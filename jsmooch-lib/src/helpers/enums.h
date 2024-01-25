@@ -1,0 +1,17 @@
+#ifndef _JSMOOCH_ENUMS_H
+#define _JSMOOCH_ENUMS_H
+
+enum jsm_systems {
+	SYS_DMG,
+	SYS_GBC,
+	SYS_NES,
+	SYS_SNES,
+	SYS_SMS,
+	SYS_GG,
+	SYS_ZX_SPECTRUM,
+	SYS_BBC_MICRO,
+	SYS_GENESIS,
+	SYS_PSX
+};
+
+#endif
