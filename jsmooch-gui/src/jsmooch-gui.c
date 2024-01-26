@@ -95,6 +95,7 @@ int main(int argc, char** argv)
     free(output_buffers[1]);
 
     // Clean up and be tidy!
+    jsm_delete(sys);
     SDL_DestroyWindowSurface(window);
     SDL_DestroyWindow(window);
 }

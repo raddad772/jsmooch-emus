@@ -92,6 +92,6 @@ struct JSM_IOmap {
 };
 
 struct jsm_system* new_system(enum jsm_systems which, struct JSM_IOmap *iomap);
-void delete_system(struct jsm_system* which);
+void jsm_delete(struct jsm_system* which);
 
 #endif

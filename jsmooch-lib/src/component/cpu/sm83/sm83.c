@@ -1,6 +1,8 @@
 #include "sm83_misc.h"
 #include "sm83.h"
 #include "sm83_opcodes.h"
+#include "stdio.h"
+#include "helpers/debug.h"
 
 u32 SM83_regs_F_getbyte(struct SM83_regs_F* this) {
 	return (this->C << 4) | (this->H << 5) | (this->N << 6) | (this->Z << 7);
@@ -37,6 +39,7 @@ void SM83_regs_init(struct SM83_regs* this) {
 
 
 void SM83_init(struct SM83* this) {
+    dbg_init();
 	this->current_instruction = SM83_decoded_opcodes[SM83_S_RESET];
 	SM83_regs_init(&(this->regs));
 	SM83_pins_init(&(this->pins));
@@ -64,6 +67,7 @@ void SM83_ins_cycles(struct SM83* this) {
 		}
 
 		this->current_instruction = SM83_decoded_opcodes[this->regs.IR];
+        //printf("\nIR: %d", this->regs.IR);
 
 		(*this->current_instruction)(&(this->regs), &(this->pins));
 		break;
@@ -80,7 +84,8 @@ void SM83_ins_cycles(struct SM83* this) {
 }
 
 void SM83_cycle(struct SM83* this) {
-	this->regs.TCU++;
+	//printf("\nCYCLE %04x", this->regs.PC);
+    this->regs.TCU++;
 	//this->trace_cycles++;
 	i32 is_halt;
 	u32 imask;
@@ -144,10 +149,11 @@ void SM83_cycle(struct SM83* this) {
 	if (this->regs.IR == SM83_S_DECODE) {
 		// operand()
 		// if CB, operand() again
-		SM83_ins_cycles(this);
+		//printf("\nINS_CYCLES");
+        SM83_ins_cycles(this);
 	}
 	else {
-		(*this->current_instruction)(&(this->regs), &(this->pins));
+        (*this->current_instruction)(&(this->regs), &(this->pins));
 	}
 }
 

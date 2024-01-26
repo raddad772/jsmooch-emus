@@ -3,6 +3,7 @@ set(CMAKE_C_STANDARD 11)
 add_executable(jsmooch-tests
         src/jsmooch-tests.c
         src/jsmooch-tests.h
+        src/cpu-tests/sm83-tests.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src ${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)

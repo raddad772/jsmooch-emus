@@ -6,8 +6,6 @@
 #include "cpu-tests/sm83-tests.h"
 #include "stdio.h"
 
-#include "jansson/jansson.h"
-
 int main()
 {
     test_sm83();
