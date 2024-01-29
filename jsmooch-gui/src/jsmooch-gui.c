@@ -31,8 +31,82 @@ void rfb_cleanup(struct read_file_buf *rfb)
     rfb->sz = 0;
 }
 
+u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer)
+{
+    u32 ret = 0;
+    switch (event->type) {
+        case SDL_KEYDOWN:
+            switch (event->key.keysym.sym) {
+                case SDLK_LEFT:
+                    input_buffer[2] = 1;
+                    break;
+                case SDLK_RIGHT:
+                    input_buffer[3] = 1;
+                    break;
+                case SDLK_UP:
+                    input_buffer[0] = 1;
+                    break;
+                case SDLK_DOWN:
+                    input_buffer[1] = 1;
+                    break;
+                case SDLK_z:
+                    input_buffer[4] = 1;
+                    break;
+                case SDLK_x:
+                    input_buffer[5] = 1;
+                    break;
+                case SDLK_a:
+                    input_buffer[6] = 1;
+                    break;
+                case SDLK_s:
+                    input_buffer[7] = 1;
+                    break;
+                case SDLK_ESCAPE:
+                    ret = 1;
+                    break;
+            }
+            break;
+        case SDL_KEYUP:
+            switch (event->key.keysym.sym) {
+                case SDLK_LEFT:
+                    input_buffer[2] = 0;
+                    break;
+                case SDLK_RIGHT:
+                    input_buffer[3] = 0;
+                    break;
+                case SDLK_UP:
+                    input_buffer[0] = 0;
+                    break;
+                case SDLK_DOWN:
+                    input_buffer[1] = 0;
+                    break;
+                case SDLK_z:
+                    input_buffer[4] = 0;
+                    break;
+                case SDLK_x:
+                    input_buffer[5] = 0;
+                    break;
+                case SDLK_a:
+                    input_buffer[6] = 0;
+                    break;
+                case SDLK_s:
+                    input_buffer[7] = 0;
+                    break;
+            }
+            break;
+
+        default:
+            break;
+    }
+    return ret;
+}
+
 int main(int argc, char** argv)
 {
+    char RFILE[500];
+    char tn[60] = "boot_div-A.gb";
+    sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
+
     SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -69,10 +143,13 @@ int main(int argc, char** argv)
 
     struct read_file_buf ROM;
     struct read_file_buf BIOS;
-    open_and_read("panda.gb", &ROM);
+    open_and_read(RFILE, &ROM);
     open_and_read("gb_bios.bin", &BIOS);
+    // Next troubleshoot if IRQs are happening
+    // and results of reads from IO are properly handled
 
     sys->load_BIOS(sys, BIOS.buf, BIOS.sz);
+    //sys->load_ROM(sys, "Tetris.gb", ROM.buf, ROM.sz);
     sys->load_ROM(sys, "Tetris.gb", ROM.buf, ROM.sz);
 
     rfb_cleanup(&ROM);
@@ -81,14 +158,36 @@ int main(int argc, char** argv)
     //sys->play(sys);
     sys->play(sys);
     struct framevars fv;
-    for (u32 f = 0; f < 600; f++) {
-        sys->map_inputs(sys, inputs, sizeof(inputs)/4);
+    SDL_Event event;
+
+    u32 input_buffer[20];
+    for (u32 i = 0; i < 20; i++) {
+        input_buffer[i] = 0;
+    }
+
+    /*
+	this->controller_in.up = bufptr[0];
+	this->controller_in.down = bufptr[1];
+	this->controller_in.left = bufptr[2];
+	this->controller_in.right = bufptr[3];
+	this->controller_in.a = bufptr[4];
+	this->controller_in.b = bufptr[5];
+	this->controller_in.start = bufptr[6];
+	this->controller_in.select = bufptr[7];
+     */
+    u32 quit = 0;
+    while(!quit) {
+        while(SDL_PollEvent(&event)) {
+            quit = handle_keys_gb(&event, input_buffer);
+        }
+        if (quit) break;
+
+        sys->map_inputs(sys, input_buffer, sizeof(inputs)/4);
         sys->finish_frame(sys);
         sys->get_framevars(sys, &fv);
         jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
         SDL_UpdateWindowSurface(window);
-        //SDL_Log("Frame %d", (int)fv.master_frame);
-        SDL_Delay(1);
+        fflush(stdout);
     }
 
     free(output_buffers[0]);

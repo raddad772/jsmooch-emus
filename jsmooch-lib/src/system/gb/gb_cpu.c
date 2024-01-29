@@ -148,9 +148,6 @@ void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, struct GB_clock*
     this->io.speed_switch_prepare = 0;
     this->io.speed_switch_cnt = -1;
     this->dma.cycles_til = this->dma.high = this->dma.index = this->dma.last_write = this->dma.new_high = this->dma.running = 0;
-
-    this->bus->read_CPU_IO = &GB_CPU_read_IO;
-    this->bus->write_CPU_IO = &GB_CPU_write_IO;
 }
 
 void GB_CPU_reset(struct GB_CPU* this) {
@@ -430,7 +427,7 @@ static u32 GB_CPU_get_input(struct GB_CPU* this) {
 }
 
 
-u32 GB_CPU_read_IO(struct GB_bus *bus, u32 addr, u32 val)
+u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
     switch(addr) {
@@ -487,7 +484,7 @@ u32 GB_CPU_read_IO(struct GB_bus *bus, u32 addr, u32 val)
     //return this->bus->APU_read_IO(addr, val);
 }
 
-void GB_CPU_write_IO(struct GB_bus* bus, u32 addr, u32 val)
+void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
     switch(addr) {

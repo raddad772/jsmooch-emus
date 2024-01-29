@@ -14,11 +14,11 @@ static u32 init_already = 0;
 void dbg_init()
 {
     if (init_already) {
-        printf("INIT ALREADY!");
+        printf("\nINIT ALREADY!");
         return;
     }
     init_already = 1;
-    printf("DBG INIT!");
+    printf("\nDBG INIT!");
     dbg.do_break = false;
     for (u32 i = 0; i < MAX_DEBUG_MSG; i++) {
         dbg.msg[i] = NULL;

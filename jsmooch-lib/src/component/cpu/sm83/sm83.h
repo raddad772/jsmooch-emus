@@ -62,7 +62,10 @@ struct SM83 {
 	struct SM83_regs regs;
 	struct SM83_pins pins;
 
-	SM83_ins_func current_instruction;
+    u32 trace_on;
+    u64 trace_cycles;
+
+    SM83_ins_func current_instruction;
 };
 
 void SM83_regs_F_setbyte(struct SM83_regs_F* this, u32 val);

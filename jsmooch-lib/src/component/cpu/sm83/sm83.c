@@ -43,6 +43,9 @@ void SM83_init(struct SM83* this) {
 	this->current_instruction = SM83_decoded_opcodes[SM83_S_RESET];
 	SM83_regs_init(&(this->regs));
 	SM83_pins_init(&(this->pins));
+
+    this->trace_cycles = 0;
+    this->trace_on = 0;
 }
 
 void SM83_reset(struct SM83* this) {
@@ -73,8 +76,9 @@ void SM83_ins_cycles(struct SM83* this) {
 		break;
 	case 2:
 		this->regs.IR = this->pins.D;
-		this->current_instruction = SM83_decoded_opcodes[SM83_MAX_OPCODE + 1 + this->regs.IR];
-		/*if (this->trace_on) {
+		this->current_instruction = SM83_decoded_opcodes[0x102 + this->regs.IR];
+		this->regs.IR |= 0xCB00;
+        /*if (this->trace_on) {
 			dbg.traces.add(TRACERS.SM83, this->trace_cycles, this->trace_format(SM83_disassemble((this->pins.Addr-1) & 0xFFFF, this->trace_peek), this->pins.Addr));
 		}*/
 		this->regs.TCU = 1;
@@ -86,7 +90,7 @@ void SM83_ins_cycles(struct SM83* this) {
 void SM83_cycle(struct SM83* this) {
 	//printf("\nCYCLE %04x", this->regs.PC);
     this->regs.TCU++;
-	//this->trace_cycles++;
+	this->trace_cycles++;
 	i32 is_halt;
 	u32 imask;
 	u32 mask;
@@ -111,7 +115,6 @@ void SM83_cycle(struct SM83* this) {
 				this->regs.IV = 0x40;
 			}
 			else if (mask & 2) { // STAT interrupt
-				//if (this->bus.ppu!.enabled)
 				imask = 0xFD;
 				this->regs.IV = 0x48;
 			}
@@ -131,13 +134,15 @@ void SM83_cycle(struct SM83* this) {
 				if (is_halt && (this->regs.IME == 0)) {
 					this->regs.HLT = 0;
 					this->regs.TCU++;
+                    printf("De-halt!");
 				}
 				else {
 					// Right here, the STAT is not supposed to be cleared if LCD disabled
 					if (this->regs.HLT) {
 						this->regs.PC = (this->regs.PC + 1) & 0xFFFF;
 					}
-					this->regs.IF &= imask;
+					printf("\nIRQ at cycle:%llu to IV:%04x", this->trace_cycles, this->regs.IV);
+                    this->regs.IF &= imask;
 					this->regs.HLT = 0;
 					this->regs.IR = SM83_S_IRQ;
 					this->current_instruction = SM83_decoded_opcodes[SM83_S_IRQ];

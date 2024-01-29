@@ -59,13 +59,16 @@ void GBMN_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
     THIS;
     this->cart = cart;
     GB_bus_set_cart(this->bus, cart);
+
     if (this->ROM != NULL) free(this->ROM);
     this->ROM = malloc(cart->header.ROM_size);
     memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
+
     if (this->cartRAM != NULL) {
         free(this->cartRAM);
         this->cartRAM = NULL;
     }
+
     if (cart->header.RAM_size > 0) {
         this->cartRAM = malloc(cart->header.RAM_size);
     }

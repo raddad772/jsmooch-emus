@@ -85,8 +85,8 @@ void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, struct GB_clock*
 void GB_CPU_cycle(struct GB_CPU* this);
 void GB_CPU_reset(struct GB_CPU* this);
 void GB_CPU_quick_boot(struct GB_CPU* this);
-u32 GB_CPU_read_IO(struct GB_bus *bus, u32 addr, u32 val);
-void GB_CPU_write_IO(struct GB_bus* bus, u32 addr, u32 val);
+u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val);
+void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val);
 
 
 #endif

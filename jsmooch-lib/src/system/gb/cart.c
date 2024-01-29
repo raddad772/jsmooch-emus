@@ -92,10 +92,11 @@ void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, size_t size)
     }
 
     this->header.ROM_banks = NUM_ROMBANKS(inp[0x0148]);
-    printf("NUM ROMBANKS: %d", this->header.ROM_banks);
+    printf("\nNUM ROMBANKS: %d", this->header.ROM_banks);
     this->header.ROM_size = (this->header.ROM_banks ? (this->header.ROM_banks * 16384) : 32768);
     if (this->ROM != NULL) {
         free(this->ROM);
+        this->ROM = NULL;
     }
     
     this->ROM = (u8 *)malloc(this->header.ROM_size);

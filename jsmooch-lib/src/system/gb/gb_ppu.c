@@ -437,9 +437,6 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
     this->clock = clock;
     this->bus = bus;
 
-    this->bus->read_PPU_IO = &GB_PPU_bus_read_IO;
-    this->bus->write_PPU_IO = &GB_PPU_bus_write_IO;
-
     this->bus->read_OAM = &GB_PPU_bus_read_OAM;
     this->bus->write_OAM = &GB_PPU_bus_write_OAM;
 
@@ -485,6 +482,7 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
 
 static void GB_PPU_disable(struct GB_PPU* this) {
     if (!this->enabled) return;
+    printf("\nDISABLE PPU %d", this->clock->master_clock);
     this->enabled = FALSE;
     this->clock->CPU_can_VRAM = 1;
     GB_clock_setCPU_can_OAM(this->clock, 1);
@@ -494,7 +492,7 @@ static void GB_PPU_disable(struct GB_PPU* this) {
 
 static void GB_PPU_enable(struct GB_PPU *this) {
     if (this->enabled) return;
-    //console.log('ENABLE PPU');
+    printf("\nENABLE PPU %d", this->clock->master_clock);
     this->enabled = TRUE;
     GB_PPU_advance_frame(this, false);
     this->clock->lx = 0;
@@ -628,6 +626,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         this->bg_palette[1] = (u8)((val >> 2) & 3);
         this->bg_palette[2] = (u8)((val >> 4) & 3);
         this->bg_palette[3] = (u8)((val >> 6) & 3);
+        printf("\nWrite to BG pallette %02x on frame %d", val, this->clock->master_frame);
         return;
     case 0xFF48: // OBP0 sprite palette 0
         //if (!this->clock->CPU_can_VRAM) return;
@@ -901,9 +900,9 @@ void GB_PPU_quick_boot(struct GB_PPU* this)
         this->enabled = true;
         //let val = 0xFC;
         //this->clock->ly = 90;
-        this->bus->write_PPU_IO(this->bus, 0xFF47, 0xFC);
-        this->bus->write_PPU_IO(this->bus, 0xFF40, 0x91);
-        this->bus->write_PPU_IO(this->bus, 0xFF41, 0x85);
+        this->bus->write_IO(this->bus, 0xFF47, 0xFC);
+        this->bus->write_IO(this->bus, 0xFF40, 0x91);
+        this->bus->write_IO(this->bus, 0xFF41, 0x85);
         this->io.lyc = 0;
         this->io.SCX = this->io.SCY = 0;
 
@@ -913,9 +912,9 @@ void GB_PPU_quick_boot(struct GB_PPU* this)
         for (u32 i = 0; i < 0x3F; i++) {
             this->bg_CRAM[i] = 0xFF;
         }
-        this->bus->write_PPU_IO(this->bus, 0xFF47, 0xFC);
-        this->bus->write_PPU_IO(this->bus, 0xFF40, 0x91);
-        this->bus->write_PPU_IO(this->bus, 0xFF41, 0x85);
+        this->bus->write_IO(this->bus, 0xFF47, 0xFC);
+        this->bus->write_IO(this->bus, 0xFF40, 0x91);
+        this->bus->write_IO(this->bus, 0xFF41, 0x85);
         this->io.lyc = 0;
         this->io.SCX = this->io.SCY = 0;
 

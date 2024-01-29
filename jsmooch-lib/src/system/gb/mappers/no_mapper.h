@@ -23,7 +23,6 @@ void GB_mapper_none_new(struct GB_mapper *parent, struct GB_clock *clock, struct
 void GB_mapper_none_delete(struct GB_mapper *parent);
 void GBMN_reset(struct GB_mapper* parent);
 void GBMN_set_cart(struct GB_mapper* parent, struct GB_cart* cart);
-void GBMN_set_BIOS(struct GB_mapper* parent, u8* src, u32 sz);
 
 u32 GBMN_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect);
 void GBMN_CPU_write(struct GB_mapper* parent, u32 addr, u32 val);

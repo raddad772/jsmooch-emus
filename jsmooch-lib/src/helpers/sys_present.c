@@ -3,6 +3,9 @@
 //
 
 #include "sys_present.h"
+#include "stdio.h"
+
+// Translate from DMG output to 32-bit RGBA
 void DMG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
 {
     u16* ibuf = (u16 *)iom->out_buffers[last_used_buffer];
@@ -16,7 +19,7 @@ void DMG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
 
             u32 r, g, b;
             u16 o = *iptr;
-            r = ((o / 3) * 255);
+            r = o * 85;
             r = 255 - r;
             g = b = r;
 
@@ -34,6 +37,9 @@ void jsm_present(enum jsm_systems which, u32 last_used_buffer, struct JSM_IOmap 
     switch(which) {
         case SYS_DMG:
             DMG_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            break;
+        default:
+            printf("\nUNKNOWN PRESENT!");
             break;
     }
 }

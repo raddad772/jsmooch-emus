@@ -31,6 +31,8 @@ add_library(jsmooch-lib
         src/helpers/sys_present.h
         src/helpers/debug.h
         src/helpers/debug.c
+        src/system/gb/mappers/mbc1.h
+        src/system/gb/mappers/mbc1.c
 )
 
 include_directories(src/)

@@ -34,6 +34,8 @@ u32 GBJ_finish_scanline(JSM);
 u32 GBJ_step_master(JSM, u32 howmany);
 void GBJ_load_BIOS(JSM, char* buf, u32 bufsize);
 void GBJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize);
+void GB_write_IO(struct GB_bus* bus, u32 addr, u32 val);
+u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val);
 
 
 void GB_new(JSM, enum GB_variants variant, struct JSM_IOmap *iomap)
@@ -60,6 +62,10 @@ void GB_new(JSM, enum GB_variants variant, struct JSM_IOmap *iomap)
 	this->BIOS = NULL;
 	this->BIOS_size = 0;
 
+    this->bus.read_IO = &GB_read_IO;
+    this->bus.write_IO = &GB_write_IO;
+
+
 	jsm->ptr = (void*)this;
 
 	jsm->get_description = &GBJ_get_description;
@@ -77,9 +83,22 @@ void GB_new(JSM, enum GB_variants variant, struct JSM_IOmap *iomap)
 	jsm->stop = &GBJ_stop;
 }
 
+u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val) {
+    u32 out = 0xFF;
+    out &= GB_CPU_bus_read_IO(bus, addr, val);
+    out &= GB_PPU_bus_read_IO(bus, addr, val);
+    return out;
+}
+
+void GB_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
+    GB_CPU_bus_write_IO(bus, addr, val);
+    GB_PPU_bus_write_IO(bus, addr, val);
+}
+
+
 void GB_delete(JSM)
 {
-	THIS;
+	JTHIS;
 	//GB_CPU_delete(&this->cpu);
 	//GB_PPU_delete(&this->ppu);
 	GB_cart_delete(&this->cart);
@@ -112,7 +131,7 @@ void GB_delete(JSM)
 
 void GBJ_get_description(JSM, struct machine_description* d)
 {
-	THIS;
+	JTHIS;
 	sprintf(d->name, "GameBoy");
 	switch (this->variant) {
 	case GBC:

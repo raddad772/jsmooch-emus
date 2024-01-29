@@ -34,13 +34,10 @@ struct GB_bus {
 	//u32 (*PPU_read)(struct GB_bus*, u32);
 
 	// Provided by gb_cpu
-	u32 (*read_CPU_IO)(struct GB_bus*, u32, u32);
-	void (*write_CPU_IO)(struct GB_bus*, u32, u32);
+	u32 (*read_IO)(struct GB_bus*, u32, u32);
+	void (*write_IO)(struct GB_bus*, u32, u32);
 
 	// Provided by gb_ppu
-	u32(*read_PPU_IO)(struct GB_bus*, u32, u32);
-	void (*write_PPU_IO)(struct GB_bus*, u32, u32);
-
 	u32 (*read_OAM)(struct GB_bus*, u32);
 	void (*write_OAM)(struct GB_bus*, u32, u32);
 

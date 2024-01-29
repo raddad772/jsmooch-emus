@@ -91,8 +91,8 @@ struct GB_PPU {
     u32 enabled;
     u32 display_update;
 
-    u8 bg_palette[4];
-    u8 sp_palette[2][4];
+    u16 bg_palette[4];
+    u16 sp_palette[2][4];
 
     u8 bg_CRAM[64];
     u8 obj_CRAM[64];
@@ -145,5 +145,7 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
 void GB_PPU_run_cycles(struct GB_PPU* this, u32 howmany);
 void GB_PPU_quick_boot(struct GB_PPU* this);
 void GB_PPU_reset(struct GB_PPU* this);
+u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val);
+void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val);
 
 #endif

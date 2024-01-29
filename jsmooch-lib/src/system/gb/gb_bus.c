@@ -38,10 +38,6 @@ void GB_bus_delete(struct GB_bus *this)
         free(this->BIOS);
         this->BIOS = NULL;
     }
-    if (this->mapper != NULL) {
-        delete_GB_mapper(this->mapper);
-        this->mapper = NULL;
-    }
 }
 
 void GB_generic_mapper_reset(struct GB_bus *this)
@@ -71,14 +67,8 @@ inline void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val) {
     if ((addr >= 0xE000) && (addr < 0xFE00)) addr -= 0x2000;  // Mirror WRAM
 
     if ((addr >= 0x8000) && (addr < 0xA000)) { // VRAM
-        //if (this->clock.CPU_can_VRAM) {
         this->generic_mapper.VRAM[(addr & 0x1FFF) + this->generic_mapper.VRAM_bank_offset] = (u8)val;
         return;
-        //return true;
-        //} else {
-        //console.log('VRAM WRITE BLOCKED!', this->bus.ppu.enabled, this->bus.ppu.io.bg_window_enable, this->clock.ly, this->bus.ppu.line_cycle);
-        //return true;
-        //}
     }
 
     if ((addr >= 0xC000) && (addr < 0xD000)) { // WRAM lo bank
@@ -94,7 +84,7 @@ inline void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val) {
         return;
     }
     if ((addr >= 0xFF00) && (addr < 0xFF80)) {// registers
-        GB_CPU_write_IO(this, addr, val);
+        this->write_IO(this, addr, val);
         return;
     }
     if ((addr >= 0xFF80) && (addr < 0xFFFF)) { // HRAM always accessible
@@ -102,7 +92,7 @@ inline void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val) {
         return;
     }
     if (addr == 0xFFFF) {  // 0xFFFF register
-        GB_CPU_write_IO(this, addr, val);
+        this->write_IO(this, addr, val);
         return;
     }
     this->mapper->CPU_write(this->mapper, addr, val);
@@ -131,11 +121,11 @@ inline u32 GB_bus_CPU_read(struct GB_bus *this, u32 addr, u32 val, u32 has_effec
     if ((addr >= 0xFE00) && (addr < 0xFF00)) // OAM
         return this->read_OAM(this, addr);
     if ((addr >= 0xFF00) && (addr < 0xFF80)) // registers
-        return GB_CPU_read_IO(this, addr, val);//, has_effect);
+        return this->read_IO(this, addr, val);//, has_effect);
     if ((addr >= 0xFF80) && (addr < 0xFFFF)) // HRAM always accessible
         return this->generic_mapper.HRAM[addr - 0xFF80];
     if (addr == 0xFFFF)
-        return GB_CPU_read_IO(this, 0xFFFF, val);//, has_effect); // 0xFFFF register
+        return this->read_IO(this, 0xFFFF, val);//, has_effect); // 0xFFFF register
 
     return this->mapper->CPU_read(this->mapper, addr, val, has_effect);
 }
