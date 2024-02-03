@@ -135,6 +135,8 @@ void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, struct GB_clock*
     this->input_buffer.up = this->input_buffer.down = 0;
     this->input_buffer.left = this->input_buffer.right = 0;
 
+    this->tracing = 0;
+
     SM83_init(&this->cpu);
     for (u32 i = 0; i < 256; i++) {
         this->FFregs[i] = 0;
@@ -157,16 +159,18 @@ void GB_CPU_reset(struct GB_CPU* this) {
     this->dma.running = 0;
 }
 
-void GB_CPU_enable_tracing(struct GB_CPU* this) {
-    if (this->tracing) return;
-    //this->cpu.enable_tracing(this->read_trace.bind(this));
-    this->tracing = TRUE;
+u32 GB_CPU_read_trace(void *tr, u32 addr)
+{
+    return GB_bus_CPU_read(((struct GB_CPU *)tr)->bus, addr, 0, 0);
 }
 
-u32 GB_CPU_read_trace(struct GB_CPU* this, u32 addr) {
-    assert(1 == 0);
-    return 0;
-    //return this->bus.mapper.CPU_read(addr, 0);
+void GB_CPU_enable_tracing(struct GB_CPU* this) {
+    if (this->tracing) return;
+    struct jsm_debug_read_trace a;
+    a.ptr = (void *)this;
+    a.read_trace = &GB_CPU_read_trace;
+    SM83_enable_tracing(&this->cpu, &a);
+    this->tracing = TRUE;
 }
 
 void GB_CPU_disable_tracing(struct GB_CPU* this) {
@@ -430,6 +434,7 @@ static u32 GB_CPU_get_input(struct GB_CPU* this) {
 u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
+    //if (addr == 0xFF44) printf("\nHEY VAL COMES IN %02x", val);
     switch(addr) {
         case 0xFF00: // JOYP
             // return not pressed=1 in bottom 4 bits
@@ -479,6 +484,7 @@ u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val)
             return this->cpu.regs.IE | 0xE0;
             //return this->clock->irq.vblank_enable | (this->clock->irq.lcd_stat_enable << 1) | (this->clock->irq.timer_enable << 2) | (this->clock->irq.serial_enable << 3) | (this->clock->irq.joypad_enable << 4);
     }
+    //if (addr == 0xFF44) printf("\nHEY VAL GOES OUT %02x", val);
     return val;
     // TODO: reenable APU reads here
     //return this->bus->APU_read_IO(addr, val);

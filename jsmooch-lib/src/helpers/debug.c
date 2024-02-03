@@ -45,7 +45,7 @@ void dbg_add_msg(char *what)
     dbg.msg[r] = malloc(strl+1);
     strcpy(dbg.msg[r], what);
     dbg.msg_len++;
-    dbg.msg_len = MIN(dbg.msg_len, 10000);
+    dbg.msg_len = MIN(dbg.msg_len, MAX_DEBUG_MSG);
 }
 
 char *dbg_get_msg()
@@ -79,4 +79,10 @@ void dbg_clear_msg()
 void dbg_delete()
 {
     dbg_clear_msg();
+}
+
+void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, struct jsm_debug_read_trace *src)
+{
+    dst->ptr = src->ptr;
+    dst->read_trace = src->read_trace;
 }

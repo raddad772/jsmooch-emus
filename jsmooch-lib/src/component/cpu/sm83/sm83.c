@@ -46,6 +46,9 @@ void SM83_init(struct SM83* this) {
 
     this->trace_cycles = 0;
     this->trace_on = 0;
+
+    this->read_trace.read_trace = NULL;
+    this->read_trace.ptr = NULL;
 }
 
 void SM83_reset(struct SM83* this) {
@@ -141,7 +144,7 @@ void SM83_cycle(struct SM83* this) {
 					if (this->regs.HLT) {
 						this->regs.PC = (this->regs.PC + 1) & 0xFFFF;
 					}
-					printf("\nIRQ at cycle:%llu to IV:%04x", this->trace_cycles, this->regs.IV);
+					//printf("\nIRQ at cycle:%llu to IV:%04x", this->trace_cycles, this->regs.IV);
                     this->regs.IF &= imask;
 					this->regs.HLT = 0;
 					this->regs.IR = SM83_S_IRQ;
@@ -162,7 +165,14 @@ void SM83_cycle(struct SM83* this) {
 	}
 }
 
+void SM83_enable_tracing(struct SM83* this, struct jsm_debug_read_trace *dbg_read_trace)
+{
+    this->trace_on = 1;
+
+    jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
+}
+
 void SM83_disable_tracing(struct SM83* this)
 {
-
+    this->trace_on = 0;
 }

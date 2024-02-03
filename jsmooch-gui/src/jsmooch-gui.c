@@ -104,8 +104,10 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer)
 int main(int argc, char** argv)
 {
     char RFILE[500];
-    char tn[60] = "boot_div-A.gb";
-    sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
+    //char tn[60] = "boot_div-A.gb";
+    //sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
+    //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\test\\statcount-auto.gb");
+    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\DKL.gb");
 
     SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -187,6 +189,7 @@ int main(int argc, char** argv)
         sys->get_framevars(sys, &fv);
         jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
         SDL_UpdateWindowSurface(window);
+        SDL_Delay(10);
         fflush(stdout);
     }
 

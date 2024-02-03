@@ -84,9 +84,12 @@ void GB_new(JSM, enum GB_variants variant, struct JSM_IOmap *iomap)
 }
 
 u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val) {
-    u32 out = 0xFF;
-    out &= GB_CPU_bus_read_IO(bus, addr, val);
-    out &= GB_PPU_bus_read_IO(bus, addr, val);
+    //u32 out = 0xFF;
+    //if (addr == 0xFF44) printf("\nFF44 STARTING VALUE %02x", out);
+    u32 out = GB_CPU_bus_read_IO(bus, addr, 0xFF);
+    //if (addr == 0xFF44) printf("\nFF44 OUT %02x", out);
+    out &= GB_PPU_bus_read_IO(bus, addr, out);
+    //if (addr == 0xFF44) printf("\nFF44 OUT2 %02x", out);
     return out;
 }
 

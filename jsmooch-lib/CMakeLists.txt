@@ -33,6 +33,8 @@ add_library(jsmooch-lib
         src/helpers/debug.c
         src/system/gb/mappers/mbc1.h
         src/system/gb/mappers/mbc1.c
+        src/component/cpu/sm83/sm83_disassembler.c
+        src/system/gb/mappers/mbc2.h
 )
 
 include_directories(src/)

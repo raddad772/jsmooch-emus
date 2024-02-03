@@ -482,7 +482,7 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
 
 static void GB_PPU_disable(struct GB_PPU* this) {
     if (!this->enabled) return;
-    printf("\nDISABLE PPU %d", this->clock->master_clock);
+    //printf("\nDISABLE PPU %d", this->clock->master_clock);
     this->enabled = FALSE;
     this->clock->CPU_can_VRAM = 1;
     GB_clock_setCPU_can_OAM(this->clock, 1);
@@ -492,7 +492,7 @@ static void GB_PPU_disable(struct GB_PPU* this) {
 
 static void GB_PPU_enable(struct GB_PPU *this) {
     if (this->enabled) return;
-    printf("\nENABLE PPU %d", this->clock->master_clock);
+    //printf("\nENABLE PPU %d", this->clock->master_clock);
     this->enabled = TRUE;
     GB_PPU_advance_frame(this, false);
     this->clock->lx = 0;
@@ -692,6 +692,8 @@ u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val){
         case 0xFF43: // SCX
             return this->io.SCX;
         case 0xFF44: // LY
+            //printf("\nRETURNING SCY %d %d %d", this->clock->ly, this->clock->master_frame, this->io.SCY);
+            //fflush(stdout);
             ly = this->clock->ly;
             if ((ly == 153) && (this->line_cycle > 1)) ly = 0;
             return ly;

@@ -2,6 +2,7 @@
 #define _SM83_H
 
 #include "helpers/int.h"
+#include "helpers/debug.h"
 #include "sm83_misc.h"
 
 struct SM83_regs_F {
@@ -66,6 +67,8 @@ struct SM83 {
     u64 trace_cycles;
 
     SM83_ins_func current_instruction;
+
+    struct jsm_debug_read_trace read_trace;
 };
 
 void SM83_regs_F_setbyte(struct SM83_regs_F* this, u32 val);
@@ -77,6 +80,7 @@ void SM83_pins_init(struct SM83_pins* this);
 void SM83_init(struct SM83* this); // Initializes SM83 processor struct. Use before using the struct
 void SM83_cycle(struct SM83* this); // Runs SM83 cycle
 void SM83_reset(struct SM83* this); // Resets SM83 processor
+void SM83_enable_tracing(struct SM83* this, struct jsm_debug_read_trace *dbg_read_trace);
 void SM83_disable_tracing(struct SM83* this);
 
 
