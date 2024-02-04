@@ -217,7 +217,7 @@ void GBJ_map_inputs(JSM, u32* bufptr, u32 bufsize) {
 	this->controller_in.b = bufptr[5];
 	this->controller_in.start = bufptr[6];
 	this->controller_in.select = bufptr[7];
-	//this->cpu.update_inputs(this->controller_in);
+	GB_CPU_update_inputs(&this->cpu, &this->controller_in);
 }
 
 u32 GBJ_finish_scanline(JSM) {

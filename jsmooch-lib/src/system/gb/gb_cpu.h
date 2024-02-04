@@ -90,6 +90,7 @@ void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val);
 
 void GB_CPU_enable_tracing(struct GB_CPU *this);
 void GB_CPU_disable_tracing(struct GB_CPU *this);
-
+struct GB_inputs;
+void GB_CPU_update_inputs(struct GB_CPU* this, struct GB_inputs *inp1);
 
 #endif

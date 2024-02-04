@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     //char tn[60] = "boot_div-A.gb";
     //sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\test\\statcount-auto.gb");
-    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\cgb-acid2.gbc");
+    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\pyellow.gbc");
 
     SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)

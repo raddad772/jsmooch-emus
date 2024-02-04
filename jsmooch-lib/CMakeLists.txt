@@ -35,6 +35,10 @@ add_library(jsmooch-lib
         src/system/gb/mappers/mbc1.c
         src/component/cpu/sm83/sm83_disassembler.c
         src/system/gb/mappers/mbc2.h
+        src/system/gb/mappers/mbc2.c
+        src/system/gb/mappers/mbc3.c
+        src/system/gb/mappers/mbc5.h
+        src/system/gb/mappers/mbc5.c
 )
 
 include_directories(src/)

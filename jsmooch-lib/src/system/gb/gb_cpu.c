@@ -6,11 +6,7 @@
 #include "gb_bus.h"
 #include "gb_clock.h"
 #include "gb_ppu.h"
-
-#ifndef TRUE
-#define TRUE -1
-#define FALSE 0
-#endif
+#include "gb.h"
 
 #define GB_INSTANT_OAM false
 
@@ -574,7 +570,7 @@ void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val)
             this->hdma.mode = (val & 0x80) >> 7;
             this->hdma.length = (val & 0x7F) + 1; // up to 128 blocks of 16 bytes.
             if (!this->hdma.enabled) {
-                printf("HDMA TRANSFER");
+                printf("\nHDMA TRANSFER");
                 this->hdma.enabled = true;
                 if (this->hdma.mode == 0) this->hdma.active = true;
             } else {
@@ -611,4 +607,16 @@ void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val)
     }
     //TODO: APU stuff
     //this->bus->apu.write_IO(addr, val);
+}
+
+void GB_CPU_update_inputs(struct GB_CPU* this, struct GB_inputs *inp1)
+{
+    this->input_buffer.a = inp1->a;
+    this->input_buffer.b = inp1->b;
+    this->input_buffer.up = inp1->up;
+    this->input_buffer.down = inp1->down;
+    this->input_buffer.left = inp1->left;
+    this->input_buffer.right = inp1->right;
+    this->input_buffer.start = inp1->start;
+    this->input_buffer.select = inp1->select;
 }
