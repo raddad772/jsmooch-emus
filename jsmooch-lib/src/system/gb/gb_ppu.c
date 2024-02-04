@@ -229,7 +229,7 @@ static struct GB_px *GB_pixel_slice_fetcher_cycle(struct GB_pixel_slice_fetcher*
 static struct GB_px *GB_pixel_slice_fetcher_get_px_if_available(struct GB_pixel_slice_fetcher* this) {
     this->out_px.had_pixel = false;
     this->out_px.bg_or_sp = -1;
-    if ((this->sp_request == 0) && (!GB_FIFO_empty(&this->bg_FIFO))) {
+    if ((this->sp_request == 0) && (!GB_FIFO_empty(&this->bg_FIFO))) { // if we're not in a sprite request, and the BG FIFO isn't empty
         this->out_px.had_pixel = true;
         u32 has_bg = this->clock->cgb_enable? true : this->ppu->io.bg_window_enable;
         u32 bg_pal = 0;
@@ -333,17 +333,18 @@ static void GB_pixel_slice_fetcher_run_fetch_cycle(struct GB_pixel_slice_fetcher
     case 4: // nothing
         this->fetch_cycle = 5;
         break;
-    case 5: // bp1
+    case 5: // bp1.
         this->fetch_bp1 = GB_bus_PPU_read(this->bus, this->fetch_addr + 1);
         //if (this->ppu->in_window()) this->fetch_bp1 = 0x55;
         this->fetch_cycle = 6;
         break;
-    case 6: // attempt background push, OR, hijack by sprite
-        if (this->sp_request) { // SPRITE HIJACK!
+    case 6: // attempt background push. also hijack by sprite, so sprite cycle #0
+        if (this->sp_request && (!GB_FIFO_empty(&this->bg_FIFO))) { // SPRITE HIJACK!
             this->fetch_cycle = 7;
             //this->sprites_queue.peek()!.sprite_obj
             this->fetch_obj = GB_FIFO_peek(&this->sprites_queue)->sprite_obj;
             this->fetch_addr = GB_sp_tile_addr(this->fetch_obj->tile, this->clock->ly - this->fetch_obj->y, this->ppu->io.sprites_big, this->fetch_obj->attr, this->clock->cgb_enable);
+            break;
         }
         else { // attempt to push to BG FIFO, which only accepts when empty.
             if (GB_FIFO_empty(&this->bg_FIFO)) {
@@ -369,6 +370,7 @@ static void GB_pixel_slice_fetcher_run_fetch_cycle(struct GB_pixel_slice_fetcher
                     }
                 }
                 this->bg_request_x += 8;
+                // This is the first fetch of the line, so discard up to 7 pixels from the first fetch for scrolling purposes
                 if ((this->ppu->line_cycle < 88) && (!GB_PPU_in_window(this->ppu))) {
                     this->bg_request_x -= 8;
                     // Now discard some pixels for scrolling!
@@ -378,21 +380,26 @@ static void GB_pixel_slice_fetcher_run_fetch_cycle(struct GB_pixel_slice_fetcher
                 this->fetch_cycle = 0; // Restart fetching
             }
         }
-        // do NOT advance if BG_FIFO won't take it
         break;
-    case 7: // sprite bp0 fetch
-        this->fetch_bp0 = GB_bus_PPU_read(this->bus, this->fetch_addr);
+    case 7: // sprite bp0 fetch, cycle 1
         this->fetch_cycle = 8;
         break;
-    case 8: // nothing
+    case 8: // nothing, cycle 2
         this->fetch_cycle = 9;
         break;
-    case 9: // sprite bp1 fetch, mix, & restart
-        this->fetch_bp1 = GB_bus_PPU_read(this->bus, this->fetch_addr + 1);
-        GB_FIFO_sprite_mix(&this->obj_FIFO, this->fetch_bp0, this->fetch_bp1, this->fetch_obj->attr, this->fetch_obj->num);
+    case 9: // spr cycle 3
+        this->fetch_cycle = 10;
+        this->spfetch_bp0 = GB_bus_PPU_read(this->bus, this->fetch_addr);
+        break;
+    case 10: // spr cycle 4
+        this->fetch_cycle = 11;
+        break;
+    case 11: // spr cycle 5. sprite bp1 fetch, mix, & restart
+        this->spfetch_bp1 = GB_bus_PPU_read(this->bus, this->fetch_addr + 1);
+        GB_FIFO_sprite_mix(&this->obj_FIFO, this->spfetch_bp0, this->spfetch_bp1, this->fetch_obj->attr, this->fetch_obj->num);
         this->sp_request--;
         GB_FIFO_pop(&this->sprites_queue);
-        this->fetch_cycle = 0;
+        this->fetch_cycle = 6; // restart hijack/sprite process or push process
         break;
     }
 }
@@ -626,7 +633,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         this->bg_palette[1] = (u8)((val >> 2) & 3);
         this->bg_palette[2] = (u8)((val >> 4) & 3);
         this->bg_palette[3] = (u8)((val >> 6) & 3);
-        printf("\nWrite to BG pallette %02x on frame %d", val, this->clock->master_frame);
+        //printf("\nWrite to BG pallette %02x on frame %d", val, this->clock->master_frame);
         return;
     case 0xFF48: // OBP0 sprite palette 0
         //if (!this->clock->CPU_can_VRAM) return;
@@ -976,10 +983,10 @@ static void GB_PPU_pixel_transfer(struct GB_PPU *this)
                     // each pixel is 0-4
                     // so it's (4 * palette #) + color
                     u32 n = ((p->palette * 4) + p->color) * 2;
-                    cv = (this->bg_CRAM[n+1] << 8) | this->bg_CRAM[n];
+                    cv = (((u16)this->bg_CRAM[n+1]) << 8) | this->bg_CRAM[n];
                 } else {
                     u32 n = ((p->palette * 4) + p->color) * 2;
-                    cv = (this->obj_CRAM[n+1] << 8) | this->obj_CRAM[n];
+                    cv = (((u16)this->obj_CRAM[n+1]) << 8) | this->obj_CRAM[n];
                 }
             } else {
                 if (p->bg_or_sp == 0) {

@@ -15,6 +15,9 @@ struct jsm_system* new_system(enum jsm_systems which, struct JSM_IOmap *iomap)
 		case SYS_DMG:
 			GB_new(out, DMG, iomap);
 			break;
+        case SYS_GBC:
+            GB_new(out, GBC, iomap);
+            break;
         default:
             printf("DELETE UNKNOWN SYSTEM!");
             break;
@@ -26,6 +29,7 @@ void jsm_delete(struct jsm_system* jsm)
 {
     switch(jsm->which) {
         case SYS_DMG:
+        case SYS_GBC:
             GB_delete(jsm);
             break;
         default:

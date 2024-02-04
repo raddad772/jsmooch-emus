@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     //char tn[60] = "boot_div-A.gb";
     //sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\test\\statcount-auto.gb");
-    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\DKL.gb");
+    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\cgb-acid2.gbc");
 
     SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -141,12 +141,13 @@ int main(int argc, char** argv)
     iom.out_buffers[0] = (void *)output_buffers[0];
     iom.out_buffers[1] = (void *)output_buffers[1];
 
-    struct jsm_system* sys = new_system(SYS_DMG, &iom);
+    struct jsm_system* sys = new_system(SYS_GBC, &iom);
 
     struct read_file_buf ROM;
     struct read_file_buf BIOS;
     open_and_read(RFILE, &ROM);
-    open_and_read("gb_bios.bin", &BIOS);
+    //open_and_read("gb_bios.bin", &BIOS);
+    open_and_read("gbc_bios.bin", &BIOS);
     // Next troubleshoot if IRQs are happening
     // and results of reads from IO are properly handled
 

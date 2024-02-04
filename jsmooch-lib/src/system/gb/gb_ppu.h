@@ -59,6 +59,8 @@ struct GB_pixel_slice_fetcher {
     struct GB_PPU_sprite* fetch_obj;
     u32 fetch_bp0;
     u32 fetch_bp1;
+    u32 spfetch_bp0;
+    u32 spfetch_bp1;
     u32 fetch_cgb_attr;
 
     struct GB_FIFO bg_FIFO;

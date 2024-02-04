@@ -1,3 +1,4 @@
+#include "stdio.h"
 #include "gb_clock.h"
 
 void GB_clock_init(struct GB_clock* this) {
@@ -32,7 +33,6 @@ void GB_clock_reset(struct GB_clock* this) {
     this->CPU_can_VRAM = 1;
     this->CPU_can_OAM = 0;
     this->bootROM_enabled = TRUE;
-    this->cgb_enable = FALSE;
     this->turbo = FALSE;
 }
 

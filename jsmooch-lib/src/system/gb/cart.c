@@ -3,6 +3,7 @@
 #include <malloc.h>
 #include "helpers/int.h"
 #include "cart.h"
+#include "system/gb/gb_clock.h"
 #include "system/gb/mappers/mapper.h"
 #include "gb_bus.h"
 
@@ -90,6 +91,11 @@ void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, size_t size)
     if ((inp[0x104] != 0xCE) || (inp[0x105] != 0xED)) {
         assert(1 != 0);
     }
+
+    this->clock->cgb_enable = (inp[0x143] == 0x80) || (inp[0x143] == 0xC0);
+    if (this->variant != GBC) this->clock->cgb_enable = 0;
+    printf("\nCGB ENABLE? %d", this->clock->cgb_enable);
+    fflush(stdout);
 
     this->header.ROM_banks = NUM_ROMBANKS(inp[0x0148]);
     printf("\nNUM ROMBANKS: %d", this->header.ROM_banks);
