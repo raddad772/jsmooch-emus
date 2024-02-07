@@ -4,6 +4,8 @@
 #include "helpers/sys_interface.h"
 #include "helpers/sys_present.h"
 
+#include "system/gb/gb.h"
+
 struct read_file_buf {
     size_t sz;
     void *buf;
@@ -107,7 +109,8 @@ int main(int argc, char** argv)
     //char tn[60] = "boot_div-A.gb";
     //sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\test\\statcount-auto.gb");
-    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\pyellow.gbc");
+    //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\tetris.gb");
+    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\smb3.nes");
 
     SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -132,8 +135,8 @@ int main(int argc, char** argv)
     struct JSM_IOmap iom;
 
     u16 *output_buffers[2];
-    output_buffers[0] = malloc(160*144*2);
-    output_buffers[1] = malloc(160*144*2);
+    output_buffers[0] = malloc(256*240*2);
+    output_buffers[1] = malloc(256*240*2);
     u32 inputs[50];
     for (u32 i = 0; i < 50; i++) {
         inputs[i] = 0;
@@ -141,18 +144,17 @@ int main(int argc, char** argv)
     iom.out_buffers[0] = (void *)output_buffers[0];
     iom.out_buffers[1] = (void *)output_buffers[1];
 
-    struct jsm_system* sys = new_system(SYS_GBC, &iom);
+    struct jsm_system* sys = new_system(SYS_NES, &iom);
 
     struct read_file_buf ROM;
     struct read_file_buf BIOS;
     open_and_read(RFILE, &ROM);
-    //open_and_read("gb_bios.bin", &BIOS);
-    open_and_read("gbc_bios.bin", &BIOS);
+    open_and_read("gb_bios.bin", &BIOS);
+    //open_and_read("gbc_bios.bin", &BIOS);
     // Next troubleshoot if IRQs are happening
     // and results of reads from IO are properly handled
 
-    sys->load_BIOS(sys, BIOS.buf, BIOS.sz);
-    //sys->load_ROM(sys, "Tetris.gb", ROM.buf, ROM.sz);
+    //sys->load_BIOS(sys, BIOS.buf, BIOS.sz);
     sys->load_ROM(sys, "Tetris.gb", ROM.buf, ROM.sz);
 
     rfb_cleanup(&ROM);
@@ -168,22 +170,14 @@ int main(int argc, char** argv)
         input_buffer[i] = 0;
     }
 
-    /*
-	this->controller_in.up = bufptr[0];
-	this->controller_in.down = bufptr[1];
-	this->controller_in.left = bufptr[2];
-	this->controller_in.right = bufptr[3];
-	this->controller_in.a = bufptr[4];
-	this->controller_in.b = bufptr[5];
-	this->controller_in.start = bufptr[6];
-	this->controller_in.select = bufptr[7];
-     */
     u32 quit = 0;
+    u32 before, after;
+
+    before = SDL_GetTicks();
     while(!quit) {
         while(SDL_PollEvent(&event)) {
             quit = handle_keys_gb(&event, input_buffer);
         }
-        if (quit) break;
 
         sys->map_inputs(sys, input_buffer, sizeof(inputs)/4);
         sys->finish_frame(sys);
@@ -193,6 +187,17 @@ int main(int argc, char** argv)
         SDL_Delay(10);
         fflush(stdout);
     }
+    /*after = SDL_GetTicks();
+    float rend = ((float)after) / 1000.0f;
+    float rstart = ((float)before) / 1000.0f;
+    float r = rend - rstart;
+    printf("\nTIME %f", r);
+    float num_cycles = (float)(((struct GB *)sys->ptr)->cpu.cpu.trace_cycles);
+    printf("\nNUM CYCLES %f", num_cycles);
+    float cycles_per_second = num_cycles / r;
+    //printf("\nCYCLES PER SECOND %f", cycles_per_second);
+    SDL_Log("\nCYCLES PER SECOND %f", cycles_per_second);
+    fflush(stdout);*/
 
     free(output_buffers[0]);
     free(output_buffers[1]);

@@ -3,6 +3,7 @@
 #include "sys_interface.h"
 #include "system/gb/gb.h"
 #include "system/gb/gb_enums.h"
+#include "system/nes/nes.h"
 #include "helpers/debug.h"
 #include "stdio.h"
 
@@ -18,6 +19,9 @@ struct jsm_system* new_system(enum jsm_systems which, struct JSM_IOmap *iomap)
         case SYS_GBC:
             GB_new(out, GBC, iomap);
             break;
+        case SYS_NES:
+            NES_new(out, iomap);
+            break;
         default:
             printf("DELETE UNKNOWN SYSTEM!");
             break;
@@ -32,6 +36,8 @@ void jsm_delete(struct jsm_system* jsm)
         case SYS_GBC:
             GB_delete(jsm);
             break;
+        case SYS_NES:
+            NES_delete(jsm);
         default:
             printf("DELETE UNKNOWN SYSTEM!");
             break;

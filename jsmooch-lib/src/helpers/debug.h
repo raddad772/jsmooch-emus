@@ -11,6 +11,7 @@
 
 struct jsm_debug_struct {
     u32 do_break;
+    u32 brk_on_NMIRQ;
 
     u32 msg_len;
     u32 msg_head;
@@ -35,6 +36,7 @@ void dbg_add_msg(char *what);
 char *dbg_get_msg();
 void dbg_clear_msg();
 void dbg_delete();
+void dbg_break();
 
 void jsm_string_init(struct jsm_string *str);
 void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, struct jsm_debug_read_trace *src);

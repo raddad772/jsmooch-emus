@@ -86,3 +86,9 @@ void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, struct jsm_debug_rea
     dst->ptr = src->ptr;
     dst->read_trace = src->read_trace;
 }
+
+void dbg_break()
+{
+    printf("Implement dbg_break()");
+    fflush(stdout);
+}

@@ -39,6 +39,35 @@ add_library(jsmooch-lib
         src/system/gb/mappers/mbc3.c
         src/system/gb/mappers/mbc5.h
         src/system/gb/mappers/mbc5.c
+        src/component/cpu/m6502/m6502.c
+        src/component/cpu/m6502/m6502_disassembler.c
+        src/system/nes/nes.h
+        src/system/nes/nes.c
+        src/component/cpu/m6502/nesm6502_opcodes.h
+        src/component/cpu/m6502/nesm6502_opcodes.c
+        src/system/nes/nes_clock.c
+        src/system/nes/nes_clock.h
+        src/system/nes/nes_bus.c
+        src/system/nes/nes_bus.h
+        src/system/nes/nes_ppu.c
+        src/system/nes/nes_ppu.h
+        src/system/nes/nes_cart.c
+        src/system/nes/nes_cart.h
+        src/system/nes/nes_cpu.c
+        src/system/nes/nes_cpu.h
+        src/component/controller/nes/nes_joypad.c
+        src/component/controller/nes/nes_joypad.h
+        src/system/nes/mappers/mapper.c
+        src/system/nes/mappers/mapper.h
+        src/system/nes/mappers/mapper.h
+        src/system/nes/mappers/no_mapper.c
+        src/system/nes/mappers/no_mapper.h
+        src/helpers/buf.c
+        src/helpers/buf.h
+        src/system/nes/mappers/a12_watcher.c
+        src/system/nes/mappers/a12_watcher.h
+        src/system/nes/mappers/mmc3b.c
+        src/system/nes/mappers/mmc3b.h
 )
 
 include_directories(src/)
