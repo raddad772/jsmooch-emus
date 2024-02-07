@@ -10,8 +10,11 @@
 *.userosscache
 *.sln.docstates
 jsmooch-lib/js
+jsmooch-lib/ts
 jsmooch-emus/js
+jsmooch-emus/ts
 jsmooch-gui/js
+jsmooch-gui/ts
 *.gb
 *.bin
 
