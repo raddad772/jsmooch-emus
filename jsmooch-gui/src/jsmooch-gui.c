@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     //sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\test\\statcount-auto.gb");
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\tetris.gb");
-    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\smb3.nes");
+    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\kirby.nes");
 
     SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)

@@ -13,7 +13,7 @@ enum NES_mappers {
         NESM_NONE,
         NESM_MMC1,
         NESM_UXROM,
-        NESM_CXROM,
+        NESM_CNROM,
         NESM_MMC3b,
         NESM_AXROM,
         NESM_VRC4E_4F,

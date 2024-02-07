@@ -350,6 +350,48 @@ build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc3b.c.obj:
   OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
   OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
 
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/axrom.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/nes/mappers/axrom.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers\axrom.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/cnrom.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/nes/mappers/cnrom.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers\cnrom.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/dxrom.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/nes/mappers/dxrom.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers\dxrom.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc1.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/nes/mappers/mmc1.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers\mmc1.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/uxrom.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/nes/mappers/uxrom.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers\uxrom.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/vrc_2b_4e_4f.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/nes/mappers/vrc_2b_4e_4f.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers\vrc_2b_4e_4f.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
+
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target jsmooch-lib
@@ -358,7 +400,7 @@ build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc3b.c.obj:
 #############################################
 # Link the static library jsmooch-lib\libjsmooch-lib.a
 
-build jsmooch-lib/libjsmooch-lib.a: C_STATIC_LIBRARY_LINKER__jsmooch-lib_Release jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_interface.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_present.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/debug.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc1.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc2.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc3.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc5.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/nesm6502_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/controller/nes/nes_joypad.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/buf.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/a12_watcher.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc3b.c.obj
+build jsmooch-lib/libjsmooch-lib.a: C_STATIC_LIBRARY_LINKER__jsmooch-lib_Release jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_interface.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_present.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/debug.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc1.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc2.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc3.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc5.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/nesm6502_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/controller/nes/nes_joypad.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/buf.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/a12_watcher.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc3b.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/axrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/cnrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/dxrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc1.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/uxrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/vrc_2b_4e_4f.c.obj
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
   POST_BUILD = cd .

@@ -10,6 +10,12 @@
 
 #include "no_mapper.h"
 #include "mmc3b.h"
+#include "axrom.h"
+#include "cnrom.h"
+#include "dxrom.h"
+#include "mmc1.h"
+#include "uxrom.h"
+#include "vrc_2b_4e_4f.h"
 
 void NES_mapper_init(struct NES_mapper* this, struct NES* nes)
 {
@@ -33,8 +39,8 @@ void NES_mapper_set_which(struct NES_mapper* this, u32 wh) {
         case 2: // UxROM
             which = NESM_UXROM;
             break;
-        case 3: // CxROM
-            which = NESM_CXROM;
+        case 3: // CNROM
+            which = NESM_CNROM;
             break;
         case 4: // MMC3
             which = NESM_MMC3b;
@@ -62,19 +68,30 @@ void NES_mapper_set_which(struct NES_mapper* this, u32 wh) {
             NES_mapper_MMC3b_init(this, this->nes);
             printf("\nMBC1");
             break;
-            /*
-        case MBC2:
-            NES_mapper_MBC2_new(mapper, nes);
-            printf("\nMBC2");
+        case NESM_AXROM:
+            NES_mapper_AXROM_init(this, this->nes);
+            printf("\nAXROM");
             break;
-        case MBC3:
-            NES_mapper_MBC3_new(mapper, nes);
-            printf("\nMBC3");
+        case NESM_CNROM:
+            NES_mapper_CNROM_init(this, this->nes);
+            printf("\nCNROM");
             break;
-        case MBC5:
-            NES_mapper_MBC5_new(mapper, nes);
-            printf("\nMBC5");
-            break;*/
+        case NESM_DXROM:
+            NES_mapper_DXROM_init(this, this->nes);
+            printf("\nDXROM");
+            break;
+        case NESM_MMC1:
+            NES_mapper_MMC1_init(this, this->nes);
+            printf("\nMMC1");
+            break;
+        case NESM_UXROM:
+            NES_mapper_UXROM_init(this, this->nes);
+            printf("\nUXROM");
+            break;
+        case NESM_VRC4E_4F:
+            NES_mapper_VRC2B_4E_4F_init(this, this->nes);
+            printf("\nVRC4");
+            break;
         default:
             printf("\nNO SUPPORTED MAPPER! %d", which);
             break;
@@ -91,6 +108,24 @@ void NES_mapper_delete(struct NES_mapper* this)
             break;
         case NESM_MMC3b: // No-mapper!
             NES_mapper_MMC3b_delete(this);
+            break;
+        case NESM_AXROM: // No-mapper!
+            NES_mapper_AXROM_delete(this);
+            break;
+        case NESM_CNROM: // No-mapper!
+            NES_mapper_CNROM_delete(this);
+            break;
+        case NESM_DXROM: // No-mapper!
+            NES_mapper_DXROM_delete(this);
+            break;
+        case NESM_MMC1: // No-mapper!
+            NES_mapper_MMC1_delete(this);
+            break;
+        case NESM_UXROM: // No-mapper!
+            NES_mapper_UXROM_delete(this);
+            break;
+        case NESM_VRC4E_4F: // No-mapper!
+            NES_mapper_VRC2B_4E_4F_delete(this);
             break;
         default:
             assert(1==0);

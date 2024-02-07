@@ -68,6 +68,18 @@ add_library(jsmooch-lib
         src/system/nes/mappers/a12_watcher.h
         src/system/nes/mappers/mmc3b.c
         src/system/nes/mappers/mmc3b.h
+        src/system/nes/mappers/axrom.c
+        src/system/nes/mappers/axrom.h
+        src/system/nes/mappers/cnrom.c
+        src/system/nes/mappers/cnrom.h
+        src/system/nes/mappers/dxrom.c
+        src/system/nes/mappers/dxrom.h
+        src/system/nes/mappers/mmc1.c
+        src/system/nes/mappers/mmc1.h
+        src/system/nes/mappers/uxrom.c
+        src/system/nes/mappers/uxrom.h
+        src/system/nes/mappers/vrc_2b_4e_4f.c
+        src/system/nes/mappers/vrc_2b_4e_4f.h
 )
 
 include_directories(src/)

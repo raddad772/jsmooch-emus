@@ -48,7 +48,7 @@ void MMC3b_map_write(struct MMC3b_map* this, u32 addr, u32 val)
 
 u32 MMC3b_map_read(struct MMC3b_map* this, u32 addr, u32 val)
 {
-    return (u32)this->data[(addr - this->addr) + this->offset];
+    return (u32)(this->data[(addr - this->addr) + this->offset]);
 }
 
 u32 NM_MMC3b_CPU_read(struct NES* nes, u32 addr, u32 val, u32 has_effect)

@@ -41,5 +41,6 @@ void buf_copy(struct buf* dst, struct buf* src) {
         return;
     }
     buf_allocate(dst, src->size);
-    memcpy(dst->ptr, src->ptr, src->size);
+    if (src->size > 0)
+        memcpy(dst->ptr, src->ptr, src->size);
 }
