@@ -79,7 +79,7 @@ void NM_MMC3b_CPU_write(struct NES* nes, u32 addr, u32 val)
     }
     // 0x4000-0x401F CPU registers
     if (addr < 0x4020) {
-        NES_bus_CPU_read_reg(nes, addr, val, 1);
+        NES_bus_CPU_write_reg(nes, addr, val);
         return;
     }
 
@@ -103,7 +103,7 @@ void NM_MMC3b_CPU_write(struct NES* nes, u32 addr, u32 val)
             NM_MMC3b_remap(this, 0);
             break;
         case 0xA000:
-            this->ppu_mirror_mode = val & 1;
+            this->ppu_mirror_mode = val & 1 ? PPUM_Horizontal : PPUM_Vertical;
             NM_MMC3b_set_mirroring(this);
             break;
         case 0xA001:
