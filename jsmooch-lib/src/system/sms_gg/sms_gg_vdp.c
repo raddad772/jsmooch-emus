@@ -2,6 +2,7 @@
 // Created by Dave on 2/7/2024.
 //
 
+#include "stdio.h"
 #include "string.h"
 
 #include "sms_gg_vdp.h"
@@ -435,8 +436,8 @@ static void new_scanline(struct SMSGG_VDP* this)
         this->bus->clock.line_counter = (this->bus->clock.line_counter - 1);
         if (this->bus->clock.line_counter < 0) {
             this->bus->clock.line_counter = this->io.line_irq_reload;
-            if (this->io.irq_line_enabled) this->io.irq_line_pending = 1;
-            //this->io.irq_line_pending = 1;
+            //if (this->io.irq_line_enabled) this->io.irq_line_pending = 1;
+            this->io.irq_line_pending = 1;
 
             update_irqs(this);
         }
@@ -446,8 +447,8 @@ static void new_scanline(struct SMSGG_VDP* this)
     }
 
     if (this->bus->clock.vpos == this->bus->clock.timing.vblank_start) {
-        if (this->io.irq_frame_enabled) this->io.irq_frame_pending = 1;
-        //this->io.irq_frame_pending = 1;
+        //if (this->io.irq_frame_enabled) this->io.irq_frame_pending = 1;
+        this->io.irq_frame_pending = 1;
         update_irqs(this);
     }
 

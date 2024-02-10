@@ -230,7 +230,6 @@ void Z80_set_instruction(struct Z80* this, u32 to)
 
 void Z80_ins_cycles(struct Z80* this)
 {
-    u32 dispatched_irq = false;
     switch(this->regs.TCU) {
         // 1-4 is fetch next thing and interpret
         // addr T0-1
@@ -244,38 +243,33 @@ void Z80_ins_cycles(struct Z80* this)
             //this->regs.prefix = 0;
             break;
         case 1: // T1 MREQ, RD
-            if (this->NMI_pending && !this->NMI_ack) {
-                this->NMI_pending = false;
-                this->NMI_ack = true;
-                this->regs.IRQ_vec = 0x66;
-                this->pins.IRQ_maskable = false;
-                Z80_set_instruction(this, Z80_S_IRQ);
-                if (dbg.brk_on_NMIRQ) {
-                    //console.log('NMI', this->trace_cycles);
-                    //dbg.break(D_RESOURCE_TYPES.Z80);
-                }
-                dispatched_irq = true;
-            } else if (this->IRQ_pending && this->regs.IFF1 && (!(this->regs.EI))) {
-                this->regs.PC = (this->regs.PC - 1) & 0xFFFF;
-                this->pins.IRQ_maskable = true;
-                this->regs.IRQ_vec = 0x38;
-                this->pins.D = 0xFF;
-                Z80_set_instruction(this, Z80_S_IRQ);
-                if (dbg.brk_on_NMIRQ) {
-                    //console.log(this->trace_cycles);
-                    //dbg.break();
-                }
-                dispatched_irq = true;
-            }
-            if (this->regs.HALT) {
-                if (dispatched_irq) {
-                    this->regs.HALT = 0;
-                } else {
-                    this->regs.TCU = 0;
-                    break;
+            if (this->regs.HALT) { this->regs.TCU = 0; break; }
+            if (this->regs.poll_IRQ) {
+                // Make sure we only do this at start of an instruction
+                this->regs.poll_IRQ = false;
+                if (this->NMI_pending && !this->NMI_ack) {
+                    this->NMI_pending = false;
+                    this->NMI_ack = true;
+                    this->regs.IRQ_vec = 0x66;
+                    this->pins.IRQ_maskable = false;
+                    Z80_set_instruction(this, Z80_S_IRQ);
+                    if (dbg.brk_on_NMIRQ) {
+                        //console.log('NMI', this->trace_cycles);
+                        //dbg.break(D_RESOURCE_TYPES.Z80);
+                    }
+                } else if (this->IRQ_pending && this->regs.IFF1 && (!(this->regs.EI))) {
+                    this->pins.D = 0xFF;
+                    this->regs.PC = (this->regs.PC - 1) & 0xFFFF;
+                    this->pins.IRQ_maskable = true;
+                    this->regs.IRQ_vec = 0x38;
+                    this->pins.D = 0xFF;
+                    Z80_set_instruction(this, Z80_S_IRQ);
+                    if (dbg.brk_on_NMIRQ) {
+                        //console.log(this->trace_cycles);
+                        //dbg.break();
+                    }
                 }
             }
-
             this->pins.RD = 1;
             this->pins.MRQ = 1;
             break;
@@ -335,7 +329,7 @@ void Z80_ins_cycles(struct Z80* this)
             this->pins.MRQ = 1;
             break;
         case 6: // operand() end
-            this->regs.WZ = ((u32)(((i32)this->regs.WZ) + ((i32)(i8)this->pins.D))) & 0xFFFF;
+            this->regs.WZ = (u32)(((i32)this->regs.WZ + ((i32)(i8)this->pins.D)) & 0xFFFF);
             Z80_set_pins_nothing(this);
             this->regs.TCU += 2;
             break;
@@ -356,7 +350,7 @@ void Z80_ins_cycles(struct Z80* this)
             Z80_set_instruction(this, this->regs.t[0]);
             break;
         case 12: // cycle 4 of opcode fetch. execute instruction!
-            //Z80_set_instruction(this, this->regs.t[0]);
+            //this->set_instruction(this->regs.t[0]);
             break;
         case 13: // CB regular and ED regular starts here
             Z80_set_pins_opcode(this);
@@ -376,7 +370,6 @@ void Z80_ins_cycles(struct Z80* this)
             Z80_set_instruction(this, this->regs.t[0]);
             break;
         default:
-            printf("UH OHNO");
             assert(1!=0);
             break;
     }

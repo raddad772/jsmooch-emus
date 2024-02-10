@@ -2,6 +2,7 @@
 // Created by Dave on 2/9/2024.
 //
 
+#include "stdio.h"
 #include "sms_gg_io.h"
 #include "sms_gg.h"
 #include "component/controller/sms/sms_gamepad.h"
@@ -95,7 +96,11 @@ static u32 read_reg_ioport2(struct SMSGG *this, u32 val)
 void write_reg_memory_ctrl(struct SMSGG* this, u32 val) {
     if (this->variant != SYS_GG) {
         SMSGG_mapper_sega_set_BIOS(&this->mapper, ((val & 8) >> 3) ^ 1); // 1 = disabled, 0 = enabled
+
         this->mapper.enable_cart = ((val & 0x40) >> 6) ^ 1;
+        printf("\n%llu: BIOS/CART SET TO %d/%d", this->clock.frames_since_restart, this->mapper.enable_bios, this->mapper.enable_cart);
+        fflush(stdout);
+
         //if (!this->mapper.enable_cart) dbg.break();
     }
     this->io.disable = (val & 4) >> 2;

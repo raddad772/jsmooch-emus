@@ -331,7 +331,7 @@ void NES_mapper_MMC3b_init(struct NES_mapper* mapper, struct NES* nes)
     this->regs.rC000 = this->regs.bank_select = 0;
     for (u32 i = 0; i < 8; i++) {
         this->regs.bank[i] = 0;
-        MMC3b_map_init(&this->PRG_map[i]);
+        if (i < 5) MMC3b_map_init(&this->PRG_map[i]);
         MMC3b_map_init(&this->CHR_map[i]);
     }
 

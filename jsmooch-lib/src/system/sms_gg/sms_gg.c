@@ -357,4 +357,5 @@ void SMSGGJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
     tmp.ptr = buf;
     tmp.size = bufsize;
     SMSGG_mapper_load_ROM_from_RAM(&this->mapper, &tmp);
+    SMSGGJ_reset(jsm);
 }

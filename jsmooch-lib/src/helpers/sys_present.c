@@ -40,8 +40,8 @@ void DMG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
             let r, g, b;
             let o = gbo[ppui];
             r = (o & 0x1F);
-            g = (o >>> 5) & 0x1F;
-            b = (o >>> 10) & 0x1F;
+            g = (o >> 5) & 0x1F;
+            b = (o >> 10) & 0x1F;
             r = (r << 3) | (r >> 2);
             g = (g << 3) | (g >> 2);
             b = (b << 3) | (b >> 2);
@@ -147,6 +147,65 @@ void NES_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
 
 }
 
+/*
+ * function SMS_present(data, imgdata, SMS_output_buffer, rendered_lines) {
+    let output = new Uint8Array(SMS_output_buffer)
+    for (let ry = 0; ry < data.bottom_rendered_line; ry++) {
+        let y = ry;
+        for (let rx = 0; rx < 256; rx++) {
+            let x = rx;
+            let di = ((y * 256) + x) * 4;
+            let ulai = (y * 256) + x;
+
+            let color = output[ulai];
+            let r, g, b;
+            b = ((color >> 4) & 3) * 0x55;
+            g = ((color >> 2) & 3) * 0x55;
+            r = (color & 3) * 0x55;
+
+            imgdata[di] = r;
+            imgdata[di+1] = g;
+            imgdata[di+2] = b;
+            imgdata[di+3] = 255;
+        }
+    }
+}
+
+ */
+
+
+void SMS_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+{
+    u16 *smso = (u16 *) iom->out_buffers[last_used_buffer];
+    u32 w = out_width;//256 - (overscan_left + overscan_right);
+    u8 *img8 = (u8 *) out_buf;
+    for (u32 ry = 0; ry < 192; /*data.bottom_rendered_line; */ ry++) {
+        u32 y = ry;
+        u32 outyw = y * w;
+        for (u32 rx = 0; rx < 256; rx++) {
+            u32 x = rx;
+            u32 di = ((y * 256) + x);
+            u32 b_out = (outyw + x) * 4;
+
+            u32 color = smso[di];
+            u32 r, g, b;
+            b = ((color >> 4) & 3) * 0x55;
+            g = ((color >> 2) & 3) * 0x55;
+            r = (color & 3) * 0x55;
+
+            img8[b_out] = b;
+            img8[b_out+1] = g;
+            img8[b_out+2] = r;
+            img8[b_out+3] = 255;
+        }
+    }
+}
+
+void GG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+{
+
+}
+
 void jsm_present(enum jsm_systems which, u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
 {
     switch(which) {
@@ -158,6 +217,13 @@ void jsm_present(enum jsm_systems which, u32 last_used_buffer, struct JSM_IOmap 
             break;
         case SYS_NES:
             NES_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            break;
+        case SYS_SMS1:
+        case SYS_SMS2:
+            SMS_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            break;
+        case SYS_GG:
+            GG_present(last_used_buffer, iom, out_buf, out_width, out_height);
             break;
         default:
             printf("\nUNKNOWN PRESENT!");
