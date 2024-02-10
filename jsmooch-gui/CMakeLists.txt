@@ -6,6 +6,7 @@ set(SDL2_PATH "C:\\dev\\SDL2\\SDL2-2.28.5\\x86_64-w64-mingw32")
 add_executable(jsmooch-gui
         src/jsmooch-gui.c
         src/jsmooch-gui.h
+        ../jsmooch-lib/src/component/cpu/z80/z80_opcodes.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src) # include files from ProjectB

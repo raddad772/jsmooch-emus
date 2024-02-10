@@ -80,6 +80,24 @@ add_library(jsmooch-lib
         src/system/nes/mappers/uxrom.h
         src/system/nes/mappers/vrc_2b_4e_4f.c
         src/system/nes/mappers/vrc_2b_4e_4f.h
+        src/component/cpu/z80/z80.c
+        src/component/cpu/z80/z80.h
+        src/component/cpu/z80/z80_opcodes.c
+        src/component/cpu/z80/z80_opcodes.h
+        src/system/sms_gg/sms_gg.c
+        src/system/sms_gg/sms_gg.h
+        src/component/controller/sms/sms_gamepad.c
+        src/component/controller/sms/sms_gamepad.h
+        src/system/sms_gg/sms_gg_vdp.c
+        src/system/sms_gg/sms_gg_vdp.h
+        src/system/sms_gg/sms_gg_clock.c
+        src/system/sms_gg/sms_gg_clock.h
+        src/component/audio/sn76489/sn76489.c
+        src/component/audio/sn76489/sn76489.h
+        src/system/sms_gg/sms_gg_mapper_sega.c
+        src/system/sms_gg/sms_gg_mapper_sega.h
+        src/system/sms_gg/sms_gg_io.c
+        src/system/sms_gg/sms_gg_io.h
 )
 
 include_directories(src/)

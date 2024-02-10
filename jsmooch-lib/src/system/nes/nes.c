@@ -262,6 +262,7 @@ u32 NESJ_step_master(JSM, u32 howmany)
         this->cycles_left -= cpu_step;
         if (dbg.do_break) break;
     }
+    return 0;
 }
 
 void NESJ_load_BIOS(JSM, char* buf, u32 bufsize)

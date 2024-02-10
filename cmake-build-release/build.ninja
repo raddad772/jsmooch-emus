@@ -392,6 +392,69 @@ build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/vrc_2b_4e_4f
   OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
   OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\nes\mappers
 
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/z80/z80.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/component/cpu/z80/z80.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\cpu\z80\z80.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\cpu\z80
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/z80/z80_opcodes.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/component/cpu/z80/z80_opcodes.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\cpu\z80\z80_opcodes.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\cpu\z80
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/sms_gg/sms_gg.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg\sms_gg.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/controller/sms/sms_gamepad.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/component/controller/sms/sms_gamepad.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\controller\sms\sms_gamepad.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\controller\sms
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_vdp.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/sms_gg/sms_gg_vdp.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg\sms_gg_vdp.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_clock.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/sms_gg/sms_gg_clock.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg\sms_gg_clock.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/audio/sn76489/sn76489.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/component/audio/sn76489/sn76489.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\audio\sn76489\sn76489.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\component\audio\sn76489
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_mapper_sega.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/sms_gg/sms_gg_mapper_sega.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg\sms_gg_mapper_sega.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg
+
+build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_io.c.obj: C_COMPILER__jsmooch-lib_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/system/sms_gg/sms_gg_io.c || cmake_object_order_depends_target_jsmooch-lib
+  DEP_FILE = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg\sms_gg_io.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src
+  OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
+  OBJECT_FILE_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir\src\system\sms_gg
+
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target jsmooch-lib
@@ -400,7 +463,7 @@ build jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/vrc_2b_4e_4f
 #############################################
 # Link the static library jsmooch-lib\libjsmooch-lib.a
 
-build jsmooch-lib/libjsmooch-lib.a: C_STATIC_LIBRARY_LINKER__jsmooch-lib_Release jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_interface.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_present.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/debug.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc1.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc2.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc3.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc5.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/nesm6502_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/controller/nes/nes_joypad.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/buf.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/a12_watcher.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc3b.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/axrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/cnrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/dxrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc1.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/uxrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/vrc_2b_4e_4f.c.obj
+build jsmooch-lib/libjsmooch-lib.a: C_STATIC_LIBRARY_LINKER__jsmooch-lib_Release jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_interface.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/gb_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/sys_present.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/debug.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc1.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/sm83/sm83_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc2.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc3.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/gb/mappers/mbc5.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/m6502_disassembler.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/m6502/nesm6502_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_bus.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_ppu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cart.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/nes_cpu.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/controller/nes/nes_joypad.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/no_mapper.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/helpers/buf.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/a12_watcher.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc3b.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/axrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/cnrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/dxrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/mmc1.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/uxrom.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/nes/mappers/vrc_2b_4e_4f.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/z80/z80.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/cpu/z80/z80_opcodes.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/controller/sms/sms_gamepad.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_vdp.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_clock.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/component/audio/sn76489/sn76489.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_mapper_sega.c.obj jsmooch-lib/CMakeFiles/jsmooch-lib.dir/src/system/sms_gg/sms_gg_io.c.obj
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   OBJECT_DIR = jsmooch-lib\CMakeFiles\jsmooch-lib.dir
   POST_BUILD = cd .
@@ -494,6 +557,13 @@ build jsmooch-gui/CMakeFiles/jsmooch-gui.dir/src/jsmooch-gui.c.obj: C_COMPILER__
   OBJECT_DIR = jsmooch-gui\CMakeFiles\jsmooch-gui.dir
   OBJECT_FILE_DIR = jsmooch-gui\CMakeFiles\jsmooch-gui.dir\src
 
+build jsmooch-gui/CMakeFiles/jsmooch-gui.dir/__/jsmooch-lib/src/component/cpu/z80/z80_opcodes.c.obj: C_COMPILER__jsmooch-gui_unscanned_Release C$:/dev/personal/jsmooch-emus/jsmooch-lib/src/component/cpu/z80/z80_opcodes.c || cmake_object_order_depends_target_jsmooch-gui
+  DEP_FILE = jsmooch-gui\CMakeFiles\jsmooch-gui.dir\__\jsmooch-lib\src\component\cpu\z80\z80_opcodes.c.obj.d
+  FLAGS = -O3 -DNDEBUG -std=gnu11 -fdiagnostics-color=always
+  INCLUDES = -IC:/dev/personal/jsmooch-emus/jsmooch-lib/src -IC:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/include/SDL2 -IC:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/include
+  OBJECT_DIR = jsmooch-gui\CMakeFiles\jsmooch-gui.dir
+  OBJECT_FILE_DIR = jsmooch-gui\CMakeFiles\jsmooch-gui.dir\__\jsmooch-lib\src\component\cpu\z80
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target jsmooch-gui
@@ -502,7 +572,7 @@ build jsmooch-gui/CMakeFiles/jsmooch-gui.dir/src/jsmooch-gui.c.obj: C_COMPILER__
 #############################################
 # Link the executable jsmooch-gui\jsmooch-gui.exe
 
-build jsmooch-gui/jsmooch-gui.exe: C_EXECUTABLE_LINKER__jsmooch-gui_Release jsmooch-gui/CMakeFiles/jsmooch-gui.dir/src/jsmooch-gui.c.obj | jsmooch-lib/libjsmooch-lib.a C$:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/lib/libSDL2main.a C$:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/lib/libSDL2.dll.a || jsmooch-lib/libjsmooch-lib.a
+build jsmooch-gui/jsmooch-gui.exe: C_EXECUTABLE_LINKER__jsmooch-gui_Release jsmooch-gui/CMakeFiles/jsmooch-gui.dir/src/jsmooch-gui.c.obj jsmooch-gui/CMakeFiles/jsmooch-gui.dir/__/jsmooch-lib/src/component/cpu/z80/z80_opcodes.c.obj | jsmooch-lib/libjsmooch-lib.a C$:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/lib/libSDL2main.a C$:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/lib/libSDL2.dll.a || jsmooch-lib/libjsmooch-lib.a
   FLAGS = -O3 -DNDEBUG
   LINK_LIBRARIES = jsmooch-lib/libjsmooch-lib.a  -lmingw32  -mwindows  C:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/lib/libSDL2main.a  C:/dev/SDL2/SDL2-2.28.5/x86_64-w64-mingw32/lib/libSDL2.dll.a  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = jsmooch-gui\CMakeFiles\jsmooch-gui.dir

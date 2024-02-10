@@ -1,5 +1,5 @@
-#ifndef _JSMOOCH_SYS_INTERFACE_H
-#define _JSMOOCH_SYS_INTERFACE_H
+#ifndef JSMOOCH_SYS_INTERFACE_H
+#define JSMOOCH_SYS_INTERFACE_H
 
 #include "int.h"
 #include "enums.h"
@@ -11,9 +11,9 @@ enum MD_timing {
 };
 
 enum MD_display_standard {
-    NTSC = 0,
-    PAL = 1,
-    LCD
+    MD_NTSC = 0,
+    MD_PAL = 1,
+    MD_LCD
 };
 
 enum SCREENVAR_fields {

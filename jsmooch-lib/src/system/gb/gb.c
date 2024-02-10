@@ -146,7 +146,7 @@ void GBJ_get_description(JSM, struct machine_description* d)
 	}
 	d->fps = 60;
 	d->timing = frame;
-	d->display_standard = LCD;
+	d->display_standard = MD_LCD;
 	d->x_resolution = 160;
 	d->y_resolution = 144;
 	d->xrh = 160;
