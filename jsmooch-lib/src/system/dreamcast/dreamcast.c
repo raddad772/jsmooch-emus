@@ -1,0 +1,195 @@
+//
+// Created by Dave on 2/11/2024.
+//
+
+#include "stdio.h"
+#include "malloc.h"
+#include "string.h"
+
+#include "helpers/sys_interface.h"
+#include "dreamcast.h"
+#include "dc_mem.h"
+
+#define JTHIS struct DC* this = (struct DC*)jsm->ptr
+#define JSM struct jsm_system* jsm
+
+#define THIS struct NES* this
+
+void DCJ_play(JSM);
+void DCJ_pause(JSM);
+void DCJ_stop(JSM);
+void DCJ_get_framevars(JSM, struct framevars* out);
+void DCJ_reset(JSM);
+void DCJ_map_inputs(JSM, u32* bufptr, u32 bufsize);
+void DCJ_get_description(JSM, struct machine_description* d);
+void DCJ_killall(JSM);
+u32 DCJ_finish_frame(JSM);
+u32 DCJ_finish_scanline(JSM);
+u32 DCJ_step_master(JSM, u32 howmany);
+void DCJ_load_BIOS(JSM, char* buf, u32 bufsize);
+void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize);
+
+
+void DC_new(JSM, struct JSM_IOmap *iomap)
+{
+    fflush(stdout);
+    do_sh4_decode();
+    struct DC* this = (struct DC*)malloc(sizeof(struct DC));
+
+    SH4_init(&this->sh4);
+    this->sh4.mptr = (void *)this;
+    this->sh4.read8 = &DCread8;
+    this->sh4.read16 = &DCread16;
+    this->sh4.read32 = &DCread32;
+    this->sh4.write8 = &DCwrite8;
+    this->sh4.write16 = &DCwrite16;
+    this->sh4.write32 = &DCwrite32;
+    /*NES_clock_init(&this->clock);
+    //NES_bus_init(&this, &this->clock);
+    r2A03_init(&this->cpu, this);
+    NES_PPU_init(&this->ppu, this);
+    NES_cart_init(&this->cart, this);
+    NES_mapper_init(&this->bus, this);
+
+    this->ppu.last_used_buffer = 0;
+    this->ppu.cur_output_num = 0;
+    this->ppu.cur_output = (u16 *)iomap->out_buffers[0];
+    this->ppu.out_buffer[0] = (u16 *)iomap->out_buffers[0];
+    this->ppu.out_buffer[1] = (u16 *)iomap->out_buffers[1];
+
+    this->cycles_left = 0;
+    this->display_enabled = 1;
+    nespad_inputs_init(&this->controller1_in);
+    nespad_inputs_init(&this->controller2_in);*/
+
+    buf_init(&this->BIOS);
+    buf_init(&this->ROM);
+
+    jsm->ptr = (void*)this;
+
+    jsm->get_description = &DCJ_get_description;
+    jsm->finish_frame = &DCJ_finish_frame;
+    jsm->finish_scanline = &DCJ_finish_scanline;
+    jsm->step_master = &DCJ_step_master;
+    jsm->reset = &DCJ_reset;
+    jsm->load_ROM = &DCJ_load_ROM;
+    jsm->load_BIOS = &DCJ_load_BIOS;
+    jsm->killall = &DCJ_killall;
+    jsm->map_inputs = &DCJ_map_inputs;
+    jsm->get_framevars = &DCJ_get_framevars;
+    jsm->play = &DCJ_play;
+    jsm->pause = &DCJ_pause;
+    jsm->stop = &DCJ_stop;
+}
+
+void DC_delete(struct jsm_system* jsm)
+{
+    JTHIS;
+
+    buf_delete(&this->BIOS);
+    buf_delete(&this->ROM);
+
+    free(jsm->ptr);
+    jsm->ptr = NULL;
+
+    jsm->get_description = NULL;
+    jsm->finish_frame = NULL;
+    jsm->finish_scanline = NULL;
+    jsm->step_master = NULL;
+    jsm->reset = NULL;
+    jsm->load_ROM = NULL;
+    jsm->load_BIOS = NULL;
+    jsm->killall = NULL;
+    jsm->map_inputs = NULL;
+    jsm->get_framevars = NULL;
+    jsm->play = NULL;
+    jsm->pause = NULL;
+    jsm->stop = NULL;
+}
+
+void DCJ_play(JSM)
+{
+
+}
+
+void DCJ_pause(JSM)
+{
+
+}
+
+void DCJ_stop(JSM)
+{
+
+}
+
+void DCJ_get_framevars(JSM, struct framevars* out)
+{
+
+}
+
+void DCJ_reset(JSM)
+{
+    JTHIS;
+    SH4_reset(&this->sh4);
+}
+
+void DCJ_map_inputs(JSM, u32* bufptr, u32 bufsize)
+{
+
+}
+
+void DCJ_get_description(JSM, struct machine_description* d)
+{
+
+}
+
+void DCJ_killall(JSM)
+{
+
+}
+
+u32 DCJ_finish_frame(JSM)
+{
+    JTHIS;
+    return 0;
+}
+
+u32 DCJ_finish_scanline(JSM)
+{
+    JTHIS;
+    return 0;
+}
+
+u32 DCJ_step_master(JSM, u32 howmany)
+{
+    JTHIS;
+    SH4_run_cycles(&this->sh4, howmany);
+    return 0;
+}
+
+void DCJ_load_BIOS(JSM, char* buf, u32 bufsize)
+{
+    JTHIS;
+    buf_allocate(&this->BIOS, bufsize);
+    memcpy(this->BIOS.ptr, buf, bufsize);
+}
+
+void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
+{
+    JTHIS;
+    buf_allocate(&this->ROM, bufsize);
+    memcpy(this->ROM.ptr, buf, bufsize);
+
+    for (u32 i = 0; i < bufsize; i++) {
+        this->RAM[0x00010000+i] = ((u8 *)this->ROM.ptr)[i];
+    }
+
+    this->sh4.regs.PC = 0xAC010000;
+
+    // Thanks Senryoku!
+    // RTE - Some interrupts jump there instead of having their own RTE, I have NO idea why.
+    this->sh4.write32(this->sh4.mptr, 0x8C000010, 0x00090009); // nop nop
+    this->sh4.write32(this->sh4.mptr, 0x8C000014, 0x0009002B); // rte nop
+    // RTS
+    this->sh4.write32(this->sh4.mptr, 0x8C000018, 0x00090009);
+    this->sh4.write32(this->sh4.mptr, 0x8C00001C, 0x0009000B);}

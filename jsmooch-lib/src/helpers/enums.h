@@ -9,6 +9,7 @@ enum jsm_systems {
 	SYS_SMS1,
     SYS_SMS2,
 	SYS_GG,
+    SYS_DREAMCAST,
 	SYS_ZX_SPECTRUM,
 	SYS_BBC_MICRO,
 	SYS_GENESIS,

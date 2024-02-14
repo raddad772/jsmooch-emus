@@ -21,6 +21,9 @@ jsmooch-gui/ts
 .idea
 cmake-build-debug/*
 cmake-build-release/*
+cmake-build-debug
+cmake-build-release
+/cmake-build-release
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

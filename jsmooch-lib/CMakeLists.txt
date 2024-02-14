@@ -98,6 +98,17 @@ add_library(jsmooch-lib
         src/system/sms_gg/sms_gg_mapper_sega.h
         src/system/sms_gg/sms_gg_io.c
         src/system/sms_gg/sms_gg_io.h
+        src/component/cpu/sh4/sh4_interpreter.c
+        src/component/cpu/sh4/sh4_interpreter.h
+        src/component/cpu/sh4/sh4_interpreter.h
+        src/component/cpu/sh4/sh4_interpreter_opcodes.c
+        src/component/cpu/sh4/sh4_interpreter_opcodes.h
+        src/system/dreamcast/dreamcast.c
+        src/system/dreamcast/dreamcast.h
+        src/component/cpu/sh4/sh4_disassembler.c
+        src/component/cpu/sh4/sh4_disassembler.h
+        src/system/dreamcast/dc_mem.c
+        src/system/dreamcast/dc_mem.h
 )
 
 include_directories(src/)
