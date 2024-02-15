@@ -6,12 +6,13 @@
 #include "string.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
+#include "fsca.h"
 
 #define NMI_VEC VBR + 0x0600
 
 // Endianness is little.
 
-#define SH4_BRK 0xAC010026
+//#define SH4_BRK 0xAC010026
 
 static void set_user_mode(struct SH4* this)
 {
@@ -92,7 +93,7 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins)
         dbg_printf("R%d:%08x", this->pp_last_n, this->regs.R[this->pp_last_n]);
     }
     if ((ins->Rn != 0) && (ins->Rm != 0) && (this->pp_last_m != 0) && (this->pp_last_n != 0)) {
-        if (had_any) printf(" ");
+        if (had_any) dbg_printf(" ");
         dbg_printf(" R0:%08x", this->regs.R[0]);
     }
 
@@ -136,7 +137,8 @@ void SH4_init(struct SH4* this)
     this->regs.currently_banked_rb = 1;
     this->trace_cycles = 0;
     SH4_reset(this);
-    printf("\nINS! %s\n", SH4_disassembled[0x6863]);
+    generate_fsca_table();
+    //printf("\nINS! %s\n", SH4_disassembled[0x6863]);
 
     this->mptr = NULL;
     this->read8 = NULL;

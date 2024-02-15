@@ -15,6 +15,7 @@ struct jsm_debug_struct {
     u32 brk_on_NMIRQ;
 
     u32 trace_on;
+    u32 watch;
     struct jsm_string msg;
     char *msg_last_newline;
 };

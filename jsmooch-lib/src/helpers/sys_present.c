@@ -206,6 +206,27 @@ void GG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 
 
 }
 
+
+void DC_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+{
+    u32 *dco = (u32 *) iom->out_buffers[last_used_buffer];
+    u32 w = out_width;
+    u32 *img32 = (u32 *) out_buf;
+    for (u32 ry = 0; ry < 480; /*data.bottom_rendered_line; */ ry++) {
+        u32 y = ry;
+        u32 outyw = y * w;
+        for (u32 rx = 0; rx < 640; rx++) {
+            u32 x = rx;
+            u32 di = ((y * 640) + x);
+            u32 b_out = (outyw + x);
+
+            u32 color = dco[di];
+            img32[b_out] = color;
+        }
+    }
+}
+
+
 void jsm_present(enum jsm_systems which, u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
 {
     switch(which) {
@@ -224,6 +245,9 @@ void jsm_present(enum jsm_systems which, u32 last_used_buffer, struct JSM_IOmap 
             break;
         case SYS_GG:
             GG_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            break;
+        case SYS_DREAMCAST:
+            DC_present(last_used_buffer, iom, out_buf, out_width, out_height);
             break;
         default:
             printf("\nUNKNOWN PRESENT!");

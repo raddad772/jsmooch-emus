@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "helpers/sys_interface.h"
 #include "helpers/sys_present.h"
+#include "helpers/debug.h"
 
 #include "system/gb/gb.h"
 #include "component/cpu/sh4/sh4_disassembler.h"
@@ -80,7 +81,7 @@ int main(int argc, char** argv)
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\tetris.gb");
     sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\256b.bin");
 
-    SDL_Log("Attempting to init SDL");
+    //SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         return -1;
@@ -101,23 +102,33 @@ int main(int argc, char** argv)
 
     // Create our emulator
     struct JSM_IOmap iom;
+    enum jsm_systems which = SYS_DREAMCAST;
 
     u16 *output_buffers[2];
-    output_buffers[0] = malloc(256*240*2);
-    output_buffers[1] = malloc(256*240*2);
     u32 inputs[50];
     for (u32 i = 0; i < 50; i++) {
         inputs[i] = 0;
     }
+    switch(which) {
+        case SYS_SMS1:
+        case SYS_SMS2:
+        case SYS_GG:
+            output_buffers[0] = malloc(256*240*2);
+            output_buffers[1] = malloc(256*240*2);
+            break;
+        case SYS_DREAMCAST:
+            printf("YEAH!");
+            output_buffers[0] = malloc(640*480*4);
+            output_buffers[1] = malloc(640*480*4);
+            break;
+    }
     iom.out_buffers[0] = (void *)output_buffers[0];
     iom.out_buffers[1] = (void *)output_buffers[1];
 
-    enum jsm_systems which = SYS_DREAMCAST;
     struct jsm_system* sys = new_system(which, &iom);
+    //SDL_Log("\n2");
 
-    struct read_file_buf ROM;
     struct read_file_buf BIOS;
-    open_and_read(RFILE, &ROM);
     u32 has_bios = 0;
     switch(which) {
         case SYS_SMS1:
@@ -151,16 +162,19 @@ int main(int argc, char** argv)
     // Next troubleshoot if IRQs are happening
     // and results of reads from IO are properly handled
 
-    if (has_bios)
+    //SDL_Log("\n3");
+    if (has_bios) {
         sys->load_BIOS(sys, BIOS.buf, BIOS.sz);
+        rfb_cleanup(&BIOS);
+    }
+
+    struct read_file_buf ROM;
+    open_and_read(RFILE, &ROM);
+    rfb_cleanup(&ROM);
     sys->load_ROM(sys, "", ROM.buf, ROM.sz);
 
-    rfb_cleanup(&ROM);
-    if (has_bios)
-        rfb_cleanup(&BIOS);
 
     //sys->play(sys);
-    sys->play(sys);
     struct framevars fv;
     SDL_Event event;
 
@@ -169,27 +183,26 @@ int main(int argc, char** argv)
         input_buffer[i] = 0;
     }
 
+    //SDL_Log("\n4");
+
+
     dbg_disable_trace();
-    sys->step_master(sys, 614404); // first loop
+    //u32 a = SDL_GetTicks();
+    //sys->step_master(sys, 20000000);
 
-    sys->get_framevars(sys, &fv); printf("\nCYCLES! %llu", fv.master_cycle);
-    u64 first = fv.master_cycle;
+    //u32 b = SDL_GetTicks();
+    /*float rend = ((float)b) /
+                 1000.0f;
+    float rstart = ((float)a) / 1000.0f;
+    float r = rend - rstart;*/
 
-    dbg_unbreak();
-    sys->step_master(sys, 140250);
 
-    dbg_unbreak();
-    dbg_enable_trace();
-    sys->step_master(sys, 5000);
+    //sys->step_master(sys, 70);
+    //dbg_flush();
 
-    dbg_flush();
-    sys->get_framevars(sys, &fv); printf("\nCYCLES! %llu (%llu)", fv.master_cycle, fv.master_cycle - first);
+    //sys->get_framevars(sys, &fv); printf("\nCYCLES! %llu (%llu)", fv.master_cycle, fv.master_cycle - first);
 
-    printf("YO!");
-    fflush(stdout);
-
-    return;
-
+    //SDL_Log("TIME! %f", r);
     u32 quit = 0;
     u32 before, after;
 
@@ -199,10 +212,12 @@ int main(int argc, char** argv)
             quit = handle_keys_gb(&event, input_buffer);
         }
 
-        sys->map_inputs(sys, input_buffer, sizeof(inputs)/4);
+        //sys->map_inputs(sys, input_buffer, sizeof(inputs)/4);
         sys->finish_frame(sys);
         sys->get_framevars(sys, &fv);
-        jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
+        //jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
+        jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
+        dbg.watch = 1;
         SDL_UpdateWindowSurface(window);
         SDL_Delay(10);
         printf("\nFrame %llu", fv.master_frame);

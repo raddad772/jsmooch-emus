@@ -7,6 +7,7 @@
 #include "assert.h"
 #include "stdio.h"
 
+#include "fsca.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 
@@ -49,24 +50,28 @@
 
 #define SH4ins(x) void SH4_##x(SH4args)
 
+#define DELAY_SLOT(x) { PCinc; SH4_fetch_and_exec(this); }
+
+
 SH4ins(EMPTY) {
     printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x", this->regs.PC, ins->opcode);
+    fflush(stdout);
     dbg_break();
     PCinc;
 }
 
 SH4ins(MOV) {
-    RN = READ32(RM);
+    RN = RM;
     PCinc;
 }
 
 SH4ins(MOVI) {
     RN = SIGNe8to32(IMM);
-    if ((ins->Rn == 7) && (ins->imm == 127)) {
+    /*if ((ins->Rn == 7) && (ins->imm == 127)) {
         printf("\nHERE!!!! %llu %08x\n", this->trace_cycles, this->regs.PC);
         fflush(stdout);
         dbg_break();
-    }
+    }*/
     PCinc;
 }
 
@@ -104,7 +109,7 @@ SH4ins(MOVWL)
 
 SH4ins(MOVLL)
 {
-    RN = RM;
+    RN = READ32(RM);
     PCinc;
 }
 
@@ -609,14 +614,8 @@ SH4ins(SHLR16) { // Rn >> 16 -> [0 -> Rn]
 }
 
 SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
-    rPC = rPC + 4 + ((2 * SIGNe8to32(DISP)) * (this->regs.SR.T ^ 1));
-    //DELAY_SLOT(rPC+2);
-    //rPC = val; // DISP*2 * !this->regs.SR.T
-    //PCinc;
+    rPC = rPC + 2 + (((2 * SIGNe8to32(DISP)) + 2) * (this->regs.SR.T ^ 1));
 }
-
-//#define DELAY_SLOT(x) this->delay_slot = (x);
-#define DELAY_SLOT(x) { PCinc; SH4_fetch_and_exec(this); }
 
 SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
     u32 val = rPC + 4 + ((2 * SIGNe8to32(DISP)) * (this->regs.SR.T ^ 1));
@@ -625,8 +624,7 @@ SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
 }
 
 SH4ins(BT) { // If T = 1: disp*2 + rPC + 4 -> rPC, Else: nop
-    rPC = rPC + 4 + ((2 * SIGNe8to32(DISP)) * this->regs.SR.T);
-    //BADOPCODE;
+    rPC = rPC + 2 + (((2 * SIGNe8to32(DISP)) + 2) * this->regs.SR.T ^ 1);
 }
 
 SH4ins(BTS) { // If T = 1: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
@@ -639,8 +637,6 @@ SH4ins(BRA) { // disp*2 + PC + 4 -> PC, (Delayed branch)
     u32 val = rPC + 4 + (2 * SIGNe12to32(DISP));
     DELAY_SLOT(rPC+2);
     rPC = val; // DISP*2 * !this->regs.SR.T
-    printf("\nBRANCH TO %08x", val);
-    fflush(stdout);
 }
 
 SH4ins(BRAF) { // Rm + PC + 4 -> PC, (Delayed branch)
@@ -1104,7 +1100,7 @@ SH4ins(FNEG) { // FRn ^ 0x80000000 -> FRn
 }
 
 SH4ins(FADD) { // FRn + FRm -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpFR(ins->Rn) += fpFR(ins->Rm);
     PCinc;
 }
 
@@ -1155,6 +1151,7 @@ SH4ins(FLOAT_single) { // (float)FPUL -> FRn
 // Thanks to the amazing website for how to implement this properly
 SH4ins(FTRC_single) { // (long)FRm -> FPUL
     // TODO make this much better!
+    // x86 overflows oddly, with positive overflow returining INT_MIN
     rFPUL = (int32)fpFR(ins->Rm);
     PCinc;
 }
@@ -1287,63 +1284,69 @@ SH4ins(FSCHG) { // If FPSCR.PR = 0: ~FPSCR.SZ -> FPSCR.SZ, Else: Undefined Opera
 SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
     //PC += 2;
     //clear_cause();
+    if (this->regs.FPSCR.PR != 0) {
+        BADOPCODE;
+    }
+    else {
+        //clear_cause();
+        float n = fpFR(ins->Rn);
 
-    switch (data_type_of (n))
-    {
-        case NORM:
-            if (sign_of (n) == 0)
-            {
-                set_I ();
-                FR[n] = 1 / sqrt (FR[n]);
-            }
-            else
-                invalid (n);
-            break;
+        switch (fpclassify(fpFR(ins->Rn)))
+        {
+            case FP_NORMAL:
+                if (n >= 0)
+                {
+                    fpFR(ins->Rn) = 1.0f / sqrtf(n);
+                }
+                else {
+                    printf("\nINVALID VALUE FOR FSRRA");
+                    //invalid(n);
+                }
+                break;
 
-        case DENORM:
-            if (sign_of (n) == 0)
-                fpu_error ();
-            else
-                invalid (n);
-            break;
+            case FP_SUBNORMAL:
+                /*if (sign_of (n) == 0)
+                    fpu_error ();
+                else
+                    invalid (n);
+                break;*/
 
-        case PZERO:
-        case NZERO:
-            dz (n, sign_of (n));
-            break;
+            case FP_ZERO:
+                //dz (n, sign_of (n));
+                break;
 
-        case PINF:
-            FR[n] = 0;
-            break;
+            case FP_INFINITE:
+                if (n > 0)
+                    fpFR(ins->Rn) = 0;
+                else
+                    break;
+                    //invalid (n);
+                break;
+            case FP_NAN:
+                //qnan (n);
+                break;
 
-        case NINF:
-            invalid (n);
-            break;
-
-        case qNAN:
-            qnan (n);
-            break;
-
-        case sNAN:
-            invalid (n);
-            break;
+            /*case sNAN:
+                //invalid (n);
+                break;*/
+        }
     }
     PCinc;
 }
 
 SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
-    // thanks to dRk|Raziel for this
-    int n=ins->Rn & 0xE;
+    // thanks to dRk|Raziel for this! using tables dumped from real DC
 
 
     //cosine(x) = sine(pi/2 + x).
     if (this->regs.FPSCR.PR==0)
     {
         //float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
+        u32 n = ins->Rn & 0xE;
         u32 pi_index=(u16)rFPUL;
 
-        fpFR(n | 0) = sin_table[pi_index];//sinf(real_pi);
-        fpFR(n | 1) = sin_table[0x4000 + pi_index];//cosf(real_pi);    // -> no need for warparound, sin_table has 0x4000 more entries
+        fpFR(n | 0) = SH4_sin_table[pi_index];//sinf(real_pi);
+        fpFR(n | 1) = SH4_sin_table[0x4000 + pi_index];//cosf(real_pi);    // -> no need for warparound, sin_table has 0x4000 more entries
 
         //CHECK_FPU_32(fr[n]);
         //CHECK_FPU_32(fr[n+1]);

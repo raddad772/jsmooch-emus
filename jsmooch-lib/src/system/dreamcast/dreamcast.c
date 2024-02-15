@@ -51,12 +51,14 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     NES_cart_init(&this->cart, this);
     NES_mapper_init(&this->bus, this);
 
-    this->ppu.last_used_buffer = 0;
-    this->ppu.cur_output_num = 0;
-    this->ppu.cur_output = (u16 *)iomap->out_buffers[0];
-    this->ppu.out_buffer[0] = (u16 *)iomap->out_buffers[0];
-    this->ppu.out_buffer[1] = (u16 *)iomap->out_buffers[1];
-
+    */
+     this->holly.last_used_buffer = 0;
+    this->holly.cur_output_num = 0;
+    this->holly.cur_output = (u32 *)iomap->out_buffers[0];
+    this->holly.out_buffer[0] = (u32 *)iomap->out_buffers[0];
+    this->holly.out_buffer[1] = (u32 *)iomap->out_buffers[1];
+    this->holly.master_frame = 0;
+    /*
     this->cycles_left = 0;
     this->display_enabled = 1;
     nespad_inputs_init(&this->controller1_in);
@@ -66,6 +68,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     buf_init(&this->ROM);
 
     jsm->ptr = (void*)this;
+    jsm->which = SYS_DREAMCAST;
 
     jsm->get_description = &DCJ_get_description;
     jsm->finish_frame = &DCJ_finish_frame;
@@ -107,9 +110,28 @@ void DC_delete(struct jsm_system* jsm)
     jsm->stop = NULL;
 }
 
+void DC_copy_fb(struct DC* this, u32* where) {
+    u32* ptr = (u32*)this->VRAM;
+    //ptr += (this->holly.FB_R_SOF1 >> 2);
+
+    printf("\nRENDER USING PTR %08llx", ptr - ((u32*)this->VRAM));
+
+    u32* out = where;
+    for (u32 y = 0; y < 480; y++) {
+        for (u32 x = 0; x < 640; x++) {
+            *out = *ptr | 0xFF000000 | (*ptr >> 24);
+            ptr++;
+            out++;
+        }
+        //ptr += (this->holly.FB_R_SIZE.fb_modulus);
+    }
+}
+
 void DCJ_play(JSM)
 {
-
+    JTHIS;
+    // FOr now we use this to copy framebuffer
+    this->holly.cur_output = this->holly.out_buffer[0];
 }
 
 void DCJ_pause(JSM)
@@ -126,6 +148,8 @@ void DCJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_cycle = this->sh4.trace_cycles;
+    out->master_frame = this->holly.master_frame;
+    out->last_used_buffer = this->holly.last_used_buffer;
 }
 
 void DCJ_reset(JSM)
@@ -152,6 +176,10 @@ void DCJ_killall(JSM)
 u32 DCJ_finish_frame(JSM)
 {
     JTHIS;
+    DCJ_step_master(jsm, 3000000);
+    DC_copy_fb(this, this->holly.cur_output);
+    this->holly.last_used_buffer = 0;
+    this->holly.master_frame++;
     return 0;
 }
 
@@ -171,6 +199,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
 void DCJ_load_BIOS(JSM, char* buf, u32 bufsize)
 {
     JTHIS;
+    // The IP.BIN is loaded by the ROM to address 8C008000
     buf_allocate(&this->BIOS, bufsize);
     memcpy(this->BIOS.ptr, buf, bufsize);
 }
@@ -199,4 +228,12 @@ void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
     // RTS
     this->sh4.write32(this->sh4.mptr, 0x8C000018, 0x00090009);
     this->sh4.write32(this->sh4.mptr, 0x8C00001C, 0x0009000B);
+
+    // Write some values to HOLLY...
+    this->sh4.write32(this->sh4.mptr, 0x005F8048, 6);          // FB_W_CTRL
+    this->sh4.write32(this->sh4.mptr, 0x005F8060, 0x00600000); // FB_W_SOF1
+    this->sh4.write32(this->sh4.mptr, 0x005F8064, 0x00600000); // FB_W_SOF2
+    this->sh4.write32(this->sh4.mptr, 0x005F8044, 0x0080000D); // FB_R_CTRL
+    this->sh4.write32(this->sh4.mptr, 0x005F8050, 0x00200000); // FB_R_SOF1
+    this->sh4.write32(this->sh4.mptr, 0x005F8054, 0x00200000); // FB_R_SOF2
 }

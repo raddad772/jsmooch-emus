@@ -20,6 +20,7 @@ void dbg_init()
         return;
     }
     init_already = 1;
+    dbg.watch = 0;
     printf("\nDBG INIT!");
     dbg.do_break = false;
     dbg.trace_on = 0;
@@ -61,6 +62,7 @@ void dbg_printf(char *format, ...)
 
 void dbg_seek_in_line(u32 pos)
 {
+    if (!dbg.trace_on) return;
     i64 current_line_pos = dbg.msg.cur - dbg.msg_last_newline;
     i64 number_to_move = (i32)pos - current_line_pos;
     if (number_to_move > 0) {
@@ -75,6 +77,7 @@ void dbg_seek_in_line(u32 pos)
 
 void dbg_flush()
 {
+    if (!dbg.trace_on) return;
     printf("%s", dbg.msg.ptr);
     fflush(stdout);
     dbg_clear_msg();
