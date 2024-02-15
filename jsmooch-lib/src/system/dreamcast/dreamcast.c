@@ -124,7 +124,8 @@ void DCJ_stop(JSM)
 
 void DCJ_get_framevars(JSM, struct framevars* out)
 {
-
+    JTHIS;
+    out->master_cycle = this->sh4.trace_cycles;
 }
 
 void DCJ_reset(JSM)
@@ -185,6 +186,11 @@ void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
     }
 
     this->sh4.regs.PC = 0xAC010000;
+    for (u32 i = 0; i < 15; i++) {
+        this->sh4.regs.R[i] = 0;
+        if (i < 8) this->sh4.regs.R_[i] = 0;
+    }
+    this->sh4.regs.R[15] = 0x8C00D400;
 
     // Thanks Senryoku!
     // RTE - Some interrupts jump there instead of having their own RTE, I have NO idea why.
@@ -192,4 +198,5 @@ void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
     this->sh4.write32(this->sh4.mptr, 0x8C000014, 0x0009002B); // rte nop
     // RTS
     this->sh4.write32(this->sh4.mptr, 0x8C000018, 0x00090009);
-    this->sh4.write32(this->sh4.mptr, 0x8C00001C, 0x0009000B);}
+    this->sh4.write32(this->sh4.mptr, 0x8C00001C, 0x0009000B);
+}

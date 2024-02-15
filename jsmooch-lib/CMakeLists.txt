@@ -109,6 +109,8 @@ add_library(jsmooch-lib
         src/component/cpu/sh4/sh4_disassembler.h
         src/system/dreamcast/dc_mem.c
         src/system/dreamcast/dc_mem.h
+        src/helpers/jsm_string.c
+        src/helpers/jsm_string.h
 )
 
 include_directories(src/)

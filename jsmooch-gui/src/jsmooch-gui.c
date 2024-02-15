@@ -169,7 +169,25 @@ int main(int argc, char** argv)
         input_buffer[i] = 0;
     }
 
-    sys->step_master(sys, 20);
+    dbg_disable_trace();
+    sys->step_master(sys, 614404); // first loop
+
+    sys->get_framevars(sys, &fv); printf("\nCYCLES! %llu", fv.master_cycle);
+    u64 first = fv.master_cycle;
+
+    dbg_unbreak();
+    sys->step_master(sys, 140250);
+
+    dbg_unbreak();
+    dbg_enable_trace();
+    sys->step_master(sys, 5000);
+
+    dbg_flush();
+    sys->get_framevars(sys, &fv); printf("\nCYCLES! %llu (%llu)", fv.master_cycle, fv.master_cycle - first);
+
+    printf("YO!");
+    fflush(stdout);
+
     return;
 
     u32 quit = 0;
@@ -187,7 +205,7 @@ int main(int argc, char** argv)
         jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
         SDL_UpdateWindowSurface(window);
         SDL_Delay(10);
-        printf("\nFrame %d", fv.master_frame);
+        printf("\nFrame %llu", fv.master_frame);
         fflush(stdout);
     }
     /*after = SDL_GetTicks();

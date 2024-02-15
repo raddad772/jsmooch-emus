@@ -2,6 +2,7 @@
 // Created by Dave on 2/10/2024.
 //
 
+#include "math.h"
 #include "string.h"
 #include "assert.h"
 #include "stdio.h"
@@ -10,20 +11,34 @@
 #include "sh4_interpreter_opcodes.h"
 
 #define SH4args  struct SH4* this, struct SH4_ins_t *ins
-#define PCinc mPC += 2
-#define mPC this->regs.PC
+#define PCinc rPC += 2
+#define rPC this->regs.PC
 
 // Sign extend 32 bits
 #define SIGNe8to32(x) (((x >> 7) * 0xFFFFFF00) | (x & 0xFF))
+#define SIGNe12to32(x) (((x >> 11) * 0xFFFFF000) | (x & 0xFFF))
 #define SIGNe16to32(x) (((x >> 15) * 0xFFFF0000) | (x & 0xFFFF))
 
 #define R(x) this->regs.R[x]
 #define RM R(ins->Rm)
 #define RN R(ins->Rn)
+
+#define fFR this->regs.FPSCR.FR
 #define IMM ins->imm
 #define DISP ins->disp
 
-#define BADOPCODE printf("\nUNIMPLEMENTED INSTRUCTION %s", __func__); fflush(stdout)
+#define rMACL this->regs.MACL
+#define rMACH this->regs.MACH
+#define rFPUL this->regs.FPUL
+
+#define fpFR(x) this->regs.fb[0].FP32[x]
+#define fpDR(x) this->regs.fb[x & 1].FP64[x >> 1]
+#define fpXF(x) this->regs.fb[1].FP32[x]
+#define fpXD(x) this->regs.fb[x & 1].FP64[x >> 1]
+#define fpFV(x) this->regs.fb[0].FV[x >> 2]
+#define fpXMTX(x) this->regs.fb[1].MTX
+
+#define BADOPCODE printf("\nUNIMPLEMENTED INSTRUCTION %s", __func__); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s", __func__)
 
 #define READ8(addr) this->read8(this->mptr, addr)
 #define READ16(addr) this->read16(this->mptr, addr)
@@ -35,7 +50,8 @@
 #define SH4ins(x) void SH4_##x(SH4args)
 
 SH4ins(EMPTY) {
-    printf("UNKNOWN OPCODE EXECUTION ATTEMPTED: %04x", ins->opcode);
+    printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x", this->regs.PC, ins->opcode);
+    dbg_break();
     PCinc;
 }
 
@@ -46,23 +62,28 @@ SH4ins(MOV) {
 
 SH4ins(MOVI) {
     RN = SIGNe8to32(IMM);
+    if ((ins->Rn == 7) && (ins->imm == 127)) {
+        printf("\nHERE!!!! %llu %08x\n", this->trace_cycles, this->regs.PC);
+        fflush(stdout);
+        dbg_break();
+    }
     PCinc;
 }
 
 SH4ins(MOVA) {
-    this->regs.R[0] = (mPC & 0xFFFFFFFC) + (DISP*4) + 4;
+    this->regs.R[0] = (rPC & 0xFFFFFFFC) + (DISP*4) + 4;
     PCinc;
 }
 
 SH4ins(MOVWI) {
-    u32 addr = mPC + (DISP*2) + 4;
+    u32 addr = rPC + (DISP*2) + 4;
     u32 val = READ16(addr);
     RN = SIGNe16to32(val);
     PCinc;
 }
 
 SH4ins(MOVLI) {
-    u32 addr = (mPC & 0xFFFFFFFC) + (DISP*4) + 4;
+    u32 addr = (rPC & 0xFFFFFFFC) + (DISP*4) + 4;
     RN = READ32(addr);
     PCinc;
 }
@@ -209,7 +230,7 @@ SH4ins(MOVBS0) { // Rm -> (R0 + Rn)
 }
 
 SH4ins(MOVWS0) { // Rm -> (R0 + Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE16(R(0) + RN, RM);
     PCinc;
 }
 
@@ -269,13 +290,12 @@ SH4ins(XTRCT) { // Rm:Rn middle 32 bits -> Rn
 }
 
 SH4ins(ADD) { // Rn + Rm -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN += RM;
     PCinc;
 }
 
 SH4ins(ADDI) { // Rn + (sign extension)imm
     u32 val = IMM;
-    printf("\nR%d:%08x val:%08x", ins->Rn, this->regs.R[0], IMM);
     RN += SIGNe8to32(val);
     PCinc;
 }
@@ -397,7 +417,7 @@ SH4ins(MACW) { // Signed, (Rn) * (Rm) + MAC -> MAC, SH1: 16 * 16 + 42 -> 42 bits
 }
 
 SH4ins(MULL) { // Rn * Rm -> MACL, 32 * 32 -> 32 bits
-    BADOPCODE; // Crash on unimplemented opcode
+    rMACL = RN * RM;
     PCinc;
 }
 
@@ -412,7 +432,7 @@ SH4ins(MULU) { // Unsigned, Rn * Rm -> MACL, 16 * 16 -> 32 bits
 }
 
 SH4ins(NEG) { // 0 - Rm -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = (u32)(0 - ((i32)RM));
     PCinc;
 }
 
@@ -437,7 +457,7 @@ SH4ins(SUBV) { // Rn - Rm -> Rn, underflow -> T
 }
 
 SH4ins(AND) { // Rn & Rm -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN &= RM;
     PCinc;
 }
 
@@ -492,12 +512,12 @@ SH4ins(TSTM) { // If (R0 + GBR) & (zero extend)imm = 0: 1 -> T, Else 0: -> T
 }
 
 SH4ins(XOR) { // Rn ^ Rm -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN ^= RM;
     PCinc;
 }
 
 SH4ins(XORI) { // R0 ^ (zero extend)imm -> R0
-    BADOPCODE; // Crash on unimplemented opcode
+    R(0) ^= SIGNe8to32(IMM);
     PCinc;
 }
 
@@ -547,73 +567,80 @@ SH4ins(SHLD) { // If Rm >= 0: Rn << Rm -> Rn, If Rm < 0: Rn >> |Rm| -> [0 -> Rn]
 }
 
 SH4ins(SHLL) { // T << Rn << 0
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = (RN >> 31) & 1;
+    RN <<= 1;
     PCinc;
 }
 
 SH4ins(SHLL2) { // Rn << 2 -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN <<= 2;
     PCinc;
 }
 
 SH4ins(SHLL8) { // Rn << 8 -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN <<= 8;
     PCinc;
 }
 
 SH4ins(SHLL16) { // Rn << 16 -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN <<= 16;
     PCinc;
 }
 
 SH4ins(SHLR) { // 0 >> Rn >> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = RN & 1;
+    RN = (RN >> 1) & 0x7FFFFFFF;
     PCinc;
 }
 
 SH4ins(SHLR2) { // Rn >> 2 -> [0 -> Rn]
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = (RN >> 2) & 0x3FFFFFFF;
     PCinc;
 }
 
 SH4ins(SHLR8) { // Rn >> 8 -> [0 -> Rn]
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = (RN >> 8) & 0x00FFFFFF;
     PCinc;
 }
 
 SH4ins(SHLR16) { // Rn >> 16 -> [0 -> Rn]
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = (RN >> 16) & 0x0000FFFF;
     PCinc;
 }
 
 SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
-    BADOPCODE; // Crash on unimplemented opcode
-    PCinc;
+    rPC = rPC + 4 + ((2 * SIGNe8to32(DISP)) * (this->regs.SR.T ^ 1));
+    //DELAY_SLOT(rPC+2);
+    //rPC = val; // DISP*2 * !this->regs.SR.T
+    //PCinc;
 }
 
-#define DELAY_SLOT(x) this->delay_slot = (x);
+//#define DELAY_SLOT(x) this->delay_slot = (x);
+#define DELAY_SLOT(x) { PCinc; SH4_fetch_and_exec(this); }
 
 SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
-    u32 val = DISP;
-    val = (2 * SIGNe8to32(val)) - 2;
-    DELAY_SLOT(mPC+2);
-    mPC = mPC + 4 + (val * (this->regs.SR.T ^ 1)); // DISP*2 * !this->regs.SR.T
+    u32 val = rPC + 4 + ((2 * SIGNe8to32(DISP)) * (this->regs.SR.T ^ 1));
+    DELAY_SLOT(rPC+2);
+    rPC = val; // DISP*2 * !this->regs.SR.T
 }
 
-SH4ins(BT) { // If T = 1: disp*2 + mPC + 4 -> mPC, Else: nop
-    BADOPCODE;
+SH4ins(BT) { // If T = 1: disp*2 + rPC + 4 -> rPC, Else: nop
+    rPC = rPC + 4 + ((2 * SIGNe8to32(DISP)) * this->regs.SR.T);
+    //BADOPCODE;
 }
 
 SH4ins(BTS) { // If T = 1: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
-    u32 val = DISP;
-    val = (2 * SIGNe8to32(val)) - 2;
-    DELAY_SLOT(mPC+2);
-    mPC = mPC + 4 + (val * this->regs.SR.T); // DISP*2 * !this->regs.SR.T
+    u32 val = rPC + 4 + ((2 * SIGNe8to32(DISP)) * this->regs.SR.T);
+    DELAY_SLOT(rPC+2);
+    rPC = val; // DISP*2 * !this->regs.SR.T
 }
 
 SH4ins(BRA) { // disp*2 + PC + 4 -> PC, (Delayed branch)
-    BADOPCODE; // Crash on unimplemented opcode
-    PCinc;
+    u32 val = rPC + 4 + (2 * SIGNe12to32(DISP));
+    DELAY_SLOT(rPC+2);
+    rPC = val; // DISP*2 * !this->regs.SR.T
+    printf("\nBRANCH TO %08x", val);
+    fflush(stdout);
 }
 
 SH4ins(BRAF) { // Rm + PC + 4 -> PC, (Delayed branch)
@@ -772,7 +799,6 @@ SH4ins(MOVCAL) { // R0 -> (Rn) (without fetching cache block)
 }
 
 SH4ins(NOP) { // No operation
-    BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 
@@ -817,7 +843,7 @@ SH4ins(SLEEP) { // Sleep or standby
 }
 
 SH4ins(STCSR) { // SR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = SH4_regs_SR_get(&this->regs.SR);
     PCinc;
 }
 
@@ -907,7 +933,7 @@ SH4ins(STSMMACH) { // Rn-4 -> Rn, MACH -> (Rn)
 }
 
 SH4ins(STSMACL) { // MACL -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = rMACL;
     PCinc;
 }
 
@@ -937,7 +963,8 @@ SH4ins(FMOV) { // FRm -> FRn
 }
 
 SH4ins(FMOV_LOAD) { // (Rm) -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 v = READ32(RM);
+    fpFR(ins->Rn) = *(float *)(&v);
     PCinc;
 }
 
@@ -1087,7 +1114,7 @@ SH4ins(FSUB) { // FRn - FRm -> FRn
 }
 
 SH4ins(FMUL) { // FRn * FRm -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpFR(ins->Rn) *= fpFR(ins->Rm);
     PCinc;
 }
 
@@ -1097,7 +1124,7 @@ SH4ins(FMAC) { // FR0 * FRm + FRn -> FRn
 }
 
 SH4ins(FDIV) { // FRn / FRm -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpFR(ins->Rn) /= fpFR(ins->Rm);
     PCinc;
 }
 
@@ -1117,12 +1144,18 @@ SH4ins(FCMP_GT) { // If FRn > FRm: 1 -> T, Else: 0 -> T
 }
 
 SH4ins(FLOAT_single) { // (float)FPUL -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    if (this->regs.FPSCR.PR == 0) { // single precision
+        fpFR(ins->Rn) = (float)((i32)this->regs.FPUL);
+    } else { // double precision
+        BADOPCODE;
+    }
     PCinc;
 }
 
+// Thanks to the amazing website for how to implement this properly
 SH4ins(FTRC_single) { // (long)FRm -> FPUL
-    BADOPCODE; // Crash on unimplemented opcode
+    // TODO make this much better!
+    rFPUL = (int32)fpFR(ins->Rm);
     PCinc;
 }
 
@@ -1222,12 +1255,12 @@ SH4ins(STSMFPSCR) { // Rn-4 -> Rn, FPSCR -> (Rn)
 }
 
 SH4ins(LDSFPUL) { // Rm -> FPUL
-    BADOPCODE; // Crash on unimplemented opcode
+    rFPUL = RM;
     PCinc;
 }
 
 SH4ins(STSFPUL) { // FPUL -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = rFPUL;
     PCinc;
 }
 
@@ -1250,7 +1283,78 @@ SH4ins(FSCHG) { // If FPSCR.PR = 0: ~FPSCR.SZ -> FPSCR.SZ, Else: Undefined Opera
     BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
-#undef mPC
+
+SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
+    //PC += 2;
+    //clear_cause();
+
+    switch (data_type_of (n))
+    {
+        case NORM:
+            if (sign_of (n) == 0)
+            {
+                set_I ();
+                FR[n] = 1 / sqrt (FR[n]);
+            }
+            else
+                invalid (n);
+            break;
+
+        case DENORM:
+            if (sign_of (n) == 0)
+                fpu_error ();
+            else
+                invalid (n);
+            break;
+
+        case PZERO:
+        case NZERO:
+            dz (n, sign_of (n));
+            break;
+
+        case PINF:
+            FR[n] = 0;
+            break;
+
+        case NINF:
+            invalid (n);
+            break;
+
+        case qNAN:
+            qnan (n);
+            break;
+
+        case sNAN:
+            invalid (n);
+            break;
+    }
+    PCinc;
+}
+
+SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
+    // thanks to dRk|Raziel for this
+    int n=ins->Rn & 0xE;
+
+
+    //cosine(x) = sine(pi/2 + x).
+    if (this->regs.FPSCR.PR==0)
+    {
+        //float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
+        u32 pi_index=(u16)rFPUL;
+
+        fpFR(n | 0) = sin_table[pi_index];//sinf(real_pi);
+        fpFR(n | 1) = sin_table[0x4000 + pi_index];//cosf(real_pi);    // -> no need for warparound, sin_table has 0x4000 more entries
+
+        //CHECK_FPU_32(fr[n]);
+        //CHECK_FPU_32(fr[n+1]);
+    }
+    else {
+        BADOPCODE;
+    }
+    PCinc;
+}
+
+#undef rPC
 #undef R
 #undef RN
 #undef RM
@@ -1362,35 +1466,21 @@ static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32
 
     for (char *mn = (char *)mnemonic; *mn!=0; mn++) {
         if ((*mn == 'R') && ((*(mn+1) == 'n') || (*(mn+1) == 'm'))) {
-            u32 *wh = *(mn+1) == 'n' ? &n : &m;
-            sprintf(copy_to, "R%d", *wh);
-            copy_to += 2;
+            // Rm or Rn
+            copy_to += sprintf(copy_to, "R%d", *(mn+1) == 'n' ? n : m);
             mn++;
-            if ((*wh) > 9) copy_to++; // 2 digits is the max
-            *copy_to = 0;
             continue;
         }
         if ((*mn == 'd') && (*(mn+1) == 'i') && (*(mn+2) == 's')) {
             // disp
-            sprintf(copy_to, "%02x", d);
-            copy_to += 2; // 2 digit minimum
-            d >>= 4;
+            copy_to += sprintf(copy_to, "%02x", d);
             mn += 3;
-            while(d>0) {
-                if (d > 0xF) copy_to++;  // 1 character hex
-                d >>= 4;
-            }
             continue;
         }
         if ((*mn == 'i') && (*(mn+1) == 'm' && (*(mn+2) == 'm'))) {
             // imm
-            sprintf(copy_to, "%d", imm);
-            copy_to++; // 1 digit minimum
+            copy_to += sprintf(copy_to, "%d", imm);
             mn += 2;
-            while(imm>0) {
-                if (imm > 9) copy_to++;  // 1 character hex
-                imm = (imm - (imm % 10)) / 10;
-            }
             continue;
         }
         *copy_to = *mn;
@@ -1560,13 +1650,13 @@ void do_sh4_decode() {
     OE("0100nnnn00001001", &SH4_SHLR2, "shlr2 Rn"); // Rn >> 2 -> [0 -> Rn]
     OE("0100nnnn00011001", &SH4_SHLR8, "shlr8 Rn"); // Rn >> 8 -> [0 -> Rn]
     OE("0100nnnn00101001", &SH4_SHLR16, "shlr16 Rn"); // Rn >> 16 -> [0 -> Rn]
-    OE("10001011dddddddd", &SH4_BF, "bf label"); // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
+    OE("10001011dddddddd", &SH4_BF, "bf disp"); // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
     OE("10001111dddddddd", &SH4_BFS, "bf/s disp"); // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
-    OE("10001001dddddddd", &SH4_BT, "bt label"); // If T = 1: disp*2 + PC + 4 -> PC, Else: nop
-    OE("10001101dddddddd", &SH4_BTS, "bt/s label"); // If T = 1: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
-    OE("1010dddddddddddd", &SH4_BRA, "bra label"); // disp*2 + PC + 4 -> PC, (Delayed branch)
+    OE("10001001dddddddd", &SH4_BT, "bt disp"); // If T = 1: disp*2 + PC + 4 -> PC, Else: nop
+    OE("10001101dddddddd", &SH4_BTS, "bt/s disp"); // If T = 1: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
+    OE("1010dddddddddddd", &SH4_BRA, "bra disp"); // disp*2 + PC + 4 -> PC, (Delayed branch)
     OE("0000mmmm00100011", &SH4_BRAF, "braf Rm"); // Rm + PC + 4 -> PC, (Delayed branch)
-    OE("1011dddddddddddd", &SH4_BSR, "bsr label"); // PC + 4 -> PR, disp*2 + PC + 4 -> PC, (Delayed branch)
+    OE("1011dddddddddddd", &SH4_BSR, "bsr disp"); // PC + 4 -> PR, disp*2 + PC + 4 -> PC, (Delayed branch)
     OE("0000mmmm00000011", &SH4_BSRF, "bsrf Rm"); // PC + 4 -> PR, Rm + PC + 4 -> PC, (Delayed branch)
     OE("0100mmmm00101011", &SH4_JMP, "jmp @Rm"); // Rm -> PC, (Delayed branch)
     OE("0100mmmm00001011", &SH4_JSR, "jsr @Rm"); // PC + 4 -> PR, Rm -> PC, (Delayed branch)
@@ -1693,6 +1783,10 @@ void do_sh4_decode() {
     OE("0100nnnn01010010", &SH4_STSMFPUL, "sts.l FPUL,@-Rn"); // Rn-4 -> Rn, FPUL -> (Rn)
     OE("1111101111111101", &SH4_FRCHG, "frchg"); // If FPSCR.PR = 0: ~FPSCR.FR -> FPSCR.FR, Else: Undefined Operation
     OE("1111001111111101", &SH4_FSCHG, "fschg"); // If FPSCR.PR = 0: ~FPSCR.SZ -> FPSCR.SZ, Else: Undefined Operation
+    // fsrra and fsca are special to this particlar sh4 IIRC
+    OE("1111nnnn01111101", &SH4_FSRRA, "fsrra");
+    OE("1111nnn011111101", &SH4_FSCA, "fsca");
+
 
     u32 unencoded = 0;
     for (u32 i = 0; i < 65536; i++) {

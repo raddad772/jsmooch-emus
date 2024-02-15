@@ -3,12 +3,15 @@
 //
 
 #include "stdio.h"
+#include "string.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 
 #define NMI_VEC VBR + 0x0600
 
 // Endianness is little.
+
+#define SH4_BRK 0xAC010026
 
 static void set_user_mode(struct SH4* this)
 {
@@ -42,54 +45,98 @@ u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this)
             (this->DN << 18) | (this->Cause << 12) | (this->Enable << 7) | (this->Flag << 2) | (this->RM);
 }
 
-void SH4_regs_FPSCR_set(struct SH4_regs_FPSCR* this, u32 val)
+void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val)
 {
-    this->data = val;
-    this->FR = (val >> 21) & 1;
-    this->SZ = (val >> 20) & 1;
-    this->PR = (val >> 19) & 1;
-    this->DN = (val >> 18) & 63;
-    this->Cause = (val >> 12) & 63;
-    this->Enable = (val >> 7) & 63;
-    this->Flag = (val >> 2) & 63;
-    this->RM = val & 3;
+    // If floating-point select register changed
+    if (this->FPSCR.FR ^ ((val >> 21) & 1)) {
+        memcpy(&this->fb[2], &this->fb[0], 64);
+        memcpy(&this->fb[0], &this->fb[1], 64);
+        memcpy(&this->fb[1], &this->fb[2], 64);
+    }
+    this->FPSCR.data = val;
+    this->FPSCR.FR = (val >> 21) & 1;
+    this->FPSCR.SZ = (val >> 20) & 1;
+    this->FPSCR.PR = (val >> 19) & 1;
+    this->FPSCR.DN = (val >> 18) & 63;
+    this->FPSCR.Cause = (val >> 12) & 63;
+    this->FPSCR.Enable = (val >> 7) & 63;
+    this->FPSCR.Flag = (val >> 2) & 63;
+    this->FPSCR.RM = val & 3;
 }
 
 static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins)
 {
     u32 had_any = 0;
+    i32 last_n = -1;
+    i32 last_m = -1;
+    dbg_seek_in_line(50);
     if (ins->Rn != -1) {
-        printf("R%d:%08x", ins->Rn, this->regs.R[ins->Rn]);
+        dbg_printf("R%d:%08x", ins->Rn, this->regs.R[ins->Rn]);
+        had_any = 1;
+        last_n = (i32)ins->Rn;
     }
     if (ins->Rm != -1) {
-        if (had_any) printf(" ");
-        printf(" R%d:%08x", ins->Rm, this->regs.R[ins->Rm]);
+        if (had_any) dbg_printf(" ");
+        had_any = 1;
+        dbg_printf("R%d:%08x", ins->Rm, this->regs.R[ins->Rm]);
+        last_m = (i32)ins->Rm;
     }
+    if ((this->pp_last_m != -1) && (this->pp_last_m != ins->Rm) && (this->pp_last_m != ins->Rn)) {
+        if (had_any) dbg_printf(" ");
+        had_any = 1;
+        dbg_printf("R%d:%08x", this->pp_last_m, this->regs.R[this->pp_last_m]);
+    }
+    if ((this->pp_last_n != -1) && (this->pp_last_n != ins->Rm) && (this->pp_last_n != ins->Rn)) {
+        if (had_any) dbg_printf(" ");
+        had_any = 1;
+        dbg_printf("R%d:%08x", this->pp_last_n, this->regs.R[this->pp_last_n]);
+    }
+    if ((ins->Rn != 0) && (ins->Rm != 0) && (this->pp_last_m != 0) && (this->pp_last_n != 0)) {
+        if (had_any) printf(" ");
+        dbg_printf(" R0:%08x", this->regs.R[0]);
+    }
+
+    this->pp_last_m = last_m;
+    this->pp_last_n = last_n;
+}
+
+void SH4_fetch_and_exec(struct SH4* this)
+{
+    u32 opcode = this->read16(this->mptr, this->regs.PC);
+#ifdef SH4_DBG_SUPPORT
+#ifdef SH4_BRK
+    if (this->regs.PC == SH4_BRK) {
+        dbg_break();
+    }
+#endif // SH4_BRK
+    this->trace_cycles++;
+#endif
+    this->cycles--;
+    struct SH4_ins_t *ins = &SH4_decoded[opcode];
+    dbg_printf("\naddr:%08x opcode:%04x %s   ", (u32)this->regs.PC, opcode, SH4_disassembled[opcode]);
+    SH4_pprint(this, ins);
+
+    ins->exec(this, ins);
 }
 
 void SH4_run_cycles(struct SH4* this, u32 howmany) {
     // fetch
-    i64 addr;
-    for (u32 i = 0; i < howmany; i++) {
-        if (this->delay_slot > -1) addr = this->delay_slot;
-        else addr = this->regs.PC;
-        this->delay_slot = -1;
-        u32 opcode = this->read16(this->mptr, addr);
-        struct SH4_ins_t *ins = &SH4_decoded[opcode];
-        printf("\naddr:%08x opcode:%04x %s   ", (u32)addr, opcode, SH4_disassembled[opcode]);
-        SH4_pprint(this, ins);
-
-        ins->exec(this, ins);
+    this->cycles = (i32)howmany;
+    while(this->cycles > 0) {
+#ifdef SH4_DBG_SUPPORT
+        if (dbg.do_break) break;
+#endif
+        SH4_fetch_and_exec(this);
     }
+    this->cycles = 0;
 }
 
 void SH4_init(struct SH4* this)
 {
     this->regs.currently_banked_rb = 1;
-    this->last_md = 1;
-    this->last_rb = 1;
-    this->delay_slot = -1;
+    this->trace_cycles = 0;
     SH4_reset(this);
+    printf("\nINS! %s\n", SH4_disassembled[0x6863]);
 
     this->mptr = NULL;
     this->read8 = NULL;
@@ -108,6 +155,7 @@ static void swap_register_banks(struct SH4* this)
         this->regs.R_[i] = t;
     }
 }
+
 
 void SH4_update_mode(struct SH4* this)
 {
@@ -145,7 +193,7 @@ undefined
      */
     this->regs.VBR = 0;
     this->regs.PC = 0xA0000000;
-    SH4_regs_FPSCR_set(&this->regs.FPSCR, 0x00040001);
+    SH4_regs_FPSCR_set(&this->regs, 0x00040001);
     SH4_SR_set(this, (SH4_regs_SR_get(&this->regs.SR) &  0b11110011) | 0b01110000000000000000000011110000);
 }
 

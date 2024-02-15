@@ -4,6 +4,8 @@
 #include "stdio.h"
 #include "string.h"
 #include "malloc.h"
+#include "assert.h"
+#include "stdarg.h"
 
 #include "debug.h"
 
@@ -20,65 +22,68 @@ void dbg_init()
     init_already = 1;
     printf("\nDBG INIT!");
     dbg.do_break = false;
-    for (u32 i = 0; i < MAX_DEBUG_MSG; i++) {
-        dbg.msg[i] = NULL;
-    }
-    dbg.msg_head = 0;
-    dbg.msg_len = 0;
+    dbg.trace_on = 0;
+    dbg.msg_last_newline = 0;
+    jsm_string_init(&dbg.msg, 5*1024*1024);
 }
 
 #ifndef MIN
 #define MIN(x,y) (((x) <= (y)) ? (x) : (y));
 #endif
 
-void dbg_add_msg(char *what)
-{
-    if (dbg.msg_len > MAX_DEBUG_MSG) {
-        printf("ERROR, DBG replacing an existing debug message!");
-    }
-    u32 r = (dbg.msg_head + dbg.msg_len) % MAX_DEBUG_MSG;
-    u32 strl = strlen(what);
-    if (dbg.msg[r] != NULL) {
-        free(dbg.msg[r]);
-        dbg.msg[r] = NULL;
-    }
-    dbg.msg[r] = malloc(strl+1);
-    strcpy(dbg.msg[r], what);
-    dbg.msg_len++;
-    dbg.msg_len = MIN(dbg.msg_len, MAX_DEBUG_MSG);
-}
-
-char *dbg_get_msg()
-{
-    if (dbg.msg_len == 0) return NULL;
-    u32 strl = strlen(dbg.msg[dbg.msg_head]);
-    char *out = malloc(strl+1);
-    strcpy(out, dbg.msg[dbg.msg_head]);
-
-    free(dbg.msg[dbg.msg_head]);
-    dbg.msg[dbg.msg_head] = NULL;
-
-    dbg.msg_head = (dbg.msg_head + 1) % MAX_DEBUG_MSG;
-    dbg.msg_len--;
-
-    return out;
-}
-
 void dbg_clear_msg()
 {
-    for (u32 i = 0; i < MAX_DEBUG_MSG; i++) {
-        if (dbg.msg[i] != NULL) {
-            free(dbg.msg[i]);
-            dbg.msg[i] = NULL;
-        }
+    jsm_string_empty(&dbg.msg);
+    dbg.msg_last_newline = dbg.msg.cur;
+}
+
+void dbg_printf(char *format, ...)
+{
+    if (!dbg.trace_on) return;
+    struct jsm_string*this = &dbg.msg;
+    // do jsm_sprintf, basically, minus one line
+    if (this->ptr == NULL) {
+        assert(1==0);
+        return;
     }
-    dbg.msg_len = 0;
-    dbg.msg_head = 0;
+    va_list va;
+    va_start(va, format);
+    vsnprintf(this->cur, this->len - (this->cur - this->ptr), format, va);
+    va_end(va);
+
+    // Scan for newlines
+    while(*(this->cur)!=0) {
+        if (*(this->cur) == '\n')
+            dbg.msg_last_newline = this->cur;
+        this->cur++;
+    }
+}
+
+void dbg_seek_in_line(u32 pos)
+{
+    i64 current_line_pos = dbg.msg.cur - dbg.msg_last_newline;
+    i64 number_to_move = (i32)pos - current_line_pos;
+    if (number_to_move > 0) {
+        while(number_to_move > 0) {
+            *dbg.msg.cur = ' ';
+            dbg.msg.cur++;
+            number_to_move--;
+        }
+        *dbg.msg.cur = 0;
+    }
+}
+
+void dbg_flush()
+{
+    printf("%s", dbg.msg.ptr);
+    fflush(stdout);
+    dbg_clear_msg();
 }
 
 void dbg_delete()
 {
     dbg_clear_msg();
+    dbg.msg_last_newline = 0;
 }
 
 void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, struct jsm_debug_read_trace *src)
@@ -87,8 +92,25 @@ void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, struct jsm_debug_rea
     dst->read_trace = src->read_trace;
 }
 
+void dbg_unbreak()
+{
+    dbg.do_break = false;
+}
+
 void dbg_break()
 {
-    printf("Implement dbg_break()");
+    printf("\nBREAK!");
     fflush(stdout);
+    dbg.do_break = true;
+    fflush(stdout);
+}
+
+void dbg_enable_trace()
+{
+    dbg.trace_on = 1;
+}
+
+void dbg_disable_trace()
+{
+    dbg.trace_on = 0;
 }

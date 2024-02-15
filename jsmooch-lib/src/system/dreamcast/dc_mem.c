@@ -48,7 +48,7 @@ u32 DCread32(void *ptr, u32 addr) {
         fflush(stdout);
         return 0;
     }
-    printf("\nR32 A:%08X V:%08x", (u32) addr, (u32) ret);
+    dbg_printf("\nRd32 A:%08X V:%08x", (u32) addr, (u32) ret);
     fflush(stdout);
     return ret;
 }
@@ -56,9 +56,11 @@ u32 DCread32(void *ptr, u32 addr) {
 void DCwrite8(void *ptr, u32 addr, u32 val)
 {
     THIS;
-    printf("\nwrite8 unknown addr %08x val %02x", addr, val);
-    fflush(stdout);
-
+    if ((addr >= 0x0C000000) && (addr < 0x0D000000)) {
+        this->RAM[addr - 0xC000000] = (u8)val;
+        return;
+    }
+    dbg_printf("\nwrite8 unknown addr %08x val %02x cycle:%llu", addr, val, this->sh4.trace_cycles);
 }
 
 void DCwrite16(void *ptr, u32 addr, u32 val)
@@ -77,7 +79,7 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     }
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
         *((u32 *)(&this->VRAM[addr - 0x05000000])) = val;
-        printf("\nVRAM WRITE A:%08x R:%06x V:%08x", addr, addr - 0x05000000, val);
+        dbg_printf("\nVRAM WRITE A:%08x R:%06x V:%08x", addr, addr - 0x05000000, val);
         return;
     }
     if ((addr >= 0x0C000000) && (addr < 0x0D000000)) {

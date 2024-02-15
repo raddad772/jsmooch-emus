@@ -8,8 +8,17 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 
-struct SH4_RV {
+#define SH4_DBG_SUPPORT
+
+struct SH4_FV {
     float a, b, c, d;
+};
+
+struct SH4_mtx {
+    float xf0, xf1, xf2, xf3;
+    float xf4, xf5, xf6, xf7;
+    float xf8, xf9, xf10, xf11;
+    float xf12, xf13, xf14, xf15;
 };
 
 struct SH4_regs_SR {
@@ -41,8 +50,6 @@ u32 SH4_regs_SR_get(struct SH4_regs_SR* this);
 void SH4_regs_SR_set(struct SH4_regs_SR* this, u32 val);
 
 void SH4_regs_FPSCR_reset(struct SH4_regs_FPSCR* this);
-u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
-void SH4_regs_FPSCR_set(struct SH4_regs_FPSCR* this, u32 val);
 
 struct SH4_regs {
     u32 R[16]; // registers
@@ -67,23 +74,29 @@ struct SH4_regs {
     struct SH4_regs_FPSCR FPSCR; // Floating Point Status Control Register
     u32 FPUL; // FP comms register
 
-    u8 FP_banks[128];
-
-    float* FP32_banks[2][16];
-    float* FP64_banks[2][8];
-    struct SH4_RV* FP_RV_banks[2][4];
+    union {
+        float FP32[16];
+        float FP64[8];
+        struct SH4_FV FV[4];
+        struct SH4_mtx MTX;
+    } fb[3];
 
     // Emulator-internal registers
     u32 currently_banked_rb;
 };
 
+u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
+void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val);
+
 struct SH4 {
     struct SH4_regs regs;
 
-    u32 last_md;
-    u32 last_rb;
+    u64 trace_cycles;
 
-    i64 delay_slot;
+    i32 cycles;
+
+    i32 pp_last_m;
+    i32 pp_last_n;
 
     void *mptr;
     u32 (*read8)(void*,u32);
@@ -97,5 +110,6 @@ struct SH4 {
 void SH4_init(struct SH4* this);
 void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
+void SH4_fetch_and_exec(struct SH4* this);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

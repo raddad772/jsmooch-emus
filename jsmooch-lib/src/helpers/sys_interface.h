@@ -60,6 +60,7 @@ struct framevars {
     u32 x;
     u32 scanline;
     u32 last_used_buffer;
+    u64 master_cycle;
     //dbg_info : debugger_info_t = new debugger_info_t();
     //console: string = '';
 };
