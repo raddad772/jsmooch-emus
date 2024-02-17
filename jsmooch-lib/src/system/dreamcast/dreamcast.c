@@ -9,6 +9,7 @@
 #include "helpers/sys_interface.h"
 #include "dreamcast.h"
 #include "dc_mem.h"
+#include "holly.h"
 
 #define JTHIS struct DC* this = (struct DC*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -44,6 +45,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     this->sh4.write8 = &DCwrite8;
     this->sh4.write16 = &DCwrite16;
     this->sh4.write32 = &DCwrite32;
+    DC_mem_init(this);
     /*NES_clock_init(&this->clock);
     //NES_bus_init(&this, &this->clock);
     r2A03_init(&this->cpu, this);
@@ -52,7 +54,8 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     NES_mapper_init(&this->bus, this);
 
     */
-     this->holly.last_used_buffer = 0;
+    holly_reset(this);
+    this->holly.last_used_buffer = 0;
     this->holly.cur_output_num = 0;
     this->holly.cur_output = (u32 *)iomap->out_buffers[0];
     this->holly.out_buffer[0] = (u32 *)iomap->out_buffers[0];
@@ -66,6 +69,8 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 
     buf_init(&this->BIOS);
     buf_init(&this->ROM);
+
+    DC_mem_init(this);
 
     jsm->ptr = (void*)this;
     jsm->which = SYS_DREAMCAST;
@@ -112,18 +117,24 @@ void DC_delete(struct jsm_system* jsm)
 
 void DC_copy_fb(struct DC* this, u32* where) {
     u32* ptr = (u32*)this->VRAM;
-    //ptr += (this->holly.FB_R_SOF1 >> 2);
+    ptr += (this->holly.FB_R_SOF1 >> 2);
+    //ptr += 0x00020000;
 
     printf("\nRENDER USING PTR %08llx", ptr - ((u32*)this->VRAM));
 
     u32* out = where;
+    u8* rgb;
     for (u32 y = 0; y < 480; y++) {
         for (u32 x = 0; x < 640; x++) {
-            *out = *ptr | 0xFF000000 | (*ptr >> 24);
+            rgb = (u8*) ptr;
+            u32 r = rgb[0];
+            u32 g = rgb[1];
+            u32 b = rgb[2];
+            *out = (r << 16) | (g << 8) | (b) | 0xFF000000;
             ptr++;
             out++;
         }
-        //ptr += (this->holly.FB_R_SIZE.fb_modulus);
+        ptr += (this->holly.FB_R_SIZE.fb_modulus);
     }
 }
 
@@ -207,14 +218,19 @@ void DCJ_load_BIOS(JSM, char* buf, u32 bufsize)
 void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
 {
     JTHIS;
+    printf("\nROM LOAD SIZE %d", bufsize);
     buf_allocate(&this->ROM, bufsize);
     memcpy(this->ROM.ptr, buf, bufsize);
 
+    //u32 offset = 0x100000;
+    u32 offset = 0x8000;
+
     for (u32 i = 0; i < bufsize; i++) {
-        this->RAM[0x00010000+i] = ((u8 *)this->ROM.ptr)[i];
+        this->RAM[offset+i] = ((u8 *)this->ROM.ptr)[i];
     }
 
-    this->sh4.regs.PC = 0xAC010000;
+    //this->sh4.regs.PC = 0xAC010000;
+    this->sh4.regs.PC = 0xAC008300;
     for (u32 i = 0; i < 15; i++) {
         this->sh4.regs.R[i] = 0;
         if (i < 8) this->sh4.regs.R_[i] = 0;

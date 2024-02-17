@@ -70,7 +70,7 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins)
     u32 had_any = 0;
     i32 last_n = -1;
     i32 last_m = -1;
-    dbg_seek_in_line(50);
+    dbg_seek_in_line(60);
     if (ins->Rn != -1) {
         dbg_printf("R%d:%08x", ins->Rn, this->regs.R[ins->Rn]);
         had_any = 1;
@@ -114,7 +114,7 @@ void SH4_fetch_and_exec(struct SH4* this)
 #endif
     this->cycles--;
     struct SH4_ins_t *ins = &SH4_decoded[opcode];
-    dbg_printf("\naddr:%08x opcode:%04x %s   ", (u32)this->regs.PC, opcode, SH4_disassembled[opcode]);
+    dbg_printf("\ncyc:%04d addr:%08x opcode:%04x %s   ", this->trace_cycles, this->regs.PC, opcode, SH4_disassembled[opcode]);
     SH4_pprint(this, ins);
 
     ins->exec(this, ins);

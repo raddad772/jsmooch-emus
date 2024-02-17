@@ -79,7 +79,6 @@ int main(int argc, char** argv)
     //sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\test\\statcount-auto.gb");
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\tetris.gb");
-    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\256b.bin");
 
     //SDL_Log("Attempting to init SDL");
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -169,9 +168,11 @@ int main(int argc, char** argv)
     }
 
     struct read_file_buf ROM;
+    //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\256b.bin");
+    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\IP.BIN");
     open_and_read(RFILE, &ROM);
-    rfb_cleanup(&ROM);
     sys->load_ROM(sys, "", ROM.buf, ROM.sz);
+    rfb_cleanup(&ROM);
 
 
     //sys->play(sys);
@@ -186,9 +187,17 @@ int main(int argc, char** argv)
     //SDL_Log("\n4");
 
 
-    dbg_disable_trace();
+    //dbg_disable_trace();
+    //dbg_enable_trace();
     //u32 a = SDL_GetTicks();
     //sys->step_master(sys, 20000000);
+    //dbg_flush();
+    //fflush(stdout);
+
+    /*dbg_enable_trace();
+    sys->step_master(sys, 200);
+    dbg_flush();*/
+    //return;
 
     //u32 b = SDL_GetTicks();
     /*float rend = ((float)b) /
@@ -208,6 +217,7 @@ int main(int argc, char** argv)
 
     before = SDL_GetTicks();
     while(!quit) {
+        float start = SDL_GetTicks();
         while(SDL_PollEvent(&event)) {
             quit = handle_keys_gb(&event, input_buffer);
         }
@@ -219,8 +229,12 @@ int main(int argc, char** argv)
         jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
         dbg.watch = 1;
         SDL_UpdateWindowSurface(window);
-        SDL_Delay(10);
-        printf("\nFrame %llu", fv.master_frame);
+        float end = SDL_GetTicks();
+        float ticks_taken = end - start;
+        printf("\n%f", ticks_taken);
+        float tick_target = 16.7;
+        if (ticks_taken < tick_target)
+            SDL_Delay(tick_target - ticks_taken);
         fflush(stdout);
     }
     /*after = SDL_GetTicks();

@@ -47,7 +47,6 @@ struct SH4_regs_FPSCR {
 
 void SH4_regs_SR_reset(struct SH4_regs_SR* this);
 u32 SH4_regs_SR_get(struct SH4_regs_SR* this);
-void SH4_regs_SR_set(struct SH4_regs_SR* this, u32 val);
 
 void SH4_regs_FPSCR_reset(struct SH4_regs_FPSCR* this);
 
@@ -73,6 +72,18 @@ struct SH4_regs {
     u32 PC; // Program Counter
     struct SH4_regs_FPSCR FPSCR; // Floating Point Status Control Register
     u32 FPUL; // FP comms register
+
+    struct SH4_regs_CCR {
+        u32 IIX; // 15 - IC index enable (?)
+        u32 ICI; // 11 - IC invalidation (?)
+        u32 ICE; // 8 - IC enable (?)
+        u32 OIX; // 7 - OC index enable (?) -- has to do with operand cache access
+        u32 ORA; // 5 - OC RAM enable (?)
+        u32 OCI; // 3 - OC invalidation
+        u32 CB; // 2 - copy-back enable
+        u32 WT; // 1 - write-through enable
+        u32 OCE; // 0 - OC enable
+    } CCR;
 
     union {
         float FP32[16];
@@ -111,5 +122,6 @@ void SH4_init(struct SH4* this);
 void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this);
+void SH4_SR_set(struct SH4* this, u32 val);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

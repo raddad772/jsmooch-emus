@@ -55,6 +55,7 @@ void jsm_delete(struct jsm_system* jsm)
             break;
         case SYS_DREAMCAST:
             DC_delete(jsm);
+            break;
         default:
             printf("DELETE UNKNOWN SYSTEM!");
             break;

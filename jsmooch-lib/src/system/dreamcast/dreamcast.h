@@ -10,6 +10,14 @@
 
 #include "component/cpu/sh4/sh4_interpreter_opcodes.h"
 #include "component/cpu/sh4/sh4_interpreter.h"
+#include "dc_mem.h"
+
+enum DC_MEM_SIZE {
+    DC8,
+    DC16,
+    DC32,
+    DC64
+};
 
 void DC_new(struct jsm_system* system, struct JSM_IOmap *iomap);
 void DC_delete(struct jsm_system* system);
@@ -19,9 +27,26 @@ struct DC {
 
     u8 RAM[16 * 1024 * 1024];
     u8 VRAM[8 * 1024 * 1024];
+    u8 OC[8 * 1024]; // Operand Cache[
 
     struct buf BIOS;
     struct buf ROM;
+
+    struct {
+        u32 TCOR0;
+        u32 TCNT0;
+        u32 PCTRA;
+        u32 PDTRA;
+        u32 TOCR;
+        u32 TSTR;
+        u32 SB_ISTNRM;
+        u32 SB_LMMODE0;
+        u32 SB_LMMODE1;
+    } io;
+
+    struct {
+        u32 ARMRST;
+    } aica;
 
     struct {
         struct DC_FB_R_CTRL {
@@ -50,8 +75,70 @@ struct DC {
 
         u32 FB_W_SOF1;
         u32 FB_W_SOF2;
+        u32 FB_W_LINESTRIDE;
         u32 FB_R_SOF1;
         u32 FB_R_SOF2;
+        u32 FB_X_CLIP;
+        u32 FB_Y_CLIP;
+        u32 FB_BURSTCTRL;
+
+        struct {
+            u32 vcount; // 16-25
+            u32 hcount; // 0-9
+        } SPG_LOAD;
+
+        u32 SPAN_SORT_CFG;
+        u32 FOG_COL_RAM;
+        u32 FOG_COL_VERT;
+        u32 FOG_DENSITY;
+        u32 FOG_TABLE[128];
+        u32 FOG_CLAMP_MAX;
+        u32 FOG_CLAMP_MIN;
+
+        struct {
+            u32 cb_endian_reg; // 17
+            u32 index_endian_reg; // 16
+            u32 bank_bit; // 8-12
+            u32 stride; // 0-4
+        } TEXT_CONTROL;
+        u32 SCALER_CTL;
+
+        u32 VO_CONTROL;
+        u32 VO_BORDER_COL; // 005F8040
+
+        u32 TA_OL_BASE; // starting address for object lists
+        u32 TA_OL_LIMIT;
+        u32 TA_ISP_BASE;
+        u32 TA_ISP_LIMIT;
+        u32 TA_GLOB_TILE_CLIP;
+        u32 TA_ALLOC_CTRL;
+        u32 TA_NEXT_OPB_INIT;
+        u32 TA_LIST_INIT;
+
+        struct {
+            u32 vblank_out_line; // bits 16-25, default 0x150
+            u32 vblank_in_line; // bits 0-9, default 0x104
+        } SPG_VBLANK_INT;
+        u32 SPG_HBLANK;
+        u32 SPG_CONTROL;
+        u32 SPG_VBLANK;
+        u32 SPG_WIDTH;
+        u32 SPG_HBLANK_INT;
+
+        u32 FPU_SHAD_SCALE;
+        u32 FPU_PARAM_CFG;
+        u32 HALF_OFFSET;
+        u32 Y_COEFF;
+        float FPU_CULL_VAL;
+        float FPU_PERP_VAL;
+        float ISP_BACKGND_D;
+        struct {
+            u32 cache_bypass; // 28
+            u32 shadow; // 27
+            u32 skip;   // 24-26
+            u32 tag_address; // 3-23
+            u32 tag_offset; // 0-2
+        } ISP_BACKGND_T;
 
         u32 last_used_buffer;
         u32 cur_output_num;
@@ -61,7 +148,15 @@ struct DC {
         u64 master_frame;
 
     } holly;
+
+    struct {
+        u32 (*read_map[0x20])(struct DC*, u32, enum DC_MEM_SIZE);
+        void (*write_map[0x20])(struct DC*, u32, u32, enum DC_MEM_SIZE);
+    } mem;
+
 };
 
+
+void DC_mem_init(struct DC* this);
 
 #endif //JSMOOCH_EMUS_DREAMCAST_H
