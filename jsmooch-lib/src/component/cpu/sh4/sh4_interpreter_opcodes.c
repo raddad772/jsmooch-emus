@@ -287,7 +287,7 @@ SH4ins(SWAPB) { // Rm -> swap lower 2 bytes -> Rn
 }
 
 SH4ins(SWAPW) { // Rm -> swap upper/lower words -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = ((RM & 0xFFFF0000) >> 16) | ((RM & 0xFFFF) << 16);
     PCinc;
 }
 
@@ -452,7 +452,11 @@ SH4ins(DMULS) { // Signed, Rn * Rm -> MACH:MACL, 32 * 32 -> 64 bits
 }
 
 SH4ins(DMULU) { // Unsigned, Rn * Rm -> MACH:MACL, 32 * 32 -> 64 bits
-    BADOPCODE; // Crash on unimplemented opcode
+    u64 n = RN;
+    u64 m = RM;
+    u64 r = n * m;
+    this->regs.MACH = ((r >> 32) & 0xFFFFFFFF);
+    this->regs.MACL = r & 0xFFFFFFFF;
     PCinc;
 }
 
@@ -507,7 +511,7 @@ SH4ins(MULS) { // Signed, Rn * Rm -> MACL, 16 * 16 -> 32 bits
 }
 
 SH4ins(MULU) { // Unsigned, Rn * Rm -> MACL, 16 * 16 -> 32 bits
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.MACL = (RN & 0xFFFF) * (RM & 0xFFFF);
     PCinc;
 }
 
@@ -634,7 +638,8 @@ SH4ins(ROTL) { // T << Rn << MSB
 }
 
 SH4ins(ROTR) { // LSB >> Rn >> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = RN & 1;
+    RN = (RN >> 1) | (this->regs.SR.T << 31);
     PCinc;
 }
 
@@ -917,7 +922,8 @@ SH4ins(OCBWB) { // Write back operand cache block
 }
 
 SH4ins(PREF) { // (Rn) -> operand cache
-    BADOPCODE; // Crash on unimplemented opcode
+    //read in (RN & 0xFFFFFFE0) to operand cache
+    //BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 

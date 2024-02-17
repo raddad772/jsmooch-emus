@@ -120,7 +120,7 @@ void DC_copy_fb(struct DC* this, u32* where) {
     ptr += (this->holly.FB_R_SOF1 >> 2);
     //ptr += 0x00020000;
 
-    printf("\nRENDER USING PTR %08llx", ptr - ((u32*)this->VRAM));
+    //printf("\nRENDER USING PTR %08llx", ptr - ((u32*)this->VRAM));
 
     u32* out = where;
     u8* rgb;
@@ -130,11 +130,11 @@ void DC_copy_fb(struct DC* this, u32* where) {
             u32 r = rgb[0];
             u32 g = rgb[1];
             u32 b = rgb[2];
-            *out = (r << 16) | (g << 8) | (b) | 0xFF000000;
+            *out = (b << 16) | (g << 8) | (r) | 0xFF000000;
             ptr++;
             out++;
         }
-        ptr += (this->holly.FB_R_SIZE.fb_modulus);
+        ptr += (this->holly.FB_R_SIZE.fb_modulus) - 1;
     }
 }
 

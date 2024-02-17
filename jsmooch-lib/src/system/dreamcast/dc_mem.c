@@ -202,7 +202,7 @@ u32 DCread32(void *ptr, u32 addr) {
 
     switch(maddr) {
         case 0xFFD8000C:
-            printf("\nTCTN0 %d", this->io.TCNT0);
+            //printf("\nTCTN0 %d", this->io.TCNT0);
             return this->io.TCNT0;
     }
 

@@ -231,11 +231,11 @@ int main(int argc, char** argv)
         SDL_UpdateWindowSurface(window);
         float end = SDL_GetTicks();
         float ticks_taken = end - start;
-        printf("\n%f", ticks_taken);
-        float tick_target = 16.7;
+        //printf("\n%f", ticks_taken);
+        float tick_target = 16.7f;
         if (ticks_taken < tick_target)
             SDL_Delay(tick_target - ticks_taken);
-        fflush(stdout);
+        //fflush(stdout);
     }
     /*after = SDL_GetTicks();
     float rend = ((float)after) /
