@@ -4,6 +4,12 @@
 #include "int.h"
 #include "enums.h"
 
+enum JSM_filekind {
+    ROM,
+    BIOS,
+    DISC_GDI
+};
+
 enum MD_timing {
     frame = 0,
     line = 1,

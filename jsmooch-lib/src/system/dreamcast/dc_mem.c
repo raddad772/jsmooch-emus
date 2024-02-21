@@ -91,9 +91,9 @@ u32 DCread8(void *ptr, u32 addr)
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if (addr <= 0x1FFFFF)
         return ((u8 *)this->BIOS.ptr)[addr];
-    if ((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF))
+    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
         //ret = this->RAM[addr - 0xC000000];
-        return this->RAM[addr - 0x0C000000];
+        return this->RAM[addr & 0xFFFFFF];
 
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
@@ -120,8 +120,8 @@ u32 DCread16(void *ptr, u32 addr)
     i64 ret = -1;
     if (addr < 0x1FFFFF)
         ret = *(u16 *)(((u8 *)this->BIOS.ptr+addr));
-    if ((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF))
-        ret = *(u16 *)(this->RAM+(addr - 0xC000000));
+    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
+        ret = *(u16 *)(this->RAM+(addr & 0xFFFFFF));
 
     switch(maddr) {
         case 0xFF800030: // PDTRA from Bus Control
@@ -177,8 +177,8 @@ u32 DCread32(void *ptr, u32 addr) {
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if (addr < 0x1FFFFF)
         ret = *(u32 *) (((u8 *) this->BIOS.ptr + addr));
-    if ((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF))
-        ret = *(u32 *) (this->RAM + (addr - 0xC000000));
+    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
+        ret = *(u32 *) (this->RAM + (addr & 0xFFFFFF));
 
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
@@ -194,8 +194,7 @@ u32 DCread32(void *ptr, u32 addr) {
     switch(addr) {
         case 0x005F6900: // Interrupt status register SB_ISTNRM
             // Clear anything that a 1 is written to in bits 21 to 0
-            //return this->io.SB_ISTNRM;
-            return 8;
+            return this->io.SB_ISTNRM;
         case 0x00702c00: // AICA ARMRST
             return this->aica.ARMRST;
     }
@@ -222,8 +221,8 @@ void DCwrite8(void *ptr, u32 addr, u32 val)
     THIS;
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
-    if ((addr >= 0x0C000000) && (addr < 0x0D000000)) {
-        this->RAM[addr - 0xC000000] = (u8)val;
+    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
+        this->RAM[addr & 0xFFFFFF] = (u8)val;
         return;
     }
 
@@ -291,9 +290,12 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
             //printf("\nVRAM WRITE A:%08x R:%06x V:%08x", addr, addr - 0x05000000, val);
         return;
     }
-    if ((addr >= 0x0C000000) && (addr < 0x0D000000)) {
-        *((u32 *) (&this->RAM[addr - 0xC000000])) = val;
+    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
+        *((u32 *) (&this->RAM[addr & 0xFFFFFF])) = val;
         return;
+    }
+    if ((maddr >= 0xE0000000) && (maddr <= 0xE3FFFFFF)) { // store queue write
+        *(u32*)&this->sh4.SQ[(addr >> 5) & 1][addr & 0x1C] = val;
     }
     if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF)) {
         return holly_write(this, addr, val);
@@ -309,9 +311,22 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     }
 
     switch(addr) {
+        case 0x005F6910: // SB_IML2NRM
+            this->io.SB_IML2NRM = val;
+            DC_recalc_interrupts(this);
+            return;
+        case 0x005F6920: // SB_IML4NRM
+            this->io.SB_IML4NRM = val;
+            DC_recalc_interrupts(this);
+            return;
+        case 0x005F6930: // SB_IML6NRM
+            this->io.SB_IML6NRM = val; //1= enabled
+            DC_recalc_interrupts(this);
+            return;
         case 0x005F6900: // Interrupt status register SB_ISTNRM
             // Clear anything that a 1 is written to in bits 21 to 0
-            this->io.SB_ISTNRM ^= this->io.SB_ISTNRM & val & 0xFFFFF;
+            printf("\nCLEAR ISTNRM %08x", val);
+            this->io.SB_ISTNRM ^= this->io.SB_ISTNRM & val & 0x3FFFFF;
             return;
         case 0x005f6884: // SB_LMMODE0 This register determines the data size when writing to the area from 0x1100 0000 to 0x11FF FFFF in texture memory via the TA FIFO buffer - Direct Texture Path. 0 = 64bit 1 = 32bit
             this->io.SB_LMMODE0 = val & 1;
@@ -325,6 +340,12 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     }
 
     switch(maddr) {
+        case 0xFF000038: // QACR0 for store queues
+            this->sh4.regs.QACR0 = val;
+            return;
+        case 0xFF00003C: // QACR1 for store queues
+            this->sh4.regs.QACR1 = val;
+            return;
         case 0xffd80008: // TCOR0
             this->io.TCOR0 = val;
             return;

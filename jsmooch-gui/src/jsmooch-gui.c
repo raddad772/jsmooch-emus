@@ -5,8 +5,7 @@
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
 
-#include "system/gb/gb.h"
-#include "component/cpu/sh4/sh4_disassembler.h"
+#include "system/dreamcast/gdi.h"
 
 struct read_file_buf {
     size_t sz;
@@ -72,6 +71,14 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
     return ret;
 }
 
+void test_gdi() {
+    struct GDI_image foo;
+    GDI_init(&foo);
+    GDI_load("c:\\dev\\rom\\dc\\crazytaxi", "crazytaxi.gdi", &foo);
+
+    GDI_delete(&foo);
+}
+
 int main(int argc, char** argv)
 {
     char RFILE[500];
@@ -81,6 +88,9 @@ int main(int argc, char** argv)
     //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\tetris.gb");
 
     //SDL_Log("Attempting to init SDL");
+    //test_gdi();
+    //return;
+
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         return -1;
@@ -116,7 +126,6 @@ int main(int argc, char** argv)
             output_buffers[1] = malloc(256*240*2);
             break;
         case SYS_DREAMCAST:
-            printf("YEAH!");
             output_buffers[0] = malloc(640*480*4);
             output_buffers[1] = malloc(640*480*4);
             break;
@@ -216,6 +225,7 @@ int main(int argc, char** argv)
     u32 before, after;
 
     before = SDL_GetTicks();
+    u32 did_break = 0;
     while(!quit) {
         float start = SDL_GetTicks();
         while(SDL_PollEvent(&event)) {
@@ -225,9 +235,20 @@ int main(int argc, char** argv)
         //sys->map_inputs(sys, input_buffer, sizeof(inputs)/4);
         sys->finish_frame(sys);
         sys->get_framevars(sys, &fv);
+        if (dbg.do_break) {
+            if (did_break == 0) {
+                dbg_enable_trace();
+                dbg.do_break = 0;
+                sys->step_master(sys, 150);
+                dbg.do_break = 0;
+                sys->step_master(sys, 150);
+                dbg_flush();
+                dbg_disable_trace();
+            }
+            did_break++;
+        }
         //jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
         jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
-        dbg.watch = 1;
         SDL_UpdateWindowSurface(window);
         float end = SDL_GetTicks();
         float ticks_taken = end - start;

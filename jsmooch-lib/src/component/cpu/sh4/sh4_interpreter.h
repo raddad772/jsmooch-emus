@@ -94,6 +94,9 @@ struct SH4_regs {
 
     // Emulator-internal registers
     u32 currently_banked_rb;
+
+    // For storage queue writes
+    u32 QACR0, QACR1;
 };
 
 u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
@@ -104,10 +107,13 @@ struct SH4 {
 
     u64 trace_cycles;
 
+    u32 interrupt_level;
+
     i32 cycles;
 
     i32 pp_last_m;
     i32 pp_last_n;
+    u8 SQ[2][32]; // store queues!
 
     void *mptr;
     u32 (*read8)(void*,u32);
@@ -123,5 +129,6 @@ void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this);
 void SH4_SR_set(struct SH4* this, u32 val);
+void SH4_set_interrupt(struct SH4* this, u32 level);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

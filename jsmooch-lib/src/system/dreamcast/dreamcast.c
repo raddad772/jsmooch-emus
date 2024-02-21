@@ -30,6 +30,24 @@ u32 DCJ_step_master(JSM, u32 howmany);
 void DCJ_load_BIOS(JSM, char* buf, u32 bufsize);
 void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize);
 
+void DC_recalc_interrupts(struct DC* this)
+{
+    u32 level2 = (this->io.SB_IML2NRM & this->io.SB_ISTNRM) & 0x3FFFFF;
+    u32 level4 = (this->io.SB_IML4NRM & this->io.SB_ISTNRM) & 0x3FFFFF;
+    u32 level6 = (this->io.SB_IML6NRM & this->io.SB_ISTNRM) & 0x3FFFFF;
+    u32 highest_level = 0;
+    if (level2) highest_level = 2;
+    if (level4) highest_level = 4;
+    if (level6) highest_level = 6;
+    SH4_set_interrupt(&this->sh4, highest_level);
+}
+
+
+void DC_raise_interrupt(struct DC* this, u32 imask)
+{
+    this->io.SB_ISTNRM |= imask;
+    DC_recalc_interrupts(this);
+}
 
 void DC_new(JSM, struct JSM_IOmap *iomap)
 {
@@ -46,6 +64,10 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     this->sh4.write16 = &DCwrite16;
     this->sh4.write32 = &DCwrite32;
     DC_mem_init(this);
+
+    this->clock.frame_cycle = 0;
+    this->clock.cycles_per_frame = DC_CYCLES_PER_SEC / 60;
+
     /*NES_clock_init(&this->clock);
     //NES_bus_init(&this, &this->clock);
     r2A03_init(&this->cpu, this);
@@ -61,6 +83,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     this->holly.out_buffer[0] = (u32 *)iomap->out_buffers[0];
     this->holly.out_buffer[1] = (u32 *)iomap->out_buffers[1];
     this->holly.master_frame = 0;
+
     /*
     this->cycles_left = 0;
     this->display_enabled = 1;
@@ -184,10 +207,69 @@ void DCJ_killall(JSM)
 
 }
 
+static void new_frame(struct DC* this)
+{
+    this->clock.frame_cycle = 0;
+    this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
+    DC_recalc_frame_timing(this);
+}
+
+enum DC_frame_events {
+    VBLANK_IN,
+    VBLANK_OUT,
+    FRAME_END
+};
+
+struct DCF_event {
+    u32 cycle;
+    enum DC_frame_events kind;
+};
+
 u32 DCJ_finish_frame(JSM)
 {
     JTHIS;
-    DCJ_step_master(jsm, 3000000);
+    //DCJ_step_master(jsm, 3000000);
+
+    new_frame(this);
+    this->clock.frame_cycle = 0;
+
+    struct DCF_event events[3];
+    u32 vbi, vbo;
+    if (this->clock.interrupt.vblank_in_start < this->clock.interrupt.vblank_out_start)
+        // #0 = vblank in
+        vbi = 0;
+    else
+        vbi = 1;
+    vbo = vbi ^ 1;
+    events[vbi].kind = VBLANK_IN;
+    events[vbi].cycle = this->clock.interrupt.vblank_in_start;
+    events[vbo].kind = VBLANK_OUT;
+    events[vbo].cycle = this->clock.interrupt.vblank_out_start;
+    events[vbo].kind = FRAME_END;
+    events[vbo].cycle = this->clock.cycles_per_frame;
+    this->clock.in_vblank = 1;
+    i32 current_event = -1;
+
+    while(this->clock.frame_cycle < this->clock.cycles_per_frame) {
+        current_event++;
+        u32 cycles_to_do = events[current_event].cycle - this->clock.frame_cycle;
+        SH4_run_cycles(&this->sh4, cycles_to_do);
+        this->clock.frame_cycle += cycles_to_do;
+        u32 out = 0;
+        switch(events[current_event].kind) {
+            case VBLANK_IN: // start vblank
+                holly_vblank_in(this);
+                break;
+            case VBLANK_OUT: // end vblank
+                holly_vblank_out(this);
+                break;
+            case FRAME_END:
+                out = 1;
+                break;
+        }
+        if (out) break;
+    }
+
     DC_copy_fb(this, this->holly.cur_output);
     this->holly.last_used_buffer = 0;
     this->holly.master_frame++;
@@ -229,8 +311,8 @@ void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
         this->RAM[offset+i] = ((u8 *)this->ROM.ptr)[i];
     }
 
-    //this->sh4.regs.PC = 0xAC010000;
-    this->sh4.regs.PC = 0xAC008300;
+    //this->sh4.regs.PC = 0xAC010000; // for like a demo
+    this->sh4.regs.PC = 0xAC008300; // for IP.BIN
     for (u32 i = 0; i < 15; i++) {
         this->sh4.regs.R[i] = 0;
         if (i < 8) this->sh4.regs.R_[i] = 0;

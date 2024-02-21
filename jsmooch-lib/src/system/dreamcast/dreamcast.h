@@ -12,6 +12,11 @@
 #include "component/cpu/sh4/sh4_interpreter.h"
 #include "dc_mem.h"
 
+#define DC_CYCLES_PER_SEC 200000000
+
+#define DC_INT_VBLANK_IN 0x08
+#define DC_INT_VBLANK_OUT 0x10
+
 enum DC_MEM_SIZE {
     DC8,
     DC16,
@@ -42,11 +47,32 @@ struct DC {
         u32 SB_ISTNRM;
         u32 SB_LMMODE0;
         u32 SB_LMMODE1;
+        u32 SB_IML2NRM;
+        u32 SB_IML4NRM;
+        u32 SB_IML6NRM;
     } io;
 
     struct {
         u32 ARMRST;
     } aica;
+
+    struct {
+        u32 frame_cycle;
+        u32 cycles_per_frame;
+        u32 cycles_per_line;
+        u32 in_vblank;
+
+        struct {
+            u32 vblank_in_start;
+            u32 vblank_in_end;
+            u32 vblank_out_start;
+            u32 vblank_out_end;
+
+            u32 vblank_in_yet;
+            u32 vblank_out_yet;
+
+        } interrupt;
+    } clock;
 
     struct {
         struct DC_FB_R_CTRL {
@@ -158,5 +184,7 @@ struct DC {
 
 
 void DC_mem_init(struct DC* this);
+void DC_raise_interrupt(struct DC* this, u32 imask);
+void DC_recalc_interrupts(struct DC* this);
 
 #endif //JSMOOCH_EMUS_DREAMCAST_H

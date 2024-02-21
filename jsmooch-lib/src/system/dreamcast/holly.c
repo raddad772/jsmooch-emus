@@ -21,7 +21,21 @@
 
 static void holly_soft_reset(struct DC* this)
 {
+    printf("\nHOLLY soft reset!");
+    fflush(stdout);
+}
 
+void DC_recalc_frame_timing(struct DC* this)
+{
+    // We need to know:
+    // which line to vblank in IRQ. cycle # in frame
+    // which line to vblank out IRQ. cycle # in frame
+    // how many cycles per line
+    // how many lines in frame
+    //this->clock.cycles_per_frame;
+    this->clock.cycles_per_line = this->clock.cycles_per_frame / this->holly.SPG_LOAD.vcount;
+    this->clock.interrupt.vblank_in_start = this->holly.SPG_VBLANK_INT.vblank_in_line * this->clock.cycles_per_line;
+    this->clock.interrupt.vblank_out_start = this->holly.SPG_VBLANK_INT.vblank_out_line * this->clock.cycles_per_line;
 }
 
 u32 holly_read(struct DC* this, u32 addr) {
@@ -101,6 +115,7 @@ void holly_write(struct DC* this, u32 addr, u32 val)
             this->holly.SPG_LOAD.hcount = val & 0x3FF;
             printf("\nHOLLY HCOUNT:%d VCOUNT:%d", this->holly.SPG_LOAD.hcount, this->holly.SPG_LOAD.vcount);
             fflush(stdout);
+            DC_recalc_frame_timing(this);
             return;
         case 0x005f80e0: // SPG_WIDTH
             this->holly.SPG_WIDTH = val;
@@ -167,6 +182,7 @@ void holly_write(struct DC* this, u32 addr, u32 val)
             this->holly.SPG_VBLANK_INT.vblank_out_line = (val >> 16) & 0x3FF;
             printf("\nVBLANK IN:%d OUT:%d", this->holly.SPG_VBLANK_INT.vblank_in_line, this->holly.SPG_VBLANK_INT.vblank_out_line);
             fflush(stdout);
+            DC_recalc_frame_timing(this);
             return;
         case 0x005F80B4: // FOG_COL_VERT
             this->holly.FOG_COL_VERT = val & 0xFFFFFF;
@@ -244,9 +260,34 @@ bit 0 = End of Render interrupt : Video
     fflush(stdout);
 }
 
+void holly_vblank_in(struct DC* this)
+{
+    this->clock.in_vblank = 1;
+    this->io.SB_ISTNRM |= 8;
+    DC_raise_interrupt(this, DC_INT_VBLANK_IN);
+}
+
+void holly_vblank_out(struct DC* this)
+{
+    this->clock.in_vblank = 0;
+    this->io.SB_ISTNRM |= 16;
+    DC_raise_interrupt(this, DC_INT_VBLANK_OUT);
+}
+/*
+Mmh no, it's configurable, look at the SB_ISTNRM and SB_IML2NRM/SB_IML4NRM/SB_IML6NRM... registers
+originaldave_ — Today at 9:22 PM
+oh, so when vblank in triggers
+I need to look at those registers to determine what's next?
+I hoped I was close to getting interrupts going lol
+just wrote a whole (very basic) frame scheduler
+Senryoku — Today at 9:23 PM
+I'm not too sure about my implementation, but interrupts from SB_ISTNRM/SB_ISTEXT/SB_ISTERR will generate SH4 IRL9/11/13 interrupts depending on the register config
+ */
+
 void holly_reset(struct DC* this)
 {
     this->holly.VO_BORDER_COL = 0x005F8040;
     this->holly.SPG_VBLANK_INT.vblank_out_line = 0x150;
     this->holly.SPG_VBLANK_INT.vblank_in_line = 0x104;
+    this->holly.SPG_LOAD.vcount = 400; // TODO: not correct but necessary to avoid divide by 0 in simple scheduler
 }

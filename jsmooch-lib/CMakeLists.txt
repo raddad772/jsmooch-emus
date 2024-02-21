@@ -117,6 +117,8 @@ add_library(jsmooch-lib
         src/system/dreamcast/holly_sw.h
         src/system/dreamcast/holly.c
         src/system/dreamcast/holly.h
+        src/system/dreamcast/gdi.c
+        src/system/dreamcast/gdi.h
 )
 
 include_directories(src/)

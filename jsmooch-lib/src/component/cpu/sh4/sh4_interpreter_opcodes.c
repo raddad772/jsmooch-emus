@@ -53,6 +53,31 @@
 #define DELAY_SLOT(x) { PCinc; SH4_fetch_and_exec(this); }
 
 
+/*
+ Source: The interrupt mask bit setting in SR is smaller than the IRL (3ñ0) level, and the BL bit
+in SR is 0 (accepted at instruction boundary).
+• Transition address: VBR + H'0000 0600
+• Transition operations:
+The PC contents immediately after the instruction at which the interrupt is accepted are set in
+SPC. The SR and R15 contents at the time of acceptance are set in SSR and SGR.
+The code corresponding to the IRL (3ñ0) level is set in INTEVT. See table 19.5, Interrupt
+Exception Handling Sources and Priority Order, for the corresponding codes. The BL, MD,
+and RB bits are set to 1 in SR, and a branch is made to VBR + H'0600. The acceptance level is
+not set in the interrupt mask bits in SR. When the BL bit in SR is 1, the interrupt is masked.
+For details, see Interrupt Controller in the hardware manual.
+ */
+// Interrupt!
+void SH4_interrupt_IRL(struct SH4* this, u32 level) {
+    this->regs.SPC = this->regs.PC;
+    this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
+    this->regs.SGR = this->regs.R[15];
+    //u32 INTEVT = 0x00000200 ^ 0x000003C0;  TODO
+    this->regs.SR.MD = 1;
+    this->regs.SR.RB = 1;
+    this->regs.SR.BL = 1;
+    this->regs.PC = this->regs.VBR + 0x00000600;
+}
+
 SH4ins(EMPTY) {
     printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, this->trace_cycles);
     fflush(stdout);
@@ -922,6 +947,17 @@ SH4ins(OCBWB) { // Write back operand cache block
 }
 
 SH4ins(PREF) { // (Rn) -> operand cache
+    u32 addr = RN & 0xFFFFFFE0;
+    // Flush store queue to RAM!
+    if ((addr >= 0xE0000000) && (addr <= 0xE3FFFFFF)) {
+        u32 sq = (addr >> 5) & 1;
+        //const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
+        u32 naddr = addr & 0x03FFFFE0 | (((sq ? this->regs.QACR1 : this->regs.QACR0) & 0b11100) << 24);
+        for (u32 i = 0; i < 8; i++) {
+            WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
+            naddr += 4;
+        }
+    }
     //read in (RN & 0xFFFFFFE0) to operand cache
     //BADOPCODE; // Crash on unimplemented opcode
     PCinc;

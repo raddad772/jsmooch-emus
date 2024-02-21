@@ -8,11 +8,15 @@
 #include "sh4_interpreter_opcodes.h"
 #include "fsca.h"
 
-#define NMI_VEC VBR + 0x0600
-
 // Endianness is little.
 
-//#define SH4_BRK 0xAC010026
+#define SH4_BRK 0x8c00837A
+#define TRACE_ON_BRK
+
+void SH4_set_interrupt(struct SH4* this, u32 level)
+{
+    this->interrupt_level = level;
+}
 
 static void set_user_mode(struct SH4* this)
 {
@@ -108,6 +112,9 @@ void SH4_fetch_and_exec(struct SH4* this)
 #ifdef SH4_BRK
     if (this->regs.PC == SH4_BRK) {
         dbg_break();
+#ifdef TRACE_ON_BRK
+        dbg_enable_trace();
+#endif
     }
 #endif // SH4_BRK
     this->trace_cycles++;
@@ -124,10 +131,14 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
     // fetch
     this->cycles = (i32)howmany;
     while(this->cycles > 0) {
+        SH4_fetch_and_exec(this);
+        if ((this->interrupt_level > 0) && (this->regs.SR.BL == 0) && (this->interrupt_level >= this->regs.SR.IMASK)) {
+            printf("\nRAISING INTERRUPT ON CYCLE %llu", this->trace_cycles);
+            SH4_interrupt_IRL(this, this->interrupt_level);
+        }
 #ifdef SH4_DBG_SUPPORT
         if (dbg.do_break) break;
 #endif
-        SH4_fetch_and_exec(this);
     }
     this->cycles = 0;
 }
@@ -147,6 +158,7 @@ void SH4_init(struct SH4* this)
     this->write8 = NULL;
     this->write16 = NULL;
     this->write32 = NULL;
+    this->interrupt_level = 0;
 }
 
 static void swap_register_banks(struct SH4* this)
