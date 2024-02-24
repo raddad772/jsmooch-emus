@@ -194,7 +194,11 @@ u32 DCread32(void *ptr, u32 addr) {
     switch(addr) {
         case 0x005F6900: // Interrupt status register SB_ISTNRM
             // Clear anything that a 1 is written to in bits 21 to 0
-            return this->io.SB_ISTNRM;
+#ifdef LYCODER
+            return 8; // stub for IP.BIN to bypass vblank wait
+#else
+        return this->io.SB_ISTNRM;
+#endif
         case 0x00702c00: // AICA ARMRST
             return this->aica.ARMRST;
     }
@@ -212,7 +216,7 @@ u32 DCread32(void *ptr, u32 addr) {
         fflush(stdout);
         return 0;
     }
-    dbg_printf("\nRd32 A:%08X V:%08x", (u32) addr, (u32) ret);
+    //dbg_printf("\nRd32 A:%08X V:%08x", (u32) addr, (u32) ret);
     return ret;
 }
 

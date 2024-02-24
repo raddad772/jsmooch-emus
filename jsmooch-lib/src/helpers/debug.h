@@ -5,6 +5,13 @@
 #ifndef JSMOOCH_EMUS_DEBUG_H
 #define JSMOOCH_EMUS_DEBUG_H
 
+//#define SH4_BRK 0x8c009090
+#define TRACE_ON_BRK
+//#define DBG_LOG_TO_FILE
+//#define LYCODER
+//#define DC_MEM_W_BRK 0x8cf70ff4
+
+
 #include "helpers/int.h"
 #include "helpers/jsm_string.h"
 

@@ -199,13 +199,22 @@ int main(int argc, char** argv)
     //dbg_disable_trace();
     //dbg_enable_trace();
     //u32 a = SDL_GetTicks();
-    //sys->step_master(sys, 20000000);
+    //sys->step_master(sys, 2400);
+    //dbg_flush();
+    //return;
     //dbg_flush();
     //fflush(stdout);
 
-    /*dbg_enable_trace();
-    sys->step_master(sys, 200);
-    dbg_flush();*/
+    //return;
+    //dbg_enable_trace();
+    dbg_enable_trace();
+    sys->step_master(sys, 5500000);
+    sys->stop(sys);
+    dbg_flush();
+    jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
+    SDL_UpdateWindowSurface(window);
+    SDL_Delay(20000);
+    return;
     //return;
 
     //u32 b = SDL_GetTicks();
@@ -238,8 +247,6 @@ int main(int argc, char** argv)
         if (dbg.do_break) {
             if (did_break == 0) {
                 dbg_enable_trace();
-                dbg.do_break = 0;
-                sys->step_master(sys, 150);
                 dbg.do_break = 0;
                 sys->step_master(sys, 150);
                 dbg_flush();

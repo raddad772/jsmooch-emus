@@ -147,8 +147,9 @@ void DC_copy_fb(struct DC* this, u32* where) {
 
     u32* out = where;
     u8* rgb;
-    for (u32 y = 0; y < 480; y++) {
-        for (u32 x = 0; x < 640; x++) {
+    for (u32 y = 0; y <= this->holly.FB_R_SIZE.fb_y_size; y++) {
+        out = (where + (y * 640));
+        for (u32 x = 0; x <= this->holly.FB_R_SIZE.fb_x_size; x++) {
             rgb = (u8*) ptr;
             u32 r = rgb[0];
             u32 g = rgb[1];
@@ -175,7 +176,10 @@ void DCJ_pause(JSM)
 
 void DCJ_stop(JSM)
 {
-
+    JTHIS;
+    DC_copy_fb(this, this->holly.cur_output);
+    this->holly.last_used_buffer = 0;
+    this->holly.master_frame++;
 }
 
 void DCJ_get_framevars(JSM, struct framevars* out)

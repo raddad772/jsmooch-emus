@@ -58,6 +58,10 @@ void dbg_printf(char *format, ...)
             dbg.msg_last_newline = this->cur;
         this->cur++;
     }
+    if ((this->len - (this->cur - this->ptr)) < 1000) {
+        dbg_flush();
+    }
+
 }
 
 void dbg_seek_in_line(u32 pos)
@@ -80,6 +84,12 @@ void dbg_flush()
     if (!dbg.trace_on) return;
     printf("%s", dbg.msg.ptr);
     fflush(stdout);
+#ifdef DBG_LOG_TO_FILE
+    FILE *w = fopen("c:\\dev\\sh4.log", "a");
+    fprintf(w, "%s", dbg.msg.ptr);
+    fflush(w);
+    fclose(w);
+#endif
     dbg_clear_msg();
 }
 

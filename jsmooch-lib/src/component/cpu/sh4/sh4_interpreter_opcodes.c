@@ -50,7 +50,7 @@
 
 #define SH4ins(x) void SH4_##x(SH4args)
 
-#define DELAY_SLOT(x) { PCinc; SH4_fetch_and_exec(this); }
+#define DELAY_SLOT { PCinc; SH4_fetch_and_exec(this); }
 
 
 /*
@@ -742,7 +742,7 @@ SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
 
 SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
     u32 val = rPC + 4 + ((2 * SIGNe8to32(DISP)) * (this->regs.SR.T ^ 1));
-    DELAY_SLOT(rPC+2);
+    DELAY_SLOT;
     rPC = val; // DISP*2 * !this->regs.SR.T
 }
 
@@ -752,19 +752,19 @@ SH4ins(BT) { // If T = 1: disp*2 + rPC + 4 -> rPC, Else: nop
 
 SH4ins(BTS) { // If T = 1: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
     u32 val = rPC + 4 + ((2 * SIGNe8to32(DISP)) * this->regs.SR.T);
-    DELAY_SLOT(rPC+2);
+    DELAY_SLOT;
     rPC = val; // DISP*2 * !this->regs.SR.T
 }
 
 SH4ins(BRA) { // disp*2 + PC + 4 -> PC, (Delayed branch)
     u32 val = rPC + 4 + (2 * SIGNe12to32(DISP));
-    DELAY_SLOT(rPC+2);
+    DELAY_SLOT;
     rPC = val; // DISP*2 * !this->regs.SR.T
 }
 
 SH4ins(BRAF) { // Rm + PC + 4 -> PC, (Delayed branch)
     u32 val = rPC + 4 + RM;
-    DELAY_SLOT(rPC + 2);
+    DELAY_SLOT;
     rPC = val;
 }
 
@@ -772,7 +772,7 @@ SH4ins(BSR) { // PC + 4 -> PR, disp*2 + PC + 4 -> PC, (Delayed branch)
     u32 val = SIGNe12to32(DISP) * 2;
     this->regs.PR = rPC + 4;
     val = rPC + 4 + val;
-    DELAY_SLOT(rPC + 2);
+    DELAY_SLOT;
     rPC = val;
 }
 
@@ -783,20 +783,20 @@ SH4ins(BSRF) { // PC + 4 -> PR, Rm + PC + 4 -> PC, (Delayed branch)
 
 SH4ins(JMP) { // Rm -> PC, (Delayed branch)
     u32 val = RM;
-    DELAY_SLOT(rPC + 2)
+    DELAY_SLOT
     rPC = val;
 }
 
 SH4ins(JSR) { // PC + 4 -> PR, Rm -> PC, (Delayed branch)
     this->regs.PR = rPC + 4;
     u32 val = RM;
-    DELAY_SLOT(rPC + 2)
+    DELAY_SLOT
     rPC = val;
 }
 
 SH4ins(RTS) { // PR -> PC, Delayed branch
     u32 val = this->regs.PR;
-    DELAY_SLOT(this->regs.PC+2)
+    DELAY_SLOT
     rPC = val;
 }
 

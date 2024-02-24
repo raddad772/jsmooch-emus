@@ -10,8 +10,7 @@
 
 // Endianness is little.
 
-#define SH4_BRK 0x8c00837A
-#define TRACE_ON_BRK
+
 
 void SH4_set_interrupt(struct SH4* this, u32 level)
 {
@@ -105,6 +104,18 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins)
     this->pp_last_n = last_n;
 }
 
+void lycoder_print(struct SH4* this, u32 opcode)
+{
+    dbg_printf("\n%08x %04x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x",
+               this->regs.PC, opcode,
+               this->regs.R[0], this->regs.R[1], this->regs.R[2],
+               this->regs.R[3], this->regs.R[4], this->regs.R[5],
+               this->regs.R[6], this->regs.R[7], this->regs.R[8],
+               this->regs.R[9], this->regs.R[10], this->regs.R[11],
+               this->regs.R[12], this->regs.R[13], this->regs.R[14],
+               this->regs.R[15]);
+}
+
 void SH4_fetch_and_exec(struct SH4* this)
 {
     u32 opcode = this->read16(this->mptr, this->regs.PC);
@@ -121,8 +132,12 @@ void SH4_fetch_and_exec(struct SH4* this)
 #endif
     this->cycles--;
     struct SH4_ins_t *ins = &SH4_decoded[opcode];
+#ifdef LYCODER
+    lycoder_print(this, opcode);
+#else
     dbg_printf("\ncyc:%04d addr:%08x opcode:%04x %s   ", this->trace_cycles, this->regs.PC, opcode, SH4_disassembled[opcode]);
     SH4_pprint(this, ins);
+#endif
 
     ins->exec(this, ins);
 }
@@ -149,7 +164,7 @@ void SH4_init(struct SH4* this)
     this->trace_cycles = 0;
     SH4_reset(this);
     generate_fsca_table();
-    //printf("\nINS! %s\n", SH4_disassembled[0x6863]);
+    printf("\nINS! %s\n", SH4_disassembled[0x6122]);
 
     this->mptr = NULL;
     this->read8 = NULL;
@@ -207,6 +222,7 @@ undefined
      */
     this->regs.VBR = 0;
     this->regs.PC = 0xA0000000;
+    this->regs.GBR = 0x8c000000;
     SH4_regs_FPSCR_set(&this->regs, 0x00040001);
     SH4_SR_set(this, (SH4_regs_SR_get(&this->regs.SR) &  0b11110011) | 0b01110000000000000000000011110000);
 }

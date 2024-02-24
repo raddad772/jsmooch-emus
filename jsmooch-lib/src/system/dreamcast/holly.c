@@ -113,7 +113,7 @@ void holly_write(struct DC* this, u32 addr, u32 val)
         case 0x005f80d8: // SPG_LOAD
             this->holly.SPG_LOAD.vcount = (val >> 16) & 0x3FF;
             this->holly.SPG_LOAD.hcount = val & 0x3FF;
-            printf("\nHOLLY HCOUNT:%d VCOUNT:%d", this->holly.SPG_LOAD.hcount, this->holly.SPG_LOAD.vcount);
+            printf("\nSPG HCOUNT:%d VCOUNT:%d", this->holly.SPG_LOAD.hcount, this->holly.SPG_LOAD.vcount);
             fflush(stdout);
             DC_recalc_frame_timing(this);
             return;
@@ -193,30 +193,6 @@ void holly_write(struct DC* this, u32 addr, u32 val)
         case 0x005F8040: // V0 border color VO_BORDER_COL. default  = 0x005F8040
             this->holly.VO_BORDER_COL = val;
             return;
-            /*bit 21 = End of Transferring interrupt : Punch Through List (*only for HOLLY2)
-bit 20 = End of DMA interrupt : Sort-DMA (Transferring for alpha sorting)
-bit 19 = End of DMA interrupt : ch2-DMA
-bit 18 = End of DMA interrupt : Dev-DMA(Development tool DMA)
-bit 17 = End of DMA interrupt : Ext-DMA2(External 2)
-bit 16 = End of DMA interrupt : Ext-DMA1(External 1)
-bit 15 = End of DMA interrupt : AICA-DMA
-bit 14 = End of DMA interrupt : GD-DMA
-bit 13 = Maple V blank over interrupt
-bit 12 = End of DMA interrupt : Maple-DMA
-bit 11 = End of DMA interrupt : PVR-DMA
-bit 10 = End of Transferring interrupt : Translucent Modifier Volume List
-bit 9 = End of Transferring interrupt : Translucent List
-bit 8 = End of Transferring interrupt : Opaque Modifier Volume List
-bit 7 = End of Transferring interrupt : Opaque List
-bit 6 = End of Transferring interrupt : YUV
-bit 5 = H Blank-in interrupt
-bit 4 = V Blank-out interrupt
-bit 3 = V Blank-in interrupt
-bit 2 = End of Render interrupt : TSP
-bit 1 = End of Render interrupt : ISP
-bit 0 = End of Render interrupt : Video
-             */
-            return;
         case HOLLY_FB_R_CTRL:
             this->holly.FB_R_CTRL.vclk_div = (val >> 23) & 1;
             this->holly.FB_R_CTRL.fb_strip_buf_en = (val >> 22) & 1;
@@ -241,7 +217,7 @@ bit 0 = End of Render interrupt : Video
             return;
         case HOLLY_FB_R_SOF1:
             this->holly.FB_R_SOF1 = val & 0x00FFFFFC;
-            printf("\nRSOF1 new val %08x", val & 0x00FFFFFC);
+            printf("\nRSOF1 new val %08x cycle %llu", val & 0x00FFFFFC, this->sh4.trace_cycles);
             fflush(stdout);
             return;
         case HOLLY_FB_R_SOF2:

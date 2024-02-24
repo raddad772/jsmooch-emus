@@ -44,6 +44,30 @@ struct DC {
         u32 PDTRA;
         u32 TOCR;
         u32 TSTR;
+            /* interrupt bits for SB_ISTNRM...
+bit 21 = End of Transferring interrupt : Punch Through List (*only for HOLLY2)
+bit 20 = End of DMA interrupt : Sort-DMA (Transferring for alpha sorting)
+bit 19 = End of DMA interrupt : ch2-DMA
+bit 18 = End of DMA interrupt : Dev-DMA(Development tool DMA)
+bit 17 = End of DMA interrupt : Ext-DMA2(External 2)
+bit 16 = End of DMA interrupt : Ext-DMA1(External 1)
+bit 15 = End of DMA interrupt : AICA-DMA
+bit 14 = End of DMA interrupt : GD-DMA
+bit 13 = Maple V blank over interrupt
+bit 12 = End of DMA interrupt : Maple-DMA
+bit 11 = End of DMA interrupt : PVR-DMA
+bit 10 = End of Transferring interrupt : Translucent Modifier Volume List
+bit 9 = End of Transferring interrupt : Translucent List
+bit 8 = End of Transferring interrupt : Opaque Modifier Volume List
+bit 7 = End of Transferring interrupt : Opaque List
+bit 6 = End of Transferring interrupt : YUV
+bit 5 = H Blank-in interrupt
+bit 4 = V Blank-out interrupt
+bit 3 = V Blank-in interrupt
+bit 2 = End of Render interrupt : TSP
+bit 1 = End of Render interrupt : ISP
+bit 0 = End of Render interrupt : Video
+             */
         u32 SB_ISTNRM;
         u32 SB_LMMODE0;
         u32 SB_LMMODE1;
