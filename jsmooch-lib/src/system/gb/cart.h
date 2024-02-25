@@ -9,7 +9,7 @@ struct GB_cart {
 	struct GB_bus* bus;
 
 	u8* ROM;
-	size_t ROM_size;
+	u64 ROM_size;
 
 	struct GB_mapper* mapper;
 	struct {
@@ -34,7 +34,7 @@ struct GB_cart {
 
 void GB_cart_init(struct GB_cart* cart, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
 void GB_cart_delete(struct GB_cart* this);
-void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, size_t size);
+void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, u64 size);
 
 
 #endif

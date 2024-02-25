@@ -6,7 +6,7 @@
 // Created by Dave on 2/6/2024.
 //
 
-#include "malloc.h"
+#include "stdlib.h"
 #include "stdio.h"
 
 #include "vrc_2b_4e_4f.h"

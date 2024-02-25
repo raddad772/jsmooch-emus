@@ -4,7 +4,7 @@
 
 
 #include "stdio.h"
-#include "mem.h"
+#include "string.h"
 
 #include "sms_gg_mapper_sega.h"
 #include "sms_gg.h"
@@ -78,7 +78,7 @@ u32 SMSGG_mapper_sega_ram_read(struct SMSGG_mapper_sega* this, u32 addr, u32 val
     return this->RAM[addr & 0x1FFF];
 }
 
-u32 SMSGG_mapper_sega_cart_read(struct SMSGG_mapper_sega* this, u32 addr, u32 val)
+u32 SMSGG_mapper_sega_cart_read(struct SMSGG_mapper_sega* this,u32 addr, u32 val)
 {
     // DBG VER
     i32 r = -1;

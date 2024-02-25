@@ -393,8 +393,8 @@ void oam_evaluate_slow(THIS) {
                 break;
             case 4: // Fetch tiles for the shifters 261
                 break;
-            case 5:
-                ;u32 tn = this->sprite_pattern_shifters[this->secondary_OAM_sprite_index];
+            case 5: {
+                u32 tn = this->sprite_pattern_shifters[this->secondary_OAM_sprite_index];
                 u32 sy = this->sprite_y_lines[this->secondary_OAM_sprite_index];
                 u32 table = this->io.sprite_pattern_table;
                 u32 attr = this->sprite_attribute_latches[this->secondary_OAM_sprite_index];
@@ -408,8 +408,10 @@ void oam_evaluate_slow(THIS) {
                     sy -= 8;
                     tn += 1;
                 }
-                this->sprite_pattern_shifters[this->secondary_OAM_sprite_index] = fetch_chr_line(this, table, tn, sy, 1);
+                this->sprite_pattern_shifters[this->secondary_OAM_sprite_index] = fetch_chr_line(this, table, tn, sy,
+                                                                                                 1);
                 break;
+            }
             case 6: // 263
                 break;
             case 7:

@@ -47,6 +47,6 @@ struct NES_cart {
 
 void NES_cart_init(struct NES_cart* this, struct NES* nes);
 void NES_cart_delete(struct NES_cart* this);
-u32 NES_cart_load_ROM_from_RAM(struct NES_cart* this, char* fil, size_t fil_sz);
+u32 NES_cart_load_ROM_from_RAM(struct NES_cart* this, char* fil, u64 fil_sz);
 
 #endif //JSMOOCH_EMUS_NES_CART_H

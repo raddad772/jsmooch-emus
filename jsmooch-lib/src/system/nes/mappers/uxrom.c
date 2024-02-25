@@ -2,7 +2,7 @@
 // Created by Dave on 2/7/2024.
 //
 
-#include "malloc.h"
+#include "stdlib.h"
 #include "stdio.h"
 
 #include "uxrom.h"

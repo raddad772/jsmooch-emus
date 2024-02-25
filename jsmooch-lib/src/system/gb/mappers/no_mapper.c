@@ -1,8 +1,8 @@
 #include <string.h>
-#include <malloc.h>
+#include "stdlib.h"
 
-#include "system\gb\mappers\mapper.h"
-#include "system\gb\mappers\no_mapper.h"
+#include "system/gb/mappers/mapper.h"
+#include "system/gb/mappers/no_mapper.h"
 #include "../gb_clock.h"
 #include "../gb_bus.h"
 #include "../cart.h"

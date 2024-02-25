@@ -4,7 +4,7 @@
 
 #include "sm83-tests.h"
 #include "stdio.h"
-#include "malloc.h"
+#include "stdlib.h"
 #include "assert.h"
 #include "string.h"
 

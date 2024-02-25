@@ -1,7 +1,7 @@
 //
 // Created by Dave on 2/4/2024.
 //
-#include <malloc.h>
+#include "stdlib.h"
 #include <stdio.h>
 #include "helpers/sys_interface.h"
 

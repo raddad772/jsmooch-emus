@@ -1,4 +1,4 @@
-#include <malloc.h>
+#include "stdlib.h"
 #include <stdio.h>
 #include "helpers/sys_interface.h"
 #include "gb.h"

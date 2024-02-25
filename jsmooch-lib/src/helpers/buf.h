@@ -9,11 +9,11 @@
 
 struct buf {
     void *ptr;
-    size_t size;
+    u64 size;
 };
 
 void buf_init(struct buf* this);
-void buf_allocate(struct buf* this, size_t size);
+void buf_allocate(struct buf* this, u64 size);
 void buf_delete(struct buf* this);
 void buf_copy(struct buf* dst, struct buf* src);
 

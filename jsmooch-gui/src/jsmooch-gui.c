@@ -1,6 +1,8 @@
 #include <stdio.h>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <stdlib.h>
+#include <pwd.h>
+#include <unistd.h>
 #include "helpers/sys_interface.h"
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
@@ -8,7 +10,7 @@
 #include "system/dreamcast/gdi.h"
 
 struct read_file_buf {
-    size_t sz;
+    u64 sz;
     void *buf;
 };
 
@@ -23,6 +25,7 @@ int open_and_read(char *fname, struct read_file_buf *rfb)
     fread(rfb->buf, sizeof(char), rfb->sz, fil);
 
     fclose(fil);
+    return 0;
 }
 
 void rfb_cleanup(struct read_file_buf *rfb)
@@ -79,17 +82,114 @@ void test_gdi() {
     GDI_delete(&foo);
 }
 
+u32 grab_BIOS(struct read_file_buf* BIOS, enum jsm_systems which)
+{
+    char BIOS_PATH[500];
+    const char *homeDir = getenv("HOME");
+
+    if (!homeDir) {
+        struct passwd* pwd = getpwuid(getuid());
+        if (pwd)
+            homeDir = pwd->pw_dir;
+    }
+
+    char *bp = BIOS_PATH;
+    bp += sprintf(bp, "%s", homeDir);
+    bp += sprintf(bp, "/Documents/emu/bios/");
+
+    u32 has_bios = 0;
+    switch(which) {
+        case SYS_SMS1:
+        case SYS_SMS2:
+            has_bios = 1;
+            bp += sprintf(bp, "master_system/bios13fx.sms");
+            open_and_read(BIOS_PATH, BIOS);
+            break;
+        case SYS_DREAMCAST:
+            has_bios = 1;
+            bp += sprintf(bp, "dreamcast/dc_boot.bin");
+            open_and_read(BIOS_PATH, BIOS);
+            break;
+        case SYS_DMG:
+            has_bios = 1;
+            bp += sprintf(bp, "gameboy/gb_bios.bin");
+            open_and_read(BIOS_PATH, BIOS);
+            break;
+        case SYS_GBC:
+            has_bios = 1;
+            bp += sprintf(bp, "gameboy/gbc_bios.bin");
+            open_and_read(BIOS_PATH, BIOS);
+            break;
+        case SYS_PSX:
+        case SYS_ZX_SPECTRUM:
+        case SYS_GENESIS:
+        case SYS_SNES:
+        case SYS_NES:
+        case SYS_BBC_MICRO:
+        case SYS_GG:
+            has_bios = 0;
+            break;
+    }
+    return has_bios;
+}
+
+u32 grab_ROM(struct read_file_buf* ROM, enum jsm_systems which, const char* fname)
+{
+    char ROM_PATH[500];
+    u32 worked = 0;
+
+    const char *homeDir = getenv("HOME");
+
+    if (!homeDir) {
+        struct passwd* pwd = getpwuid(getuid());
+        if (pwd)
+            homeDir = pwd->pw_dir;
+    }
+
+    char *rp = ROM_PATH;
+    rp += sprintf(rp, "%s/Documents/emu/rom/", homeDir);
+
+    u32 has_bios = 0;
+    switch(which) {
+        case SYS_SMS1:
+        case SYS_SMS2:
+            rp += sprintf(rp, "master_system/");
+            worked = 1;
+            break;
+        case SYS_DREAMCAST:
+            rp += sprintf(rp, "dreamcast/");
+            worked = 1;
+            break;
+        case SYS_DMG:
+        case SYS_GBC:
+            rp += sprintf(rp, "gameboy/");
+            worked = 1;
+            break;
+        case SYS_NES:
+            rp += sprintf(rp, "nes/");
+            worked = 1;
+            break;
+        case SYS_PSX:
+        case SYS_ZX_SPECTRUM:
+        case SYS_GENESIS:
+        case SYS_SNES:
+        case SYS_BBC_MICRO:
+        case SYS_GG:
+            worked = 0;
+            break;
+    }
+    if (!worked) return 0;
+    rp += sprintf(rp, "%s", fname);
+    open_and_read(ROM_PATH, ROM);
+    return ROM->sz > 0;
+}
+
 int main(int argc, char** argv)
 {
     char RFILE[500];
-    //char tn[60] = "boot_div-A.gb";
-    //sprintf(RFILE, "c:\\dev\\mooneye-tests\\misc\\%s", tn);
-    //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\test\\statcount-auto.gb");
-    //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\tetris.gb");
+    enum jsm_systems which = SYS_DREAMCAST;
 
-    //SDL_Log("Attempting to init SDL");
-    //test_gdi();
-    //return;
+    struct read_file_buf BIOS;
 
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -111,7 +211,6 @@ int main(int argc, char** argv)
 
     // Create our emulator
     struct JSM_IOmap iom;
-    enum jsm_systems which = SYS_DREAMCAST;
 
     u16 *output_buffers[2];
     u32 inputs[50];
@@ -122,6 +221,7 @@ int main(int argc, char** argv)
         case SYS_SMS1:
         case SYS_SMS2:
         case SYS_GG:
+        case SYS_NES:
             output_buffers[0] = malloc(256*240*2);
             output_buffers[1] = malloc(256*240*2);
             break;
@@ -136,50 +236,20 @@ int main(int argc, char** argv)
     struct jsm_system* sys = new_system(which, &iom);
     //SDL_Log("\n2");
 
-    struct read_file_buf BIOS;
-    u32 has_bios = 0;
-    switch(which) {
-        case SYS_SMS1:
-        case SYS_SMS2:
-            has_bios = 1;
-            open_and_read("sms_bios.sms", &BIOS);
-            break;
-        case SYS_DREAMCAST:
-            has_bios = 1;
-            open_and_read("dc_boot.bin", &BIOS);
-            break;
-        case SYS_DMG:
-            has_bios = 1;
-            open_and_read("gb_bios.bin", &BIOS);
-            break;
-        case SYS_GBC:
-            has_bios = 1;
-            open_and_read("gbc_bios.bin", &BIOS);
-            break;
-        case SYS_PSX:
-        case SYS_ZX_SPECTRUM:
-        case SYS_GENESIS:
-        case SYS_SNES:
-        case SYS_NES:
-        case SYS_BBC_MICRO:
-        case SYS_GG:
-            has_bios = 0;
-            break;
-    }
-    //open_and_read("gbc_bios.bin", &BIOS);
-    // Next troubleshoot if IRQs are happening
-    // and results of reads from IO are properly handled
 
     //SDL_Log("\n3");
+    u32 has_bios = grab_BIOS(&BIOS, which);
     if (has_bios) {
         sys->load_BIOS(sys, BIOS.buf, BIOS.sz);
         rfb_cleanup(&BIOS);
     }
 
     struct read_file_buf ROM;
-    //sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\256b.bin");
-    sprintf(RFILE, "C:\\dev\\personal\\jsmooch-emus\\cmake-build-debug\\jsmooch-gui\\IP.BIN");
-    open_and_read(RFILE, &ROM);
+    u32 worked = grab_ROM(&ROM, which, "IP.BIN");
+    if (!worked) {
+        printf("\nCouldn't open ROM!");
+        return -1;
+    }
     sys->load_ROM(sys, "", ROM.buf, ROM.sz);
     rfb_cleanup(&ROM);
 
@@ -196,25 +266,14 @@ int main(int argc, char** argv)
     //SDL_Log("\n4");
 
 
-    //dbg_disable_trace();
     //dbg_enable_trace();
-    //u32 a = SDL_GetTicks();
-    //sys->step_master(sys, 2400);
-    //dbg_flush();
-    //return;
-    //dbg_flush();
-    //fflush(stdout);
-
-    //return;
-    //dbg_enable_trace();
-    dbg_enable_trace();
-    sys->step_master(sys, 5500000);
+    /*sys->step_master(sys, 5500000);
     sys->stop(sys);
     dbg_flush();
     jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
     SDL_UpdateWindowSurface(window);
     SDL_Delay(20000);
-    return;
+    return 0;*/
     //return;
 
     //u32 b = SDL_GetTicks();
@@ -259,7 +318,7 @@ int main(int argc, char** argv)
         SDL_UpdateWindowSurface(window);
         float end = SDL_GetTicks();
         float ticks_taken = end - start;
-        //printf("\n%f", ticks_taken);
+        printf("\n%f", ticks_taken);
         float tick_target = 16.7f;
         if (ticks_taken < tick_target)
             SDL_Delay(tick_target - ticks_taken);

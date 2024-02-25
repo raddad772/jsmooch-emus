@@ -3,13 +3,15 @@
 //
 
 #include "stdio.h"
-#include "malloc.h"
+#include "stdlib.h"
 #include "string.h"
 
 #include "helpers/sys_interface.h"
 #include "dreamcast.h"
 #include "dc_mem.h"
 #include "holly.h"
+
+#define IP_BIN
 
 #define JTHIS struct DC* this = (struct DC*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -308,7 +310,6 @@ void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
     buf_allocate(&this->ROM, bufsize);
     memcpy(this->ROM.ptr, buf, bufsize);
 
-    //u32 offset = 0x100000;
     u32 offset = 0x8000;
 
     for (u32 i = 0; i < bufsize; i++) {

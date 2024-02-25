@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <malloc.h>
+#include "stdlib.h"
 #include <string.h>
 #include "gb_bus.h"
 #include "gb_clock.h"

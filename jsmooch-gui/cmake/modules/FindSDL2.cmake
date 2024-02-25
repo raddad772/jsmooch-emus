@@ -76,8 +76,10 @@ SET(SDL2_SEARCH_PATHS
 	/opt/local # DarwinPorts
 	/opt/csw # Blastwave
 	/opt
+	/opt/homebrew/opt/sdl2 #Homebrew
 	${SDL2_PATH}
 )
+Message(STATUS "HEYHEYHEY")
 
 FIND_PATH(SDL2_INCLUDE_DIR SDL.h
 	HINTS
@@ -100,12 +102,15 @@ FIND_LIBRARY(SDL2_LIBRARY_TEMP
 	PATHS ${SDL2_SEARCH_PATHS}
 )
 
+set(YORHO "HAY2")
+
 IF(NOT SDL2_BUILDING_LIBRARY)
 	IF(NOT ${SDL2_INCLUDE_DIR} MATCHES ".framework")
 		# Non-OS X framework versions expect you to also dynamically link to
 		# SDL2main. This is mainly for Windows and OS X. Other (Unix) platforms
 		# seem to provide SDL2main for compatibility even though they don't
 		# necessarily need it.
+		set(YORHO "HAY")
 		FIND_LIBRARY(SDL2MAIN_LIBRARY
 			NAMES SDL2main
 			HINTS
@@ -163,7 +168,7 @@ IF(SDL2_LIBRARY_TEMP)
 	# Set the final string here so the GUI reflects the final state.
 	SET(SDL2_LIBRARY ${SDL2_LIBRARY_TEMP} CACHE STRING "Where the SDL2 Library can be found")
 	# Set the temp variable to INTERNAL so it is not seen in the CMake GUI
-	SET(SDL2_LIBRARY_TEMP "${SDL2_LIBRARY_TEMP}" CACHE INTERNAL "")
+	#SET(SDL2_LIBRARY_TEMP "${SDL2_LIBRARY_TEMP}" CACHE INTERNAL "")
 ENDIF(SDL2_LIBRARY_TEMP)
 
 # message("</FindSDL2.cmake>")

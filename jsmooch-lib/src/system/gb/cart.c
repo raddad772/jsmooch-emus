@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
-#include <malloc.h>
+#include "stdlib.h"
 #include "helpers/int.h"
 #include "cart.h"
 #include "system/gb/gb_clock.h"
@@ -65,7 +65,7 @@ void GB_cart_delete(struct GB_cart* this) {
 #define MIN(x,y) (((x) <= (y)) ? (x) : (y));
 #endif
 
-void GBC_read_ROM(struct GB_cart* this, u8 *inp, size_t size)
+void GBC_read_ROM(struct GB_cart* this, u8 *inp, u64 size)
 {
     u32 k = MIN((u32)this->header.ROM_size, (u32)size);
     this->header.ROM_size = k;
@@ -85,7 +85,7 @@ void GBC_setup_mapper(struct GB_cart* this)
     this->mapper->set_cart(this->mapper, this);
 }
 
-void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, size_t size)
+void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, u64 size)
 {
     u8* inp = (u8*)ibuf;
     if ((inp[0x104] != 0xCE) || (inp[0x105] != 0xED)) {

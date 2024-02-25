@@ -3,7 +3,7 @@
 //
 
 #include "string.h"
-#include "malloc.h"
+#include "stdlib.h"
 
 #include "buf.h"
 
@@ -13,7 +13,7 @@ void buf_init(struct buf* this)
     this->size = 0;
 }
 
-void buf_allocate(struct buf* this, size_t size)
+void buf_allocate(struct buf* this, u64 size)
 {
     if (this->ptr != NULL) {
         free(this->ptr);
