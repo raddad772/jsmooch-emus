@@ -48,6 +48,7 @@ void jsm_delete(struct jsm_system* jsm)
             break;
         case SYS_NES:
             NES_delete(jsm);
+            break;
         case SYS_SMS1:
         case SYS_SMS2:
         case SYS_GG:

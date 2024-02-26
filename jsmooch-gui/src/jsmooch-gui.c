@@ -229,15 +229,17 @@ int main(int argc, char** argv)
             output_buffers[0] = malloc(640*480*4);
             output_buffers[1] = malloc(640*480*4);
             break;
+        case SYS_DMG:
+        case SYS_GBC:
+            output_buffers[0] = malloc(160*144*4);
+            output_buffers[1] = malloc(160*144*4);
+            break;
     }
     iom.out_buffers[0] = (void *)output_buffers[0];
     iom.out_buffers[1] = (void *)output_buffers[1];
 
     struct jsm_system* sys = new_system(which, &iom);
-    //SDL_Log("\n2");
 
-
-    //SDL_Log("\n3");
     u32 has_bios = grab_BIOS(&BIOS, which);
     if (has_bios) {
         sys->load_BIOS(sys, BIOS.buf, BIOS.sz);
@@ -245,7 +247,8 @@ int main(int argc, char** argv)
     }
 
     struct read_file_buf ROM;
-    u32 worked = grab_ROM(&ROM, which, "IP.BIN");
+    //u32 worked = grab_ROM(&ROM, which, "IP.BIN");
+    u32 worked = grab_ROM(&ROM, which, "IP.BI");
     if (!worked) {
         printf("\nCouldn't open ROM!");
         return -1;
