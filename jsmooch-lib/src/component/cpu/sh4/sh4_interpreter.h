@@ -69,7 +69,10 @@ struct SH4_regs {
     u32 PR; // Procedure register
     u32 PC; // Program Counter
     struct SH4_regs_FPSCR FPSCR; // Floating Point Status Control Register
-    u32 FPUL; // FP comms register
+    union {
+        float f;
+        u32 u;
+    } FPUL;
 
     struct SH4_regs_CCR {
         u32 IIX; // 15 - IC index enable (?)
@@ -84,6 +87,7 @@ struct SH4_regs {
     } CCR;
 
     union {
+        u32 U32[16];
         float FP32[16];
         float FP64[8];
         struct SH4_FV FV[4];
@@ -95,10 +99,13 @@ struct SH4_regs {
 
     // For storage queue writes
     u32 QACR0, QACR1;
+
+    u32 EXPEVT;
 };
 
 u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
 void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val);
+void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this);
 
 struct SH4 {
     struct SH4_regs regs;

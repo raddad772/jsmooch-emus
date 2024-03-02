@@ -30,9 +30,9 @@
 
 #define rMACL this->regs.MACL
 #define rMACH this->regs.MACH
-#define rFPUL this->regs.FPUL
 
 #define fpFR(x) this->regs.fb[0].FP32[x]
+#define fpFRU(x) this->regs.fb[0].U32[x]
 #define fpDR(x) this->regs.fb[x & 1].FP64[x >> 1]
 #define fpXF(x) this->regs.fb[1].FP32[x]
 #define fpXD(x) this->regs.fb[x & 1].FP64[x >> 1]
@@ -76,6 +76,19 @@ void SH4_interrupt_IRL(struct SH4* this, u32 level) {
     this->regs.SR.RB = 1;
     this->regs.SR.BL = 1;
     this->regs.PC = this->regs.VBR + 0x00000600;
+    switch(level) {
+        case 2:
+            this->regs.EXPEVT = 0x240;
+            break;
+        case 4:
+            this->regs.EXPEVT = 0x280;
+            break;
+        case 6:
+            this->regs.EXPEVT = 0x2C0;
+            break;
+        default:
+            printf("\nUNKNOWN OR INVALID INTERRUPT LEVEL %d", level);
+    }
 }
 
 SH4ins(EMPTY) {
@@ -307,7 +320,10 @@ SH4ins(MOVT) { // T -> Rn
 }
 
 SH4ins(SWAPB) { // Rm -> swap lower 2 bytes -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 tmp = RM;
+    RN = tmp & 0xFFFF0000;
+    RN |= ((tmp >> 8) & 0xFF);
+    RN |= (tmp << 8) & 0xFF00;
     PCinc;
 }
 
@@ -372,7 +388,7 @@ SH4ins(CMPGE) { // If Rn >= Rm (signed): 1 -> T, Else: 0 -> T
 }
 
 SH4ins(CMPHI) { // If Rn > Rm (unsigned): 1 -> T, Else: 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = RN > RM;
     PCinc;
 }
 
@@ -777,8 +793,10 @@ SH4ins(BSR) { // PC + 4 -> PR, disp*2 + PC + 4 -> PC, (Delayed branch)
 }
 
 SH4ins(BSRF) { // PC + 4 -> PR, Rm + PC + 4 -> PC, (Delayed branch)
-    BADOPCODE; // Crash on unimplemented opcode
-    PCinc;
+    this->regs.PR = rPC + 4;
+    u32 val = RM + rPC + 4;
+    DELAY_SLOT;
+    rPC = val;
 }
 
 SH4ins(JMP) { // Rm -> PC, (Delayed branch)
@@ -821,52 +839,57 @@ SH4ins(LDCSR) { // Rm -> SR
 }
 
 SH4ins(LDCMSR) { // (Rm) -> SR, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    SH4_SR_set(this, READ32(RM) & 0x700083F3);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(LDCGBR) { // Rm -> GBR
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.GBR = RM;
     PCinc;
 }
 
 SH4ins(LDCMGBR) { // (Rm) -> GBR, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.GBR = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(LDCVBR) { // Rm -> VBR
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.VBR = RM;
     PCinc;
 }
 
 SH4ins(LDCMVBR) { // (Rm) -> VBR, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.VBR = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(LDCSSR) { // Rm -> SSR
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SSR = RM;
     PCinc;
 }
 
 SH4ins(LDCMSSR) { // (Rm) -> SSR, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SSR = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(LDCSPC) { // Rm -> SPC
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SPC = RM;
     PCinc;
 }
 
 SH4ins(LDCMSPC) { // (Rm) -> SPC, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SPC = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(LDCDBR) { // Rm -> DBR
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.DBR = RM;
     PCinc;
 }
 
@@ -886,17 +909,18 @@ SH4ins(LDCMRn_BANK) { // (Rm) -> Rn_BANK, Rm+4 -> Rm
 }
 
 SH4ins(LDSMACH) { // Rm -> MACH
-    BADOPCODE; // Crash on unimplemented opcode
+    rMACH = RM;
     PCinc;
 }
 
 SH4ins(LDSMMACH) { // (Rm) -> MACH, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    rMACH = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(LDSMACL) { // Rm -> MACL
-    BADOPCODE; // Crash on unimplemented opcode
+    rMACL = RM;
     PCinc;
 }
 
@@ -1106,7 +1130,7 @@ SH4ins(FMOV) { // FRm -> FRn
 
 SH4ins(FMOV_LOAD) { // (Rm) -> FRn
     u32 v = READ32(RM);
-    fpFR(ins->Rn) = *(float *)(&v);
+    fpFRU(ins->Rn) = v;
     PCinc;
 }
 
@@ -1116,12 +1140,14 @@ SH4ins(FMOV_STORE) { // FRm -> (Rn)
 }
 
 SH4ins(FMOV_RESTORE) { // (Rm) -> FRn, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    fpFRU(ins->Rn) = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(FMOV_SAVE) { // Rn-4 -> Rn, FRm -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, fpFRU(ins->Rm));
     PCinc;
 }
 
@@ -1288,7 +1314,7 @@ SH4ins(FCMP_GT) { // If FRn > FRm: 1 -> T, Else: 0 -> T
 
 SH4ins(FLOAT_single) { // (float)FPUL -> FRn
     if (this->regs.FPSCR.PR == 0) { // single precision
-        fpFR(ins->Rn) = (float)((i32)this->regs.FPUL);
+        fpFR(ins->Rn) = (float)((i32)this->regs.FPUL.u);
     } else { // double precision
         BADOPCODE;
     }
@@ -1299,7 +1325,7 @@ SH4ins(FLOAT_single) { // (float)FPUL -> FRn
 SH4ins(FTRC_single) { // (long)FRm -> FPUL
     // TODO make this much better!
     // x86 overflows oddly, with positive overflow returining INT_MIN
-    rFPUL = (int32)fpFR(ins->Rm);
+    this->regs.FPUL.u = (int32)fpFR(ins->Rm);
     PCinc;
 }
 
@@ -1379,7 +1405,7 @@ SH4ins(FCNVSD) { // float_to_double (FPUL) -> DRn
 }
 
 SH4ins(LDSFPSCR) { // Rm -> FPSCR
-    BADOPCODE; // Crash on unimplemented opcode
+    SH4_regs_FPSCR_set(&this->regs, RM & 0x003FFFFF);
     PCinc;
 }
 
@@ -1389,7 +1415,8 @@ SH4ins(STSFPSCR) { // FPSCR -> Rn
 }
 
 SH4ins(LDSMFPSCR) { // (Rm) -> FPSCR, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    SH4_regs_FPSCR_set(&this->regs, READ32(RM) & 0x003FFFFF);
+    RM += 4;
     PCinc;
 }
 
@@ -1399,17 +1426,18 @@ SH4ins(STSMFPSCR) { // Rn-4 -> Rn, FPSCR -> (Rn)
 }
 
 SH4ins(LDSFPUL) { // Rm -> FPUL
-    rFPUL = RM;
+    this->regs.FPUL.u = RM;
     PCinc;
 }
 
 SH4ins(STSFPUL) { // FPUL -> Rn
-    RN = rFPUL;
+    RN = this->regs.FPUL.u;
     PCinc;
 }
 
 SH4ins(LDSMFPUL) { // (Rm) -> FPUL, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.FPUL.u = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
@@ -1419,7 +1447,12 @@ SH4ins(STSMFPUL) { // Rn-4 -> Rn, FPUL -> (Rn)
 }
 
 SH4ins(FRCHG) { // If FPSCR.PR = 0: ~FPSCR.FR -> FPSCR.FR, Else: Undefined Operation
-    BADOPCODE; // Crash on unimplemented opcode
+    if (this->regs.FPSCR.PR == 0) {
+        this->regs.FPSCR.FR ^= 1;
+        SH4_regs_FPSCR_bankswitch(&this->regs);
+    } else {
+        assert(1==0);
+    }
     PCinc;
 }
 
@@ -1490,7 +1523,7 @@ SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
     {
         //float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
         u32 n = ins->Rn & 0xE;
-        u32 pi_index=(u16)rFPUL;
+        u32 pi_index=(u16)this->regs.FPUL.u;
 
         fpFR(n | 0) = SH4_sin_table[pi_index];//sinf(real_pi);
         fpFR(n | 1) = SH4_sin_table[0x4000 + pi_index];//cosf(real_pi);    // -> no need for warparound, sin_table has 0x4000 more entries

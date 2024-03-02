@@ -293,13 +293,16 @@ int main(int argc, char** argv)
         sys->finish_frame(sys);
         sys->get_framevars(sys, &fv);
         if (dbg.do_break) {
+            //break;
             if (did_break == 0) {
                 dbg_enable_trace();
                 dbg.do_break = 0;
+                dbg_unbreak();
                 sys->step_master(sys, 150);
                 dbg_flush();
                 dbg_disable_trace();
             }
+            if (did_break == 1) break;
             did_break++;
         }
         //jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);

@@ -48,6 +48,7 @@ struct DC {
         u32 PDTRA;
         u32 TOCR;
         u32 TSTR;
+        u32 SDMR;
             /* interrupt bits for SB_ISTNRM...
 bit 21 = End of Transferring interrupt : Punch Through List (*only for HOLLY2)
 bit 20 = End of DMA interrupt : Sort-DMA (Transferring for alpha sorting)
@@ -78,6 +79,16 @@ bit 0 = End of Render interrupt : Video
         u32 SB_IML2NRM;
         u32 SB_IML4NRM;
         u32 SB_IML6NRM;
+
+        u32 BSCR;
+        u32 BSCR2;
+        u32 RTCOR;
+        u32 RFCR;
+        u32 RTCSR;
+        u32 WCR1;
+        u32 WCR2;
+        u32 MCR; // memory control register
+        u32 MMUCR;
     } io;
 
     struct {

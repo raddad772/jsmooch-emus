@@ -49,13 +49,18 @@ u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this)
             (this->DN << 18) | (this->Cause << 12) | (this->Enable << 7) | (this->Flag << 2) | (this->RM);
 }
 
+void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this)
+{
+    memcpy(&this->fb[2], &this->fb[0], 64);
+    memcpy(&this->fb[0], &this->fb[1], 64);
+    memcpy(&this->fb[1], &this->fb[2], 64);
+}
+
 void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val)
 {
     // If floating-point select register changed
     if (this->FPSCR.FR ^ ((val >> 21) & 1)) {
-        memcpy(&this->fb[2], &this->fb[0], 64);
-        memcpy(&this->fb[0], &this->fb[1], 64);
-        memcpy(&this->fb[1], &this->fb[2], 64);
+        SH4_regs_FPSCR_bankswitch(this);
     }
     this->FPSCR.data = val;
     this->FPSCR.FR = (val >> 21) & 1;

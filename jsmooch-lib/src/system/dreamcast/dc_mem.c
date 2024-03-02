@@ -152,6 +152,9 @@ u32 DCread16(void *ptr, u32 addr)
             tfinal |= 0; // 0=VGA, 2=RGB, 3=composite //@intFromEnum(self._dc.?.cable_type) << 8;
 
             return tfinal;
+        case 0xFF800028: // RFCR
+            // doc a little unclear on this
+            return this->io.RFCR;
     }
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
@@ -202,6 +205,8 @@ u32 DCread32(void *ptr, u32 addr) {
 #endif
         case 0x00702c00: // AICA ARMRST
             return this->aica.ARMRST;
+        case 0x1F000024: // EXPEVT
+            return this->sh4.regs.EXPEVT;
     }
 
     switch(maddr) {
@@ -224,6 +229,7 @@ u32 DCread32(void *ptr, u32 addr) {
 void DCwrite8(void *ptr, u32 addr, u32 val)
 {
     THIS;
+    val &= 0xFF;
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
@@ -237,6 +243,9 @@ void DCwrite8(void *ptr, u32 addr, u32 val)
             return;
         case 0xffd80004: // TSTR
             this->io.TSTR = 0;
+            return;
+        case 0xFF940190: // -0xFF SDMR
+            this->io.SDMR = val & 0xFF;
             return;
     }
 
@@ -252,9 +261,25 @@ void DCwrite8(void *ptr, u32 addr, u32 val)
     printf("\nwrite8 unknown addr %08x %08x val %02x cycle:%llu", addr, maddr, val, this->sh4.trace_cycles);
 }
 
+void GDR_write(struct DC* this, u32 reg, u32 val)
+{
+    /*switch(reg) {
+    }*/
+    printf("\nUnhandled GDR reg write %02x", reg);
+}
+
+void G1_write(struct DC* this, u32 reg, u32 val)
+{
+    /*switch(reg) {
+    }*/
+    printf("\nUnhandled G1 reg write %02x", reg);
+}
+
+
 void DCwrite16(void *ptr, u32 addr, u32 val)
 {
     THIS;
+    val &= 0xFFFF;
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
@@ -264,7 +289,14 @@ void DCwrite16(void *ptr, u32 addr, u32 val)
         return;
     }
 
-    // handle Operand Cache access
+    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
+        *((u16 *)&this->RAM[addr & 0xFFFFFF]) = (u16)val;
+        return;
+        // addr & 0xFFFFFF
+    }
+
+
+        // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
         if (this->sh4.regs.CCR.OIX == 0)
             *(u16 *)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]) = val;
@@ -273,7 +305,30 @@ void DCwrite16(void *ptr, u32 addr, u32 val)
         return;
     }
 
+    if ((addr >= 0x005F7000) && (addr <= 0x005F70FF)) {
+        GDR_write(this, maddr & 0xFF, val);
+        return;
+    }
+
+    if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) {
+        G1_write(this, maddr, val);
+        return;
+    }
+
     switch(maddr) {
+        case 0xFF800004: // BCR2
+            this->io.BSCR2 = val;
+            return;
+        case 0xFF800024: // RTCOR
+            this->io.RTCOR = val;
+            return;
+        case 0xFF800028: // RFCR
+            // doc a little unclear on this
+            this->io.RFCR = 0b1010010000000000 | (val & 0x1FF);
+            return;
+        case 0xFF80001C: // RTCSR
+            this->io.RTCSR = val;
+            return;
         case  0xFFD80010:  // TCR0
             return;
     }
@@ -305,6 +360,10 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF)) {
         return holly_write(this, addr, val);
     }
+    if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) {
+        G1_write(this, maddr, val);
+        return;
+    }
 
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
@@ -316,6 +375,9 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     }
 
     switch(addr) {
+        case 0x1F000010: // MMUCR
+            this->io.MMUCR = val;
+            return;
         case 0x005F6910: // SB_IML2NRM
             this->io.SB_IML2NRM = val;
             DC_recalc_interrupts(this);
@@ -345,6 +407,22 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     }
 
     switch(maddr) {
+        case 0xFF800000: // BSCR
+            this->io.BSCR = val;
+            printf("\nWRITE TO BSCR!");
+            return;
+        case 0xFF800008: // WCR1
+            this->io.WCR1 = val;
+            return;
+        case 0xFF80000C: // WCR2
+            this->io.WCR2 = val;
+            return;
+        case 0xFF800014: // MCR
+            this->io.MCR = val;
+            return;
+        case 0xFF940190: // SDMR
+            this->io.SDMR = val;
+            return;
         case 0xFF000038: // QACR0 for store queues
             this->sh4.regs.QACR0 = val;
             return;
@@ -373,6 +451,7 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     }
 
     printf("\nwrite32 unknown addr %08x %08x val %02x cycle:%llu", addr, maddr, val, this->sh4.trace_cycles);
+    dbg_break();
     fflush(stdout);
 }
 
