@@ -3,6 +3,7 @@
 
 #include "int.h"
 #include "enums.h"
+#include "buf.h"
 
 enum JSM_filekind {
     ROM,
@@ -81,11 +82,14 @@ struct jsm_system {
     u32 (*finish_scanline)(struct jsm_system* jsm);
     u32 (*step_master)(struct jsm_system* jsm, u32);
     void (*reset)(struct jsm_system* jsm);
-    void (*load_ROM)(struct jsm_system* jsm, char[200], char*, u32);
-    void (*load_BIOS)(struct jsm_system* jsm, char*, u32);
+    void (*load_ROM)(struct jsm_system* jsm, struct multi_file_set* mfs);
+    void (*load_BIOS)(struct jsm_system* jsm, struct multi_file_set* mfs);
     void (*killall)(struct jsm_system* jsm);
     void (*map_inputs)(struct jsm_system* jsm, u32* bufptr, u32 bufsize);
     void (*get_framevars)(struct jsm_system* jsm, struct framevars* out);
+
+    void (*enable_tracing)(struct jsm_system* jsm);
+    void (*disable_tracing)(struct jsm_system* jsm);
 
     void (*play)(struct jsm_system* jsm);
     void (*pause)(struct jsm_system* jsm);

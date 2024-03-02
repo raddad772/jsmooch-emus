@@ -8,8 +8,6 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 
-#define SH4_DBG_SUPPORT
-
 struct SH4_FV {
     float a, b, c, d;
 };

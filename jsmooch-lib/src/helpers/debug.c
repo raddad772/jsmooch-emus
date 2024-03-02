@@ -1,6 +1,8 @@
 //
 // Created by Dave on 1/24/2024.
 //
+#include <unistd.h>
+#include <pwd.h>
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
@@ -79,13 +81,29 @@ void dbg_seek_in_line(u32 pos)
     }
 }
 
+void construct_path(char* w, const char* who)
+{
+    const char *homeDir = getenv("HOME");
+
+    if (!homeDir) {
+        struct passwd* pwd = getpwuid(getuid());
+        if (pwd)
+            homeDir = pwd->pw_dir;
+    }
+
+    char *tp = w;
+    tp += sprintf(tp, "%s/dev/%s", homeDir, who);
+}
+
 void dbg_flush()
 {
     if (!dbg.trace_on) return;
     printf("%s", dbg.msg.ptr);
     fflush(stdout);
 #ifdef DBG_LOG_TO_FILE
-    FILE *w = fopen("c:\\dev\\sh4.log", "a");
+    char fpath[250];
+    construct_path(fpath, "z80.log");
+    FILE *w = fopen(fpath, "a");
     fprintf(w, "%s", dbg.msg.ptr);
     fflush(w);
     fclose(w);

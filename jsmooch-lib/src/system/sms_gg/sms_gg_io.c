@@ -2,6 +2,7 @@
 // Created by Dave on 2/9/2024.
 //
 
+#include "assert.h"
 #include "stdio.h"
 #include "sms_gg_io.h"
 #include "sms_gg.h"
@@ -98,7 +99,7 @@ void write_reg_memory_ctrl(struct SMSGG* this, u32 val) {
         SMSGG_mapper_sega_set_BIOS(&this->mapper, ((val & 8) >> 3) ^ 1); // 1 = disabled, 0 = enabled
 
         this->mapper.enable_cart = ((val & 0x40) >> 6) ^ 1;
-        printf("\n%llu: BIOS/CART SET TO %d/%d", this->clock.frames_since_restart, this->mapper.enable_bios, this->mapper.enable_cart);
+        //assert(1==0);
         fflush(stdout);
 
         //if (!this->mapper.enable_cart) dbg.break();
@@ -151,6 +152,10 @@ u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect) 
 
 void SMSGG_bus_cpu_out_sms1(struct SMSGG* this, u32 addr, u32 val) {
     addr &= 0xFF;
+    if (addr == 2) {
+        this->io.GGreg = val;
+        return;
+    }
     if (addr <= 0x3F) {
         // even memory control
         // odd I/O control
@@ -163,10 +168,12 @@ void SMSGG_bus_cpu_out_sms1(struct SMSGG* this, u32 addr, u32 val) {
         return;
     }
     if (addr <= 0xBF) {
+        //printf("\nWRITE %02x %02x", addr, val);
         // even goes to VDP data
         // odd goes to VDP control
+
         if (addr & 1) SMSGG_VDP_write_control(&this->vdp, val);
-        else SMSGG_VDP_write_control(&this->vdp, val);
+        else SMSGG_VDP_write_data(&this->vdp, val);
         return;
     }
     // C0-FF, no effect
@@ -180,8 +187,9 @@ u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect)
         case 0: // Various stuff
             // TODO: make this more complete
             return 0x40 | (bus->io.gg_start ? 0x80 : 0);
-        case 1:
         case 2:
+            return bus->io.GGreg;
+        case 1:
         case 3:
         case 4:
         case 5:

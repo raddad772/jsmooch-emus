@@ -176,7 +176,7 @@ void NES_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
 
 void SMS_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16 *smso = (u16 *) iom->out_buffers[last_used_buffer];
+    u16 *smso = (u16 *) iom->out_buffers[1];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u8 *img8 = (u8 *) out_buf;
     for (u32 ry = 0; ry < 192; /*data.bottom_rendered_line; */ ry++) {
@@ -192,7 +192,6 @@ void SMS_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
             b = ((color >> 4) & 3) * 0x55;
             g = ((color >> 2) & 3) * 0x55;
             r = (color & 3) * 0x55;
-
             img8[b_out] = b;
             img8[b_out+1] = g;
             img8[b_out+2] = r;

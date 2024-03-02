@@ -255,7 +255,7 @@ originaldave_ — Today at 9:22 PM
 oh, so when vblank in triggers
 I need to look at those registers to determine what's next?
 I hoped I was close to getting interrupts going lol
-just wrote a whole (very basic) frame scheduler
+just wrote a whole (very basic) frame scheduler_t
 Senryoku — Today at 9:23 PM
 I'm not too sure about my implementation, but interrupts from SB_ISTNRM/SB_ISTEXT/SB_ISTERR will generate SH4 IRL9/11/13 interrupts depending on the register config
  */
@@ -265,5 +265,5 @@ void holly_reset(struct DC* this)
     this->holly.VO_BORDER_COL = 0x005F8040;
     this->holly.SPG_VBLANK_INT.vblank_out_line = 0x150;
     this->holly.SPG_VBLANK_INT.vblank_in_line = 0x104;
-    this->holly.SPG_LOAD.vcount = 400; // TODO: not correct but necessary to avoid divide by 0 in simple scheduler
+    this->holly.SPG_LOAD.vcount = 400; // TODO: not correct but necessary to avoid divide by 0 in simple scheduler_t
 }

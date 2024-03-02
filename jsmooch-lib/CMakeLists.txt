@@ -119,6 +119,10 @@ add_library(jsmooch-lib
         src/system/dreamcast/holly.h
         src/system/dreamcast/gdi.c
         src/system/dreamcast/gdi.h
+        src/component/cpu/z80/z80_disassembler.c
+        src/component/cpu/z80/z80_disassembler.h
+        src/helpers/scheduler.c
+        src/helpers/scheduler.h
 )
 
 include_directories(src/)

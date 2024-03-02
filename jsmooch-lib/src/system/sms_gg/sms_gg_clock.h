@@ -30,7 +30,7 @@ struct SMSGG_clock {
     u32 ccounter;
     u32 hpos;
     u32 vpos;
-    u32 line_counter;
+    i32 line_counter;
 
     struct SMSGG_clock_timing {
         float fps;

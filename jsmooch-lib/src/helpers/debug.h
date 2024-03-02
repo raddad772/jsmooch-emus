@@ -11,6 +11,10 @@
 //#define LYCODER
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
+#define SH4_DBG_SUPPORT
+//#define Z80_DBG_SUPPORT
+#define M6502_DBG_SUPPORT
+#define SM83_DBG_SUPPORT
 
 #include "helpers/int.h"
 #include "helpers/jsm_string.h"

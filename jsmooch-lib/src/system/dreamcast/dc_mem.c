@@ -47,6 +47,7 @@ static void write_empty(struct DC* this, u32 addr, u32 val, enum DC_MEM_SIZE sz)
 
 u32 DCreadRAM(struct DC* this, u32 addr, enum DC_MEM_SIZE sz)
 {
+    return 0;
 }
 
 void DCwriteRAM(struct DC* this, u32 addr, u32 val, enum DC_MEM_SIZE sz)
@@ -67,7 +68,7 @@ void DC_mem_init(struct DC* this)
 
     // 0C - RAM. EC, CC, 1C, 8C
     //
-#define MAP(addr, rdfunc, wrfunc) this->mem.read_map[addr] = &rdfunc; this->mem.write_map[addr] = &wrfunc;
+#define MAP(addr, rdfunc, wrfunc) this->mem.read_map[addr] = &(rdfunc); this->mem.write_map[addr] = &(wrfunc)
     MAP(0x0C, DCreadRAM, DCwriteRAM);
     MAP(0x8C, DCreadRAM, DCwriteRAM);
     MAP(0x8C, DCreadRAM, DCwriteRAM);
@@ -75,7 +76,7 @@ void DC_mem_init(struct DC* this)
 
 u32 DCread(struct DC* this, u32 addr, enum DC_MEM_SIZE sz)
 {
-
+    return 0;
 }
 
 void DCwrite(struct DC* this, u32 addr, u32 val, enum DC_MEM_SIZE sz)

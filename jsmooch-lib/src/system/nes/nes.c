@@ -1,6 +1,7 @@
 //
 // Created by Dave on 2/4/2024.
 //
+#include "assert.h"
 #include "stdlib.h"
 #include <stdio.h>
 #include "helpers/sys_interface.h"
@@ -26,8 +27,10 @@ void NESJ_killall(JSM);
 u32 NESJ_finish_frame(JSM);
 u32 NESJ_finish_scanline(JSM);
 u32 NESJ_step_master(JSM, u32 howmany);
-void NESJ_load_BIOS(JSM, char* buf, u32 bufsize);
-void NESJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize);
+void NESJ_load_BIOS(JSM, struct multi_file_set* mfs);
+void NESJ_load_ROM(JSM, struct multi_file_set* mfs);
+void NESJ_enable_tracing(JSM);
+void NESJ_disable_tracing(JSM);
 
 void NES_new(JSM, struct JSM_IOmap *iomap)
 {
@@ -62,6 +65,8 @@ void NES_new(JSM, struct JSM_IOmap *iomap)
     jsm->killall = &NESJ_killall;
     jsm->map_inputs = &NESJ_map_inputs;
     jsm->get_framevars = &NESJ_get_framevars;
+    jsm->enable_tracing = &NESJ_enable_tracing;
+    jsm->disable_tracing = &NESJ_disable_tracing;
     jsm->play = &NESJ_play;
     jsm->pause = &NESJ_pause;
     jsm->stop = &NESJ_stop;
@@ -95,6 +100,20 @@ void NES_delete(JSM)
     jsm->play = NULL;
     jsm->pause = NULL;
     jsm->stop = NULL;
+    jsm->enable_tracing = NULL;
+    jsm->disable_tracing = NULL;
+}
+
+void NESJ_enable_tracing(JSM)
+{
+    // TODO
+    assert(1==0);
+}
+
+void NESJ_disable_tracing(JSM)
+{
+    // TODO
+    assert(1==0);
 }
 
 void NESJ_play(JSM)
@@ -265,15 +284,16 @@ u32 NESJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void NESJ_load_BIOS(JSM, char* buf, u32 bufsize)
+void NESJ_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     printf("\nNES doesn't have a BIOS...?");
 }
 
-void NESJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
+void NESJ_load_ROM(JSM, struct multi_file_set* mfs)
 {
-    JTHIS;
-    NES_cart_load_ROM_from_RAM(&this->cart, buf, bufsize);
+    THIS;
+    struct buf* b = &mfs->files[0].buf;
+    NES_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
     NES_mapper_set_which(&this->bus, this->cart.header.mapper_number);
     this->bus.set_cart(this, &this->cart);
     NESJ_reset(jsm);

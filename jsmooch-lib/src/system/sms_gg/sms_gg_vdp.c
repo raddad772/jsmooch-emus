@@ -208,7 +208,7 @@ static void update_videomode(struct SMSGG_VDP* this) {
 
 static void update_irqs(struct SMSGG_VDP* this)
 {
-    u32 level = 0;
+    /*u32 level = 0;
     if (this->io.irq_frame_pending && this->io.irq_frame_enabled) {
         level = 1;
     }
@@ -216,7 +216,8 @@ static void update_irqs(struct SMSGG_VDP* this)
         level = 1;
         //this->io.irq_line_pending = 0;
     }
-    SMSGG_bus_notify_IRQ(this->bus, level);
+    SMSGG_bus_notify_IRQ(this->bus, level);*/
+    SMSGG_bus_notify_IRQ(this->bus, ((this->io.irq_frame_pending && this->io.irq_frame_enabled) || (this->io.irq_line_pending && this->io.irq_line_enabled)));
 }
 
 static void sprite_setup(struct SMSGG_VDP* this)
@@ -409,6 +410,7 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems 
 static void new_frame(struct SMSGG_VDP* this)
 {
     this->bus->clock.frames_since_restart++;
+    printf("\n%llu", this->bus->clock.frames_since_restart);
     this->bus->clock.vpos = 0;
     this->bus->clock.vdp_frame_cycle = 0;
     this->last_used_buffer = this->cur_output_num;
@@ -432,18 +434,17 @@ static void new_scanline(struct SMSGG_VDP* this)
         new_frame(this);
     }
 
-    if (this->bus->clock.vpos < this->bus->clock.timing.rendered_lines) {
+    if (this->bus->clock.vpos <= this->bus->clock.timing.rendered_lines) {
         this->bus->clock.line_counter = (this->bus->clock.line_counter - 1);
         if (this->bus->clock.line_counter < 0) {
-            this->bus->clock.line_counter = this->io.line_irq_reload;
-            //if (this->io.irq_line_enabled) this->io.irq_line_pending = 1;
+            this->bus->clock.line_counter = (i32)this->io.line_irq_reload;
             this->io.irq_line_pending = 1;
 
             update_irqs(this);
         }
     }
     else {
-        this->bus->clock.line_counter = this->io.line_irq_reload;
+        this->bus->clock.line_counter = (i32)this->io.line_irq_reload;
     }
 
     if (this->bus->clock.vpos == this->bus->clock.timing.vblank_start) {
@@ -579,6 +580,7 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
             update_videomode(this);
             return;
         case 1: // mode control thing, #2
+            //dbg_break();
             this->io.sprite_zoom = val & 1;
             this->io.sprite_size = (val & 2) >> 1;
             this->io.video_mode = (this->io.video_mode & 0x0A) | ((val & 8) >> 1) | ((val & 0x10) >> 4);
@@ -630,7 +632,6 @@ void SMSGG_VDP_write_control(struct SMSGG_VDP* this, u32 val)
     this->latch.control = 0;
     this->io.address = ((val & 0x3F) << 8) | (this->io.address & 0xC0FF);
     this->io.code = (val & 0xC0) >> 6;
-    //console.log('SET IO CODE', this->io.code);
 
     if (this->io.code == 0) {
         this->latch.vram = this->VRAM[this->io.address];
@@ -640,5 +641,4 @@ void SMSGG_VDP_write_control(struct SMSGG_VDP* this, u32 val)
     if (this->io.code == 2) {
         register_write(this, (this->io.address >> 8) & 0x0F, this->io.address & 0xFF);
     }
-    
 }

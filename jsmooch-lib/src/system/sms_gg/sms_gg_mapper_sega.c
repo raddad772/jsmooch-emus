@@ -54,7 +54,9 @@ void SMSGG_mapper_sega_reset(struct SMSGG_mapper_sega* this)
     this->cart.rom_80_bank = 0x8000;
     this->cart.ram_80_enabled = 0;
     this->cart.ram_C0_enabled = false;
-    this->enable_cart = (this->variant == SYS_GG) ? 1 : 0;
+    //this->enable_cart = (this->variant == SYS_GG) ? 1 : 0;
+    this->enable_cart = 0;
+    this->enable_bios = 1;
     memset(this->RAM, 0, 16384);
 }
 
@@ -177,4 +179,5 @@ void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* 
     buf_copy(&this->ROM, inbuf);
     this->cart.num_ROM_banks = this->ROM.size / 0x4000;
     if (this->cart.num_ROM_banks == 0) this->cart.num_ROM_banks = 1;
+    printf("\nLoaded ROM of size %d banks %d", this->ROM.size, this->cart.num_ROM_banks);
 }

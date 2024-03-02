@@ -7,6 +7,7 @@
 
 #include "helpers/buf.h"
 #include "helpers/sys_interface.h"
+#include "helpers/scheduler.h"
 
 #include "component/cpu/sh4/sh4_interpreter_opcodes.h"
 #include "component/cpu/sh4/sh4_interpreter.h"
@@ -35,7 +36,10 @@ struct DC {
     u8 OC[8 * 1024]; // Operand Cache[
 
     struct buf BIOS;
+    struct buf flash;
     struct buf ROM;
+
+    struct scheduler_t scheduler;
 
     struct {
         u32 TCOR0;
@@ -200,8 +204,8 @@ bit 0 = End of Render interrupt : Video
     } holly;
 
     struct {
-        u32 (*read_map[0x20])(struct DC*, u32, enum DC_MEM_SIZE);
-        void (*write_map[0x20])(struct DC*, u32, u32, enum DC_MEM_SIZE);
+        u32 (*read_map[0x100])(struct DC*, u32, enum DC_MEM_SIZE);
+        void (*write_map[0x100])(struct DC*, u32, u32, enum DC_MEM_SIZE);
     } mem;
 
 };

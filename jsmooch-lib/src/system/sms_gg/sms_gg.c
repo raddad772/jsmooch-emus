@@ -29,18 +29,32 @@ void SMSGGJ_killall(JSM);
 u32 SMSGGJ_finish_frame(JSM);
 u32 SMSGGJ_finish_scanline(JSM);
 u32 SMSGGJ_step_master(JSM, u32 howmany);
-void SMSGGJ_load_BIOS(JSM, char* buf, u32 bufsize);
-void SMSGGJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize);
+void SMSGGJ_load_BIOS(JSM, struct multi_file_set* mfs);
+void SMSGGJ_load_ROM(JSM, struct multi_file_set* mfs);
+void SMSGGJ_enable_tracing(JSM);
+void SMSGGJ_disable_tracing(JSM);
+
+u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
+{
+    struct SMSGG* this = (struct SMSGG*)ptr;
+    return SMSGG_bus_read(this, addr, 0, 0);
+}
 
 void SMSGG_new(struct jsm_system* jsm, struct JSM_IOmap *iomap, enum jsm_systems variant, enum jsm_regions region) {
     struct SMSGG* this = (struct SMSGG*)malloc(sizeof(struct SMSGG));
+    this->tracing = 0;
     SMSGG_clock_init(&this->clock, variant, region);
     SMSGG_VDP_init(&this->vdp, this, variant);
     SMSGG_mapper_sega_init(&this->mapper, variant);
     Z80_init(&this->cpu, 0);
-    Z80_reset(&this->cpu);
     smspad_inputs_init(&this->controller1_in);
     smspad_inputs_init(&this->controller2_in);
+
+    // setup tracing reads
+    struct jsm_debug_read_trace a;
+    a.ptr = (void *)this;
+    a.read_trace = &SMSGG_CPU_read_trace;
+    Z80_setup_tracing(&this->cpu, &a);
 
     // bus init
     SMSGG_gamepad_init(&this->io.controllerA, variant, 1);
@@ -96,6 +110,10 @@ void SMSGG_new(struct jsm_system* jsm, struct JSM_IOmap *iomap, enum jsm_systems
     jsm->play = &SMSGGJ_play;
     jsm->pause = &SMSGGJ_pause;
     jsm->stop = &SMSGGJ_stop;
+    jsm->enable_tracing = &SMSGGJ_enable_tracing;
+    jsm->disable_tracing = &SMSGGJ_disable_tracing;
+
+    SMSGGJ_reset(jsm);
 }
 
 void SMSGG_delete(struct jsm_system* jsm)
@@ -119,6 +137,8 @@ void SMSGG_delete(struct jsm_system* jsm)
     jsm->play = NULL;
     jsm->pause = NULL;
     jsm->stop = NULL;
+    jsm->enable_tracing = NULL;
+    jsm->disable_tracing = NULL;
 }
 
 void SMSGGJ_get_description(JSM, struct machine_description* d)
@@ -130,7 +150,7 @@ void SMSGGJ_get_description(JSM, struct machine_description* d)
 
     d->fps = 60;
     d->timing = frame;
-    d->display_standard = NTSC;
+    d->display_standard = MD_NTSC;
     if (this->variant == SYS_GG) {
         d->x_resolution = 160;
         d->y_resolution = 144;
@@ -260,6 +280,7 @@ u32 SMSGGJ_finish_scanline(JSM)
     JTHIS;
     u32 cycles_left = 684 - (this->clock.hpos * 2);
     SMSGGJ_step_master(jsm, cycles_left);
+    return 0;
 }
 
 static void cpu_cycle(struct SMSGG* this)
@@ -267,24 +288,40 @@ static void cpu_cycle(struct SMSGG* this)
     if (this->cpu.pins.RD) {
         if (this->cpu.pins.MRQ) {// read ROM/RAM
             this->cpu.pins.D = SMSGG_bus_read(this, this->cpu.pins.Addr, this->cpu.pins.D, 1);
-            if (this->cpu.trace_on) {
+#ifndef LYCODER
+            if (dbg.trace_on) {
+                // Z80(    25)r   0006   $18     TCU:1
+                dbg_printf("\n\e[0;32mSMS(%06llu)r   %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
                 //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_read('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, null, this->cpu.regs.TCU));
             }
+#endif
         } else if (this->cpu.pins.IO) { // read IO port
             this->cpu.pins.D = this->cpu_in(this, this->cpu.pins.Addr, this->cpu.pins.D, 1);
+#ifndef LYCODER
+            if (dbg.trace_on)
+                dbg_printf("\nSMS(%06llu)in  %04x   $%02x         TCU:%d", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+#endif
+        }
+    }
+    if (this->cpu.pins.WR) {
+        if (this->cpu.pins.MRQ) { // write RAM
+            if (dbg.trace_on && (this->cpu.last_trace_cycle != this->cpu.trace_cycles)) {
+                //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_write('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
+                this->cpu.last_trace_cycle = this->cpu.trace_cycles;
+#ifndef LYCODER
+                dbg_printf("\n\e[0;34mSMS(%06llu)wr  %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+#endif
+            }
+            SMSGG_bus_write(this, this->cpu.pins.Addr, this->cpu.pins.D);
+        } else if (this->cpu.pins.IO) {
+            this->cpu_out(this, this->cpu.pins.Addr, this->cpu.pins.D);
+#ifndef LYCODER
+            if (dbg.trace_on)
+                dbg_printf("\n\e[0;34mSMS(%06llu)out %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+#endif
         }
     }
     Z80_cycle(&this->cpu);
-    if (this->cpu.pins.WR) {
-        if (this->cpu.pins.MRQ) { // write RAM
-            if (this->cpu.trace_on && (this->cpu.last_trace_cycle != this->cpu.trace_cycles)) {
-                //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_write('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
-                this->cpu.last_trace_cycle = this->cpu.trace_cycles;
-            }
-            SMSGG_bus_write(this, this->cpu.pins.Addr, this->cpu.pins.D);
-        } else if (this->cpu.pins.IO) // write IO
-            this->cpu_out(this, this->cpu.pins.Addr, this->cpu.pins.D);
-    }
     this->clock.cpu_frame_cycle += this->clock.cpu_divisor;
 }
 
@@ -308,10 +345,13 @@ static void poll_pause(struct SMSGG* this)
     }
 }
 
-u32 SMSGGJ_step_master(JSM, u32 howmany)
-{
+u32 SMSGGJ_step_master(JSM, u32 howmany) {
     JTHIS;
-    for (u32 i = 0; i < howmany; i++) {
+#ifdef LYCODER
+    do {
+#else
+        for (u32 i = 0; i < howmany; i++) {
+#endif
         if (this->clock.frames_since_restart != this->last_frame) {
             this->last_frame = this->clock.frames_since_restart;
             poll_pause(this);
@@ -335,27 +375,38 @@ u32 SMSGGJ_step_master(JSM, u32 howmany)
             this->last_frame = this->clock.frames_since_restart;
             poll_pause(this);
         }
+#ifdef LYCODER
+        if (this->cpu.trace_cycles > 8000000) break;
+#endif
         if (dbg.do_break) break;
         this->clock.master_cycles++;
+#ifdef LYCODER
+    } while (true);
+#else
     }
+#endif
     return 0;
 }
 
-void SMSGGJ_load_BIOS(JSM, char* buf, u32 bufsize)
+void SMSGGJ_enable_tracing(JSM)
 {
-    JTHIS;
-    struct buf tmp;
-    tmp.ptr = buf;
-    tmp.size = bufsize;
-    SMSGG_mapper_load_BIOS_from_RAM(&this->mapper, &tmp);
+// TODO
+assert(1==0);
 }
 
-void SMSGGJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
-{
+void SMSGGJ_disable_tracing(JSM) {
+// TODO
+    assert(1 == 0);
+}
+
+void SMSGGJ_load_BIOS(JSM, struct multi_file_set* mfs) {
     JTHIS;
-    struct buf tmp;
-    tmp.ptr = buf;
-    tmp.size = bufsize;
-    SMSGG_mapper_load_ROM_from_RAM(&this->mapper, &tmp);
+    SMSGG_mapper_load_BIOS_from_RAM(&this->mapper, &mfs->files[0].buf);
+}
+
+void SMSGGJ_load_ROM(JSM, struct multi_file_set* mfs) {
+    JTHIS;
+    struct buf* b = &mfs->files[0].buf;
+    SMSGG_mapper_load_ROM_from_RAM(&this->mapper, b);
     SMSGGJ_reset(jsm);
 }

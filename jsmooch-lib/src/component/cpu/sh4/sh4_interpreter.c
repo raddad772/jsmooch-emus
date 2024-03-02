@@ -134,10 +134,15 @@ void SH4_fetch_and_exec(struct SH4* this)
     struct SH4_ins_t *ins = &SH4_decoded[opcode];
 #ifdef LYCODER
     lycoder_print(this, opcode);
-#else
-    dbg_printf("\ncyc:%04d addr:%08x opcode:%04x %s   ", this->trace_cycles, this->regs.PC, opcode, SH4_disassembled[opcode]);
-    SH4_pprint(this, ins);
-#endif
+#else // !LYCODER
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf("\ncyc:%04d addr:%08x opcode:%04x %s   ", this->trace_cycles, this->regs.PC, opcode,
+                   SH4_disassembled[opcode]);
+        SH4_pprint(this, ins);
+    }
+#endif // SH4_DBG_SUPPORT
+#endif // else !LYCODER
 
     ins->exec(this, ins);
 }

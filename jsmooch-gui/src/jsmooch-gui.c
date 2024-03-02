@@ -9,34 +9,6 @@
 
 #include "system/dreamcast/gdi.h"
 
-struct read_file_buf {
-    u64 sz;
-    void *buf;
-};
-
-int open_and_read(char *fname, struct read_file_buf *rfb)
-{
-    FILE *fil = fopen(fname, "rb");
-    fseek(fil, 0L, SEEK_END);
-    rfb->sz = ftell(fil);
-
-    fseek(fil, 0L, SEEK_SET);
-    rfb->buf = malloc(rfb->sz);
-    fread(rfb->buf, sizeof(char), rfb->sz, fil);
-
-    fclose(fil);
-    return 0;
-}
-
-void rfb_cleanup(struct read_file_buf *rfb)
-{
-    if (rfb->buf != NULL) {
-        free(rfb->buf);
-        rfb->buf = NULL;
-    }
-    rfb->sz = 0;
-}
-
 u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
     u32 ret = 0;
     i32 evt = event->type == SDL_KEYDOWN ? 1 : event->type == SDL_KEYUP ? 0 : -1;
@@ -77,14 +49,6 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
 void test_gdi() {
     struct GDI_image foo;
     GDI_init(&foo);
-    GDI_load("c:\\dev\\rom\\dc\\crazytaxi", "crazytaxi.gdi", &foo);
-
-    GDI_delete(&foo);
-}
-
-u32 grab_BIOS(struct read_file_buf* BIOS, enum jsm_systems which)
-{
-    char BIOS_PATH[500];
     const char *homeDir = getenv("HOME");
 
     if (!homeDir) {
@@ -93,32 +57,51 @@ u32 grab_BIOS(struct read_file_buf* BIOS, enum jsm_systems which)
             homeDir = pwd->pw_dir;
     }
 
-    char *bp = BIOS_PATH;
-    bp += sprintf(bp, "%s", homeDir);
-    bp += sprintf(bp, "/Documents/emu/bios/");
+    char PATH[500];
+    sprintf(PATH, "%s/Documents/emu/rom/dreamcast/crazy_taxi", homeDir);
+    printf("\nHEY! %s", PATH);
+    GDI_load(PATH, "crazytaxi.gdi", &foo);
+
+    GDI_delete(&foo);
+}
+
+u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
+{
+    char BIOS_PATH[255];
+    char BASE_PATH[255];
+    const char *homeDir = getenv("HOME");
+
+    if (!homeDir) {
+        struct passwd* pwd = getpwuid(getuid());
+        if (pwd)
+            homeDir = pwd->pw_dir;
+    }
+
+    sprintf(BASE_PATH, "%s/Documents/emu/bios/", homeDir);
 
     u32 has_bios = 0;
     switch(which) {
         case SYS_SMS1:
         case SYS_SMS2:
             has_bios = 1;
-            bp += sprintf(bp, "master_system/bios13fx.sms");
-            open_and_read(BIOS_PATH, BIOS);
+            sprintf(BIOS_PATH, "%s/master_system", BASE_PATH);
+            mfs_add("bios13fx.sms", BIOS_PATH, BIOSes);
             break;
         case SYS_DREAMCAST:
             has_bios = 1;
-            bp += sprintf(bp, "dreamcast/dc_boot.bin");
-            open_and_read(BIOS_PATH, BIOS);
+            sprintf(BIOS_PATH, "%s/dreamcast", BASE_PATH);
+            mfs_add("dc_boot.bin", BIOS_PATH, BIOSes);
+            mfs_add("dc_flash.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_DMG:
             has_bios = 1;
-            bp += sprintf(bp, "gameboy/gb_bios.bin");
-            open_and_read(BIOS_PATH, BIOS);
+            sprintf(BIOS_PATH, "%s/gameboy", BASE_PATH);
+            mfs_add("gb_bios.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_GBC:
             has_bios = 1;
-            bp += sprintf(bp, "gameboy/gbc_bios.bin");
-            open_and_read(BIOS_PATH, BIOS);
+            sprintf(BIOS_PATH, "%s/gameboy", BASE_PATH);
+            mfs_add("gbc_bios.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_PSX:
         case SYS_ZX_SPECTRUM:
@@ -133,9 +116,11 @@ u32 grab_BIOS(struct read_file_buf* BIOS, enum jsm_systems which)
     return has_bios;
 }
 
-u32 grab_ROM(struct read_file_buf* ROM, enum jsm_systems which, const char* fname)
+u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fname)
 {
-    char ROM_PATH[500];
+    char BASER_PATH[255];
+    char BASE_PATH[255];
+    char ROM_PATH[255];
     u32 worked = 0;
 
     const char *homeDir = getenv("HOME");
@@ -146,27 +131,26 @@ u32 grab_ROM(struct read_file_buf* ROM, enum jsm_systems which, const char* fnam
             homeDir = pwd->pw_dir;
     }
 
-    char *rp = ROM_PATH;
-    rp += sprintf(rp, "%s/Documents/emu/rom/", homeDir);
+    sprintf(BASER_PATH, "%s/Documents/emu/rom", homeDir);
 
     u32 has_bios = 0;
     switch(which) {
         case SYS_SMS1:
         case SYS_SMS2:
-            rp += sprintf(rp, "master_system/");
+            sprintf(BASE_PATH, "%s/master_system", BASER_PATH);
             worked = 1;
             break;
         case SYS_DREAMCAST:
-            rp += sprintf(rp, "dreamcast/");
+            sprintf(BASE_PATH, "%s/dreamcast", BASER_PATH);
             worked = 1;
             break;
         case SYS_DMG:
         case SYS_GBC:
-            rp += sprintf(rp, "gameboy/");
+            sprintf(BASE_PATH, "%s/gameboy", BASER_PATH);
             worked = 1;
             break;
         case SYS_NES:
-            rp += sprintf(rp, "nes/");
+            sprintf(BASE_PATH, "%s/nes", BASER_PATH);
             worked = 1;
             break;
         case SYS_PSX:
@@ -179,17 +163,19 @@ u32 grab_ROM(struct read_file_buf* ROM, enum jsm_systems which, const char* fnam
             break;
     }
     if (!worked) return 0;
-    rp += sprintf(rp, "%s", fname);
-    open_and_read(ROM_PATH, ROM);
-    return ROM->sz > 0;
+    mfs_add(fname, BASE_PATH, ROMs);
+    return ROMs->files[ROMs->num_files-1].buf.size > 0;
 }
 
 int main(int argc, char** argv)
 {
-    char RFILE[500];
     enum jsm_systems which = SYS_DREAMCAST;
 
-    struct read_file_buf BIOS;
+    //test_gdi();
+    //return;
+
+    struct multi_file_set BIOSes;
+    mfs_init(&BIOSes);
 
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -240,24 +226,22 @@ int main(int argc, char** argv)
 
     struct jsm_system* sys = new_system(which, &iom);
 
-    u32 has_bios = grab_BIOS(&BIOS, which);
+    u32 has_bios = grab_BIOSes(&BIOSes, which);
     if (has_bios) {
-        sys->load_BIOS(sys, BIOS.buf, BIOS.sz);
-        rfb_cleanup(&BIOS);
+        sys->load_BIOS(sys, &BIOSes);
     }
+    mfs_delete(&BIOSes);
 
-    struct read_file_buf ROM;
-    //u32 worked = grab_ROM(&ROM, which, "IP.BIN");
-    u32 worked = grab_ROM(&ROM, which, "IP.BI");
+    struct multi_file_set ROMs;
+    mfs_init(&ROMs);
+    u32 worked = grab_ROM(&ROMs, which, "IP.BIN");
     if (!worked) {
         printf("\nCouldn't open ROM!");
         return -1;
     }
-    sys->load_ROM(sys, "", ROM.buf, ROM.sz);
-    rfb_cleanup(&ROM);
+    sys->load_ROM(sys, &ROMs);
+    mfs_delete(&ROMs);
 
-
-    //sys->play(sys);
     struct framevars fv;
     SDL_Event event;
 
@@ -268,16 +252,17 @@ int main(int argc, char** argv)
 
     //SDL_Log("\n4");
 
-
-    //dbg_enable_trace();
-    /*sys->step_master(sys, 5500000);
-    sys->stop(sys);
+    /*dbg_disable_trace();
+    sys->step_master(sys, 1000000000);
+    dbg_unbreak();
+    dbg_enable_trace();
+    sys->step_master(sys, 2000);
     dbg_flush();
-    jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
+    return 0;*/
+    /*jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
     SDL_UpdateWindowSurface(window);
     SDL_Delay(20000);
     return 0;*/
-    //return;
 
     //u32 b = SDL_GetTicks();
     /*float rend = ((float)b) /
@@ -286,7 +271,7 @@ int main(int argc, char** argv)
     float r = rend - rstart;*/
 
 
-    //sys->step_master(sys, 70);
+    //sys->step_master(sys, 720);
     //dbg_flush();
 
     //sys->get_framevars(sys, &fv); printf("\nCYCLES! %llu (%llu)", fv.master_cycle, fv.master_cycle - first);
@@ -297,6 +282,7 @@ int main(int argc, char** argv)
 
     before = SDL_GetTicks();
     u32 did_break = 0;
+    u32 loops = 0;
     while(!quit) {
         float start = SDL_GetTicks();
         while(SDL_PollEvent(&event)) {
@@ -321,10 +307,13 @@ int main(int argc, char** argv)
         SDL_UpdateWindowSurface(window);
         float end = SDL_GetTicks();
         float ticks_taken = end - start;
-        printf("\n%f", ticks_taken);
+        //printf("\n%llu", fv.master_frame);
+        //printf("\n%f", ticks_taken);
         float tick_target = 16.7f;
         if (ticks_taken < tick_target)
             SDL_Delay(tick_target - ticks_taken);
+        //loops++;
+        //if (loops > 5) break;
         //fflush(stdout);
     }
     /*after = SDL_GetTicks();

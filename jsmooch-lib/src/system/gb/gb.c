@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "stdlib.h"
 #include <stdio.h>
 #include "helpers/sys_interface.h"
@@ -32,11 +33,12 @@ void GBJ_killall(JSM);
 u32 GBJ_finish_frame(JSM);
 u32 GBJ_finish_scanline(JSM);
 u32 GBJ_step_master(JSM, u32 howmany);
-void GBJ_load_BIOS(JSM, char* buf, u32 bufsize);
-void GBJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize);
+void GBJ_load_BIOS(JSM, struct multi_file_set* mfs);
+void GBJ_load_ROM(JSM, struct multi_file_set* mfs);
 void GB_write_IO(struct GB_bus* bus, u32 addr, u32 val);
 u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val);
-
+void GBJ_enable_tracing(JSM);
+void GBJ_disable_tracing(JSM);
 
 void GB_new(JSM, enum GB_variants variant, struct JSM_IOmap *iomap)
 {
@@ -78,6 +80,10 @@ void GB_new(JSM, enum GB_variants variant, struct JSM_IOmap *iomap)
 	jsm->killall = &GBJ_killall;
 	jsm->map_inputs = &GBJ_map_inputs;
 	jsm->get_framevars = &GBJ_get_framevars;
+
+    jsm->enable_tracing = &GBJ_enable_tracing;
+    jsm->disable_tracing = &GBJ_disable_tracing;
+
 	jsm->play = &GBJ_play;
 	jsm->pause = &GBJ_pause;
 	jsm->stop = &GBJ_stop;
@@ -130,6 +136,8 @@ void GB_delete(JSM)
 	jsm->play = NULL;
 	jsm->pause = NULL;
 	jsm->stop = NULL;
+    jsm->enable_tracing = NULL;
+    jsm->disable_tracing = NULL;
 }
 
 void GBJ_get_description(JSM, struct machine_description* d)
@@ -293,6 +301,18 @@ void GBJ_get_framevars(JSM, struct framevars* out)
     out->last_used_buffer = this->ppu.last_used_buffer;
 }
 
+void GBJ_enable_tracing(JSM)
+{
+    // TODO
+    assert(1==0);
+}
+
+void GBJ_disable_tracing(JSM)
+{
+    // TODO
+    assert(1==0);
+}
+
 void GBJ_play(JSM)
 {
 
@@ -308,19 +328,21 @@ void GBJ_stop(JSM)
 
 }
 
-void GBJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
+void GBJ_load_ROM(JSM, struct multi_file_set* mfs)
 {
 	JTHIS;
-	GB_cart_load_ROM_from_RAM(&this->cart, buf, bufsize);
+    struct buf* b = &mfs->files[0].buf;
+	GB_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
 	GBJ_reset(jsm);
 }
 
-void GBJ_load_BIOS(JSM, char *buf, u32 bufsize) {
+void GBJ_load_BIOS(JSM, struct multi_file_set* mfs) {
 	JTHIS;
-	this->BIOS = (u8 *)malloc(bufsize);
-	for (u32 i = 0; i < bufsize; i++) {
-		this->BIOS[i] = (u8)buf[i];
+    struct buf* b = &mfs->files[0].buf;
+	this->BIOS = (u8 *)malloc(b->size);
+	for (u32 i = 0; i < b->size; i++) {
+		this->BIOS[i] = ((u8*)b->ptr)[i];
 	}
-    this->BIOS_size = bufsize;
+    this->BIOS_size = b->size;
 }
 

@@ -16,8 +16,10 @@ jsmooch-emus/ts
 jsmooch-gui/js
 jsmooch-gui/ts
 .DS_Store
+*.DS_Store*
 *.gb
 *.bin
+jsmooch-tests/js
 
 .idea
 cmake-build-debug/*

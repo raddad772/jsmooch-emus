@@ -129,5 +129,9 @@ void Z80_reset(struct Z80* this);
 void Z80_cycle(struct Z80* this);
 void Z80_notify_NMI(struct Z80* this, u32 level);
 void Z80_notify_IRQ(struct Z80* this, u32 level);
+void Z80_setup_tracing(struct Z80* this, struct jsm_debug_read_trace* dbg_read_trace);
+void Z80_enable_tracing(struct Z80* this);
+void Z80_disable_tracing(struct Z80* this);
+
 
 #endif //JSMOOCH_EMUS_Z80_H

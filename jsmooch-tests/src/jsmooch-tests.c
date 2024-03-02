@@ -4,9 +4,11 @@
 
 #include "jsmooch-tests.h"
 #include "cpu-tests/sm83-tests.h"
+#include "cpu-tests/z80-tests.h"
 #include "stdio.h"
 
 int main()
 {
-    test_sm83();
+    //test_sm83();
+    test_z80();
 }

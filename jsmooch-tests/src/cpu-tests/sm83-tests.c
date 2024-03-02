@@ -2,6 +2,8 @@
 // Created by Dave on 1/25/2024.
 //
 
+#include <pwd.h>
+#include <unistd.h>
 #include "sm83-tests.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -9,6 +11,7 @@
 #include "string.h"
 
 #include "helpers/int.h"
+#include "rfb.h"
 #include "component/cpu/sm83/sm83.h"
 #include "../json.h"
 
@@ -38,7 +41,7 @@ struct test_cycle {
     u32 m; // memory request
 };
 
-u8 test_RAM[65536];
+static u8 test_RAM[65536];
 
 struct jsontest {
     char name[50];
@@ -49,42 +52,6 @@ struct jsontest {
 
     struct ram_entry opcodes[5];
 };
-
-struct read_file_buf {
-    size_t sz;
-    void *buf;
-    u32 success;
-};
-
-
-int open_and_read(char *fname, struct read_file_buf *rfb)
-{
-    FILE *fil = fopen(fname, "rb");
-    if (fil == NULL) {
-        rfb->success = 0;
-        printf("\nCould not open %s", fname);
-        return -1;
-    }
-    fseek(fil, 0L, SEEK_END);
-    rfb->sz = ftell(fil);
-
-    fseek(fil, 0L, SEEK_SET);
-    rfb->buf = malloc(rfb->sz);
-    fread(rfb->buf, sizeof(char), rfb->sz, fil);
-    rfb->success = 1;
-
-    fclose(fil);
-    return 0;
-}
-
-void rfb_cleanup(struct read_file_buf *rfb)
-{
-    if (rfb->buf != NULL) {
-        free(rfb->buf);
-        rfb->buf = NULL;
-    }
-    rfb->sz = 0;
-}
 
 u32 skip_test(u32 prefix, u32 ins) {
     switch(prefix) {
@@ -152,9 +119,7 @@ u32 is_call(u32 prefix, u32 ins) {
     }
 }
 
-char *test_path = "C:\\dev\\personal\\jsmoo\\misc\\tests\\GeneratedTests\\sm83\\v1";
-
-void pprint_regs(struct SM83_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
+static void pprint_regs(struct SM83_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
 {
     printf("\nREG CPU    TEST");
     printf("\n----------------");
@@ -180,7 +145,7 @@ void pprint_regs(struct SM83_regs *cpu_regs, struct test_cpu_regs *test_regs, u3
         printf("\nF   %02x     %02x", SM83_regs_F_getbyte(&cpu_regs->F), test_regs->f);
 }
 
-u32 testregs(struct SM83* cpu, struct test_state* final, u32 last_pc, u32 is_call)
+static u32 testregs(struct SM83* cpu, struct test_state* final, u32 last_pc, u32 is_call)
 {
     u32 passed = 1;
     u32 rpc = cpu->regs.PC == last_pc;
@@ -204,15 +169,26 @@ u32 testregs(struct SM83* cpu, struct test_state* final, u32 last_pc, u32 is_cal
     return passed;
 
 }
-void construct_path(char *out, u32 iclass, u32 ins)
+
+static void construct_path(char *out, u32 iclass, u32 ins)
 {
-    sprintf(out, "%s\\", test_path);
-    out += strlen(test_path) + 1;
-    if (iclass != 0) {
-        sprintf(out, "cb ");
-        out += 3;
+    char test_path[500];
+    const char *homeDir = getenv("HOME");
+
+    if (!homeDir) {
+        struct passwd* pwd = getpwuid(getuid());
+        if (pwd)
+            homeDir = pwd->pw_dir;
     }
-    sprintf(out, "%02x.json", ins);
+
+    char *tp = out;
+    tp += sprintf(tp, "%s", homeDir);
+    tp += sprintf(tp, "/dev/jsmoo/misc/tests/GeneratedTests/sm83/v1");
+
+    tp += sprintf(tp, "%s/", test_path);
+    if (iclass != 0)
+        tp += sprintf(tp, "cb ");
+    tp += sprintf(tp, "%02x.json", ins);
 }
 
 void parse_state(struct json_object_s *object, struct test_state *state)
@@ -299,7 +275,7 @@ void parse_state(struct json_object_s *object, struct test_state *state)
     }
 }
 
-void parse_and_fill_out(struct jsontest tests[1000], struct read_file_buf *infile)
+static void parse_and_fill_out(struct jsontest tests[1000], struct read_file_buf *infile)
 {
     struct json_value_s *root = json_parse(infile->buf, infile->sz);
     assert(root->type == json_type_array);
@@ -386,7 +362,7 @@ struct sm83_test_result
     struct jsontest *failed_test_struct;
 };
 
-void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
+static void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
     printf("\nCycles");
     for (u32 i = 0; i < test->num_cycles; i++) {
         printf("\n\nTEST cycle:%d  addr:%04x  data:%02x  rwm:%d%d%d", i, test->cycles[i].addr, test->cycles[i].data, test->cycles[i].r, test->cycles[i].w, test->cycles[i].m);

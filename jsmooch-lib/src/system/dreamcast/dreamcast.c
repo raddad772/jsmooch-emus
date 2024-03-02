@@ -2,10 +2,13 @@
 // Created by Dave on 2/11/2024.
 //
 
+#include "assert.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 
+
+#include "helpers/scheduler.h"
 #include "helpers/sys_interface.h"
 #include "dreamcast.h"
 #include "dc_mem.h"
@@ -18,6 +21,8 @@
 
 #define THIS struct NES* this
 
+#define DC_CYCLES_PER_FRAME (DC_CYCLES_PER_SEC / 60)
+
 void DCJ_play(JSM);
 void DCJ_pause(JSM);
 void DCJ_stop(JSM);
@@ -29,8 +34,12 @@ void DCJ_killall(JSM);
 u32 DCJ_finish_frame(JSM);
 u32 DCJ_finish_scanline(JSM);
 u32 DCJ_step_master(JSM, u32 howmany);
-void DCJ_load_BIOS(JSM, char* buf, u32 bufsize);
-void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize);
+void DCJ_load_BIOS(JSM, struct multi_file_set* mfs);
+void DCJ_load_ROM(JSM, struct multi_file_set* mfs);
+void DCJ_enable_tracing(JSM);
+void DCJ_disable_tracing(JSM);
+static void DC_schedule_frame(struct DC* this);
+
 
 void DC_recalc_interrupts(struct DC* this)
 {
@@ -69,6 +78,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 
     this->clock.frame_cycle = 0;
     this->clock.cycles_per_frame = DC_CYCLES_PER_SEC / 60;
+    scheduler_init(&this->scheduler);
 
     /*NES_clock_init(&this->clock);
     //NES_bus_init(&this, &this->clock);
@@ -94,6 +104,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 
     buf_init(&this->BIOS);
     buf_init(&this->ROM);
+    buf_init(&this->flash);
 
     DC_mem_init(this);
 
@@ -110,6 +121,8 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     jsm->killall = &DCJ_killall;
     jsm->map_inputs = &DCJ_map_inputs;
     jsm->get_framevars = &DCJ_get_framevars;
+    jsm->enable_tracing = &DCJ_enable_tracing;
+    jsm->disable_tracing = &DCJ_disable_tracing;
     jsm->play = &DCJ_play;
     jsm->pause = &DCJ_pause;
     jsm->stop = &DCJ_stop;
@@ -121,6 +134,8 @@ void DC_delete(struct jsm_system* jsm)
 
     buf_delete(&this->BIOS);
     buf_delete(&this->ROM);
+    buf_delete(&this->flash);
+    scheduler_delete(&this->scheduler);
 
     free(jsm->ptr);
     jsm->ptr = NULL;
@@ -138,6 +153,8 @@ void DC_delete(struct jsm_system* jsm)
     jsm->play = NULL;
     jsm->pause = NULL;
     jsm->stop = NULL;
+    jsm->enable_tracing = NULL;
+    jsm->disable_tracing = NULL;
 }
 
 void DC_copy_fb(struct DC* this, u32* where) {
@@ -162,6 +179,18 @@ void DC_copy_fb(struct DC* this, u32* where) {
         }
         ptr += (this->holly.FB_R_SIZE.fb_modulus) - 1;
     }
+}
+
+void DCJ_enable_tracing(JSM)
+{
+    // TODO
+    assert(1==0);
+}
+
+void DCJ_disable_tracing(JSM)
+{
+    // TODO
+    assert(1==0);
 }
 
 void DCJ_play(JSM)
@@ -216,11 +245,17 @@ void DCJ_killall(JSM)
 static void new_frame(struct DC* this)
 {
     this->clock.frame_cycle = 0;
+    this->holly.master_frame++;
     this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
     DC_recalc_frame_timing(this);
+    DC_copy_fb(this, this->holly.cur_output);
+    this->holly.last_used_buffer = 0;
+    this->holly.master_frame++;
+    DC_schedule_frame(this);
 }
 
 enum DC_frame_events {
+    FRAME_START,
     VBLANK_IN,
     VBLANK_OUT,
     FRAME_END
@@ -231,54 +266,33 @@ struct DCF_event {
     enum DC_frame_events kind;
 };
 
+static void DC_schedule_frame(struct DC* this)
+{
+    // events
+    // frame start @0.
+    // vblank_in_start @?
+    // vblank_out_start @?
+    // frame end @200mil
+    scheduler_clear(&this->scheduler);
+    scheduler_add(&this->scheduler, 0, FRAME_START);
+    if (this->clock.interrupt.vblank_in_start < this->clock.interrupt.vblank_out_start) {
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, VBLANK_IN);
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, VBLANK_OUT);
+    }
+    else {
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, VBLANK_OUT);
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, VBLANK_IN);
+    }
+    scheduler_add(&this->scheduler, DC_CYCLES_PER_FRAME, FRAME_END);
+}
+
 u32 DCJ_finish_frame(JSM)
 {
     JTHIS;
-    //DCJ_step_master(jsm, 3000000);
-
-    new_frame(this);
-    this->clock.frame_cycle = 0;
-
-    struct DCF_event events[3];
-    u32 vbi, vbo;
-    if (this->clock.interrupt.vblank_in_start < this->clock.interrupt.vblank_out_start)
-        // #0 = vblank in
-        vbi = 0;
-    else
-        vbi = 1;
-    vbo = vbi ^ 1;
-    events[vbi].kind = VBLANK_IN;
-    events[vbi].cycle = this->clock.interrupt.vblank_in_start;
-    events[vbo].kind = VBLANK_OUT;
-    events[vbo].cycle = this->clock.interrupt.vblank_out_start;
-    events[vbo].kind = FRAME_END;
-    events[vbo].cycle = this->clock.cycles_per_frame;
-    this->clock.in_vblank = 1;
-    i32 current_event = -1;
-
-    while(this->clock.frame_cycle < this->clock.cycles_per_frame) {
-        current_event++;
-        u32 cycles_to_do = events[current_event].cycle - this->clock.frame_cycle;
-        SH4_run_cycles(&this->sh4, cycles_to_do);
-        this->clock.frame_cycle += cycles_to_do;
-        u32 out = 0;
-        switch(events[current_event].kind) {
-            case VBLANK_IN: // start vblank
-                holly_vblank_in(this);
-                break;
-            case VBLANK_OUT: // end vblank
-                holly_vblank_out(this);
-                break;
-            case FRAME_END:
-                out = 1;
-                break;
-        }
-        if (out) break;
+    if (scheduler_at_end(&this->scheduler)) {
+        DC_schedule_frame(this);
     }
-
-    DC_copy_fb(this, this->holly.cur_output);
-    this->holly.last_used_buffer = 0;
-    this->holly.master_frame++;
+    DCJ_step_master(jsm, DC_CYCLES_PER_FRAME - this->scheduler.timecode);
     return 0;
 }
 
@@ -288,31 +302,127 @@ u32 DCJ_finish_scanline(JSM)
     return 0;
 }
 
+void DC_scheduler_pprint(struct DC* this)
+{
+    for (u32 i = 0; i < this->scheduler.array.used_len; i++) {
+        struct scheduler_event* evt = &this->scheduler.array.events[i];
+        printf("\nSCHED EVENT CYC:%8llu ", evt->timecode);
+        switch(evt->event) {
+            case FRAME_END:
+                printf("FRAME_END");
+                break;
+            case FRAME_START:
+                printf("FRAME_START");
+                break;
+            case VBLANK_IN:
+                printf("VBLANK_IN");
+                break;
+            case VBLANK_OUT:
+                printf("VBLANK_OUT");
+                break;
+        }
+    }
+}
+
 u32 DCJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    SH4_run_cycles(&this->sh4, howmany);
-    return 0;
+    i64 steps_done = 0;
+
+    struct scheduler_event* next_evt = scheduler_next_event(&this->scheduler);
+    i64 til_next_event = scheduler_til_next_event(&this->scheduler);
+    if (next_evt == NULL) {
+        printf("\nOOPS!6");
+        DC_schedule_frame(this);
+        til_next_event = scheduler_til_next_event(&this->scheduler);
+    }
+    u32 quit = 0;
+
+    while(!quit) {
+        while(til_next_event < 1) {
+            // handle an event if any exist
+            next_evt = scheduler_next_event(&this->scheduler);
+            if (next_evt == NULL) {
+                printf("\nHOW DID THIS HAPPEN5;");
+                break;
+            }
+
+            switch ((enum DC_frame_events) next_evt->event) {
+                case FRAME_START:
+                    this->clock.frame_cycle = 0;
+                    this->clock.in_vblank = 1;
+                    break;
+                case VBLANK_IN:
+                    holly_vblank_in(this);
+                    break;
+                case VBLANK_OUT:
+                    holly_vblank_out(this);
+                    break;
+                case FRAME_END:
+                    quit = 1;
+                    new_frame(this);
+                    break;
+                default:
+                    printf("\nUNKNOWN FRAME EVENT %d", this->clock.frame_cycle);
+                    break;
+            }
+            if (quit) {
+                break;
+            }
+            scheduler_advance_event(&this->scheduler);
+            til_next_event = scheduler_til_next_event(&this->scheduler);
+            if (dbg.do_break) break;
+        }
+        if (quit || dbg.do_break) break;
+        if ((til_next_event+steps_done) > howmany) {
+            til_next_event = howmany - steps_done;
+        }
+        i64 old_cycles = (i64)this->sh4.trace_cycles;
+        SH4_run_cycles(&this->sh4, til_next_event);
+        i64 ran_cycles = (i64)this->sh4.trace_cycles - old_cycles;
+        this->clock.frame_cycle += ran_cycles;
+        scheduler_ran(&this->scheduler, ran_cycles);
+        steps_done += ran_cycles;
+        til_next_event = scheduler_til_next_event(&this->scheduler);
+        if (dbg.do_break) break;
+    }
+    return steps_done;
 }
 
-void DCJ_load_BIOS(JSM, char* buf, u32 bufsize)
+void DCJ_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
-    // The IP.BIN is loaded by the ROM to address 8C008000
-    buf_allocate(&this->BIOS, bufsize);
-    memcpy(this->BIOS.ptr, buf, bufsize);
+    // We expect dc_boot.bin and dc_flash.bin
+    u32 found = 0;
+    for (u32 i = 0; i < mfs->num_files; i++) {
+        struct read_file_buf* rfb = &mfs->files[i];
+        if (!strcmp(rfb->name, "dc_boot.bin")) {
+            buf_copy(&this->BIOS, &rfb->buf);
+            found++;
+        }
+        else if (!strcmp(rfb->name, "dc_flash.bin")) {
+            buf_copy(&this->flash, &rfb->buf);
+            found++;
+        }
+        else {
+            printf("\n UNKNOWN FILE? %s", rfb->name);
+        }
+    }
+    if (found != 2) {
+        printf("\nHmmm what?!?!?! DC BIOS LOAD FAILURE!?!?!");
+        fflush(stdout);
+    }
 }
 
-void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
+void DCJ_load_ROM(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
-    printf("\nROM LOAD SIZE %d", bufsize);
-    buf_allocate(&this->ROM, bufsize);
-    memcpy(this->ROM.ptr, buf, bufsize);
+    struct buf* b = &mfs->files[0].buf;
+    buf_copy(&this->ROM, b);
 
     u32 offset = 0x8000;
 
-    for (u32 i = 0; i < bufsize; i++) {
+    for (u32 i = 0; i < this->ROM.size; i++) {
         this->RAM[offset+i] = ((u8 *)this->ROM.ptr)[i];
     }
 
@@ -339,4 +449,6 @@ void DCJ_load_ROM(JSM, char name[200], char* buf, u32 bufsize)
     this->sh4.write32(this->sh4.mptr, 0x005F8044, 0x0080000D); // FB_R_CTRL
     this->sh4.write32(this->sh4.mptr, 0x005F8050, 0x00200000); // FB_R_SOF1
     this->sh4.write32(this->sh4.mptr, 0x005F8054, 0x00200000); // FB_R_SOF2
+
+    DC_schedule_frame(this);
 }

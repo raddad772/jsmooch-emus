@@ -30,6 +30,7 @@ struct SMSGG {
     struct SN76489 sn76489;
 
     u32 display_enabled;
+    u32 tracing;
     u32 last_frame;
 
     struct smspad_inputs controller1_in;
@@ -44,6 +45,7 @@ struct SMSGG {
         struct SMSGG_controller_port portB;
         u32 disable;
         u32 gg_start;
+        u32 GGreg;
     } io;
 };
 
