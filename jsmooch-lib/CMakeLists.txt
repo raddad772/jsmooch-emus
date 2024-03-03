@@ -125,6 +125,7 @@ add_library(jsmooch-lib
         src/helpers/scheduler.h
         src/system/dreamcast/gdrom.c
         src/system/dreamcast/gdrom.h
+        src/system/dreamcast/holly_regs.h
 )
 
 include_directories(src/)

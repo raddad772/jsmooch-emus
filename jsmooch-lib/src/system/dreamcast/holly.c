@@ -33,9 +33,26 @@ void DC_recalc_frame_timing(struct DC* this)
     // how many cycles per line
     // how many lines in frame
     //this->clock.cycles_per_frame;
-    this->clock.cycles_per_line = this->clock.cycles_per_frame / this->holly.SPG_LOAD.vcount;
-    this->clock.interrupt.vblank_in_start = this->holly.SPG_VBLANK_INT.vblank_in_line * this->clock.cycles_per_line;
-    this->clock.interrupt.vblank_out_start = this->holly.SPG_VBLANK_INT.vblank_out_line * this->clock.cycles_per_line;
+    this->clock.cycles_per_line = this->clock.cycles_per_frame / this->holly.SPG_LOAD.f.vcount;
+    this->clock.interrupt.vblank_in_start = this->holly.SPG_VBLANK_INT.f.vblank_in_line * this->clock.cycles_per_line;
+    this->clock.interrupt.vblank_out_start = this->holly.SPG_VBLANK_INT.f.vblank_out_line * this->clock.cycles_per_line;
+}
+
+#define B32(b31_b28, b27_24,b23_20,b19_16,b15_12,b11_8,b7_4,b3_0) ( \
+  ((0b##b31_b28) << 28) | \
+  ((0b##b27_24) << 24) | \
+  ((0b##b23_20) << 20) | \
+  ((0b##b19_16) << 16) | \
+  ((0b##b15_12) << 12) | \
+  ((0b##b11_8) << 8) | \
+  ((0b##b7_4) << 4) | \
+  (0b##b3_0))
+
+#define B10_6_10 B32(0000,0011,1111,1111,0000,0011,1111,1111)
+
+static void holly_TA_list_init(struct DC* this)
+{
+
 }
 
 u32 holly_read(struct DC* this, u32 addr) {
@@ -45,7 +62,9 @@ u32 holly_read(struct DC* this, u32 addr) {
         case 0x005F80004: // Revision
             return 0x0011;
         case 0x005f80d0: // SPG_CONTROL
-            return this->holly.SPG_CONTROL;
+            return this->holly.SPG_CONTROL.u;
+        case 0x005f8144: // TA_LIST_INIT
+            return 0;
     }
 
     printf("\nUNKNOWN HOLLY READ: %08x", addr);
@@ -53,186 +72,165 @@ u32 holly_read(struct DC* this, u32 addr) {
     return 0;
 }
 
-#define RT return 1
 u32 holly_write(struct DC* this, u32 addr, u32 val)
 {
     addr = (addr & 0x0000FFFF) | 0x005F0000;
     if ((addr >= 0x005F8200) && (addr <= 0x005F83FC)) {
         this->holly.FOG_TABLE[(addr - 0x005F8200) >> 2] = val;
-        RT;
+        return 1;
     }
     switch(addr) {
         case 0x005F80e8: // VO_CONTROL
-            this->holly.VO_CONTROL = val;
+            this->holly.VO_CONTROL.u = val & B32(0000,0000,0011,1111,0000,0001,1111,1111);
             // 640 pixels 0x00160000
             // 320 pixels 0x00160100
             printf("\nVO_CONTROL SET TO %d PIXELS", (val & 0x100) ? 320 : 640);
             fflush(stdout);
-            RT;
+            return 1;
         case 0x005f8124: // TA_OL_BASE
             this->holly.TA_OL_BASE = val & 0x00FFFFE0;
-            RT;
+            return 1;
         case 0x005f812c: // TA_OL_LIMIT
             this->holly.TA_OL_LIMIT = val & 0x00FFFFE0;
-            RT;
+            return 1;
         case 0x005f8128: // TA_ISP_BASE
             this->holly.TA_ISP_BASE = val & 0x00FFFFFC;
-            RT;
+            return 1;
         case 0x005f8130: // TA_ISP_LIMIT
             this->holly.TA_ISP_LIMIT = val & 0x00FFFFFC;
-            RT;
+            return 1;
         case 0x005f813C: // TA_GLOB_TILE_CLIP
             this->holly.TA_GLOB_TILE_CLIP = val;
-            RT;
+            return 1;
         case 0x005f8140: // TA_ALLOC_CTRL
             this->holly.TA_ALLOC_CTRL = val;
-            RT;
+            return 1;
         case 0x005f8164: // TA_NEXT_OPB_INIT
             this->holly.TA_NEXT_OPB_INIT = val;
-            RT;
+            return 1;
         case 0x005f8144: // TA_LIST_INIT
-            this->holly.TA_LIST_INIT = val;
-            RT;
+            if (val & 0x80000000) holly_TA_list_init(this);
+            return 1;
         case 0x005f8068: // FB_X_CLIP
-            this->holly.FB_X_CLIP = val;
-            RT;
+            this->holly.FB_X_CLIP.u = val & B32(0000,0111,1111,1111,0000,0111,1111,1111);
+            return 1;
         case 0x005f806c: // FB_Y_CLIP
-            this->holly.FB_Y_CLIP = val;
-            RT;
+            this->holly.FB_Y_CLIP.u = val & B32(0000,0111,1111,1111,0000,0111,1111,1111);
+            return 1;
         case 0x005f8110: // FB_BURSTCTRL
-            this->holly.FB_BURSTCTRL = val;
-            RT;
+            this->holly.FB_BURSTCTRL.u = val & B32(0000,0000,0000,1111,1111,1111,0011,1111);
+            return 1;
         case 0x005f80d4: // SPG_HBLANK
-            this->holly.SPG_HBLANK = val;
-            RT;
+            this->holly.SPG_HBLANK.u = val & B32(0000,0011,1111,1111,0000,0011,1111,1111);
+            return 1;
         case 0x005f80d0: // SPG_CONTROL
-            this->holly.SPG_CONTROL = val;
-            RT;
+            this->holly.SPG_CONTROL.u = val & B32(0000,0000,0000,0000,0000,0011,1111,1111);
+            return 1;
         case 0x005f80dc: // SPG_VBLANK
-            this->holly.SPG_VBLANK = val;
-            RT;
+            this->holly.SPG_VBLANK.u = val & B32(0000,0011,1111,1111,0000,0011,1111,1111);
+            return 1;
         case 0x005f80d8: // SPG_LOAD
-            this->holly.SPG_LOAD.vcount = (val >> 16) & 0x3FF;
-            this->holly.SPG_LOAD.hcount = val & 0x3FF;
-            printf("\nSPG HCOUNT:%d VCOUNT:%d", this->holly.SPG_LOAD.hcount, this->holly.SPG_LOAD.vcount);
+            this->holly.SPG_LOAD.u = val & B32(0000,0011,1111,1111,0000,0011,1111,1111);
+            printf("\nSPG HCOUNT:%d VCOUNT:%d", this->holly.SPG_LOAD.f.hcount, this->holly.SPG_LOAD.f.vcount);
             fflush(stdout);
             DC_recalc_frame_timing(this);
-            RT;
+            return 1;
         case 0x005f80e0: // SPG_WIDTH
-            this->holly.SPG_WIDTH = val;
-            RT;
+            this->holly.SPG_WIDTH.u = val & B32(1111,1111,1111,1111,1111,1111,0111,1111);
+            return 1;
         case 0x005f808c: // ISP_BACKGND_T
-            this->holly.ISP_BACKGND_T.cache_bypass = (val >> 28) & 1;
-            this->holly.ISP_BACKGND_T.shadow = (val >> 27) & 1;
-            this->holly.ISP_BACKGND_T.skip = (val >> 24) & 7;
-            this->holly.ISP_BACKGND_T.tag_address = (val >> 3) & 0x000FFFFF;
-            this->holly.ISP_BACKGND_T.tag_offset = val & 7;
-            RT;
+            this->holly.ISP_BACKGND_T.u = val & B32(0001,1111,1111,1111,1111,1111,1111,1111);
+            return 1;
         case 0x005f80bc: // FOG_CLAMP_MAX
             this->holly.FOG_CLAMP_MAX = val;
-            RT;
+            return 1;
         case 0x005f80c0:
             this->holly.FOG_CLAMP_MIN = val;
-            RT;
+            return 1;
         case 0x005f80e4: // // TEXT_CONTROL
-            this->holly.TEXT_CONTROL.cb_endian_reg = (val >> 17) & 1;
-            this->holly.TEXT_CONTROL.index_endian_reg = (val >> 16) & 1;
-            this->holly.TEXT_CONTROL.bank_bit = (val >> 8) & 0x1F;
-            this->holly.TEXT_CONTROL.stride = val & 0x1F;
-            RT;
+            this->holly.TEXT_CONTROL.u = val & B32(0000,0000,0000,0011,0001,1111,0001,1111);
+            return 1;
         case 0x005f80f4: // SCALER_CTL
-            this->holly.SCALER_CTL = val;
-            RT;
+            this->holly.SCALER_CTL.u = val & B32(0000,0000,0000,0111,1111,1111,1111,1111);
+            return 1;
         case 0x005f804c: // FB_W_LINESTRIDE
-            this->holly.FB_W_LINESTRIDE = val;
-            RT;
+            this->holly.FB_W_LINESTRIDE.u = val & B32(0000,0000,0000,0000,0000,0001,1111,1111);
+            return 1;
         case 0x005f80c8: // SPG_HBLANK_INT
-            this->holly.SPG_HBLANK_INT = val;
-            RT;
+            this->holly.SPG_HBLANK_INT.u = val & B32(0000,0011,1111,1111,0011,0011,1111,1111);
+            return 1;
         case 0x005f8074: // FPU_SHAD_SCALE
-            this->holly.FPU_SHAD_SCALE = val;
-            RT;
+            this->holly.FPU_SHAD_SCALE.u = val & B32(0000,0000,0000,0000,0000,0001,1111,1111);
+            return 1;
         case 0x005f807c: // FPU_PARAM_CFG
-            this->holly.FPU_PARAM_CFG = val;
-            RT;
+            this->holly.FPU_PARAM_CFG.u = val & B32(0000,0000,0010,1111,1111,1111,1111,1111);
+            return 1;
         case 0x005f8080: // HALF_OFFSET
-            this->holly.HALF_OFFSET = val;
-            RT;
+            this->holly.HALF_OFFSET.u = val & B32(0000,0000,0000,0000,0000,0000,0000,0111);
+            return 1;
         case 0x005f8118: // Y_COEFF
-            this->holly.Y_COEFF = val;
-            RT;
+            this->holly.Y_COEFF.u = val & B32(0000,0000,0000,0000,1111,1111,1111,1111);
+            return 1;
         case 0x005f8078: // FPU_CULL_VAL (float)
             this->holly.FPU_CULL_VAL = *(float*)&val;
-            RT;
+            return 1;
         case 0x005f8084: // FPU_PERP_VAL (float)
             this->holly.FPU_PERP_VAL = *(float*)&val;
-            RT;
+            return 1;
         case 0x005f8088: // ISP_BACKGND_D (float)
             this->holly.ISP_BACKGND_D = *(float*)&val;
-            RT;
+            return 1;
         case 0x005F8008: // SOFTRESET
             holly_soft_reset(this);
-            RT;
+            return 1;
         case 0x005F8030: // SPAN_SORT_CFG, mostly ignore this
             this->holly.SPAN_SORT_CFG = val;
-            RT;
+            return 1;
         case 0x005F80B0: // FOG_COL_RAM
             this->holly.FOG_COL_RAM = val & 0xFFFFFF;
-            RT;
+            return 1;
         case 0x005F80CC:
-            this->holly.SPG_VBLANK_INT.vblank_in_line = (val & 0x3FF);
-            this->holly.SPG_VBLANK_INT.vblank_out_line = (val >> 16) & 0x3FF;
-            printf("\nVBLANK IN:%d OUT:%d", this->holly.SPG_VBLANK_INT.vblank_in_line, this->holly.SPG_VBLANK_INT.vblank_out_line);
+            this->holly.SPG_VBLANK_INT.u = val & B10_6_10;
+            printf("\nVBLANK IN:%d OUT:%d", this->holly.SPG_VBLANK_INT.f.vblank_in_line, this->holly.SPG_VBLANK_INT.f.vblank_out_line);
             fflush(stdout);
             DC_recalc_frame_timing(this);
-            RT;
+            return 1;
         case 0x005F80B4: // FOG_COL_VERT
             this->holly.FOG_COL_VERT = val & 0xFFFFFF;
-            RT;
+            return 1;
         case 0x005F80B8: // FOG_DENSITY
             this->holly.FOG_DENSITY = val & 0xFFFF;
-            RT;
+            return 1;
         case 0x005F8040: // V0 border color VO_BORDER_COL. default  = 0x005F8040
-            this->holly.VO_BORDER_COL = val;
-            RT;
+            this->holly.VO_BORDER_COL.u = val & B32(0000,0001,1111,1111,1111,1111,1111,1111);
+            return 1;
         case HOLLY_FB_R_CTRL:
-            this->holly.FB_R_CTRL.vclk_div = (val >> 23) & 1;
-            this->holly.FB_R_CTRL.fb_strip_buf_en = (val >> 22) & 1;
-            this->holly.FB_R_CTRL.fb_stripsize = (val >> 16) & 0x3F;
-            this->holly.FB_R_CTRL.fb_chroma_threshold = (val >> 8) & 0xFF;
-            this->holly.FB_R_CTRL.fb_concat = (val >> 4) & 7;
-            this->holly.FB_R_CTRL.fb_depth = (val >> 2) & 3;
-            this->holly.FB_R_CTRL.fb_enable = val & 1;
-            printf("\nHOLLY enable:%d depth:%d", this->holly.FB_R_CTRL.fb_enable, this->holly.FB_R_CTRL.fb_depth);
-            RT;
+            this->holly.FB_R_CTRL.u = val & B32(0000,0000,1111,1111,1111,1111,0111,1111);
+            printf("\nHOLLY enable:%d depth:%d", this->holly.FB_R_CTRL.f.fb_enable, this->holly.FB_R_CTRL.f.fb_depth);
+            return 1;
         case HOLLY_FB_W_CTRL:
-            this->holly.FB_W_CTRL.fb_alpha_threshold = (val >> 16) & 0xFF;
-            this->holly.FB_W_CTRL.fb_kval = (val >> 8) & 0xFF;
-            this->holly.FB_W_CTRL.fb_dither = (val >> 3) & 1;
-            this->holly.FB_W_CTRL.fb_packmode = val & 7;
-            RT;
+            this->holly.FB_W_CTRL.u = val & B32(0000,0000,1111,1111,1111,1111,0000,1111);
+            return 1;
         case HOLLY_FB_W_SOF1:
-            this->holly.FB_W_SOF1 = val & 0x01FFFFFC;
-            RT;
+            this->holly.FB_W_SOF1.u = val & 0x01FFFFFC;
+            return 1;
         case HOLLY_FB_W_SOF2:
-            this->holly.FB_W_SOF2 = val & 0x01FFFFFC;
-            RT;
+            this->holly.FB_W_SOF2.u = val & 0x01FFFFFC;
+            return 1;
         case HOLLY_FB_R_SOF1:
-            this->holly.FB_R_SOF1 = val & 0x00FFFFFC;
+            this->holly.FB_R_SOF1.u = val & 0x00FFFFFC;
             printf("\nRSOF1 new val %08x cycle %llu", val & 0x00FFFFFC, this->sh4.trace_cycles);
             fflush(stdout);
-            RT;
+            return 1;
         case HOLLY_FB_R_SOF2:
-            this->holly.FB_R_SOF2 = val & 0x00FFFFFC;
-            RT;
+            this->holly.FB_R_SOF2.u = val & 0x00FFFFFC;
+            return 1;
         case HOLLY_FB_R_SIZE:
-            this->holly.FB_R_SIZE.fb_modulus = (val >> 20) & 0x3FF;
-            this->holly.FB_R_SIZE.fb_y_size = (val >> 10) & 0x3FF;
-            this->holly.FB_R_SIZE.fb_x_size = val & 0x3FF;
-            printf("\nHOLLY mod:%03x ysize:%d xsize:%d", this->holly.FB_R_SIZE.fb_modulus,
-                   this->holly.FB_R_SIZE.fb_y_size, this->holly.FB_R_SIZE.fb_x_size);
+            this->holly.FB_R_SIZE.u = val & B32(0011,1111,1111,1111,1111,1111,1111,1111);
+            printf("\nHOLLY mod:%03x ysize:%d xsize:%d", this->holly.FB_R_SIZE.f.fb_modulus,
+                   this->holly.FB_R_SIZE.f.fb_y_size, this->holly.FB_R_SIZE.f.fb_x_size);
             fflush(stdout);
-            RT;
+            return 1;
     }
     printf("\nUNKNOWN HOLLY WRITE: %08x data:%08x cyc:%llu", addr, val, this->sh4.trace_cycles);
     fflush(stdout);
@@ -265,8 +263,9 @@ I'm not too sure about my implementation, but interrupts from SB_ISTNRM/SB_ISTEX
 
 void holly_reset(struct DC* this)
 {
-    this->holly.VO_BORDER_COL = 0x005F8040;
-    this->holly.SPG_VBLANK_INT.vblank_out_line = 0x150;
-    this->holly.SPG_VBLANK_INT.vblank_in_line = 0x104;
-    this->holly.SPG_LOAD.vcount = 400; // TODO: not correct but necessary to avoid divide by 0 in simple scheduler_t
+    this->holly.VO_BORDER_COL.u = 0x005F8040;
+    this->holly.SPG_VBLANK_INT.u = 0;
+    this->holly.SPG_VBLANK_INT.f.vblank_out_line = 0x150;
+    this->holly.SPG_VBLANK_INT.f.vblank_in_line = 0x104;
+    this->holly.SPG_LOAD.f.vcount = 400; // TODO: not correct but necessary to avoid divide by 0 in simple scheduler_t
 }

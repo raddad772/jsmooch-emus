@@ -38,5 +38,5 @@ void GDROM_write(struct DC* this, u32 reg, u32 val, u32 bits)
 
 u32 GDROM_read(struct DC* this, u32 reg, u32 bits)
 {
-
+    return 0;
 }

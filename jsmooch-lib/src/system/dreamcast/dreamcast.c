@@ -156,16 +156,16 @@ void DC_delete(struct jsm_system* jsm)
 
 void DC_copy_fb(struct DC* this, u32* where) {
     u32* ptr = (u32*)this->VRAM;
-    ptr += (this->holly.FB_R_SOF1 >> 2);
+    ptr += this->holly.FB_R_SOF1.f.field;
     //ptr += 0x00020000;
 
     //printf("\nRENDER USING PTR %08llx", ptr - ((u32*)this->VRAM));
 
     u32* out = where;
     u8* rgb;
-    for (u32 y = 0; y <= this->holly.FB_R_SIZE.fb_y_size; y++) {
+    for (u32 y = 0; y <= this->holly.FB_R_SIZE.f.fb_y_size; y++) {
         out = (where + (y * 640));
-        for (u32 x = 0; x <= this->holly.FB_R_SIZE.fb_x_size; x++) {
+        for (u32 x = 0; x <= this->holly.FB_R_SIZE.f.fb_x_size; x++) {
             rgb = (u8*) ptr;
             u32 r = rgb[0];
             u32 g = rgb[1];
@@ -174,7 +174,7 @@ void DC_copy_fb(struct DC* this, u32* where) {
             ptr++;
             out++;
         }
-        ptr += (this->holly.FB_R_SIZE.fb_modulus) - 1;
+        ptr += (this->holly.FB_R_SIZE.f.fb_modulus) - 1;
     }
 }
 
