@@ -377,6 +377,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
         if ((til_next_event+steps_done) > howmany) {
             til_next_event = howmany - steps_done;
         }
+        if (til_next_event == 0) break; // ran outta cycles before an event
         i64 old_cycles = (i64)this->sh4.trace_cycles;
         SH4_run_cycles(&this->sh4, til_next_event);
         i64 ran_cycles = (i64)this->sh4.trace_cycles - old_cycles;

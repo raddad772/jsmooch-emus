@@ -117,6 +117,7 @@ static void read_directory_entry(struct ISO9660_directory_record* this, u8* w, u
     // Now read out the sectors it says to
     u32 sz = ((this->size_extant + 2047) / 2048) * 2048;
     buf_allocate(&this->data, sz);
+    printf("\nLE %d", this->location_extant);
     read_sectors_to_buffer(this->data.ptr, track, this->location_extant, sz / 2048);
 }
 
@@ -149,12 +150,14 @@ static void read_primary_volume_descriptor(struct ISO9660_volume_descriptor *vd,
     vd->optional_type_l_loc = decode_du32(sector + 144) - lba_start;
     read_directory_entry(&vd->root_entry, sector+156, lba_start, track, 1);
     u8* ptr = vd->root_entry.data.ptr;
+    return;
     struct ISO9660_directory_record dr;
     do {
         read_directory_entry(&dr, ptr, lba_start, track, 0);
         pprint_directory_entry(&dr);
         if ((ptr - (u8*)vd->root_entry.data.ptr) > 2048) break;
         printf("\n! %d", dr.len);
+        ptr += dr.len;
     } while(true);
     memcpy(vd->set_id, sector+190, 128);
     memcpy(vd->publisher_id, sector+318, 128);

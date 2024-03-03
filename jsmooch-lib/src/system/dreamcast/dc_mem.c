@@ -5,6 +5,7 @@
 #include "stdio.h"
 #include "dc_mem.h"
 #include "holly.h"
+#include "gdrom.h"
 
 #define THIS struct DC* this = (struct DC*)ptr
 
@@ -174,13 +175,25 @@ u32 DCread16(void *ptr, u32 addr)
     return (u32)ret;
 }
 
+u32 DCread_flash(struct DC* this, u32 addr, u32 bits)
+{
+    switch(addr) {
+
+    }
+    return *(u32 *)((u8*)this->flash.ptr + (addr & 0x1FFFF));
+}
+
 u32 DCread32(void *ptr, u32 addr) {
     THIS;
     i64 ret = -1;
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if (addr < 0x1FFFFF)
-        ret = *(u32 *) (((u8 *) this->BIOS.ptr + addr));
+        ret = *(u32 *) ((((u8 *) this->BIOS.ptr) + (addr & 0x1FFFFF)));
+    if ((addr >= 0x200000 ) && (addr <= 0x21FFFF)) {
+        ret = DCread_flash(this, addr, 32);
+    }
+
     if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
         ret = *(u32 *) (this->RAM + (addr & 0xFFFFFF));
 
@@ -261,18 +274,18 @@ void DCwrite8(void *ptr, u32 addr, u32 val)
     printf("\nwrite8 unknown addr %08x %08x val %02x cycle:%llu", addr, maddr, val, this->sh4.trace_cycles);
 }
 
-void GDR_write(struct DC* this, u32 reg, u32 val)
+void G1_write(struct DC* this, u32 reg, u32 val, u32 bits)
 {
-    /*switch(reg) {
-    }*/
-    printf("\nUnhandled GDR reg write %02x", reg);
-}
-
-void G1_write(struct DC* this, u32 reg, u32 val)
-{
-    /*switch(reg) {
-    }*/
-    printf("\nUnhandled G1 reg write %02x", reg);
+    switch(reg | 0x5F7400) {
+        case 0x5F7480: { // SB_G1RRC write-only timing for system ROM accesses
+            return;
+        }
+        case 0x5F74E4: { // Secret GDROM unlock register!
+            printf("\nGDROM UNLOCK! %04x cyc:%llu", val, this->sh4.trace_cycles);
+            return;
+        }
+    }
+    printf("\nUnhandled G1 reg write %02x val %04x bits %d", reg, val, bits);
 }
 
 
@@ -306,12 +319,12 @@ void DCwrite16(void *ptr, u32 addr, u32 val)
     }
 
     if ((addr >= 0x005F7000) && (addr <= 0x005F70FF)) {
-        GDR_write(this, maddr & 0xFF, val);
+        GDROM_write(this, maddr & 0xFF, val, 16);
         return;
     }
 
     if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) {
-        G1_write(this, maddr, val);
+        G1_write(this, maddr & 0xFF, val, 16);
         return;
     }
 
@@ -341,7 +354,17 @@ void DCwrite16(void *ptr, u32 addr, u32 val)
 void DCwrite32(void *ptr, u32 addr, u32 val)
 {
     THIS;
+
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf("\ncyc:%05llu write32  addr:%08x val:%08x", this->sh4.trace_cycles, addr, val);
+    }
+#endif
+
     u32 maddr = addr;
+    if (maddr == 0x8c00b7bc) {
+        printf("\nWRITE TO 8C00B7BC cyc:%llu val:%08x PC:%08x", this->sh4.trace_cycles, val, this->sh4.regs.PC);
+    }
     addr &= 0x1FFFFFFF;
 
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
@@ -361,7 +384,7 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
         return holly_write(this, addr, val);
     }
     if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) {
-        G1_write(this, maddr, val);
+        G1_write(this, maddr & 0xFF, val, 32);
         return;
     }
 

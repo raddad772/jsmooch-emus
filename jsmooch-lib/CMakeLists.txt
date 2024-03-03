@@ -123,6 +123,8 @@ add_library(jsmooch-lib
         src/component/cpu/z80/z80_disassembler.h
         src/helpers/scheduler.c
         src/helpers/scheduler.h
+        src/system/dreamcast/gdrom.c
+        src/system/dreamcast/gdrom.h
 )
 
 include_directories(src/)
