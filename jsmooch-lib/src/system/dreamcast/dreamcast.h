@@ -19,10 +19,10 @@
 #define DC_INT_VBLANK_OUT 0x10
 
 enum DC_MEM_SIZE {
-    DC8,
-    DC16,
-    DC32,
-    DC64
+    DC8 = 1,
+    DC16 = 2,
+    DC32 = 4,
+    DC64 = 8
 };
 
 void DC_new(struct jsm_system* system, struct JSM_IOmap *iomap);

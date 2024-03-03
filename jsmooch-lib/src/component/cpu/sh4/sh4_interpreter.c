@@ -214,13 +214,9 @@ void SH4_init(struct SH4* this)
     //printf("\nINS! %s\n", SH4_disassembled[0x6122]);
 
     this->mptr = NULL;
-    this->read8 = NULL;
-    this->read16 = NULL;
     this->fetch_ins = NULL;
-    this->read32 = NULL;
-    this->write8 = NULL;
-    this->write16 = NULL;
-    this->write32 = NULL;
+    this->read = NULL;
+    this->write = NULL;
     this->interrupt_level = 0;
 }
 

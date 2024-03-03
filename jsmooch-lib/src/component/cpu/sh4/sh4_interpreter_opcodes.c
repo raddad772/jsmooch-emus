@@ -41,18 +41,22 @@
 
 #define BADOPCODE printf("\nUNIMPLEMENTED INSTRUCTION %s", __func__); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s", __func__)
 
-#define READ8(addr) this->read8(this->mptr, addr)
-#define READ16(addr) this->read16(this->mptr, addr)
-#define READ32(addr) this->read32(this->mptr, addr)
-#define WRITE8(addr, val) this->write8(this->mptr, addr, val)
-#define WRITE16(addr, val) this->write16(this->mptr, addr, val)
-#define WRITE32(addr, val) this->write32(this->mptr, addr, val)
+#define READ8(addr) this->read(this->mptr, addr, DC8)
+#define READ16(addr) this->read(this->mptr, addr, DC16)
+#define READ32(addr) this->read(this->mptr, addr, DC32)
+#define WRITE8(addr, val) this->write(this->mptr, addr, val, DC8)
+#define WRITE16(addr, val) this->write(this->mptr, addr, val, DC16)
+#define WRITE32(addr, val) this->write(this->mptr, addr, val, DC32)
 
 #define SH4ins(x) void SH4_##x(SH4args)
 
 #define DELAY_SLOT { PCinc; SH4_fetch_and_exec(this); }
 
-
+enum MSIZE {
+    DC8 = 1,
+    DC16 = 2,
+    DC32 = 4
+};
 /*
  Source: The interrupt mask bit setting in SR is smaller than the IRL (3ñ0) level, and the BL bit
 in SR is 0 (accepted at instruction boundary).

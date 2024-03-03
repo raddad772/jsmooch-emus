@@ -7,7 +7,7 @@
 
 #include "dreamcast.h"
 
-void holly_write(struct DC* this, u32 addr, u32 val);
+u32 holly_write(struct DC* this, u32 addr, u32 val);
 u32 holly_read(struct DC* this, u32 addr);
 void holly_reset(struct DC* this);
 void DC_recalc_frame_timing(struct DC* this);

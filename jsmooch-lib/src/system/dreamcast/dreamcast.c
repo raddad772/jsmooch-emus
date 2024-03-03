@@ -68,12 +68,8 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 
     SH4_init(&this->sh4);
     this->sh4.mptr = (void *)this;
-    this->sh4.read8 = &DCread8;
-    this->sh4.read16 = &DCread16;
-    this->sh4.read32 = &DCread32;
-    this->sh4.write8 = &DCwrite8;
-    this->sh4.write16 = &DCwrite16;
-    this->sh4.write32 = &DCwrite32;
+    this->sh4.read = &DCread;
+    this->sh4.write = &DCwrite;
     this->sh4.fetch_ins = &DCfetch_ins;
     DC_mem_init(this);
 
@@ -438,19 +434,19 @@ void DCJ_load_ROM(JSM, struct multi_file_set* mfs)
 
     // Thanks Senryoku!
     // RTE - Some interrupts jump there instead of having their own RTE, I have NO idea why.
-    this->sh4.write32(this->sh4.mptr, 0x8C000010, 0x00090009); // nop nop
-    this->sh4.write32(this->sh4.mptr, 0x8C000014, 0x0009002B); // rte nop
+    this->sh4.write(this->sh4.mptr, 0x8C000010, 0x00090009, DC32); // nop nop
+    this->sh4.write(this->sh4.mptr, 0x8C000014, 0x0009002B, DC32); // rte nop
     // RTS
-    this->sh4.write32(this->sh4.mptr, 0x8C000018, 0x00090009);
-    this->sh4.write32(this->sh4.mptr, 0x8C00001C, 0x0009000B);
+    this->sh4.write(this->sh4.mptr, 0x8C000018, 0x00090009, DC32);
+    this->sh4.write(this->sh4.mptr, 0x8C00001C, 0x0009000B, DC32);
 
     // Write some values to HOLLY...
-    this->sh4.write32(this->sh4.mptr, 0x005F8048, 6);          // FB_W_CTRL
-    this->sh4.write32(this->sh4.mptr, 0x005F8060, 0x00600000); // FB_W_SOF1
-    this->sh4.write32(this->sh4.mptr, 0x005F8064, 0x00600000); // FB_W_SOF2
-    this->sh4.write32(this->sh4.mptr, 0x005F8044, 0x0080000D); // FB_R_CTRL
-    this->sh4.write32(this->sh4.mptr, 0x005F8050, 0x00200000); // FB_R_SOF1
-    this->sh4.write32(this->sh4.mptr, 0x005F8054, 0x00200000); // FB_R_SOF2
+    this->sh4.write(this->sh4.mptr, 0x005F8048, 6, DC32);          // FB_W_CTRL
+    this->sh4.write(this->sh4.mptr, 0x005F8060, 0x00600000, DC32); // FB_W_SOF1
+    this->sh4.write(this->sh4.mptr, 0x005F8064, 0x00600000, DC32); // FB_W_SOF2
+    this->sh4.write(this->sh4.mptr, 0x005F8044, 0x0080000D, DC32); // FB_R_CTRL
+    this->sh4.write(this->sh4.mptr, 0x005F8050, 0x00200000, DC32); // FB_R_SOF1
+    this->sh4.write(this->sh4.mptr, 0x005F8054, 0x00200000, DC32); // FB_R_SOF2
 
     DC_schedule_frame(this);
 }
