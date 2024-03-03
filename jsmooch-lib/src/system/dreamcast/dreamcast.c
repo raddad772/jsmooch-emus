@@ -74,6 +74,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     this->sh4.write8 = &DCwrite8;
     this->sh4.write16 = &DCwrite16;
     this->sh4.write32 = &DCwrite32;
+    this->sh4.fetch_ins = &DCfetch_ins;
     DC_mem_init(this);
 
     this->clock.frame_cycle = 0;

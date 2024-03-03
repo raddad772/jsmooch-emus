@@ -123,6 +123,7 @@ struct SH4 {
     void *mptr;
     u32 (*read8)(void*,u32);
     u32 (*read16)(void*,u32);
+    u32 (*fetch_ins)(void*,u32);
     u32 (*read32)(void*,u32);
     void (*write8)(void*,u32,u32);
     void (*write16)(void*,u32,u32);

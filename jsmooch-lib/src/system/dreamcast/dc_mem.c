@@ -85,54 +85,83 @@ void DCwrite(struct DC* this, u32 addr, u32 val, enum DC_MEM_SIZE sz)
 
 }
 
+#if defined(SH4_DBG_SUPPORT) || defined(DO_LAST_TRACES)
+#define yRT(x) ret = x
+#else
+#define yRT(x) return (x)
+#endif
+
+u32 DCread_flash(struct DC* this, u32 addr, u32 bits)
+{
+    switch(addr) {
+
+    }
+    return *(u32 *)((u8*)this->flash.ptr + (addr & 0x1FFFF));
+}
 
 u32 DCread8(void *ptr, u32 addr)
 {
     THIS;
     u32 maddr = addr;
+    i64 ret = -1;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if (addr <= 0x1FFFFF)
-        return ((u8 *)this->BIOS.ptr)[addr];
+        yRT(((u8 *)this->BIOS.ptr)[addr]);
     if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
         //ret = this->RAM[addr - 0xC000000];
-        return this->RAM[addr & 0xFFFFFF];
+        yRT(this->RAM[addr & 0xFFFFFF]);
 
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
         if (this->sh4.regs.CCR.OIX == 0)
-            return this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)];
+            yRT(this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]);
         else
-            return this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)];
+            yRT(this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]);
     }
 
     switch(maddr) {
         case  0xFFD80004:  // TSTR
-            return 0;
+            yRT(0);
     }
-    printf("\nread8 from UNKNOWN addr:%08x %08x", addr, maddr);
-    fflush(stdout);
-    return 0;
+    if (ret == -1) {
+        printf("\nread8 from UNKNOWN addr:%08x %08x", addr, maddr);
+        fflush(stdout);
+        return 0;
+    }
+
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf("\ncyc:%05llu read8    addr:%08x val:%02x", this->sh4.trace_cycles, addr, ret);
+    }
+#endif
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf("\ncyc:%05llu read8    addr:%08x val:%02x", this->sh4.trace_cycles, addr, ret);
+    dbg_LT_endline();
+#endif
+
+    return (u32)ret;
 }
 
-u32 DCread16(void *ptr, u32 addr)
+u32 DCread16r(void *ptr, u32 addr, u32 ins_fetch)
 {
     THIS;
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     i64 ret = -1;
     if (addr < 0x1FFFFF)
-        ret = *(u16 *)(((u8 *)this->BIOS.ptr+addr));
+        yRT(*(u16 *)(((u8 *)this->BIOS.ptr+addr)));
     if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
-        ret = *(u16 *)(this->RAM+(addr & 0xFFFFFF));
+        yRT(*(u16 *)(this->RAM+(addr & 0xFFFFFF)));
 
     switch(maddr) {
-        case 0xFF800030: // PDTRA from Bus Control
+        case 0xFF800030: {
+            // PDTRA from Bus Control
             // Note: I got it from Deecy...
             // Note: I have absolutely no idea what's going on here.
             //       This is directly taken from Flycast, which already got it from Chankast.
             //       This is needed for the bios to work properly, without it, it will
             //       go to sleep mode with all interrupts disabled early on.
-            ;u32 tpctra = this->io.PCTRA;
+            u32 tpctra = this->io.PCTRA;
             u32 tpdtra = this->io.PDTRA;
 
             u16 tfinal = 0;
@@ -144,25 +173,26 @@ u32 DCread16(void *ptr, u32 addr)
                 tfinal = 0;
             }
 
-            if (((tpctra & 0xf) == 0xB) && ( (tpdtra & 0xf) == 2)) {
-                    tfinal = 0;
+            if (((tpctra & 0xf) == 0xB) && ((tpdtra & 0xf) == 2)) {
+                tfinal = 0;
             } else if (((tpctra & 0xf) == 0xC) && ((tpdtra & 0xf) == 2)) {
-            tfinal = 3;
+                tfinal = 3;
             }
 
             tfinal |= 0; // 0=VGA, 2=RGB, 3=composite //@intFromEnum(self._dc.?.cable_type) << 8;
 
-            return tfinal;
+            yRT(tfinal);
+        }
         case 0xFF800028: // RFCR
             // doc a little unclear on this
-            return this->io.RFCR;
+            yRT(this->io.RFCR);
     }
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
         if (this->sh4.regs.CCR.OIX == 0)
-            return *(u16 *)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]);
+            yRT(*(u16 *)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]));
         else
-            return *(u16 *)(&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]);
+            yRT(*(u16 *)(&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]));
     }
 
 
@@ -171,16 +201,28 @@ u32 DCread16(void *ptr, u32 addr)
         fflush(stdout);
         return 0;
     }
-    //printf("\nR16 A:%08x V:%04x", (u32)addr, (u32)ret);
+
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf("\ncyc:%05llu read16   addr:%08x val:%04x", this->sh4.trace_cycles, addr, ret);
+    }
+#endif
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf("\ncyc:%05llu read16   addr:%08x val:%04x", this->sh4.trace_cycles, addr, ret);
+    dbg_LT_endline();
+#endif
+
     return (u32)ret;
 }
 
-u32 DCread_flash(struct DC* this, u32 addr, u32 bits)
+u32 DCread16(void *ptr, u32 addr)
 {
-    switch(addr) {
+    return DCread16r(ptr, addr, false);
+}
 
-    }
-    return *(u32 *)((u8*)this->flash.ptr + (addr & 0x1FFFF));
+u32 DCfetch_ins(void *ptr, u32 addr)
+{
+    return DCread16r(ptr, addr, true);
 }
 
 u32 DCread32(void *ptr, u32 addr) {
@@ -189,53 +231,66 @@ u32 DCread32(void *ptr, u32 addr) {
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if (addr < 0x1FFFFF)
-        ret = *(u32 *) ((((u8 *) this->BIOS.ptr) + (addr & 0x1FFFFF)));
+        yRT(*(u32 *) ((((u8 *) this->BIOS.ptr) + (addr & 0x1FFFFF))));
     if ((addr >= 0x200000 ) && (addr <= 0x21FFFF)) {
-        ret = DCread_flash(this, addr, 32);
+        yRT(DCread_flash(this, addr, 32));
     }
 
     if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
-        ret = *(u32 *) (this->RAM + (addr & 0xFFFFFF));
+        yRT(*(u32 *) (this->RAM + (addr & 0xFFFFFF)));
 
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
         if (this->sh4.regs.CCR.OIX == 0)
-            return *(u32 *)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]);
+            yRT(*(u32 *)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]));
         else
-            return *(u32 *)(&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]);
+            yRT(*(u32 *)(&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]));
     }
 
     if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF))
-        return holly_read(this, addr);
+        yRT(holly_read(this, addr));
 
     switch(addr) {
         case 0x005F6900: // Interrupt status register SB_ISTNRM
             // Clear anything that a 1 is written to in bits 21 to 0
 #ifdef LYCODER
-            return 8; // stub for IP.BIN to bypass vblank wait
+            yRT(return 8); // stub for IP.BIN to bypass vblank wait
 #else
-        return this->io.SB_ISTNRM;
+            yRT(this->io.SB_ISTNRM);
 #endif
         case 0x00702c00: // AICA ARMRST
-            return this->aica.ARMRST;
+            yRT(this->aica.ARMRST);
         case 0x1F000024: // EXPEVT
-            return this->sh4.regs.EXPEVT;
+            dbg_printf("\nREAD EXPEVT");
+            yRT(this->sh4.regs.EXPEVT);
     }
 
     switch(maddr) {
         case 0xFFD8000C:
             //printf("\nTCTN0 %d", this->io.TCNT0);
-            return this->io.TCNT0;
+            yRT(this->io.TCNT0);
     }
 
     if (ret < 0) {
         //dbg_break();
+#ifdef SH4_DBG_SUPPORT
+        if (dbg.trace_on)
+            dbg_printf("\nread32 unknown addr %08x %08x cycle%llu", addr, maddr, this->sh4.trace_cycles);
+#endif
         printf("\nread32 unknown addr %08x %08x cycle%llu", addr, maddr, this->sh4.trace_cycles);
-        dbg_printf("\nIT HAPPENED HERE!");
         fflush(stdout);
         return 0;
     }
-    //dbg_printf("\nRd32 A:%08X V:%08x", (u32) addr, (u32) ret);
+
+#ifdef SH4_DBG_SUPPORT
+        if (dbg.trace_on) {
+            dbg_printf("\ncyc:%05llu read32   addr:%08x val:%08x", this->sh4.trace_cycles, addr, ret);
+        }
+#endif
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf("\ncyc:%05llu read32   addr:%08x val:%08x", this->sh4.trace_cycles, addr, ret);
+    dbg_LT_endline();
+#endif
     return ret;
 }
 
@@ -243,6 +298,15 @@ void DCwrite8(void *ptr, u32 addr, u32 val)
 {
     THIS;
     val &= 0xFF;
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf("\ncyc:%05llu write16  addr:%08x val:%02x", this->sh4.trace_cycles, addr, val);
+    }
+#endif
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf("\ncyc:%05llu write16  addr:%08x val:%02x", this->sh4.trace_cycles, addr, val);
+    dbg_LT_endline();
+#endif
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
@@ -293,6 +357,15 @@ void DCwrite16(void *ptr, u32 addr, u32 val)
 {
     THIS;
     val &= 0xFFFF;
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf("\ncyc:%05llu write16  addr:%08x val:%04x", this->sh4.trace_cycles, addr, val);
+    }
+#endif
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf("\ncyc:%05llu write16  addr:%08x val:%04x", this->sh4.trace_cycles, addr, val);
+    dbg_LT_endline();
+#endif
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
@@ -359,6 +432,10 @@ void DCwrite32(void *ptr, u32 addr, u32 val)
     if (dbg.trace_on) {
         dbg_printf("\ncyc:%05llu write32  addr:%08x val:%08x", this->sh4.trace_cycles, addr, val);
     }
+#endif
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf("\ncyc:%05llu write32  addr:%08x val:%08x", this->sh4.trace_cycles, addr, val);
+    dbg_LT_endline();
 #endif
 
     u32 maddr = addr;

@@ -193,7 +193,7 @@ SH4ins(MOVLP)
     RN = READ32(RM);
     if (ins->Rn != ins->Rm)
         RM += 4;
-    printf(" nrm:%08x", RM);
+    printf(" nrm:%08x cyc:%06llu", RM, this->trace_cycles);
     PCinc;
 }
 
@@ -983,6 +983,10 @@ SH4ins(PREF) { // (Rn) -> operand cache
             WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
             naddr += 4;
         }
+    }
+    else if (dbg.trace_on)
+    {
+        dbg_printf("\nPREFETCH %08x", RN);
     }
     //read in (RN & 0xFFFFFFE0) to operand cache
     //BADOPCODE; // Crash on unimplemented opcode

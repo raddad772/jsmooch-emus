@@ -14,5 +14,6 @@ u32 DCread32(void *ptr, u32 addr);
 void DCwrite8(void *ptr, u32 addr, u32 val);
 void DCwrite16(void *ptr, u32 addr, u32 val);
 void DCwrite32(void *ptr, u32 addr, u32 val);
+u32 DCfetch_ins(void *ptr, u32 addr);
 
 #endif //JSMOOCH_EMUS_DC_MEM_H

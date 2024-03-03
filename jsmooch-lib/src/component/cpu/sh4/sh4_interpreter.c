@@ -4,13 +4,15 @@
 
 #include "stdio.h"
 #include "string.h"
+#include "stdarg.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 #include "fsca.h"
 
 // Endianness is little.
 
-
+// disassembly printf args
+#define SH_DISA_P_ARGS "\ncyc:%05d addr:%08x opcode:%04x %s   ", this->trace_cycles, this->regs.PC, opcode, SH4_disassembled[opcode]
 
 void SH4_set_interrupt(struct SH4* this, u32 level)
 {
@@ -73,36 +75,70 @@ void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val)
     this->FPSCR.RM = val & 3;
 }
 
-static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins)
+static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces)
 {
     u32 had_any = 0;
     i32 last_n = -1;
     i32 last_m = -1;
-    dbg_seek_in_line(60);
+    if (!last_traces)
+        dbg_seek_in_line(60);
+    else
+        dbg_LT_seek_in_line(60);
     if (ins->Rn != -1) {
-        dbg_printf("R%d:%08x", ins->Rn, this->regs.R[ins->Rn]);
+        if (!last_traces)
+            dbg_printf("R%d:%08x", ins->Rn, this->regs.R[ins->Rn]);
+        else
+            dbg_LT_printf("R%d:%08x", ins->Rn, this->regs.R[ins->Rn]);
+
         had_any = 1;
         last_n = (i32)ins->Rn;
     }
     if (ins->Rm != -1) {
         if (had_any) dbg_printf(" ");
         had_any = 1;
-        dbg_printf("R%d:%08x", ins->Rm, this->regs.R[ins->Rm]);
+        if (!last_traces)
+            dbg_printf("R%d:%08x", ins->Rm, this->regs.R[ins->Rm]);
+        else
+            dbg_LT_printf("R%d:%08x", ins->Rm, this->regs.R[ins->Rm]);
         last_m = (i32)ins->Rm;
     }
     if ((this->pp_last_m != -1) && (this->pp_last_m != ins->Rm) && (this->pp_last_m != ins->Rn)) {
-        if (had_any) dbg_printf(" ");
+        if (had_any) {
+            if (!last_traces)
+                dbg_printf(" ");
+            else
+                dbg_LT_printf(" ");
+        }
         had_any = 1;
-        dbg_printf("R%d:%08x", this->pp_last_m, this->regs.R[this->pp_last_m]);
+        if (!last_traces)
+            dbg_printf("R%d:%08x", this->pp_last_m, this->regs.R[this->pp_last_m]);
+        else
+            dbg_LT_printf("R%d:%08x", this->pp_last_m, this->regs.R[this->pp_last_m]);
     }
     if ((this->pp_last_n != -1) && (this->pp_last_n != ins->Rm) && (this->pp_last_n != ins->Rn)) {
-        if (had_any) dbg_printf(" ");
+        if (had_any) {
+            if (!last_traces)
+                dbg_printf(" ");
+            else
+                dbg_LT_printf(" ");
+        }
         had_any = 1;
-        dbg_printf("R%d:%08x", this->pp_last_n, this->regs.R[this->pp_last_n]);
+        if (!last_traces)
+            dbg_printf("R%d:%08x", this->pp_last_n, this->regs.R[this->pp_last_n]);
+        else
+            dbg_LT_printf("R%d:%08x", this->pp_last_n, this->regs.R[this->pp_last_n]);
     }
     if ((ins->Rn != 0) && (ins->Rm != 0) && (this->pp_last_m != 0) && (this->pp_last_n != 0)) {
-        if (had_any) dbg_printf(" ");
-        dbg_printf(" R0:%08x", this->regs.R[0]);
+        if (had_any) {
+            if (!last_traces)
+                dbg_printf(" ");
+            else
+                dbg_LT_printf(" ");
+        }
+        if (!last_traces)
+            dbg_printf(" R0:%08x", this->regs.R[0]);
+        else
+            dbg_LT_printf(" R0:%08x", this->regs.R[0]);
     }
 
     this->pp_last_m = last_m;
@@ -123,28 +159,29 @@ void lycoder_print(struct SH4* this, u32 opcode)
 
 void SH4_fetch_and_exec(struct SH4* this)
 {
-    u32 opcode = this->read16(this->mptr, this->regs.PC);
+    u32 opcode = this->fetch_ins(this->mptr, this->regs.PC);
 #ifdef SH4_DBG_SUPPORT
 #ifdef SH4_BRK
     if (this->regs.PC == SH4_BRK) {
         dbg_break();
-#ifdef TRACE_ON_BRK
-        dbg_enable_trace();
-#endif
     }
 #endif // SH4_BRK
     this->trace_cycles++;
 #endif
     this->cycles--;
     struct SH4_ins_t *ins = &SH4_decoded[opcode];
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf(SH_DISA_P_ARGS);
+    SH4_pprint(this, ins, true);
+    dbg_LT_endline();
+#endif
 #ifdef LYCODER
     lycoder_print(this, opcode);
 #else // !LYCODER
 #ifdef SH4_DBG_SUPPORT
     if (dbg.trace_on) {
-        dbg_printf("\ncyc:%04d addr:%08x opcode:%04x %s   ", this->trace_cycles, this->regs.PC, opcode,
-                   SH4_disassembled[opcode]);
-        SH4_pprint(this, ins);
+        dbg_printf(SH_DISA_P_ARGS);
+        SH4_pprint(this, ins, false);
     }
 #endif // SH4_DBG_SUPPORT
 #endif // else !LYCODER
@@ -174,11 +211,12 @@ void SH4_init(struct SH4* this)
     this->trace_cycles = 0;
     SH4_reset(this);
     generate_fsca_table();
-    printf("\nINS! %s\n", SH4_disassembled[0x6122]);
+    //printf("\nINS! %s\n", SH4_disassembled[0x6122]);
 
     this->mptr = NULL;
     this->read8 = NULL;
     this->read16 = NULL;
+    this->fetch_ins = NULL;
     this->read32 = NULL;
     this->write8 = NULL;
     this->write16 = NULL;
@@ -236,7 +274,6 @@ undefined
     SH4_regs_FPSCR_set(&this->regs, 0x00040001);
     SH4_SR_set(this, (SH4_regs_SR_get(&this->regs.SR) &  0b11110011) | 0b01110000000000000000000011110000);
 }
-
 
 
 /* syscalls - https://mc.pp.se/dc/syscalls.html
