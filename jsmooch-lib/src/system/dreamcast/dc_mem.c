@@ -56,30 +56,64 @@ void DC_mem_init(struct DC* this)
 #undef MAP
 }
 
+u64 VMASK[9] = {
+        0,
+        0xFF, // 1 = 8-bit
+        0xFFFF, // 2 = 16-bit
+        0,
+        0xFFFFFFFF, // 4 = 32-bit
+        0,
+        0,
+        0,
+        0xFFFFFFFFFFFFFFFF // 8 = 64-bit?
+};
+
+static i64 (*DCreads[5])(void *, u32) = {
+    NULL,
+    &DCread8,
+    &DCread16,
+    NULL,
+    &DCread32
+};
+
+
+static u32 (*DCwrites[5])(void *, u32, u32) = {
+        NULL,
+        &DCwrite8, // 1 = 8-bit
+        &DCwrite16, // 2 = 16-bit
+        NULL,
+        &DCwrite32
+};
+
+#define RFO addr, ret
+#define WFO addr, val
+static char RFORM[5][100] = {
+        "",
+        "\n" DBGC_READ " read8    (%08x) %02x" DBGC_RST,
+        "\n" DBGC_READ " read16   (%08x) %04x" DBGC_RST,
+        "",
+        "\n" DBGC_READ " read32   (%08x) %08x" DBGC_RST
+};
+
+static char WFORM[5][100] = {
+        "",
+        "\n" DBGC_WRITE " write8   (%08x) %02x" DBGC_RST, // 1 = 8-bit
+        "\n" DBGC_WRITE " write16  (%08x) %04x" DBGC_RST, // 2 = 16-bit
+        "",
+        "\n" DBGC_WRITE " write32  (%08x) %08x" DBGC_RST // 4 = 32-bit
+};
+
+
 u32 DCread(void *ptr, u32 addr, u32 sz) {
     THIS;
-    i64 ret;
-    switch (sz) {
-        case DC8:
-            ret = DCread8(ptr, addr);
-            break;
-        case DC16:
-            ret = DCread16(ptr, addr);
-            break;
-        case DC32:
-            ret = DCread32(ptr, addr);
-            break;
-        default:
-            printf("\nUnknown read size %d", sz);
-            return 0;
-    }
+    i64 ret = DCreads[sz](ptr, addr);
 #ifdef SH4_DBG_SUPPORT
     if (dbg.trace_on) {
-        dbg_printf("\ncyc:%05llu read%d    addr:%08x val:%02x", this->sh4.trace_cycles, dcms(sz), addr, ret);
+        dbg_printf(RFORM[sz], RFO);
     }
 #endif
 #ifdef DO_LAST_TRACES
-    dbg_LT_printf("\ncyc:%05llu read%d    addr:%08x val:%02x", this->sh4.trace_cycles, dcms(sz), addr, ret);
+    dbg_LT_printf(RFORM[sz], RFO);
     dbg_LT_endline();
 #endif
 
@@ -87,44 +121,25 @@ u32 DCread(void *ptr, u32 addr, u32 sz) {
         printf("unknown read%d from %08x", dcms(sz), addr);
         return 0;
     }
-    switch (sz) {
-        case DC8:
-            return ((u32) ret) & 0xFF;
-        case DC16:
-            return ((u32) ret) & 0xFFFF;
-        case DC32:
-            return ((u32) ret) & 0xFFFFFFFF;
-    }
+    return (u32)ret & VMASK[sz];
 }
 
 void DCwrite(void *ptr, u32 addr, u32 val, u32 sz)
 {
     THIS;
+    val &= VMASK[sz];
+
 #ifdef SH4_DBG_SUPPORT
     if (dbg.trace_on) {
-        dbg_printf("\ncyc:%05llu write%d   addr:%08x val:%08x", this->sh4.trace_cycles, dcms(sz), addr, val);
+        dbg_printf(WFORM[sz], WFO);
     }
 #endif
 #ifdef DO_LAST_TRACES
-    dbg_LT_printf("\ncyc:%05llu write%d   addr:%08x val:%08x", this->sh4.trace_cycles, dcms(sz), addr, val);
+    dbg_LT_printf(WFORM[sz], WFO);
     dbg_LT_endline();
 #endif
-    
-    u32 worked = 0;
 
-    switch(sz) {
-        case DC8:
-            worked = DCwrite8(ptr, addr, val & 0xFF);
-            break;
-        case DC16:
-            worked = DCwrite16(ptr, addr, val & 0xFFFF);
-            break;
-        case DC32:
-            worked = DCwrite32(ptr, addr, val & 0xFFFFFFFF);
-            break;
-    }
-
-    if (!worked) {
+    if (!DCwrites[sz](ptr, addr, val)) {
         printf("\nwrite%d unknown addr %08x %08x val %02x cycle:%llu", dcms(sz), addr & 0x1FFFFFFF, addr, val,
                this->sh4.trace_cycles);
         dbg_break();
@@ -208,7 +223,8 @@ i64 DCread16r(void *ptr, u32 addr, u32 ins_fetch) {
         }
         case 0xFF800028: // RFCR
             // doc a little unclear on this
-            return this->io.RFCR;
+            //return this->io.RFCR;
+            return 0x0011; // to pass BIOS check
     }
     // handle Operand Cache access
     if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
@@ -320,7 +336,6 @@ void G1_write(struct DC* this, u32 reg, u32 val, u32 bits)
             return;
         }
         case 0x5F74E4: { // Secret GDROM unlock register!
-            printf("\nGDROM UNLOCK! %04x cyc:%llu", val, this->sh4.trace_cycles);
             return;
         }
     }
@@ -331,15 +346,6 @@ u32 DCwrite16(void *ptr, u32 addr, u32 val)
 {
     THIS;
     val &= 0xFFFF;
-#ifdef SH4_DBG_SUPPORT
-    if (dbg.trace_on) {
-        dbg_printf("\ncyc:%05llu write16  addr:%08x val:%04x", this->sh4.trace_cycles, addr, val);
-    }
-#endif
-#ifdef DO_LAST_TRACES
-    dbg_LT_printf("\ncyc:%05llu write16  addr:%08x val:%04x", this->sh4.trace_cycles, addr, val);
-    dbg_LT_endline();
-#endif
     u32 maddr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access

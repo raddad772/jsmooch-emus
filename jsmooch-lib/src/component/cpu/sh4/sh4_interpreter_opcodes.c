@@ -193,11 +193,9 @@ SH4ins(MOVWP)
 
 SH4ins(MOVLP)
 {
-    printf("\nn:%d m:%d rm:%08x", ins->Rn, ins->Rm, RM);
     RN = READ32(RM);
     if (ins->Rn != ins->Rm)
         RM += 4;
-    printf(" nrm:%08x cyc:%06llu", RM, this->trace_cycles);
     PCinc;
 }
 

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_DEBUG_H
 #define JSMOOCH_EMUS_DEBUG_H
 
-//#define SH4_BRK 0x8c009090
+#define SH4_BRK 0x8c0000ea
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
 #define TRACE_ON_BRK     // Enable tracing on break
@@ -13,6 +13,7 @@
 //#define LYCODER        // lycoder-format traces for easy winmerge
 #define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 #define DUMP_LAST_TRACES_ON_BREAK
+#define TRACE_COLORS
 
 #define SH4_DBG_SUPPORT
 //#define Z80_DBG_SUPPORT
@@ -89,5 +90,35 @@ void LT_dump_to_dbg(struct last_traces_t* this);
 #define dbg_LT_clear() (void)0
 #endif
 void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, struct jsm_debug_read_trace *src);
+
+
+#ifdef TRACE_COLORS
+#define DBGC_BLACK "\e[0;30m"
+#define DBGC_RED "\e[0;31m"
+#define DBGC_GREEN "\e[0;32m"
+#define DBGC_YELLOW "\e[0;33m"
+#define DBGC_BLUE "\e[0;34m"
+#define DBGC_PURPLE "\e[0;35m"
+#define DBGC_CYAN "\e[0;36m"
+#define DBGC_WHITE "\e[0;37m"
+#define DBGC_RST "\e[0m"
+
+#else
+
+#define DBGC_BLACK ""
+#define DBGC_RED ""
+#define DBGC_GREEN ""
+#define DBGC_YELLOW ""
+#define DBGC_BLUE ""
+#define DBGC_PURPLE ""
+#define DBGC_CYAN ""
+#define DBGC_WHITE ""
+#define DBGC_RST ""
+
+#endif
+
+#define DBGC_TRACE DBGC_RST
+#define DBGC_READ DBGC_GREEN
+#define DBGC_WRITE DBGC_RED
 
 #endif //JSMOOCH_EMUS_DEBUG_H

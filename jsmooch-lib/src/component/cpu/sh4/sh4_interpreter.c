@@ -12,7 +12,7 @@
 // Endianness is little.
 
 // disassembly printf args
-#define SH_DISA_P_ARGS "\ncyc:%05d addr:%08x opcode:%04x %s   ", this->trace_cycles, this->regs.PC, opcode, SH4_disassembled[opcode]
+#define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", this->trace_cycles, this->regs.PC, SH4_disassembled[opcode]
 
 void SH4_set_interrupt(struct SH4* this, u32 level)
 {
@@ -58,8 +58,7 @@ void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this)
     memcpy(&this->fb[1], &this->fb[2], 64);
 }
 
-void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val)
-{
+void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val) {
     // If floating-point select register changed
     if (this->FPSCR.FR ^ ((val >> 21) & 1)) {
         SH4_regs_FPSCR_bankswitch(this);
@@ -81,9 +80,9 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces
     i32 last_n = -1;
     i32 last_m = -1;
     if (!last_traces)
-        dbg_seek_in_line(60);
+        dbg_seek_in_line(45);
     else
-        dbg_LT_seek_in_line(60);
+        dbg_LT_seek_in_line(45);
     if (ins->Rn != -1) {
         if (!last_traces)
             dbg_printf("R%d:%08x", ins->Rn, this->regs.R[ins->Rn]);
@@ -94,7 +93,12 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces
         last_n = (i32)ins->Rn;
     }
     if (ins->Rm != -1) {
-        if (had_any) dbg_printf(" ");
+        if (had_any) {
+            if (!last_traces)
+                dbg_printf(" ");
+            else
+                dbg_LT_printf(" ");
+        }
         had_any = 1;
         if (!last_traces)
             dbg_printf("R%d:%08x", ins->Rm, this->regs.R[ins->Rm]);
@@ -138,7 +142,7 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces
         if (!last_traces)
             dbg_printf(" R0:%08x", this->regs.R[0]);
         else
-            dbg_LT_printf(" R0:%08x", this->regs.R[0]);
+            dbg_LT_printf("R0:%08x", this->regs.R[0]);
     }
 
     this->pp_last_m = last_m;

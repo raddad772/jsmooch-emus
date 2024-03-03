@@ -64,7 +64,6 @@ void dbg_printf(char *format, ...)
     if ((this->len - (this->cur - this->ptr)) < 1000) {
         dbg_flush();
     }
-
 }
 
 void dbg_seek_in_line(u32 pos)
@@ -194,7 +193,6 @@ void LT_endline(struct last_traces_t* this)
 
 void LT_seek_in_line(struct last_traces_t* this, u32 where)
 {
-    if (!dbg.trace_on) return;
     u32 cur_entry = (this->head + this->len) % LAST_TRACES_LEN;
     i64 current_line_pos = this->curptr - &this->entries[cur_entry][0];
     i64 number_to_move = (i32)where - current_line_pos;
@@ -208,13 +206,18 @@ void LT_seek_in_line(struct last_traces_t* this, u32 where)
 
 void LT_dump_to_dbg(struct last_traces_t* this)
 {
+    u32 old_dbg = dbg.trace_on;
+    dbg.trace_on = 1;
     u32 len = this->len;
     u32 index = this->head;
+    printf("\n-------------LAST TRACES");
     while(len > 0) {
-        dbg_printf("%s", this->entries[index]);
+        printf("%s", this->entries[index]);
+        //printf("%s", this->entries[index]);
         index = (index + 1) % LAST_TRACES_LEN;
         len--;
     }
 
     LT_init(this);
+    dbg.trace_on = old_dbg;
 }
