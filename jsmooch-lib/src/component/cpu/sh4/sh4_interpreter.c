@@ -12,7 +12,7 @@
 // Endianness is little.
 
 // disassembly printf args
-#define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", this->trace_cycles, this->regs.PC, SH4_disassembled[opcode]
+#define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", this->trace_cycles, this->regs.PC, SH4_disassembled[SH4_decoded_index][opcode]
 
 void SH4_set_interrupt(struct SH4* this, u32 level)
 {
@@ -173,7 +173,7 @@ void SH4_fetch_and_exec(struct SH4* this)
     this->trace_cycles++;
 #endif
     this->cycles--;
-    struct SH4_ins_t *ins = &SH4_decoded[opcode];
+    struct SH4_ins_t *ins = &SH4_decoded[SH4_decoded_index][opcode];
 #ifdef DO_LAST_TRACES
     dbg_LT_printf(SH_DISA_P_ARGS);
     SH4_pprint(this, ins, true);

@@ -1,0 +1,946 @@
+.aica, mem=area0
+0x00702C00: ARMRST
+u32
+access_32, rw
+
+.io, mem=area0
+0x005F6910: SB_IML2NRM
+u32
+access_32, w
+on_write=DC_recalc_interrupts(this)
+
+0x005F6920: SB_IML4NRM
+u32
+access_32, w
+on_write=DC_recalc_interrupts(this)
+
+0x005F6930: SB_IML6NRM
+u32
+access_32, w
+on_write=DC_recalc_interrupts(this)
+
+0x005F6940: SB_PDTNRM
+u32
+access_32, rw
+
+0x005F6944: SB_PDTEXT
+u32
+access_32, rw
+
+0x005F6950: SB_G2DTNRM
+u32
+access_32, rw
+
+0x005F6954: SB_GD2TEXT
+u32
+access_32, rw
+
+0x005F6800: SB_CD2STAT
+u32, flags
+access_32, rw
+dma_ch2_tex_mem_start_addr: 5-25
+_any: 26-31: 0b000100
+
+0x005F6804: SB_CD2LEN
+u32, flags
+access_32, rw
+dma_ch2_tx_len: 5-23
+
+0x005F6808: SB_C2DST
+u32
+access_32, rw
+on_write=sb_dma_start(this, 2, addr)
+write_mask=1
+
+0x005F6810: SB_SDSTAW
+u32, flags
+access_32, rw
+sortdma_start_addr: 5-26
+_any: 27-31: 0b00001
+
+0x005F6814: SB_SDBAAW
+u32, flags
+access_32, rw
+sortdma_base_addr: 5-26
+_any: 27-31: 0b00001
+
+0x005F6818: SB_SDWLT
+u32
+access_32, rw
+write_mask=1
+
+0x005F681C: SB_SDLAS
+u32
+access_32, rw
+write_mask=1
+
+0x005F6820: SB_SDST
+u32
+access_32, rw
+on_write=sb_dma_start(this, -1, addr)
+write_mask=1
+
+0x005F6840: SB_DBREQM
+u32
+access_32, rw
+write_mask=1
+
+0x005F6844: SB_BAVLWC
+u32
+access_32, rw
+
+0x005F6848: SB_C2DPRYC
+u32
+access_32, rw
+
+0x005F684C: SB_C2DMAXL
+u32
+access_32, rw
+
+0x005F6884: SB_LMMODE0
+u32
+access_32, rw
+write_mask=1
+
+0x005F6888: SB_LMMODE1
+u32
+access_32, rw
+write_mask=1
+
+0x005F68A0: SB_RBSPLT
+u32
+access_32, rw
+
+0x005F68A4: SB_UKN5F68A4
+u32
+access_32, rw
+
+0x005F68AC: SB_UKN5F68AC
+u32
+access_32, rw
+
+0x005F6914: SB_IML2EXT
+u32, flags
+access_32, rw
+on_write=DC_recalc_interrupts(this)
+gdrom: 0
+aica: 1
+modem: 2
+ext_device: 3
+
+0x005F6918: SB_IML2ERR
+u32, flags
+access_32, rw
+render_isp_out_of_cache: 0
+render_hazard_processing_strip_buffer: 1
+ta_isp_parameter_overflow: 2
+ta_object_list_pointer_overflow: 3
+ta_illegal_parameter: 4
+ta_fifo_overflow: 5
+pvrif_illegal_addr: 6
+pvrif_dma_overrun: 7
+maple_illegal_addr: 8
+maple_dma_overrun: 9
+maple_write_fifo_overflow: 10
+maple_illegal_cmd: 11
+g1_illegal_addr: 12
+g1_gdma_overrun: 13
+g1_romflash_access_at_gdma: 14
+g2_aica_dma_illegal_addr_set: 15
+g2_ext_dma1_illegal_addr_set: 16
+g2_ext_dma2_illegal_addr_set: 17
+g2_dev_dma_illegal_addr_set: 18
+g2_aica_dma_overrun: 19
+g2_ext_dma1_overrun: 20
+g2_ext_dma2_overrun: 21
+g2_dev_dma_overrun: 22
+g2_aica_dma_timeout: 23
+g2_ext_dma1_timeout: 24
+g2_ext_dma2_timeout: 25
+g2_dev_dma_timeout: 26
+cpu_acess_timeout: 27
+sort_dma_cmd_error: 28
+sh4_if: 31
+
+0x005F6924: SB_IML4EXT
+u32, flags
+access_32, rw
+on_write=DC_recalc_interrupts(this)
+gdrom: 0
+aica: 1
+modem: 2
+ext_device: 3
+
+
+0x005F6928: SB_IML4ERR
+u32, flags
+access_32, rw
+render_isp_out_of_cache: 0
+render_hazard_processing_strip_buffer: 1
+ta_isp_parameter_overflow: 2
+ta_object_list_pointer_overflow: 3
+ta_illegal_parameter: 4
+ta_fifo_overflow: 5
+pvrif_illegal_addr: 6
+pvrif_dma_overrun: 7
+maple_illegal_addr: 8
+maple_dma_overrun: 9
+maple_write_fifo_overflow: 10
+maple_illegal_cmd: 11
+g1_illegal_addr: 12
+g1_gdma_overrun: 13
+g1_romflash_access_at_gdma: 14
+g2_aica_dma_illegal_addr_set: 15
+g2_ext_dma1_illegal_addr_set: 16
+g2_ext_dma2_illegal_addr_set: 17
+g2_dev_dma_illegal_addr_set: 18
+g2_aica_dma_overrun: 19
+g2_ext_dma1_overrun: 20
+g2_ext_dma2_overrun: 21
+g2_dev_dma_overrun: 22
+g2_aica_dma_timeout: 23
+g2_ext_dma1_timeout: 24
+g2_ext_dma2_timeout: 25
+g2_dev_dma_timeout: 26
+cpu_acess_timeout: 27
+sort_dma_cmd_error: 28
+sh4_if: 31
+
+0x005F6934: SB_IML6EXT
+u32, flags
+access_32, rw
+on_write=DC_recalc_interrupts(this)
+gdrom: 0
+aica: 1
+modem: 2
+ext_device: 3
+
+0x005F6938: SB_IML6ERR
+u32, flags
+access_32, rw
+render_isp_out_of_cache: 0
+render_hazard_processing_strip_buffer: 1
+ta_isp_parameter_overflow: 2
+ta_object_list_pointer_overflow: 3
+ta_illegal_parameter: 4
+ta_fifo_overflow: 5
+pvrif_illegal_addr: 6
+pvrif_dma_overrun: 7
+maple_illegal_addr: 8
+maple_dma_overrun: 9
+maple_write_fifo_overflow: 10
+maple_illegal_cmd: 11
+g1_illegal_addr: 12
+g1_gdma_overrun: 13
+g1_romflash_access_at_gdma: 14
+g2_aica_dma_illegal_addr_set: 15
+g2_ext_dma1_illegal_addr_set: 16
+g2_ext_dma2_illegal_addr_set: 17
+g2_dev_dma_illegal_addr_set: 18
+g2_aica_dma_overrun: 19
+g2_ext_dma1_overrun: 20
+g2_ext_dma2_overrun: 21
+g2_dev_dma_overrun: 22
+g2_aica_dma_timeout: 23
+g2_ext_dma1_timeout: 24
+g2_ext_dma2_timeout: 25
+g2_dev_dma_timeout: 26
+cpu_acess_timeout: 27
+sort_dma_cmd_error: 28
+sh4_if: 31
+
+.io, mem=p4
+0xFFC00000: CPG_FRQCR
+u32
+access_32, w
+
+0xFFC00008: CPG_WTCNT
+u32
+access_32, w
+
+0xFFC0000C: CPG_WTCSR
+u32, flags
+access_32, w
+CKS: 0-2
+IOVF: 3
+WOVF: 4
+RSTS: 5
+WT_IT: 6: 0
+TME: 6
+_other: 8-15: 0b10100101
+
+0xFFC00010: CPG_STBCR2
+u32
+access_32, w
+
+0xFFC80030: RDAYAR
+u32
+access_32, w
+
+0xFFC00004: STBCR
+u32, flags
+access_32, rw
+_all: 0-7: 0b00000011
+
+0xFFC80038: RCR1
+u32, flags
+access_32, rw
+AF: 0
+_AIE: 3: 0
+_CIE: 4: 0
+CF: 7
+
+0xFFC80034: RMONAR
+u32
+access_32, rw
+
+0xFFC80040: RCR2
+u32, flags
+access_32, rw
+_: 0-6: 0b0000000
+PEF: 7
+
+
+0xFF000000: PTEH
+flags, u32
+access_32, rw
+asid: 0-7
+vpn: 10-31
+
+0xFF000004: PTEL
+flags, u32
+access_32, rw
+wt: 0
+sh: 1
+d: 2
+c: 3
+sz_a: 4
+pr: 5-6
+sz_b: 7
+v: 8
+ppn: 10-28
+
+0xFF000034: PTEA
+flags, u32
+access_32, rw
+sa: 0-2
+tc: 3
+
+0xFF000008: TTB
+u32
+access_32, rw
+
+0xFF00000C: TEA
+u32
+access_32, rw
+
+0xFF000010: MMUCR
+flags, u32
+access_32, rw
+default=0x00000000
+at: 0
+ti: 2
+sv: 8
+sqmd: 9
+urc: 10-15
+urb: 18-23
+lrui: 26-31
+
+0xFF800004: BCR2
+u32
+access_32, rw
+
+0xFF800018: PCR
+u32
+access_32, rw
+
+0xFF800024: RTCOR
+u32
+access_32, rw
+
+0xFF80001C: RTCSR
+u32
+access_32, rw
+
+0xFFA00010: SAR1
+u32
+access_32, rw
+
+0xFFA00014: DAR1
+u32
+access_32, rw
+
+0xFFA00024: DAR2
+u32
+access_32, rw
+
+0xFFA00018: DMATCR1
+u32
+access_32, rw
+
+0xFFA0001C: CHCR1
+flags, u32
+access_32, rw
+DE: 0
+TE: 1
+IE: 2
+TS: 4-6
+_TM: 7: 0b0
+RS: 8-11
+SM:12-13
+DM: 14-15
+_AL: 16: 0b0
+_AM: 17: 0b0
+_RL: 18: 0b0
+_DS: 19: 0b0
+_DTC: 24: 0b0
+_DSA: 25-27: 0b000
+_STC: 28: 0b0
+_SSA: 29-31: 0b000
+
+0xFFA0002C: CHCR2
+flags, u32
+access_32, rw
+DE: 0
+TE: 1
+IE: 2
+_TS: 4-6: 0b100
+_TM: 7: 0b1
+_RS: 8-11: 0b0010
+SM: 12-13: 0
+_DM: 14-15: 0b01
+_AM: 17: 0
+_DS: 19: 0
+
+0xFFA00020: SAR2
+u32
+access_32, rw
+
+0xFFA00030: SAR3
+u32
+access_32, rw
+
+0xFFA00034: DMAC_DAR3
+u32
+access_32, rw
+
+0xFFA00038: DMAC_DMATCR3
+u32
+access_32, rw
+
+0xFFA0003C: DMAC_CHCR3
+u32, flags
+access_32, rw
+DE: 0
+TE: 1
+IE: 2
+TS: 4-6
+_TM: 7: 0b0
+RS: 8-11
+SM: 12-13
+DM: 14-15
+_AM: 17: 0b0
+_DS: 19: 0b0
+_DTC: 24: 0b0
+_DSA: 25-27: 0b000
+_STC: 28: 0b0
+_SSA: 29-31: 0b000
+
+0xFFA00028: DMATCR2
+u32
+access_32, rw
+
+0xFFA00040: DMAOR
+u32, flags
+access_32, w
+_DME: 0: 0b1
+NMIF: 1
+AE: 2
+_PR: 8-9: 0b10
+_DDT: 15: 0b1
+
+0xFFD00000: ICR
+u32
+access_32, rw
+
+0xFFD00004: IPRA
+u32, flags
+access_32, rw
+_RTC: 0-3: 0b0000
+TMU2: 4-7
+TMU1: 8-11
+TMU0: 12-15
+
+0xFFD00008: IPRB
+u32, flags
+access_32, rw
+_SCI: 4-7: 0b0000
+REF: 8-11
+WDT: 12-15
+
+0xFFD0000C: IPRC
+u32, flags
+access_32, rw
+UDI: 0-3
+SCIF: 4-7
+DMAC: 8-11
+
+0xFF800040: PCTRB
+u32
+access_32, rw
+
+0xFF800044: PDTRB
+u32
+access_32, rw
+
+0xFF800048: GPIOIC
+u32
+access_32, rw
+
+0xFFD80010: TCR0
+u32
+access_32, rw
+
+0xFF80002C: PCTRA
+u32
+access_32, rw
+
+0xFF800008: WCR1
+u32
+access_32, rw
+
+0xFF80000C: WCR2
+u32
+access_32, rw
+
+0xFF800010: WCR3
+u32
+access_32, rw
+
+0xFF800014: MCR
+u32
+access_32, rw
+
+0xFF940190: SDMR
+u32
+access_32, rw
+
+0xFFD80008: TCOR0
+u32
+access_32, rw
+
+0xFFD8000C: TCNT0
+u32
+access_32, rw
+
+0xFFD80014: TCOR1
+u32
+access_32, rw
+
+0xFFD80018: TMU_TCNT1
+u32
+access_32, rw
+
+0xFFD8001C: TMU_TCR1
+u32
+access_32, rw
+
+0xFFD80020: TMU_TCOR2
+u32
+access_32, rw
+
+0xFFD80024: TMU_TCNT2
+u32
+access_32, rw
+
+0xFFD80028: TMU_TCR2
+u32
+access_32, rw
+
+0xFFE80000: SCIF_SCSMR2
+u32
+access_32, rw
+
+0xFFE80004: SCIF_SCBRR2
+u32
+access_32, rw
+
+0xFFE80008: SCIF_SCSCR2
+u32
+access_32, rw
+
+0xFFE8000C: SCIF_SCFTDR2
+u32
+access_32, rw
+
+0xFFE80010: SCIF_SCFSR2
+u32
+access_32, rw
+
+0xFFE80014: SCIF_SCFRDR2
+u32
+access_32, rw
+
+0xFFE80018: SCIF_SCFCR2
+u32
+access_32, rw
+
+0xFFE8001C: SCIF_SCFDR2
+u32
+access_32, rw
+
+0xFFE80020: SCIF_SCSPTR2
+u32
+access_32, rw
+
+0xFFE80024: SCIF_SCLSR2
+u32
+access_32, rw
+
+0xFF200008: UKNFF200008
+u32
+access_32, rw
+
+0xFF200014: UKNFF200014
+u32
+access_32, rw
+
+0xFF200020: UKNFF200020
+u32
+access_32, rw
+
+.gdrom, mem=gdrom
+0x005F7404: SB_GDSTAR
+u32, flags
+access_32, rw
+gddma_start_addr: 5-28
+_any: 29-31: 0b000
+
+0x005F7408: SB_GDLEN
+u32, flags
+access_32, rw
+gddma_len: 0-24
+
+0x005F740C: SB_GDDIR
+u32, flags
+access_32, rw
+gddma_dir: 0
+
+0x005F7414: SB_GDEN
+u32, flags
+access_32, rw
+gddma_enable: 0
+
+0x005F7418: SB_GDST
+u32
+access_32, rw
+on_write=gdrom_dma_start(this)
+write_mask=1
+
+.holly, mem=holly
+0x005F8044: FB_R_CTRL
+u32, flags
+access_32, rw
+fb_enable: 0
+fb_line_double: 1
+fb_depth: 2-3
+fb_concat: 4-6
+fb_chroma_threshold: 8-15
+fb_stripsize: 16-21
+fb_strip_buf_en: 22
+vclk_div: 23
+
+0x005F8048: FB_W_CTRL
+u32, flags
+access_32, rw
+fb_packmode: 0-2
+fb_dither: 3
+fb_kval: 8-15
+fb_alpha_threshold: 16-23
+
+0x005F805C: FB_R_SIZE
+u32, flags
+access_32, rw
+fb_x_size: 0-9
+fb_y_size: 10-19
+fb_modulus: 20-29
+
+0x005F8060: FB_W_SOF1
+u32, flags
+access_32, rw
+field1_ptr: 2-24
+
+0x005F8064: FB_W_SOF2
+u32, flags
+access_32, rw
+field2_ptr: 2-24
+
+0x005F804C: FB_W_LINESTRIDE
+u32, flags
+access_32, rw
+line_stride: 0-8
+
+0x005F8050: FB_R_SOF1
+u32, flags
+access_32, rw
+field: 2-23
+
+0x005F8054: FB_R_SOF2
+u32, flags
+access_32, rw
+field: 2-23
+
+0x005F8068: FB_X_CLIP
+u32, flags
+access_32, rw
+fb_x_clipping_min: 0-10
+fb_x_clipping_max: 16-26
+
+0x005F806C: FB_Y_CLIP
+u32, flags
+access_32, rw
+fb_y_clipping_min: 0-9
+fb_y_clipping_max: 16-25
+
+0x005F8110: FB_BURSTCTRL
+u32, flags
+access_32, rw
+vid_burst: 0-5
+vid_lat: 8-14
+wr_burst: 15-18
+
+0x005F80D8: SPG_LOAD
+u32, flags
+access_32, rw
+on_write=DC_recalc_frame_timing(this)
+hcount: 0-9
+vcount: 16-25
+
+0x005F8030: SPAN_SORT_CFG
+u32
+access_32, rw
+
+0x005F80B0: FOG_COL_RAM
+u32
+access_32, rw
+
+0x005F80B4: FOG_COL_VERT
+u32, flags
+access_32, rw
+blue: 0-7
+green: 8-15
+red: 16-23
+
+0x005F80B8: FOG_DENSITY
+u32, flags
+access_32, rw
+exponent: 0-7
+mantissa: 8-15
+
+0x005F80BC: FOG_CLAMP_MAX
+u32
+access_32, rw
+
+0x005F80C0: FOG_CLAMP_MIN
+u32
+access_32, rw
+
+0x005F80E4: TEXT_CONTROL
+u32, flags
+access_32, rw
+stride: 0-4
+bank_bit: 8-12
+index_endian_reg: 16
+cb_endian_reg: 17
+
+0x005F80F4: SCALER_CTL
+u32, flags
+access_32, rw
+vertical_scale_factor: 0-15
+horizontal_scroll_enable: 16
+interlace: 17
+field_select: 18
+
+0x005F80E8: VO_CONTROL
+u32, flags
+access_32, rw
+hsync_pol: 0
+vsync_pol: 1
+blank_pol: 2
+blank_video: 3
+field_mode: 4-7
+pixel_double: 8
+pclk_delay: 16-21
+
+0x005F8040: VO_BORDER_COL
+u32, flags
+access_32, rw
+default=0x005F8040
+blue: 0-7
+green: 8-15
+red: 16-23
+chroma: 24
+
+0x005F8124: TA_OL_BASE
+u32, flags
+access_32, rw
+base_addr: 5-23
+
+0x005F812C: TA_OL_LIMIT
+u32, flags
+access_32, rw
+limit_addr: 5-23
+
+0x005F8128: TA_ISP_BASE
+u32, flags
+access_32, rw
+base_addr: 2-23
+
+0x005F8130: TA_ISP_LIMIT
+u32, flags
+access_32, rw
+limit_addr: 2-23
+
+0x005F813C: TA_GLOB_TILE_CLIP
+u32, flags
+access_32, rw
+tile_x_num: 0-5
+tile_y_num: 16-19
+
+0x005F8140: TA_ALLOC_CTRL
+u32,flags
+access_32, rw
+O_OPB: 0-1
+OM_OPB: 4-5
+T_OPB: 8-9
+PT_OPB: 16-17
+OPB_MODE: 20
+
+0x005F8164: TA_NEXT_OPB_INIT
+u32, flags
+access_32, rw
+addr: 5-23
+
+0x005F80CC: SPG_VBLANK_INT
+u32, flags
+access_32, rw
+on_write=DC_recalc_frame_timing(this)
+vblank_in_line: 0-9
+vblank_out_line: 16-25
+
+0x005F80D4: SPG_HBLANK
+u32, flags
+access_32, rw
+hbstart: 0-9
+hbend: 16-25
+
+0x005F80DC: SPG_VBLANK
+u32, flags
+access_32, rw
+vbstart: 0-9
+vbend: 16-25
+
+0x005F80D0: SPG_CONTROL
+u32, flags
+access_32, rw
+mhsync_pol: 0
+mvsync_pol: 1
+mcsync_pol: 2
+spg_lock: 3
+interlace: 4
+force_field2: 5
+NTSC: 6
+PAL: 7
+sync_direction: 8
+csync_on_h: 9
+
+0x005F80E0: SPG_WIDTH
+u32, flags
+access_32, rw
+hswidth: 0-6
+vswidth: 8-11
+bpwidth: 12-21
+eqwidth: 22-31
+
+0x005F80C8: SPG_HBLANK_INT
+u32, flags
+access_32, rw
+line_comp_val: 0-9
+hblank_int_mode: 12-13
+hblank_in_interrupt: 16-25
+
+0x005F8074: FPU_SHAD_SCALE
+u32, flags
+access_32, rw
+shadow_scale_factor: 0-7
+intensity_shadow_enable: 8
+
+0x005F807C: FPU_PARAM_CFG
+u32, flags
+access_32, rw
+ptr_first_burst_size: 0-3
+ptr_burst_size: 4-7
+isp_parameter_burst_trigger_threshold: 8-13
+tsp_parameter_burst_trigger_threshold: 14-19
+region_header_type: 21
+
+0x005F8080: HALF_OFFSET
+u32, flags
+access_32, rw
+fpu_pixel_sampling_position: 0
+tsp_pixel_sampling_position: 1
+tsp_texel_sampling_position: 2
+
+0x005F8118: Y_COEFF
+u32, flags
+access_32, rw
+coeff_0_2: 0-7
+coeff_1: 8-15
+
+0x005F808C: ISP_BACKGND_T
+u32, flags
+access_32, rw
+tag_offset: 0-2
+tag_address: 3-23
+skip: 24-26
+shadow: 27
+cache_bypass: 28
+
+.maple, mem=maple
+0x005F6C04: SB_MDSTAR
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F6C10: SB_MDTSEL
+u32
+access_32, rw
+write_mask=1
+
+0x005F6C14: SB_MDEN
+u32
+access_32, rw
+write_mask=1
+
+0x005F6C18: SB_MDST
+u32
+access_32, rw
+on_write=if (val & 1) { maple_dma_init(this); }
+write_mask=1
+
+0x005F6C80: SB_MSYS
+u32
+access_32, rw
+
+0x005F6C8C: SB_MDAPRO
+u32, flags
+access_32, rw
+w_cond=(val >> 16) == 0x6155
+bottom_addr: 0-6
+top_addr: 8-14
+
+0x005F6CE8: SB_MMSEL
+u32
+access_32, rw
+write_mask=1
+

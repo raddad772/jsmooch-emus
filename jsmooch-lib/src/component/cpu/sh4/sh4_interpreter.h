@@ -88,6 +88,7 @@ struct SH4_regs {
 
     union {
         u32 U32[16];
+        u64 U64[8];
         float FP32[16];
         float FP64[8];
         struct SH4_FV FV[4];
@@ -101,6 +102,8 @@ struct SH4_regs {
     u32 QACR0, QACR1;
 
     u32 EXPEVT;
+    u32 TRAPA;
+    u32 INTEVT;
 };
 
 u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
@@ -122,8 +125,8 @@ struct SH4 {
 
     void *mptr;
     u32 (*fetch_ins)(void*,u32);
-    u32 (*read)(void*,u32,u32);
-    void (*write)(void*,u32,u32,u32);
+    u64 (*read)(void*,u32,u32);
+    void (*write)(void*,u32,u64,u32);
 };
 
 void SH4_init(struct SH4* this);

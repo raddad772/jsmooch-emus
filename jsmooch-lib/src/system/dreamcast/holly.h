@@ -7,12 +7,13 @@
 
 #include "dreamcast.h"
 
-u32 holly_write(struct DC* this, u32 addr, u32 val);
-u32 holly_read(struct DC* this, u32 addr);
+void holly_write(struct DC* this, u32 addr, u32 val, u32* success);
+u64 holly_read(struct DC* this, u32 addr, u32* success);
 void holly_reset(struct DC* this);
 void DC_recalc_frame_timing(struct DC* this);
 void holly_vblank_in(struct DC* this);
 void holly_vblank_out(struct DC* this);
+void maple_dma_init(struct DC* this);
 
 
 #endif //JSMOOCH_EMUS_HOLLY_H

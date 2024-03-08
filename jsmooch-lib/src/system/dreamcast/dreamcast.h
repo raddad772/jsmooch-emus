@@ -41,30 +41,15 @@ struct DC {
 
     struct scheduler_t scheduler;
 
-    struct {
-        u32 TCOR0;
-        u32 TCNT0;
-        u32 PCTRA;
+    struct { // io
+#include "generated/io_decls.h"
+
         u32 PDTRA;
         u32 TOCR;
         u32 TSTR;
-        u32 SDMR;
         u32 SB_ISTNRM;
-        u32 SB_LMMODE0;
-        u32 SB_LMMODE1;
-        u32 SB_IML2NRM;
-        u32 SB_IML4NRM;
-        u32 SB_IML6NRM;
-
         u32 BSCR;
-        u32 BSCR2;
-        u32 RTCOR;
         u32 RFCR;
-        u32 RTCSR;
-        u32 WCR1;
-        u32 WCR2;
-        u32 MCR; // memory control register
-        u32 MMUCR;
     } io;
 
     struct {
@@ -89,11 +74,32 @@ struct DC {
         } interrupt;
     } clock;
 
-#include "holly_regs.h"
+    struct {
+#include "generated/holly_decls.h"
+
+        float FPU_CULL_VAL;
+        float FPU_PERP_VAL;
+        float ISP_BACKGND_D;
+        u32 FOG_TABLE[128];
+        u32 last_used_buffer;
+        u32 cur_output_num;
+        u32 *cur_output;
+        u32 *out_buffer[2];
+
+        u64 master_frame;
+    } holly;
 
     struct {
-        u32 (*read_map[0x100])(struct DC*, u32, enum DC_MEM_SIZE);
-        void (*write_map[0x100])(struct DC*, u32, u32, enum DC_MEM_SIZE);
+#include "generated/gdrom_decls.h"
+    } gdrom;
+
+    struct {
+#include "generated/maple_decls.h"
+    } maple;
+
+    struct {
+        u64 (*read[0x40])(struct DC*, u32, enum DC_MEM_SIZE, u32*);
+        void (*write[0x40])(struct DC*, u32, u64, enum DC_MEM_SIZE, u32*);
     } mem;
 
 };

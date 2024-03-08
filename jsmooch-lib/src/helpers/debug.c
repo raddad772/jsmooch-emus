@@ -29,6 +29,7 @@ void dbg_init()
     dbg.msg_last_newline = 0;
     jsm_string_init(&dbg.msg, 5*1024*1024);
     LT_init(&dbg.last_traces);
+    dbg.var = 0;
 }
 
 #ifndef MIN
@@ -175,7 +176,7 @@ void LT_printf(struct last_traces_t* this, char *format, ...)
     va_list va;
     va_start(va, format);
 
-    this->curptr += vsnprintf(this->curptr, len_left, format, va);
+    this->curptr += vsprintf(this->curptr, format, va);
     va_end(va);
 }
 

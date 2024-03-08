@@ -5,14 +5,14 @@
 #ifndef JSMOOCH_EMUS_DEBUG_H
 #define JSMOOCH_EMUS_DEBUG_H
 
-#define SH4_BRK 0x8c0000ea
+#define H4_BRK 0x8c000100
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
-#define TRACE_ON_BRK     // Enable tracing on break
+//#define TRACE_ON_BRK     // Enable tracing on break
 //#define DBG_LOG_TO_FILE // log debug to file
 //#define LYCODER        // lycoder-format traces for easy winmerge
 #define DO_LAST_TRACES   // keeps last X traces, slows down emulation
-#define DUMP_LAST_TRACES_ON_BREAK
+//#define DUMP_LAST_TRACES_ON_BREAK
 #define TRACE_COLORS
 
 #define SH4_DBG_SUPPORT
@@ -45,6 +45,7 @@ struct jsm_debug_struct {
     char *msg_last_newline;
 
     struct last_traces_t last_traces;
+    u32 var;
 };
 
 struct jsm_debug_read_trace {

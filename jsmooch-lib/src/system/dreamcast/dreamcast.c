@@ -39,7 +39,7 @@ void DCJ_load_ROM(JSM, struct multi_file_set* mfs);
 void DCJ_enable_tracing(JSM);
 void DCJ_disable_tracing(JSM);
 static void DC_schedule_frame(struct DC* this);
-
+static void new_frame(struct DC* this);
 
 void DC_recalc_interrupts(struct DC* this)
 {
@@ -68,7 +68,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 
     SH4_init(&this->sh4);
     this->sh4.mptr = (void *)this;
-    this->sh4.read = &DCread;
+    this->sh4.read = &DCread_noins;
     this->sh4.write = &DCwrite;
     this->sh4.fetch_ins = &DCfetch_ins;
     DC_mem_init(this);
@@ -93,17 +93,11 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     this->holly.out_buffer[1] = (u32 *)iomap->out_buffers[1];
     this->holly.master_frame = 0;
 
-    /*
-    this->cycles_left = 0;
-    this->display_enabled = 1;
-    nespad_inputs_init(&this->controller1_in);
-    nespad_inputs_init(&this->controller2_in);*/
+    new_frame(this);
 
     buf_init(&this->BIOS);
     buf_init(&this->ROM);
     buf_init(&this->flash);
-
-    DC_mem_init(this);
 
     jsm->ptr = (void*)this;
     jsm->which = SYS_DREAMCAST;
@@ -356,7 +350,6 @@ u32 DCJ_step_master(JSM, u32 howmany)
                     holly_vblank_out(this);
                     break;
                 case FRAME_END:
-                    quit = 1;
                     new_frame(this);
                     break;
                 default:
@@ -370,11 +363,15 @@ u32 DCJ_step_master(JSM, u32 howmany)
             til_next_event = scheduler_til_next_event(&this->scheduler);
             if (dbg.do_break) break;
         }
-        if (quit || dbg.do_break) break;
+        if (quit || dbg.do_break) {
+            break;
+        }
         if ((til_next_event+steps_done) > howmany) {
             til_next_event = howmany - steps_done;
+            if (til_next_event < 1) {
+                break; // ran outta cycles before an event
+            }
         }
-        if (til_next_event == 0) break; // ran outta cycles before an event
         i64 old_cycles = (i64)this->sh4.trace_cycles;
         SH4_run_cycles(&this->sh4, til_next_event);
         i64 ran_cycles = (i64)this->sh4.trace_cycles - old_cycles;

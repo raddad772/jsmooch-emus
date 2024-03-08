@@ -29,9 +29,12 @@ struct sh4_str_ret
 };
 struct SH4;
 
-extern struct SH4_ins_t SH4_decoded[65536];
-extern char SH4_disassembled[65536][30];
-extern char SH4_mnemonic[65536][30];
+// based on PR bit
+// SZ << 1 | PR
+#define SH4_decoded_index ((this->regs.FPSCR.SZ << 1) | this->regs.FPSCR.PR)
+extern struct SH4_ins_t SH4_decoded[4][65536];
+extern char SH4_disassembled[4][65536][30];
+extern char SH4_mnemonic[4][65536][30];
 void SH4_interrupt_IRL(struct SH4* this, u32 level);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_OPCODES_H

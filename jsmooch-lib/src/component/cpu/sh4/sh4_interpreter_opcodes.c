@@ -33,20 +33,23 @@
 
 #define fpFR(x) this->regs.fb[0].FP32[x]
 #define fpFRU(x) this->regs.fb[0].U32[x]
-#define fpDR(x) this->regs.fb[x & 1].FP64[x >> 1]
+#define fpDR(x) this->regs.fb[0].FP64[x >> 1]
+#define fpDRU(x) this->regs.fb[0].U64[x >> 1]
 #define fpXF(x) this->regs.fb[1].FP32[x]
 #define fpXD(x) this->regs.fb[x & 1].FP64[x >> 1]
 #define fpFV(x) this->regs.fb[0].FV[x >> 2]
 #define fpXMTX(x) this->regs.fb[1].MTX
 
-#define BADOPCODE printf("\nUNIMPLEMENTED INSTRUCTION %s", __func__); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s", __func__)
+#define BADOPCODE printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ)
 
 #define READ8(addr) this->read(this->mptr, addr, DC8)
 #define READ16(addr) this->read(this->mptr, addr, DC16)
 #define READ32(addr) this->read(this->mptr, addr, DC32)
+#define READ64(addr) this->read(this->mptr, addr, DC64)
 #define WRITE8(addr, val) this->write(this->mptr, addr, val, DC8)
 #define WRITE16(addr, val) this->write(this->mptr, addr, val, DC16)
 #define WRITE32(addr, val) this->write(this->mptr, addr, val, DC32)
+#define WRITE64(addr, val) this->write(this->mptr, addr, val, DC64)
 
 #define SH4ins(x) void SH4_##x(SH4args)
 
@@ -55,7 +58,8 @@
 enum MSIZE {
     DC8 = 1,
     DC16 = 2,
-    DC32 = 4
+    DC32 = 4,
+    DC64 = 8
 };
 /*
  Source: The interrupt mask bit setting in SR is smaller than the IRL (3ñ0) level, and the BL bit
@@ -1076,7 +1080,7 @@ SH4ins(STCMSPC) { // Rn-4 -> Rn, SPC -> (Rn)
 }
 
 SH4ins(STCDBR) { // DBR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.DBR;
     PCinc;
 }
 
@@ -1132,45 +1136,58 @@ SH4ins(TRAPA) { // SH1*,SH2*: PC/SR -> stack area, (imm*4 + VBR) -> PC, SH3*,SH4
 }
 
 SH4ins(FMOV) { // FRm -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+        fpFRU(ins->Rn) = fpFRU(ins->Rm);
+    }  else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_LOAD) { // (Rm) -> FRn
-    u32 v = READ32(RM);
-    fpFRU(ins->Rn) = v;
+    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+        fpFRU(ins->Rn) = READ32(RM);
+    } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_STORE) { // FRm -> (Rn)
-    WRITE32(RN, *(u32 *)&fpFR(ins->Rm));
+    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+        WRITE32(RN, fpFRU(ins->Rm));
+    } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_RESTORE) { // (Rm) -> FRn, Rm+4 -> Rm
-    fpFRU(ins->Rn) = READ32(RM);
-    RM += 4;
+    if (this->regs.FPSCR.SZ == 0) {// float
+        fpFRU(ins->Rn) = READ32(RM);
+        RM += 4;
+    }  else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_SAVE) { // Rn-4 -> Rn, FRm -> (Rn)
-    RN -= 4;
-    WRITE32(RN, fpFRU(ins->Rm));
+    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+        RN -= 4;
+        WRITE32(RN, fpFRU(ins->Rm));
+    } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_LOAD) { // (R0 + Rm) -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+        fpFRU(ins->Rn) = READ32(R(0) + RM);
+    }  else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_STORE) { // FRm -> (R0 + Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    if (this->regs.FPSCR.SZ == 0) { // 32-bit
+        WRITE32(R(0) + RN, fpFRU(ins->Rm));
+    } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_DR) { // DRm -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) = fpDR(ins->Rm);
     PCinc;
 }
 
@@ -1210,7 +1227,8 @@ SH4ins(FMOV_STORE_XD) { // XDm -> (Rn)
 }
 
 SH4ins(FMOV_RESTORE_DR) { // (Rm) -> DRn, Rm + 8 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDRU(ins->Rn) = READ64(RM);
+    RM += 8;
     PCinc;
 }
 
@@ -1220,7 +1238,8 @@ SH4ins(FMOV_RESTORE_XD) { // (Rm) -> XDn, Rm+8 -> Rm
 }
 
 SH4ins(FMOV_SAVE_DR) { // Rn-8 -> Rn, DRm -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 8;
+    WRITE64(RN, fpDRU(ins->Rm));
     PCinc;
 }
 
@@ -1560,9 +1579,9 @@ SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
 *
  */
 
-struct SH4_ins_t SH4_decoded[65536];
-char SH4_disassembled[65536][30];
-char SH4_mnemonic[65536][30];
+struct SH4_ins_t SH4_decoded[4][65536];
+char SH4_disassembled[4][65536][30];
+char SH4_mnemonic[4][65536][30];
 
 static void process_SH4_instruct(struct sh4_str_ret *r, const char* stri)
 {
@@ -1648,11 +1667,11 @@ static void process_SH4_instruct(struct sh4_str_ret *r, const char* stri)
     }
 }
 
-static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32 d, u32 imm)
+static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32 d, u32 imm, u32 szpr)
 {
-    strcpy(SH4_mnemonic[opcode], mnemonic);
+    strcpy(SH4_mnemonic[szpr][opcode], mnemonic);
 
-    char *copy_to = SH4_disassembled[opcode];
+    char *copy_to = SH4_disassembled[szpr][opcode];
     *copy_to = 0;
 
     for (char *mn = (char *)mnemonic; *mn!=0; mn++) {
@@ -1680,10 +1699,16 @@ static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32
     *copy_to = 0;
 }
 
+static void cpSH4(u32 dest, u32 src) {
+    memcpy(&SH4_decoded[dest], &SH4_decoded[src], 65536*sizeof(struct SH4_ins_t));
+    memcpy(&SH4_disassembled[dest][0], &SH4_disassembled[src][0], 65536*30);
+    memcpy(&SH4_mnemonic[dest][0], &SH4_mnemonic[src][0], 65535*30);
+}
 
-static void iterate_opcodes(struct sh4_str_ret* r, SH4_ins_func ins, const char* mnemonic, u32 override)
+static void iterate_opcodes(struct sh4_str_ret* r, SH4_ins_func ins, const char* mnemonic, u32 override, u32 szpr)
 {
     u32 d_times = 1;
+    // Go at least once through each of n, m, d, and i
     u32 n_max = r->n_max ? r->n_max : 1;
     u32 m_max = r->m_max ? r->m_max : 1;
     u32 d_max = r->d_max ? r->d_max : 1;
@@ -1699,44 +1724,58 @@ static void iterate_opcodes(struct sh4_str_ret* r, SH4_ins_func ins, const char*
                     if (r->i_max > 0) opcode |= (i << r->i_shift);
                     opcode |= r->mask;
 
-                    struct SH4_ins_t *is = &SH4_decoded[opcode];
-                    assert((!override) && (is->decoded == 0));
+                    struct SH4_ins_t *is = &SH4_decoded[szpr][opcode];
+                    if ((!override) && (is->decoded != 0)) { // If no override and already decoded
+                        assert(1==0);
+                    }
+                    else if (override & (is->decoded == 0)) {// If override and NOT already decoded
+                        assert(1==0);
+                    }
                     is->Rn = n;
                     is->Rm = m;
                     is->imm = i;
                     is->disp = (i32)(d*d_times);
                     is->exec = ins;
                     is->decoded = 1;
-                    emplace_mnemonic(opcode, mnemonic, n, m, d, i);
-                    //printf("\n%s", SH4_disassembled[opcode]);
+                    emplace_mnemonic(opcode, mnemonic, n, m, d, i, szpr);
+
+                    if (szpr > 0) {
+                        // copy to szpr=3
+                        memcpy(&SH4_decoded[3][opcode], &SH4_decoded[szpr][opcode], sizeof(struct SH4_ins_t));
+                        memcpy(&SH4_disassembled[3][opcode][0], &SH4_disassembled[szpr][opcode][0], 30);
+                        memcpy(&SH4_mnemonic[3][opcode][0], &SH4_mnemonic[szpr][opcode][0], 30);
+                    }
+                    //printf("\n%s", SH4_disassembled[0][opcode]);
                 }
             }
         }
     }
 }
 
-static void decode_and_iterate_opcodes(const char* inpt, SH4_ins_func ins, const char *mnemonic, u32 override)
+static void decode_and_iterate_opcodes(const char* inpt, SH4_ins_func ins, const char *mnemonic, u32 override, u32 szpr)
 {
     struct sh4_str_ret a;
     process_SH4_instruct(&a, inpt);
-    iterate_opcodes(&a, ins, mnemonic, override);
+    iterate_opcodes(&a, ins, mnemonic, override, szpr);
 }
 
 
-#define OE(opcstr, func, mn) decode_and_iterate_opcodes(opcstr, func, mn, 0)
-#define OE_override(opcstr, func, mn) decode_and_iterate_opcodes(opcstr, func, mn, 1)
+#define OE(opcstr, func, mn) decode_and_iterate_opcodes(opcstr, func, mn, 0, 0)
+#define OEo(opcstr, func, mn, sz, pr) decode_and_iterate_opcodes(opcstr, func, mn, 1, ((sz<<1) | pr))
 
 void do_sh4_decode() {
-    for (u32 i = 0; i < 65536; i++) {
-        SH4_decoded[i] = (struct SH4_ins_t) {
-                .opcode = i,
-                .Rn = -1,
-                .Rm = -1,
-                .imm = 0,
-                .disp = 0,
-                .exec = NULL,
-                .decoded = 0
-        };
+    for (u32 szpr = 0; szpr < 4; szpr++) {
+        for (u32 i = 0; i < 65536; i++) {
+            SH4_decoded[szpr][i] = (struct SH4_ins_t) {
+                    .opcode = i,
+                    .Rn = -1,
+                    .Rm = -1,
+                    .imm = 0,
+                    .disp = 0,
+                    .exec = NULL,
+                    .decoded = 0
+            };
+        }
     }
 
     OE("0110nnnnmmmm0011", &SH4_MOV, "mov Rm,Rn"); // Rm -> Rn
@@ -1916,23 +1955,6 @@ void do_sh4_decode() {
     OE("1111nnnnmmmm1011", &SH4_FMOV_SAVE, "fmov.s FRm,@-Rn"); // Rn-4 -> Rn, FRm -> (Rn)
     OE("1111nnnnmmmm0110", &SH4_FMOV_INDEX_LOAD, "fmov.s @(R0,Rm),FRn"); // (R0 + Rm) -> FRn
     OE("1111nnnnmmmm0111", &SH4_FMOV_INDEX_STORE, "fmov.s FRm,@(R0,Rn)"); // FRm -> (R0 + Rn)
-    /*OE("1111nnn0mmm01100", &SH4_FMOV_DR, "fmov DRm,DRn"); // DRm -> DRn
-    OE("1111nnn1mmm01100", &SH4_FMOV_DRXD, "fmov DRm,XDn"); // DRm -> XDn
-    OE("1111nnn0mmm11100", &SH4_FMOV_XDDR, "fmov XDm,DRn"); // XDm -> DRn
-    OE("1111nnn1mmm11100", &SH4_FMOV_XDXD, "fmov XDm,XDn"); // XDm -> XDn
-    OE("1111nnn0mmmm1000", &SH4_FMOV_LOAD_DR, "fmov.d @Rm,DRn"); // (Rm) -> DRn
-    OE("1111nnn1mmmm1000", &SH4_FMOV_LOAD_XD, "fmov.d @Rm,XDn"); // (Rm) -> XDn
-    OE("1111nnnnmmm01010", &SH4_FMOV_STORE_DR, "fmov.d DRm,@Rn"); // DRm -> (Rn)
-    OE("1111nnnnmmm11010", &SH4_FMOV_STORE_XD, "fmov.d XDm,@Rn"); // XDm -> (Rn)
-    OE("1111nnn0mmmm1001", &SH4_FMOV_RESTORE_DR, "fmov.d @Rm+,DRn"); // (Rm) -> DRn, Rm + 8 -> Rm
-    OE("1111nnn1mmmm1001", &SH4_FMOV_RESTORE_XD, "fmov.d @Rm+,XDn"); // (Rm) -> XDn, Rm+8 -> Rm
-    OE("1111nnnnmmm01011", &SH4_FMOV_SAVE_DR, "fmov.d DRm,@-Rn"); // Rn-8 -> Rn, DRm -> (Rn)
-    OE("1111nnnnmmm11011", &SH4_FMOV_SAVE_XD, "fmov.d XDm,@-Rn"); // Rn-8 -> Rn, (Rn) -> XDm
-    OE("1111nnn0mmmm0110", &SH4_FMOV_INDEX_LOAD_DR, "fmov.d @(R0,Rm),DRn"); // (R0 + Rm) -> DRn
-    OE("1111nnn1mmmm0110", &SH4_FMOV_INDEX_LOAD_XD, "fmov.d @(R0,Rm),XDn"); // (R0 + Rm) -> XDn
-    OE("1111nnnnmmm00111", &SH4_FMOV_INDEX_STORE_DR, "fmov.d DRm,@(R0,Rn)"); // DRm -> (R0 + Rn)
-    OE("1111nnnnmmm10111", &SH4_FMOV_INDEX_STORE_XD, "fmov.d XDm,@(R0,Rn)"); // XDm -> (R0 + Rn)
-     */
     OE("1111nnnn10001101", &SH4_FLDI0, "fldi0 FRn"); // 0x00000000 -> FRn
     OE("1111nnnn10011101", &SH4_FLDI1, "fldi1 FRn"); // 0x3F800000 -> FRn
     OE("1111mmmm00011101", &SH4_FLDS, "flds FRm,FPUL"); // FRm -> FPUL
@@ -1951,17 +1973,6 @@ void do_sh4_decode() {
     OE("1111mmmm00111101", &SH4_FTRC_single, "ftrc FRm,FPUL"); // (long)FRm -> FPUL
     OE("1111nnmm11101101", &SH4_FIPR, "fipr FVm,FVn"); // inner_product (FVm, FVn) -> FR[n+3]
     OE("1111nn0111111101", &SH4_FTRV, "ftrv XMTRX,FVn"); // transform_vector (XMTRX, FVn) -> FVn
-    /*OE("1111nnn001011101", &SH4_FABSDR, "fabs DRn"); // DRn & 0x7FFFFFFFFFFFFFFF -> DRn
-    OE("1111nnn001001101", &SH4_FNEGDR, "fneg DRn"); // DRn ^ 0x8000000000000000 -> DRn
-    OE("1111nnn0mmm00000", &SH4_FADDDR, "fadd DRm,DRn"); // DRn + DRm -> DRn
-    OE("1111nnn0mmm00001", &SH4_FSUBDR, "fsub DRm,DRn"); // DRn - DRm -> DRn
-    OE("1111nnn0mmm00010", &SH4_FMULDR, "fmul DRm,DRn"); // DRn * DRm -> DRn
-    OE("1111nnn0mmm00011", &SH4_FDIVDR, "fdiv DRm,DRn"); // DRn / DRm -> DRn
-    OE("1111nnn001101101", &SH4_FSQRTDR, "fsqrt DRn"); // sqrt (DRn) -> DRn
-    OE("1111nnn0mmm00100", &SH4_FCMP_EQDR, "fcmp/eq DRm,DRn"); // If DRn = DRm: 1 -> T, Else: 0 -> T
-    OE("1111nnn0mmm00101", &SH4_FCMP_GTDR, "fcmp/gt DRm,DRn"); // If DRn > DRm: 1 -> T, Else: 0 -> T
-    OE("1111nnn000101101", &SH4_FLOAT_double, "float FPUL,DRn"); // (double)FPUL -> DRn
-    OE("1111mmm000111101", &SH4_FTRC_double, "ftrc DRm,FPUL"); // (long)DRm -> FPUL*/
     OE("1111mmm010111101", &SH4_FCNVDS, "fcnvds DRm,FPUL"); // double_to_float (DRm) -> FPUL
     OE("1111nnn010101101", &SH4_FCNVSD, "fcnvsd FPUL,DRn"); // float_to_double (FPUL) -> DRn
     OE("0100mmmm01101010", &SH4_LDSFPSCR, "lds Rm,FPSCR"); // Rm -> FPSCR
@@ -1978,14 +1989,52 @@ void do_sh4_decode() {
     OE("1111nnnn01111101", &SH4_FSRRA, "fsrra");
     OE("1111nnn011111101", &SH4_FSCA, "fsca");
 
+    // Now copy all SZ=0 PR=0 instructions to SZ=0 PR=1, SZ=1 PR=0, and SZ=1 PR=1
+    for (u32 szpr = 1; szpr < 4; szpr++) {
+        cpSH4(szpr, 0);
+    }
+
+    // do PR=0 SZ=1, copy to PR=1 SZ=1
+    OEo("1111nnn0mmm01100", &SH4_FMOV_DR, "fmov DRm,DRn", 1, 0); // DRm -> DRn
+    OEo("1111nnn1mmm01100", &SH4_FMOV_DRXD, "fmov DRm,XDn", 1, 0); // DRm -> XDn
+    OEo("1111nnn0mmm11100", &SH4_FMOV_XDDR, "fmov XDm,DRn", 1, 0); // XDm -> DRn
+    OEo("1111nnn1mmm11100", &SH4_FMOV_XDXD, "fmov XDm,XDn", 1, 0); // XDm -> XDn
+    OEo("1111nnn0mmmm1000", &SH4_FMOV_LOAD_DR, "fmov.d @Rm,DRn", 1, 0); // (Rm) -> DRn
+    OEo("1111nnn1mmmm1000", &SH4_FMOV_LOAD_XD, "fmov.d @Rm,XDn", 1, 0); // (Rm) -> XDn
+    OEo("1111nnnnmmm01010", &SH4_FMOV_STORE_DR, "fmov.d DRm,@Rn", 1, 0); // DRm -> (Rn)
+    OEo("1111nnnnmmm11010", &SH4_FMOV_STORE_XD, "fmov.d XDm,@Rn", 1, 0); // XDm -> (Rn)
+    OEo("1111nnn0mmmm1001", &SH4_FMOV_RESTORE_DR, "fmov.d @Rm+,DRn", 1, 0); // (Rm) -> DRn, Rm + 8 -> Rm
+    OEo("1111nnn1mmmm1001", &SH4_FMOV_RESTORE_XD, "fmov.d @Rm+,XDn", 1, 0); // (Rm) -> XDn, Rm+8 -> Rm
+    OEo("1111nnnnmmm01011", &SH4_FMOV_SAVE_DR, "fmov.d DRm,@-Rn", 1, 0); // Rn-8 -> Rn, DRm -> (Rn)
+    OEo("1111nnnnmmm11011", &SH4_FMOV_SAVE_XD, "fmov.d XDm,@-Rn", 1, 0); // Rn-8 -> Rn, (Rn) -> XDm
+    OEo("1111nnn0mmmm0110", &SH4_FMOV_INDEX_LOAD_DR, "fmov.d @(R0,Rm),DRn", 1, 0); // (R0 + Rm) -> DRn
+    OEo("1111nnn1mmmm0110", &SH4_FMOV_INDEX_LOAD_XD, "fmov.d @(R0,Rm),XDn", 1, 0); // (R0 + Rm) -> XDn
+    OEo("1111nnnnmmm00111", &SH4_FMOV_INDEX_STORE_DR, "fmov.d DRm,@(R0,Rn)", 1, 0); // DRm -> (R0 + Rn)
+    OEo("1111nnnnmmm10111", &SH4_FMOV_INDEX_STORE_XD, "fmov.d XDm,@(R0,Rn)", 1, 0); // XDm -> (R0 + Rn)
+
+    // do PR=1 SZ=0, copy to PR=1 SZ=1
+    OEo("1111nnn001011101", &SH4_FABSDR, "fabs DRn", 0, 1); // DRn & 0x7FFFFFFFFFFFFFFF -> DRn
+    OEo("1111nnn001001101", &SH4_FNEGDR, "fneg DRn", 0, 1); // DRn ^ 0x8000000000000000 -> DRn
+    OEo("1111nnn0mmm00000", &SH4_FADDDR, "fadd DRm,DRn", 0, 1); // DRn + DRm -> DRn
+    OEo("1111nnn0mmm00001", &SH4_FSUBDR, "fsub DRm,DRn", 0, 1); // DRn - DRm -> DRn
+    OEo("1111nnn0mmm00010", &SH4_FMULDR, "fmul DRm,DRn", 0, 1); // DRn * DRm -> DRn
+    OEo("1111nnn0mmm00011", &SH4_FDIVDR, "fdiv DRm,DRn", 0, 1); // DRn / DRm -> DRn
+    OEo("1111nnn001101101", &SH4_FSQRTDR, "fsqrt DRn", 0, 1); // sqrt (DRn) -> DRn
+    OEo("1111nnn0mmm00100", &SH4_FCMP_EQDR, "fcmp/eq DRm,DRn", 0, 1); // If DRn = DRm: 1 -> T, Else: 0 -> T
+    OEo("1111nnn0mmm00101", &SH4_FCMP_GTDR, "fcmp/gt DRm,DRn", 0, 1); // If DRn > DRm: 1 -> T, Else: 0 -> T
+    OEo("1111nnn000101101", &SH4_FLOAT_double, "float FPUL,DRn", 0, 1); // (double)FPUL -> DRn
+    OEo("1111mmm000111101", &SH4_FTRC_double, "ftrc DRm,FPUL", 0, 1); // (long)DRm -> FPUL
+
 
     u32 unencoded = 0;
-    for (u32 i = 0; i < 65536; i++) {
-        if (SH4_decoded[i].decoded == 0) {
-            SH4_decoded[i].exec = &SH4_EMPTY;
-            sprintf(SH4_disassembled[i], "UNKNOWN OPCODE %04x", i);
-            sprintf(SH4_mnemonic[i], "UNKNOWN OPCODE %04x", i);
-            unencoded++;
+    for (u32 szpr = 0; szpr < 4; szpr++) {
+        for (u32 i = 0; i < 65536; i++) {
+            if (SH4_decoded[szpr][i].decoded == 0) {
+                SH4_decoded[szpr][i].exec = &SH4_EMPTY;
+                sprintf(SH4_disassembled[szpr][i], "UNKNOWN OPCODE %04x", i);
+                sprintf(SH4_mnemonic[szpr][i], "UNKNOWN OPCODE %04x", i);
+                unencoded++;
+            }
         }
     }
 }

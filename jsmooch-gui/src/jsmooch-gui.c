@@ -257,9 +257,13 @@ int main(int argc, char** argv)
                                     // memory is written at cycle 58615 PC: 8c0000ea val: 0000
     //sys->step_master(sys, 58600);
     //dbg_enable_trace();
-    sys->step_master(sys, 10000);
-    dbg_LT_dump();
-    dbg_flush();
+    //sys->step_master(sys, 63);
+    //dbg_LT_clear();
+    dbg_disable_trace();
+    sys->step_master(sys, 8200100); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    // 2621400 kinda inside memset
+    //dbg_LT_dump();
+    //dbg_flush();
     return 0;
     /*jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
     SDL_UpdateWindowSurface(window);

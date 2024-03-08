@@ -1,26 +1,28 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "UnreachableCode"
 //
 //
 // Created by Dave on 2/13/2024.
 //
 
+#include "assert.h"
 #include "stdio.h"
 #include "dc_mem.h"
 #include "holly.h"
 #include "gdrom.h"
 
-i64 DCread8(void *ptr, u32 addr);
-i64 DCread16(void *ptr, u32 addr);
-i64 DCread32(void *ptr, u32 addr);
-u32 DCwrite8(void *ptr, u32 addr, u32 val);
-u32 DCwrite16(void *ptr, u32 addr, u32 val);
-u32 DCwrite32(void *ptr, u32 addr, u32 val);
+
+u64 DCread_flash(struct DC* this, u32 addr, u32* success, u32 bits);
+void G1_write(struct DC* this, u32 reg, u32 val, u32 bits, u32* success);
+
+#define B32(b31_b28, b27_24,b23_20,b19_16,b15_12,b11_8,b7_4,b3_0) ( \
+  ((0b##b31_b28) << 28) | ((0b##b27_24) << 24) | \
+  ((0b##b23_20) << 20) | ((0b##b19_16) << 16) | \
+  ((0b##b15_12) << 12) | ((0b##b11_8) << 8) | \
+  ((0b##b7_4) << 4) | (0b##b3_0))
+
 
 #define THIS struct DC* this = (struct DC*)ptr
-
-#define READ16FROM8(arr, addr) (*(u16 *)(arr[addr]))
-#define READ32FROM8(arr, addr) (*(u32 *)addr[addr]))
-#define WRITE16TO8(arr, addr, val) {*(u16 *)(arr[addr]) = (u16)val; }
-#define WRITE32TO8(arr, addr, val) {*(u32 *)(arr[addr]) = val; }
 
 static u32 dcms(enum DC_MEM_SIZE sz)
 {
@@ -36,163 +38,244 @@ static u32 dcms(enum DC_MEM_SIZE sz)
     }
 }
 
-void DC_mem_init(struct DC* this)
+static void gdrom_dma_start(struct DC* this)
 {
-    for (u32 i = 0; i < 0x20; i++) {
-        /*this->mem.read_map[i] = &read_empty;
-        this->mem.write_map[i] = &write_empty;*/
-    }
-
-    this->io.TCOR0 = this->io.TCNT0 = this->io.PCTRA = this->io.PDTRA = 0;
-    this->io.SB_LMMODE0 = 0;
-    this->io.SB_LMMODE1 = 0;
-
-    // 0C - RAM. EC, CC, 1C, 8C
-    //
-#define MAP(addr, rdfunc, wrfunc) this->mem.read_map[addr] = &(rdfunc); this->mem.write_map[addr] = &(wrfunc)
-    /*MAP(0x0C, DCreadRAM, DCwriteRAM);
-    MAP(0x8C, DCreadRAM, DCwriteRAM);
-    MAP(0x8C, DCreadRAM, DCwriteRAM);*/
-#undef MAP
+    if (this->gdrom.SB_GDST) printf("\nGDROM DMA REQUEST!");
 }
 
-u64 VMASK[9] = {
-        0,
-        0xFF, // 1 = 8-bit
-        0xFFFF, // 2 = 16-bit
-        0,
-        0xFFFFFFFF, // 4 = 32-bit
-        0,
-        0,
-        0,
-        0xFFFFFFFFFFFFFFFF // 8 = 64-bit?
-};
+static void sb_dma_start(struct DC* this, i32 channel, u32 reg_addr)
+{
+    printf("\nWAIT WHAT? DMA START %d %d", channel, this->io.SB_C2DST);
+}
 
-static i64 (*DCreads[5])(void *, u32) = {
-    NULL,
-    &DCread8,
-    &DCread16,
-    NULL,
-    &DCread32
-};
+ u64 read_empty(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32 *success)
+ {
+    *success = 0;
 
+    printf("\nRead empty addr %08x full:%08X", (addr & 0x1FFFFFFF), addr);
+    fflush(stdout);
+    return 0;
+ }
 
-static u32 (*DCwrites[5])(void *, u32, u32) = {
+ void write_empty(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+ {
+     printf("\nWrite empty addr %08x full:%08X val:%08llx", (addr & 0x1FFFFFFF), addr, val);
+     fflush(stdout);
+     *success = 0;
+ }
+
+ u64 cR8(void *ptr, u32 addr) {
+    return ((u8 *)ptr)[addr];
+ }
+
+ u64 cR16(void *ptr, u32 addr) {
+    return *(u16*)(((u8*)ptr)+addr);
+}
+
+u64 cR32(void *ptr, u32 addr) {
+    return *(u32*)(((u8*)ptr)+addr);
+}
+
+u64 cR64(void *ptr, u32 addr) {
+    return *(u64*)(((u8*)ptr)+addr);
+}
+
+void cW8(void *ptr, u32 addr, u64 val) {
+    *(((u8*)ptr)+addr) = val;
+}
+
+void cW16(void *ptr, u32 addr, u64 val) {
+    *(u16 *)(((u8*)ptr)+addr) = val;
+}
+
+void cW32(void *ptr, u32 addr, u64 val) {
+    *(u32 *)(((u8*)ptr)+addr) = val;
+}
+
+void cW64(void *ptr, u32 addr, u64 val) {
+    *(u64 *)(((u8*)ptr)+addr) = val;
+}
+
+static u64 (*cR[9])(void *, u32) = {
         NULL,
-        &DCwrite8, // 1 = 8-bit
-        &DCwrite16, // 2 = 16-bit
+        &cR8,
+        &cR16,
         NULL,
-        &DCwrite32
+        &cR32,
+        NULL,
+        NULL,
+        NULL,
+        &cR64
 };
 
-#define RFO addr, ret
-#define WFO addr, val
-static char RFORM[5][100] = {
-        "",
-        "\n" DBGC_READ " read8    (%08x) %02x" DBGC_RST,
-        "\n" DBGC_READ " read16   (%08x) %04x" DBGC_RST,
-        "",
-        "\n" DBGC_READ " read32   (%08x) %08x" DBGC_RST
-};
-
-static char WFORM[5][100] = {
-        "",
-        "\n" DBGC_WRITE " write8   (%08x) %02x" DBGC_RST, // 1 = 8-bit
-        "\n" DBGC_WRITE " write16  (%08x) %04x" DBGC_RST, // 2 = 16-bit
-        "",
-        "\n" DBGC_WRITE " write32  (%08x) %08x" DBGC_RST // 4 = 32-bit
+static void (*cW[9])(void *, u32, u64) = {
+        NULL,
+        &cW8,
+        &cW16,
+        NULL,
+        &cW32,
+        NULL,
+        NULL,
+        NULL,
+        &cW64
 };
 
 
-u32 DCread(void *ptr, u32 addr, u32 sz) {
-    THIS;
-    i64 ret = DCreads[sz](ptr, addr);
-#ifdef SH4_DBG_SUPPORT
-    if (dbg.trace_on) {
-        dbg_printf(RFORM[sz], RFO);
-    }
+u64 read_area0(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+ {
+     u32 full_addr = addr;
+     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
+     if (addr <= 0x1FFFFF)
+         return cR[sz](this->BIOS.ptr, addr & 0x1FFFFF);
+     if ((addr >= 0x200000 ) && (addr <= 0x21FFFF))
+         return DCread_flash(this, addr, success, 4);
+
+     if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF))
+         return holly_read(this, addr, success);
+
+     // handle Operand Cache access
+     if ((full_addr >= 0x7C000000) && (full_addr <= 0x7FFFFFFF)) {
+         if (this->sh4.regs.CCR.OIX == 0)
+             return cR[sz](this->OC, ((addr & 0x2000) >> 1) | (addr & 0xFFF));
+         else
+             return cR[sz](this->OC, ((addr & 0x02000000) >> 13) | (addr & 0xFFF));
+     }
+
+     switch(full_addr) {
+#include "generated/area0_reads.c"
+         case 0x005F6900: // Interrupt status register SB_ISTNRM
+             // Clear anything that a 1 is written to in bits 21 to 0
+#ifdef LYCODER
+             return 8; // stub for IP.BIN to bypass vblank wait
+#else
+             return this->io.SB_ISTNRM;
 #endif
-#ifdef DO_LAST_TRACES
-    dbg_LT_printf(RFORM[sz], RFO);
-    dbg_LT_endline();
-#endif
+     }
 
-    if (ret < 0) {
-        printf("unknown read%d from %08x", dcms(sz), addr);
-        return 0;
-    }
-    return (u32)ret & VMASK[sz];
-}
+     *success = 0;
+     return 0;
+ }
 
-void DCwrite(void *ptr, u32 addr, u32 val, u32 sz)
+
+ static void maple_write(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
 {
-    THIS;
-    val &= VMASK[sz];
-
-#ifdef SH4_DBG_SUPPORT
-    if (dbg.trace_on) {
-        dbg_printf(WFORM[sz], WFO);
-    }
-#endif
-#ifdef DO_LAST_TRACES
-    dbg_LT_printf(WFORM[sz], WFO);
-    dbg_LT_endline();
-#endif
-
-    if (!DCwrites[sz](ptr, addr, val)) {
-        printf("\nwrite%d unknown addr %08x %08x val %02x cycle:%llu", dcms(sz), addr & 0x1FFFFFFF, addr, val,
-               this->sh4.trace_cycles);
-        dbg_break();
-        fflush(stdout);
-    }
-}
-
-i64 DCread_flash(struct DC* this, u32 addr, u32 bits)
-{
-    printf("\nUNSUPPORTED FLASH READ JUST YET");
+    addr &= 0x1FFFFFFF;
     switch(addr) {
-
+#include "generated/maple_writes.c"
     }
-    return *(u32 *)((u8*)this->flash.ptr + (addr & 0x1FFFF));
+    printf("\nYEAH GOT HERE SORRY DAWG");
+    *success = 0;
 }
 
-i64 DCread8(void *ptr, u32 addr)
+ void write_area0(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+ {
+    u32 full_addr = addr;
+    addr &= 0x1FFFFFFF;
+
+    if ((full_addr >= 0x7C000000) && (full_addr <= 0x7FFFFFFF)) {
+         if (this->sh4.regs.CCR.OIX == 0)
+             cW[sz](this->OC, ((full_addr & 0x2000) >> 1) | (full_addr & 0xFFF), val);
+         else
+             cW[sz](this->OC, ((full_addr & 0x02000000) >> 13) | (full_addr & 0xFFF), val);
+         return;
+     }
+
+     addr &= 0x1FFFFFFF;
+     if ((addr >= 0x005F7000) && (addr <= 0x005F70FF)) { // General G1 commands
+         G1_write(this, full_addr, val, sz, success);
+         return;
+     }
+
+     if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) { // GDROM commands
+         G1_write(this, full_addr, val, sz, success);
+         return;
+     }
+
+     if ((addr >= 0x005F6C00) && (addr <= 0x005F6CFF)) { // Maple commands!
+         maple_write(this, full_addr, val, sz, success);
+         return;
+     }
+
+     if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF)) {
+         holly_write(this, addr, val, success);
+         return;
+     }
+
+     switch(addr) {
+#include "generated/area0_writes.c"
+         case 0x005F6900: // Interrupt status register SB_ISTNRM
+             // Clear anything that a 1 is written to in bits 21 to 0
+             printf("\nCLEAR ISTNRM %08llx", val);
+             this->io.SB_ISTNRM ^= this->io.SB_ISTNRM & val & 0x3FFFFF;
+             return;
+     }
+
+     *success = 0;
+ }
+
+u64 read_area1(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
 {
-    THIS;
-    u32 maddr = addr;
+    u32 full_addr = addr;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
-    if (addr <= 0x1FFFFF)
-        return ((u8 *)this->BIOS.ptr)[addr];
-    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
-        //ret = this->RAM[addr - 0xC000000];
-        return this->RAM[addr & 0xFFFFFF];
 
-    // handle Operand Cache access
-    if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
-        if (this->sh4.regs.CCR.OIX == 0)
-            return this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)];
-        else
-            return this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)];
-    }
+    if ((addr >= 0x05000000) && (addr <= 0x05800000)) // VRAM access
+        return cR[sz](this->VRAM, addr & 0x057FFFFF);
 
-    switch(maddr) {
-        case  0xFFD80004:  // TSTR
-            return 0;
-    }
-    return -1;
+    *success = 0;
+    return 0;
 }
 
-i64 DCread16r(void *ptr, u32 addr, u32 ins_fetch) {
-    THIS;
-    u32 maddr = addr;
+void write_area1(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+{
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
-    if (addr < 0x1FFFFF)
-        return *(u16 *) (((u8 *) this->BIOS.ptr + addr));
-    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
-        return *(u16 *) (this->RAM + (addr & 0xFFFFFF));
+    if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
+        cW[sz](this->VRAM, addr & 0x057FFFFF, val);
+        return;
+    }
 
-    switch (maddr) {
-        case 0xFF800030: {
+    *success = 0;
+}
+
+u64 read_area3(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+{
+    addr &= 0x1FFFFFFF;
+    if (((addr >= 0x0C000000) && (addr <= 0x0DFFFFFF)))// || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
+        return cR[sz](this->RAM, addr & 0xFFFFFF);
+
+    *success = 0;
+    return 0;
+}
+
+void write_area3(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+{
+    addr &= 0x1FFFFFFF;
+    if (((addr >= 0x0C000000) && (addr <= 0x0DFFFFFF))) {//|| ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
+        cW[sz](this->RAM, addr & 0xFFFFFF, val);
+        return;
+    }
+
+    *success = 0;
+}
+
+u64 read_area4(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+{
+    assert(1==0);
+}
+
+void write_area4(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
+{
+    assert(1==0);
+}
+
+u64 read_P4(struct DC* this, u32 addr, enum DC_MEM_SIZE sz, u32* success)
+{
+    addr |= 0xF0000000;
+    switch (addr | 0xE0000000) {
+#include "generated/p4_reads.c"
+        case 0xFF000024: //
+            return this->sh4.regs.EXPEVT;
+        case 0xFF800030: { // PDTRA
+            assert(sz==2);
             // PDTRA from Bus Control
             // Note: I got it from Deecy...
             // Note: I have absolutely no idea what's going on here.
@@ -225,282 +308,51 @@ i64 DCread16r(void *ptr, u32 addr, u32 ins_fetch) {
             // doc a little unclear on this
             //return this->io.RFCR;
             return 0x0011; // to pass BIOS check
-    }
-    // handle Operand Cache access
-    if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
-        if (this->sh4.regs.CCR.OIX == 0)
-            return *(u16 *) (&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]);
-        else
-            return *(u16 *) (&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]);
-    }
-    return -1;
-}
-
-i64 DCread16(void *ptr, u32 addr)
-{
-    return DCread16r(ptr, addr, false);
-}
-
-u32 DCfetch_ins(void *ptr, u32 addr)
-{
-    return DCread16r(ptr, addr, true);
-}
-
-i64 DCread32(void *ptr, u32 addr) {
-    THIS;
-    u32 maddr = addr;
-    addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
-    if (addr < 0x1FFFFF)
-        return *(u32 *) ((((u8 *) this->BIOS.ptr) + (addr & 0x1FFFFF)));
-    if ((addr >= 0x200000 ) && (addr <= 0x21FFFF)) {
-        return DCread_flash(this, addr, 32);
+        case  0xFFD80004:  // TSTR
+            return 0;
     }
 
-    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF)))
-        return *(u32 *) (this->RAM + (addr & 0xFFFFFF));
-
-    // handle Operand Cache access
-    if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
-        if (this->sh4.regs.CCR.OIX == 0)
-            return *(u32 *)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]);
-        else
-            return *(u32 *)(&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]);
-    }
-
-    if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF))
-        return holly_read(this, addr);
-
-    switch(addr) {
-        case 0x005F6900: // Interrupt status register SB_ISTNRM
-            // Clear anything that a 1 is written to in bits 21 to 0
-#ifdef LYCODER
-            return return 8); // stub for IP.BIN to bypass vblank wait
-#else
-            return this->io.SB_ISTNRM;
-#endif
-        case 0x00702c00: // AICA ARMRST
-            return this->aica.ARMRST;
-        case 0x1F000024: // EXPEVT
-            dbg_printf("\nREAD EXPEVT");
-            return this->sh4.regs.EXPEVT;
-    }
-
-    switch(maddr) {
-        case 0xFFD8000C:
-            //printf("\nTCTN0 %d", this->io.TCNT0);
-            return this->io.TCNT0;
-    }
-    
-    return -1;
-}
-
-#define RT return 1
-u32 DCwrite8(void *ptr, u32 addr, u32 val)
-{
-    THIS;
-    val &= 0xFF;
-    u32 maddr = addr;
-    addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
-    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
-        this->RAM[addr & 0xFFFFFF] = (u8)val;
-        RT;
-    }
-
-    switch(maddr) {
-        case 0xffd80000: // TOCR timer output control register
-            this->io.TOCR = 0;
-            RT;
-        case 0xffd80004: // TSTR
-            this->io.TSTR = 0;
-            RT;
-        case 0xFF940190: // -0xFF SDMR
-            this->io.SDMR = val & 0xFF;
-            RT;
-    }
-
-    // handle Operand Cache access
-    if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
-        if (this->sh4.regs.CCR.OIX == 0)
-            this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)] = val;
-        else
-            this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)] = val;
-        RT;
-    }
+    *success = 0;
     return 0;
 }
 
-void G1_write(struct DC* this, u32 reg, u32 val, u32 bits)
+void write_P4(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
 {
-    switch(reg | 0x5F7400) {
-        case 0x5F7480: { // SB_G1RRC write-only timing for system ROM accesses
+    u32 full_addr = addr;
+    u32 up_addr = addr | 0xE0000000;
+    addr &= 0x1FFFFFFF;
+    if ((full_addr >= 0xE0000000) && (full_addr <= 0xE3FFFFFF)) { // store queue write
+        cW[sz](this->sh4.SQ[(addr >> 5) & 1], addr & 0x1C, val);
+        return;
+    }
+
+    switch(up_addr) {
+#include "generated/p4_writes.c"
+        case 0xFF000020: // EXPEVT
+            this->sh4.regs.EXPEVT = val & 0xFFF;
             return;
-        }
-        case 0x5F74E4: { // Secret GDROM unlock register!
+        case 0xFF000024: // TRAPA
+            this->sh4.regs.TRAPA = val & 0xFF;
             return;
-        }
-    }
-    printf("\nUnhandled G1 reg write %02x val %04x bits %d", reg, val, bits);
-}
-
-u32 DCwrite16(void *ptr, u32 addr, u32 val)
-{
-    THIS;
-    val &= 0xFFFF;
-    u32 maddr = addr;
-    addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
-    if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
-        *((u16 *)(&this->VRAM[addr - 0x05000000])) = (u16)val;
-        //if ((val != 0) || (dbg.watch));
-        //    printf("\nVRAM WRITE A:%08x R:%06x V:%04x", addr, addr - 0x05000000, val & 0xFFFF);
-        RT;
-    }
-
-    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
-        *((u16 *)&this->RAM[addr & 0xFFFFFF]) = (u16)val;
-        RT;
-        // addr & 0xFFFFFF
-    }
-
-
-        // handle Operand Cache access
-    if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
-        if (this->sh4.regs.CCR.OIX == 0)
-            *(u16 *)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]) = val;
-        else
-            *(u16 *)(&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]) = val;
-        RT;
-    }
-
-    if ((addr >= 0x005F7000) && (addr <= 0x005F70FF)) {
-        GDROM_write(this, maddr & 0xFF, val, 16);
-        RT;
-    }
-
-    if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) {
-        G1_write(this, maddr & 0xFF, val, 16);
-        RT;
-    }
-
-    switch(maddr) {
-        case 0xFF800004: // BCR2
-            this->io.BSCR2 = val;
-            RT;
-        case 0xFF800024: // RT;COR
-            this->io.RTCOR = val;
-            RT;
+        case 0xFF000028: // INTEVT
+            this->sh4.regs.INTEVT = val & 0xFFFF;
+            return;
+        case 0xFF800030: // PDTRA
+            return;
         case 0xFF800028: // RFCR
             // doc a little unclear on this
             this->io.RFCR = 0b1010010000000000 | (val & 0x1FF);
-            RT;
-        case 0xFF80001C: // RT;CSR
-            this->io.RTCSR = val;
-            RT;
-        case  0xFFD80010:  // TCR0
-            RT;
-    }
-    return 0;
-}
-
-u32 DCwrite32(void *ptr, u32 addr, u32 val)
-{
-    THIS;
-    u32 maddr = addr;
-    if (maddr == 0x8c00b7bc) {
-        printf("\nWRITE TO 8C00B7BC cyc:%llu val:%08x PC:%08x", this->sh4.trace_cycles, val, this->sh4.regs.PC);
-    }
-    addr &= 0x1FFFFFFF;
-
-    if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
-        *((u32 *)(&this->VRAM[addr - 0x05000000])) = val;
-        //if ((val != 0) || (dbg.watch))
-            //printf("\nVRAM WRITE A:%08x R:%06x V:%08x", addr, addr - 0x05000000, val);
-        RT;
-    }
-    if (((addr >= 0x0C000000) && (addr <= 0x0CFFFFFF)) || ((addr >= 0x0E000000) && (addr <= 0x0EFFFFFF))) {
-        *((u32 *) (&this->RAM[addr & 0xFFFFFF])) = val;
-        RT;
-    }
-    if ((maddr >= 0xE0000000) && (maddr <= 0xE3FFFFFF)) { // store queue write
-        *(u32*)&this->sh4.SQ[(addr >> 5) & 1][addr & 0x1C] = val;
-    }
-    if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF)) {
-        return holly_write(this, addr, val);
-    }
-    if ((addr >= 0x005F7400) && (addr <= 0x005F74FF)) {
-        G1_write(this, maddr & 0xFF, val, 32);
-        RT;
-    }
-
-    // handle Operand Cache access
-    if ((maddr >= 0x7C000000) && (maddr <= 0x7FFFFFFF)) {
-        if (this->sh4.regs.CCR.OIX == 0)
-            *(u32*)(&this->OC[((addr & 0x2000) >> 1) | (addr & 0xFFF)]) = val;
-        else
-            *(u32*)(&this->OC[((addr & 0x02000000) >> 13) | (addr & 0xFFF)]) = val;
-        RT;
-    }
-
-    switch(addr) {
-        case 0x1F000010: // MMUCR
-            this->io.MMUCR = val;
-            RT;
-        case 0x005F6910: // SB_IML2NRM
-            this->io.SB_IML2NRM = val;
-            DC_recalc_interrupts(this);
-            RT;
-        case 0x005F6920: // SB_IML4NRM
-            this->io.SB_IML4NRM = val;
-            DC_recalc_interrupts(this);
-            RT;
-        case 0x005F6930: // SB_IML6NRM
-            this->io.SB_IML6NRM = val; //1= enabled
-            DC_recalc_interrupts(this);
-            RT;
-        case 0x005F6900: // Interrupt status register SB_ISTNRM
-            // Clear anything that a 1 is written to in bits 21 to 0
-            printf("\nCLEAR ISTNRM %08x", val);
-            this->io.SB_ISTNRM ^= this->io.SB_ISTNRM & val & 0x3FFFFF;
-            RT;
-        case 0x005f6884: // SB_LMMODE0 This register determines the data size when writing to the area from 0x1100 0000 to 0x11FF FFFF in texture memory via the TA FIFO buffer - Direct Texture Path. 0 = 64bit 1 = 32bit
-            this->io.SB_LMMODE0 = val & 1;
-            RT;
-        case 0x005f6888: // SB_LMMODE1 This register determines the data size when writing to the area from 0x1300 0000 to 0x13FF FFFF in texture memory via the TA FIFO buffer. The meanings of the settings are the same as for SB_LMMODE0. (The default is also the same.)
-            this->io.SB_LMMODE1 = val & 1;
-            RT;
-        case 0x00702c00: // AICA ARMRST
-            this->aica.ARMRST = val;
-            RT;
-    }
-
-    switch(maddr) {
+            return;
         case 0xFF800000: // BSCR
             this->io.BSCR = val;
-            printf("\nWRITE TO BSCR!");
-            RT;
-        case 0xFF800008: // WCR1
-            this->io.WCR1 = val;
-            RT;
-        case 0xFF80000C: // WCR2
-            this->io.WCR2 = val;
-            RT;
-        case 0xFF800014: // MCR
-            this->io.MCR = val;
-            RT;
-        case 0xFF940190: // SDMR
-            this->io.SDMR = val;
-            RT;
+            printf("\nWRITE TO BSCR!"); // ignore?
+            return;
         case 0xFF000038: // QACR0 for store queues
             this->sh4.regs.QACR0 = val;
-            RT;
+            return;
         case 0xFF00003C: // QACR1 for store queues
             this->sh4.regs.QACR1 = val;
-            RT;
-        case 0xffd80008: // TCOR0
-            this->io.TCOR0 = val;
-            RT;
-        case 0xffd8000c:
-            this->io.TCNT0 = val;
-            RT;
+            return;
         case 0xff00001c: // Cache control CCR
             this->sh4.regs.CCR.IIX = (val >> 15) & 1;
             this->sh4.regs.CCR.ICI = (val >> 11) & 1;
@@ -513,10 +365,186 @@ u32 DCwrite32(void *ptr, u32 addr, u32 val)
             this->sh4.regs.CCR.OCE = val & 1;
             printf("\nOIX:%d ORA:%d OCE:%d", this->sh4.regs.CCR.OIX, this->sh4.regs.CCR.ORA, this->sh4.regs.CCR.OCE);
             //fflush(stdout);
-            RT;
+            return;
+        case 0xffd80000: // TOCR timer output control register
+            assert(sz==1);
+            this->io.TOCR = 0;
+            return;
+        case 0xffd80004: // TSTR
+            assert(sz==1);
+            this->io.TSTR = 0;
+            return;
     }
-    return 0;
+    *success = 0;
 }
+
+
+
+void DC_mem_init(struct DC* this)
+{
+    for (u32 i = 0; i < 0x40; i++) {
+        this->mem.read[i] = &read_empty;
+        this->mem.write[i] = &write_empty;
+    }
+
+#define MAP(addr, rdfunc, wrfunc) this->mem.read[(addr)>>2] = &(rdfunc); this->mem.write[(addr)>>2] = &(wrfunc)
+    // All of P0. P1, P2, P3 should mirror the lower half of P0?
+    u32 areas[4] = { 0x00, 0x80, 0xA0, 0xC0 };
+    for (u32 i = 0; i < 4; i++) {
+        u32 area = areas[i];
+        MAP(area + 0x00, read_area0, write_area0);
+        MAP(area + 0x04, read_area1, write_area1);
+        //MAP(0x08, read_area2, write_area2);
+        MAP(area + 0x0C, read_area3, write_area3);
+        MAP(area + 0x10, read_area4, write_area4);
+        //MAP(0x14, read_area5, write_area5);
+        //MAP(0x18, read_area6, write_area6);
+        MAP(area + 0x1C, read_P4, write_P4);
+    }
+
+    for (u32 addr = 0xE0; addr < 0x100; addr += 4) {
+        MAP(addr, read_P4, write_P4);
+    }
+#undef MAP
+}
+
+
+
+u64 VMASK[9] = {
+        0,
+        0xFF, // 1 = 8-bit
+        0xFFFF, // 2 = 16-bit
+        0,
+        0xFFFFFFFF, // 4 = 32-bit
+        0,
+        0,
+        0,
+        0xFFFFFFFFFFFFFFFF // 8 = 64-bit?
+};
+
+#define RFO addr, ret
+#define WFO addr, val
+static char RFORM[9][100] = {
+        "",
+        "\n" DBGC_READ " read8    (%08x) %02x" DBGC_RST,
+        "\n" DBGC_READ " read16   (%08x) %04x" DBGC_RST,
+        "",
+        "\n" DBGC_READ " read32   (%08x) %08x" DBGC_RST,
+        "",
+        "",
+        "",
+        "\n" DBGC_READ " read64   (%08x) %16llu" DBGC_RST
+};
+
+static char WFORM[9][100] = {
+        "",
+        "\n" DBGC_WRITE " write8   (%08x) %02llx" DBGC_RST, // 1 = 8-bit
+        "\n" DBGC_WRITE " write16  (%08x) %04llx" DBGC_RST, // 2 = 16-bit
+        "",
+        "\n" DBGC_WRITE " write32  (%08x) %08llx" DBGC_RST, // 4 = 32-bit
+        "",
+        "",
+        "",
+        "\n" DBGC_WRITE " write64  (%08x) %016llx" DBGC_RST // 8 = 64-bit
+};
+
+
+void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
+    THIS;
+    u32 success = 1;
+    val &= VMASK[sz];
+
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf(WFORM[sz], WFO);
+    }
+#endif
+#ifdef DO_LAST_TRACES
+    dbg_LT_printf(WFORM[sz], WFO);
+    dbg_LT_endline();
+#endif
+    this->mem.write[addr >> 26](this, addr, val, sz, &success);
+
+    if (!success) {
+        //printf("\nwrite%d unknown addr %08x %08x val %02llu cycle:%llu", dcms(sz), addr & 0x1FFFFFFF, addr, val,
+        //       this->sh4.trace_cycles);
+        if (addr >= 0xFF000000)
+            printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
+        else
+            printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
+        fflush(stdout);
+        dbg.var++;
+        if (dbg.var > 15) {
+            dbg_break();
+        }
+
+    }
+}
+
+u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
+{
+    THIS;
+    u32 success = 1;
+    u64 ret = this->mem.read[addr >> 26](this, addr, sz, &success) & VMASK[sz];
+#ifdef SH4_DBG_SUPPORT
+    if (!is_ins_fetch) {
+        if (dbg.trace_on) {
+            dbg_printf(RFORM[sz], RFO);
+        }
+    }
+#endif
+#ifdef DO_LAST_TRACES
+    if (!is_ins_fetch) {
+        dbg_LT_printf(RFORM[sz], RFO);
+        dbg_LT_endline();
+    }
+#endif
+
+    if (!success) {
+        printf("\nunknown read%d from %08x", dcms(sz), addr);
+        return 0;
+    }
+    return ret;
+}
+
+
+u64 DCread_flash(struct DC* this, u32 addr, u32* success, u32 bits)
+{
+    printf("\nUNSUPPORTED FLASH READ JUST YET");
+    *success = 0;
+    switch(addr) {
+
+    }
+    return *(u32 *)((u8*)this->flash.ptr + (addr & 0x1FFFF));
+}
+
+u32 DCfetch_ins(void *ptr, u32 addr)
+{
+    return DCread(ptr, addr, 2, true);
+}
+
+u64 DCread_noins(void *ptr, u32 addr, u32 sz)
+{
+    return DCread(ptr, addr, sz, false);
+}
+
+void G1_write(struct DC* this, u32 addr, u32 val, u32 bits, u32* success)
+{
+    addr &= 0x1FFFFFFF;
+    switch(addr) {
+#include "generated/gdrom_writes.c"
+        case 0x005F7480: { // SB_G1RRC write-only timing for system ROM accesses
+            return;
+        }
+        case 0x005F74E4: { // Secret GDROM unlock register!
+            return;
+        }
+    }
+    *success = 0;
+    printf("\nUnhandled G1 reg write %02x val %04x bits %d", addr, val, bits);
+}
+
+
 
 /*
  * it's a bit funky
@@ -542,3 +570,4 @@ the mmu isn't needed though
 
 
  */
+#pragma clang diagnostic pop
