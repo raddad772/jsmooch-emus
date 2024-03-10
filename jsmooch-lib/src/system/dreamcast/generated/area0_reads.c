@@ -1,10 +1,10 @@
 
         case 0x00702C00:  { return this->aica.ARMRST; }
-        case 0x005F6800:  { return this->io.SB_CD2STAT.u | 0x10000000; }
+        case 0x005F6800:  { return this->io.SB_CD2STAT; }
         case 0x005F6804:  { return this->io.SB_CD2LEN.u; }
         case 0x005F6808:  { return this->io.SB_C2DST; }
-        case 0x005F6810:  { return this->io.SB_SDSTAW.u | 0x08000000; }
-        case 0x005F6814:  { return this->io.SB_SDBAAW.u | 0x08000000; }
+        case 0x005F6810:  { return this->io.SB_SDSTAW; }
+        case 0x005F6814:  { return this->io.SB_SDBAAW; }
         case 0x005F6818:  { return this->io.SB_SDWLT; }
         case 0x005F681C:  { return this->io.SB_SDLAS; }
         case 0x005F6820:  { return this->io.SB_SDST; }
@@ -17,6 +17,9 @@
         case 0x005F68A0:  { return this->io.SB_RBSPLT; }
         case 0x005F68A4:  { return this->io.SB_UKN5F68A4; }
         case 0x005F68AC:  { return this->io.SB_UKN5F68AC; }
+        case 0x005F6900: { return (this->io.SB_ISTNRM.u) | ((this->io.SB_ISTERR.u > 0) << 30) | ((this->io.SB_ISTEXT.u > 0) << 31); }
+        case 0x005F6904:  { return this->io.SB_ISTEXT.u; }
+        case 0x005F6908:  { return this->io.SB_ISTERR.u; }
         case 0x005F6914:  { return this->io.SB_IML2EXT.u; }
         case 0x005F6918:  { return this->io.SB_IML2ERR.u; }
         case 0x005F6924:  { return this->io.SB_IML4EXT.u; }

@@ -2,12 +2,16 @@
 // Created by Dave on 2/10/2024.
 //
 
+#include "assert.h"
 #include "stdio.h"
 #include "string.h"
 #include "stdarg.h"
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 #include "fsca.h"
+#include "tmu.h"
+
+//#define SH4_BRK 0x8c002774
 
 // Endianness is little.
 
@@ -222,6 +226,7 @@ void SH4_init(struct SH4* this)
     this->read = NULL;
     this->write = NULL;
     this->interrupt_level = 0;
+    TMU_reset(this);
 }
 
 static void swap_register_banks(struct SH4* this)
@@ -275,6 +280,107 @@ undefined
     SH4_SR_set(this, (SH4_regs_SR_get(&this->regs.SR) &  0b11110011) | 0b01110000000000000000000011110000);
 }
 
+#include "helpers/multisize_memaccess.c"
+
+u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
+{
+    struct SH4* this = (struct SH4*)ptr;
+    u32 full_addr = addr;
+    u32 up_addr = addr | 0xE0000000;
+    addr &= 0x1FFFFFFF;
+    if ((full_addr < 0xE0000000) && (addr < 0x1C000000)) {
+        printf("\nIllegal SH4 read forward! %08x", addr);
+        *success = 0;
+        return 0;
+    }
+
+    if ((up_addr >= 0xFF800000) && (up_addr <= 0xFF80002C)) {
+        return TMU_read(this, full_addr, sz, success);
+    }
+
+    switch (addr | 0xF0000000) {
+#include "generated/regs_reads.c"
+        case 0xFF800030: { // PDTRA
+            assert(sz==2);
+            // PDTRA from Bus Control
+            // Note: I got it from Deecy...
+            // Note: I have absolutely no idea what's going on here.
+            //       This is directly taken from Flycast, which already got it from Chankast.
+            //       This is needed for the bios to work properly, without it, it will
+            //       go to sleep mode with all interrupts disabled early on.
+            u32 tpctra = this->regs.PCTRA;
+            u32 tpdtra = this->regs.PDTRA;
+
+            u16 tfinal = 0;
+            if ((tpctra & 0xf) == 0x8) {
+                tfinal = 3;
+            } else if ((tpctra & 0xf) == 0xB) {
+                tfinal = 3;
+            } else {
+                tfinal = 0;
+            }
+
+            if (((tpctra & 0xf) == 0xB) && ((tpdtra & 0xf) == 2)) {
+                tfinal = 0;
+            } else if (((tpctra & 0xf) == 0xC) && ((tpdtra & 0xf) == 2)) {
+                tfinal = 3;
+            }
+
+            tfinal |= 0; // 0=VGA, 2=RGB, 3=composite //@intFromEnum(self._dc.?.cable_type) << 8;
+
+            return tfinal;
+        }
+        case 0xFF800028: // RFCR
+            // doc a little unclear on this
+            //return this->io.RFCR;
+            return 0x0011; // to pass BIOS check
+    }
+
+    *success = 0;
+    return 0;
+}
+
+void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
+{
+    // 1F000000-1FFFFFFF also mirrors this
+    u32 full_addr = addr;
+    u32 up_addr = addr | 0xE0000000;
+    addr &= 0x1FFFFFFF;
+    if ((full_addr < 0xE0000000) && (addr < 0x1C000000)) {
+        printf("\nIllegal SH4 write forward! %08x", addr);
+        *success = 0;
+        return;
+    }
+    struct SH4* this = (struct SH4*)ptr;
+
+    if ((addr >= 0xFF800000) && (addr <= 0xFF80002C)) {
+        TMU_write(this, full_addr, val, sz, success);
+        return;
+    }
+
+    if ((full_addr >= 0xE0000000) && (full_addr <= 0xE3FFFFFF)) { // store queue write
+        cW[sz](this->SQ[(addr >> 5) & 1], addr & 0x1C, val);
+        return;
+    }
+
+
+    switch(up_addr) {
+#include "generated/regs_writes.c"
+        case 0xFF800028: // RFCR
+            // doc a little unclear on this
+            this->regs.RFCR = 0b1010010000000000 | (val & 0x1FF);
+            return;
+    }
+
+    *success = 0;
+}
+
+void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to)
+{
+    to->ptr = (void *)this;
+    to->read = &SH4_ma_read;
+    to->write = &SH4_ma_write;
+}
 
 /* syscalls - https://mc.pp.se/dc/syscalls.html
  * Crazy Taxi

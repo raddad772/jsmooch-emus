@@ -15,5 +15,10 @@ void holly_vblank_in(struct DC* this);
 void holly_vblank_out(struct DC* this);
 void maple_dma_init(struct DC* this);
 
+void holly_raise_interrupt(struct DC* this, u32 irq_num);
+void holly_lower_interrupt(struct DC* this, enum holly_interrupt_masks irq_num);
+void holly_eval_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, u32 is_true);
+void holly_recalc_interrupts(struct DC* this);
+
 
 #endif //JSMOOCH_EMUS_HOLLY_H

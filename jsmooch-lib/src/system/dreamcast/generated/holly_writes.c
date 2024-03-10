@@ -15,6 +15,8 @@
         case 0x005F807C: { this->holly.FPU_PARAM_CFG.u = val & 0x002FFFFF; return; }
         case 0x005F8080: { this->holly.HALF_OFFSET.u = val & 0x00000007; return; }
         case 0x005F808C: { this->holly.ISP_BACKGND_T.u = val & 0x1FFFFFFF; return; }
+        case 0x005F80A0: { this->holly.SDRAM_REFRESH = (val & 0x000000FF); return; }
+        case 0x005F80A8: { this->holly.SDRAM_CFG = val; return; }
         case 0x005F80B0: { this->holly.FOG_COL_RAM = val; return; }
         case 0x005F80B4: { this->holly.FOG_COL_VERT.u = val & 0x00FFFFFF; return; }
         case 0x005F80B8: { this->holly.FOG_DENSITY.u = val & 0x0000FFFF; return; }
@@ -29,6 +31,8 @@
         case 0x005F80E0: { this->holly.SPG_WIDTH.u = val & 0xFFFFFF7F; return; }
         case 0x005F80E4: { this->holly.TEXT_CONTROL.u = val & 0x00031F1F; return; }
         case 0x005F80E8: { this->holly.VO_CONTROL.u = val & 0x003F01FF; return; }
+        case 0x005F80EC: { this->holly.VO_STARTX = (val & 0x000003FF); return; }
+        case 0x005F80F0: { this->holly.VO_STARTY.u = val & 0x03FF03FF; return; }
         case 0x005F80F4: { this->holly.SCALER_CTL.u = val & 0x0007FFFF; return; }
         case 0x005F8110: { this->holly.FB_BURSTCTRL.u = val & 0x0007FF3F; return; }
         case 0x005F8118: { this->holly.Y_COEFF.u = val & 0x0000FFFF; return; }

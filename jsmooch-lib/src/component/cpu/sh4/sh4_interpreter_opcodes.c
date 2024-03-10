@@ -293,7 +293,8 @@ SH4ins(MOVLS0) { // Rm -> (R0 + Rn)
 }
 
 SH4ins(MOVBLG) { // (disp + GBR) -> sign extension -> R0
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 val = READ8(ins->disp + this->regs.GBR);
+    R(0) = SIGNe8to32(val);
     PCinc;
 }
 
@@ -303,22 +304,22 @@ SH4ins(MOVWLG) { // (disp*2 + GBR) -> sign extension -> R0
 }
 
 SH4ins(MOVLLG) { // (disp*4 + GBR) -> R0
-    BADOPCODE; // Crash on unimplemented opcode
+    R(0) = READ32((ins->disp << 2) + this->regs.GBR);
     PCinc;
 }
 
 SH4ins(MOVBSG) { // R0 -> (disp + GBR)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE8(ins->disp + this->regs.GBR, R(0));
     PCinc;
 }
 
 SH4ins(MOVWSG) { // R0 -> (disp*2 + GBR)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE16((ins->disp << 1) + this->regs.GBR, R(0));
     PCinc;
 }
 
 SH4ins(MOVLSG) { // R0 -> (disp*4 + GBR)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE32((ins->disp << 2) + this->regs.GBR, R(0));
     PCinc;
 }
 
@@ -633,7 +634,10 @@ SH4ins(ORM) { // (R0 + GBR) | (zero extend)imm -> (R0 + GBR)
 }
 
 SH4ins(TAS) { // If (Rn) = 0: 1 -> T, Else: 0 -> T, 1 -> MSB of (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 val = READ8(RN);
+    this->regs.SR.T = val == 0;
+    val |= 0x80;
+    WRITE8(RN, val);
     PCinc;
 }
 
@@ -969,7 +973,6 @@ SH4ins(OCBI) { // Invalidate operand cache block
 }
 
 SH4ins(OCBP) { // Write back and invalidate operand cache block
-    BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 
@@ -1000,8 +1003,11 @@ SH4ins(PREF) { // (Rn) -> operand cache
 }
 
 SH4ins(RTE) { // Delayed branch, SH1*,SH2*: stack area -> PC/SR, SH3*,SH4*: SSR/SPC -> SR/PC
-    BADOPCODE; // Crash on unimplemented opcode
-    PCinc;
+    SH4_SR_set(this, this->regs.SSR);
+    u32 val = this->regs.SPC;
+
+    DELAY_SLOT;
+    rPC = val;
 }
 
 SH4ins(SETS) { // 1 -> S
@@ -1010,12 +1016,13 @@ SH4ins(SETS) { // 1 -> S
 }
 
 SH4ins(SETT) { // 1 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = 1;
     PCinc;
 }
 
 SH4ins(SLEEP) { // Sleep or standby
-    BADOPCODE; // Crash on unimplemented opcode
+    dbg_break();
+    dbg_LT_dump();
     PCinc;
 }
 
@@ -1030,7 +1037,7 @@ SH4ins(STCMSR) { // Rn-4 -> Rn, SR -> (Rn)
 }
 
 SH4ins(STCGBR) { // GBR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.GBR;
     PCinc;
 }
 
@@ -1040,7 +1047,7 @@ SH4ins(STCMGBR) { // Rn-4 -> Rn, GBR -> (Rn)
 }
 
 SH4ins(STCVBR) { // VBR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.VBR;
     PCinc;
 }
 
@@ -1090,7 +1097,7 @@ SH4ins(STCMDBR) { // Rn-4 -> Rn, DBR -> (Rn)
 }
 
 SH4ins(STCRm_BANK) { // Rm_BANK -> Rn (m = 0-7)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.R_[ins->Rm];
     PCinc;
 }
 
@@ -1100,12 +1107,13 @@ SH4ins(STCMRm_BANK) { // Rn-4 -> Rn, Rm_BANK -> (Rn) (m = 0-7)
 }
 
 SH4ins(STSMACH) { // MACH -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.MACH;
     PCinc;
 }
 
 SH4ins(STSMMACH) { // Rn-4 -> Rn, MACH -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.MACH);
     PCinc;
 }
 
@@ -1115,7 +1123,8 @@ SH4ins(STSMACL) { // MACL -> Rn
 }
 
 SH4ins(STSMMACL) { // Rn-4 -> Rn, MACL -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.MACL);
     PCinc;
 }
 
@@ -1484,6 +1493,11 @@ SH4ins(FRCHG) { // If FPSCR.PR = 0: ~FPSCR.FR -> FPSCR.FR, Else: Undefined Opera
 }
 
 SH4ins(FSCHG) { // If FPSCR.PR = 0: ~FPSCR.SZ -> FPSCR.SZ, Else: Undefined Operation
+    if (this->regs.FPSCR.PR == 0) {
+        this->regs.FPSCR.SZ ^= 1;
+    }
+    else assert(1==0);
+
     BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }

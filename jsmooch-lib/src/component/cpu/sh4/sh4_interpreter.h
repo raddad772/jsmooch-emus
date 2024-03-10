@@ -8,6 +8,15 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 
+// One of these for external mem system to write/read registers here,
+// One for this to read/write main memory
+struct SH4_memaccess_t {
+    void *ptr;
+    u64 (*read)(void*,u32,u32,u32*);
+    void (*write)(void*,u32,u64,u32,u32*);
+};
+
+
 struct SH4_FV {
     float a, b, c, d;
 };
@@ -74,18 +83,6 @@ struct SH4_regs {
         u32 u;
     } FPUL;
 
-    struct SH4_regs_CCR {
-        u32 IIX; // 15 - IC index enable (?)
-        u32 ICI; // 11 - IC invalidation (?)
-        u32 ICE; // 8 - IC enable (?)
-        u32 OIX; // 7 - OC index enable (?) -- has to do with operand cache access
-        u32 ORA; // 5 - OC RAM enable (?)
-        u32 OCI; // 3 - OC invalidation
-        u32 CB; // 2 - copy-back enable
-        u32 WT; // 1 - write-through enable
-        u32 OCE; // 0 - OC enable
-    } CCR;
-
     union {
         u32 U32[16];
         u64 U64[8];
@@ -99,11 +96,10 @@ struct SH4_regs {
     u32 currently_banked_rb;
 
     // For storage queue writes
-    u32 QACR0, QACR1;
 
-    u32 EXPEVT;
-    u32 TRAPA;
-    u32 INTEVT;
+    // Some system regs
+    u32 RFCR;
+#include "generated/regs_decls.h"
 };
 
 u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
@@ -122,6 +118,15 @@ struct SH4 {
     i32 pp_last_m;
     i32 pp_last_n;
     u8 SQ[2][32]; // store queues!
+    u8 OC[8 * 1024]; // Operand Cache!
+
+    struct {
+        u32 TOCR;
+        u32 TSTR;
+        u32 TCOR[3];
+        u32 TCNT[3];
+        u32 TCR[3];
+    } tmu;
 
     void *mptr;
     u32 (*fetch_ins)(void*,u32);
@@ -135,5 +140,6 @@ void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this);
 void SH4_SR_set(struct SH4* this, u32 val);
 void SH4_set_interrupt(struct SH4* this, u32 level);
+void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

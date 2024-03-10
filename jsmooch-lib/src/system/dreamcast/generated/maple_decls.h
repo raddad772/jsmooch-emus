@@ -9,7 +9,7 @@
                 u32 bottom_addr : 7;
                 u32 : 1;
                 u32 top_addr : 7;
-            } f;
+            };
             u32 u;
         } SB_MDAPRO;  // 0x005F6C8C
         u32 SB_MMSEL;  // 0x005F6CE8

@@ -11,7 +11,7 @@
 //#define TRACE_ON_BRK     // Enable tracing on break
 //#define DBG_LOG_TO_FILE // log debug to file
 //#define LYCODER        // lycoder-format traces for easy winmerge
-#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
+//#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 //#define DUMP_LAST_TRACES_ON_BREAK
 #define TRACE_COLORS
 
@@ -24,7 +24,7 @@
 #include "helpers/jsm_string.h"
 
 #define MAX_DEBUG_MSG 2000000
-#define LAST_TRACES_LEN 100
+#define LAST_TRACES_LEN 50
 #define LAST_TRACES_MSG_LEN 200
 
 struct last_traces_t {

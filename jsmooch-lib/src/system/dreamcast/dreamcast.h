@@ -17,6 +17,7 @@
 
 #define DC_INT_VBLANK_IN 0x08
 #define DC_INT_VBLANK_OUT 0x10
+#define DC_INT_GDROM   0x
 
 enum DC_MEM_SIZE {
     DC8 = 1,
@@ -30,30 +31,38 @@ void DC_delete(struct jsm_system* system);
 
 struct DC {
     struct SH4 sh4;
+    struct SH4_memaccess_t sh4mem;
 
     u8 RAM[16 * 1024 * 1024];
     u8 VRAM[8 * 1024 * 1024];
-    u8 OC[8 * 1024]; // Operand Cache[
 
     struct buf BIOS;
-    struct buf flash;
     struct buf ROM;
 
     struct scheduler_t scheduler;
 
+    struct {
+        struct buf buf;
+    } flash;
+
+    struct {
+        u32 broadcast; // 0 -> NTSC, 1 -> PAL, 2 -> PAL/M, 3 -> PAL/N, 4 -> default
+        u32 language; // 0 -> JP, 1 -> EN, 2 -> DE, 3 -> FR, 4 -> SP, 5 -> IT, 6 -> default
+        u32 region; // 0 -> JP, 1 -> USA, 2 -> EU, 3 -> default
+    } settings;
+
     struct { // io
 #include "generated/io_decls.h"
-
-        u32 PDTRA;
-        u32 TOCR;
-        u32 TSTR;
-        u32 SB_ISTNRM;
-        u32 BSCR;
-        u32 RFCR;
     } io;
 
     struct {
+#include "generated/g2_decls.h"
+    } g2;
+
+    struct {
         u32 ARMRST;
+        u8 mem[0x8000];
+        u8 wave_mem[2*1024*1024];
     } aica;
 
     struct {
@@ -90,7 +99,71 @@ struct DC {
     } holly;
 
     struct {
-#include "generated/gdrom_decls.h"
+#include "generated/g1_decls.h"
+    } g1;
+
+    struct {
+        union {
+            struct {
+                u32 : 1;
+                u32 nIEN: 1;
+            };
+            u32 u;
+        } device_control;
+
+        union {
+            struct {
+                u32 CHECK : 1; // 1 = error occurred
+                u32 NU: 1; // RESERVED
+                u32 CORR: 1; // 1 = correctable error
+                u32 DRQ: 1; // 1 when data transfer with host is possible (waiting?)
+                u32 DSC : 1; // 1 means seek processing complete
+                u32 DF: 1; // drive fault info
+                u32 DRDY: 1; // 1 when response to ATA command is possible (waiting?)
+                u32 BSY: 1; // 1 when command is accepted
+            };
+            u32 u;
+        } device_status;
+
+        union {
+            struct {
+                u32 mode_value: 3;
+                u32 transfer_mode: 5;
+            };
+            u32 u;
+        } sector_count;
+
+        union {
+            struct {
+                u32 status : 4;
+                u32 disc_format : 4;
+            };
+            u32 u;
+        } sector_number;
+
+        union {
+            struct {
+                u32 ILI: 1;
+                u32 EOMF: 1;
+                u32 ABORT: 1;
+                u32 MCR: 1;
+                u32 ERROR: 4;
+            };
+            u32 u;
+        } error;
+
+        u32 sns_asc;
+        u32 sns_ascq;
+        u32 sns_key;
+
+        u32 features;
+        u32 cmd;
+
+        u32 state;
+
+        struct {
+            u32 playing;
+        } cdda;
     } gdrom;
 
     struct {
@@ -98,15 +171,27 @@ struct DC {
     } maple;
 
     struct {
-        u64 (*read[0x40])(struct DC*, u32, enum DC_MEM_SIZE, u32*);
-        void (*write[0x40])(struct DC*, u32, u64, enum DC_MEM_SIZE, u32*);
+        void *rptr[0x40];
+        void *wptr[0x40];
+        u64 (*read[0x40])(void*, u32, enum DC_MEM_SIZE, u32*);
+        void (*write[0x40])(void*, u32, u64, enum DC_MEM_SIZE, u32*);
     } mem;
 
 };
 
+enum holly_interrupt_hi {
+    holly_nrm = 0,
+    holly_ext = 0x100,
+    holly_err = 0x200
+};
+
+enum holly_interrupt_masks {
+    hirq_vblank_in = 4,
+    hirq_vblank_out = 5,
+
+    hirq_gdrom_cmd = holly_ext | 0
+};
 
 void DC_mem_init(struct DC* this);
-void DC_raise_interrupt(struct DC* this, u32 imask);
-void DC_recalc_interrupts(struct DC* this);
 
 #endif //JSMOOCH_EMUS_DREAMCAST_H

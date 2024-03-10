@@ -13,6 +13,57 @@ static void holly_soft_reset(struct DC* this)
     fflush(stdout);
 }
 
+void holly_recalc_interrupts(struct DC* this)
+{
+    u32 level2 = (this->io.SB_IML2NRM & this->io.SB_ISTNRM.u) & 0x3FFFFF;
+    level2 |= (this->io.SB_IML2EXT.u & this->io.SB_ISTEXT.u);
+    level2 |= (this->io.SB_IML2ERR.u & this->io.SB_ISTERR.u);
+
+    u32 level4 = (this->io.SB_IML4NRM & this->io.SB_ISTNRM.u) & 0x3FFFFF;
+    level4 |= (this->io.SB_IML4EXT.u & this->io.SB_ISTEXT.u);
+    level4 |= (this->io.SB_IML4ERR.u & this->io.SB_ISTERR.u);
+
+    u32 level6 = (this->io.SB_IML6NRM & this->io.SB_ISTNRM.u) & 0x3FFFFF;
+    level6 |= (this->io.SB_IML6EXT.u & this->io.SB_ISTEXT.u);
+    level6 |= (this->io.SB_IML6ERR.u & this->io.SB_ISTERR.u);
+
+    u32 highest_level = 0;
+    if (level2) highest_level = 2;
+    if (level4) highest_level = 4;
+    if (level6) highest_level = 6;
+    SH4_set_interrupt(&this->sh4, highest_level);
+}
+
+void holly_eval_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, u32 is_true)
+{
+    if (is_true) holly_raise_interrupt(this, irq_num);
+    else holly_lower_interrupt(this, irq_num);
+}
+
+void holly_lower_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
+{
+    u32 imask = (1 << (irq_num & 0xFF)) ^ 0xFFFFFFFF;
+    if (irq_num & 0x100)
+        this->io.SB_ISTEXT.u &= imask;
+    else if (irq_num & 0x200)
+        this->io.SB_ISTERR.u &= imask;
+    else
+        this->io.SB_ISTNRM.u &= imask;
+    holly_recalc_interrupts(this);
+}
+
+void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
+{
+    u32 imask = 1 << (irq_num & 0xFF);
+    if (irq_num & 0x100)
+        this->io.SB_ISTEXT.u |= imask;
+    else if (irq_num & 0x200)
+        this->io.SB_ISTERR.u |= imask;
+    else
+        this->io.SB_ISTNRM.u |= imask;
+    holly_recalc_interrupts(this);
+}
+
 void DC_recalc_frame_timing(struct DC* this)
 {
     // We need to know:
@@ -21,9 +72,9 @@ void DC_recalc_frame_timing(struct DC* this)
     // how many cycles per line
     // how many lines in frame
     //this->clock.cycles_per_frame;
-    this->clock.cycles_per_line = this->clock.cycles_per_frame / this->holly.SPG_LOAD.f.vcount;
-    this->clock.interrupt.vblank_in_start = this->holly.SPG_VBLANK_INT.f.vblank_in_line * this->clock.cycles_per_line;
-    this->clock.interrupt.vblank_out_start = this->holly.SPG_VBLANK_INT.f.vblank_out_line * this->clock.cycles_per_line;
+    this->clock.cycles_per_line = this->clock.cycles_per_frame / this->holly.SPG_LOAD.vcount;
+    this->clock.interrupt.vblank_in_start = this->holly.SPG_VBLANK_INT.vblank_in_line * this->clock.cycles_per_line;
+    this->clock.interrupt.vblank_out_start = this->holly.SPG_VBLANK_INT.vblank_out_line * this->clock.cycles_per_line;
 }
 
 #define B32(b31_b28, b27_24,b23_20,b19_16,b15_12,b11_8,b7_4,b3_0) ( \
@@ -91,8 +142,8 @@ void holly_write(struct DC* this, u32 addr, u32 val, u32* success)
 void holly_vblank_in(struct DC* this)
 {
     this->clock.in_vblank = 1;
-    this->io.SB_ISTNRM |= 8;
-    DC_raise_interrupt(this, DC_INT_VBLANK_IN);
+    this->io.SB_ISTNRM.vblank_in = 1;
+    holly_raise_interrupt(this, hirq_vblank_in);
 }
 
 void maple_dma_init(struct DC* this)
@@ -104,8 +155,8 @@ void maple_dma_init(struct DC* this)
 void holly_vblank_out(struct DC* this)
 {
     this->clock.in_vblank = 0;
-    this->io.SB_ISTNRM |= 16;
-    DC_raise_interrupt(this, DC_INT_VBLANK_OUT);
+    this->io.SB_ISTNRM.vblank_out = 1;
+    holly_raise_interrupt(this, hirq_vblank_out);
 
     if ((this->maple.SB_MDTSEL == 1) && this->maple.SB_MDEN) {
         maple_dma_init(this);
@@ -126,7 +177,7 @@ void holly_reset(struct DC* this)
 {
     this->holly.VO_BORDER_COL.u = 0x005F8040;
     this->holly.SPG_VBLANK_INT.u = 0;
-    this->holly.SPG_VBLANK_INT.f.vblank_out_line = 0x150;
-    this->holly.SPG_VBLANK_INT.f.vblank_in_line = 0x104;
-    this->holly.SPG_LOAD.f.vcount = 400; // TODO: not correct but necessary to avoid divide by 0 in simple scheduler_t
+    this->holly.SPG_VBLANK_INT.vblank_out_line = 0x150;
+    this->holly.SPG_VBLANK_INT.vblank_in_line = 0x104;
+    this->holly.SPG_LOAD.vcount = 400; // TODO: not correct but necessary to avoid divide by 0 in simple scheduler_t
 }

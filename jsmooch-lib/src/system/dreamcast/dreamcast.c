@@ -7,7 +7,7 @@
 #include "stdlib.h"
 #include "string.h"
 
-
+#include "gdrom.h"
 #include "helpers/scheduler.h"
 #include "helpers/sys_interface.h"
 #include "dreamcast.h"
@@ -41,25 +41,6 @@ void DCJ_disable_tracing(JSM);
 static void DC_schedule_frame(struct DC* this);
 static void new_frame(struct DC* this);
 
-void DC_recalc_interrupts(struct DC* this)
-{
-    u32 level2 = (this->io.SB_IML2NRM & this->io.SB_ISTNRM) & 0x3FFFFF;
-    u32 level4 = (this->io.SB_IML4NRM & this->io.SB_ISTNRM) & 0x3FFFFF;
-    u32 level6 = (this->io.SB_IML6NRM & this->io.SB_ISTNRM) & 0x3FFFFF;
-    u32 highest_level = 0;
-    if (level2) highest_level = 2;
-    if (level4) highest_level = 4;
-    if (level6) highest_level = 6;
-    SH4_set_interrupt(&this->sh4, highest_level);
-}
-
-
-void DC_raise_interrupt(struct DC* this, u32 imask)
-{
-    this->io.SB_ISTNRM |= imask;
-    DC_recalc_interrupts(this);
-}
-
 void DC_new(JSM, struct JSM_IOmap *iomap)
 {
     fflush(stdout);
@@ -71,6 +52,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     this->sh4.read = &DCread_noins;
     this->sh4.write = &DCwrite;
     this->sh4.fetch_ins = &DCfetch_ins;
+    SH4_give_memaccess(&this->sh4, &this->sh4mem);
     DC_mem_init(this);
 
     this->clock.frame_cycle = 0;
@@ -97,7 +79,12 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 
     buf_init(&this->BIOS);
     buf_init(&this->ROM);
-    buf_init(&this->flash);
+    buf_init(&this->flash.buf);
+    GDROM_reset(this);
+
+    this->settings.broadcast = 0; // NTSC
+    this->settings.region = 1; // EN
+    this->settings.language = 1; // EN
 
     jsm->ptr = (void*)this;
     jsm->which = SYS_DREAMCAST;
@@ -125,7 +112,7 @@ void DC_delete(struct jsm_system* jsm)
 
     buf_delete(&this->BIOS);
     buf_delete(&this->ROM);
-    buf_delete(&this->flash);
+    buf_delete(&this->flash.buf);
     scheduler_delete(&this->scheduler);
 
     free(jsm->ptr);
@@ -150,16 +137,16 @@ void DC_delete(struct jsm_system* jsm)
 
 void DC_copy_fb(struct DC* this, u32* where) {
     u32* ptr = (u32*)this->VRAM;
-    ptr += this->holly.FB_R_SOF1.f.field;
+    ptr += this->holly.FB_R_SOF1.field;
     //ptr += 0x00020000;
 
     //printf("\nRENDER USING PTR %08llx", ptr - ((u32*)this->VRAM));
 
     u32* out = where;
     u8* rgb;
-    for (u32 y = 0; y <= this->holly.FB_R_SIZE.f.fb_y_size; y++) {
+    for (u32 y = 0; y <= this->holly.FB_R_SIZE.fb_y_size; y++) {
         out = (where + (y * 640));
-        for (u32 x = 0; x <= this->holly.FB_R_SIZE.f.fb_x_size; x++) {
+        for (u32 x = 0; x <= this->holly.FB_R_SIZE.fb_x_size; x++) {
             rgb = (u8*) ptr;
             u32 r = rgb[0];
             u32 g = rgb[1];
@@ -168,7 +155,7 @@ void DC_copy_fb(struct DC* this, u32* where) {
             ptr++;
             out++;
         }
-        ptr += (this->holly.FB_R_SIZE.f.fb_modulus) - 1;
+        ptr += (this->holly.FB_R_SIZE.fb_modulus) - 1;
     }
 }
 
@@ -396,7 +383,7 @@ void DCJ_load_BIOS(JSM, struct multi_file_set* mfs)
             found++;
         }
         else if (!strcmp(rfb->name, "dc_flash.bin")) {
-            buf_copy(&this->flash, &rfb->buf);
+            buf_copy(&this->flash.buf, &rfb->buf);
             found++;
         }
         else {

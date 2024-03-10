@@ -260,10 +260,14 @@ int main(int argc, char** argv)
     //sys->step_master(sys, 63);
     //dbg_LT_clear();
     dbg_disable_trace();
-    sys->step_master(sys, 8200100); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    //sys->step_master(sys, 11494000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    sys->step_master(sys, 14000000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    dbg_unbreak();
+    dbg_enable_trace();
+    sys->step_master(sys, 200);
     // 2621400 kinda inside memset
     //dbg_LT_dump();
-    //dbg_flush();
+    dbg_flush();
     return 0;
     /*jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
     SDL_UpdateWindowSurface(window);

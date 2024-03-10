@@ -5,9 +5,9 @@ import os
 
 JSMOOCH_LIB_PATH = os.path.expanduser('~') + '/dev/jsmooch-emus/jsmooch-lib/src'
 
-
-
 DC_PATH = JSMOOCH_LIB_PATH + '/system/dreamcast/generated'
+SH4_PATH = JSMOOCH_LIB_PATH + '/component/cpu/sh4/generated'
+
 
 class OutOptions:
     def __init__(self):
@@ -72,6 +72,8 @@ class Register:
         self.r_cond = None
         self.w_override = None
         self.r_override = None
+        self.w_exclude = False
+        self.r_exclude = False
         self.default_value = None
         self.quickboot_value = None
         self.and_bitfields = []
@@ -99,7 +101,6 @@ class Register:
             o = o | bf.mask
         return o
 
-
     @property
     def hex_address(self) -> str:
         return '0x{:08X}'.format(self.address)
@@ -111,15 +112,13 @@ class Register:
 
         indent1 = di(oo.init_indent)
 
-
-
         return o
 
     def decl(self, oo: OutOptions) -> str:
         o = ''
         indent1 = di(oo.decl_indent)
-        indent2 = di(oo.decl_indent+1)
-        indent3 = di(oo.decl_indent+2)
+        indent2 = di(oo.decl_indent + 1)
+        indent3 = di(oo.decl_indent + 2)
         if not self.has_and_bits:
             return '\n' + indent1 + 'u32 ' + self.name + ';  // ' + self.hex_address
         o = '\n' + indent1 + 'union {  // ' + self.name + '\n'
@@ -133,23 +132,26 @@ class Register:
                 o += indent3 + 'u32 : ' + str(insert_bits) + ';\n'
             o += indent3 + 'u32 ' + bf.name + ' : ' + str((bf.end - bf.start) + 1) + ';\n'
             last_end = bf.end
-        o += indent2 + '} f;\n'
+        o += indent2 + '};\n'
         o += indent2 + 'u32 u;\n'
         o += indent1 + '} ' + self.name + ';  // ' + self.hex_address
 
         return o
 
     def switch_write(self, oo: OutOptions, section: str, pref: str, in_var: str) -> str:
-        if not self.write:
+        if (not self.write) or self.w_exclude:
             return ''
         indent1 = di(oo.switch_indent)
-        indent2 = di(oo.switch_indent+1)
+        indent2 = di(oo.switch_indent + 1)
         o = ''
         o += '\n' + indent1 + 'case ' + self.hex_address + ': '
         o += '{ '
 
         if self.w_override is not None:
             o += self.w_override
+            if o[-1:] != ';':
+                o += ';'
+            o += ' '
         else:
             if self.w_cond is not None:
                 o += 'if (' + self.w_cond + ') { '
@@ -187,24 +189,32 @@ class Register:
         return o
 
     def switch_read(self, oo: OutOptions, section: str, pref: str):
-        if not self.read:
+        if (not self.read) or self.r_exclude:
             return ''
         indent1 = di(oo.switch_indent)
         o = ''
         o += '\n' + indent1 + 'case ' + self.hex_address + ': '
-        o += ' { return ' + pref + section + '.' + self.name
-        if self.has_and_bits:
-            o += '.u'
 
-        if self.has_or_bits:
-            o += ' | 0x{:08X}'.format(self.or_bitfield)
+        if self.r_override is not None:
+            o += '{ ' + self.r_override
+            if o[-1:] != ';':
+                o += ';'
+            o += ' }'
+        else:
+            o += ' { return ' + pref + section + '.' + self.name
+            if self.has_and_bits:
+                o += '.u'
 
-        o += '; }'
+            if self.has_or_bits:
+                o += ' | 0x{:08X}'.format(self.or_bitfield)
+
+            o += '; }'
         return o
 
-def main():
+
+def parse_regs_file(fname: str, out_path: str) -> None:
     fl = []
-    with open('regs.txt', 'r') as infil:
+    with open(fname, 'r') as infil:
         fl = infil.readlines()
     fl = [s.strip() for s in fl]
 
@@ -269,6 +279,13 @@ def main():
                 # Either default= or boot=
                 if cur_line[:7] == "w_cond=":
                     o.w_cond = cur_line[7:].strip()
+                elif cur_line[:11] == 'w_override=':
+                    o.w_override = cur_line[11:].strip()
+                elif cur_line[:11] == 'r_override=':
+                    o.r_override = cur_line[11:].strip()
+                elif cur_line[:8] == 'exclude=':
+                    o.w_exclude = 'w' in cur_line[8:]
+                    o.r_exclude = 'r' in cur_line[8:]
                 else:
                     try:
                         kind, val = cur_line.split("=")
@@ -281,11 +298,8 @@ def main():
                         o.quickboot_value = int(val, 0)
                     elif kind == 'on_write':
                         o.on_write = val.strip()
-                    elif kind == 'w_override':
-                        o.w_override = val.strip()
                     elif kind == 'write_mask':
                         val = val.strip()
-                        print(val)
                         if val[:4] == 'bits':
                             startend = val[4:].strip()
                             if '-' in startend:
@@ -301,6 +315,7 @@ def main():
                     else:
                         raise Exception("Unknown kind! " + kind)
 
+                if lindex >= len(fl): break
                 cur_line = fl[lindex]
                 lindex += 1
                 if lindex >= len(fl): break
@@ -332,7 +347,7 @@ def main():
                     o.and_bitfields.append(BitField(name, start, end))
                     o.has_and_bits = True
 
-                if len(cls) == 3: # OR bits present...
+                if len(cls) == 3:  # OR bits present...
                     o.or_bitfields.append(BitField(name, start, end, default_value=int(cls[2], 0), kind=BFIK.OR))
                     o.has_or_bits = True
 
@@ -348,8 +363,6 @@ def main():
     for section in sections:
         se = sections[section]
         sections[section] = sorted(se, key=lambda x: x.address, reverse=False)
-
-    print(DC_PATH)
 
     out_decls = {}
     out_reads = {}
@@ -371,16 +384,21 @@ def main():
             out_reads[fname] += register.switch_read(oo, section, 'this->')
 
     for section in out_decls:
-        with open(DC_PATH + '/' + section + '_decls.h', 'w') as outfile:
+        with open(out_path + '/' + section + '_decls.h', 'w') as outfile:
             outfile.write(out_decls[section])
 
     for fname in out_reads:
-        with open(DC_PATH + '/' + fname + '_reads.c', 'w') as outfile:
+        with open(out_path + '/' + fname + '_reads.c', 'w') as outfile:
             outfile.write(out_reads[fname])
 
     for fname in out_writes:
-        with open(DC_PATH + '/' + fname + '_writes.c', 'w') as outfile:
+        with open(out_path + '/' + fname + '_writes.c', 'w') as outfile:
             outfile.write(out_writes[fname])
+
+
+def main():
+    parse_regs_file('dreamcast_regs.txt', DC_PATH)
+    parse_regs_file('sh4_regs.txt', SH4_PATH)
 
 
 if __name__ == '__main__':
