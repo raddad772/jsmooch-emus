@@ -128,6 +128,7 @@ add_library(jsmooch-lib
         src/system/dreamcast/holly_regs.h
         src/component/cpu/sh4/tmu.c
         src/component/cpu/sh4/tmu.h
+        src/component/cpu/sh4/tmu.c
 )
 
 include_directories(src/)

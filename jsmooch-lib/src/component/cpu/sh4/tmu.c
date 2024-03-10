@@ -36,6 +36,12 @@ void TMU_write(struct SH4* this, u32 addr, u64 val, u32 sz, u32* success)
 
 u64 TMU_read(struct SH4* this, u32 addr, u32 sz, u32* success)
 {
+    switch(addr | 0xF0000000) {
+        case 0xFF800028: // RFCR
+            // doc a little unclear on this
+            //return this->io.RFCR;
+            return 0x0011; // to pass BIOS check
+    }
     *success = 0;
     return 0;
 }

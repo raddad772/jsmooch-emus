@@ -330,12 +330,9 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
 
             return tfinal;
         }
-        case 0xFF800028: // RFCR
-            // doc a little unclear on this
-            //return this->io.RFCR;
-            return 0x0011; // to pass BIOS check
     }
 
+    printf("\nMISSED SH4 READ %08x", full_addr);
     *success = 0;
     return 0;
 }
@@ -344,7 +341,7 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
 {
     // 1F000000-1FFFFFFF also mirrors this
     u32 full_addr = addr;
-    u32 up_addr = addr | 0xE0000000;
+    u32 up_addr = addr | 0xF0000000;
     addr &= 0x1FFFFFFF;
     if ((full_addr < 0xE0000000) && (addr < 0x1C000000)) {
         printf("\nIllegal SH4 write forward! %08x", addr);
@@ -353,7 +350,7 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
     }
     struct SH4* this = (struct SH4*)ptr;
 
-    if ((addr >= 0xFF800000) && (addr <= 0xFF80002C)) {
+    if ((up_addr >= 0xFF800000) && (up_addr <= 0xFF80002C)) {
         TMU_write(this, full_addr, val, sz, success);
         return;
     }
@@ -372,6 +369,7 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
             return;
     }
 
+    printf("\nMISSED SH4 WRITE %08x", full_addr);
     *success = 0;
 }
 

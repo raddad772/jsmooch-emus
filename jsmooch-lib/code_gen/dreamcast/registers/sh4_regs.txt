@@ -346,7 +346,7 @@ access_32, rw
 u32
 access_32, rw
 
-0xFF000030: PDTRA
+0xFF800030: PDTRA
 u32
 access_32, rw
 exclude=r
@@ -369,4 +369,5 @@ write_mask=0xFFF
 0xFF800000: BSCR
 u32
 access_32, rw
-on_write=printf("nWRITE TO BSCR!")
+on_write=printf("\nWRITE TO BSCR!")
+

@@ -8,14 +8,13 @@
         case 0xFF000020: { this->regs.EXPEVT = (val & 0xFFF); return; }
         case 0xFF000024: { this->regs.TRAPA = (val & 0xFF); return; }
         case 0xFF000028: { this->regs.INTEVT = (val & 0xFFFF); return; }
-        case 0xFF000030: { this->regs.PDTRA = val; return; }
         case 0xFF000034: { this->regs.PTEA.u = val & 0x0000000F; return; }
         case 0xFF000038: { this->regs.QACR0 = val; return; }
         case 0xFF00003C: { this->regs.QACR1 = val; return; }
         case 0xFF200008: { this->regs.UKNFF200008 = val; return; }
         case 0xFF200014: { this->regs.UKNFF200014 = val; return; }
         case 0xFF200020: { this->regs.UKNFF200020 = val; return; }
-        case 0xFF800000: { this->regs.BSCR = val; printf("nWRITE TO BSCR!"); return; }
+        case 0xFF800000: { this->regs.BSCR = val; printf("\nWRITE TO BSCR!"); return; }
         case 0xFF800004: { this->regs.BCR2 = val; return; }
         case 0xFF800008: { this->regs.WCR1 = val; return; }
         case 0xFF80000C: { this->regs.WCR2 = val; return; }
@@ -25,6 +24,7 @@
         case 0xFF80001C: { this->regs.RTCSR = val; return; }
         case 0xFF800024: { this->regs.RTCOR = val; return; }
         case 0xFF80002C: { this->regs.PCTRA = val; return; }
+        case 0xFF800030: { this->regs.PDTRA = val; return; }
         case 0xFF800040: { this->regs.PCTRB = val; return; }
         case 0xFF800044: { this->regs.PDTRB = val; return; }
         case 0xFF800048: { this->regs.GPIOIC = val; return; }

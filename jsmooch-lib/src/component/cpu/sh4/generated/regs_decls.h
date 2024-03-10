@@ -61,7 +61,6 @@
         u32 EXPEVT;  // 0xFF000020
         u32 TRAPA;  // 0xFF000024
         u32 INTEVT;  // 0xFF000028
-        u32 PDTRA;  // 0xFF000030
         union {  // PTEA
             struct {
                 u32 sa : 3;
@@ -84,6 +83,7 @@
         u32 RTCSR;  // 0xFF80001C
         u32 RTCOR;  // 0xFF800024
         u32 PCTRA;  // 0xFF80002C
+        u32 PDTRA;  // 0xFF800030
         u32 PCTRB;  // 0xFF800040
         u32 PDTRB;  // 0xFF800044
         u32 GPIOIC;  // 0xFF800048
