@@ -12,5 +12,6 @@
 void GDROM_write(struct DC* this, u32 reg, u64 val, u32 sz, u32* success);
 u64 GDROM_read(struct DC* this, u32 reg, u32 sz, u32* success);
 void GDROM_reset(struct DC* this);
+void GDROM_init(struct DC* this);
 
 #endif //JSMOOCH_EMUS_GDROM_H

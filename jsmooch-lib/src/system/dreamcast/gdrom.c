@@ -2,6 +2,7 @@
 // Created by David Schneider on 3/2/24.
 //
 
+#include "assert.h"
 #include "stdio.h"
 #include "dreamcast.h"
 #include "gdrom.h"
@@ -43,6 +44,11 @@ enum GDstatus {
     GD_ERROR
 };
 
+void GDROM_init(struct DC* this)
+{
+    this->gdrom.interrupt_reason.u = 0;
+}
+
 static void GDROM_setdisc(struct DC* this) {
     this->gdrom.cdda.playing = 0;
     this->gdrom.sns_asc = 0x28;
@@ -64,6 +70,23 @@ static void GDROM_setstate(struct DC* this, enum gd_states state)
         case gds_waitcmd:
             this->gdrom.device_status.DRDY = 1;
             this->gdrom.device_status.BSY = 0;
+            break;
+        case gds_waitpacket:
+            //assert(prev_state == gds_procata); // Validate the previous command ;)
+
+            // Prepare for packet command
+            this->gdrom.packet_cmd.index = 0;
+
+            // Set CoD, clear BSY and IO
+            this->gdrom.interrupt_reason.CoD = 1;
+            this->gdrom.device_status.BSY = 0;
+            this->gdrom.interrupt_reason.IO = 0;
+
+            // Make DRQ valid
+            this->gdrom.device_status.DRQ = 1;
+
+            // ATA can optionally raise the interrupt ...
+            // RaiseInterrupt(holly_GDROM_CMD);
             break;
         default:
             printf("\nUNIMPLEMENTED STATE %d", state);
@@ -97,6 +120,10 @@ static void GDROM_command(struct DC* this, u32 cmd, u32* success)
         case 0x08:
             printf("\nGDROM SOFT RESET!");
             GDROM_reset(this);
+            return;
+        case 0xA0: // Wait for SPI packet!!!
+            printf("\nGDROM WAIT FOR PACKET!");
+            GDROM_setstate(this, gds_waitpacket);
             return;
         case 0xEF:
             printf("\nGDROM SET FEATURES! %llu", this->sh4.trace_cycles);

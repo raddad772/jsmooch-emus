@@ -82,6 +82,7 @@
         u32 PCR;  // 0xFF800018
         u32 RTCSR;  // 0xFF80001C
         u32 RTCOR;  // 0xFF800024
+        u32 RFCR;  // 0xFF800028
         u32 PCTRA;  // 0xFF80002C
         u32 PDTRA;  // 0xFF800030
         u32 PCTRB;  // 0xFF800040

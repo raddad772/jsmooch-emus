@@ -23,6 +23,7 @@
         case 0xFF800018:  { return this->regs.PCR; }
         case 0xFF80001C:  { return this->regs.RTCSR; }
         case 0xFF800024:  { return this->regs.RTCOR; }
+        case 0xFF800028: { return 0x11; }
         case 0xFF80002C:  { return this->regs.PCTRA; }
         case 0xFF800040:  { return this->regs.PCTRB; }
         case 0xFF800044:  { return this->regs.PDTRB; }

@@ -140,6 +140,7 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
      switch(addr) {
          case 0x005F688C: // SB_FEST. we never have a value
              return 0;
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/area0_reads.c"
      }
 
@@ -152,6 +153,7 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/maple_writes.c"
     }
     printf("\nYEAH GOT HERE SORRY DAWG");
@@ -460,6 +462,7 @@ void G2_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success)
 {
     addr &= 0x1FFFFFFF;
     switch(addr) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/g2_writes.c"
     }
     *success = 0;
@@ -474,6 +477,7 @@ u64 G1_read(struct DC* this, u32 addr, u32 sz, u32* success)
     }
 
     switch(addr) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/g1_reads.c"
     }
 
@@ -489,6 +493,7 @@ void G1_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success)
         return;
     }
     switch(addr) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/g1_writes.c"
         case 0x005F74E4: { // Secret GDROM unlock register!
             return;

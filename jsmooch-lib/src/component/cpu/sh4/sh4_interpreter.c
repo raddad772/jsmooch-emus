@@ -213,10 +213,11 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
     this->cycles = 0;
 }
 
-void SH4_init(struct SH4* this)
+void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
 {
     this->regs.currently_banked_rb = 1;
     this->trace_cycles = 0;
+    this->scheduler = scheduler;
     SH4_reset(this);
     generate_fsca_table();
     //printf("\nINS! %s\n", SH4_disassembled[0x6122]);
@@ -226,6 +227,7 @@ void SH4_init(struct SH4* this)
     this->read = NULL;
     this->write = NULL;
     this->interrupt_level = 0;
+    TMU_init(this);
     TMU_reset(this);
 }
 
@@ -280,6 +282,7 @@ undefined
     SH4_SR_set(this, (SH4_regs_SR_get(&this->regs.SR) &  0b11110011) | 0b01110000000000000000000011110000);
 }
 
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "helpers/multisize_memaccess.c"
 
 u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
@@ -294,11 +297,12 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
         return 0;
     }
 
-    if ((up_addr >= 0xFF800000) && (up_addr <= 0xFF80002C)) {
+    if ((up_addr >= 0xFFD80000) && (up_addr <= 0xFFD8002C)) {
         return TMU_read(this, full_addr, sz, success);
     }
 
     switch (addr | 0xF0000000) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/regs_reads.c"
         case 0xFF800030: { // PDTRA
             assert(sz==2);
@@ -350,7 +354,7 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
     }
     struct SH4* this = (struct SH4*)ptr;
 
-    if ((up_addr >= 0xFF800000) && (up_addr <= 0xFF80002C)) {
+    if ((up_addr >= 0xFFD80000) && (up_addr <= 0xFFD8002C)) {
         TMU_write(this, full_addr, val, sz, success);
         return;
     }
@@ -362,11 +366,8 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
 
 
     switch(up_addr) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/regs_writes.c"
-        case 0xFF800028: // RFCR
-            // doc a little unclear on this
-            this->regs.RFCR = 0b1010010000000000 | (val & 0x1FF);
-            return;
     }
 
     printf("\nMISSED SH4 WRITE %08x", full_addr);

@@ -249,6 +249,12 @@ access_32, rw
 u32
 access_32, rw
 
+0xFF800028: RFCR
+u32
+access_32, rw
+r_override=return 0x11
+w_override=this->regs.RFCR = 0b1010010000000000 | (val & 0x1FF)
+
 0xFF80002C: PCTRA
 u32
 access_32, rw

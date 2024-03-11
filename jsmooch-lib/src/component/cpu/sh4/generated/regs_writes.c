@@ -23,6 +23,7 @@
         case 0xFF800018: { this->regs.PCR = val; return; }
         case 0xFF80001C: { this->regs.RTCSR = val; return; }
         case 0xFF800024: { this->regs.RTCOR = val; return; }
+        case 0xFF800028: { this->regs.RFCR = 0b1010010000000000 | (val & 0x1FF); return; }
         case 0xFF80002C: { this->regs.PCTRA = val; return; }
         case 0xFF800030: { this->regs.PDTRA = val; return; }
         case 0xFF800040: { this->regs.PCTRB = val; return; }

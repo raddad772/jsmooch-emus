@@ -7,6 +7,7 @@
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
+#include "helpers/scheduler.h"
 
 // One of these for external mem system to write/read registers here,
 // One for this to read/write main memory
@@ -94,17 +95,17 @@ struct SH4_regs {
 
     // Emulator-internal registers
     u32 currently_banked_rb;
-
-    // For storage queue writes
-
-    // Some system regs
-    u32 RFCR;
 #include "generated/regs_decls.h"
 };
 
 u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
 void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val);
 void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this);
+
+struct SH4_tmu_int_struct {
+    struct SH4* sh4;
+    u32 ch;
+};
 
 struct SH4 {
     struct SH4_regs regs;
@@ -126,15 +127,26 @@ struct SH4 {
         u32 TCOR[3];
         u32 TCNT[3];
         u32 TCR[3];
+        u32 shift[3];
+        u32 old_mode[3];
+        u32 base[3];
+        u64 base64[3];
+        u32 mask[3];
+        u64 mask64[3];
+
+        struct SH4_tmu_int_struct scheduled_func_structs[3];
+        struct scheduled_bound_function scheduled_funcs[3];
     } tmu;
 
     void *mptr;
     u32 (*fetch_ins)(void*,u32);
     u64 (*read)(void*,u32,u32);
     void (*write)(void*,u32,u64,u32);
+
+    struct scheduler_t* scheduler;
 };
 
-void SH4_init(struct SH4* this);
+void SH4_init(struct SH4* this, struct scheduler_t* scheduler);
 void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this);

@@ -93,6 +93,7 @@ static void holly_TA_list_init(struct DC* this)
 u64 holly_read(struct DC* this, u32 addr, u32* success) {
     *success = 1;
     switch ((addr & 0x0000FFFF) | 0x005F0000) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/holly_reads.c"
         case 0x005F8000: // Device ID
             return 0x17FD11DB;
@@ -116,6 +117,7 @@ void holly_write(struct DC* this, u32 addr, u32 val, u32* success)
         this->holly.FOG_TABLE[(addr - 0x005F8200) >> 2] = val;
     }
     switch(addr) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/holly_writes.c"
         case 0x005f8144: // TA_LIST_INIT
             if (val & 0x80000000) holly_TA_list_init(this);

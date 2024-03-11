@@ -2,9 +2,15 @@
 // Created by David Schneider on 2/28/24.
 //
 
+#include "stdio.h"
 #include "assert.h"
 #include "stdlib.h"
 #include "scheduler.h"
+
+void schedule_event(struct scheduler_t* this, struct scheduled_bound_function* func, i64 timecode)
+{
+    printf("\nIM SUPPOSED TO SCHEDULE A FUNCTION FOR %lld CYCLES FROM NOW! (%llu)", timecode, this->timecode);
+}
 
 static void scheduler_array_init(struct scheduler_event_array* this)
 {

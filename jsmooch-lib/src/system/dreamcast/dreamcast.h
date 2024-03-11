@@ -12,6 +12,7 @@
 #include "component/cpu/sh4/sh4_interpreter_opcodes.h"
 #include "component/cpu/sh4/sh4_interpreter.h"
 #include "dc_mem.h"
+#include "spi.h"
 
 #define DC_CYCLES_PER_SEC 200000000
 
@@ -164,6 +165,23 @@ struct DC {
         struct {
             u32 playing;
         } cdda;
+
+        struct
+        {
+            union
+            {
+                struct
+                {
+                    u32 CoD:1; //Bit 0 (CoD) : "0" indicates data and "1" indicates a command.
+                    u32 IO:1;  //Bit 1 (IO)  : "1" indicates transfer from device to host, and "0" from host to device.
+                    u32 any :6;//not used
+                };
+                u8 u;
+            };
+        } interrupt_reason;
+
+        struct SPI_packet_cmd packet_cmd;
+
     } gdrom;
 
     struct {

@@ -7,6 +7,14 @@
 
 #include "int.h"
 
+typedef u32 (*scheduler_callback)(void*,u32,u32);
+
+struct scheduled_bound_function {
+    void *ptr;
+    scheduler_callback func;
+};
+
+
 struct scheduler_event {
     i64 timecode;    // Timecode can be for instance, cycle in frame
     u32 event;  // Per-implementation
@@ -35,5 +43,7 @@ i64 scheduler_til_next_event(struct scheduler_t* this); // Returns time til next
 struct scheduler_event* scheduler_next_event(struct scheduler_t* this); // Returns next event
 void scheduler_advance_event(struct scheduler_t* this);
 u32 scheduler_at_end(struct scheduler_t* this);
+
+void schedule_event(struct scheduler_t* this, struct scheduled_bound_function* func, i64 timecode);
 
 #endif //JSMOOCH_EMUS_SCHEDULER_H

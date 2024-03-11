@@ -46,8 +46,9 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     fflush(stdout);
     do_sh4_decode();
     struct DC* this = (struct DC*)malloc(sizeof(struct DC));
+    scheduler_init(&this->scheduler);
 
-    SH4_init(&this->sh4);
+    SH4_init(&this->sh4, &this->scheduler);
     this->sh4.mptr = (void *)this;
     this->sh4.read = &DCread_noins;
     this->sh4.write = &DCwrite;
@@ -55,9 +56,10 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     SH4_give_memaccess(&this->sh4, &this->sh4mem);
     DC_mem_init(this);
 
+    GDROM_init(this);
+
     this->clock.frame_cycle = 0;
     this->clock.cycles_per_frame = DC_CYCLES_PER_SEC / 60;
-    scheduler_init(&this->scheduler);
 
     /*NES_clock_init(&this->clock);
     //NES_bus_init(&this, &this->clock);
