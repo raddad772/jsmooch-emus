@@ -15,6 +15,7 @@
         case 0x005F807C: { this->holly.FPU_PARAM_CFG.u = val & 0x002FFFFF; return; }
         case 0x005F8080: { this->holly.HALF_OFFSET.u = val & 0x00000007; return; }
         case 0x005F808C: { this->holly.ISP_BACKGND_T.u = val & 0x1FFFFFFF; return; }
+        case 0x005F8098: { this->holly.ISP_FEED_CFG.u = val & 0x00FFFFF9; return; }
         case 0x005F80A0: { this->holly.SDRAM_REFRESH = (val & 0x000000FF); return; }
         case 0x005F80A8: { this->holly.SDRAM_CFG = val; return; }
         case 0x005F80B0: { this->holly.FOG_COL_RAM = val; return; }

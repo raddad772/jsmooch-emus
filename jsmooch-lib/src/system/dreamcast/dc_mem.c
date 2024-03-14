@@ -10,6 +10,7 @@
 #include "dc_mem.h"
 #include "holly.h"
 #include "gdrom.h"
+#include "maple.h"
 
 #include "helpers/multisize_memaccess.c"
 
@@ -103,13 +104,18 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
      MTHIS;
      u32 full_addr = addr;
      addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
-     if (addr <= 0x1FFFFF)
+     if (addr <= 0x001FFFFF)
          return cR[sz](this->BIOS.ptr, addr & 0x1FFFFF);
      if ((addr >= 0x00200000 ) && (addr <= 0x0021FFFF))
          return DCread_flash(this, addr, success, 4);
 
      if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF))
          return holly_read(this, addr, success);
+
+     if ((addr >= 0x005F6C00) && (addr <= 0x005F6CFF)) { // Maple commands!
+         return maple_read(this, full_addr, sz, success);
+     }
+
 
      if ((addr >= 0x00600000) && (addr <= 0x006FFFFF))
          return 0; // asynchronous modem area
@@ -138,6 +144,8 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
 
 
      switch(addr) {
+         case 0x005F689C: // SB_REVISION
+             return 0x0B;
          case 0x005F688C: // SB_FEST. we never have a value
              return 0;
 // NOLINTNEXTLINE(bugprone-suspicious-include)
@@ -147,18 +155,6 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
      *success = 0;
      return 0;
  }
-
-
- static void maple_write(struct DC* this, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
-{
-    addr &= 0x1FFFFFFF;
-    switch(addr) {
-// NOLINTNEXTLINE(bugprone-suspicious-include)
-#include "generated/maple_writes.c"
-    }
-    printf("\nYEAH GOT HERE SORRY DAWG");
-    *success = 0;
-}
 
  void write_area0(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
  {
@@ -229,7 +225,7 @@ u64 read_area1(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
 
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) // VRAM access
-        return cR[sz](this->VRAM, addr & 0x057FFFFF);
+        return cR[sz](this->VRAM, addr & 0x007FFFFF);
 
     *success = 0;
     return 0;
@@ -240,7 +236,7 @@ void write_area1(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success
     MTHIS;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
-        cW[sz](this->VRAM, addr & 0x057FFFFF, val);
+        cW[sz](this->VRAM, addr & 0x007FFFFF, val);
         return;
     }
 

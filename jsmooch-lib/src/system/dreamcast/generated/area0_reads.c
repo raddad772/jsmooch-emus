@@ -20,10 +20,13 @@
         case 0x005F6900: { return (this->io.SB_ISTNRM.u) | ((this->io.SB_ISTERR.u > 0) << 30) | ((this->io.SB_ISTEXT.u > 0) << 31); }
         case 0x005F6904:  { return this->io.SB_ISTEXT.u; }
         case 0x005F6908:  { return this->io.SB_ISTERR.u; }
+        case 0x005F6910:  { return this->io.SB_IML2NRM; }
         case 0x005F6914:  { return this->io.SB_IML2EXT.u; }
         case 0x005F6918:  { return this->io.SB_IML2ERR.u; }
+        case 0x005F6920:  { return this->io.SB_IML4NRM; }
         case 0x005F6924:  { return this->io.SB_IML4EXT.u; }
         case 0x005F6928:  { return this->io.SB_IML4ERR.u; }
+        case 0x005F6930:  { return this->io.SB_IML6NRM; }
         case 0x005F6934:  { return this->io.SB_IML6EXT.u; }
         case 0x005F6938:  { return this->io.SB_IML6ERR.u; }
         case 0x005F6940:  { return this->io.SB_PDTNRM; }

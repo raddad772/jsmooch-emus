@@ -18,9 +18,9 @@
 // disassembly printf args
 #define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", this->trace_cycles, this->regs.PC, SH4_disassembled[SH4_decoded_index][opcode]
 
-void SH4_set_interrupt(struct SH4* this, u32 level)
+void SH4_set_IRL_irq_level(struct SH4* this, u32 level)
 {
-    this->interrupt_level = level;
+    this->IRL_irq_level = level;
 }
 
 static void set_user_mode(struct SH4* this)
@@ -202,9 +202,12 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
     this->cycles = (i32)howmany;
     while(this->cycles > 0) {
         SH4_fetch_and_exec(this);
-        if ((this->interrupt_level > 0) && (this->regs.SR.BL == 0) && (this->interrupt_level >= this->regs.SR.IMASK)) {
-            printf("\nRAISING INTERRUPT ON CYCLE %llu", this->trace_cycles);
-            SH4_interrupt_IRL(this, this->interrupt_level);
+        if ((this->IRL_irq_level != 0xF) && (this->regs.SR.BL == 0) && (((~this->IRL_irq_level) & 15) > this->regs.SR.IMASK)) {
+#ifdef BRK_ON_NMIRQ
+            dbg_break();
+#endif
+            printf("\nINTERRUPT SERVICED AT %llu LEVEL:%d IMASK:%d", this->trace_cycles, this->IRL_irq_level, this->regs.SR.IMASK);
+            SH4_interrupt_IRL(this, this->IRL_irq_level);
         }
 #ifdef SH4_DBG_SUPPORT
         if (dbg.do_break) break;
@@ -226,7 +229,7 @@ void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
     this->fetch_ins = NULL;
     this->read = NULL;
     this->write = NULL;
-    this->interrupt_level = 0;
+    this->IRL_irq_level = 0;
     TMU_init(this);
     TMU_reset(this);
 }
@@ -301,9 +304,16 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
         return TMU_read(this, full_addr, sz, success);
     }
 
+    // OC address array
+    if ((up_addr >= 0xF4000000) && (up_addr <= 0xF4FFFFFF)) {
+        return 0;
+    }
+
     switch (addr | 0xF0000000) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/regs_reads.c"
+        case 0xFF000030: // Undocumented CPU_VERSION
+            return 0x040205c1;
         case 0xFF800030: { // PDTRA
             assert(sz==2);
             // PDTRA from Bus Control
@@ -364,6 +374,10 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
         return;
     }
 
+    // OC address array
+    if ((up_addr >= 0xF4000000) && (up_addr <= 0xF4FFFFFF)) {
+        return;
+    }
 
     switch(up_addr) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)

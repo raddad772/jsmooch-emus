@@ -13,7 +13,6 @@ void holly_reset(struct DC* this);
 void DC_recalc_frame_timing(struct DC* this);
 void holly_vblank_in(struct DC* this);
 void holly_vblank_out(struct DC* this);
-void maple_dma_init(struct DC* this);
 
 void holly_raise_interrupt(struct DC* this, u32 irq_num);
 void holly_lower_interrupt(struct DC* this, enum holly_interrupt_masks irq_num);

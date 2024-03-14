@@ -2,6 +2,7 @@
 // Created by Dave on 2/16/2024.
 //
 
+#include "assert.h"
 #include "stdio.h"
 #include "helpers/debug.h"
 #include "holly.h"
@@ -12,6 +13,19 @@ static void holly_soft_reset(struct DC* this)
     printf("\nHOLLY soft reset!");
     fflush(stdout);
 }
+
+
+#define NI 0b1111
+static u32 HOLLY_IRQ_outputs[7] = {
+        NI, // no interrupt
+        NI, // no interrupt
+        0b1101, // level 2
+        NI, // no intterupt
+        0b1011, // level 4
+        NI, // no interrupt
+        0b1001  // level 6
+};
+#undef NI
 
 void holly_recalc_interrupts(struct DC* this)
 {
@@ -31,7 +45,12 @@ void holly_recalc_interrupts(struct DC* this)
     if (level2) highest_level = 2;
     if (level4) highest_level = 4;
     if (level6) highest_level = 6;
-    SH4_set_interrupt(&this->sh4, highest_level);
+    //if (highest_level != this->sh4.IRL_irq_level) {
+        //printf("\nINTERRUPT HIGHEST LEVEL CHANGE TO %d cyc:%llu", highest_level, this->sh4.trace_cycles);
+        //printf("\nIML6NRN: %08x", this->io.SB_IML6NRM & this->io.SB_ISTNRM.u & 0x3FFFFF);
+    //}
+    //printf("\nHOLLY RAISING INTERRUPT ON CYCLE %llu", this->sh4.trace_cycles);
+    SH4_set_IRL_irq_level(&this->sh4, HOLLY_IRQ_outputs[highest_level]);
 }
 
 void holly_eval_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, u32 is_true)
@@ -90,8 +109,18 @@ static void holly_TA_list_init(struct DC* this)
 
 }
 
+static u32 holly_get_frame_cycle(struct DC* this) {
+    return (u32)(this->clock.frame_start_cycle - this->sh4.trace_cycles);
+}
+
+static u32 holly_get_SPG_line(struct DC* this) {
+    u32 cycle_num = holly_get_frame_cycle(this);
+    return cycle_num / this->clock.cycles_per_line;
+}
+
 u64 holly_read(struct DC* this, u32 addr, u32* success) {
     *success = 1;
+    u32 v;
     switch ((addr & 0x0000FFFF) | 0x005F0000) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/holly_reads.c"
@@ -101,6 +130,14 @@ u64 holly_read(struct DC* this, u32 addr, u32* success) {
             return 0x0011;
         case 0x005f8144: // TA_LIST_INIT
             return 0;
+        case 0x005F8004: // REVISION
+            return 0x0011;
+        case 0x005F810C: // SPG_STATUS read-only
+            // determine scanline
+            v = holly_get_SPG_line(this) & 0x3FF;
+            //TODO: blank, hsync, fieldnum
+            v |= (this->clock.in_vblank) << 13;
+            return v;
     }
 
     printf("\nUNKNOWN HOLLY READ: %08x", addr);
@@ -115,6 +152,7 @@ void holly_write(struct DC* this, u32 addr, u32 val, u32* success)
     addr = (addr & 0x0000FFFF) | 0x005F0000;
     if ((addr >= 0x005F8200) && (addr <= 0x005F83FC)) {
         this->holly.FOG_TABLE[(addr - 0x005F8200) >> 2] = val;
+        return;
     }
     switch(addr) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
@@ -148,14 +186,7 @@ void holly_vblank_in(struct DC* this)
     holly_raise_interrupt(this, hirq_vblank_in);
 }
 
-void maple_dma_init(struct DC* this)
-{
-    printf("\nMAPLE DMA!?!?!?!?");
-}
-
-
-void holly_vblank_out(struct DC* this)
-{
+void holly_vblank_out(struct DC* this) {
     this->clock.in_vblank = 0;
     this->io.SB_ISTNRM.vblank_out = 1;
     holly_raise_interrupt(this, hirq_vblank_out);
@@ -164,16 +195,6 @@ void holly_vblank_out(struct DC* this)
         maple_dma_init(this);
     }
 }
-/*
-Mmh no, it's configurable, look at the SB_ISTNRM and SB_IML2NRM/SB_IML4NRM/SB_IML6NRM... registers
-originaldave_ — Today at 9:22 PM
-oh, so when vblank in triggers
-I need to look at those registers to determine what's next?
-I hoped I was close to getting interrupts going lol
-just wrote a whole (very basic) frame scheduler_t
-Senryoku — Today at 9:23 PM
-I'm not too sure about my implementation, but interrupts from SB_ISTNRM/SB_ISTEXT/SB_ISTERR will generate SH4 IRL9/11/13 interrupts depending on the register config
- */
 
 void holly_reset(struct DC* this)
 {

@@ -31,16 +31,17 @@
 #define rMACL this->regs.MACL
 #define rMACH this->regs.MACH
 
-#define fpFR(x) this->regs.fb[0].FP32[x]
-#define fpFRU(x) this->regs.fb[0].U32[x]
-#define fpDR(x) this->regs.fb[0].FP64[x >> 1]
-#define fpDRU(x) this->regs.fb[0].U64[x >> 1]
-#define fpXF(x) this->regs.fb[1].FP32[x]
-#define fpXD(x) this->regs.fb[x & 1].FP64[x >> 1]
-#define fpFV(x) this->regs.fb[0].FV[x >> 2]
+#define fpFR(x) this->regs.fb[0].FP32[(x)]
+#define fpFRU(x) this->regs.fb[0].U32[(x)]
+#define fpDR(x) this->regs.fb[0].FP64[(x)]
+#define fpDRU(x) this->regs.fb[0].U64[(x)]
+#define fpXF(x) this->regs.fb[1].FP32[(x)]
+#define fpXD(x) this->regs.fb[1].FP64[(x)]
+#define fpXDU(x) this->regs.fb[1].U64[(x)]
+#define fpFV(x) this->regs.fb[0].FV[(x)]
 #define fpXMTX(x) this->regs.fb[1].MTX
 
-#define BADOPCODE printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ)
+#define BADOPCODE { printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ); fflush(stdout); dbg_printf("\nUNIMPLEMENTED INSTRUCTION %s PR=%d SZ=%d", __func__, this->regs.FPSCR.PR, this->regs.FPSCR.SZ); }
 
 #define READ8(addr) this->read(this->mptr, addr, DC8)
 #define READ16(addr) this->read(this->mptr, addr, DC16)
@@ -75,28 +76,44 @@ not set in the interrupt mask bits in SR. When the BL bit in SR is 1, the interr
 For details, see Interrupt Controller in the hardware manual.
  */
 // Interrupt!
+
+static u32 INTEVT_TABLE[15] = {
+        0x200,
+        0x220,
+        0x240,
+        0x260,
+        0x280,
+        0x2A0,
+        0x2C0,
+        0x2E0,
+        0x300,
+        0x320,
+        0x340,
+        0x360,
+        0x380,
+        0x3A0,
+        0x3C0
+};
+
 void SH4_interrupt_IRL(struct SH4* this, u32 level) {
     this->regs.SPC = this->regs.PC;
     this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
     this->regs.SGR = this->regs.R[15];
-    //u32 INTEVT = 0x00000200 ^ 0x000003C0;  TODO
     this->regs.SR.MD = 1;
     this->regs.SR.RB = 1;
     this->regs.SR.BL = 1;
     this->regs.PC = this->regs.VBR + 0x00000600;
-    switch(level) {
-        case 2:
-            this->regs.EXPEVT = 0x240;
-            break;
-        case 4:
-            this->regs.EXPEVT = 0x280;
-            break;
-        case 6:
-            this->regs.EXPEVT = 0x2C0;
-            break;
-        default:
-            printf("\nUNKNOWN OR INVALID INTERRUPT LEVEL %d", level);
+    /*
+     Only the IRL1 and 2 interrupts are used (pull up IRL0 and 3), and these interrupts are used as level
+encoding interrupts. The interrupt levels are "2" (IRL3:0 = 1101), "4" (IRL3:0 = 1011), and "6"
+(IRL3:0 = 1001).
+     */
+#ifdef SH4_DBG_SUPPORT
+    if (dbg.trace_on) {
+        dbg_printf("\nRaising interrupt %d cyc:%llu", level, this->trace_cycles);
     }
+#endif
+    this->regs.INTEVT = INTEVT_TABLE[level];
 }
 
 SH4ins(EMPTY) {
@@ -402,17 +419,17 @@ SH4ins(CMPHI) { // If Rn > Rm (unsigned): 1 -> T, Else: 0 -> T
 }
 
 SH4ins(CMPGT) { // If Rn > Rm (signed): 1 -> T, Else: 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = ((i32)RN) > ((i32)RM);
     PCinc;
 }
 
 SH4ins(CMPPL) { // If Rn > 0 (signed): 1 -> T, Else: 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = ((i32)RN) > 0;
     PCinc;
 }
 
 SH4ins(CMPPZ) { // If Rn >= 0 (signed): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = ((i32)RN)>=0;
+    this->regs.SR.T = ((i32)RN) >= 0;
     PCinc;
 }
 
@@ -614,7 +631,7 @@ SH4ins(ANDM) { // (R0 + GBR) & (zero extend)imm -> (R0 + GBR)
 }
 
 SH4ins(NOT) { // ~Rm -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = ~RM;
     PCinc;
 }
 
@@ -697,7 +714,20 @@ SH4ins(ROTR) { // LSB >> Rn >> T
 }
 
 SH4ins(SHAD) { // If Rm >= 0: Rn << Rm -> Rn, If Rm < 0: Rn >> |Rm| -> [MSB -> Rn]
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 s = RM & 0x80000000;
+
+    if (s == 0)
+        RN <<= RM & 0x1F;
+    else if ((RM & 0x1F) == 0)
+    {
+        if ((RN & 0x80000000) == 0)
+            RN = 0;
+        else
+            RN = 0xFFFFFFFF;
+    }
+    else
+        RN = (long)RN >> ((~RM & 0x1F) + 1);
+
     PCinc;
 }
 
@@ -1032,7 +1062,8 @@ SH4ins(STCSR) { // SR -> Rn
 }
 
 SH4ins(STCMSR) { // Rn-4 -> Rn, SR -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, SH4_regs_SR_get(&this->regs.SR));
     PCinc;
 }
 
@@ -1042,7 +1073,8 @@ SH4ins(STCGBR) { // GBR -> Rn
 }
 
 SH4ins(STCMGBR) { // Rn-4 -> Rn, GBR -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.GBR);
     PCinc;
 }
 
@@ -1052,17 +1084,19 @@ SH4ins(STCVBR) { // VBR -> Rn
 }
 
 SH4ins(STCMVBR) { // Rn-4 -> Rn, VBR -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.VBR);
     PCinc;
 }
 
 SH4ins(STCSGR) { // SGR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.SGR;
     PCinc;
 }
 
 SH4ins(STCMSGR) { // Rn-4 -> Rn, SGR -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.SGR);
     PCinc;
 }
 
@@ -1072,17 +1106,19 @@ SH4ins(STCSSR) { // SSR -> Rn
 }
 
 SH4ins(STCMSSR) { // Rn-4 -> Rn, SSR -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.SSR);
     PCinc;
 }
 
 SH4ins(STCSPC) { // SPC -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.SPC;
     PCinc;
 }
 
 SH4ins(STCMSPC) { // Rn-4 -> Rn, SPC -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.SPC);
     PCinc;
 }
 
@@ -1092,7 +1128,8 @@ SH4ins(STCDBR) { // DBR -> Rn
 }
 
 SH4ins(STCMDBR) { // Rn-4 -> Rn, DBR -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.DBR);
     PCinc;
 }
 
@@ -1169,7 +1206,9 @@ SH4ins(FMOV_RESTORE) { // (Rm) -> FRn, Rm+4 -> Rm
     if (this->regs.FPSCR.SZ == 0) {// float
         fpFRU(ins->Rn) = READ32(RM);
         RM += 4;
-    }  else BADOPCODE;
+    }  else {
+        printf("\nWAIT WHAT2? %d %d", this->regs.FPSCR.SZ, this->regs.FPSCR.PR);
+    }
     PCinc;
 }
 
@@ -1177,7 +1216,10 @@ SH4ins(FMOV_SAVE) { // Rn-4 -> Rn, FRm -> (Rn)
     if (this->regs.FPSCR.SZ == 0) { // 32-bit
         RN -= 4;
         WRITE32(RN, fpFRU(ins->Rm));
-    } else BADOPCODE;
+    } else {
+        printf("\nWAIT WAHT? %d %d", this->regs.FPSCR.SZ, this->regs.FPSCR.PR);
+        BADOPCODE;
+    }
     PCinc;
 }
 
@@ -1253,7 +1295,10 @@ SH4ins(FMOV_SAVE_DR) { // Rn-8 -> Rn, DRm -> (Rn)
 }
 
 SH4ins(FMOV_SAVE_XD) { // Rn-8 -> Rn, (Rn) -> XDm
-    BADOPCODE; // Crash on unimplemented opcode
+    // TODO: some people say XD selects bank based on lower bit of m.
+    // some people say it always selects the alternate bank and that bit is ignored
+    RN -= 8;
+    fpXDU(ins->Rm) = READ64(RN);
     PCinc;
 }
 
@@ -1278,17 +1323,17 @@ SH4ins(FMOV_INDEX_STORE_XD) { // XDm -> (R0 + Rn)
 }
 
 SH4ins(FLDI0) { // 0x00000000 -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.fb[0].U32[ins->Rn] = 0;
     PCinc;
 }
 
 SH4ins(FLDI1) { // 0x3F800000 -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.fb[0].U32[ins->Rn] = 0x3F800000;
     PCinc;
 }
 
 SH4ins(FLDS) { // FRm -> FPUL
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.FPUL.u = this->regs.fb[0].U32[ins->Rm];
     PCinc;
 }
 
@@ -1344,7 +1389,8 @@ SH4ins(FCMP_EQ) { // If FRn = FRm: 1 -> T, Else: 0 -> T
 }
 
 SH4ins(FCMP_GT) { // If FRn > FRm: 1 -> T, Else: 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    //TODO: better accuracy
+    this->regs.SR.T = fpFR(ins->Rn) > fpFR(ins->Rm);
     PCinc;
 }
 
@@ -1446,7 +1492,7 @@ SH4ins(LDSFPSCR) { // Rm -> FPSCR
 }
 
 SH4ins(STSFPSCR) { // FPSCR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = SH4_regs_FPSCR_get(&this->regs.FPSCR);
     PCinc;
 }
 
@@ -1457,7 +1503,8 @@ SH4ins(LDSMFPSCR) { // (Rm) -> FPSCR, Rm+4 -> Rm
 }
 
 SH4ins(STSMFPSCR) { // Rn-4 -> Rn, FPSCR -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, SH4_regs_FPSCR_get(&this->regs.FPSCR));
     PCinc;
 }
 
@@ -1478,7 +1525,8 @@ SH4ins(LDSMFPUL) { // (Rm) -> FPUL, Rm+4 -> Rm
 }
 
 SH4ins(STSMFPUL) { // Rn-4 -> Rn, FPUL -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.FPUL.u);
     PCinc;
 }
 
@@ -1498,7 +1546,6 @@ SH4ins(FSCHG) { // If FPSCR.PR = 0: ~FPSCR.SZ -> FPSCR.SZ, Else: Undefined Opera
     }
     else assert(1==0);
 
-    BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 

@@ -15,6 +15,7 @@
         case 0x005F807C:  { return this->holly.FPU_PARAM_CFG.u; }
         case 0x005F8080:  { return this->holly.HALF_OFFSET.u; }
         case 0x005F808C:  { return this->holly.ISP_BACKGND_T.u; }
+        case 0x005F8098:  { return this->holly.ISP_FEED_CFG.u; }
         case 0x005F80A0:  { return this->holly.SDRAM_REFRESH; }
         case 0x005F80A8:  { return this->holly.SDRAM_CFG; }
         case 0x005F80B0:  { return this->holly.FOG_COL_RAM; }

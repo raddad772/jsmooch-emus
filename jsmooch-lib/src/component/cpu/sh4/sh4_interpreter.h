@@ -112,7 +112,7 @@ struct SH4 {
 
     u64 trace_cycles;
 
-    u32 interrupt_level;
+    u32 IRL_irq_level;
 
     i32 cycles;
 
@@ -151,7 +151,7 @@ void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this);
 void SH4_SR_set(struct SH4* this, u32 val);
-void SH4_set_interrupt(struct SH4* this, u32 level);
+void SH4_set_IRL_irq_level(struct SH4* this, u32 level);
 void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

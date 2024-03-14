@@ -6,17 +6,17 @@ access_32, rw
 .io, mem=area0
 0x005F6910: SB_IML2NRM
 u32
-access_32, w
+access_32, rw
 on_write=holly_recalc_interrupts(this)
 
 0x005F6920: SB_IML4NRM
 u32
-access_32, w
+access_32, rw
 on_write=holly_recalc_interrupts(this)
 
 0x005F6930: SB_IML6NRM
 u32
-access_32, w
+access_32, rw
 on_write=holly_recalc_interrupts(this)
 
 0x005F6940: SB_PDTNRM
@@ -660,6 +660,15 @@ on_write=gdrom_dma_start(this)
 write_mask=1
 
 .holly, mem=holly
+0x005F8098: ISP_FEED_CFG
+u32, flags
+access_32, rw
+pre_sort_mode: 0
+_res : 1-2
+discard_mode: 3
+punch_through_chunk_size: 4-13
+cache_size_for_translucency: 14-23
+
 0x005F8044: FB_R_CTRL
 u32, flags
 access_32, rw
@@ -971,8 +980,12 @@ on_write=if (val & 1) { maple_dma_init(this); }
 write_mask=1
 
 0x005F6C80: SB_MSYS
-u32
+u32, flags
 access_32, rw
+delay_time: 0-3
+sending_rate: 8-9
+single_hard_trigger: 12
+time_out_counter: 16-31
 
 0x005F6C8C: SB_MDAPRO
 u32, flags

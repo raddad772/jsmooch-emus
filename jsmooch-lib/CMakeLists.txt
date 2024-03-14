@@ -129,6 +129,9 @@ add_library(jsmooch-lib
         src/component/cpu/sh4/tmu.c
         src/component/cpu/sh4/tmu.h
         src/component/cpu/sh4/tmu.c
+        src/system/dreamcast/maple.c
+        src/system/dreamcast/controller.h
+        src/system/dreamcast/controller.c
 )
 
 include_directories(src/)

@@ -7,12 +7,14 @@
 #include "stdlib.h"
 #include "string.h"
 
+#include "gdi.h"
 #include "gdrom.h"
 #include "helpers/scheduler.h"
 #include "helpers/sys_interface.h"
 #include "dreamcast.h"
 #include "dc_mem.h"
 #include "holly.h"
+#include "controller.h"
 
 #define IP_BIN
 
@@ -56,7 +58,16 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     SH4_give_memaccess(&this->sh4, &this->sh4mem);
     DC_mem_init(this);
 
+    for (u32 i = 0; i < 4; i++) {
+        MAPLE_port_init(&this->maple.ports[i]);
+    }
+    DC_controller_init(&this->c1);
+    DC_controller_connect(this, 0, &this->c1);
+
+    this->gdrom.gdi.num_tracks = 0;
+
     GDROM_init(this);
+    GDROM_reset(this);
 
     this->clock.frame_cycle = 0;
     this->clock.cycles_per_frame = DC_CYCLES_PER_SEC / 60;
@@ -111,6 +122,9 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 void DC_delete(struct jsm_system* jsm)
 {
     JTHIS;
+
+    if (this->gdrom.gdi.num_tracks > 0)
+        GDI_delete(&this->gdrom.gdi);
 
     buf_delete(&this->BIOS);
     buf_delete(&this->ROM);
@@ -225,6 +239,7 @@ void DCJ_killall(JSM)
 static void new_frame(struct DC* this)
 {
     this->clock.frame_cycle = 0;
+    this->clock.frame_start_cycle = this->sh4.trace_cycles;
     this->holly.master_frame++;
     this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
     DC_recalc_frame_timing(this);
@@ -235,10 +250,11 @@ static void new_frame(struct DC* this)
 }
 
 enum DC_frame_events {
-    FRAME_START,
-    VBLANK_IN,
-    VBLANK_OUT,
-    FRAME_END
+    evt_EMPTY=0,
+    evt_FRAME_START,
+    evt_VBLANK_IN,
+    evt_VBLANK_OUT,
+    evt_FRAME_END,
 };
 
 struct DCF_event {
@@ -254,16 +270,16 @@ static void DC_schedule_frame(struct DC* this)
     // vblank_out_start @?
     // frame end @200mil
     scheduler_clear(&this->scheduler);
-    scheduler_add(&this->scheduler, 0, FRAME_START);
+    scheduler_add(&this->scheduler, 0, evt_FRAME_START);
     if (this->clock.interrupt.vblank_in_start < this->clock.interrupt.vblank_out_start) {
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, VBLANK_IN);
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, VBLANK_OUT);
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, evt_VBLANK_IN);
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, evt_VBLANK_OUT);
     }
     else {
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, VBLANK_OUT);
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, VBLANK_IN);
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, evt_VBLANK_OUT);
+        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, evt_VBLANK_IN);
     }
-    scheduler_add(&this->scheduler, DC_CYCLES_PER_FRAME, FRAME_END);
+    scheduler_add(&this->scheduler, DC_CYCLES_PER_FRAME, evt_FRAME_END);
 }
 
 u32 DCJ_finish_frame(JSM)
@@ -288,16 +304,19 @@ void DC_scheduler_pprint(struct DC* this)
         struct scheduler_event* evt = &this->scheduler.array.events[i];
         printf("\nSCHED EVENT CYC:%8llu ", evt->timecode);
         switch(evt->event) {
-            case FRAME_END:
+            case evt_EMPTY:
+                printf("EMPTY");
+                break;
+            case evt_FRAME_END:
                 printf("FRAME_END");
                 break;
-            case FRAME_START:
+            case evt_FRAME_START:
                 printf("FRAME_START");
                 break;
-            case VBLANK_IN:
+            case evt_VBLANK_IN:
                 printf("VBLANK_IN");
                 break;
-            case VBLANK_OUT:
+            case evt_VBLANK_OUT:
                 printf("VBLANK_OUT");
                 break;
         }
@@ -326,19 +345,24 @@ u32 DCJ_step_master(JSM, u32 howmany)
                 printf("\nHOW DID THIS HAPPEN5;");
                 break;
             }
+            u32 new_scheduler = 0;
 
             switch ((enum DC_frame_events) next_evt->event) {
-                case FRAME_START:
+                case evt_FRAME_START:
                     this->clock.frame_cycle = 0;
                     this->clock.in_vblank = 1;
                     break;
-                case VBLANK_IN:
+                case evt_VBLANK_IN:
                     holly_vblank_in(this);
                     break;
-                case VBLANK_OUT:
+                case evt_VBLANK_OUT:
                     holly_vblank_out(this);
                     break;
-                case FRAME_END:
+                case evt_EMPTY:
+                    break;
+                case evt_FRAME_END:
+                    printf("\nEVENT: FRAME END %llu", this->sh4.trace_cycles);
+                    new_scheduler = 1;
                     new_frame(this);
                     break;
                 default:
@@ -348,7 +372,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
             if (quit) {
                 break;
             }
-            scheduler_advance_event(&this->scheduler);
+            if (!new_scheduler) scheduler_advance_event(&this->scheduler);
             til_next_event = scheduler_til_next_event(&this->scheduler);
             if (dbg.do_break) break;
         }
@@ -399,6 +423,31 @@ void DCJ_load_BIOS(JSM, struct multi_file_set* mfs)
 }
 
 void DCJ_load_ROM(JSM, struct multi_file_set* mfs)
+{
+    JTHIS;
+/*
+    struct GDI_image foo;
+    GDI_init(&foo);
+    const char *homeDir = getenv("HOME");
+
+    if (!homeDir) {
+        struct passwd* pwd = getpwuid(getuid());
+        if (pwd)
+            homeDir = pwd->pw_dir;
+    }
+
+    char PATH[500];
+    sprintf(PATH, "%s/Documents/emu/rom/dreamcast/crazy_taxi", homeDir);
+    printf("\nHEY! %s", PATH);
+    GDI_load(PATH, "crazytaxi.gdi", &foo);
+
+    GDI_delete(&foo);
+
+ */
+    GDI_load(mfs->files[0].path, mfs->files[0].name, &this->gdrom.gdi);
+}
+
+void DCJ_old_load_ROM(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;

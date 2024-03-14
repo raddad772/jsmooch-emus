@@ -127,6 +127,16 @@
             };
             u32 u;
         } ISP_BACKGND_T;  // 0x005F808C
+        union {  // ISP_FEED_CFG
+            struct {
+                u32 pre_sort_mode : 1;
+                u32 : 2;
+                u32 discard_mode : 1;
+                u32 punch_through_chunk_size : 10;
+                u32 cache_size_for_translucency : 10;
+            };
+            u32 u;
+        } ISP_FEED_CFG;  // 0x005F8098
         u32 SDRAM_REFRESH;  // 0x005F80A0
         u32 SDRAM_CFG;  // 0x005F80A8
         u32 FOG_COL_RAM;  // 0x005F80B0

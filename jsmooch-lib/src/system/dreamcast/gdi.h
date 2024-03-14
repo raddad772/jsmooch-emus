@@ -30,7 +30,6 @@ struct GDI_image {
     struct GDI_track tracks[50];
 
     u32 primary_volume_descriptor;
-
 };
 
 enum ISO9660_VD {
@@ -115,5 +114,6 @@ struct ISO9660_volume_descriptor {
 void GDI_init(struct GDI_image *this);
 void GDI_delete(struct GDI_image *this);
 void GDI_load(char *folder, char *filename, struct GDI_image *img);
+void GDI_GetToc(struct GDI_image *this, u32* toc, u32 area);
 
 #endif //JSMOOCH_EMUS_GDI_H

@@ -9,7 +9,7 @@
 
 void schedule_event(struct scheduler_t* this, struct scheduled_bound_function* func, i64 timecode)
 {
-    printf("\nIM SUPPOSED TO SCHEDULE A FUNCTION FOR %lld CYCLES FROM NOW! (%llu)", timecode, this->timecode);
+    //printf("\nIM SUPPOSED TO SCHEDULE A FUNCTION FOR %lld CYCLES FROM NOW! (%llu)", timecode, this->timecode);
 }
 
 static void scheduler_array_init(struct scheduler_event_array* this)
@@ -41,6 +41,7 @@ void scheduler_clear(struct scheduler_t* this)
     this->timecode = 0;
     this->event_index = 0;
     this->array.used_len = 0;
+    //scheduler_add(this, 0, 0);
 }
 
 void scheduler_add(struct scheduler_t* this, u64 timecode, u32 event) {

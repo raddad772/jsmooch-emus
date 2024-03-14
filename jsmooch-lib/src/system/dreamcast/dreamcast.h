@@ -13,6 +13,9 @@
 #include "component/cpu/sh4/sh4_interpreter.h"
 #include "dc_mem.h"
 #include "spi.h"
+#include "gdi.h"
+#include "maple.h"
+#include "controller.h"
 
 #define DC_CYCLES_PER_SEC 200000000
 
@@ -33,6 +36,8 @@ void DC_delete(struct jsm_system* system);
 struct DC {
     struct SH4 sh4;
     struct SH4_memaccess_t sh4mem;
+
+    struct DC_controller c1;
 
     u8 RAM[16 * 1024 * 1024];
     u8 VRAM[8 * 1024 * 1024];
@@ -68,6 +73,7 @@ struct DC {
 
     struct {
         u32 frame_cycle;
+        u64 frame_start_cycle;
         u32 cycles_per_frame;
         u32 cycles_per_line;
         u32 in_vblank;
@@ -123,8 +129,16 @@ struct DC {
                 u32 DRDY: 1; // 1 when response to ATA command is possible (waiting?)
                 u32 BSY: 1; // 1 when command is accepted
             };
-            u32 u;
+            u8 u;
         } device_status;
+
+        union {
+            struct {
+                u8 lo;
+                u8 hi;
+            };
+            u16 u;
+        } byte_count;
 
         union {
             struct {
@@ -133,6 +147,8 @@ struct DC {
             };
             u32 u;
         } sector_count;
+
+        u32 ata_cmd;
 
         union {
             struct {
@@ -182,10 +198,21 @@ struct DC {
 
         struct SPI_packet_cmd packet_cmd;
 
+        struct GDROM_PIOBUF {
+            u32 next_state;
+            u32 index;
+            u32 size;
+            u16 data[0x8000]; //64 kb
+        } pio_buff;
+
+        struct GDI_image gdi;
     } gdrom;
 
     struct {
 #include "generated/maple_decls.h"
+        u32 vblank_repeat_trigger;
+
+        struct MAPLE_port ports[4];
     } maple;
 
     struct {
@@ -206,6 +233,8 @@ enum holly_interrupt_hi {
 enum holly_interrupt_masks {
     hirq_vblank_in = 4,
     hirq_vblank_out = 5,
+
+    hirq_maple_dma = holly_nrm | 12,
 
     hirq_gdrom_cmd = holly_ext | 0
 };

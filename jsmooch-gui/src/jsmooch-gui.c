@@ -141,7 +141,7 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
             worked = 1;
             break;
         case SYS_DREAMCAST:
-            sprintf(BASE_PATH, "%s/dreamcast", BASER_PATH);
+            sprintf(BASE_PATH, "%s/dreamcast/crazy_taxi", BASER_PATH);
             worked = 1;
             break;
         case SYS_DMG:
@@ -234,12 +234,12 @@ int main(int argc, char** argv)
 
     struct multi_file_set ROMs;
     mfs_init(&ROMs);
-    u32 worked = grab_ROM(&ROMs, which, "IP.BIN");
+    u32 worked = grab_ROM(&ROMs, which, "crazytaxi.gdi");
     if (!worked) {
         printf("\nCouldn't open ROM!");
         return -1;
     }
-    //sys->load_ROM(sys, &ROMs);
+    sys->load_ROM(sys, &ROMs);
     mfs_delete(&ROMs);
 
     struct framevars fv;
@@ -261,12 +261,13 @@ int main(int argc, char** argv)
     //dbg_LT_clear();
     dbg_disable_trace();
     //sys->step_master(sys, 11494000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
-    sys->step_master(sys, 14000000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    //sys->step_master(sys, 14000000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    sys->step_master(sys, 136643778); // end of copy BIOS to RAM and start exec inRAM at 8c000100
     dbg_unbreak();
-    dbg_enable_trace();
-    sys->step_master(sys, 200);
+    //dbg_enable_trace();
+    //sys->step_master(sys, 300);
     // 2621400 kinda inside memset
-    //dbg_LT_dump();
+    dbg_LT_dump();
     dbg_flush();
     return 0;
     /*jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);

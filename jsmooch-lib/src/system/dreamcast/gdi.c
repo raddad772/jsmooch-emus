@@ -173,6 +173,69 @@ static void read_primary_volume_descriptor(struct ISO9660_volume_descriptor *vd,
     vd->path_version = (u32)sector[881];
 }
 
+static u32 CreateTrackInfo(u32 ctrl,u32 addr,u32 fad)
+{
+    u8 p[4];
+    p[0]=(ctrl<<4)|(addr<<0);
+    p[1]=fad>>16;
+    p[2]=fad>>8;
+    p[3]=fad>>0;
+
+    return *(u32*)p;
+}
+static u32 CreateTrackInfo_se(u32 ctrl,u32 addr,u32 tracknum)
+{
+    u8 p[4];
+    p[0]=(ctrl<<4)|(addr<<0);
+    p[1]=tracknum;
+    p[2]=0;
+    p[3]=0;
+    return *(u32*)p;
+}
+
+
+void GDI_GetToc(struct GDI_image *this, u32* to, u32 area)
+{
+    memset(to, 0xFFFFFFFF, 102*4);
+
+    u32 first_track=1;
+    u32 last_track=(u32)(this->num_tracks);
+    if (area==1)
+        first_track=3;
+    //else if (disc->type==GdRom)
+    //{
+    else
+        last_track=2;
+    //
+    //}
+
+    //Generate the TOC info
+
+    //-1 for 1..99 0 ..98
+    //t.CTRL=track.mode==0?0:4;
+    // u32 fmt = d->tracks[i].CTRL==4?2048:2352;
+    // CTRL=4 if 2048 sectors
+    // CTRL=0 if 2352 sectors
+    //	to[99]=CreateTrackInfo_se(disc->tracks[first_track-1].CTRL,disc->tracks[first_track-1].ADDR,first_track);
+    //	to[100]=CreateTrackInfo_se(disc->tracks[last_track-1].CTRL,disc->tracks[last_track-1].ADDR,last_track);
+    to[99] = CreateTrackInfo_se(this->tracks[first_track-1].type,1,first_track);
+    to[100]=CreateTrackInfo_se(this->tracks[last_track-1].type,1,last_track);
+
+    //if (disc->type==GdRom)
+    //{
+        //use smaller LEADOUT
+        if (area==0)
+            to[101]=CreateTrackInfo(0,0,13085);
+        //else {
+            //printf("\nINVALID DENSITY");
+        //}
+    //}
+    for (u32 i=first_track-1;i<last_track;i++)
+    {
+        to[i]=CreateTrackInfo(this->tracks[i].type,1,this->tracks[i].begin_LBA);
+    }
+
+}
 
 void GDI_load(char *folder, char *filename, struct GDI_image *img)
 {
@@ -189,8 +252,8 @@ void GDI_load(char *folder, char *filename, struct GDI_image *img)
         fgets(tmp, 5000, f);
         char *p = tmp;
         u32 track_num = strtol(p, &p, 10);
-        this->tracks[i].begin_LBA = strtol(p, &p, 10);
-        this->tracks[i].type = strtol(p, &p, 10);
+        this->tracks[i].begin_LBA = strtol(p, &p, 10)+150; // FADS
+        this->tracks[i].type = strtol(p, &p, 10); // CTRL
         this->tracks[i].sector_size = strtol(p, &p, 10);
         char *fname = strtok(p, " ");
         char fn[500];
@@ -210,6 +273,7 @@ void GDI_load(char *folder, char *filename, struct GDI_image *img)
     fclose(f);
 
     // OK, we really mostly care about track 3 for new
+    return;
     struct GDI_track* t = &this->tracks[2];
 
     // Now find the primary volume descriptor, starting at sector 10
