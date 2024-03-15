@@ -7,17 +7,17 @@ access_32, rw
 0x005F6910: SB_IML2NRM
 u32
 access_32, rw
-on_write=holly_recalc_interrupts(this)
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML2NRM wrote: %08llu cyc: %llx", val, this->sh4.trace_cycles)*/
 
 0x005F6920: SB_IML4NRM
 u32
 access_32, rw
-on_write=holly_recalc_interrupts(this)
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML4NRM wrote: %08llx cyc: %llu", val, this->sh4.trace_cycles)*/
 
 0x005F6930: SB_IML6NRM
 u32
 access_32, rw
-on_write=holly_recalc_interrupts(this)
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML6NRM wrote: %08llx cyc: %llu", val, this->sh4.trace_cycles)*/
 
 0x005F6940: SB_PDTNRM
 u32
@@ -120,7 +120,7 @@ access_32, rw
 0x005F6914: SB_IML2EXT
 u32, flags
 access_32, rw
-on_write=holly_recalc_interrupts(this)
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML2EXT write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
 gdrom: 0
 aica: 1
 modem: 2
@@ -129,6 +129,7 @@ ext_device: 3
 0x005F6918: SB_IML2ERR
 u32, flags
 access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML2ERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
 render_isp_out_of_cache: 0
 render_hazard_processing_strip_buffer: 1
 ta_isp_parameter_overflow: 2
@@ -163,7 +164,7 @@ sh4_if: 31
 0x005F6924: SB_IML4EXT
 u32, flags
 access_32, rw
-on_write=holly_recalc_interrupts(this)
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML4EXT write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
 gdrom: 0
 aica: 1
 modem: 2
@@ -172,7 +173,7 @@ ext_device: 3
 0x005F6900: SB_ISTNRM
 u32, flags
 access_32, rw
-w_override=this->io.SB_ISTNRM.u ^= this->io.SB_ISTNRM.u & val & 0x3FFFFF
+w_override=this->io.SB_ISTNRM.u &= ~val; holly_recalc_interrupts(this)/*; printf("\nSB_ISTNRM wrote: %08llx cyc:%llu", val, this->sh4.trace_cycles);*/
 r_override=return (this->io.SB_ISTNRM.u) | ((this->io.SB_ISTERR.u > 0) << 30) | ((this->io.SB_ISTEXT.u > 0) << 31)
 render_end_video: 0
 render_end_isp: 1
@@ -208,7 +209,7 @@ ext_device: 3
 0x005F6908: SB_ISTERR
 u32, flags
 access_32, rw
-w_override=this->io.SB_ISTERR.u ^= this->io.SB_ISTERR.u & val & 0x9FFFFFFF
+w_override=this->io.SB_ISTERR.u &= ~val; holly_recalc_interrupts(this)/*; printf("\nSB_ISTERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
 render_isp_out_of_cache: 0
 render_hazard_processing_strip_buffer: 1
 ta_isp_tsp_parameter_overflow: 2
@@ -243,6 +244,7 @@ sh4_if: 31
 0x005F6928: SB_IML4ERR
 u32, flags
 access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML4ERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
 render_isp_out_of_cache: 0
 render_hazard_processing_strip_buffer: 1
 ta_isp_parameter_overflow: 2
@@ -277,7 +279,7 @@ sh4_if: 31
 0x005F6934: SB_IML6EXT
 u32, flags
 access_32, rw
-on_write=holly_recalc_interrupts(this)
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML6EXT write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
 gdrom: 0
 aica: 1
 modem: 2
@@ -286,6 +288,7 @@ ext_device: 3
 0x005F6938: SB_IML6ERR
 u32, flags
 access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML6ERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
 render_isp_out_of_cache: 0
 render_hazard_processing_strip_buffer: 1
 ta_isp_parameter_overflow: 2
@@ -340,15 +343,18 @@ access_32, rw
 write_mask=1
 
 0x005F7810: SB_ADTSEL
-u32
+u32, flags
 access_32, rw
-write_mask=7
 on_write=update_dma_triggers(this, addr, val)
+tsel0: 0
+tsel1: 1
+tsel2: 2
 
 0x005F7814: SB_ADEN
 u32
 access_32, rw
 write_mask=1
+on_write=update_dma_triggers(this, addr, val);
 
 0x005F7818: SB_ADST
 u32
@@ -392,6 +398,7 @@ on_write=update_dma_triggers(this, addr, val)
 u32
 access_32, rw
 write_mask=1
+on_write=update_dma_triggers(this, addr, val);
 
 0x005F7838: SB_E1ST
 u32
@@ -435,6 +442,7 @@ on_write=update_dma_triggers(this, addr, val)
 u32
 access_32, rw
 write_mask=1
+on_write=update_dma_triggers(this, addr, val);
 
 0x005F7858: SB_E2ST
 u32
@@ -478,6 +486,7 @@ on_write=update_dma_triggers(this, addr, val)
 u32
 access_32, rw
 write_mask=1
+on_write=update_dma_triggers(this, addr, val);
 
 0x005F7878: SB_DDST
 u32
@@ -875,7 +884,7 @@ addr: 5-23
 0x005F80CC: SPG_VBLANK_INT
 u32, flags
 access_32, rw
-on_write=DC_recalc_frame_timing(this)
+on_write=DC_recalc_frame_timing(this)/*; printf("\nSPG_VBLANK_INT wrote: %08llx", val)*/
 vblank_in_line: 0-9
 vblank_out_line: 16-25
 

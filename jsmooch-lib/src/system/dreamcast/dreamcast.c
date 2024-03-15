@@ -50,6 +50,8 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     struct DC* this = (struct DC*)malloc(sizeof(struct DC));
     scheduler_init(&this->scheduler);
 
+    dbg.dcptr = this;
+
     SH4_init(&this->sh4, &this->scheduler);
     this->sh4.mptr = (void *)this;
     this->sh4.read = &DCread_noins;
@@ -361,7 +363,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
                 case evt_EMPTY:
                     break;
                 case evt_FRAME_END:
-                    printf("\nEVENT: FRAME END %llu", this->sh4.trace_cycles);
+                    //printf("\nEVENT: FRAME END %llu", this->sh4.trace_cycles);
                     new_scheduler = 1;
                     new_frame(this);
                     break;

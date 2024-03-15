@@ -261,11 +261,11 @@ int main(int argc, char** argv)
     //dbg_LT_clear();
     dbg_disable_trace();
     //sys->step_master(sys, 11494000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
-    //sys->step_master(sys, 14000000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
-    sys->step_master(sys, 136643778); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    sys->step_master(sys, 260000000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    //sys->step_master(sys, 135800160); // end of copy BIOS to RAM and start exec inRAM at 8c000100
     dbg_unbreak();
-    //dbg_enable_trace();
-    //sys->step_master(sys, 300);
+    dbg_enable_trace();
+    sys->step_master(sys, 50);
     // 2621400 kinda inside memset
     dbg_LT_dump();
     dbg_flush();

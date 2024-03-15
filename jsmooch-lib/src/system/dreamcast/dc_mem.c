@@ -17,6 +17,7 @@
 u64 DCread_flash(struct DC* this, u32 addr, u32* success, u32 bits);
 void G1_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success);
 void G2_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success);
+u64 G2_read(struct DC* this, u32 addr, u32 sz, u32* success);
 u64 G1_read(struct DC* this, u32 addr, u32 sz, u32* success);
 
 #define B32(b31_b28, b27_24,b23_20,b19_16,b15_12,b11_8,b7_4,b3_0) ( \
@@ -44,6 +45,7 @@ static u32 dcms(enum DC_MEM_SIZE sz)
 
 static void update_dma_triggers(struct DC* this, u32 addr, u64 val)
 {
+    if (val & 1) printf("\nTRIGGER TO DMA %08x", addr);
 
 }
 
@@ -106,7 +108,7 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
      addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
      if (addr <= 0x001FFFFF)
          return cR[sz](this->BIOS.ptr, addr & 0x1FFFFF);
-     if ((addr >= 0x00200000 ) && (addr <= 0x0021FFFF))
+     if ((addr >= 0x00200000) && (addr <= 0x0021FFFF))
          return DCread_flash(this, addr, success, 4);
 
      if ((addr >= 0x005F8000) && (addr <= 0x005FFFFF))
@@ -115,6 +117,15 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
      if ((addr >= 0x005F6C00) && (addr <= 0x005F6CFF)) { // Maple commands!
          return maple_read(this, full_addr, sz, success);
      }
+
+     if ((addr >= 0x005F7800) && (addr <= 0x005F78FF)) {
+         return G2_read(this, full_addr, sz, success);
+     }
+
+     if ((addr >= 0x005F7C00) && (addr <= 0x005F7CFF)) {
+         return G2_read(this, full_addr, sz, success);
+     }
+
 
 
      if ((addr >= 0x00600000) && (addr <= 0x006FFFFF))
@@ -140,6 +151,10 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
 
      if ((addr >= 0x00700000) && (addr <= 0x00707FE0)) {
          return aica_read(this, addr, sz, success);
+     }
+
+     if ((addr >= 0x00800000) && (addr <= 0x009FFFFF)) {
+         return cR[sz](this->aica.wave_mem, addr & 0x1FFFFF);
      }
 
 
@@ -235,6 +250,10 @@ void write_area1(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success
 {
     MTHIS;
     addr &= 0x1FFFFFFF; // only 29 bits of real addresses I guess
+    if ((addr >= 0x04000000) && (addr <= 0x04800000)) {
+        cW[sz](this->VRAM, addr & 0x007FFFFF, val);
+        return;
+    }
     if ((addr >= 0x05000000) && (addr <= 0x05800000)) { // VRAM 32bit access
         cW[sz](this->VRAM, addr & 0x007FFFFF, val);
         return;
@@ -290,8 +309,8 @@ void DC_mem_init(struct DC* this)
 
 #define MAP(addr, rdfunc, wrfunc, obj) this->mem.read[(addr)>>2] = (rdfunc); this->mem.write[(addr)>>2] = (wrfunc); this->mem.rptr[(addr) >> 2] = ((void *)obj); this->mem.wptr[(addr) >> 2] = ((void *)obj)
     // All of P0. P1, P2, P3 should mirror the lower half of P0?
-    u32 areas[4] = { 0x00, 0x80, 0xA0, 0xC0 };
-    for (u32 i = 0; i < 4; i++) {
+    u32 areas[5] = { 0x00, 0x60, 0x80, 0xA0, 0xC0 };
+    for (u32 i = 0; i < 5; i++) {
         u32 area = areas[i];
         MAP(area + 0x00, &read_area0, &write_area0, this);
         MAP(area + 0x04, &read_area1, &write_area1, this);
@@ -454,6 +473,18 @@ u64 DCread_noins(void *ptr, u32 addr, u32 sz)
     return DCread(ptr, addr, sz, false);
 }
 
+u64 G2_read(struct DC* this, u32 addr, u32 sz, u32* success)
+{
+    addr &= 0x1FFFFFFF;
+    switch(addr) {
+// NOLINTNEXTLINE(bugprone-suspicious-include)
+#include "generated/g2_reads.c"
+    }
+    *success = 0;
+    printf("\nUnhandled G2 reg read %02x sz %d", addr, sz);
+    return 0;
+}
+
 void G2_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success)
 {
     addr &= 0x1FFFFFFF;
@@ -464,6 +495,7 @@ void G2_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success)
     *success = 0;
     printf("\nUnhandled G2 reg write %02x val %04llx bits %d", addr, val, bits);
 }
+
 
 u64 G1_read(struct DC* this, u32 addr, u32 sz, u32* success)
 {

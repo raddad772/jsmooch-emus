@@ -3,8 +3,8 @@
         case 0x005F7804: { this->g2.SB_ADSTAR = (val & 0x1FFFFFE0); return; }
         case 0x005F7808: { this->g2.SB_ADLEN.u = val & 0x81FFFFE0; return; }
         case 0x005F780C: { this->g2.SB_ADDIR = (val & 1); return; }
-        case 0x005F7810: { this->g2.SB_ADTSEL = (val & 7); update_dma_triggers(this, addr, val); return; }
-        case 0x005F7814: { this->g2.SB_ADEN = (val & 1); return; }
+        case 0x005F7810: { this->g2.SB_ADTSEL.u = val & 0x00000007; update_dma_triggers(this, addr, val); return; }
+        case 0x005F7814: { this->g2.SB_ADEN = (val & 1); update_dma_triggers(this, addr, val); return; }
         case 0x005F7818: { this->g2.SB_ADST = (val & 1); g2_dma_init(this, addr, val); return; }
         case 0x005F781C: { this->g2.SB_ADSUSP.u = val & 0x00000001; return; }
         case 0x005F7820: { this->g2.SB_E1STAG = (val & 0x1FFFFFE0); return; }
@@ -12,7 +12,7 @@
         case 0x005F7828: { this->g2.SB_E1LEN.u = val & 0x81FFFFE0; return; }
         case 0x005F782C: { this->g2.SB_E1DIR = (val & 1); return; }
         case 0x005F7830: { this->g2.SB_E1TSEL = (val & 7); update_dma_triggers(this, addr, val); return; }
-        case 0x005F7834: { this->g2.SB_E1EN = (val & 1); return; }
+        case 0x005F7834: { this->g2.SB_E1EN = (val & 1); update_dma_triggers(this, addr, val); return; }
         case 0x005F7838: { this->g2.SB_E1ST = (val & 1); g2_dma_init(this, addr, val); return; }
         case 0x005F783C: { this->g2.SB_E1SUSP.u = val & 0x00000001; return; }
         case 0x005F7840: { this->g2.SB_E2STAG = (val & 0x1FFFFFE0); return; }
@@ -20,7 +20,7 @@
         case 0x005F7848: { this->g2.SB_E2LEN.u = val & 0x81FFFFE0; return; }
         case 0x005F784C: { this->g2.SB_E2DIR = (val & 1); return; }
         case 0x005F7850: { this->g2.SB_E2TSEL = (val & 7); update_dma_triggers(this, addr, val); return; }
-        case 0x005F7854: { this->g2.SB_E2EN = (val & 1); return; }
+        case 0x005F7854: { this->g2.SB_E2EN = (val & 1); update_dma_triggers(this, addr, val); return; }
         case 0x005F7858: { this->g2.SB_E2ST = (val & 1); g2_dma_init(this, addr, val); return; }
         case 0x005F785C: { this->g2.SB_E2SUSP.u = val & 0x00000001; return; }
         case 0x005F7860: { this->g2.SB_DDSTAG = (val & 0x1FFFFFE0); return; }
@@ -28,7 +28,7 @@
         case 0x005F7868: { this->g2.SB_DDLEN.u = val & 0x81FFFFE0; return; }
         case 0x005F786C: { this->g2.SB_DDDIR = (val & 1); return; }
         case 0x005F7870: { this->g2.SB_DDTSEL = (val & 7); update_dma_triggers(this, addr, val); return; }
-        case 0x005F7874: { this->g2.SB_DDEN = (val & 1); return; }
+        case 0x005F7874: { this->g2.SB_DDEN = (val & 1); update_dma_triggers(this, addr, val); return; }
         case 0x005F7878: { this->g2.SB_DDST = (val & 1); g2_dma_init(this, addr, val); return; }
         case 0x005F787C: { this->g2.SB_DDSUSP.u = val & 0x00000001; return; }
         case 0x005F7890: { this->g2.SB_G2DSTO = (val & 0x00000FFF); return; }

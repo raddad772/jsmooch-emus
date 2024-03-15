@@ -286,6 +286,8 @@ def parse_regs_file(fname: str, out_path: str) -> None:
                 elif cur_line[:8] == 'exclude=':
                     o.w_exclude = 'w' in cur_line[8:]
                     o.r_exclude = 'r' in cur_line[8:]
+                elif cur_line[:9] == 'on_write=':
+                    o.on_write = cur_line[9:]
                 else:
                     try:
                         kind, val = cur_line.split("=")
@@ -296,8 +298,6 @@ def parse_regs_file(fname: str, out_path: str) -> None:
                         o.default_value = int(val, 0)
                     elif kind == 'boot':
                         o.quickboot_value = int(val, 0)
-                    elif kind == 'on_write':
-                        o.on_write = val.strip()
                     elif kind == 'write_mask':
                         val = val.strip()
                         if val[:4] == 'bits':
@@ -340,7 +340,11 @@ def parse_regs_file(fname: str, out_path: str) -> None:
                     start, end = startend.split('-')
                 else:
                     start = end = startend
-                start = int(start, 10)
+                try:
+                    start = int(start, 10)
+                except ValueError:
+                    print("REG: " + o.name + " LINE: " + cur_line)
+                    raise
                 end = int(end, 10)
 
                 if len(name) > 0 and name[0] != '_':

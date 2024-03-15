@@ -27,6 +27,8 @@
 #define LAST_TRACES_LEN 50
 #define LAST_TRACES_MSG_LEN 200
 
+
+struct DC;
 struct last_traces_t {
     char entries[LAST_TRACES_LEN][LAST_TRACES_MSG_LEN];
     u32 head;
@@ -46,6 +48,7 @@ struct jsm_debug_struct {
 
     struct last_traces_t last_traces;
     u32 var;
+    struct DC* dcptr;
 };
 
 struct jsm_debug_read_trace {

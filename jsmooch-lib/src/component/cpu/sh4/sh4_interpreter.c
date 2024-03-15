@@ -10,6 +10,7 @@
 #include "sh4_interpreter_opcodes.h"
 #include "fsca.h"
 #include "tmu.h"
+#include "system/dreamcast/dreamcast.h"
 
 //#define SH4_BRK 0x8c002774
 
@@ -206,7 +207,10 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
 #ifdef BRK_ON_NMIRQ
             dbg_break();
 #endif
-            printf("\nINTERRUPT SERVICED AT %llu LEVEL:%d IMASK:%d", this->trace_cycles, this->IRL_irq_level, this->regs.SR.IMASK);
+            //printf("\nINTERRUPT SERVICED AT %llu LEVEL:%d IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", this->trace_cycles, this->IRL_irq_level, this->regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u);
+            if (dbg.trace_on) {
+                dbg_printf("\nIRQ LEVEL:%d IMASK:%d", this->IRL_irq_level, this->regs.SR.IMASK);
+            }
             SH4_interrupt_IRL(this, this->IRL_irq_level);
         }
 #ifdef SH4_DBG_SUPPORT

@@ -3,7 +3,18 @@
         u32 SB_MDTSEL;  // 0x005F6C10
         u32 SB_MDEN;  // 0x005F6C14
         u32 SB_MDST;  // 0x005F6C18
-        u32 SB_MSYS;  // 0x005F6C80
+        union {  // SB_MSYS
+            struct {
+                u32 delay_time : 4;
+                u32 : 4;
+                u32 sending_rate : 2;
+                u32 : 2;
+                u32 single_hard_trigger : 1;
+                u32 : 3;
+                u32 time_out_counter : 16;
+            };
+            u32 u;
+        } SB_MSYS;  // 0x005F6C80
         union {  // SB_MDAPRO
             struct {
                 u32 bottom_addr : 7;

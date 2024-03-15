@@ -998,7 +998,6 @@ SH4ins(NOP) { // No operation
 }
 
 SH4ins(OCBI) { // Invalidate operand cache block
-    BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 
@@ -1243,12 +1242,12 @@ SH4ins(FMOV_DR) { // DRm -> DRn
 }
 
 SH4ins(FMOV_DRXD) { // DRm -> XDn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rm) = fpXD(ins->Rn);
     PCinc;
 }
 
 SH4ins(FMOV_XDDR) { // XDm -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpXD(ins->Rm) = fpDR(ins->Rn);
     PCinc;
 }
 
@@ -1284,7 +1283,8 @@ SH4ins(FMOV_RESTORE_DR) { // (Rm) -> DRn, Rm + 8 -> Rm
 }
 
 SH4ins(FMOV_RESTORE_XD) { // (Rm) -> XDn, Rm+8 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    fpXDU(ins->Rn) = READ64(RM);
+    RM += 8;
     PCinc;
 }
 
@@ -1338,7 +1338,7 @@ SH4ins(FLDS) { // FRm -> FPUL
 }
 
 SH4ins(FSTS) { // FPUL -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpFR(ins->Rn) = this->regs.FPUL.f;
     PCinc;
 }
 
@@ -1348,7 +1348,11 @@ SH4ins(FABS) { // FRn & 0x7FFFFFFF -> FRn
 }
 
 SH4ins(FNEG) { // FRn ^ 0x80000000 -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    if (this->regs.FPSCR.PR ==0)
+        fpFRU(ins->Rn)^=0x80000000;
+    else
+        fpFRU(ins->Rn&0xE)^=0x80000000;
+
     PCinc;
 }
 
@@ -1369,7 +1373,8 @@ SH4ins(FMUL) { // FRn * FRm -> FRn
 }
 
 SH4ins(FMAC) { // FR0 * FRm + FRn -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    double res = (double)fpFR(ins->Rn) + ((double)fpFR(0) * (double)fpFR(ins->Rm));
+    fpFR(ins->Rn) = (float)res;
     PCinc;
 }
 
@@ -1378,13 +1383,15 @@ SH4ins(FDIV) { // FRn / FRm -> FRn
     PCinc;
 }
 
+// Thanks Reicast!
 SH4ins(FSQRT) { // sqrt (FRn) -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpFR(ins->Rn) = sqrtf(fpFR(ins->Rn));
+    //CHECK_FPU_32(fr[n]);
     PCinc;
 }
 
 SH4ins(FCMP_EQ) { // If FRn = FRm: 1 -> T, Else: 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = !!(fpFR(ins->Rm) == fpFR(ins->Rn));
     PCinc;
 }
 
@@ -1410,14 +1417,71 @@ SH4ins(FTRC_single) { // (long)FRm -> FPUL
     this->regs.FPUL.u = (int32)fpFR(ins->Rm);
     PCinc;
 }
-
+// thanks Reicast
 SH4ins(FIPR) { // inner_product (FVm, FVn) -> FR[n+3]
-    BADOPCODE; // Crash on unimplemented opcode
+    if (this->regs.FPSCR.PR == 0)
+    {
+        //clear_cause ();
+        i64 n=ins->Rn & 0xC;
+        i64 m=(ins->Rn & 0x3) << 2;
+        float idp;
+        idp  = fpFR(n+0) * fpFR(m+0);
+        idp += fpFR(n+1) * fpFR(m+1);
+        idp += fpFR(n+2) * fpFR(m+2);
+        idp += fpFR(n+3) * fpFR(m+3);
+
+        //CHECK_FPU_32(idp);
+        fpFR(n+3)=idp;
+    }
+    else
+        BADOPCODE;
     PCinc;
 }
 
+// Thanks Reicast!
 SH4ins(FTRV) { // transform_vector (XMTRX, FVn) -> FVn
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 n=ins->Rn&0xC;
+
+    if (this->regs.FPSCR.PR==0)
+    {
+
+        float v1, v2, v3, v4;
+
+        v1 = fpXF(0)  * fpFR(n + 0) +
+             fpXF(4)  * fpFR(n + 1) +
+             fpXF(8)  * fpFR(n + 2) +
+             fpXF(12) * fpFR(n + 3);
+
+        v2 = fpXF(1)  * fpFR(n + 0) +
+             fpXF(5)  * fpFR(n + 1) +
+             fpXF(9)  * fpFR(n + 2) +
+             fpXF(13) * fpFR(n + 3);
+
+        v3 = fpXF(2)  * fpFR(n + 0) +
+             fpXF(6)  * fpFR(n + 1) +
+             fpXF(10) * fpFR(n + 2) +
+             fpXF(14) * fpFR(n + 3);
+
+        v4 = fpXF(3)  * fpFR(n + 0) +
+             fpXF(7)  * fpFR(n + 1) +
+             fpXF(11) * fpFR(n + 2) +
+             fpXF(15) * fpFR(n + 3);
+
+        /*CHECK_FPU_32(v1);
+        CHECK_FPU_32(v2);
+        CHECK_FPU_32(v3);
+        CHECK_FPU_32(v4);*/
+
+        fpFR(n + 0) = v1;
+        fpFR(n + 1) = v2;
+        fpFR(n + 2) = v3;
+        fpFR(n + 3) = v4;
+
+    }
+    else
+    {
+        BADOPCODE;
+    }
     PCinc;
 }
 

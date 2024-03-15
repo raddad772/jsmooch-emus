@@ -3,7 +3,7 @@
         case 0x005F7804:  { return this->g2.SB_ADSTAR; }
         case 0x005F7808:  { return this->g2.SB_ADLEN.u; }
         case 0x005F780C:  { return this->g2.SB_ADDIR; }
-        case 0x005F7810:  { return this->g2.SB_ADTSEL; }
+        case 0x005F7810:  { return this->g2.SB_ADTSEL.u; }
         case 0x005F7814:  { return this->g2.SB_ADEN; }
         case 0x005F7818:  { return this->g2.SB_ADST; }
         case 0x005F781C:  { return this->g2.SB_ADSUSP.u; }

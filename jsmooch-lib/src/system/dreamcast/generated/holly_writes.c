@@ -24,7 +24,7 @@
         case 0x005F80BC: { this->holly.FOG_CLAMP_MAX = val; return; }
         case 0x005F80C0: { this->holly.FOG_CLAMP_MIN = val; return; }
         case 0x005F80C8: { this->holly.SPG_HBLANK_INT.u = val & 0x03FF33FF; return; }
-        case 0x005F80CC: { this->holly.SPG_VBLANK_INT.u = val & 0x03FF03FF; DC_recalc_frame_timing(this); return; }
+        case 0x005F80CC: { this->holly.SPG_VBLANK_INT.u = val & 0x03FF03FF; DC_recalc_frame_timing(this)/*; printf("\nSPG_VBLANK_INT wrote: %08llx", val)*/; return; }
         case 0x005F80D0: { this->holly.SPG_CONTROL.u = val & 0x000003FF; return; }
         case 0x005F80D4: { this->holly.SPG_HBLANK.u = val & 0x03FF03FF; return; }
         case 0x005F80D8: { this->holly.SPG_LOAD.u = val & 0x03FF03FF; DC_recalc_frame_timing(this); return; }

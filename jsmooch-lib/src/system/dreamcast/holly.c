@@ -33,11 +33,11 @@ void holly_recalc_interrupts(struct DC* this)
     level2 |= (this->io.SB_IML2EXT.u & this->io.SB_ISTEXT.u);
     level2 |= (this->io.SB_IML2ERR.u & this->io.SB_ISTERR.u);
 
-    u32 level4 = (this->io.SB_IML4NRM & this->io.SB_ISTNRM.u) & 0x3FFFFF;
+    u32 level4 = (this->io.SB_IML4NRM & this->io.SB_ISTNRM.u);
     level4 |= (this->io.SB_IML4EXT.u & this->io.SB_ISTEXT.u);
     level4 |= (this->io.SB_IML4ERR.u & this->io.SB_ISTERR.u);
 
-    u32 level6 = (this->io.SB_IML6NRM & this->io.SB_ISTNRM.u) & 0x3FFFFF;
+    u32 level6 = (this->io.SB_IML6NRM & this->io.SB_ISTNRM.u);
     level6 |= (this->io.SB_IML6EXT.u & this->io.SB_ISTEXT.u);
     level6 |= (this->io.SB_IML6ERR.u & this->io.SB_ISTERR.u);
 
@@ -50,7 +50,11 @@ void holly_recalc_interrupts(struct DC* this)
         //printf("\nIML6NRN: %08x", this->io.SB_IML6NRM & this->io.SB_ISTNRM.u & 0x3FFFFF);
     //}
     //printf("\nHOLLY RAISING INTERRUPT ON CYCLE %llu", this->sh4.trace_cycles);
-    SH4_set_IRL_irq_level(&this->sh4, HOLLY_IRQ_outputs[highest_level]);
+    u32 lv = HOLLY_IRQ_outputs[highest_level];
+#ifdef DCDBG_HOLLY_IRQ
+    printf("\nSET HOLLY IRQ OUT LEVEL TO %d", lv);
+#endif
+    SH4_set_IRL_irq_level(&this->sh4, lv);
 }
 
 void holly_eval_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, u32 is_true)
@@ -70,6 +74,29 @@ void holly_lower_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
         this->io.SB_ISTNRM.u &= imask;
     holly_recalc_interrupts(this);
 }
+/*
+    hirq_vblank_in = 4,
+    hirq_vblank_out = 5,
+
+    hirq_maple_dma = holly_nrm | 12,
+
+    hirq_gdrom_cmd = holly_ext | 0
+*/
+static const char irq_strings[50][50] = {
+        "gdrom_cmd",
+        "",
+        "",
+        "",
+        "hirq_vblank_in",
+        "hirq_vblank_out",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "holly_maple_dma"
+};
 
 void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
 {
@@ -80,6 +107,7 @@ void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
         this->io.SB_ISTERR.u |= imask;
     else
         this->io.SB_ISTNRM.u |= imask;
+    //printf("\nHOLLY RAISE INTTERUPT %s val:%08x SB_ISTNRM:%08x SB_ISTEXT:%08x cyc:%llu", irq_strings[irq_num & 0xFF], imask, this->io.SB_ISTNRM.u, this->io.SB_ISTEXT.u, this->sh4.trace_cycles);
     holly_recalc_interrupts(this);
 }
 

@@ -11,7 +11,14 @@
             u32 u;
         } SB_ADLEN;  // 0x005F7808
         u32 SB_ADDIR;  // 0x005F780C
-        u32 SB_ADTSEL;  // 0x005F7810
+        union {  // SB_ADTSEL
+            struct {
+                u32 tsel0 : 1;
+                u32 tsel1 : 1;
+                u32 tsel2 : 1;
+            };
+            u32 u;
+        } SB_ADTSEL;  // 0x005F7810
         u32 SB_ADEN;  // 0x005F7814
         u32 SB_ADST;  // 0x005F7818
         union {  // SB_ADSUSP
