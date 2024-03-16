@@ -20,4 +20,6 @@ void holly_eval_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, u
 void holly_recalc_interrupts(struct DC* this);
 
 
+void holly_TA_FIFO_DMA(struct DC* this, u32 src_addr, u32 tx_len, void *src, u32 src_len);
+
 #endif //JSMOOCH_EMUS_HOLLY_H

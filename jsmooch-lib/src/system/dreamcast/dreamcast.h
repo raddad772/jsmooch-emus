@@ -33,6 +33,8 @@ enum DC_MEM_SIZE {
 void DC_new(struct jsm_system* system, struct JSM_IOmap *iomap);
 void DC_delete(struct jsm_system* system);
 
+#define HOLLY_VRAM_SIZE 8*1024*1024
+
 struct DC {
     struct SH4 sh4;
     struct SH4_memaccess_t sh4mem;
@@ -40,7 +42,7 @@ struct DC {
     struct DC_controller c1;
 
     u8 RAM[16 * 1024 * 1024];
-    u8 VRAM[8 * 1024 * 1024];
+    u8 VRAM[HOLLY_VRAM_SIZE];
 
     struct buf BIOS;
     struct buf ROM;
@@ -235,6 +237,7 @@ enum holly_interrupt_masks {
     hirq_vblank_out = 5,
 
     hirq_maple_dma = holly_nrm | 12,
+    hirq_ch2_dma = holly_nrm | 19,
 
     hirq_gdrom_cmd = holly_ext | 0
 };

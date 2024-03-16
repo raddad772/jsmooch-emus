@@ -6,7 +6,7 @@
 #include "stdio.h"
 #include "helpers/debug.h"
 #include "holly.h"
-
+#include "helpers/multisize_memaccess.c"
 
 static void holly_soft_reset(struct DC* this)
 {
@@ -87,15 +87,22 @@ static const char irq_strings[50][50] = {
         "",
         "",
         "",
-        "hirq_vblank_in",
-        "hirq_vblank_out",
+        "hirq_vblank_in", // 4
+        "hirq_vblank_out", // 5
         "",
         "",
         "",
         "",
         "",
         "",
-        "holly_maple_dma"
+        "holly_maple_dma", // 12
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Ch2DMA END", // 19
 };
 
 void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
@@ -222,6 +229,26 @@ void holly_vblank_out(struct DC* this) {
     if ((this->maple.SB_MDTSEL == 1) && this->maple.SB_MDEN) {
         maple_dma_init(this);
     }
+}
+
+void holly_TA_FIFO_cpy(struct DC*this, u32 src_addr, u32 tx_len, void* src)
+{
+    tx_len >>= 2;
+    u32* ptr = (u32*)(((u8*)src)+src_addr);
+
+}
+
+void holly_TA_FIFO_DMA(struct DC* this, u32 src_addr, u32 tx_len, void *src, u32 src_len)
+{
+    if (tx_len == 0) {
+        printf("\nHOLLY TA DMA TRANSFER SIZE 0!?");
+        return;
+    }
+    if ((src_addr+tx_len) >= src_len) {
+        printf(DBGC_RED "\nTOO LONG DMA TRANSFER CH2" DBGC_RST);
+        return;
+    }
+    holly_TA_FIFO_cpy(this, src_addr, tx_len, src);
 }
 
 void holly_reset(struct DC* this)

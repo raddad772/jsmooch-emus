@@ -1,12 +1,6 @@
 
-        u32 SB_CD2STAT;  // 0x005F6800
-        union {  // SB_CD2LEN
-            struct {
-                u32 : 5;
-                u32 dma_ch2_tx_len : 19;
-            };
-            u32 u;
-        } SB_CD2LEN;  // 0x005F6804
+        u32 SB_C2DSTAT;  // 0x005F6800
+        u32 SB_C2DLEN;  // 0x005F6804
         u32 SB_C2DST;  // 0x005F6808
         u32 SB_SDSTAW;  // 0x005F6810
         u32 SB_SDBAAW;  // 0x005F6814

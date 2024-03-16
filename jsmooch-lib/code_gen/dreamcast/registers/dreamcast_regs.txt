@@ -35,16 +35,17 @@ access_32, rw
 u32
 access_32, rw
 
-0x005F6800: SB_CD2STAT
+0x005F6800: SB_C2DSTAT
 u32
 access_32, rw
 write_mask=bits 5-25
+on_write=printf("\nSB-C2DSTAT WRITE %08llx cyc:%llu", val, this->sh4.trace_cycles)
 
 
-0x005F6804: SB_CD2LEN
-u32, flags
+0x005F6804: SB_C2DLEN
+u32
 access_32, rw
-dma_ch2_tx_len: 5-23
+write_mask=bits5-23
 
 0x005F6808: SB_C2DST
 u32

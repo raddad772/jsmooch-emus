@@ -1,7 +1,7 @@
 
         case 0x00702C00: { this->aica.ARMRST = val; return; }
-        case 0x005F6800: { this->io.SB_CD2STAT = (val & 0x03FFFFE0); return; }
-        case 0x005F6804: { this->io.SB_CD2LEN.u = val & 0x00FFFFE0; return; }
+        case 0x005F6800: { this->io.SB_C2DSTAT = (val & 0x03FFFFE0); printf("\nSB-C2DSTAT WRITE %08llx cyc:%llu", val, this->sh4.trace_cycles); return; }
+        case 0x005F6804: { this->io.SB_C2DLEN = (val & 0x00FFFFE0); return; }
         case 0x005F6808: { this->io.SB_C2DST = (val & 1); sb_dma_start(this, 2, addr); return; }
         case 0x005F6810: { this->io.SB_SDSTAW = (val & 0x07FFFFE0); return; }
         case 0x005F6814: { this->io.SB_SDBAAW = (val & 0x07FFFFE0); return; }

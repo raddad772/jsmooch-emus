@@ -69,7 +69,22 @@ static void gdrom_dma_start(struct DC* this)
 
 static void sb_dma_start(struct DC* this, i32 channel, u32 reg_addr)
 {
-    printf("\nWAIT WHAT? DMA START %d %d", channel, this->io.SB_C2DST);
+    printf("\nWAIT WHAT? DMA START %d %d %08x %llu", channel, this->io.SB_C2DSTAT, this->io.SB_C2DLEN.u, this->sh4.trace_cycles);
+    if (this->io.SB_C2DST) { // TA FIFO DMA!
+        u32 addr = this->io.SB_C2DSTAT;
+        if (addr == 0) addr = 0x10000000;
+        // TA polygon FIFO
+        if (((addr >= 0x10000000) && (addr <= 0x107FFFE0)) ||
+             (addr >= 0x12000000) && (addr <= 0x127FFFE0)) {
+            holly_TA_FIFO_DMA(this, addr & 0x7FFFFF, this->io.SB_C2DLEN, this->VRAM, HOLLY_VRAM_SIZE);
+
+        }
+        else {
+            printf(DBGC_RED "\nUNSUPPORTED CH2 DMA TO %08x" DBGC_RST, addr);
+        }
+        this->io.SB_C2DST = 0;
+    }
+
 }
 
 #define MTHIS struct DC* this = (struct DC*)ptr

@@ -313,11 +313,13 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
         return 0;
     }
 
-    switch (addr | 0xF0000000) {
+    switch (addr | 0xE0000000) {
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/regs_reads.c"
         case 0xFF000030: // Undocumented CPU_VERSION
             return 0x040205c1;
+        case 0xEC380A50: // unknown?
+            return 0;
         case 0xFF800030: { // PDTRA
             assert(sz==2);
             // PDTRA from Bus Control

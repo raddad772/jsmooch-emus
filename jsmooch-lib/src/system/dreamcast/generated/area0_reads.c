@@ -1,7 +1,7 @@
 
         case 0x00702C00:  { return this->aica.ARMRST; }
-        case 0x005F6800:  { return this->io.SB_CD2STAT; }
-        case 0x005F6804:  { return this->io.SB_CD2LEN.u; }
+        case 0x005F6800:  { return this->io.SB_C2DSTAT; }
+        case 0x005F6804:  { return this->io.SB_C2DLEN; }
         case 0x005F6808:  { return this->io.SB_C2DST; }
         case 0x005F6810:  { return this->io.SB_SDSTAW; }
         case 0x005F6814:  { return this->io.SB_SDBAAW; }
