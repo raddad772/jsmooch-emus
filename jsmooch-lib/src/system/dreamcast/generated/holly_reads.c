@@ -41,6 +41,7 @@
         case 0x005F8128:  { return this->holly.TA_ISP_BASE.u; }
         case 0x005F812C:  { return this->holly.TA_OL_LIMIT.u; }
         case 0x005F8130:  { return this->holly.TA_ISP_LIMIT.u; }
+        case 0x005F8134:  { return this->holly.TA_NEXT_OPB; }
         case 0x005F813C:  { return this->holly.TA_GLOB_TILE_CLIP.u; }
         case 0x005F8140:  { return this->holly.TA_ALLOC_CTRL.u; }
-        case 0x005F8164:  { return this->holly.TA_NEXT_OPB_INIT.u; }
+        case 0x005F8164:  { return this->holly.TA_NEXT_OPB_INIT; }

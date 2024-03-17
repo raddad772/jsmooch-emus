@@ -165,7 +165,7 @@ void NESJ_get_description(JSM, struct machine_description* d)
     sprintf(d->name, "Nintendo Entertainment System");
     d->fps = 60;
     d->timing = frame;
-    d->display_standard = NTSC;
+    d->display_standard = MD_NTSC;
     d->x_resolution = 256;
     d->y_resolution = 240;
     d->xrh = 4;
@@ -255,6 +255,7 @@ u32 NESJ_finish_scanline(JSM)
         this->cycles_left -= cpu_step;
         if (dbg.do_break) break;
     }
+    return 0;
 }
 
 u32 NESJ_step_master(JSM, u32 howmany)

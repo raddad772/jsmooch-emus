@@ -23,6 +23,7 @@ u32 NUM_ROMBANKS(u32 inp) {
         case 0x54: return 96;
     }
     assert(1 != 0);
+    return 1;
 }
 
 void GB_cart_init(struct GB_cart* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus) {

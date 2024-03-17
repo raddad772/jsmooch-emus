@@ -89,10 +89,10 @@
         u32 PDTRB;  // 0xFF800044
         u32 GPIOIC;  // 0xFF800048
         u32 SDMR;  // 0xFF940190
-        u32 SAR1;  // 0xFFA00010
-        u32 DAR1;  // 0xFFA00014
-        u32 DMATCR1;  // 0xFFA00018
-        union {  // CHCR1
+        u32 DMAC_SAR1;  // 0xFFA00010
+        u32 DMAC_DAR1;  // 0xFFA00014
+        u32 DMAC_DMATCR1;  // 0xFFA00018
+        union {  // DMAC_CHCR1
             struct {
                 u32 DE : 1;
                 u32 TE : 1;
@@ -105,11 +105,11 @@
                 u32 DM : 2;
             };
             u32 u;
-        } CHCR1;  // 0xFFA0001C
-        u32 SAR2;  // 0xFFA00020
-        u32 DAR2;  // 0xFFA00024
-        u32 DMATCR2;  // 0xFFA00028
-        union {  // CHCR2
+        } DMAC_CHCR1;  // 0xFFA0001C
+        u32 DMAC_SAR2;  // 0xFFA00020
+        u32 DMAC_DAR2;  // 0xFFA00024
+        u32 DMAC_DMATCR2;  // 0xFFA00028
+        union {  // DMAC_CHCR2
             struct {
                 u32 DE : 1;
                 u32 TE : 1;
@@ -118,8 +118,8 @@
                 u32 SM : 2;
             };
             u32 u;
-        } CHCR2;  // 0xFFA0002C
-        u32 SAR3;  // 0xFFA00030
+        } DMAC_CHCR2;  // 0xFFA0002C
+        u32 DMAC_SAR3;  // 0xFFA00030
         u32 DMAC_DAR3;  // 0xFFA00034
         u32 DMAC_DMATCR3;  // 0xFFA00038
         union {  // DMAC_CHCR3

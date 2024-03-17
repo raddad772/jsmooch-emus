@@ -14,6 +14,13 @@
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 //#define DUMP_LAST_TRACES_ON_BREAK
 #define TRACE_COLORS
+//#define SH4_IRQ_DBG
+
+#ifdef SH4_IRQ_DBG
+#define SH4_IRQ_DBG_printf(...) printf(__VA_ARGS__)
+#else
+#define SH4_IRQ_DBG_printf(...) (void)0;
+#endif
 
 #define SH4_DBG_SUPPORT
 //#define Z80_DBG_SUPPORT
@@ -24,7 +31,7 @@
 #include "helpers/jsm_string.h"
 
 #define MAX_DEBUG_MSG 2000000
-#define LAST_TRACES_LEN 50
+#define LAST_TRACES_LEN 800
 #define LAST_TRACES_MSG_LEN 200
 
 

@@ -14,7 +14,7 @@
 
 #include "helpers/multisize_memaccess.c"
 
-u64 DCread_flash(struct DC* this, u32 addr, u32* success, u32 bits);
+u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz);
 void G1_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success);
 void G2_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success);
 u64 G2_read(struct DC* this, u32 addr, u32 sz, u32* success);
@@ -45,8 +45,7 @@ static u32 dcms(enum DC_MEM_SIZE sz)
 
 static void update_dma_triggers(struct DC* this, u32 addr, u64 val)
 {
-    if (val & 1) printf("\nTRIGGER TO DMA %08x", addr);
-
+    if (val & 1) printf("\nG2 TRIGGER TO DMA %08x", addr);
 }
 
 static void pvr_dma_init(struct DC* this, u32 addr, u64 val)
@@ -69,8 +68,13 @@ static void gdrom_dma_start(struct DC* this)
 
 static void sb_dma_start(struct DC* this, i32 channel, u32 reg_addr)
 {
-    printf("\nWAIT WHAT? DMA START %d %d %08x %llu", channel, this->io.SB_C2DSTAT, this->io.SB_C2DLEN.u, this->sh4.trace_cycles);
+    printf("\nWAIT WHAT? DMA START %d addr:%08x len:%08x cyc:%llu", channel, this->io.SB_C2DSTAT, this->io.SB_C2DLEN, this->sh4.trace_cycles);
+    if (this->io.SB_SDST) {
+        printf(DBGC_RED "\nSORT DMA START REQUEST" DBGC_RST);
+        return;
+    }
     if (this->io.SB_C2DST) { // TA FIFO DMA!
+        printf(DBGC_GREEN "\nTA FIFO DMA START!" DBGC_RST);
         u32 addr = this->io.SB_C2DSTAT;
         if (addr == 0) addr = 0x10000000;
         // TA polygon FIFO
@@ -192,6 +196,11 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
     u32 full_addr = addr;
     addr &= 0x1FFFFFFF;
 
+     if (addr <= 0x001FFFFF) {
+         dbg_break();
+         printf("\nBIOS write %08x %llu", addr, this->sh4.trace_cycles);
+         return;
+     }
     if ((full_addr >= 0x7C000000) && (full_addr <= 0x7FFFFFFF)) {
          if (this->sh4.regs.CCR.OIX == 0)
              cW[sz](this->sh4.OC, ((full_addr & 0x2000) >> 1) | (full_addr & 0xFFF), val);
@@ -304,6 +313,7 @@ u64 read_area4(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
 {
     MTHIS;
     assert(1==0);
+    return 0;
 }
 
 void write_area4(void* ptr, u32 addr, u64 val, enum DC_MEM_SIZE sz, u32* success)
@@ -452,7 +462,7 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
 }
 
 
-u64 DCread_flash(struct DC* this, u32 addr, u32* success, u32 sz)
+u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz)
 {
     *success =  1;
     if (sz == 1) {

@@ -114,7 +114,9 @@ void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num)
         this->io.SB_ISTERR.u |= imask;
     else
         this->io.SB_ISTNRM.u |= imask;
-    //printf("\nHOLLY RAISE INTTERUPT %s val:%08x SB_ISTNRM:%08x SB_ISTEXT:%08x cyc:%llu", irq_strings[irq_num & 0xFF], imask, this->io.SB_ISTNRM.u, this->io.SB_ISTEXT.u, this->sh4.trace_cycles);
+#ifdef SH4_IRQ_DBG
+    printf(DBGC_BLUE "\nHOLLY RAISE INTTERUPT %s val:%08x SB_ISTNRM:%08x SB_ISTEXT:%08x cyc:%llu" DBGC_RST, irq_strings[irq_num & 0xFF], imask, this->io.SB_ISTNRM.u, this->io.SB_ISTEXT.u, this->sh4.trace_cycles);
+#endif
     holly_recalc_interrupts(this);
 }
 
@@ -141,7 +143,8 @@ void DC_recalc_frame_timing(struct DC* this)
 
 static void holly_TA_list_init(struct DC* this)
 {
-
+    printf("\nTA LIST INIT!");
+    this->holly.TA_NEXT_OPB = this->holly.TA_NEXT_OPB_INIT;
 }
 
 static u32 holly_get_frame_cycle(struct DC* this) {
@@ -231,10 +234,78 @@ void holly_vblank_out(struct DC* this) {
     }
 }
 
-void holly_TA_FIFO_cpy(struct DC*this, u32 src_addr, u32 tx_len, void* src)
+enum HOLLY_PCW_paratype {
+    ctrl_end_of_list = 0,
+    ctrl_user_tile_clip = 1,
+    ctrl_object_list_set = 2,
+    ctrl_reserved = 3,
+    global_polygon_or_modifier_volume = 4,
+    global_sprite = 5,
+    global_reserved = 6,
+    vertex_parameter = 7
+};
+
+union HOLLY_PCW {
+    struct {
+        u32 uv_is_16bit: 1;
+        u32 goraud: 1;
+        u32 offset: 1;
+        u32 texture: 1;
+        u32 col_type: 2;
+        u32 volume: 1;
+        u32 shadow: 1;
+        u32 : 8;
+        u32 user_clip: 2;
+        u32 strip_len: 2;
+        u32 : 3;
+        u32 group_en: 1;
+        u32 list_type: 3;
+        u32 : 1;
+        u32 end_of_strip: 1;
+        u32 para_type: 3;
+    };
+    u32 u;
+};
+
+void holly_TA_FIFO_load(struct DC* this, u32 src_addr, u32 tx_len, void* src)
 {
-    tx_len >>= 2;
     u32* ptr = (u32*)(((u8*)src)+src_addr);
+    u32* end_ptr = ptr + (tx_len >> 2);
+    u32 end_of_strip = 0;
+    while (ptr < end_ptr) {
+        union HOLLY_PCW cmd;
+        cmd.u = *ptr;
+        ptr++;
+        printf("\nCMD FOUND! para_type: %d %08x", cmd.para_type, cmd.u);
+        enum HOLLY_PCW_paratype ptype = cmd.para_type;
+        switch(ptype) {
+            case ctrl_end_of_list:
+                printf("\nEND OF LIST! %ld", end_ptr - ptr);
+                //ptr = end_ptr;
+                break;
+            case ctrl_user_tile_clip:
+                printf("\nUSER TILE CLIP!");
+                break;
+            case ctrl_object_list_set:
+                printf("\nOBJECT LIST SET!");
+                break;
+            case ctrl_reserved:
+                printf("\nRESERVED!");
+                break;
+            case global_polygon_or_modifier_volume:
+                printf("\nPOLYGON OR MODIFIER VOLUME!");
+                break;
+            case global_sprite:
+                printf("\nSPRITE!");
+                break;
+            case global_reserved:
+                printf("\nGLOBAL RESERVED!");
+                break;
+            case vertex_parameter:
+                printf("\nVERTEX PARAMETER!!!");
+                break;
+        }
+    }
 
 }
 
@@ -248,7 +319,15 @@ void holly_TA_FIFO_DMA(struct DC* this, u32 src_addr, u32 tx_len, void *src, u32
         printf(DBGC_RED "\nTOO LONG DMA TRANSFER CH2" DBGC_RST);
         return;
     }
-    holly_TA_FIFO_cpy(this, src_addr, tx_len, src);
+    holly_TA_FIFO_load(this, src_addr, tx_len, src);
+    this->sh4.regs.DMAC_SAR2 = src_addr;
+    this->sh4.regs.DMAC_CHCR2.u &= 0xFFFFFFFE;
+    this->sh4.regs.DMAC_DMATCR2 = 0x00000000;
+
+    this->io.SB_C2DST = 0x00000000;
+    this->io.SB_C2DLEN = 0x00000000;
+
+    holly_raise_interrupt(this, hirq_ch2_dma);
 }
 
 void holly_reset(struct DC* this)

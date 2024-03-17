@@ -43,4 +43,4 @@
         case 0x005F8130: { this->holly.TA_ISP_LIMIT.u = val & 0x00FFFFFC; return; }
         case 0x005F813C: { this->holly.TA_GLOB_TILE_CLIP.u = val & 0x000F003F; return; }
         case 0x005F8140: { this->holly.TA_ALLOC_CTRL.u = val & 0x00130333; return; }
-        case 0x005F8164: { this->holly.TA_NEXT_OPB_INIT.u = val & 0x00FFFFE0; return; }
+        case 0x005F8164: { this->holly.TA_NEXT_OPB_INIT = (val & 0x00FFFFE0); return; }

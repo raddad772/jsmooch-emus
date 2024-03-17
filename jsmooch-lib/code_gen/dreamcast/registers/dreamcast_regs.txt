@@ -877,10 +877,14 @@ T_OPB: 8-9
 PT_OPB: 16-17
 OPB_MODE: 20
 
-0x005F8164: TA_NEXT_OPB_INIT
+0x005F8134: TA_NEXT_OPB
 u32, flags
+access_32, r
+
+0x005F8164: TA_NEXT_OPB_INIT
+u32
 access_32, rw
-addr: 5-23
+write_mask=bits 5-23
 
 0x005F80CC: SPG_VBLANK_INT
 u32, flags

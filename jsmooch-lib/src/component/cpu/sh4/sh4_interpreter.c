@@ -207,7 +207,12 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
 #ifdef BRK_ON_NMIRQ
             dbg_break();
 #endif
-            //printf("\nINTERRUPT SERVICED AT %llu LEVEL:%d IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", this->trace_cycles, this->IRL_irq_level, this->regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u);
+#ifdef SH4_IRQ_DBG
+#define THING "\nINTERRUPT SERVICED AT %llu R0:%08x SR:%08x SSR:%08x LEVEL:%d IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", this->trace_cycles, this->regs.R[0], SH4_regs_SR_get(&this->regs.SR), this->regs.SSR, this->IRL_irq_level, this->regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u
+            dbg_LT_printf(THING);
+            printf(THING);
+#undef THING
+#endif
             if (dbg.trace_on) {
                 dbg_printf("\nIRQ LEVEL:%d IMASK:%d", this->IRL_irq_level, this->regs.SR.IMASK);
             }
@@ -240,6 +245,7 @@ void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
 
 static void swap_register_banks(struct SH4* this)
 {
+    //printf(DBGC_RED "\nBANK SWAP RB:%d" DBGC_RST, this->regs.SR.RB);
     for (u32 i = 0; i < 8; i++) {
         u32 t = this->regs.R[i];
         this->regs.R[i] = this->regs.R_[i];
@@ -250,18 +256,14 @@ static void swap_register_banks(struct SH4* this)
 
 void SH4_update_mode(struct SH4* this)
 {
-    // If we've switched into or out of privileged
-    u32 should_be = 0;
-    if (!this->regs.SR.MD) should_be = 0;
-    else should_be = this->regs.SR.RB;
-    if (should_be != this->regs.currently_banked_rb) {
-        this->regs.currently_banked_rb = should_be;
-        swap_register_banks(this);
-    }
 }
 
 void SH4_SR_set(struct SH4* this, u32 val)
 {
+    // TODO: only do bank switch when MD is proper. DUH!
+
+    u32 old_RB = this->regs.SR.RB;
+
     this->regs.SR.data = val;
     this->regs.SR.MD = (val >> 30) & 1;
     this->regs.SR.RB = (val >> 29) & 1;
@@ -272,7 +274,33 @@ void SH4_SR_set(struct SH4* this, u32 val)
     this->regs.SR.IMASK = (val >> 4) & 15;
     this->regs.SR.S = (val >> 1) & 1;
     this->regs.SR.T = val & 1;
-    SH4_update_mode(this);
+
+    if(this->regs.SR.MD) {
+        if (old_RB != this->regs.SR.RB) {
+            swap_register_banks(this);
+        }
+    }
+    else {
+        if (this->regs.SR.RB)
+        {
+            printf("\nUpdateSR MD=0;RB=1 , this must not happen!"); // reicast says
+            this->regs.SR.RB = 0;//error - must always be 0
+        }
+        if (old_RB)
+            swap_register_banks(this);
+    }
+
+    /*if (!this->regs.SR.MD) should_be = 0;
+    else should_be = this->regs.SR.RB;
+    if (should_be != this->regs.currently_banked_rb) {
+#ifdef SH4_IRQ_DBG
+        dbg_LT_printf(DBGC_RED "\nSWAP REGISTER BANKS cur:%d shouldbe:%d R0:%08x R0_BANKEd:%08x PC:%08X cyc:%llu" DBGC_RST, this->regs.currently_banked_rb, should_be, this->regs.R[0], this->regs.R_[0], this->regs.PC, this->trace_cycles);
+        printf(DBGC_RED "\nSWAP REGISTER BANKS cur:%d shouldbe:%d R0:%08x R0_BANKEd:%08x PC:%08X cyc:%llu" DBGC_RST, this->regs.currently_banked_rb, should_be, this->regs.R[0], this->regs.R_[0], this->regs.PC, this->trace_cycles);
+#endif
+        this->regs.currently_banked_rb = should_be;
+        swap_register_banks(this);
+    }*/
+
 }
 
 void SH4_reset(struct SH4* this)
@@ -318,8 +346,11 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
 #include "generated/regs_reads.c"
         case 0xFF000030: // Undocumented CPU_VERSION
             return 0x040205c1;
-        case 0xEC380A50: // unknown?
+        /*case 0xEC380A50: // unknown?
+            dbg_break();
             return 0;
+        case 0xEFFFFFFF: // unknown?
+            return 0;*/
         case 0xFF800030: { // PDTRA
             assert(sz==2);
             // PDTRA from Bus Control

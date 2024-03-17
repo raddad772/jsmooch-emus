@@ -54,6 +54,7 @@ u32 NES_controllerport_data(struct NES_controllerport* this)
             printf("PLEASE IMP 1");
             break;
     }
+    return 0;
 }
 
 void NES_controllerport_latch(struct NES_controllerport* this, u32 what) {

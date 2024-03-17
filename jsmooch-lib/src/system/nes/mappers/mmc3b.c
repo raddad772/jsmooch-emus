@@ -213,14 +213,14 @@ void NM_MMC3b_remap(struct NES_mapper_MMC3b* this, u32 boot) {
             this->CHR_map[i].ROM = true;
             this->CHR_map[i].RAM = false;
         }
-        
+
         MMC3b_map_set(&this->PRG_map[0], 0x6000, 0,false, true);
         this->PRG_map[0].data = (u8 *)this->PRG_RAM.ptr;
         this->PRG_map[0].RAM = true;
         this->PRG_map[0].ROM = false;
         MMC3b_set_PRG_ROM(this, 0xE000, this->num_PRG_banks-1);
     }
-    
+
     if (this->status.PRG_mode == 0) {
         // 0 = 8000-9FFF swappable,
         //     C000-DFFF fixed to second-last bank
@@ -233,9 +233,9 @@ void NM_MMC3b_remap(struct NES_mapper_MMC3b* this, u32 boot) {
         MMC3b_set_PRG_ROM(this, 0x8000, this->num_PRG_banks-2);
         MMC3b_set_PRG_ROM(this, 0xC000, this->regs.bank[6]);
     }
-    
+
     MMC3b_set_PRG_ROM(this, 0xA000, this->regs.bank[7]);
-    
+
     if (this->status.CHR_mode == 0) {
         MMC3b_set_CHR_ROM_1k(this, 0, this->regs.bank[0] & 0xFE);
         MMC3b_set_CHR_ROM_1k(this, 1, this->regs.bank[0] | 0x01);

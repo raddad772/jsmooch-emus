@@ -310,6 +310,7 @@
             };
             u32 u;
         } TA_ISP_LIMIT;  // 0x005F8130
+        u32 TA_NEXT_OPB;  // 0x005F8134
         union {  // TA_GLOB_TILE_CLIP
             struct {
                 u32 tile_x_num : 6;
@@ -332,10 +333,4 @@
             };
             u32 u;
         } TA_ALLOC_CTRL;  // 0x005F8140
-        union {  // TA_NEXT_OPB_INIT
-            struct {
-                u32 : 5;
-                u32 addr : 19;
-            };
-            u32 u;
-        } TA_NEXT_OPB_INIT;  // 0x005F8164
+        u32 TA_NEXT_OPB_INIT;  // 0x005F8164

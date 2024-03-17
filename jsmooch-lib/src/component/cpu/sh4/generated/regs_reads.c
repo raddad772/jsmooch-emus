@@ -29,15 +29,15 @@
         case 0xFF800044:  { return this->regs.PDTRB; }
         case 0xFF800048:  { return this->regs.GPIOIC; }
         case 0xFF940190:  { return this->regs.SDMR; }
-        case 0xFFA00010:  { return this->regs.SAR1; }
-        case 0xFFA00014:  { return this->regs.DAR1; }
-        case 0xFFA00018:  { return this->regs.DMATCR1; }
-        case 0xFFA0001C:  { return this->regs.CHCR1.u | 0x00000000; }
-        case 0xFFA00020:  { return this->regs.SAR2; }
-        case 0xFFA00024:  { return this->regs.DAR2; }
-        case 0xFFA00028:  { return this->regs.DMATCR2; }
-        case 0xFFA0002C:  { return this->regs.CHCR2.u | 0x000042C0; }
-        case 0xFFA00030:  { return this->regs.SAR3; }
+        case 0xFFA00010:  { return this->regs.DMAC_SAR1; }
+        case 0xFFA00014:  { return this->regs.DMAC_DAR1; }
+        case 0xFFA00018:  { return this->regs.DMAC_DMATCR1; }
+        case 0xFFA0001C:  { return this->regs.DMAC_CHCR1.u | 0x00000000; }
+        case 0xFFA00020:  { return this->regs.DMAC_SAR2; }
+        case 0xFFA00024:  { return this->regs.DMAC_DAR2; }
+        case 0xFFA00028:  { return this->regs.DMAC_DMATCR2; }
+        case 0xFFA0002C:  { return this->regs.DMAC_CHCR2.u | 0x000042C0; }
+        case 0xFFA00030:  { return this->regs.DMAC_SAR3; }
         case 0xFFA00034:  { return this->regs.DMAC_DAR3; }
         case 0xFFA00038:  { return this->regs.DMAC_DMATCR3; }
         case 0xFFA0003C:  { return this->regs.DMAC_CHCR3.u | 0x00000000; }

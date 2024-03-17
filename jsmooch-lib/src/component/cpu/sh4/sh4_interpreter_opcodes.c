@@ -97,11 +97,17 @@ static u32 INTEVT_TABLE[15] = {
 
 void SH4_interrupt_IRL(struct SH4* this, u32 level) {
     this->regs.SPC = this->regs.PC;
+    SH4_IRQ_DBG_printf("\npIQ. SETTING SSR FROM %08x to %08X", this->regs.SSR, SH4_regs_SR_get(&this->regs.SR));
     this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
     this->regs.SGR = this->regs.R[15];
-    this->regs.SR.MD = 1;
+    SH4_IRQ_DBG_printf("\nChanging RB from %d to 1", this->regs.SR.RB);
+
+    u32 old_SR = SH4_regs_SR_get(&this->regs.SR);
+    SH4_SR_set(this, old_SR | (1 << 30) | (1 << 29) | (1 << 28));
+
+    /*this->regs.SR.MD = 1;
     this->regs.SR.RB = 1;
-    this->regs.SR.BL = 1;
+    this->regs.SR.BL = 1;*/
     this->regs.PC = this->regs.VBR + 0x00000600;
     /*
      Only the IRL1 and 2 interrupts are used (pull up IRL0 and 3), and these interrupts are used as level
@@ -409,7 +415,7 @@ SH4ins(CMPHS) { // If Rn >= Rm (unsigned): 1 -> T, Else: 0 -> T
 }
 
 SH4ins(CMPGE) { // If Rn >= Rm (signed): 1 -> T, Else: 0 -> T
-    this->regs.SR.T = (i32)RN >= (i32)RM;
+    this->regs.SR.T = (u32)((i32)RN >= (i32)RM);
     PCinc;
 }
 
@@ -720,13 +726,10 @@ SH4ins(SHAD) { // If Rm >= 0: Rn << Rm -> Rn, If Rm < 0: Rn >> |Rm| -> [MSB -> R
         RN <<= RM & 0x1F;
     else if ((RM & 0x1F) == 0)
     {
-        if ((RN & 0x80000000) == 0)
-            RN = 0;
-        else
-            RN = 0xFFFFFFFF;
+        RN=(u32)(((i32)RN)>>31);
     }
     else
-        RN = (long)RN >> ((~RM & 0x1F) + 1);
+        RN = (u32)((i32)RN >> ((~RM & 0x1F) + 1));
 
     PCinc;
 }
@@ -994,6 +997,9 @@ SH4ins(MOVCAL) { // R0 -> (Rn) (without fetching cache block)
 }
 
 SH4ins(NOP) { // No operation
+    if ((this->regs.PC == 0x8c0c0868) || (this->regs.PC == 0x8c0c086A)) {
+        dbg_printf("\nWAIT WOAH %08x PC:%08x", this->regs.R[0], this->regs.PC);
+    }
     PCinc;
 }
 
@@ -1032,6 +1038,11 @@ SH4ins(PREF) { // (Rn) -> operand cache
 }
 
 SH4ins(RTE) { // Delayed branch, SH1*,SH2*: stack area -> PC/SR, SH3*,SH4*: SSR/SPC -> SR/PC
+    if (this->regs.PC == 0x8c0c0868) {
+        dbg_printf("\nWAIT RTE %08x!?", this->regs.R[0]);
+        dbg_printf("\nOLD SSR: %08x. NEW SSR: %08x", SH4_regs_SR_get(&this->regs.SR), this->regs.SSR);
+    }
+
     SH4_SR_set(this, this->regs.SSR);
     u32 val = this->regs.SPC;
 
