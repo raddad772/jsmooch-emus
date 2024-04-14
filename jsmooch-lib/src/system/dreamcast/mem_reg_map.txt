@@ -1,0 +1,6 @@
+#
+# registers can either by FA, Fully Address, like 0xF8000080,
+# GA, 0x8C00000 or 0x0C0000 or whatever works.
+
+RANGES
+0x00000000 -

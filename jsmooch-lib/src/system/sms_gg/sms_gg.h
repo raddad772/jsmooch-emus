@@ -1,0 +1,54 @@
+//
+// Created by Dave on 2/7/2024.
+//
+
+#ifndef JSMOOCH_EMUS_SMS_GG_H
+#define JSMOOCH_EMUS_SMS_GG_H
+
+#include "helpers/int.h"
+#include "helpers/debug.h"
+#include "helpers/sys_interface.h"
+#include "component/cpu/z80/z80.h"
+
+#include "component/controller/sms/sms_gamepad.h"
+#include "sms_gg_clock.h"
+#include "sms_gg_vdp.h"
+#include "component/audio/sn76489/sn76489.h"
+#include "sms_gg_mapper_sega.h"
+#include "sms_gg_io.h"
+
+void SMSGG_new(struct jsm_system* jsm, struct JSM_IOmap *iomap, enum jsm_systems variant, enum jsm_regions region);
+void SMSGG_delete(struct jsm_system* jsm);
+
+struct SMSGG {
+    struct SMSGG_clock clock;
+    enum jsm_systems variant;
+    enum jsm_regions region;
+    struct Z80 cpu;
+    struct SMSGG_VDP vdp;
+    struct SMSGG_mapper_sega mapper;
+    struct SN76489 sn76489;
+
+    u32 display_enabled;
+    u32 tracing;
+    u32 last_frame;
+
+    struct smspad_inputs controller1_in;
+    struct smspad_inputs controller2_in;
+
+    u32 (*cpu_in)(struct SMSGG* this, u32, u32, u32);
+    void (*cpu_out)(struct SMSGG* this, u32, u32);
+
+    struct {
+        struct SMSGG_gamepad controllerA;
+        struct SMSGG_controller_port portA;
+        struct SMSGG_controller_port portB;
+        u32 disable;
+        u32 gg_start;
+        u32 GGreg;
+    } io;
+};
+
+void SMSGG_bus_notify_IRQ(struct SMSGG* this, u32 level);
+
+#endif //JSMOOCH_EMUS_SMS_GG_H

@@ -1,0 +1,23 @@
+//
+// Created by RadDad772 on 3/8/24.
+//
+
+#ifndef JSMOOCH_EMUS_TMU_H
+#define JSMOOCH_EMUS_TMU_H
+
+#include "helpers/int.h"
+
+// TMUs count down at 1/4 speed from the CPU
+
+
+struct SH4_TMU {
+    u64 base_clock;
+};
+
+struct SH4;
+void TMU_init(struct SH4* this);
+void TMU_reset(struct SH4* this);
+void TMU_write(struct SH4* this, u32 addr, u64 val, u32 sz, u32* success);
+u64 TMU_read(struct SH4* this, u32 addr, u32 sz, u32* success);
+
+#endif //JSMOOCH_EMUS_TMU_H

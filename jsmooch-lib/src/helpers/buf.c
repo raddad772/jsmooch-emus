@@ -1,0 +1,102 @@
+//
+// Created by Dave on 2/6/2024.
+//
+
+#include "assert.h"
+#include <stdio.h>
+#include "string.h"
+#include "stdlib.h"
+
+#include "buf.h"
+
+void buf_init(struct buf* this)
+{
+    this->ptr = NULL;
+    this->size = 0;
+}
+
+void buf_allocate(struct buf* this, u64 size)
+{
+    if (this->ptr != NULL) {
+        free(this->ptr);
+    }
+    if (size == 0) {
+        this->ptr = NULL;
+        this->size = 0;
+        return;
+    }
+    this->ptr = malloc(size);
+    this->size = size;
+}
+
+void buf_delete(struct buf* this)
+{
+    if (this->ptr != NULL)
+        free(this->ptr);
+    this->ptr = NULL;
+    this->size = 0;
+}
+
+void buf_copy(struct buf* dst, struct buf* src) {
+    if (src->ptr == NULL) {
+        buf_delete(dst);
+        return;
+    }
+    buf_allocate(dst, src->size);
+    if (src->size > 0)
+        memcpy(dst->ptr, src->ptr, src->size);
+}
+
+void rfb_init(struct read_file_buf* this){
+    buf_init(&this->buf);
+    this->path[0] = 0;
+    this->name[0] = 0;
+}
+
+int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
+{
+    char OUTPATH[500];
+    sprintf(OUTPATH, "%s/%s", fpath, fname);
+    strncpy(rfb->name, fname, 255);
+    strncpy(rfb->path, fpath, 255);
+    printf("\nOUTPATH %s|%s|%s", OUTPATH, fpath, fname);
+
+    FILE *fil = fopen(OUTPATH, "rb");
+    fseek(fil, 0L, SEEK_END);
+    printf("\nSZ: %d", ftell(fil));
+    buf_allocate(&rfb->buf, ftell(fil));
+
+    fseek(fil, 0L, SEEK_SET);
+    fread(rfb->buf.ptr, sizeof(char), rfb->buf.size, fil);
+
+    fclose(fil);
+    return 0;
+}
+
+void rfb_delete(struct read_file_buf *rfb)
+{
+    buf_delete(&rfb->buf);
+}
+
+void mfs_init(struct multi_file_set* this)
+{
+    this->num_files = 0;
+    for (u32 i = 0; i < MFS_MAX; i++) {
+        rfb_init(&this->files[i]);
+    }
+}
+
+void mfs_delete(struct multi_file_set* this)
+{
+    for (u32 i = 0; i < this->num_files; i++) {
+        rfb_delete(&this->files[i]);
+    }
+    this->num_files = 0;
+}
+
+void mfs_add(const char *fname, const char *fpath, struct multi_file_set *this)
+{
+    assert(this->num_files < (MFS_MAX - 1));
+    rfb_read(fname, fpath, &this->files[this->num_files]);
+    this->num_files++;
+}

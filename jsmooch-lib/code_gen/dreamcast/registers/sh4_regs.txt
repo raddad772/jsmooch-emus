@@ -1,0 +1,380 @@
+.regs, mem=regs
+0xFFC00000: CPG_FRQCR
+u32
+access_32, w
+
+0xFFC00008: CPG_WTCNT
+u32
+access_32, w
+
+0xFFC0000C: CPG_WTCSR
+u32, flags
+access_32, w
+CKS: 0-2
+IOVF: 3
+WOVF: 4
+RSTS: 5
+WT_IT: 6: 0
+TME: 6
+_other: 8-15: 0b10100101
+
+0xFFC00010: CPG_STBCR2
+u32
+access_32, w
+
+0xFFC80030: RDAYAR
+u32
+access_32, w
+
+0xFFC00004: STBCR
+u32, flags
+access_32, rw
+_all: 0-7: 0b00000011
+
+0xFFC80038: RCR1
+u32, flags
+access_32, rw
+AF: 0
+_AIE: 3: 0
+_CIE: 4: 0
+CF: 7
+
+0xFFC80034: RMONAR
+u32
+access_32, rw
+
+0xFFC80040: RCR2
+u32, flags
+access_32, rw
+_: 0-6: 0b0000000
+PEF: 7
+
+0xFF000000: PTEH
+flags, u32
+access_32, rw
+asid: 0-7
+vpn: 10-31
+
+0xFF000004: PTEL
+flags, u32
+access_32, rw
+wt: 0
+sh: 1
+d: 2
+c: 3
+sz_a: 4
+pr: 5-6
+sz_b: 7
+v: 8
+ppn: 10-28
+
+0xFF000034: PTEA
+flags, u32
+access_32, rw
+sa: 0-2
+tc: 3
+
+0xFF000008: TTB
+u32
+access_32, rw
+
+0xFF00000C: TEA
+u32
+access_32, rw
+
+0xFF000010: MMUCR
+flags, u32
+access_32, rw
+default=0x00000000
+at: 0
+ti: 2
+sv: 8
+sqmd: 9
+urc: 10-15
+urb: 18-23
+lrui: 26-31
+
+0xFF800004: BCR2
+u32
+access_32, rw
+
+0xFF800018: PCR
+u32
+access_32, rw
+
+0xFF800024: RTCOR
+u32
+access_32, rw
+
+0xFF80001C: RTCSR
+u32
+access_32, rw
+
+0xFFA00010: DMAC_SAR1
+u32
+access_32, rw
+
+0xFFA00014: DMAC_DAR1
+u32
+access_32, rw
+
+0xFFA00024: DMAC_DAR2
+u32
+access_32, rw
+
+0xFFA00018: DMAC_DMATCR1
+u32
+access_32, rw
+
+0xFFA0001C: DMAC_CHCR1
+flags, u32
+access_32, rw
+DE: 0
+TE: 1
+IE: 2
+TS: 4-6
+_TM: 7: 0b0
+RS: 8-11
+SM:12-13
+DM: 14-15
+_AL: 16: 0b0
+_AM: 17: 0b0
+_RL: 18: 0b0
+_DS: 19: 0b0
+_DTC: 24: 0b0
+_DSA: 25-27: 0b000
+_STC: 28: 0b0
+_SSA: 29-31: 0b000
+
+0xFFA0002C: DMAC_CHCR2
+flags, u32
+access_32, rw
+DE: 0
+TE: 1
+IE: 2
+_TS: 4-6: 0b100
+_TM: 7: 0b1
+_RS: 8-11: 0b0010
+SM: 12-13: 0
+_DM: 14-15: 0b01
+_AM: 17: 0
+_DS: 19: 0
+
+0xFFA00020: DMAC_SAR2
+u32
+access_32, rw
+
+0xFFA00030: DMAC_SAR3
+u32
+access_32, rw
+
+0xFFA00034: DMAC_DAR3
+u32
+access_32, rw
+
+0xFFA00038: DMAC_DMATCR3
+u32
+access_32, rw
+
+0xFFA0003C: DMAC_CHCR3
+u32, flags
+access_32, rw
+DE: 0
+TE: 1
+IE: 2
+TS: 4-6
+_TM: 7: 0b0
+RS: 8-11
+SM: 12-13
+DM: 14-15
+_AM: 17: 0b0
+_DS: 19: 0b0
+_DTC: 24: 0b0
+_DSA: 25-27: 0b000
+_STC: 28: 0b0
+_SSA: 29-31: 0b000
+
+0xFFA00028: DMAC_DMATCR2
+u32
+access_32, rw
+
+0xFFA00040: DMAOR
+u32, flags
+access_32, w
+_DME: 0: 0b1
+NMIF: 1
+AE: 2
+_PR: 8-9: 0b10
+_DDT: 15: 0b1
+
+0xFFD00000: ICR
+u32
+access_32, rw
+
+0xFFD00004: IPRA
+u32, flags
+access_32, rw
+_RTC: 0-3: 0b0000
+TMU2: 4-7
+TMU1: 8-11
+TMU0: 12-15
+
+0xFFD00008: IPRB
+u32, flags
+access_32, rw
+_SCI: 4-7: 0b0000
+REF: 8-11
+WDT: 12-15
+
+0xFFD0000C: IPRC
+u32, flags
+access_32, rw
+UDI: 0-3
+SCIF: 4-7
+DMAC: 8-11
+
+0xFF800040: PCTRB
+u32
+access_32, rw
+
+0xFF800044: PDTRB
+u32
+access_32, rw
+
+0xFF800048: GPIOIC
+u32
+access_32, rw
+
+0xFFD80010: TCR0
+u32
+access_32, rw
+
+0xFF800028: RFCR
+u32
+access_32, rw
+r_override=return 0xa400
+w_override=this->regs.RFCR = 0b1010010000000000 | (val & 0x1FF)
+
+0xFF80002C: PCTRA
+u32
+access_32, rw
+write_mask=0xFFFF
+
+0xFF800008: WCR1
+u32
+access_32, rw
+
+0xFF80000C: WCR2
+u32
+access_32, rw
+
+0xFF800010: WCR3
+u32
+access_32, rw
+
+0xFF800014: MCR
+u32
+access_32, rw
+
+0xFF940190: SDMR
+u32
+access_32, rw
+
+0xFFE80000: SCIF_SCSMR2
+u32
+access_32, rw
+
+0xFFE80004: SCIF_SCBRR2
+u32
+access_32, rw
+
+0xFFE80008: SCIF_SCSCR2
+u32
+access_32, rw
+
+0xFFE8000C: SCIF_SCFTDR2
+u32
+access_32, rw
+
+0xFFE80010: SCIF_SCFSR2
+u32
+access_32, rw
+
+0xFFE80014: SCIF_SCFRDR2
+u32
+access_32, rw
+
+0xFFE80018: SCIF_SCFCR2
+u32
+access_32, rw
+
+0xFFE8001C: SCIF_SCFDR2
+u32
+access_32, rw
+
+0xFFE80020: SCIF_SCSPTR2
+u32
+access_32, rw
+
+0xFFE80024: SCIF_SCLSR2
+u32
+access_32, rw
+
+0xFF200008: UKNFF200008
+u32
+access_32, rw
+
+0xFF200014: UKNFF200014
+u32
+access_32, rw
+
+0xFF200020: UKNFF200020
+u32
+access_32, rw
+
+0xFF00001C: CCR
+u32, flags
+access_32, rw
+OCE: 0
+WT: 1
+CB: 2
+OCI: 3
+ORA: 5
+OIX: 7
+ICE: 8
+ICI: 11
+IIX: 15
+
+0xFF000038: QACR0
+u32
+access_32, rw
+
+0xFF00003C: QACR1
+u32
+access_32, rw
+
+0xFF800030: PDTRA
+u32
+access_32, rw
+exclude=r
+
+0xFF000028: INTEVT
+u32
+access_32, rw
+write_mask=0xFFFF
+
+0xFF000024: TRAPA
+u32
+access_32, rw
+write_mask=0xFF
+
+0xFF000020: EXPEVT
+u32
+access_32, rw
+write_mask=0xFFF
+
+0xFF800000: BSCR
+u32
+access_32, rw
+on_write=printf("\nWRITE TO BSCR!")
+

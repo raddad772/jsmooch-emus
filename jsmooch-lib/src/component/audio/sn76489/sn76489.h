@@ -1,0 +1,42 @@
+//
+// Created by Dave on 2/8/2024.
+//
+
+#ifndef JSMOOCH_EMUS_SN76489_H
+#define JSMOOCH_EMUS_SN76489_H
+
+#include "helpers/int.h"
+
+/*
+Big thanks to TotalJustice of TotalSMS, who allowed me to
+ use their implementation of the SMS PSG with minor
+ modifications
+ */
+
+struct SN76489 {
+    u32 vol[4];
+    i16 polarity[4];
+    struct SN76489_noise {
+        u32 lfsr;
+        u32 shift_rate;
+        u32 mode;
+        u32 counter;
+        u32 countdown;
+    } noise;
+
+    struct SN76489_SW {
+        i32 counter;
+        i32 freq;
+    } sw[3];
+
+    u32 io_reg; // current register selected
+    u32 io_kind; // 0 = tone, 1 = volume
+};
+
+void SN76489_init(struct SN76489* this);
+void SN76489_cycle(struct SN76489* this);
+i16 SN76489_mix_sample(struct SN76489* this);
+void SN76489_reset(struct SN76489* this);
+void SN76489_write_data(struct SN76489* this, u32 val);
+
+#endif //JSMOOCH_EMUS_SN76489_H
