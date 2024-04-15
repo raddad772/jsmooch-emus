@@ -10,7 +10,7 @@
 #include "system/dreamcast/gdi.h"
 
 
-#define DO_DREAMCAST
+//#define DO_DREAMCAST
 
 u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
     u32 ret = 0;
@@ -113,7 +113,11 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
         case SYS_NES:
         case SYS_BBC_MICRO:
         case SYS_GG:
+        case SYS_ATARI2600:
             has_bios = 0;
+            break;
+        default:
+            printf("\nNO BIOS SWITCH FOR CONSOLE %d", which);
             break;
     }
     return has_bios;
@@ -152,6 +156,9 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
             sprintf(BASE_PATH, "%s/gameboy", BASER_PATH);
             worked = 1;
             break;
+        case SYS_ATARI2600:
+            sprintf(BASE_PATH, "%s/atari2600", BASER_PATH);
+            break;
         case SYS_NES:
             sprintf(BASE_PATH, "%s/nes", BASER_PATH);
             worked = 1;
@@ -163,6 +170,10 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
         case SYS_BBC_MICRO:
         case SYS_GG:
             worked = 0;
+            break;
+        default:
+            worked = 0;
+            printf("\nNO CASE FOR SYSTEM %d", which);
             break;
     }
     if (!worked) return 0;
@@ -177,7 +188,7 @@ int main(int argc, char** argv)
 #ifdef DO_DREAMCAST
     enum jsm_systems which = SYS_DREAMCAST;
 #else
-    enum jsm_systems which = SYS_NES;
+    enum jsm_systems which = SYS_ATARI2600;
 #endif
     //test_gdi();
     //return 0;
@@ -228,6 +239,10 @@ int main(int argc, char** argv)
             output_buffers[0] = malloc(160*144*4);
             output_buffers[1] = malloc(160*144*4);
             break;
+        case SYS_ATARI2600:
+            output_buffers[0] = malloc(160*240);
+            output_buffers[1] = malloc(160*240);
+            break;
     }
     iom.out_buffers[0] = (void *)output_buffers[0];
     iom.out_buffers[1] = (void *)output_buffers[1];
@@ -245,7 +260,7 @@ int main(int argc, char** argv)
 #ifdef DO_DREAMCAST
     u32 worked = grab_ROM(&ROMs, which, "crazytaxi.gdi");
 #else
-    u32 worked = grab_ROM(&ROMs, which, "little_sisyphus_v1.nes");
+    u32 worked = grab_ROM(&ROMs, which, "frogger.a26");
 #endif
     if (!worked) {
         printf("\nCouldn't open ROM!");

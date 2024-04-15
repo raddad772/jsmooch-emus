@@ -53,6 +53,7 @@ void M6502_pins_init(struct M6502_pins* this)
     this->IRQ = this->NMI = 0;
 
     this->RST = 0;
+    this->RDY = 0;
 }
 
 void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
@@ -81,6 +82,7 @@ static void M6502_power_on(struct M6502* this)
     this->regs.S = 0xFD;
     this->pins.D = 0x60;
     this->pins.RW = 0;
+    this->pins.RDY = 0;
     this->regs.X = this->regs.Y = 0;
     this->regs.P.I = 1;
     this->regs.P.Z = 1;
@@ -90,6 +92,7 @@ static void M6502_power_on(struct M6502* this)
 void M6502_reset(struct M6502* this) {
     this->pins.RST = 0;
     this->regs.TCU = 0;
+    this->pins.RDY = 0;
     this->pins.D = M6502_OP_RESET;
     this->pins.RW = 1;
     this->regs.P.B = 1;

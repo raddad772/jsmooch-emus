@@ -48,6 +48,8 @@ struct M6502_pins {
     u32 IRQ;
     u32 NMI;
     u32 RST;
+
+    u32 RDY;
 };
 
 void M6502_regs_init(struct M6502_regs* this);

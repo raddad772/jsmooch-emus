@@ -144,6 +144,12 @@ add_library(jsmooch-lib
         src/component/cpu/m6502/m6502_opcodes.h
         src/component/misc/m6532.c
         src/component/misc/m6532.h
+        src/system/atari2600/atari2600.c
+        src/system/atari2600/atari2600.h
+        src/system/atari2600/cart.c
+        src/system/atari2600/cart.h
+        src/system/atari2600/tia.c
+        src/system/atari2600/tia.h
 )
 
 include_directories(src/)
