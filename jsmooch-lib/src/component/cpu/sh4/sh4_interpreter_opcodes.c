@@ -15,11 +15,6 @@
 #define PCinc rPC += 2
 #define rPC this->regs.PC
 
-// Sign extend 32 bits
-#define SIGNe8to32(x) ((((x) >> 7) * 0xFFFFFF00) | ((x) & 0xFF))
-#define SIGNe12to32(x) ((((x) >> 11) * 0xFFFFF000) | ((x) & 0xFFF))
-#define SIGNe16to32(x) ((((x) >> 15) * 0xFFFF0000) | ((x) & 0xFFFF))
-
 #define R(x) this->regs.R[x]
 #define RM R(ins->Rm)
 #define RN R(ins->Rn)

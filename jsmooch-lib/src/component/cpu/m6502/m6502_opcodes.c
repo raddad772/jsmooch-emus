@@ -1,3 +1,4 @@
+#include "stdio.h"
 #include "assert.h"
 #include "helpers/int.h"
 #include "m6502_opcodes.h"
@@ -4349,7 +4350,8 @@ static void M6502_ins_FE_INC(struct M6502_regs *regs, struct M6502_pins *pins)
 
 static void M6502_ins_100_S_RESET(struct M6502_regs *regs, struct M6502_pins *pins)
 {
-        switch(regs->TCU) {
+    fflush(stdout);
+    switch(regs->TCU) {
             case 1: { //3
                 pins->RW = 0;
                 pins->Addr = regs->S | 0x100;
@@ -4386,6 +4388,8 @@ static void M6502_ins_100_S_RESET(struct M6502_regs *regs, struct M6502_pins *pi
 
 static void M6502_ins_101_S_NMI(struct M6502_regs *regs, struct M6502_pins *pins)
 {
+    printf("\nS_NMI");
+
         switch(regs->TCU) {
             case 1: {
                 regs->P.B = 0;
@@ -4431,6 +4435,7 @@ static void M6502_ins_101_S_NMI(struct M6502_regs *regs, struct M6502_pins *pins
 
 static void M6502_ins_102_S_IRQ(struct M6502_regs *regs, struct M6502_pins *pins)
 {
+    printf("\nS_IRQ");
         switch(regs->TCU) {
             case 1: {
                 regs->P.B = 0;

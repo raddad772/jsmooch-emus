@@ -44,56 +44,32 @@ void atari2600J_load_ROM(JSM, struct multi_file_set* mfs);
 void atari2600J_enable_tracing(JSM);
 void atari2600J_disable_tracing(JSM);
 
-static void atari2600_mmap(struct atari2600* this) {
-    u32 addr;
-    for (addr = 0; addr < 0x2000; addr++) {
-        u32 a7, a9, a12;
-        a7 = (addr >> 7) & 1;
-        a9 = (addr >> 9) & 1;
-        a12 = (addr >> 12) & 1;
-        if (a12) { // ROM
-            this->mem_map[addr] = 0x1000 | (addr & 0xFFF);
-        }
-        else if (a9 & a7) { // RIOT
-            this->mem_map[addr] = (addr & 0x1F) + 0x280;
-        }
-        else if (a7) { // RIOT RAM
-            this->mem_map[addr] = (addr & 0x7F) + 0x80;
-        }
-        else if (a9 == 0) { // TIA
-            this->mem_map[addr] = addr & 0x3F;
-        }
-        else {
-            printf("\nMISSED ADDR %04x", addr);
-        }
-    }
-}
-
-
 void atari2600_new(JSM, struct JSM_IOmap *iomap)
 {
     struct atari2600* this = (struct atari2600*)malloc(sizeof(struct atari2600));
 
-    atari2600_mmap(this);
     M6502_init(&this->cpu, M6502_decoded_opcodes);
     M6532_init(&this->riot);
     TIA_init(&this->tia);
     atari2600_cart_init(&this->cart);
 
+    this->case_switches.reset = 0;
+    this->case_switches.select = 0;
+    this->case_switches.p0_difficulty = 0;
+    this->case_switches.p1_difficulty = 0;
+    this->case_switches.color = 1;
+
     this->tia.last_used_buffer = 0;
     this->tia.cur_output_num = 0;
-    this->tia.cur_output = (u16 *)iomap->out_buffers[0];
-    this->tia.out_buffer[0] = (u16 *)iomap->out_buffers[0];
-    this->tia.out_buffer[1] = (u16 *)iomap->out_buffers[1];
+    this->tia.cur_output = (u8 *)iomap->out_buffers[0];
+    this->tia.out_buffer[0] = (u8 *)iomap->out_buffers[0];
+    this->tia.out_buffer[1] = (u8 *)iomap->out_buffers[1];
 
-
-    this->clock.timing.cpu_divisor = 3;
-    this->clock.timing.tia_divisor = 1;
-    this->clock.frames_since_restart = 0;
-    this->clock.timing.vblank_in_lines = 40; // 40 NTSC, 48 PAL
-    this->clock.timing.display_line_start = 192; // 192 NTSC, 22? PAL
-    this->clock.timing.vblank_out_start = 192 + 40;
-    this->clock.timing.vblank_out_lines = 30; // 30 NTSC, 36 PAL
+    this->tia.frames_since_restart = 0;
+    this->tia.timing.vblank_in_lines = 40; // 40 NTSC, 48 PAL
+    this->tia.timing.display_line_start = 40;
+    this->tia.timing.vblank_out_start = 192 + 40; // // 192 NTSC, 22? PAL
+    this->tia.timing.vblank_out_lines = 30; // 30 NTSC, 36 PAL
 
     this->cycles_left = 0;
     this->display_enabled = 1;
@@ -174,24 +150,28 @@ void atari2600J_stop(JSM)
 void atari2600J_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
-    out->master_frame = this->clock.master_frame;
-    out->x = this->clock.line_cycle;
-    out->scanline = this->clock.sy;
+    out->master_frame = this->tia.master_frame;
+    out->x = this->tia.hcounter;
+    out->scanline = this->tia.vcounter;
+}
+
+static void CPU_reset(struct atari2600* this)
+{
+    M6502_reset(&this->cpu);
+    printf("\n%08X Addr", this->cpu.pins.Addr);
 }
 
 void atari2600J_reset(JSM)
 {
     JTHIS;
     //atari2600_clock_reset(&this->clock);
-    M6502_reset(&this->cpu);
-    TIA_reset(&this);
-    M6532_reset(&this);
+    atari2600_cart_reset(&this->cart);
+    CPU_reset(this);
+    TIA_reset(&this->tia);
+    M6532_reset(&this->riot);
 
-    this->clock.master_frame = 0;
-    this->clock.master_clock = 0;
-    this->clock.line_cycle = 0;
-    this->clock.sy = 0;
-
+    this->tia.master_frame = 0;
+    this->master_clock = 0;
 }
 
 void atari2600J_map_inputs(JSM, u32* bufptr, u32 bufsize)
@@ -199,16 +179,49 @@ void atari2600J_map_inputs(JSM, u32* bufptr, u32 bufsize)
     JTHIS;
 
     // TODO
-    /*this->controller1_in.up = bufptr[0];
+    this->controller1_in.up = bufptr[0];
     this->controller1_in.down = bufptr[1];
     this->controller1_in.left = bufptr[2];
     this->controller1_in.right = bufptr[3];
-    this->controller1_in.a = bufptr[4];
-    this->controller1_in.b = bufptr[5];
-    this->controller1_in.start = bufptr[6];
-    this->controller1_in.select = bufptr[7];
-    // Controller 2 not support yet
-    r2A03_update_inputs(&this->cpu, &this->controller1_in, &this->controller2_in);*/
+    this->controller1_in.fire = bufptr[4];
+
+    this->controller2_in = (struct atari2600_inputs) {
+        .down = 0,
+        .up = 0,
+        .left = 0,
+        .right = 0,
+        .fire = 0
+    };
+
+    // Now update input stuff! YAY!
+    this->tia.io.INPT[0] = this->tia.io.INPT[1] = this->tia.io.INPT[2] = this->tia.io.INPT[3] = this->tia.io.INPT[4] = this->tia.io.INPT[5] = 0;
+    this->riot.io.SWCHA = 0;
+    this->riot.io.SWCHB &= 0b11001011; // Combat stores 3 bits of data in here
+
+    // Do switches
+    this->riot.io.SWCHB |=
+            (this->case_switches.reset ^ 1) |
+            ((this->case_switches.select ^ 1) << 1) |
+            (this->case_switches.color << 3) |
+            (this->case_switches.p0_difficulty << 6) |
+            (this->case_switches.p1_difficulty << 7);
+
+    // P0 controller
+    this->riot.io.SWCHA |=
+            (this->controller1_in.up << 4) |
+            (this->controller1_in.down << 5) |
+            (this->controller1_in.left << 6) |
+            (this->controller1_in.right << 7);
+
+    this->tia.io.INPT[4] |= (this->controller1_in.fire << 7);
+
+    //P1 controller
+    this->riot.io.SWCHA |=
+            (this->controller2_in.up) |
+            (this->controller2_in.down << 1) |
+            (this->controller2_in.left << 2) |
+            (this->controller2_in.right << 3);
+    this->tia.io.INPT[5] |= (this->controller2_in.fire << 7);
 }
 
 void atari2600J_get_description(JSM, struct machine_description* d)
@@ -263,8 +276,8 @@ void atari2600J_killall(JSM)
 u32 atari2600J_finish_frame(JSM)
 {
     JTHIS;
-    u32 current_frame = this->clock.master_frame;
-    while (this->clock.master_frame == current_frame) {
+    u32 current_frame = this->tia.master_frame;
+    while (this->tia.master_frame == current_frame) {
         atari2600J_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
@@ -273,8 +286,7 @@ u32 atari2600J_finish_frame(JSM)
 
 void CPU_run_cycle(struct atari2600* this)
 {
-    if (this->cpu.pins.RDY) return; // CPU is halted until next scanline
-    this->cpu.pins.D = this->CPU_bus.D;
+    if (this->tia.cpu_RDY) return; // CPU is halted until next scanline
 
     M6502_cycle(&this->cpu);
 
@@ -282,16 +294,18 @@ void CPU_run_cycle(struct atari2600* this)
     this->CPU_bus.RW = this->cpu.pins.RW;
     this->CPU_bus.D = this->cpu.pins.D;
 
-    if (this->CPU_bus.Addr.a12) // cart
+    if (this->CPU_bus.Addr.a12) // cart. a12=1
         atari2600_cart_bus_cycle(&this->cart, this->CPU_bus.Addr.u, &this->CPU_bus.D, this->CPU_bus.RW);
     else if ((this->CPU_bus.Addr.a9 && this->CPU_bus.Addr.a7) || this->CPU_bus.Addr.a7) // RIOT, RIOT RAM
         M6532_bus_cycle(&this->riot, this->CPU_bus.Addr.u, &this->CPU_bus.D, this->CPU_bus.RW);
     else if (this->CPU_bus.Addr.a9 == 0) { // TIA
-        TIA_bus_cycle(this, this->CPU_bus.Addr.u, &this->CPU_bus.D, this->CPU_bus.RW);
+        TIA_bus_cycle(&this->tia, this->CPU_bus.Addr.u, &this->CPU_bus.D, this->CPU_bus.RW);
     }
     else {
-        printf("\nMISSED ADDR %04x", this->CPU_bus.Addr.u);
+        printf("\nMISSED ADDR2 %04x %d %d", this->CPU_bus.Addr.u, this->CPU_bus.Addr.a7, this->CPU_bus.Addr.a9);
     }
+    this->cpu.pins.D = this->CPU_bus.D;
+
 
     /*if (this->tracing) { TODO
         //dbg.traces.add(TRACERS.M6502, this->clock->trace_cycles, trace_format_write('MOS', MOS_COLOR, this->clock->trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
@@ -302,8 +316,8 @@ void CPU_run_cycle(struct atari2600* this)
 u32 atari2600J_finish_scanline(JSM)
 {
     JTHIS;
-    u32 start_y = this->clock.sy;
-    while (this->clock.sy == start_y) {
+    u32 start_y = this->tia.vcounter;
+    while (this->tia.vcounter == start_y) {
         atari2600J_step_master(jsm, 1);
         if (dbg.do_break) break;
     }
@@ -315,11 +329,12 @@ u32 atari2600J_step_master(JSM, u32 howmany)
     JTHIS;
     this->cycles_left += (i32)howmany;
     while (this->cycles_left > 0) {
-        if ((this->clock.master_clock % 3) == 0)
+        if ((this->master_clock % 3) == 0)
             CPU_run_cycle(this);
         TIA_run_cycle(&this->tia);
+        M6532_cycle(&this->riot);
 
-        this->clock.master_clock++;
+        this->master_clock++;
         this->cycles_left--;
         if (dbg.do_break) break;
     }
@@ -335,6 +350,7 @@ void atari2600J_load_ROM(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
+    printf("\nLoad ROM");
     atari2600_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, mfs->files[0].name);
     atari2600J_reset(jsm);
 }

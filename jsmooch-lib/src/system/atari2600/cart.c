@@ -19,8 +19,9 @@ void atari2600_cart_delete(struct atari2600_cart* this)
 
 void atari2600_cart_bus_cycle(struct atari2600_cart* this, u32 addr, u32 *data, u32 rw)
 {
+    addr &= this->addr_mask;
     if (rw == 0) {
-        *data = *(u8 *)&this->ROM.ptr[addr & this->addr_mask];
+        *data = *(u8 *)&this->ROM.ptr[addr];
     }
     else {
         printf("\nUNSUPPORTED WRITE TO CART %03x", addr);
@@ -29,8 +30,10 @@ void atari2600_cart_bus_cycle(struct atari2600_cart* this, u32 addr, u32 *data, 
 
 void atari2600_cart_load_ROM_from_RAM(struct atari2600_cart* this, char *fil, u64 file_sz, char* file_name)
 {
+    printf("\nAllocate cart %ull", file_sz);
     buf_allocate(&this->ROM, file_sz);
-    memcpy(&this->ROM.ptr, fil, file_sz);
+    memcpy(this->ROM.ptr, fil, file_sz);
+    printf("\nROM SIZE %d", this->ROM.size);
     if (file_sz == 2048) {
         this->addr_mask = 0x7FF;
     }
@@ -41,4 +44,9 @@ void atari2600_cart_load_ROM_from_RAM(struct atari2600_cart* this, char *fil, u6
         printf("\nUnsupported cart sixe %d", file_sz);
         return;
     }
+}
+
+void atari2600_cart_reset(struct atari2600_cart* this)
+{
+
 }

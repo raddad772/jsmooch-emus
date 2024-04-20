@@ -9,7 +9,7 @@
 
 struct buf {
     void *ptr;
-    u64 size;
+    u32 size;
 };
 
 void buf_init(struct buf* this);

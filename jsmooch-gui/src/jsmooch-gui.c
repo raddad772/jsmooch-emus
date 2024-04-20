@@ -158,6 +158,7 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
             break;
         case SYS_ATARI2600:
             sprintf(BASE_PATH, "%s/atari2600", BASER_PATH);
+            worked = 1;
             break;
         case SYS_NES:
             sprintf(BASE_PATH, "%s/nes", BASER_PATH);
@@ -177,9 +178,8 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
             break;
     }
     if (!worked) return 0;
-    printf("\nH1");
     mfs_add(fname, BASE_PATH, ROMs);
-    printf("\n%d %s %s", ROMs->files[ROMs->num_files-1].buf.size > 0, BASE_PATH, fname);
+    //printf("\n%d %s %s", ROMs->files[ROMs->num_files-1].buf.size > 0, BASE_PATH, fname);
     return ROMs->files[ROMs->num_files-1].buf.size > 0;
 }
 
@@ -189,6 +189,7 @@ int main(int argc, char** argv)
     enum jsm_systems which = SYS_DREAMCAST;
 #else
     enum jsm_systems which = SYS_ATARI2600;
+    //enum jsm_systems which = SYS_NES;
 #endif
     //test_gdi();
     //return 0;
@@ -261,6 +262,7 @@ int main(int argc, char** argv)
     u32 worked = grab_ROM(&ROMs, which, "crazytaxi.gdi");
 #else
     u32 worked = grab_ROM(&ROMs, which, "frogger.a26");
+    //u32 worked = grab_ROM(&ROMs, which, "mario3.nes");
 #endif
     if (!worked) {
         printf("\nCouldn't open ROM!");
@@ -326,6 +328,7 @@ int main(int argc, char** argv)
     u32 did_break = 0;
     u32 loops = 0;
     while(!quit) {
+        //printf("\nFRAME!"); fflush(stdout);
         float start = SDL_GetTicks();
         while(SDL_PollEvent(&event)) {
             quit = handle_keys_gb(&event, input_buffer);
@@ -353,7 +356,7 @@ int main(int argc, char** argv)
         float end = SDL_GetTicks();
         float ticks_taken = end - start;
         //printf("\n%llu", fv.master_frame);
-        printf("\n%f", ticks_taken);
+        //printf("\n%f", ticks_taken);
         float tick_target = 16.7f;
         if (ticks_taken < tick_target)
             SDL_Delay(tick_target - ticks_taken);

@@ -10,7 +10,6 @@
 #include "cart.h"
 #include "tia.h"
 
-
 void atari2600_new(struct jsm_system* system, struct JSM_IOmap *iomap);
 void atari2600_delete(struct jsm_system* system);
 
@@ -21,11 +20,11 @@ struct atari2600_inputs {
 struct atari2600_CPU_bus {
     union {
         struct {
-            u32 _1: 6;
+            u32 _0_6: 7;
             u32 a7: 1;
-            u32 _2: 1;
+            u32 _8: 1;
             u32 a9: 1;
-            u32 _3: 2;
+            u32 _2: 2;
             u32 a12: 1;
         };
         u32 u;
@@ -41,36 +40,23 @@ struct atari2600 {
     struct M6532 riot;
     struct atari_TIA tia;
 
-    struct {
-        u64 master_clock;
-        u64 master_frame;
-
-        u32 frames_since_restart;
-
-        u32 line_cycle;
-        u32 sy;
-
-        struct {
-            u32 cpu_divisor; // 3
-            u32 tia_divisor; // 1
-
-            u32 vblank_in_lines;
-            u32 display_line_start;
-            u32 vblank_out_start;
-            u32 vblank_out_lines;
-        } timing;
-    } clock;
-
     struct atari2600_CPU_bus CPU_bus;
 
     i32 cycles_left;
     u32 display_enabled;
-
-    u32 mem_map[0x2000];
+    u64 master_clock;
 
     struct atari2600_inputs controller1_in;
     struct atari2600_inputs controller2_in;
     struct atari2600_cart cart;
+
+    struct {
+        u32 reset;
+        u32 select;
+        u32 color;
+        u32 p0_difficulty;
+        u32 p1_difficulty;
+    } case_switches;
 };
 
 

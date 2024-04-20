@@ -5,6 +5,55 @@
 #include "sys_present.h"
 #include "stdio.h"
 
+static const u32 TIA_palette[128] = {
+        0xff000000, 0xff444400, 0xff702800, 0xff841800,
+        0xff880000, 0xff78005c, 0xff480078, 0xff140084,
+        0xff000088, 0xff00187c, 0xff002c5c, 0xff00402c,
+        0xff003c00, 0xff143800, 0xff2c3000, 0xff442800,
+        0xff404040, 0xff646410, 0xff844414, 0xff983418,
+        0xff9c2020, 0xff8c2074, 0xff602090, 0xff302098,
+        0xff1c209c, 0xff1c3890, 0xff1c4c78, 0xff1c5c48,
+        0xff205c20, 0xff345c1c, 0xff4c501c, 0xff644818,
+        0xff6c6c6c, 0xff848424, 0xff985c28, 0xffac5030,
+        0xffb03c3c, 0xffa03c88, 0xff783ca4, 0xff4c3cac,
+        0xff3840b0, 0xff3854a8, 0xff386890, 0xff387c64,
+        0xff407c40, 0xff507c38, 0xff687034, 0xff846830,
+        0xff909090, 0xffa0a034, 0xffac783c, 0xffc06848,
+        0xffc05858, 0xffb0589c, 0xff8c58b8, 0xff6858c0,
+        0xff505cc0, 0xff5070bc, 0xff5084ac, 0xff509c80,
+        0xff5c9c5c, 0xff6c9850, 0xff848c4c, 0xffa08444,
+        0xffb0b0b0, 0xffb8b840, 0xffbc8c4c, 0xffd0805c,
+        0xffd07070, 0xffc070b0, 0xffa070cc, 0xff7c70d0,
+        0xff6874d0, 0xff6888cc, 0xff689cc0, 0xff68b494,
+        0xff74b474, 0xff84b468, 0xff9ca864, 0xffb89c58,
+        0xffc8c8c8, 0xffd0d050, 0xffcca05c, 0xffe09470,
+        0xffe08888, 0xffd084c0, 0xffb484dc, 0xff9488e0,
+        0xff7c8ce0, 0xff7c9cdc, 0xff7cb4d4, 0xff7cd0ac,
+        0xff8cd08c, 0xff9ccc7c, 0xffb4c078, 0xffd0b46c,
+        0xffdcdcdc, 0xffe8e85c, 0xffdcb468, 0xffeca880,
+        0xffeca0a0, 0xffdc9cd0, 0xffc49cec, 0xffa8a0ec,
+        0xff90a4ec, 0xff90b4ec, 0xff90cce8, 0xff90e4c0,
+        0xffa4e4a4, 0xffb4e490, 0xffccd488, 0xffe8cc7c,
+        0xffececec, 0xfffcfc68, 0xfffcbc94, 0xfffcb4b4,
+        0xffecb0e0, 0xffd4b0fc, 0xffbcb4fc, 0xffa4b8fc,
+        0xffa4c8fc, 0xffa4e0fc, 0xffa4fcd4, 0xffb8fcb8,
+        0xffc8fca4, 0xffe0ec9c, 0xfffce08c, 0xffffffff
+};
+
+void atari2600_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+{
+    u8* ibuf = (u8 *)iom->out_buffers[last_used_buffer];
+    for (u32 y = 0; y < 192; y++) {
+        u8* iptr = (void *)ibuf + ((y * 160));
+        for (u32 x = 0; x < 160; x++) {
+            u32* optr = (u32 *)((u8 *)out_buf + (((y * out_width) + x) * 4));
+
+            *optr = TIA_palette[*iptr];
+            iptr++;
+        }
+    }
+}
+
 // Translate from DMG output to 32-bit RGBA
 void DMG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
 {
@@ -87,7 +136,7 @@ void GBC_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
     }
 }
 
-u32 NES_palette[512] = {
+static const u32 NES_palette[512] = {
         0xFF525252, 0xFF011A51, 0xFF0F0F65, 0xFF230663, 0xFF36034B, 0xFF400426, 0xFF3F0904, 0xFF321300, 0xFF1F2000, 0xFF0B2A00, 0xFF002F00, 0xFF002E0A, 0xFF00262D, 0xFF000000, 0xFF000000, 0xFF000000,
         0xFFA0A0A0, 0xFF1E4A9D, 0xFF3837BC, 0xFF5828B8, 0xFF752194, 0xFF84235C, 0xFF822E24, 0xFF6F3F00, 0xFF515200, 0xFF316300, 0xFF1A6B05, 0xFF0E692E, 0xFF105C68, 0xFF000000, 0xFF000000, 0xFF000000,
         0xFFFEFFFF, 0xFF699EFC, 0xFF8987FF, 0xFFAE76FF, 0xFFCE6DF1, 0xFFE070B2, 0xFFDE7C70, 0xFFC8913E, 0xFFA6A725, 0xFF81BA28, 0xFF63C446, 0xFF54C17D, 0xFF56B3C0, 0xFF3C3C3C, 0xFF000000, 0xFF000000,
@@ -247,6 +296,9 @@ void jsm_present(enum jsm_systems which, u32 last_used_buffer, struct JSM_IOmap 
             break;
         case SYS_DREAMCAST:
             DC_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            break;
+        case SYS_ATARI2600:
+            atari2600_present(last_used_buffer, iom, out_buf, out_width, out_height);
             break;
         default:
             printf("\nUNKNOWN PRESENT!");

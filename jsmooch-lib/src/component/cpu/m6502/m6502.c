@@ -93,8 +93,6 @@ void M6502_reset(struct M6502* this) {
     this->pins.RST = 0;
     this->regs.TCU = 0;
     this->pins.RDY = 0;
-    this->pins.D = M6502_OP_RESET;
-    this->pins.RW = 1;
     this->regs.P.B = 1;
     this->regs.P.D = 0;
     this->regs.P.I = 1;
@@ -102,6 +100,8 @@ void M6502_reset(struct M6502* this) {
     this->regs.STP = 0;
     if (this->first_reset) M6502_power_on(this);
     this->first_reset = 0;
+    this->pins.RW = 0;
+    this->pins.D = M6502_OP_RESET;
 }
 
 void M6502_enable_tracing(struct M6502* this, struct jsm_debug_read_trace *dbg_read_trace)
@@ -117,6 +117,7 @@ void M6502_disable_tracing(struct M6502* this)
 
 void M6502_cycle(struct M6502* this)
 {
+    fflush(stdout);
     // Perform 1 processor cycle
     this->trace_cycles++;
     if (this->regs.HLT || this->regs.STP) return;
@@ -138,6 +139,7 @@ void M6502_cycle(struct M6502* this)
 
     this->regs.P.I = this->regs.new_I;
     this->regs.TCU++;
+    fflush(stdout);
     if (this->regs.TCU == 1) {
         this->PCO = this->pins.Addr; // Capture PC before it runs away
         this->regs.IR = this->pins.D;
@@ -155,8 +157,9 @@ void M6502_cycle(struct M6502* this)
                 dbg_break();
             }
         }
+        fflush(stdout);
         this->current_instruction = this->opcode_table[this->regs.IR];
-        if (this->current_instruction == &M6502_ins_NONE) {
+        if (this->current_instruction == this->opcode_table[2]) { // TODO: this doesn't work with illegal opcodes or m65c02
             printf("INVALID OPCODE %02x", this->regs.IR);
             fflush(stdout);
             dbg_break();

@@ -1,0 +1,384 @@
+<div class="palette">
+<div class="color" style="background:#000000; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#000000
+</div>
+<div class="color" style="background:#444400; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#444400
+</div>
+<div class="color" style="background:#702800; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#702800
+</div>
+<div class="color" style="background:#841800; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#841800
+</div>
+<div class="color" style="background:#880000; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#880000
+</div>
+<div class="color" style="background:#78005c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#78005c
+</div>
+<div class="color" style="background:#480078; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#480078
+</div>
+<div class="color" style="background:#140084; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#140084
+</div>
+<div class="color" style="background:#000088; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#000088
+</div>
+<div class="color" style="background:#00187c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#00187c
+</div>
+<div class="color" style="background:#002c5c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#002c5c
+</div>
+<div class="color" style="background:#00402c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#00402c
+</div>
+<div class="color" style="background:#003c00; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#003c00
+</div>
+<div class="color" style="background:#143800; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#143800
+</div>
+<div class="color" style="background:#2c3000; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#2c3000
+</div>
+<div class="color" style="background:#442800; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#442800
+</div>
+<div class="color" style="background:#404040; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#404040
+</div>
+<div class="color" style="background:#646410; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#646410
+</div>
+<div class="color" style="background:#844414; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#844414
+</div>
+<div class="color" style="background:#983418; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#983418
+</div>
+<div class="color" style="background:#9c2020; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#9c2020
+</div>
+<div class="color" style="background:#8c2074; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#8c2074
+</div>
+<div class="color" style="background:#602090; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#602090
+</div>
+<div class="color" style="background:#302098; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#302098
+</div>
+<div class="color" style="background:#1c209c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#1c209c
+</div>
+<div class="color" style="background:#1c3890; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#1c3890
+</div>
+<div class="color" style="background:#1c4c78; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#1c4c78
+</div>
+<div class="color" style="background:#1c5c48; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#1c5c48
+</div>
+<div class="color" style="background:#205c20; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#205c20
+</div>
+<div class="color" style="background:#345c1c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#345c1c
+</div>
+<div class="color" style="background:#4c501c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#4c501c
+</div>
+<div class="color" style="background:#644818; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#644818
+</div>
+<div class="color" style="background:#6c6c6c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#6c6c6c
+</div>
+<div class="color" style="background:#848424; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#848424
+</div>
+<div class="color" style="background:#985c28; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#985c28
+</div>
+<div class="color" style="background:#ac5030; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#ac5030
+</div>
+<div class="color" style="background:#b03c3c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b03c3c
+</div>
+<div class="color" style="background:#a03c88; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a03c88
+</div>
+<div class="color" style="background:#783ca4; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#783ca4
+</div>
+<div class="color" style="background:#4c3cac; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#4c3cac
+</div>
+<div class="color" style="background:#3840b0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#3840b0
+</div>
+<div class="color" style="background:#3854a8; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#3854a8
+</div>
+<div class="color" style="background:#386890; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#386890
+</div>
+<div class="color" style="background:#387c64; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#387c64
+</div>
+<div class="color" style="background:#407c40; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#407c40
+</div>
+<div class="color" style="background:#507c38; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#507c38
+</div>
+<div class="color" style="background:#687034; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#687034
+</div>
+<div class="color" style="background:#846830; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#846830
+</div>
+<div class="color" style="background:#909090; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#909090
+</div>
+<div class="color" style="background:#a0a034; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a0a034
+</div>
+<div class="color" style="background:#ac783c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#ac783c
+</div>
+<div class="color" style="background:#c06848; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#c06848
+</div>
+<div class="color" style="background:#c05858; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#c05858
+</div>
+<div class="color" style="background:#b0589c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b0589c
+</div>
+<div class="color" style="background:#8c58b8; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#8c58b8
+</div>
+<div class="color" style="background:#6858c0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#6858c0
+</div>
+<div class="color" style="background:#505cc0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#505cc0
+</div>
+<div class="color" style="background:#5070bc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#5070bc
+</div>
+<div class="color" style="background:#5084ac; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#5084ac
+</div>
+<div class="color" style="background:#509c80; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#509c80
+</div>
+<div class="color" style="background:#5c9c5c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#5c9c5c
+</div>
+<div class="color" style="background:#6c9850; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#6c9850
+</div>
+<div class="color" style="background:#848c4c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#848c4c
+</div>
+<div class="color" style="background:#a08444; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a08444
+</div>
+<div class="color" style="background:#b0b0b0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b0b0b0
+</div>
+<div class="color" style="background:#b8b840; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b8b840
+</div>
+<div class="color" style="background:#bc8c4c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#bc8c4c
+</div>
+<div class="color" style="background:#d0805c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#d0805c
+</div>
+<div class="color" style="background:#d07070; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#d07070
+</div>
+<div class="color" style="background:#c070b0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#c070b0
+</div>
+<div class="color" style="background:#a070cc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a070cc
+</div>
+<div class="color" style="background:#7c70d0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#7c70d0
+</div>
+<div class="color" style="background:#6874d0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#6874d0
+</div>
+<div class="color" style="background:#6888cc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#6888cc
+</div>
+<div class="color" style="background:#689cc0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#689cc0
+</div>
+<div class="color" style="background:#68b494; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#68b494
+</div>
+<div class="color" style="background:#74b474; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#74b474
+</div>
+<div class="color" style="background:#84b468; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#84b468
+</div>
+<div class="color" style="background:#9ca864; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#9ca864
+</div>
+<div class="color" style="background:#b89c58; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b89c58
+</div>
+<div class="color" style="background:#c8c8c8; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#c8c8c8
+</div>
+<div class="color" style="background:#d0d050; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#d0d050
+</div>
+<div class="color" style="background:#cca05c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#cca05c
+</div>
+<div class="color" style="background:#e09470; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#e09470
+</div>
+<div class="color" style="background:#e08888; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#e08888
+</div>
+<div class="color" style="background:#d084c0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#d084c0
+</div>
+<div class="color" style="background:#b484dc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b484dc
+</div>
+<div class="color" style="background:#9488e0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#9488e0
+</div>
+<div class="color" style="background:#7c8ce0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#7c8ce0
+</div>
+<div class="color" style="background:#7c9cdc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#7c9cdc
+</div>
+<div class="color" style="background:#7cb4d4; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#7cb4d4
+</div>
+<div class="color" style="background:#7cd0ac; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#7cd0ac
+</div>
+<div class="color" style="background:#8cd08c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#8cd08c
+</div>
+<div class="color" style="background:#9ccc7c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#9ccc7c
+</div>
+<div class="color" style="background:#b4c078; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b4c078
+</div>
+<div class="color" style="background:#d0b46c; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#d0b46c
+</div>
+<div class="color" style="background:#dcdcdc; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#dcdcdc
+</div>
+<div class="color" style="background:#e8e85c; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#e8e85c
+</div>
+<div class="color" style="background:#dcb468; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#dcb468
+</div>
+<div class="color" style="background:#eca880; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#eca880
+</div>
+<div class="color" style="background:#eca0a0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#eca0a0
+</div>
+<div class="color" style="background:#dc9cd0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#dc9cd0
+</div>
+<div class="color" style="background:#c49cec; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#c49cec
+</div>
+<div class="color" style="background:#a8a0ec; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a8a0ec
+</div>
+<div class="color" style="background:#90a4ec; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#90a4ec
+</div>
+<div class="color" style="background:#90b4ec; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#90b4ec
+</div>
+<div class="color" style="background:#90cce8; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#90cce8
+</div>
+<div class="color" style="background:#90e4c0; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#90e4c0
+</div>
+<div class="color" style="background:#a4e4a4; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a4e4a4
+</div>
+<div class="color" style="background:#b4e490; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b4e490
+</div>
+<div class="color" style="background:#ccd488; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#ccd488
+</div>
+<div class="color" style="background:#e8cc7c; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#e8cc7c
+</div>
+<div class="color" style="background:#ececec; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#ececec
+</div>
+<div class="color" style="background:#fcfc68; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#fcfc68
+</div>
+<div class="color" style="background:#fcbc94; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#fcbc94
+</div>
+<div class="color" style="background:#fcb4b4; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#fcb4b4
+</div>
+<div class="color" style="background:#ecb0e0; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#ecb0e0
+</div>
+<div class="color" style="background:#d4b0fc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#d4b0fc
+</div>
+<div class="color" style="background:#bcb4fc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#bcb4fc
+</div>
+<div class="color" style="background:#a4b8fc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a4b8fc
+</div>
+<div class="color" style="background:#a4c8fc; color: #ffffff; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a4c8fc
+</div>
+<div class="color" style="background:#a4e0fc; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a4e0fc
+</div>
+<div class="color" style="background:#a4fcd4; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#a4fcd4
+</div>
+<div class="color" style="background:#b8fcb8; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#b8fcb8
+</div>
+<div class="color" style="background:#c8fca4; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#c8fca4
+</div>
+<div class="color" style="background:#e0ec9c; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#e0ec9c
+</div>
+<div class="color" style="background:#fce08c; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#fce08c
+</div>
+<div class="color" style="background:#ffffff; color: #000000; min-width: 14.285714285714286%; height: 24px; line-height: 24px; font-size: 10px">
+#ffffff

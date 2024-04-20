@@ -2,10 +2,11 @@
 
 #include "sys_interface.h"
 #include "system/gb/gb.h"
-#include "system/gb/gb_enums.h"
+//#include "system/gb/gb_enums.h"
 #include "system/nes/nes.h"
 #include "system/sms_gg/sms_gg.h"
 #include "system/dreamcast/dreamcast.h"
+#include "system/atari2600/atari2600.h"
 #include "helpers/debug.h"
 #include "stdio.h"
 
@@ -15,6 +16,9 @@ struct jsm_system* new_system(enum jsm_systems which, struct JSM_IOmap *iomap)
     struct jsm_system* out = malloc(sizeof(struct jsm_system));
     out->which = which;
 	switch (which) {
+        case SYS_ATARI2600:
+            atari2600_new(out, iomap);
+            break;
 		case SYS_DMG:
 			GB_new(out, DMG, iomap);
 			break;
@@ -42,6 +46,9 @@ struct jsm_system* new_system(enum jsm_systems which, struct JSM_IOmap *iomap)
 void jsm_delete(struct jsm_system* jsm)
 {
     switch(jsm->which) {
+        case SYS_ATARI2600:
+            atari2600_delete(jsm);
+            break;
         case SYS_DMG:
         case SYS_GBC:
             GB_delete(jsm);
