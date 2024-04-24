@@ -12,8 +12,8 @@
 #include "helpers/physical_io.h"
 
 
-//#define DO_DREAMCAST
-#define NEW_IOS
+#define DO_DREAMCAST
+
 struct system_io {
     struct CDKRKR {
         struct HID_digital_button* up;
@@ -68,7 +68,6 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
                 input_buffer[3] = evt;
                 break;
             case SDLK_UP:
-                printf("\nUP! %d", evt);
                 input_buffer[0] = evt;
                 break;
             case SDLK_DOWN:
@@ -93,7 +92,6 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
                 ret = 1;
                 break;
             default:
-                printf("\nYO. %d", event->key.keysym.sym);
                 break;
         }
     }
@@ -303,10 +301,10 @@ static void setup_controller(struct system_io* io, struct physical_io_device* pi
 int main(int argc, char** argv)
 {
 #ifdef DO_DREAMCAST
-    enum jsm_systems kind = SYS_DREAMCAST;
+    enum jsm_systems which = SYS_DREAMCAST;
 #else
     //enum jsm_systems which = SYS_ATARI2600;
-    enum jsm_systems which = SYS_NES;
+    enum jsm_systems which = SYS_ATARI2600;
 #endif
     //test_gdi();
     //return 0;
@@ -345,18 +343,34 @@ int main(int argc, char** argv)
 
     struct multi_file_set ROMs;
     mfs_init(&ROMs);
-#ifdef DO_DREAMCAST
-    u32 worked = grab_ROM(&ROMs, kind, "crazytaxi.gdi");
-#else
-    //u32 worked = grab_ROM(&ROMs, kind, "frogger.a26");
-    u32 worked = grab_ROM(&ROMs, which, "mario3.nes");
-#endif
+    u32 worked;
+    switch(which) {
+        case SYS_NES:
+            worked = grab_ROM(&ROMs, which, "mario3.nes");
+            break;
+        case SYS_SMS1:
+        case SYS_SMS2:
+            worked = grab_ROM(&ROMs, which, "sonic.sms");
+            break;
+        case SYS_DMG:
+            worked = grab_ROM(&ROMs, which, "tetris.gb");
+            break;
+        case SYS_GBC:
+            worked = grab_ROM(&ROMs, which, "wario3.gbc");
+            break;
+        case SYS_ATARI2600:
+            worked = grab_ROM(&ROMs, which, "frogger.a26");
+            break;
+        case SYS_DREAMCAST:
+            worked = grab_ROM(&ROMs, which, "crazytaxi.gdi");
+            break;
+    }
     if (!worked) {
         printf("\nCouldn't open ROM!");
         return -1;
     }
 
-    struct physical_io_device* fileioport = load_ROM_into_emu(sys, &IOs, &ROMs);
+    struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
     mfs_delete(&ROMs);
 
     struct system_io inputs;
@@ -366,8 +380,8 @@ int main(int argc, char** argv)
     struct physical_io_device* controller2 = NULL;
     struct physical_io_device* display = NULL;
     struct physical_io_device* chassis = NULL;
-    for (u32 i = 0; i < cvec_len(&IOs); i++) {
-        struct physical_io_device* pio = cvec_get(&IOs, i);
+    for (u32 i = 0; i < cvec_len(IOs); i++) {
+        struct physical_io_device* pio = cvec_get(IOs, i);
         switch(pio->kind) {
             case HID_CONTROLLER:
                 if (controller1 == NULL) {
@@ -514,7 +528,6 @@ int main(int argc, char** argv)
 
     // Clean up and be tidy!
     jsm_delete(sys);
-    cvec_delete(&IOs);
     SDL_DestroyWindowSurface(window);
     SDL_DestroyWindow(window);
 }

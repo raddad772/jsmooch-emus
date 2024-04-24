@@ -51,7 +51,6 @@ u32 NES_controllerport_data(struct NES_controllerport* this)
             return NES_joypad_data((struct NES_joypad*)this->device) & 3;
         case NES_NONE:
         default:
-            printf("PLEASE IMP 1");
             break;
     }
     return 0;

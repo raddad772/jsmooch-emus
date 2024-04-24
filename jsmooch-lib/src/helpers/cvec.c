@@ -83,9 +83,7 @@ void cvec_clear(struct cvec* this)
 
 void *cvec_get(struct cvec* this, u32 index)
 {
-#ifdef JSDEBUG
     assert(index < this->len);
-#endif
     return this->data + (this->data_sz * index);
 }
 

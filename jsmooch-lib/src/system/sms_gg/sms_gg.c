@@ -168,10 +168,12 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
-    b->common_id = DBCID_ch_reset;
-    sprintf(b->name, "Reset");
-    b->state = 0;
+    if (this->variant != SYS_GG) {
+        b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+        b->common_id = DBCID_ch_reset;
+        sprintf(b->name, "Reset");
+        b->state = 0;
+    }
 
     this->io.pause_button = NULL;
 

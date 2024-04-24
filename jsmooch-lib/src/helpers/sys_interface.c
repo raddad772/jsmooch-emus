@@ -18,9 +18,9 @@ struct jsm_system* new_system(enum jsm_systems which)
     cvec_lock_reallocs(&out->IOs);
     out->kind = which;
 	switch (which) {
-        /*case SYS_ATARI2600:
-            atari2600_new(out, iomap);
-            break;*/
+        case SYS_ATARI2600:
+            atari2600_new(out);
+            break;
 		case SYS_DMG:
 			GB_new(out, DMG);
 			break;
@@ -35,9 +35,9 @@ struct jsm_system* new_system(enum jsm_systems which)
         case SYS_GG:
             SMSGG_new(out, which, REGION_USA);
             break;
-        /*case SYS_DREAMCAST:
-            DC_new(out, iomap);
-            break;*/
+        case SYS_DREAMCAST:
+            DC_new(out);
+            break;
         default:
             printf("CREATE UNKNOWN SYSTEM!");
             break;
@@ -48,6 +48,7 @@ struct jsm_system* new_system(enum jsm_systems which)
 
 void jsm_delete(struct jsm_system* jsm)
 {
+    struct cvec* o = &jsm->IOs;
     switch(jsm->kind) {
         case SYS_ATARI2600:
             atari2600_delete(jsm);
@@ -71,6 +72,7 @@ void jsm_delete(struct jsm_system* jsm)
             printf("DELETE UNKNOWN SYSTEM!");
             break;
     }
+    cvec_delete(o);
     dbg_delete();
     free(jsm);
 }

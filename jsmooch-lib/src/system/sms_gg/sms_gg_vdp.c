@@ -410,7 +410,6 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems 
 static void new_frame(struct SMSGG_VDP* this)
 {
     this->bus->clock.frames_since_restart++;
-    printf("\n%llu", this->bus->clock.frames_since_restart);
     this->bus->clock.vpos = 0;
     this->bus->clock.vdp_frame_cycle = 0;
     this->cur_output = this->display->device.display.output[this->display->device.display.last_written];

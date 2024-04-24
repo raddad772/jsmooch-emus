@@ -38,7 +38,7 @@ void DCJ_load_BIOS(JSM, struct multi_file_set* mfs);
 void DCJ_enable_tracing(JSM);
 void DCJ_disable_tracing(JSM);
 static void DC_schedule_frame(struct DC* this);
-static void new_frame(struct DC* this);
+static void new_frame(struct DC* this, u32 copy_buf);
 void DCJ_describe_io(JSM, struct cvec* IOs);
 
 void DC_new(JSM)
@@ -87,7 +87,7 @@ void DC_new(JSM)
     holly_reset(this);
     this->holly.master_frame = -1;
 
-    new_frame(this);
+    new_frame(this, 0);
 
     buf_init(&this->BIOS);
     buf_init(&this->ROM);
@@ -222,14 +222,14 @@ void DCJ_killall(JSM)
 
 }
 
-static void new_frame(struct DC* this)
+static void new_frame(struct DC* this, u32 copy_buf)
 {
     this->clock.frame_cycle = 0;
     this->clock.frame_start_cycle = this->sh4.trace_cycles;
     this->holly.master_frame++;
     this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
     DC_recalc_frame_timing(this);
-    DC_copy_fb(this, this->holly.cur_output);
+    if (copy_buf) DC_copy_fb(this, this->holly.cur_output);
     this->holly.master_frame++;
     DC_schedule_frame(this);
 }
@@ -348,7 +348,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
                 case evt_FRAME_END:
                     //printf("\nEVENT: FRAME END %llu", this->sh4.trace_cycles);
                     new_scheduler = 1;
-                    new_frame(this);
+                    new_frame(this, 1);
                     break;
                 default:
                     printf("\nUNKNOWN FRAME EVENT %d", this->clock.frame_cycle);
