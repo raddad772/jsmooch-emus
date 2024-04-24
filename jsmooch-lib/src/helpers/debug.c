@@ -85,16 +85,6 @@ void dbg_seek_in_line(u32 pos)
 
 void construct_path(char* w, const char* who)
 {
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
-    char *tp = w;
-    tp += sprintf(tp, "%s/dev/%s", homeDir, who);
 }
 
 void dbg_flush()

@@ -30,20 +30,18 @@ void DCJ_pause(JSM);
 void DCJ_stop(JSM);
 void DCJ_get_framevars(JSM, struct framevars* out);
 void DCJ_reset(JSM);
-void DCJ_map_inputs(JSM, u32* bufptr, u32 bufsize);
-void DCJ_get_description(JSM, struct machine_description* d);
 void DCJ_killall(JSM);
 u32 DCJ_finish_frame(JSM);
 u32 DCJ_finish_scanline(JSM);
 u32 DCJ_step_master(JSM, u32 howmany);
 void DCJ_load_BIOS(JSM, struct multi_file_set* mfs);
-void DCJ_load_ROM(JSM, struct multi_file_set* mfs);
 void DCJ_enable_tracing(JSM);
 void DCJ_disable_tracing(JSM);
 static void DC_schedule_frame(struct DC* this);
 static void new_frame(struct DC* this);
+void DCJ_describe_io(JSM, struct cvec* IOs);
 
-void DC_new(JSM, struct JSM_IOmap *iomap)
+void DC_new(JSM)
 {
     fflush(stdout);
     do_sh4_decode();
@@ -53,6 +51,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     dbg.dcptr = this;
 
     SH4_init(&this->sh4, &this->scheduler);
+    this->described_inputs = 0;
     this->sh4.mptr = (void *)this;
     this->sh4.read = &DCread_noins;
     this->sh4.write = &DCwrite;
@@ -86,12 +85,7 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
 
     */
     holly_reset(this);
-    this->holly.last_used_buffer = 0;
-    this->holly.cur_output_num = 0;
-    this->holly.cur_output = (u32 *)iomap->out_buffers[0];
-    this->holly.out_buffer[0] = (u32 *)iomap->out_buffers[0];
-    this->holly.out_buffer[1] = (u32 *)iomap->out_buffers[1];
-    this->holly.master_frame = 0;
+    this->holly.master_frame = -1;
 
     new_frame(this);
 
@@ -105,23 +99,21 @@ void DC_new(JSM, struct JSM_IOmap *iomap)
     this->settings.language = 6; //1; // EN
 
     jsm->ptr = (void*)this;
-    jsm->which = SYS_DREAMCAST;
+    jsm->kind = SYS_DREAMCAST;
 
-    jsm->get_description = &DCJ_get_description;
     jsm->finish_frame = &DCJ_finish_frame;
     jsm->finish_scanline = &DCJ_finish_scanline;
     jsm->step_master = &DCJ_step_master;
     jsm->reset = &DCJ_reset;
-    jsm->load_ROM = &DCJ_load_ROM;
     jsm->load_BIOS = &DCJ_load_BIOS;
     jsm->killall = &DCJ_killall;
-    jsm->map_inputs = &DCJ_map_inputs;
     jsm->get_framevars = &DCJ_get_framevars;
     jsm->enable_tracing = &DCJ_enable_tracing;
     jsm->disable_tracing = &DCJ_disable_tracing;
     jsm->play = &DCJ_play;
     jsm->pause = &DCJ_pause;
     jsm->stop = &DCJ_stop;
+    jsm->describe_io = &DCJ_describe_io;
 }
 
 void DC_delete(struct jsm_system* jsm)
@@ -140,21 +132,19 @@ void DC_delete(struct jsm_system* jsm)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->get_description = NULL;
     jsm->finish_frame = NULL;
     jsm->finish_scanline = NULL;
     jsm->step_master = NULL;
     jsm->reset = NULL;
-    jsm->load_ROM = NULL;
     jsm->load_BIOS = NULL;
     jsm->killall = NULL;
-    jsm->map_inputs = NULL;
     jsm->get_framevars = NULL;
     jsm->play = NULL;
     jsm->pause = NULL;
     jsm->stop = NULL;
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
+    jsm->describe_io = NULL;
 }
 
 void DC_copy_fb(struct DC* this, u32* where) {
@@ -197,7 +187,7 @@ void DCJ_play(JSM)
 {
     JTHIS;
     // FOr now we use this to copy framebuffer
-    this->holly.cur_output = this->holly.out_buffer[0];
+    this->holly.cur_output = this->holly.display->device.display.output[0];
 }
 
 void DCJ_pause(JSM)
@@ -209,7 +199,6 @@ void DCJ_stop(JSM)
 {
     JTHIS;
     DC_copy_fb(this, this->holly.cur_output);
-    this->holly.last_used_buffer = 0;
     this->holly.master_frame++;
 }
 
@@ -218,7 +207,7 @@ void DCJ_get_framevars(JSM, struct framevars* out)
     JTHIS;
     out->master_cycle = this->sh4.trace_cycles;
     out->master_frame = this->holly.master_frame;
-    out->last_used_buffer = this->holly.last_used_buffer;
+    out->last_used_buffer = this->holly.display->device.display.last_written;
 }
 
 void DCJ_reset(JSM)
@@ -227,15 +216,6 @@ void DCJ_reset(JSM)
     SH4_reset(&this->sh4);
 }
 
-void DCJ_map_inputs(JSM, u32* bufptr, u32 bufsize)
-{
-
-}
-
-void DCJ_get_description(JSM, struct machine_description* d)
-{
-
-}
 
 void DCJ_killall(JSM)
 {
@@ -250,7 +230,6 @@ static void new_frame(struct DC* this)
     this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
     DC_recalc_frame_timing(this);
     DC_copy_fb(this, this->holly.cur_output);
-    this->holly.last_used_buffer = 0;
     this->holly.master_frame++;
     DC_schedule_frame(this);
 }
@@ -404,6 +383,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
         til_next_event = scheduler_til_next_event(&this->scheduler);
         if (dbg.do_break) break;
     }
+    printf("\nSTEPS:%lli BRK:%d", steps_done, dbg.do_break);
     return steps_done;
 }
 
@@ -432,10 +412,25 @@ void DCJ_load_BIOS(JSM, struct multi_file_set* mfs)
     }
 }
 
-void DCJ_load_ROM(JSM, struct multi_file_set* mfs)
+static void DCIO_close_drive(JSM)
+{
+
+}
+
+static void DCIO_open_drive(JSM)
+{
+
+}
+
+static void DCIO_remove_disc(JSM)
+{
+
+}
+
+static void DCIO_insert_disc(JSM, struct multi_file_set *mfs)
 {
     JTHIS;
-/*
+    /*
     struct GDI_image foo;
     GDI_init(&foo);
     const char *homeDir = getenv("HOME");
@@ -456,6 +451,88 @@ void DCJ_load_ROM(JSM, struct multi_file_set* mfs)
  */
     GDI_load(mfs->files[0].path, mfs->files[0].name, &this->gdrom.gdi);
 }
+
+static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id)
+{
+    struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
+    sprintf(b->name, "%s", name);
+    b->state = 0;
+    b->id = 0;
+    b->kind = DBK_BUTTON;
+    b->common_id = common_id;
+}
+
+static void setup_controller(struct DC* this, u32 num, const char*name, u32 connected)
+{
+    struct physical_io_device *d = cvec_push_back(this->IOs);
+    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+
+    sprintf(d->device.controller.name, "%s", name);
+    d->id = num;
+    d->kind = HID_CONTROLLER;
+    d->connected = connected;
+
+    struct JSM_CONTROLLER* cnt = &d->device.controller;
+
+    // up down left right a b start select. in that order
+    new_button(cnt, "up", DBCID_co_up);
+    new_button(cnt, "down", DBCID_co_down);
+    new_button(cnt, "left", DBCID_co_left);
+    new_button(cnt, "right", DBCID_co_right);
+    new_button(cnt, "a", DBCID_co_fire1);
+    new_button(cnt, "b", DBCID_co_fire2);
+    new_button(cnt, "start", DBCID_co_start);
+}
+
+void DCJ_describe_io(JSM, struct cvec* IOs)
+{
+    JTHIS;
+    if (this->described_inputs) return;
+    this->described_inputs = 1;
+
+    this->IOs = IOs;
+
+    // controllers
+    setup_controller(this, 0, "Player 1", 1);
+
+    // power and reset buttons
+    struct physical_io_device* chassis = cvec_push_back(IOs);
+    physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
+    struct HID_digital_button* b;
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    sprintf(b->name, "Power");
+    b->state = 1;
+    b->common_id = DBCID_ch_power;
+
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b->common_id = DBCID_ch_reset;
+    sprintf(b->name, "Reset");
+    b->state = 0;
+
+    // GDROM
+    struct physical_io_device *d = cvec_push_back(IOs);
+    physical_io_device_init(d, HID_DISC_DRIVE, 1, 1, 1, 0);
+    d->device.disc_drive.insert_disc = &DCIO_insert_disc;
+    d->device.disc_drive.remove_disc = &DCIO_remove_disc;
+    d->device.disc_drive.open_drive = &DCIO_open_drive;
+    d->device.disc_drive.close_drive = &DCIO_close_drive;
+
+    // screen
+    d = cvec_push_back(IOs);
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    d->device.display.fps = 60;
+    d->device.display.output[0] = malloc(640*480*4);
+    d->device.display.output[1] = malloc(640*480*4);
+    this->holly.display = d;
+    this->holly.cur_output = (u32 *)d->device.display.output[0];
+    d->device.display.last_written = 1;
+    d->device.display.last_displayed = 1;
+
+    this->c1.devices = IOs;
+    this->c1.device_index = 0;
+
+}
+
 
 void DCJ_old_load_ROM(JSM, struct multi_file_set* mfs)
 {

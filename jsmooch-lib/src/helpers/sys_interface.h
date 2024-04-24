@@ -4,6 +4,7 @@
 #include "int.h"
 #include "enums.h"
 #include "buf.h"
+#include "cvec.h"
 
 enum JSM_filekind {
     ROM,
@@ -75,17 +76,15 @@ struct framevars {
 struct jsm_system {
     void* ptr; // Pointer that holds the system
 
-    enum jsm_systems which; // Which system is it?
+    enum jsm_systems kind; // Which system is it?
 
-    void (*get_description)(struct jsm_system* jsm, struct machine_description *output);
     u32 (*finish_frame)(struct jsm_system* jsm);
     u32 (*finish_scanline)(struct jsm_system* jsm);
     u32 (*step_master)(struct jsm_system* jsm, u32);
     void (*reset)(struct jsm_system* jsm);
-    void (*load_ROM)(struct jsm_system* jsm, struct multi_file_set* mfs);
     void (*load_BIOS)(struct jsm_system* jsm, struct multi_file_set* mfs);
     void (*killall)(struct jsm_system* jsm);
-    void (*map_inputs)(struct jsm_system* jsm, u32* bufptr, u32 bufsize);
+    void (*describe_io)(struct jsm_system *jsm, struct cvec* IOs);
     void (*get_framevars)(struct jsm_system* jsm, struct framevars* out);
 
     void (*enable_tracing)(struct jsm_system* jsm);
@@ -94,15 +93,11 @@ struct jsm_system {
     void (*play)(struct jsm_system* jsm);
     void (*pause)(struct jsm_system* jsm);
     void (*stop)(struct jsm_system* jsm);
+
+    struct cvec IOs;
 };
 
-struct JSM_IOmap {
-    void *out_buffers[2];
-    int last_buf;
-    int frame_num;
-};
-
-struct jsm_system* new_system(enum jsm_systems which, struct JSM_IOmap *iomap);
+struct jsm_system* new_system(enum jsm_systems which);
 void jsm_delete(struct jsm_system* which);
 
 #endif

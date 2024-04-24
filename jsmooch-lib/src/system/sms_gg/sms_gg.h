@@ -9,6 +9,7 @@
 #include "helpers/debug.h"
 #include "helpers/sys_interface.h"
 #include "component/cpu/z80/z80.h"
+#include "helpers/physical_io.h"
 
 #include "component/controller/sms/sms_gamepad.h"
 #include "sms_gg_clock.h"
@@ -17,7 +18,7 @@
 #include "sms_gg_mapper_sega.h"
 #include "sms_gg_io.h"
 
-void SMSGG_new(struct jsm_system* jsm, struct JSM_IOmap *iomap, enum jsm_systems variant, enum jsm_regions region);
+void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region);
 void SMSGG_delete(struct jsm_system* jsm);
 
 struct SMSGG {
@@ -31,18 +32,21 @@ struct SMSGG {
 
     u32 display_enabled;
     u32 tracing;
-    u32 last_frame;
 
-    struct smspad_inputs controller1_in;
-    struct smspad_inputs controller2_in;
+    struct cvec* IOs;
+
+    u32 described_inputs;
+    u32 last_frame;
 
     u32 (*cpu_in)(struct SMSGG* this, u32, u32, u32);
     void (*cpu_out)(struct SMSGG* this, u32, u32);
 
     struct {
         struct SMSGG_gamepad controllerA;
+        struct SMSGG_gamepad controllerB;
         struct SMSGG_controller_port portA;
         struct SMSGG_controller_port portB;
+        struct HID_digital_button *pause_button;
         u32 disable;
         u32 gg_start;
         u32 GGreg;

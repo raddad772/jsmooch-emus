@@ -357,7 +357,7 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
             // PDTRA from Bus Control
             // Note: I got it from Deecy...
             // Note: I have absolutely no idea what's going on here.
-            //       This is directly taken from Flycast, which already got it from Chankast.
+            //       This is directly taken from Flycast, kind already got it from Chankast.
             //       This is needed for the bios to work properly, without it, it will
             //       go to sleep mode with all interrupts disabled early on.
             u32 tpctra = this->regs.PCTRA;

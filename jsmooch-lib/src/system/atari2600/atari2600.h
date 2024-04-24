@@ -10,7 +10,7 @@
 #include "cart.h"
 #include "tia.h"
 
-void atari2600_new(struct jsm_system* system, struct JSM_IOmap *iomap);
+void atari2600_new(struct jsm_system* system);
 void atari2600_delete(struct jsm_system* system);
 
 struct atari2600_inputs {
@@ -39,6 +39,9 @@ struct atari2600 {
     struct M6502 cpu;
     struct M6532 riot;
     struct atari_TIA tia;
+
+    u32 described_inputs;
+    struct cvec* IOs;
 
     struct atari2600_CPU_bus CPU_bus;
 

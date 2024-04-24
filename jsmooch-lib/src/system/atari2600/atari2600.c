@@ -33,8 +33,6 @@ void atari2600J_pause(JSM);
 void atari2600J_stop(JSM);
 void atari2600J_get_framevars(JSM, struct framevars* out);
 void atari2600J_reset(JSM);
-void atari2600J_map_inputs(JSM, u32* bufptr, u32 bufsize);
-void atari2600J_get_description(JSM, struct machine_description* d);
 void atari2600J_killall(JSM);
 u32 atari2600J_finish_frame(JSM);
 u32 atari2600J_finish_scanline(JSM);
@@ -43,8 +41,11 @@ void atari2600J_load_BIOS(JSM, struct multi_file_set* mfs);
 void atari2600J_load_ROM(JSM, struct multi_file_set* mfs);
 void atari2600J_enable_tracing(JSM);
 void atari2600J_disable_tracing(JSM);
+void atari2600J_describe_io(JSM, struct cvec* IOs);
+static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
+static void atari2600IO_unload_cart(JSM);
 
-void atari2600_new(JSM, struct JSM_IOmap *iomap)
+void atari2600_new(JSM)
 {
     struct atari2600* this = (struct atari2600*)malloc(sizeof(struct atari2600));
 
@@ -59,17 +60,13 @@ void atari2600_new(JSM, struct JSM_IOmap *iomap)
     this->case_switches.p1_difficulty = 0;
     this->case_switches.color = 1;
 
-    this->tia.last_used_buffer = 0;
-    this->tia.cur_output_num = 0;
-    this->tia.cur_output = (u8 *)iomap->out_buffers[0];
-    this->tia.out_buffer[0] = (u8 *)iomap->out_buffers[0];
-    this->tia.out_buffer[1] = (u8 *)iomap->out_buffers[1];
-
     this->tia.frames_since_restart = 0;
     this->tia.timing.vblank_in_lines = 40; // 40 NTSC, 48 PAL
     this->tia.timing.display_line_start = 40;
     this->tia.timing.vblank_out_start = 192 + 40; // // 192 NTSC, 22? PAL
     this->tia.timing.vblank_out_lines = 30; // 30 NTSC, 36 PAL
+
+    this->described_inputs = 0;
 
     this->cycles_left = 0;
     this->display_enabled = 1;
@@ -77,23 +74,21 @@ void atari2600_new(JSM, struct JSM_IOmap *iomap)
     atari2600_inputs_init(&this->controller2_in);
 
     jsm->ptr = (void*)this;
-    jsm->which = SYS_ATARI2600;
+    jsm->kind = SYS_ATARI2600;
 
-    jsm->get_description = &atari2600J_get_description;
     jsm->finish_frame = &atari2600J_finish_frame;
     jsm->finish_scanline = &atari2600J_finish_scanline;
     jsm->step_master = &atari2600J_step_master;
     jsm->reset = &atari2600J_reset;
-    jsm->load_ROM = &atari2600J_load_ROM;
     jsm->load_BIOS = &atari2600J_load_BIOS;
     jsm->killall = &atari2600J_killall;
-    jsm->map_inputs = &atari2600J_map_inputs;
     jsm->get_framevars = &atari2600J_get_framevars;
     jsm->enable_tracing = &atari2600J_enable_tracing;
     jsm->disable_tracing = &atari2600J_disable_tracing;
     jsm->play = &atari2600J_play;
     jsm->pause = &atari2600J_pause;
     jsm->stop = &atari2600J_stop;
+    jsm->describe_io = &atari2600J_describe_io;
 
     atari2600J_reset(jsm);
 }
@@ -106,21 +101,108 @@ void atari2600_delete(JSM)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->get_description = NULL;
     jsm->finish_frame = NULL;
     jsm->finish_scanline = NULL;
     jsm->step_master = NULL;
     jsm->reset = NULL;
-    jsm->load_ROM = NULL;
     jsm->load_BIOS = NULL;
     jsm->killall = NULL;
-    jsm->map_inputs = NULL;
     jsm->get_framevars = NULL;
     jsm->play = NULL;
     jsm->pause = NULL;
     jsm->stop = NULL;
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
+    jsm->describe_io = NULL;
+}
+
+static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id)
+{
+    struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
+    sprintf(b->name, "%s", name);
+    b->state = 0;
+    b->id = 0;
+    b->kind = DBK_BUTTON;
+    b->common_id = common_id;
+}
+
+static void setup_controller(struct atari2600* this, u32 num, const char*name, u32 connected)
+{
+    struct physical_io_device *d = cvec_push_back(this->IOs);
+    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+
+    sprintf(d->device.controller.name, "%s", name);
+    d->id = num;
+    d->kind = HID_CONTROLLER;
+    d->connected = connected;
+
+    struct JSM_CONTROLLER* cnt = &d->device.controller;
+
+    // up down left right a b start select. in that order
+    new_button(cnt, "up", DBCID_co_up);
+    new_button(cnt, "down", DBCID_co_down);
+    new_button(cnt, "left", DBCID_co_left);
+    new_button(cnt, "right", DBCID_co_right);
+    new_button(cnt, "fire", DBCID_co_fire1);
+}
+
+void atari2600J_describe_io(JSM, struct cvec *IOs)
+{
+    JTHIS;
+    if (this->described_inputs) return;
+    this->described_inputs = 1;
+
+    this->IOs = IOs;
+
+    // controllers
+    setup_controller(this, 0, "Player 1", 1);
+    setup_controller(this, 1, "Player 2", 0);
+
+    // Chassis buttons
+    struct physical_io_device* chassis = cvec_push_back(IOs);
+    physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
+    struct HID_digital_button* b;
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    sprintf(b->name, "Power");
+    b->state = 1;
+    b->common_id = DBCID_ch_power;
+
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b->common_id = DBCID_ch_reset;
+    sprintf(b->name, "Reset");
+    b->state = 0;
+
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b->common_id = DBCID_ch_diff_left;
+    sprintf(b->name, "Left Difficulty");
+    b->state = 0;
+
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b->common_id = DBCID_ch_diff_right;
+    sprintf(b->name, "Right Difficulty");
+    b->state = 0;
+
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b->common_id = DBCID_ch_game_select;
+    sprintf(b->name, "Game Select");
+    b->state = 0;
+
+    // cartridge port
+    struct physical_io_device *d = cvec_push_back(IOs);
+    physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
+    d->device.cartridge_port.load_cart = &atari2600IO_load_cart;
+    d->device.cartridge_port.unload_cart = &atari2600IO_unload_cart;
+
+    // screen
+    d = cvec_push_back(IOs);
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    d->device.display.fps = 60;
+    d->device.display.output[0] = malloc(256*224*2);
+    d->device.display.output[1] = malloc(256*224*2);
+    this->tia.display = d;
+    this->tia.cur_output = (u8 *)d->device.display.output[0];
+    d->device.display.last_written = 1;
+    d->device.display.last_displayed = 1;
 }
 
 void atari2600J_enable_tracing(JSM)
@@ -174,17 +256,22 @@ void atari2600J_reset(JSM)
     this->master_clock = 0;
 }
 
-void atari2600J_map_inputs(JSM, u32* bufptr, u32 bufsize)
+void atari2600_map_inputs(JSM)
 {
     JTHIS;
+    struct physical_io_device* p = (struct physical_io_device*)cvec_get(this->IOs, 0);
+    struct cvec* bl = &p->device.controller.digital_buttons;
+    struct HID_digital_button* b;
+
+#define B_GET(button, num) { b = cvec_get(bl, num); this->controller1_in. button = b->state; }
+    B_GET(up, 0);
+    B_GET(down, 1);
+    B_GET(left, 2);
+    B_GET(right, 3);
+    B_GET(fire, 4);
+#undef B_GET
 
     // TODO
-    this->controller1_in.up = bufptr[0];
-    this->controller1_in.down = bufptr[1];
-    this->controller1_in.left = bufptr[2];
-    this->controller1_in.right = bufptr[3];
-    this->controller1_in.fire = bufptr[4];
-
     this->controller2_in = (struct atari2600_inputs) {
         .down = 0,
         .up = 0,
@@ -192,6 +279,16 @@ void atari2600J_map_inputs(JSM, u32* bufptr, u32 bufsize)
         .right = 0,
         .fire = 0
     };
+
+    p = (struct physical_io_device*)cvec_get(this->IOs, 2);
+    bl = &p->device.chassis.digital_buttons;
+
+#define B_GET(button, num) { b = cvec_get(bl, num); this->case_switches. button = b->state; }
+    B_GET(reset, 1);
+    B_GET(p0_difficulty, 2);
+    B_GET(p1_difficulty, 3);
+    B_GET(select, 4);
+#undef B_GET
 
     // Now update input stuff! YAY!
     this->tia.io.INPT[0] = this->tia.io.INPT[1] = this->tia.io.INPT[2] = this->tia.io.INPT[3] = this->tia.io.INPT[4] = this->tia.io.INPT[5] = 0;
@@ -276,6 +373,7 @@ void atari2600J_killall(JSM)
 u32 atari2600J_finish_frame(JSM)
 {
     JTHIS;
+    atari2600_map_inputs(jsm);
     u32 current_frame = this->tia.master_frame;
     while (this->tia.master_frame == current_frame) {
         atari2600J_finish_scanline(jsm);
@@ -316,6 +414,7 @@ void CPU_run_cycle(struct atari2600* this)
 u32 atari2600J_finish_scanline(JSM)
 {
     JTHIS;
+    atari2600_map_inputs(jsm);
     u32 start_y = this->tia.vcounter;
     while (this->tia.vcounter == start_y) {
         atari2600J_step_master(jsm, 1);
@@ -327,6 +426,7 @@ u32 atari2600J_finish_scanline(JSM)
 u32 atari2600J_step_master(JSM, u32 howmany)
 {
     JTHIS;
+    atari2600_map_inputs(jsm);
     this->cycles_left += (i32)howmany;
     while (this->cycles_left > 0) {
         if ((this->master_clock % 3) == 0)
@@ -346,7 +446,7 @@ void atari2600J_load_BIOS(JSM, struct multi_file_set* mfs)
     printf("\nAtari 2600 doesn't have a BIOS...?");
 }
 
-void atari2600J_load_ROM(JSM, struct multi_file_set* mfs)
+static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
@@ -355,3 +455,7 @@ void atari2600J_load_ROM(JSM, struct multi_file_set* mfs)
     atari2600J_reset(jsm);
 }
 
+static void atari2600IO_unload_cart(JSM)
+{
+
+}

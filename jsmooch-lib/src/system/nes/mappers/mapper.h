@@ -53,7 +53,7 @@ struct NES_mapper {
 void NES_mapper_init(struct NES_mapper* this, struct NES* nes);
 void NES_mapper_delete(struct NES_mapper* this);
 void NES_mapper_set_which(struct NES_mapper* this, u32 wh);
-//struct NES_mapper* new_NES_mapper(struct NES* nes, enum NES_mappers which);
+//struct NES_mapper* new_NES_mapper(struct NES* nes, enum NES_mappers kind);
 //void delete_NES_mapper(struct NES_mapper* whom);
 
 typedef u32 (*mirror_ppu_t)(u32);

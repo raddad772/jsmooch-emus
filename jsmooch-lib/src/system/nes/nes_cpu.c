@@ -170,10 +170,10 @@ u32 NES_bus_CPU_read_reg(struct NES* nes, u32 addr, u32 val, u32 has_effect)
             r = NES_controllerport_data(&this->controller_port1);
             return r;
         case 0x4017: // JOYSER1
-            //r = this->controller_port2.data();
-            return 0;
+            r = NES_controllerport_data(&this->controller_port2);
+            return r;
     }
-    //return this->bus.apu.read_IO(addr, val, has_effect);
+    //return this->bus.apu.read_IO(addr, val, has_effect);  TODO
     return val;
 }
 
@@ -192,10 +192,4 @@ void NES_bus_CPU_write_reg(struct NES* nes, u32 addr, u32 val)
             return;
     }
     //this->bus.apu.write_IO(addr, val);
-}
-
-void r2A03_update_inputs(struct r2A03* this, struct nespad_inputs* inp1, struct nespad_inputs* inp2)
-{
-    NES_joypad_buffer_input(&this->joypad1, inp1);
-    NES_joypad_buffer_input(&this->joypad2, inp2);
 }

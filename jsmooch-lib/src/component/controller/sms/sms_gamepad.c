@@ -2,7 +2,9 @@
 // Created by Dave on 2/7/2024.
 //
 
+#include "helpers/physical_io.h"
 #include "sms_gamepad.h"
+#include "string.h"
 
 void smspad_inputs_init(struct smspad_inputs* this)
 {
@@ -41,10 +43,31 @@ u32 SMSGG_gamepad_read(struct SMSGG_gamepad* this)
 
 void SMSGG_gamepad_latch(struct SMSGG_gamepad* this)
 {
-    this->pins.up = this->input_waiting.up ? 0 : 1;
-    this->pins.down = this->input_waiting.down ? 0 : 1;
-    this->pins.left = this->input_waiting.left ? 0 : 1;
-    this->pins.right = this->input_waiting.right ? 0 : 1;
-    this->pins.tr = this->input_waiting.b2 ? 0 : 1;
-    this->pins.tl = this->input_waiting.b1 ? 0 : 1;
+    struct physical_io_device* p = (struct physical_io_device*)cvec_get(this->devices, this->device_index);
+    if (p->connected) {
+        struct cvec* bl = &p->device.controller.digital_buttons;
+        struct HID_digital_button* b;
+#define B_GET(button, num) { b = cvec_get(bl, num); this->pins. button = b->state; }
+        B_GET(up, 0);
+        B_GET(down, 1);
+        B_GET(left, 2);
+        B_GET(right, 3);
+        B_GET(tr, 4);
+        B_GET(tl, 5);
+#undef B_GET
+        this->pins.up = this->input_waiting.up ? 0 : 1;
+        this->pins.down = this->input_waiting.down ? 0 : 1;
+        this->pins.left = this->input_waiting.left ? 0 : 1;
+        this->pins.right = this->input_waiting.right ? 0 : 1;
+        this->pins.tr = this->input_waiting.b2 ? 0 : 1;
+        this->pins.tl = this->input_waiting.b1 ? 0 : 1;
+    }
+    else {
+        this->pins.up = this->input_waiting.up = 1;
+        this->pins.down = this->input_waiting.down = 1;
+        this->pins.left = this->input_waiting.left = 1;
+        this->pins.right = this->input_waiting.right = 1;
+        this->pins.tr = this->input_waiting.b2 = 1;
+        this->pins.tl = this->input_waiting.b1 = 1;
+    }
 }

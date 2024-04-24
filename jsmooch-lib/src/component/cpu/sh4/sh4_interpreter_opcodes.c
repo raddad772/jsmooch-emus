@@ -62,7 +62,7 @@ enum MSIZE {
 in SR is 0 (accepted at instruction boundary).
 • Transition address: VBR + H'0000 0600
 • Transition operations:
-The PC contents immediately after the instruction at which the interrupt is accepted are set in
+The PC contents immediately after the instruction at kind the interrupt is accepted are set in
 SPC. The SR and R15 contents at the time of acceptance are set in SSR and SGR.
 The code corresponding to the IRL (3ñ0) level is set in INTEVT. See table 19.5, Interrupt
 Exception Handling Sources and Priority Order, for the corresponding codes. The BL, MD,
@@ -801,7 +801,7 @@ SH4ins(SHLR16) { // Rn >> 16 -> [0 -> Rn]
 SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
     //printf("\nBF! %llu", this->trace_cycles);
     assert(this->regs.SR.T < 2);
-    // PC += 2, which is normal
+    // PC += 2, kind is normal
     // add ((2 * DISP) + 2) * !T
     // so it'll add 0 if T=1
     // it'll add (2*DISP)+2 if T=0
@@ -819,7 +819,7 @@ SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
 
 SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
     //printf("\nBFS! %llu", this->trace_cycles);
-    // PC is gonna be +4 no matter what, which is correct
+    // PC is gonna be +4 no matter what, kind is correct
     // then we add 2*disp to that after if T = 0
     /*i64 val = (i64)rPC + 4;
     val += (2 * (i32)SIGNe8to32(DISP)) * (i32)(this->regs.SR.T ^ 1);
@@ -1124,6 +1124,7 @@ SH4ins(SETT) { // 1 -> T
 
 SH4ins(SLEEP) { // Sleep or standby
     dbg_break();
+    printf("\nBREAK FOR SLEEP!");
     dbg_LT_dump();
     PCinc;
 }

@@ -81,7 +81,7 @@ void GB_timer_SYSCLK_change(struct GB_timer *this, u32 new_value) {
 void GB_timer_write_IO(struct GB_timer *this, u32 addr, u32 val) {
     u32 last_bit;
     switch (addr) {
-    case 0xFF04: // DIV, which is upper 8 bits of SYSCLK
+    case 0xFF04: // DIV, kind is upper 8 bits of SYSCLK
         GB_timer_SYSCLK_change(this, 0);
         break;
     case 0xFF05: // TIMA, the timer counter
@@ -409,9 +409,25 @@ void GB_CPU_quick_boot(struct GB_CPU* this)
     }
 }
 
+static void update_inputs(struct GB_CPU* this) {
+    struct cvec* bl = &this->io_device->device.controller.digital_buttons;
+    struct HID_digital_button* b;
+#define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
+    B_GET(up, 0);
+    B_GET(down, 1);
+    B_GET(left, 2);
+    B_GET(right, 3);
+    B_GET(a, 4);
+    B_GET(b, 5);
+    B_GET(start, 6);
+    B_GET(select, 7);
+#undef B_GET
+}
+
 static u32 GB_CPU_get_input(struct GB_CPU* this) {
     u32 out1;
     u32 out3 = 0x0F;
+    update_inputs(this);
     if (this->io.JOYP.action_select == 0) {
         out1 = this->input_buffer.a | (this->input_buffer.b << 1) | (this->input_buffer.select << 2) | (this->input_buffer.start << 3);
         out1 ^= 0x0F;

@@ -9,23 +9,32 @@
 
 #include "cvec.h"
 
+void cvec_lock_reallocs(struct cvec* this)
+{
+    this->realloc_locked = 1;
+}
+
 void cvec_init(struct cvec* this, u32 data_size, u32 prealloc)
 {
     this->data = NULL;
     this->data_sz = data_size;
     this->len_allocated = 0;
+    this->realloc_locked = 0;
     this->len = 0;
 
     if (prealloc != 0) {
         this->len_allocated = prealloc * 2;
         this->data = malloc(data_size * this->len_allocated);
     }
+
 }
 
 void cvec_delete(struct cvec* this)
 {
-    if (this->data != NULL)
+    if (this->data != NULL) {
         free(this->data);
+    }
+    this->realloc_locked = 0;
     this->data = NULL;
     this->len_allocated = 0;
     this->len = 0;
@@ -37,13 +46,15 @@ u32 cvec_len(struct cvec* this) {
 
 void *cvec_push_back(struct cvec* this)
 {
-    printf("\nPUSH BACK! %d", this->len);
+    //printf("\nPUSH BACK! %d", this->len);
     if (this->len >= this->len_allocated) {
         if (this->len_allocated == 0) {
+            assert(!this->realloc_locked);
             this->len_allocated = 20;
             this->data = malloc(this->data_sz * this->len_allocated);
         }
         else {
+            assert(!this->realloc_locked);
             this->len_allocated = this->len_allocated * 2;
             u32 sz = this->data_sz * this->len_allocated;
             if (sz > (16*1024*1024)) {

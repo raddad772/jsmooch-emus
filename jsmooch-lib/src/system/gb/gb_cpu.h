@@ -4,6 +4,7 @@
 #include "helpers/int.h"
 #include "gb_enums.h"
 #include "component/cpu/sm83/sm83.h"
+#include "helpers/physical_io.h"
 
 struct GB_timer {
     u32 TIMA;//: u32 = 0
@@ -78,7 +79,7 @@ struct GB_CPU {
         u32 right;
     } input_buffer;
 
-    // inputs!?
+    struct physical_io_device *io_device;
 };
 
 void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
@@ -91,6 +92,5 @@ void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val);
 void GB_CPU_enable_tracing(struct GB_CPU *this);
 void GB_CPU_disable_tracing(struct GB_CPU *this);
 struct GB_inputs;
-void GB_CPU_update_inputs(struct GB_CPU* this, struct GB_inputs *inp1);
 
 #endif

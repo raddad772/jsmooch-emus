@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_SMS_GG_VDP_H
 #define JSMOOCH_EMUS_SMS_GG_VDP_H
 
+#include "helpers/physical_io.h"
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
@@ -26,11 +27,8 @@ struct SMSGG_VDP {
     u16 CRAM[32];
     enum SMSGG_VDP_modes mode;
 
-    u32 last_used_buffer;
-    u32 cur_output_num;
+    struct physical_io_device* display;
     u16 *cur_output;
-    u16 *out_buffer[2];
-
     struct SMSGG_object objects[8];
 
     struct SMSGG_VDP_io {

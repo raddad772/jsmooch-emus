@@ -26,6 +26,8 @@ struct NES_PPU {
     struct NES* nes;
     PPU_linerender_func render_cycle;
 
+    struct physical_io_device* display;
+
     i32 line_cycle;
     u8 OAM[256];
     u8 secondary_OAM[32];
@@ -41,10 +43,7 @@ struct NES_PPU {
     struct PPU_effect_buffer w2006_buffer;
 
     u8 CGRAM[0x20];
-    u32 last_used_buffer;
-    u32 cur_output_num;
-    u16 *cur_output;
-    u16 *out_buffer[2];
+    u16* cur_output;
 
     u32 bg_fetches[4];
     u32 bg_shifter;

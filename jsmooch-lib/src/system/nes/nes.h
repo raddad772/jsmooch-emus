@@ -12,8 +12,15 @@
 #include "nes_cpu.h"
 #include "nes_ppu.h"
 
-void NES_new(struct jsm_system* system, struct JSM_IOmap *iomap);
+void NES_new(struct jsm_system* system);
 void NES_delete(struct jsm_system* system);
+
+#define NES_INPUTS_CHASSIS 0
+#define NES_INPUTS_CARTRIDGE 1
+#define NES_INPUTS_PLAYER1 0
+#define NES_INPUTS_PLAYER2 1
+
+#define NES_OUTPUTS_DISPLAY 0
 
 enum NES_TIMINGS {
     NES_NTSC,
@@ -27,11 +34,11 @@ struct NES {
     struct r2A03 cpu;
     struct NES_PPU ppu;
 
+    u32 described_inputs;
     u32 cycles_left;
     u32 display_enabled;
+    struct cvec* IOs;
 
-    struct nespad_inputs controller1_in;
-    struct nespad_inputs controller2_in;
     struct NES_mapper bus;
     struct NES_cart cart;
 };

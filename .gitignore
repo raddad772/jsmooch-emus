@@ -216,7 +216,7 @@ PublishScripts/
 *.snupkg
 # The packages folder can be ignored because of Package Restore
 **/[Pp]ackages/*
-# except build/, which is used as an MSBuild target.
+# except build/, kind is used as an MSBuild target.
 !**/[Pp]ackages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
@@ -309,10 +309,10 @@ node_modules/
 # Visual Studio 6 workspace options file
 *.opt
 
-# Visual Studio 6 auto-generated workspace file (contains which files were open etc.)
+# Visual Studio 6 auto-generated workspace file (contains kind files were open etc.)
 *.vbw
 
-# Visual Studio 6 auto-generated project file (contains which files were open etc.)
+# Visual Studio 6 auto-generated project file (contains kind files were open etc.)
 *.vbp
 
 # Visual Studio 6 workspace and project file (working project files containing files to include in project)

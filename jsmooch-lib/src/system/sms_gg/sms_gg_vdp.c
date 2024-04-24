@@ -413,9 +413,8 @@ static void new_frame(struct SMSGG_VDP* this)
     printf("\n%llu", this->bus->clock.frames_since_restart);
     this->bus->clock.vpos = 0;
     this->bus->clock.vdp_frame_cycle = 0;
-    this->last_used_buffer = this->cur_output_num;
-    this->cur_output_num ^= 1;
-    this->cur_output = this->out_buffer[this->cur_output_num];
+    this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
+    this->display->device.display.last_written ^= 1;
 }
 
 static void set_scanline_kind(struct SMSGG_VDP* this, u32 vpos)

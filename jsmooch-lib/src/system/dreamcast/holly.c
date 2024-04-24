@@ -145,8 +145,8 @@ void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, 
 void DC_recalc_frame_timing(struct DC* this)
 {
     // We need to know:
-    // which line to vblank in IRQ. cycle # in frame
-    // which line to vblank out IRQ. cycle # in frame
+    // kind line to vblank in IRQ. cycle # in frame
+    // kind line to vblank out IRQ. cycle # in frame
     // how many cycles per line
     // how many lines in frame
     //this->clock.cycles_per_frame;

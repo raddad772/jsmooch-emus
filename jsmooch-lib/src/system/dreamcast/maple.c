@@ -103,7 +103,7 @@ void maple_dma_init(struct DC* this)
         return;
     }
     if (this->maple.SB_MDTSEL == 1) this->maple.vblank_repeat_trigger = 1;
-    //printf("\nMAPLE DMA TRANSFER %08x", this->maple.SB_MDSTAR);
+    printf("\nMAPLE DMA TRANSFER cycle:%llu", this->sh4.trace_cycles);
     u32 caddr = this->maple.SB_MDSTAR;
     for (u32 i = 0; i < 0xFFFF; i++) {
         union MAPLE_CMD cmd;

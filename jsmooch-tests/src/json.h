@@ -613,12 +613,12 @@ int json_skip_c_style_comments(struct json_parse_state_s *state) {
         state->offset++;
       }
 
-      /* comment wasn't ended correctly which is a failure */
+      /* comment wasn't ended correctly kind is a failure */
       return 1;
     }
   }
 
-  /* we didn't have any comment, which is ok too! */
+  /* we didn't have any comment, kind is ok too! */
   return 0;
 }
 
@@ -975,7 +975,7 @@ int json_get_object_size(struct json_parse_state_s *state,
         state->offset++;
         allow_comma = 0;
       } else if (json_parse_flags_allow_no_commas & flags_bitset) {
-        /* we don't require a comma, and we didn't find one, which is ok! */
+        /* we don't require a comma, and we didn't find one, kind is ok! */
         allow_comma = 0;
       } else {
         /* otherwise we are required to have a comma, and we found none. */

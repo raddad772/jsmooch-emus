@@ -10,42 +10,45 @@
 #include "helpers/debug.h"
 #include "stdio.h"
 
-struct jsm_system* new_system(enum jsm_systems which, struct JSM_IOmap *iomap)
+struct jsm_system* new_system(enum jsm_systems which)
 {
     dbg_init();
     struct jsm_system* out = malloc(sizeof(struct jsm_system));
-    out->which = which;
+    cvec_init(&out->IOs, sizeof(struct physical_io_device), 20);
+    cvec_lock_reallocs(&out->IOs);
+    out->kind = which;
 	switch (which) {
-        case SYS_ATARI2600:
+        /*case SYS_ATARI2600:
             atari2600_new(out, iomap);
-            break;
+            break;*/
 		case SYS_DMG:
-			GB_new(out, DMG, iomap);
+			GB_new(out, DMG);
 			break;
         case SYS_GBC:
-            GB_new(out, GBC, iomap);
+            GB_new(out, GBC);
             break;
         case SYS_NES:
-            NES_new(out, iomap);
+            NES_new(out);
             break;
         case SYS_SMS1:
         case SYS_SMS2:
         case SYS_GG:
-            SMSGG_new(out, iomap, which, REGION_USA);
+            SMSGG_new(out, which, REGION_USA);
             break;
-        case SYS_DREAMCAST:
+        /*case SYS_DREAMCAST:
             DC_new(out, iomap);
-            break;
+            break;*/
         default:
-            printf("DELETE UNKNOWN SYSTEM!");
+            printf("CREATE UNKNOWN SYSTEM!");
             break;
 	}
+    out->describe_io(out, &out->IOs);
     return out;
 }
 
 void jsm_delete(struct jsm_system* jsm)
 {
-    switch(jsm->which) {
+    switch(jsm->kind) {
         case SYS_ATARI2600:
             atari2600_delete(jsm);
             break;

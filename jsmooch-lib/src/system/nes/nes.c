@@ -4,6 +4,7 @@
 #include "assert.h"
 #include "stdlib.h"
 #include <stdio.h>
+#include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
 
 #include "nes.h"
@@ -21,18 +22,17 @@ void NESJ_pause(JSM);
 void NESJ_stop(JSM);
 void NESJ_get_framevars(JSM, struct framevars* out);
 void NESJ_reset(JSM);
-void NESJ_map_inputs(JSM, u32* bufptr, u32 bufsize);
 void NESJ_get_description(JSM, struct machine_description* d);
 void NESJ_killall(JSM);
 u32 NESJ_finish_frame(JSM);
 u32 NESJ_finish_scanline(JSM);
 u32 NESJ_step_master(JSM, u32 howmany);
 void NESJ_load_BIOS(JSM, struct multi_file_set* mfs);
-void NESJ_load_ROM(JSM, struct multi_file_set* mfs);
 void NESJ_enable_tracing(JSM);
 void NESJ_disable_tracing(JSM);
+void NESJ_describe_io(JSM, struct cvec* IOs);
 
-void NES_new(JSM, struct JSM_IOmap *iomap)
+void NES_new(JSM)
 {
     struct NES* this = (struct NES*)malloc(sizeof(struct NES));
     NES_clock_init(&this->clock);
@@ -42,34 +42,25 @@ void NES_new(JSM, struct JSM_IOmap *iomap)
     NES_cart_init(&this->cart, this);
     NES_mapper_init(&this->bus, this);
 
-    this->ppu.last_used_buffer = 0;
-    this->ppu.cur_output_num = 0;
-    this->ppu.cur_output = (u16 *)iomap->out_buffers[0];
-    this->ppu.out_buffer[0] = (u16 *)iomap->out_buffers[0];
-    this->ppu.out_buffer[1] = (u16 *)iomap->out_buffers[1];
+    this->described_inputs = 0;
 
     this->cycles_left = 0;
     this->display_enabled = 1;
-    nespad_inputs_init(&this->controller1_in);
-    nespad_inputs_init(&this->controller2_in);
-
     jsm->ptr = (void*)this;
 
-    jsm->get_description = &NESJ_get_description;
     jsm->finish_frame = &NESJ_finish_frame;
     jsm->finish_scanline = &NESJ_finish_scanline;
     jsm->step_master = &NESJ_step_master;
     jsm->reset = &NESJ_reset;
-    jsm->load_ROM = &NESJ_load_ROM;
     jsm->load_BIOS = &NESJ_load_BIOS;
     jsm->killall = &NESJ_killall;
-    jsm->map_inputs = &NESJ_map_inputs;
     jsm->get_framevars = &NESJ_get_framevars;
     jsm->enable_tracing = &NESJ_enable_tracing;
     jsm->disable_tracing = &NESJ_disable_tracing;
     jsm->play = &NESJ_play;
     jsm->pause = &NESJ_pause;
     jsm->stop = &NESJ_stop;
+    jsm->describe_io = &NESJ_describe_io;
 }
 
 void NES_delete(JSM)
@@ -84,24 +75,126 @@ void NES_delete(JSM)
     NES_mapper_delete(&this->bus);
     NES_cart_delete(&this->cart);
 
+    while (cvec_len(this->IOs) > 0) {
+        struct physical_io_device* pio = cvec_pop_back(this->IOs);
+        if (pio->kind == HID_CART_PORT) {
+            if (pio->device.cartridge_port.unload_cart) pio->device.cartridge_port.unload_cart(jsm);
+        }
+        physical_io_device_delete(pio);
+    }
+
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->get_description = NULL;
     jsm->finish_frame = NULL;
     jsm->finish_scanline = NULL;
     jsm->step_master = NULL;
     jsm->reset = NULL;
-    jsm->load_ROM = NULL;
     jsm->load_BIOS = NULL;
     jsm->killall = NULL;
-    jsm->map_inputs = NULL;
     jsm->get_framevars = NULL;
     jsm->play = NULL;
     jsm->pause = NULL;
     jsm->stop = NULL;
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
+    jsm->describe_io = NULL;
+}
+
+static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id)
+{
+    struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
+    sprintf(b->name, "%s", name);
+    b->state = 0;
+    b->id = 0;
+    b->kind = DBK_BUTTON;
+    b->common_id = common_id;
+}
+
+static void setup_controller(struct NES* this, u32 num, const char*name, u32 connected)
+{
+    struct physical_io_device *d = cvec_push_back(this->IOs);
+    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+
+    sprintf(d->device.controller.name, "%s", name);
+    d->id = num;
+    d->kind = HID_CONTROLLER;
+    d->connected = connected;
+
+    struct JSM_CONTROLLER* cnt = &d->device.controller;
+
+    // up down left right a b start select. in that order
+    new_button(cnt, "up", DBCID_co_up);
+    new_button(cnt, "down", DBCID_co_down);
+    new_button(cnt, "left", DBCID_co_left);
+    new_button(cnt, "right", DBCID_co_right);
+    new_button(cnt, "a", DBCID_co_fire1);
+    new_button(cnt, "b", DBCID_co_fire2);
+    new_button(cnt, "start", DBCID_co_start);
+    new_button(cnt, "select", DBCID_co_select);
+}
+
+static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
+{
+    JTHIS;
+    struct buf* b = &mfs->files[0].buf;
+    NES_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
+    NES_mapper_set_which(&this->bus, this->cart.header.mapper_number);
+    this->bus.set_cart(this, &this->cart);
+    NESJ_reset(jsm);
+}
+
+static void NESIO_unload_cart(JSM)
+{
+}
+
+void NESJ_describe_io(JSM, struct cvec *IOs)
+{
+    JTHIS;
+    if (this->described_inputs) return;
+    this->described_inputs = 1;
+
+    this->IOs = IOs;
+
+    // controllers
+    setup_controller(this, 0, "Player 1", 1);
+    setup_controller(this, 1, "Player 2", 0);
+
+    // power and reset buttons
+    struct physical_io_device* chassis = cvec_push_back(IOs);
+    physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
+    struct HID_digital_button* b;
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    sprintf(b->name, "Power");
+    b->state = 1;
+    b->common_id = DBCID_ch_power;
+
+    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b->common_id = DBCID_ch_reset;
+    sprintf(b->name, "Reset");
+    b->state = 0;
+
+    // cartridge port
+    struct physical_io_device *d = cvec_push_back(IOs);
+    physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
+    d->device.cartridge_port.load_cart = &NESIO_load_cart;
+    d->device.cartridge_port.unload_cart = &NESIO_unload_cart;
+
+    // screen
+    d = cvec_push_back(IOs);
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    d->device.display.fps = 60;
+    d->device.display.output[0] = malloc(256*224*2);
+    d->device.display.output[1] = malloc(256*224*2);
+    this->ppu.display = d;
+    this->ppu.cur_output = (u16 *)d->device.display.output[0];
+    d->device.display.last_written = 1;
+    d->device.display.last_displayed = 1;
+
+    this->cpu.joypad1.devices = IOs;
+    this->cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
+    this->cpu.joypad2.devices = IOs;
+    this->cpu.joypad2.device_index = NES_INPUTS_PLAYER2;
 }
 
 void NESJ_enable_tracing(JSM)
@@ -144,75 +237,11 @@ void NESJ_reset(JSM)
     NES_PPU_reset(&this->ppu);
 }
 
-void NESJ_map_inputs(JSM, u32* bufptr, u32 bufsize)
-{
-    JTHIS;
-    this->controller1_in.up = bufptr[0];
-    this->controller1_in.down = bufptr[1];
-    this->controller1_in.left = bufptr[2];
-    this->controller1_in.right = bufptr[3];
-    this->controller1_in.a = bufptr[4];
-    this->controller1_in.b = bufptr[5];
-    this->controller1_in.start = bufptr[6];
-    this->controller1_in.select = bufptr[7];
-    // Controller 2 not support yet
-    r2A03_update_inputs(&this->cpu, &this->controller1_in, &this->controller2_in);
-}
 
 void NESJ_get_description(JSM, struct machine_description* d)
 {
     JTHIS;
     sprintf(d->name, "Nintendo Entertainment System");
-    d->fps = 60;
-    d->timing = frame;
-    d->display_standard = MD_NTSC;
-    d->x_resolution = 256;
-    d->y_resolution = 240;
-    d->xrh = 4;
-    d->xrw = 3;
-
-    d->overscan.top = 8;
-    d->overscan.bottom = 8;
-    d->overscan.left = 8;
-    d->overscan.right = 8;
-
-    d->out_size = (256 * 240 * 4);
-
-    struct input_map_keypoint* k;
-
-    k = &d->keymap[0];
-    k->buf_pos = 0;
-    sprintf(k->name, "up");
-
-    k = &d->keymap[1];
-    k->buf_pos = 1;
-    sprintf(k->name, "down");
-
-    k = &d->keymap[2];
-    k->buf_pos = 2;
-    sprintf(k->name, "left");
-
-    k = &d->keymap[3];
-    k->buf_pos = 3;
-    sprintf(k->name, "right");
-
-    k = &d->keymap[4];
-    k->buf_pos = 4;
-    sprintf(k->name, "a");
-
-    k = &d->keymap[5];
-    k->buf_pos = 5;
-    sprintf(k->name, "b");
-
-    k = &d->keymap[6];
-    k->buf_pos = 6;
-    sprintf(k->name, "start");
-
-    k = &d->keymap[7];
-    k->buf_pos = 7;
-    sprintf(k->name, "select");
-
-    d->keymap_size = 8;
 }
 
 void NESJ_killall(JSM)
@@ -228,7 +257,7 @@ u32 NESJ_finish_frame(JSM)
         NESJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->ppu.last_used_buffer;
+    return this->ppu.display->device.display.last_written;
 }
 
 u32 NESJ_finish_scanline(JSM)
@@ -290,12 +319,3 @@ void NESJ_load_BIOS(JSM, struct multi_file_set* mfs)
     printf("\nNES doesn't have a BIOS...?");
 }
 
-void NESJ_load_ROM(JSM, struct multi_file_set* mfs)
-{
-    JTHIS;
-    struct buf* b = &mfs->files[0].buf;
-    NES_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
-    NES_mapper_set_which(&this->bus, this->cart.header.mapper_number);
-    this->bus.set_cart(this, &this->cart);
-    NESJ_reset(jsm);
-}

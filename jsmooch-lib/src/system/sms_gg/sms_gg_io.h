@@ -24,14 +24,6 @@ void SMSGG_controller_port_init(struct SMSGG_controller_port* this, enum jsm_sys
 u32 SMSGG_controller_port_read(struct SMSGG_controller_port* this);
 void SMSGG_controller_port_reset(struct SMSGG_controller_port* this);
 
-struct SMSGG_reset_button {
-    u32 value;
-    enum jsm_systems variant;
-};
-
-void SMSGG_reset_button_init(struct SMSGG_reset_button* this, enum jsm_systems variant);
-void SMSGG_reset_button_latch(struct SMSGG_reset_button* this);
-u32 SMSGG_reset_button_read(struct SMSGG_reset_button* this);
 struct SMSGG;
 
 u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);

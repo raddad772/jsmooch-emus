@@ -10,7 +10,7 @@
 #include "gb_cpu.h"
 #include "cart.h"
 
-void GB_new(struct jsm_system* system, enum GB_variants variant, struct JSM_IOmap *iomap);
+void GB_new(struct jsm_system* system, enum GB_variants variant);
 void GB_delete(struct jsm_system* system);
 
 struct GB_inputs {
@@ -32,12 +32,15 @@ struct GB {
     struct GB_PPU ppu;
     enum GB_variants variant;
 
+    struct cvec* IOs;
+
+    u32 described_inputs;
+
     struct GB_cart cart;
     struct GB_inputs controller_in;
     i32 cycles_left;
 
-    u8* BIOS;
-    u32 BIOS_size;
+    struct buf BIOS;
 };
 
 #endif

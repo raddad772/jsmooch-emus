@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_TIA_H
 #define JSMOOCH_EMUS_TIA_H
 
+#include "helpers/physical_io.h"
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 
@@ -12,11 +13,9 @@
 
 struct atari_TIA {
     // For output to display
-    u32 last_used_buffer;
-    u32 cur_output_num;
     u8 *cur_output;
-    u8 *out_buffer[2];
 
+    struct physical_io_device* display;
     u32 cpu_RDY;
 
     u32 hcounter;

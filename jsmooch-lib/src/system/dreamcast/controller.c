@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "helpers/physical_io.h"
 #include "controller.h"
 #include "dreamcast.h"
 

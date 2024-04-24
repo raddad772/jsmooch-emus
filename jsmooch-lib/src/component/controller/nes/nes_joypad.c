@@ -3,6 +3,7 @@
 //
 
 #include "nes_joypad.h"
+#include "stdio.h"
 
 void nespad_inputs_init(struct nespad_inputs* this)
 {
@@ -15,19 +16,6 @@ void NES_joypad_init(struct NES_joypad* this, u32 joynum)
     this->counter = this->latched = 0;
     this->joynum = joynum;
     nespad_inputs_init(&this->input_buffer);
-    nespad_inputs_init(&this->input_waiting);
-}
-
-void NES_joypad_buffer_input(struct NES_joypad* this, struct nespad_inputs *from)
-{
-    this->input_waiting.up = from->up;
-    this->input_waiting.down = from->down;
-    this->input_waiting.left = from->left;
-    this->input_waiting.right = from->right;
-    this->input_waiting.a = from->a;
-    this->input_waiting.b = from->b;
-    this->input_waiting.start = from->start;
-    this->input_waiting.select = from->select;
 }
 
 void NES_joypad_latch(struct NES_joypad *this, u32 what)
@@ -36,14 +24,22 @@ void NES_joypad_latch(struct NES_joypad *this, u32 what)
     this->latched = what;
     this->counter = 0;
     if (this->latched == 0) {
-        this->input_buffer.up = this->input_waiting.up;
-        this->input_buffer.down = this->input_waiting.down;
-        this->input_buffer.left = this->input_waiting.left;
-        this->input_buffer.right = this->input_waiting.right;
-        this->input_buffer.a = this->input_waiting.a;
-        this->input_buffer.b = this->input_waiting.b;
-        this->input_buffer.start = this->input_waiting.start;
-        this->input_buffer.select = this->input_waiting.select;
+        struct physical_io_device* p = (struct physical_io_device*)cvec_get(this->devices, this->device_index);
+        if (p->connected) {
+            struct cvec* bl = &p->device.controller.digital_buttons;
+            struct HID_digital_button* b;
+            // up down left right a b start select
+#define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
+            B_GET(up, 0);
+            B_GET(down, 1);
+            B_GET(left, 2);
+            B_GET(right, 3);
+            B_GET(a, 4);
+            B_GET(b, 5);
+            B_GET(start, 6);
+            B_GET(select, 7);
+#undef B_GET
+        }
     }
 }
 

@@ -13,7 +13,7 @@
 
 void PPU_scanline_visible(struct NES_PPU* this);
 
-void effect_buffer_init(struct PPU_effect_buffer* this)
+static void effect_buffer_init(struct PPU_effect_buffer* this)
 {
     this->length = 16;
     for (u32 i = 0; i < 16; i++) {
@@ -21,7 +21,7 @@ void effect_buffer_init(struct PPU_effect_buffer* this)
     }
 }
 
-i32 effect_buffer_get(struct PPU_effect_buffer* this, u32 cycle)
+static i32 effect_buffer_get(struct PPU_effect_buffer* this, u32 cycle)
 {
     u32 ci = cycle % 16;
     i32 r = this->items[ci];
@@ -29,7 +29,7 @@ i32 effect_buffer_get(struct PPU_effect_buffer* this, u32 cycle)
     return r;
 }
 
-void effect_buffer_set(struct PPU_effect_buffer* this, u32 cycle, i32 value)
+static void effect_buffer_set(struct PPU_effect_buffer* this, u32 cycle, i32 value)
 {
     this->items[cycle % 16] = value;
 }
@@ -614,9 +614,8 @@ void new_frame(THIS) {
     this->nes->clock.frame_odd = (this->nes->clock.frame_odd + 1) & 1;
     this->nes->clock.master_frame++;
     this->nes->clock.cpu_frame_cycle = 0;
-    this->last_used_buffer = this->cur_output_num;
-    this->cur_output_num ^= 1;
-    this->cur_output = this->out_buffer[this->cur_output_num];
+    this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
+    this->display->device.display.last_written ^= 1;
 }
 
 void set_scanline(THIS, u32 to) {

@@ -346,7 +346,7 @@ static void GB_pixel_slice_fetcher_run_fetch_cycle(struct GB_pixel_slice_fetcher
             this->fetch_addr = GB_sp_tile_addr(this->fetch_obj->tile, this->clock->ly - this->fetch_obj->y, this->ppu->io.sprites_big, this->fetch_obj->attr, this->clock->cgb_enable);
             break;
         }
-        else { // attempt to push to BG FIFO, which only accepts when empty.
+        else { // attempt to push to BG FIFO, kind only accepts when empty.
             if (GB_FIFO_empty(&this->bg_FIFO)) {
                 // Push to FIFO
                 for (u32 i = 0; i < 8; i++) {
@@ -481,8 +481,6 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
     this->io.obj_enable = this->io.bg_window_enable = 1;
     this->io.SCX = this->io.SCY = this->io.wx = this->io.wy = 0;
     this->io.cram_bg_increment = this->io.cram_bg_addr = this->io.cram_obj_increment = this->io.cram_obj_addr = 0;
-
-    this->cur_output_num = 0;
 
     GB_PPU_disable(this);
 }
@@ -814,9 +812,8 @@ static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
     this->clock->frames_since_restart++;
     this->clock->master_frame++;
     if (update_buffer) {
-        this->last_used_buffer = this->cur_output_num;
-        this->cur_output_num ^= 1;
-        this->cur_output = this->out_buffer[this->cur_output_num];
+        this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
+        this->display->device.display.last_written ^= 1;
     }
 }
 

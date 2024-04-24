@@ -25,6 +25,9 @@ struct DC_controller {
     u32 de_cmd;
     u32 reply_len;
 
+    struct cvec* devices;
+    u32 device_index;
+
     u32 src_AP;
     u32 dest_AP;
     u32 data_size;

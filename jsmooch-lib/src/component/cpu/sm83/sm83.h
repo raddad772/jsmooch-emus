@@ -39,7 +39,7 @@ struct SM83_regs {
 	u32 interrupt_flag;
 
     // internal/speculative
-	u32 TCU; // "Timing Control Unit" basically which cycle of an op we're on
+	u32 TCU; // "Timing Control Unit" basically kind cycle of an op we're on
 	u32 IR; // "Instruction Register" currently-executing register
 
 	u32 TR; // Temporary Register

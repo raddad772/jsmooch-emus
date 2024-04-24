@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_DREAMCAST_H
 #define JSMOOCH_EMUS_DREAMCAST_H
 
+#include "helpers/physical_io.h"
 #include "helpers/buf.h"
 #include "helpers/sys_interface.h"
 #include "helpers/scheduler.h"
@@ -54,7 +55,7 @@ enum HOLLY_PCW_paratype {
 };
 
 
-void DC_new(struct jsm_system* system, struct JSM_IOmap *iomap);
+void DC_new(struct jsm_system* system);
 void DC_delete(struct jsm_system* system);
 
 #define HOLLY_VRAM_SIZE 8*1024*1024
@@ -71,9 +72,13 @@ struct DC {
     struct SH4_memaccess_t sh4mem;
 
     struct DC_controller c1;
+    struct DC_controller c2;
 
     u8 RAM[16 * 1024 * 1024];
     u8 VRAM[HOLLY_VRAM_SIZE];
+
+    u32 described_inputs;
+    struct cvec* IOs;
 
     struct buf BIOS;
     struct buf ROM;
@@ -130,10 +135,7 @@ struct DC {
         float FPU_PERP_VAL;
         float ISP_BACKGND_D;
         u32 FOG_TABLE[128];
-        u32 last_used_buffer;
-        u32 cur_output_num;
         u32 *cur_output;
-        u32 *out_buffer[2];
 
         u64 master_frame;
 
@@ -153,6 +155,8 @@ struct DC {
 
             struct DCDisplayList display_lists[5];
         } ta;
+
+        struct physical_io_device* display;
     } holly;
 
     struct {

@@ -52,14 +52,12 @@ struct r2A03 {
     struct NES_controllerport controller_port2;
     struct NES_joypad joypad1;
     struct NES_joypad joypad2;
-
 };
 
 void r2A03_init(struct r2A03* this, struct NES* nes);
 void r2A03_notify_NMI(struct r2A03* this, u32 level);
 void r2A03_notify_IRQ(struct r2A03* this, u32 level, u32 from);
 void r2A03_reset(struct r2A03* this);
-void r2A03_update_inputs(struct r2A03* this, struct nespad_inputs* inp1, struct nespad_inputs* inp2);
 void r2A03_run_cycle(struct r2A03* this);
 void NES_bus_CPU_write_reg(struct NES* nes, u32 addr, u32 val);
 u32 NES_bus_CPU_read_reg(struct NES* nes, u32 addr, u32 val, u32 has_effect);

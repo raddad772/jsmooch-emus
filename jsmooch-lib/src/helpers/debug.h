@@ -13,8 +13,8 @@
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
 //#define TRACE_ON_BRK     // Enable tracing on break
-#define DBG_LOG_TO_FILE // log debug to file
-#define LYCODER        // lycoder-format traces for easy winmerge
+//#define DBG_LOG_TO_FILE // log debug to file
+//#define LYCODER        // lycoder-format traces for easy winmerge
 //#define REICAST_DIFF
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 //#define DUMP_LAST_TRACES_ON_BREAK
@@ -50,6 +50,7 @@ struct last_traces_t {
     char *curptr;
 };
 
+#define MAX_DEBUG_MSG 2000000
 struct jsm_debug_struct {
     u32 do_break;
     u32 brk_on_NMIRQ;

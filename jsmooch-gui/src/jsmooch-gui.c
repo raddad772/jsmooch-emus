@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <SDL.h>
 #include <stdlib.h>
@@ -8,14 +9,57 @@
 #include "helpers/debug.h"
 
 #include "system/dreamcast/gdi.h"
+#include "helpers/physical_io.h"
 
 
 //#define DO_DREAMCAST
+#define NEW_IOS
+struct system_io {
+    struct CDKRKR {
+        struct HID_digital_button* up;
+        struct HID_digital_button* down;
+        struct HID_digital_button* left;
+        struct HID_digital_button* right;
+        struct HID_digital_button* fire1;
+        struct HID_digital_button* fire2;
+        struct HID_digital_button* fire3;
+        struct HID_digital_button* start;
+        struct HID_digital_button* select;
+    } p[2];
+    struct HID_digital_button* ch_power;
+    struct HID_digital_button* ch_reset;
+    struct HID_digital_button* ch_pause;
+};
+
+
+void map_inputs(const u32 *input_buffer, struct system_io* inputs, struct jsm_system *jsm)
+{
+    struct CDKRKR* p1 = &inputs->p[0];
+    struct CDKRKR* p2 = &inputs->p[1];
+    // Arrows
+    if (p1->up) p1->up->state = input_buffer[0];
+    if (p1->down) p1->down->state = input_buffer[1];
+    if (p1->left) p1->left->state = input_buffer[2];
+    if (p1->right) p1->right->state = input_buffer[3];
+
+    // fire buttons
+    if (p1->fire1) p1->fire1->state = input_buffer[4];
+    if (p1->fire2) p1->fire2->state = input_buffer[5];
+    if (p1->fire3) p1->fire3->state = input_buffer[8];
+
+    // Start, select on controller
+    if (p1->start) p1->start->state = input_buffer[7];
+    if (p1->select) p1->select->state = input_buffer[6];
+
+    // Pause/start on chassis
+    if (inputs->ch_pause) inputs->ch_pause->state = input_buffer[7];
+}
+
 
 u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
     u32 ret = 0;
     i32 evt = event->type == SDL_KEYDOWN ? 1 : event->type == SDL_KEYUP ? 0 : -1;
-    if (evt > 0) {
+    if (evt >= 0) {
         switch (event->key.keysym.sym) {
             case SDLK_LEFT:
                 input_buffer[2] = evt;
@@ -24,6 +68,7 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
                 input_buffer[3] = evt;
                 break;
             case SDLK_UP:
+                printf("\nUP! %d", evt);
                 input_buffer[0] = evt;
                 break;
             case SDLK_DOWN:
@@ -35,6 +80,9 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
             case SDLK_x:
                 input_buffer[5] = evt;
                 break;
+            case SDLK_c:
+                input_buffer[8] = evt;
+                break;
             case SDLK_a:
                 input_buffer[6] = evt;
                 break;
@@ -43,6 +91,9 @@ u32 handle_keys_gb(SDL_Event *event, u32 *input_buffer) {
                 break;
             case SDLK_ESCAPE:
                 ret = 1;
+                break;
+            default:
+                printf("\nYO. %d", event->key.keysym.sym);
                 break;
         }
     }
@@ -183,13 +234,79 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
     return ROMs->files[ROMs->num_files-1].buf.size > 0;
 }
 
+struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec* IOs, struct multi_file_set* mfs)
+{
+    struct physical_io_device *pio = NULL;
+    switch(sys->kind) {
+        case SYS_DREAMCAST:
+            for (u32 i = 0; i < cvec_len(IOs); i++) {
+                pio = cvec_get(IOs, i);
+                if (pio->kind == HID_DISC_DRIVE) {
+                    pio->device.disc_drive.insert_disc(sys, mfs);
+                    break;
+                }
+                pio = NULL;
+            }
+            return pio;
+    }
+    pio = NULL;
+    for (u32 i = 0; i < cvec_len(IOs); i++) {
+        pio = cvec_get(IOs, i);
+        if (pio->kind == HID_CART_PORT) break;
+        pio = NULL;
+    }
+    // TODO: add sram support
+    if (pio) pio->device.cartridge_port.load_cart(sys, mfs, NULL);
+    return pio;
+}
+
+
+static void setup_controller(struct system_io* io, struct physical_io_device* pio, u32 pnum)
+{
+    struct cvec* dbs = &pio->device.controller.digital_buttons;
+    for (u32 i = 0; i < cvec_len(dbs); i++) {
+        struct HID_digital_button* db = cvec_get(dbs, i);
+        switch(db->common_id) {
+            case DBCID_co_up:
+                io->p[pnum].up = db;
+                continue;
+            case DBCID_co_down:
+                io->p[pnum].down = db;
+                continue;
+            case DBCID_co_left:
+                io->p[pnum].left = db;
+                continue;
+            case DBCID_co_right:
+                io->p[pnum].right = db;
+                continue;
+            case DBCID_co_fire1:
+                io->p[pnum].fire1 = db;
+                continue;
+            case DBCID_co_fire2:
+                io->p[pnum].fire2 = db;
+                continue;
+            case DBCID_co_fire3:
+                io->p[pnum].fire3 = db;
+                continue;
+            case DBCID_co_select:
+                io->p[pnum].select = db;
+                continue;
+            case DBCID_co_start:
+                io->p[pnum].start = db;
+                continue;
+        }
+    }
+}
+
+
+
 int main(int argc, char** argv)
 {
 #ifdef DO_DREAMCAST
-    enum jsm_systems which = SYS_DREAMCAST;
+    enum jsm_systems kind = SYS_DREAMCAST;
 #else
-    enum jsm_systems which = SYS_ATARI2600;
-    //enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_ATARI2600;
+    enum jsm_systems which = SYS_NES;
 #endif
     //test_gdi();
     //return 0;
@@ -216,60 +333,78 @@ int main(int argc, char** argv)
         return -3;
 
     // Create our emulator
-    struct JSM_IOmap iom;
 
-    u16 *output_buffers[2];
-    u32 inputs[50];
-    for (u32 i = 0; i < 50; i++) {
-        inputs[i] = 0;
-    }
-    switch(which) {
-        case SYS_SMS1:
-        case SYS_SMS2:
-        case SYS_GG:
-        case SYS_NES:
-            output_buffers[0] = malloc(256*240*2);
-            output_buffers[1] = malloc(256*240*2);
-            break;
-        case SYS_DREAMCAST:
-            output_buffers[0] = malloc(640*480*4);
-            output_buffers[1] = malloc(640*480*4);
-            break;
-        case SYS_DMG:
-        case SYS_GBC:
-            output_buffers[0] = malloc(160*144*4);
-            output_buffers[1] = malloc(160*144*4);
-            break;
-        case SYS_ATARI2600:
-            output_buffers[0] = malloc(160*240);
-            output_buffers[1] = malloc(160*240);
-            break;
-    }
-    iom.out_buffers[0] = (void *)output_buffers[0];
-    iom.out_buffers[1] = (void *)output_buffers[1];
-
-    struct jsm_system* sys = new_system(which, &iom);
+    struct jsm_system* sys = new_system(which);
+    struct cvec *IOs = &sys->IOs;
 
     u32 has_bios = grab_BIOSes(&BIOSes, which);
     if (has_bios) {
         sys->load_BIOS(sys, &BIOSes);
+        mfs_delete(&BIOSes);
     }
-    mfs_delete(&BIOSes);
 
     struct multi_file_set ROMs;
     mfs_init(&ROMs);
 #ifdef DO_DREAMCAST
-    u32 worked = grab_ROM(&ROMs, which, "crazytaxi.gdi");
+    u32 worked = grab_ROM(&ROMs, kind, "crazytaxi.gdi");
 #else
-    u32 worked = grab_ROM(&ROMs, which, "frogger.a26");
-    //u32 worked = grab_ROM(&ROMs, which, "mario3.nes");
+    //u32 worked = grab_ROM(&ROMs, kind, "frogger.a26");
+    u32 worked = grab_ROM(&ROMs, which, "mario3.nes");
 #endif
     if (!worked) {
         printf("\nCouldn't open ROM!");
         return -1;
     }
-    sys->load_ROM(sys, &ROMs);
+
+    struct physical_io_device* fileioport = load_ROM_into_emu(sys, &IOs, &ROMs);
     mfs_delete(&ROMs);
+
+    struct system_io inputs;
+    memset(&inputs, 0, sizeof(struct system_io));
+
+    struct physical_io_device* controller1 = NULL;
+    struct physical_io_device* controller2 = NULL;
+    struct physical_io_device* display = NULL;
+    struct physical_io_device* chassis = NULL;
+    for (u32 i = 0; i < cvec_len(&IOs); i++) {
+        struct physical_io_device* pio = cvec_get(&IOs, i);
+        switch(pio->kind) {
+            case HID_CONTROLLER:
+                if (controller1 == NULL) {
+                    controller1 = pio;
+                    setup_controller(&inputs, pio, 0);
+                }
+                else {
+                    controller2 = pio;
+                    setup_controller(&inputs, pio, 1);
+                }
+                continue;
+            case HID_DISPLAY:
+                display = pio;
+                continue;
+            case HID_CHASSIS:
+                chassis = pio;
+                struct cvec* dbs = &chassis->device.chassis.digital_buttons;
+                for (u32 j = 0; j < cvec_len(dbs); j++) {
+                    struct HID_digital_button* db = cvec_get(dbs, j);
+                    switch(db->common_id) {
+                        case DBCID_ch_pause:
+                            inputs.ch_pause = db;
+                            continue;
+                        case DBCID_ch_power:
+                            inputs.ch_power = db;
+                            continue;
+                        case DBCID_ch_reset:
+                            inputs.ch_reset = db;
+                            continue;
+                    }
+                }
+                continue;
+        }
+    }
+    assert(controller1);
+    assert(display);
+    assert(chassis);
 
     struct framevars fv;
     SDL_Event event;
@@ -291,10 +426,10 @@ int main(int argc, char** argv)
     //sys->step_master(sys, 63);
     //dbg_LT_clear();
     //dbg_disable_trace();
-    dbg_enable_trace();
+    //   dbg_enable_trace();
     //sys->step_master(sys, 11494000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
     //sys->step_master(sys, 2000000000); //
-    sys->step_master(sys, 20000000); //
+    sys->step_master(sys, 200000000); //
     //sys->step_master(sys, 1000000000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
     dbg_unbreak();
     dbg_enable_trace();
@@ -303,7 +438,7 @@ int main(int argc, char** argv)
     dbg_LT_dump();
     dbg_flush();
     return 0;
-    /*jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
+    /*jsm_present(sys->kind, 0, &iom, window_surface->pixels, 640, 480);
     SDL_UpdateWindowSurface(window);
     SDL_Delay(20000);
     return 0;*/
@@ -334,7 +469,7 @@ int main(int argc, char** argv)
             quit = handle_keys_gb(&event, input_buffer);
         }
 
-        sys->map_inputs(sys, input_buffer, sizeof(inputs)/4);
+        map_inputs(input_buffer, &inputs, sys);
         sys->finish_frame(sys);
         sys->get_framevars(sys, &fv);
         if (dbg.do_break) {
@@ -350,8 +485,8 @@ int main(int argc, char** argv)
             if (did_break == 1) break;
             did_break++;
         }
-        //jsm_present(sys->which, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
-        jsm_present(sys->which, 0, &iom, window_surface->pixels, 640, 480);
+        //jsm_present(sys->kind, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
+        jsm_present(sys->kind, display, window_surface->pixels, 640, 480);
         SDL_UpdateWindowSurface(window);
         float end = SDL_GetTicks();
         float ticks_taken = end - start;
@@ -377,11 +512,9 @@ int main(int argc, char** argv)
     SDL_Log("\nCYCLES PER SECOND %f", cycles_per_second);
     fflush(stdout);*/
 
-    free(output_buffers[0]);
-    free(output_buffers[1]);
-
     // Clean up and be tidy!
     jsm_delete(sys);
+    cvec_delete(&IOs);
     SDL_DestroyWindowSurface(window);
     SDL_DestroyWindow(window);
 }

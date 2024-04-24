@@ -40,9 +40,9 @@ static const u32 TIA_palette[128] = {
         0xffc8fca4, 0xffe0ec9c, 0xfffce08c, 0xffffffff
 };
 
-void atari2600_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u8* ibuf = (u8 *)iom->out_buffers[last_used_buffer];
+    u8* ibuf = (u8 *)device->device.display.output[device->device.display.last_written];
     for (u32 y = 0; y < 192; y++) {
         u8* iptr = (void *)ibuf + ((y * 160));
         for (u32 x = 0; x < 160; x++) {
@@ -55,9 +55,9 @@ void atari2600_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_bu
 }
 
 // Translate from DMG output to 32-bit RGBA
-void DMG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void DMG_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16* ibuf = (u16 *)iom->out_buffers[last_used_buffer];
+    u16* ibuf = (u16 *)device->device.display.output[device->device.display.last_written];
     //u16* ptr = ibuf;
 
     for (u32 y = 0; y < 144; y++) {
@@ -104,9 +104,9 @@ void DMG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
     //this.draw_lines_around_screen(imgdata);
 }
 */
-void GBC_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void GBC_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16* ibuf = (u16 *)iom->out_buffers[last_used_buffer];
+    u16* ibuf = (u16 *)device->device.display.output[device->device.display.last_written];
     //u16* ptr = ibuf;
 
     for (u32 y = 0; y < 144; y++) {
@@ -171,9 +171,9 @@ static const u32 NES_palette[512] = {
         0xFF989898, 0xFF6C7C97, 0xFF7675A0, 0xFF81709F, 0xFF8A6D94, 0xFF8F6E82, 0xFF8E726E, 0xFF88785E, 0xFF7E7F56, 0xFF738457, 0xFF6A8761, 0xFF658672, 0xFF668286, 0xFF5E5E5E, 0xFF000000, 0xFF000000
 };
 
-void NES_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16* neso = (u16 *)iom->out_buffers[last_used_buffer];
+    u16* neso = (u16 *)device->device.display.output[device->device.display.last_written];
     u32 overscan_left = 8; // overscan.left;
     u32 overscan_right = 8; // overscan.right;
     u32 overscan_top = 8; // overscan.top;
@@ -223,9 +223,9 @@ void NES_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
  */
 
 
-void SMS_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void SMS_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16 *smso = (u16 *) iom->out_buffers[1];
+    u16 *smso = (u16 *)device->device.display.output[device->device.display.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u8 *img8 = (u8 *) out_buf;
     for (u32 ry = 0; ry < 192; /*data.bottom_rendered_line; */ ry++) {
@@ -249,15 +249,15 @@ void SMS_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32
     }
 }
 
-void GG_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void GG_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-
+    // TODO: this
 }
 
 
-void DC_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u32 *dco = (u32 *) iom->out_buffers[last_used_buffer];
+    u32 *dco = (u32 *)device->device.display.output[device->device.display.last_written];
     u32 w = out_width;
     u32 *img32 = (u32 *) out_buf;
     for (u32 ry = 0; ry < 480; /*data.bottom_rendered_line; */ ry++) {
@@ -274,31 +274,30 @@ void DC_present(u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 
     }
 }
 
-
-void jsm_present(enum jsm_systems which, u32 last_used_buffer, struct JSM_IOmap *iom, void *out_buf, u32 out_width, u32 out_height)
+void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 out_width, u32 out_height)
 {
     switch(which) {
         case SYS_DMG:
-            DMG_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            DMG_present(display, out_buf, out_width, out_height);
             break;
         case SYS_GBC:
-            GBC_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            GBC_present(display, out_buf, out_width, out_height);
             break;
         case SYS_NES:
-            NES_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            NES_present(display, out_buf, out_width, out_height);
             break;
         case SYS_SMS1:
         case SYS_SMS2:
-            SMS_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            SMS_present(display, out_buf, out_width, out_height);
             break;
         case SYS_GG:
-            GG_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            GG_present(display, out_buf, out_width, out_height);
             break;
         case SYS_DREAMCAST:
-            DC_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            DC_present(display, out_buf, out_width, out_height);
             break;
         case SYS_ATARI2600:
-            atari2600_present(last_used_buffer, iom, out_buf, out_width, out_height);
+            atari2600_present(display, out_buf, out_width, out_height);
             break;
         default:
             printf("\nUNKNOWN PRESENT!");

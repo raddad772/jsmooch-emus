@@ -17,6 +17,9 @@ struct SMSGG_gamepad {
     u32 num;
     struct smspad_inputs input_waiting;
     enum jsm_systems variant;
+
+    struct cvec* devices;
+    u32 device_index;
 };
 
 void smspad_inputs_init(struct smspad_inputs* this);

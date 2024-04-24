@@ -53,7 +53,7 @@ static void gdrom_dma_start(struct DC* this)
 static void DC_write_C2DST(struct DC* this, u32 val)
 {
     if (this->io.SB_C2DST) { // TA FIFO DMA!
-        //printf(DBGC_GREEN "\nTA FIFO DMA START!" DBGC_RST);
+        printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", this->sh4.trace_cycles);
         u32 addr = this->io.SB_C2DSTAT;
         if (addr == 0) addr = 0x10000000;
         // TA polygon FIFO
@@ -447,7 +447,6 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
 #endif
 
     if (!success) {
-        dbg_break();
         printf("\n(READ)");
         if (addr >= 0xFF000000)
             printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);

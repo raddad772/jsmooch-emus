@@ -2,6 +2,7 @@
 #define _GB_PPU_H
 
 #include "gb_enums.h"
+#include "helpers/physical_io.h"
 
 #ifndef NULL
 #define NULL 0
@@ -139,8 +140,8 @@ struct GB_PPU {
 
     u32 update_display;
     u32 last_used_buffer;
-    u32 cur_output_num;
-    u16 *cur_output;
+    u16* cur_output;
+    struct physical_io_device *display;
 };
 
 void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);

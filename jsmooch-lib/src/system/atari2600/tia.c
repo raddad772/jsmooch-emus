@@ -365,9 +365,8 @@ static void TIA_new_frame(struct atari_TIA* this)
     this->frames_since_restart++;
 
     // Flip framebuffer
-    this->last_used_buffer = this->cur_output_num;
-    this->cur_output_num ^= 1;
-    this->cur_output = this->out_buffer[this->cur_output_num];
+    this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
+    this->display->device.display.last_written ^= 1;
 }
 
 static void TIA_new_line(struct atari_TIA* this)

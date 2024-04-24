@@ -29,23 +29,6 @@ void SMSGG_controller_port_reset(struct SMSGG_controller_port* this)
     this->TR_direction = this->TH_direction = 1;
 }
 
-void SMSGG_reset_button_init(struct SMSGG_reset_button* this, enum jsm_systems variant)
-{
-    this->variant = variant;
-    this->value = 1;
-}
-
-void SMSGG_reset_button_latch(struct SMSGG_reset_button* this)
-{
-    if (this->variant == SYS_GG) this->value = 1; // GG has no reset button
-    else this->value = 1; // Why did I do this?
-}
-
-u32 SMSGG_reset_button_read(struct SMSGG_reset_button* this)
-{
-    return this->value;
-}
-
 static u32 read_reg_ioport1(struct SMSGG *this, u32 val)
 {
     /*
@@ -59,7 +42,11 @@ static u32 read_reg_ioport1(struct SMSGG *this, u32 val)
      D0 : Port A UP pin input
      */
     u32 pinsA = SMSGG_controller_port_read(&this->io.portA);
-    u32 pinsB = SMSGG_controller_port_read(&this->io.portB);
+    u32 pinsB;
+    if (this->variant != SYS_GG)
+        pinsB = SMSGG_controller_port_read(&this->io.portB);
+    else
+        pinsB = 0x7F;
     u32 r = (pinsA & 0x3F);
     r |= (pinsB & 3) << 6;
     if (this->io.portA.TR_direction == 0) {
@@ -81,7 +68,12 @@ static u32 read_reg_ioport2(struct SMSGG *this, u32 val)
      D0 : Port B LEFT pin input
      */
     u32 pinsA = SMSGG_controller_port_read(&this->io.portA);
-    u32 pinsB = SMSGG_controller_port_read(&this->io.portB);
+    u32 pinsB;
+    if (this->variant != SYS_GG)
+        pinsB = SMSGG_controller_port_read(&this->io.portB);
+    else
+        pinsB = 0x7F;
+
     //this->reset_button.latch();
     u32 r = (pinsB >> 2) & 0x0F;
     //r |= this->reset_button.value << 4;
@@ -133,7 +125,7 @@ void write_reg_io_ctrl(struct SMSGG* this, u32 val) {
 u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect) {
     addr &= 0xFF;
     if (addr <= 0x3F) {
-        // reads return last byte of the instruction which read the port
+        // reads return last byte of the instruction kind read the port
         return val;
     }
     if (addr <= 0x7F) {
@@ -186,7 +178,10 @@ u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect)
     switch(addr) {
         case 0: // Various stuff
             // TODO: make this more complete
-            return 0x40 | (bus->io.gg_start ? 0x80 : 0);
+            if (bus->variant == SYS_GG)
+                return 0x40 | (bus->io.pause_button->state ? 0x80 : 0);
+            else
+                return 0x40;
         case 2:
             return bus->io.GGreg;
         case 1:
@@ -197,23 +192,9 @@ u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect)
         case 6:
         case 7:
             return 0;
-            /*case 0xDC: // JOYP1
-                // up down left right b1 b2
-                let buttons = this->gg_joymap.latch();
-                let val = buttons.up ? 0 : 1;
-                val |= buttons.down ? 0 : 2;
-                val |= buttons.left ? 0 : 4;
-                val |= buttons.right ? 0 : 8;
-                val |= buttons.b1 ? 0 : 0x10;
-                val |= buttons.b2 ? 0 : 0x20;
-                val |= 0xC0;
-                return val;
-            case 0xDD:
-                return 0xFF;*/
-
     }
     if (addr <= 0x3F) {
-        // reads return last byte of the instruction which read the port
+        // reads return last byte of the instruction kind read the port
         return 0xFF;
     }
     if (addr <= 0x7F) {
