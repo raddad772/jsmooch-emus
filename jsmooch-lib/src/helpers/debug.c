@@ -85,6 +85,7 @@ void dbg_seek_in_line(u32 pos)
 
 void construct_path(char* w, const char* who)
 {
+    
 }
 
 void dbg_flush()
@@ -128,9 +129,13 @@ void dbg_unbreak()
 
 void dbg_break()
 {
-    printf("\nBREAK!");
-    fflush(stdout);
+#ifdef DISABLE_BREAK
+    printf("\nBREAK IGNORED!");
+#else
     dbg.do_break = true;
+    printf("\nBREAK!");
+#endif
+    fflush(stdout);
 #ifdef DUMP_LAST_TRACES_ON_BREAK
     if (!dbg.trace_on) // If traces are on, we don't want doubles
         dbg_LT_dump();

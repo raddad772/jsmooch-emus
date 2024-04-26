@@ -46,9 +46,6 @@ struct GB_bus {
 	void (*IRQ_vblank_up)(struct GB_bus*);
 	void (*IRQ_vblank_down)(struct GB_bus*);
 	
-	// Pointer to our mapper
-	void* mapper_ptr;
-	
 	// Pointer to BIOS, owned by GB
 	u8* BIOS;
 };

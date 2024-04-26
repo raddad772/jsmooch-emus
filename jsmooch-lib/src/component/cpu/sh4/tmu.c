@@ -11,7 +11,7 @@
 #define tmu_UNIE      0x0020
 #define TCUSE this->trace_cycles
 
-u32 scheduled_tmu_callback(void *ptr, u32 sch_cycle, u32 jitter);
+u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter);
 
 /* A lot of the structure and logic here very closely follows Reicast */
 
@@ -56,9 +56,9 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
         togo = SH4_CYCLES_PER_SEC;
 
     if (this->tmu.mask[ch])
-        schedule_event(this->scheduler, &this->tmu.scheduled_funcs[ch], cycles);
+        scheduler_add(this->scheduler, cycles, SE_bound_function, 0, scheduler_bind_function(this->tmu.scheduled_funcs[ch].func, this->tmu.scheduled_funcs[ch].ptr));
     else
-        schedule_event(this->scheduler, &this->tmu.scheduled_funcs[ch], -1);
+        scheduler_add(this->scheduler, -1, SE_bound_function, 0, scheduler_bind_function(this->tmu.scheduled_funcs[ch].func, this->tmu.scheduled_funcs[ch].ptr));
 }
 
 
@@ -227,7 +227,7 @@ u64 TMU_read(struct SH4* this, u32 addr, u32 sz, u32* success)
     return 0;
 }
 
-u32 scheduled_tmu_callback(void *ptr, u32 sch_cycle, u32 jitter)
+u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
 {
     struct SH4_tmu_int_struct* is = (struct SH4_tmu_int_struct*) ptr;
     struct SH4* this = is->sh4;

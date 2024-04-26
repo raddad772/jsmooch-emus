@@ -31,8 +31,8 @@ void *cvec_push_back(struct cvec* this);
 void *cvec_pop_back(struct cvec* this);
 void cvec_clear(struct cvec* this);
 void *cvec_get(struct cvec* this, u32 index);
-void cvec_lock_reallocs(struct cvec* this);
-
+void *cvec_get_unsafe(struct cvec* this, u32 index);
+void cvec_lock_reallocs(struct cvec* this); // For locking reallocs to preserve pointers
 void cvec_push_back_copy(struct cvec* this, void *src);
 
 void cvec_iterator_init(struct cvec_iterator* this);

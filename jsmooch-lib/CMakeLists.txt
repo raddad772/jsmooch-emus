@@ -152,6 +152,8 @@ add_library(jsmooch-lib
         src/system/atari2600/tia.h
         src/helpers/physical_io.c
         src/helpers/physical_io.h
+        src/helpers/ccircular.c
+        src/helpers/ccircular.h
 )
 
 include_directories(src/)

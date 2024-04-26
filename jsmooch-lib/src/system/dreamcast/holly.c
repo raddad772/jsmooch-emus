@@ -11,6 +11,7 @@
 #include <string.h>
 #include "assert.h"
 #include "stdio.h"
+#include "stdlib.h"
 #include "helpers/debug.h"
 #include "dreamcast.h"
 #include "holly.h"
@@ -127,8 +128,26 @@ static const char irq_strings[50][50] = {
         "Ch2DMA END", // 19
 };
 
+struct delay_func_struct {
+    struct DC* DC;
+    enum holly_interrupt_masks which;
+};
+
+u32 holly_delayed_raise_interrupt(void* ptr, u64 key, i64 clock, u32 jitter)
+{
+    struct DC* this = (struct DC*)ptr;
+    holly_raise_interrupt(this, key, 0);
+    return 0;
+}
+
+
 void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, i64 delay)
 {
+    if (delay > 0) {
+        struct scheduled_bound_function* bf = scheduler_bind_function(&holly_delayed_raise_interrupt, this);
+        scheduler_add(&this->scheduler, (i64)this->sh4.trace_cycles + delay, SE_bound_function, irq_num, bf);
+        return;
+    }
     u32 imask = 1 << (irq_num & 0xFF);
     if (irq_num & 0x100)
         this->io.SB_ISTEXT.u |= imask;

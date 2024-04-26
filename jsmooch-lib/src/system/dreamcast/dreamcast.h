@@ -110,8 +110,8 @@ struct DC {
     } aica;
 
     struct {
-        u32 frame_cycle;
-        u64 frame_start_cycle;
+        i32 frame_cycle;
+        i64 frame_start_cycle;
         u32 cycles_per_frame;
         u32 cycles_per_line;
         u32 in_vblank;

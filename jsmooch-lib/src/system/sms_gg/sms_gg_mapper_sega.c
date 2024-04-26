@@ -179,5 +179,5 @@ void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* 
     buf_copy(&this->ROM, inbuf);
     this->cart.num_ROM_banks = this->ROM.size / 0x4000;
     if (this->cart.num_ROM_banks == 0) this->cart.num_ROM_banks = 1;
-    printf("\nLoaded ROM of size %llu banks %d", this->ROM.size, this->cart.num_ROM_banks);
+    printf("\nLoaded ROM of size %ud banks %d", this->ROM.size, this->cart.num_ROM_banks);
 }

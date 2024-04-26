@@ -41,12 +41,15 @@ static void DC_schedule_frame(struct DC* this);
 static void new_frame(struct DC* this, u32 copy_buf);
 void DCJ_describe_io(JSM, struct cvec* IOs);
 
+#define JITTER 500
+
 void DC_new(JSM)
 {
     fflush(stdout);
     do_sh4_decode();
     struct DC* this = (struct DC*)malloc(sizeof(struct DC));
     scheduler_init(&this->scheduler);
+    this->scheduler.jitter = JITTER;
 
     dbg.dcptr = this;
 
@@ -225,7 +228,7 @@ void DCJ_killall(JSM)
 static void new_frame(struct DC* this, u32 copy_buf)
 {
     this->clock.frame_cycle = 0;
-    this->clock.frame_start_cycle = this->sh4.trace_cycles;
+    this->clock.frame_start_cycle = (i64)this->sh4.trace_cycles;
     this->holly.master_frame++;
     this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
     DC_recalc_frame_timing(this);
@@ -254,38 +257,30 @@ static void DC_schedule_frame(struct DC* this)
     // vblank_in_start @?
     // vblank_out_start @?
     // frame end @200mil
-    scheduler_clear(&this->scheduler);
-    scheduler_add(&this->scheduler, 0, evt_FRAME_START);
-    if (this->clock.interrupt.vblank_in_start < this->clock.interrupt.vblank_out_start) {
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, evt_VBLANK_IN);
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, evt_VBLANK_OUT);
-    }
-    else {
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_out_start, evt_VBLANK_OUT);
-        scheduler_add(&this->scheduler, this->clock.interrupt.vblank_in_start, evt_VBLANK_IN);
-    }
-    scheduler_add(&this->scheduler, DC_CYCLES_PER_FRAME, evt_FRAME_END);
+    printf("\nScheduling frame @ %lld", this->clock.frame_start_cycle);
+    scheduler_add(&this->scheduler, this->clock.frame_start_cycle, SE_keyed_event, evt_FRAME_START, 0);
+    scheduler_add(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_in_start, SE_keyed_event, evt_VBLANK_IN, 0);
+    scheduler_add(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_out_start, SE_keyed_event, evt_VBLANK_OUT, 0);
+    scheduler_add(&this->scheduler, this->clock.frame_start_cycle+DC_CYCLES_PER_FRAME, SE_keyed_event, evt_FRAME_END, 0);
 }
 
 u32 DCJ_finish_frame(JSM)
 {
     JTHIS;
-    if (scheduler_at_end(&this->scheduler)) {
-        DC_schedule_frame(this);
-    }
-    DCJ_step_master(jsm, DC_CYCLES_PER_FRAME - this->scheduler.timecode);
+    DCJ_step_master(jsm, DC_CYCLES_PER_FRAME - this->clock.frame_cycle);
     return 0;
 }
 
 u32 DCJ_finish_scanline(JSM)
 {
     JTHIS;
+    assert(1==0);
     return 0;
 }
 
 void DC_scheduler_pprint(struct DC* this)
 {
-    for (u32 i = 0; i < this->scheduler.array.used_len; i++) {
+    /*for (u32 i = 0; i < this->scheduler.array.used_len; i++) {
         struct scheduler_event* evt = &this->scheduler.array.events[i];
         printf("\nSCHED EVENT CYC:%8llu ", evt->timecode);
         switch(evt->event) {
@@ -305,7 +300,7 @@ void DC_scheduler_pprint(struct DC* this)
                 printf("VBLANK_OUT");
                 break;
         }
-    }
+    }*/
 }
 
 u32 DCJ_step_master(JSM, u32 howmany)
@@ -313,28 +308,23 @@ u32 DCJ_step_master(JSM, u32 howmany)
     JTHIS;
     i64 steps_done = 0;
 
-    struct scheduler_event* next_evt = scheduler_next_event(&this->scheduler);
-    i64 til_next_event = scheduler_til_next_event(&this->scheduler);
-    if (next_evt == NULL) {
-        printf("\nOOPS!6");
+    if (this->scheduler.first_event == NULL)
         DC_schedule_frame(this);
-        til_next_event = scheduler_til_next_event(&this->scheduler);
-    }
     u32 quit = 0;
+    i64 cycles_left = (i64)howmany;
 
-    while(!quit) {
-        while(til_next_event < 1) {
+    i64 cycles_start = this->sh4.trace_cycles;
+
+    u64 key;
+    while(cycles_left > 0) {
+        // Clear scheduled events
+        while((key = scheduler_next_event_if_any(&this->scheduler)) != -1) {
             // handle an event if any exist
-            next_evt = scheduler_next_event(&this->scheduler);
-            if (next_evt == NULL) {
-                printf("\nHOW DID THIS HAPPEN5;");
-                break;
-            }
-            u32 new_scheduler = 0;
-
-            switch ((enum DC_frame_events) next_evt->event) {
+            switch ((enum DC_frame_events)key) {
                 case evt_FRAME_START:
+                    printf("\nFRAME START: %llu", this->sh4.trace_cycles);
                     this->clock.frame_cycle = 0;
+                    this->clock.frame_start_cycle = (i64)this->sh4.trace_cycles;
                     this->clock.in_vblank = 1;
                     break;
                 case evt_VBLANK_IN:
@@ -346,30 +336,21 @@ u32 DCJ_step_master(JSM, u32 howmany)
                 case evt_EMPTY:
                     break;
                 case evt_FRAME_END:
-                    //printf("\nEVENT: FRAME END %llu", this->sh4.trace_cycles);
-                    new_scheduler = 1;
+                    printf("\nEVENT: FRAME END %llu", this->sh4.trace_cycles);
                     new_frame(this, 1);
                     break;
                 default:
                     printf("\nUNKNOWN FRAME EVENT %d", this->clock.frame_cycle);
                     break;
             }
-            if (quit) {
-                break;
-            }
-            if (!new_scheduler) scheduler_advance_event(&this->scheduler);
-            til_next_event = scheduler_til_next_event(&this->scheduler);
             if (dbg.do_break) break;
         }
         if (quit || dbg.do_break) {
             break;
         }
-        if ((til_next_event+steps_done) > howmany) {
-            til_next_event = howmany - steps_done;
-            if (til_next_event < 1) {
-                break; // ran outta cycles before an event
-            }
-        }
+        i64 til_next_event = scheduler_til_next_event(&this->scheduler, this->scheduler.timecode);
+        if (til_next_event > cycles_left) til_next_event = cycles_left;
+
         i64 old_cycles = (i64)this->sh4.trace_cycles;
         u64 old_tcb = this->sh4.trace_cycles_blocks;
         //this->sh4.trace_cycles_blocks += til_next_event;
@@ -378,12 +359,12 @@ u32 DCJ_step_master(JSM, u32 howmany)
         //this->sh4.trace_cycles_blocks = old_tcb + ran_cycles;
         this->sh4.trace_cycles_blocks += ran_cycles;
         this->clock.frame_cycle += ran_cycles;
-        scheduler_ran(&this->scheduler, ran_cycles);
-        steps_done += ran_cycles;
-        til_next_event = scheduler_til_next_event(&this->scheduler);
+        scheduler_ran_cycles(&this->scheduler, ran_cycles);
+        cycles_left -= ran_cycles;
+
         if (dbg.do_break) break;
     }
-    printf("\nSTEPS:%lli BRK:%d", steps_done, dbg.do_break);
+    printf("\nSTEPS:%lli BRK:%d", this->sh4.trace_cycles - cycles_start, dbg.do_break);
     return steps_done;
 }
 

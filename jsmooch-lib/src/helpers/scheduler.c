@@ -9,91 +9,144 @@
 
 void schedule_event(struct scheduler_t* this, struct scheduled_bound_function* func, i64 timecode)
 {
-    //printf("\nIM SUPPOSED TO SCHEDULE A FUNCTION FOR %lld CYCLES FROM NOW! (%llu)", timecode, this->timecode);
-    //func->func(func->ptr, this->timecode, 5);
-    //TODO: MAKE THIS WORK!
-}
-
-static void scheduler_array_init(struct scheduler_event_array* this)
-{
-    this->allocated_len = 20;
-    this->used_len = 0;
-    this->events = malloc(20 * sizeof(struct scheduler_event));
-}
-
-static void scheduler_array_delete(struct scheduler_event_array* this)
-{
-    if (this->events != NULL) {
-        free(this->events);
-    }
-    this->allocated_len = 0;
-    this->used_len = 0;
-    this->events = NULL;
 }
 
 void scheduler_init(struct scheduler_t* this)
 {
-    scheduler_array_init(&this->array);
+    this->first_event = 0;
     this->timecode = 0;
-    this->event_index = 0;
-}
-
-void scheduler_clear(struct scheduler_t* this)
-{
-    this->timecode = 0;
-    this->event_index = 0;
-    this->array.used_len = 0;
-    //scheduler_add(this, 0, 0);
-}
-
-void scheduler_add(struct scheduler_t* this, u64 timecode, u32 event) {
-    struct scheduler_event* evt = &this->array.events[this->array.used_len];
-    this->array.used_len++;
-    evt->timecode = timecode;
-    evt->event = event;
+    this->jitter = 0;
+    this->num_events = 0;
 }
 
 void scheduler_delete(struct scheduler_t* this)
 {
-    scheduler_array_delete(&this->array);
+    scheduler_clear(this);
 }
 
-i64 scheduler_til_next_event(struct scheduler_t* this) {
-    return this->array.events[this->event_index].timecode - this->timecode;
-}
-
-void scheduler_ran(struct scheduler_t* this, u64 howmany)
+void scheduler_clear(struct scheduler_t* this)
 {
+    this->num_events = 0;
+    this->current_key = 0;
+    struct scheduler_event* cur = this->first_event;
+    while(cur != 0) {
+        struct scheduler_event* d = cur;
+
+        cur = cur->next;
+
+        if (d->bound_func)
+            free(d->bound_func);
+        free(d);
+    }
+    this->first_event = 0;
+}
+
+struct scheduler_event* alloc_event(i64 timecode, enum scheduler_event_kind event_kind, u64 key, struct scheduled_bound_function *bound_func, struct scheduler_event* next)
+{
+    struct scheduler_event* se = malloc(sizeof(struct scheduler_event));
+    se->timecode = timecode;
+    se->kind = event_kind;
+
+    se->key = key;
+    se->bound_func = bound_func;
+
+    se->next = next;
+    return se;
+}
+
+struct scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr)
+{
+    struct scheduled_bound_function *f = malloc(sizeof(struct scheduled_bound_function));
+    f->func = func;
+    f->ptr = ptr;
+    return f;
+}
+
+void scheduler_add(struct scheduler_t* this, i64 timecode, enum scheduler_event_kind event_kind, u64 key, struct scheduled_bound_function* bound_func) {
+    u32 instant = false;
+    if ((timecode <= this->timecode) || (timecode == 0)) {
+        instant = true;
+    }
+
+    if ((instant) && (event_kind == SE_bound_function)) {
+        assert(bound_func);
+        bound_func->func(bound_func->ptr, key, this->timecode, this->jitter);
+        return;
+    }
+    else if (instant) {
+        struct scheduler_event* fe = this->first_event;
+        this->first_event = alloc_event(timecode, event_kind, key, bound_func, fe);
+        return;
+    }
+
+    // Insert into linked list at correct place
+    // No events currently...
+    if (this->first_event == 0) {
+        this->first_event = alloc_event(timecode, event_kind, key, bound_func, 0);
+        return;
+    }
+    else if (this->first_event->next == 0) {
+        if (timecode <= this->first_event->timecode) {// Insert before first
+            this->first_event = alloc_event(timecode, event_kind, key, bound_func, this->first_event);
+        }
+        else {
+            this->first_event->next = alloc_event(timecode, event_kind, key, bound_func, 0);
+        }
+        return;
+    }
+
+    // First see if we insert to the first...
+    if (this->first_event->timecode > timecode) {
+        this->first_event = alloc_event(timecode, event_kind, key, bound_func, this->first_event);
+        return;
+    }
+
+    // If we're at this point, the list has two or more events, and does not need an insertion at the start.
+    // Find one to insert AFTER
+    struct scheduler_event *insert_after = this->first_event;
+    while(insert_after->next != 0) {
+        if (insert_after->next->timecode > timecode) break;
+        insert_after = insert_after->next;
+    }
+
+    insert_after->next = alloc_event(timecode, event_kind, key, bound_func, insert_after->next);
+}
+
+i64 scheduler_til_next_event(struct scheduler_t* this, i64 timecode) {
+    if (!this->first_event) return this->jitter;
+    i64 r = this->first_event->timecode - timecode;
+    if (r > this->jitter) r = this->jitter;
+    return r;
+}
+
+void scheduler_ran_cycles(struct scheduler_t* this, i64 howmany) {
     this->timecode += howmany;
 }
 
-u32 scheduler_at_end(struct scheduler_t* this) {
-    return this->event_index >= this->array.used_len;
-}
-
-struct scheduler_event* scheduler_next_event(struct scheduler_t* this) {
-    if (this->event_index >= this->array.used_len) return NULL;
-    return &this->array.events[this->event_index];
-}
-
-void scheduler_advance_event(struct scheduler_t* this)
+u64 scheduler_next_event_if_any(struct scheduler_t* this)
 {
-    this->event_index++;
+    if (this->first_event == 0) return -1;
+    struct scheduler_event *e;
+    while (this->first_event != NULL) {
+        // If we are ahead of current....
+        if (this->timecode >= this->first_event->timecode) {
+            e = this->first_event;
+            if (this->first_event->kind == SE_bound_function) {
+                e->bound_func->func(e->bound_func->ptr, e->key, this->timecode, this->jitter);
+                free(e->bound_func);
+                e->bound_func = NULL;
+                this->first_event = this->first_event->next;
+                free(e);
+                continue;
+            }
+            else {
+                u64 r = e->key;
+                this->first_event = this->first_event->next;
+                free(e);
+                return r;
+            }
+        }
+        if (this->timecode < this->first_event->timecode) return -1;
+    }
+    return -1;
 }
-
-void scheduler_allocate(struct scheduler_t* this, u32 howmany)
-{
-    assert(1!=0);
-}
-
-/*
- do {
-    do_cycles = cycles_til_next_event = event[current_event].cycles - current_cycles;
-    if (cycles_til_next_event < cycles_left_to_emulate) do_cycles = cycles_left_to_emulate;
-    current_cycles += emulate(cycles_til_next_event);
-    if (interrupted && needs_reschedule) {reschedule; continue;}
-    if (cycles_left_to_emulate == 0) break;
-    current_event++;
-    fire_event(event[current_event]);
-}
- */

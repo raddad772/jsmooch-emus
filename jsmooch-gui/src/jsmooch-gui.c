@@ -441,12 +441,10 @@ int main(int argc, char** argv)
     //dbg_LT_clear();
     //dbg_disable_trace();
     //   dbg_enable_trace();
-    //sys->step_master(sys, 11494000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
-    //sys->step_master(sys, 2000000000); //
-    sys->step_master(sys, 200000000); //
-    //sys->step_master(sys, 1000000000); // end of copy BIOS to RAM and start exec inRAM at 8c000100
+    sys->step_master(sys, 10000000); //
     dbg_unbreak();
     dbg_enable_trace();
+    sys->step_master(sys, 10000000); //
     //printf("\n-----traces");
     //sys->step_master(sys, 800);
     dbg_LT_dump();

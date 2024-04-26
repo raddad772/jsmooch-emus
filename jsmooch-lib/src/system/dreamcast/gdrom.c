@@ -140,7 +140,7 @@ static void GDROM_process_spi_cmd(struct DC* this) {
             GDI_GetToc(&this->gdrom.gdi, &toc_gd[0], this->gdrom.packet_cmd.data_8[1] & 0x1);
 
             GDROM_spi_pio_end(this, (u8*)&toc_gd[0], (this->gdrom.packet_cmd.data_8[4]) | (this->gdrom.packet_cmd.data_8[3] << 8), gds_pio_end);
-
+            break;
         }
         case 0x70: // Reicast does this a bit weird so we do too!
             gd_printf("\nSPI CMD 70 %llu", this->sh4.trace_cycles);

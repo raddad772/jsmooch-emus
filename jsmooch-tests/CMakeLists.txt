@@ -11,6 +11,8 @@ add_executable(jsmooch-tests
         src/cpu-tests/rfb.c
         src/cpu-tests/rfb.h
         src/cpu-test-generators/sh4.c
+        src/helper-tests/scheduler-tests.c
+        src/helper-tests/scheduler-tests.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src ${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)

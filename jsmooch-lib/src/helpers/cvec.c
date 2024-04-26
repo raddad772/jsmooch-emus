@@ -87,6 +87,12 @@ void *cvec_get(struct cvec* this, u32 index)
     return this->data + (this->data_sz * index);
 }
 
+void *cvec_get_unsafe(struct cvec* this, u32 index)
+{
+    assert(index < this->len_allocated);
+    return this->data + (this->data_sz * index);
+}
+
 void cvec_push_back_copy(struct cvec* this, void *src)
 {
     void *dst = cvec_push_back(this);
