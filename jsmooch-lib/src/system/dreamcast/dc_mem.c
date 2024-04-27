@@ -53,7 +53,7 @@ static void gdrom_dma_start(struct DC* this)
 static void DC_write_C2DST(struct DC* this, u32 val)
 {
     if (this->io.SB_C2DST) { // TA FIFO DMA!
-        printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", this->sh4.trace_cycles);
+        printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", this->sh4.clock.trace_cycles);
         u32 addr = this->io.SB_C2DSTAT;
         if (addr == 0) addr = 0x10000000;
         // TA polygon FIFO
@@ -188,7 +188,7 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
 
      if (addr <= 0x001FFFFF) {
          dbg_break();
-         printf("\nBIOS write %08x %llu", addr, this->sh4.trace_cycles);
+         printf("\nBIOS write %08x %llu", addr, this->sh4.clock.trace_cycles);
          return;
      }
     if ((full_addr >= 0x7C000000) && (full_addr <= 0x7FFFFFFF)) {
@@ -407,7 +407,7 @@ void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
 
     if (!success) {
         //printf("\nwrite%d unknown addr %08x %08x val %02llu cycle:%llu", dcms(sz), addr & 0x1FFFFFFF, addr, val,
-        //       this->sh4.trace_cycles);
+        //       this->sh4.clock.trace_cycles);
         if (addr >= 0xFF000000)
             printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
         else
@@ -482,7 +482,7 @@ u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz)
                 break;
             case 0x1A004:
             case 0x1A0A4: {
-#ifdef LYCODER
+#if defined(LYCODER) || defined(REICAST_DIFF)
                 return 0x30;
 #endif
                 if (this->settings.broadcast <= 3)

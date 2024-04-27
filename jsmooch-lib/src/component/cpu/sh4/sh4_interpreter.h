@@ -107,11 +107,15 @@ struct SH4_tmu_int_struct {
     u32 ch;
 };
 
+struct SH4_clock {
+    i64 trace_cycles;
+    i64 timer_cycles;
+    i64 trace_cycles_blocks;
+};
+
 struct SH4 {
     struct SH4_regs regs;
-
-    u64 trace_cycles;
-    u64 trace_cycles_blocks;
+    struct SH4_clock clock;
 
     u32 IRL_irq_level;
 
@@ -150,9 +154,11 @@ struct SH4 {
 void SH4_init(struct SH4* this, struct scheduler_t* scheduler);
 void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
-void SH4_fetch_and_exec(struct SH4* this);
+void SH4_fetch_and_exec(struct SH4* this, u32 is_delay_slot);
 void SH4_SR_set(struct SH4* this, u32 val);
 void SH4_set_IRL_irq_level(struct SH4* this, u32 level);
 void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to);
+void SH4_interrupt_pend(struct SH4* this, u32 level, u32 onoff);
+void SH4_interrupt_mask(struct SH4* this, u32 level, u32 onoff);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

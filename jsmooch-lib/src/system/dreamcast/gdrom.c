@@ -86,7 +86,7 @@ static void GDROM_setdisc(struct DC* this) {
 }
 
 static void GDROM_process_spi_cmd(struct DC* this) {
-    gd_printf("\nPROCESS SPI PACKET! %llu ", this->sh4.trace_cycles);
+    gd_printf("\nPROCESS SPI PACKET! %llu ", this->sh4.clock.trace_cycles);
     gd_printf("Sense: %02x %02x %02x \n", this->gdrom.sns_asc, this->gdrom.sns_ascq, this->gdrom.sns_key);
 
     gd_printf("SPI command %02x;", this->gdrom.packet_cmd.data_8[0]);
@@ -96,18 +96,18 @@ static void GDROM_process_spi_cmd(struct DC* this) {
            this->gdrom.packet_cmd.data_8[6], this->gdrom.packet_cmd.data_8[7], this->gdrom.packet_cmd.data_8[8],
            this->gdrom.packet_cmd.data_8[9], this->gdrom.packet_cmd.data_8[10], this->gdrom.packet_cmd.data_8[11]);
 
-    //if (this->gdrom.sns_key == 0x0 || this->gdrom.sns_key == 0xB)
-        //this->gdrom.device_status.CHECK = 0;
-    //else {
+    if (this->gdrom.sns_key == 0x0 || this->gdrom.sns_key == 0xB)
+        this->gdrom.device_status.CHECK = 0;
+    else {
         //gd_printf("\nCHECK! 1...");
-        //this->gdrom.device_status.CHECK = 1;
-    //}
+        this->gdrom.device_status.CHECK = 1;
+    }
 
     switch (this->gdrom.packet_cmd.data_8[0]) {
         case 0: // SPI_TEST_UNIT
             gd_printf("\nSPI_TEST_UNIT");
 
-            //this->gdrom.device_status.CHECK = this->gdrom.sector_number.status == GD_BUSY; // Drive is ready ;)
+            this->gdrom.device_status.CHECK = this->gdrom.sector_number.status == GD_BUSY; // Drive is ready ;)
             gd_printf("\nCHECK? %d", this->gdrom.device_status.CHECK);
 
             GDROM_setstate(this, gds_procpacketdone);
@@ -117,7 +117,7 @@ static void GDROM_process_spi_cmd(struct DC* this) {
             GDROM_spi_pio_end(this, (u8*)&reply_11[this->gdrom.packet_cmd.data_8[2] >> 1], this->gdrom.packet_cmd.data_8[4], gds_pio_end);
             break;
         case 0x13: // SPI_REQ_ERR
-            gd_printf("SPI_REQ_ERR cyc:%llu\n", this->sh4.trace_cycles);
+            gd_printf("SPI_REQ_ERR cyc:%llu\n", this->sh4.clock.trace_cycles);
             u8 resp[10];
             resp[0] = 0xF0;
             resp[1] = 0;
@@ -143,7 +143,7 @@ static void GDROM_process_spi_cmd(struct DC* this) {
             break;
         }
         case 0x70: // Reicast does this a bit weird so we do too!
-            gd_printf("\nSPI CMD 70 %llu", this->sh4.trace_cycles);
+            gd_printf("\nSPI CMD 70 %llu", this->sh4.clock.trace_cycles);
             GDROM_setstate(this, gds_procpacketdone);
             break;
         case 0x71:
@@ -264,7 +264,7 @@ static void GDROM_ATA_command(struct DC* this)
         this->gdrom.device_status.CHECK = 0;
     else {
         gd_printf("\nCHECK 1 %02x", this->gdrom.sns_key);
-        //this->gdrom.device_status.CHECK = 1;
+        this->gdrom.device_status.CHECK = 1;
     }
 
     switch(this->gdrom.ata_cmd) {
@@ -283,7 +283,7 @@ static void GDROM_ATA_command(struct DC* this)
             GDROM_setstate(this, gds_waitpacket);
             return;
         case 0xEF: // Feature set
-            gd_printf("\nGDROM SET FEATURES! %llu", this->sh4.trace_cycles);
+            gd_printf("\nGDROM SET FEATURES! %llu", this->sh4.clock.trace_cycles);
 
             this->gdrom.device_status.DSC = 0;
             this->gdrom.device_status.CHECK = 0;
@@ -299,9 +299,9 @@ static void GDROM_ATA_command(struct DC* this)
 
 void GDROM_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
 {
-    printf("\nGDROM WRITE! %llu", this->sh4.trace_cycles);
+    printf("\nGDROM WRITE! %llu", this->sh4.clock.trace_cycles);
     addr &= 0x1FFFFFFF;
-    //gd_printf("\nGDROM write! %08x %02x %04x %d cycle:%llu", reg | 0x5F7400, reg, val, bits, this->sh4.trace_cycles);
+    //gd_printf("\nGDROM write! %08x %02x %04x %d cycle:%llu", reg | 0x5F7400, reg, val, bits, this->sh4.clock.trace_cycles);
     switch(addr) {
         // read / write
         case 0x005F7018: // Device control
@@ -311,14 +311,14 @@ void GDROM_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
         case 0x005F7080: // Data
             if (this->gdrom.state == gds_waitpacket)
             {
-                gd_printf("\nGD CMD WRITE AT %llu: %04llx %d", this->sh4.trace_cycles, val, this->gdrom.pio_buff.index);
+                gd_printf("\nGD CMD WRITE AT %llu: %04llx %d", this->sh4.clock.trace_cycles, val, this->gdrom.pio_buff.index);
                 this->gdrom.packet_cmd.data_16[this->gdrom.packet_cmd.index] = (u16)val;
                 this->gdrom.packet_cmd.index += 1;
                 if (this->gdrom.packet_cmd.index == 6)
                     GDROM_setstate(this, gds_procpacket);
             }
             else if (this->gdrom.state == gds_pio_get_data){
-                gd_printf("\nGD PIO GETDATA AT %llu: %04llx %d", this->sh4.trace_cycles, val, this->gdrom.pio_buff.index);
+                gd_printf("\nGD PIO GETDATA AT %llu: %04llx %d", this->sh4.clock.trace_cycles, val, this->gdrom.pio_buff.index);
                 this->gdrom.pio_buff.data[this->gdrom.pio_buff.index] = (u16)val;
                 this->gdrom.pio_buff.index += 1;
                 if (this->gdrom.pio_buff.size == this->gdrom.pio_buff.index)
@@ -333,7 +333,7 @@ void GDROM_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
             }
             return;
         case 0x005F7084: // Features
-            gd_printf("\nGDROM SET FEATURES! %llu", this->sh4.trace_cycles);
+            gd_printf("\nGDROM SET FEATURES! %llu", this->sh4.clock.trace_cycles);
             this->gdrom.features = val;
             gd_printf("\nGDROM SET FEATURES REG %02llx", val);
             return;

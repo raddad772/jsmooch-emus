@@ -49,7 +49,7 @@
 
 #define SH4ins(x) void SH4_##x(SH4args)
 
-#define DELAY_SLOT { PCinc; SH4_fetch_and_exec(this); }
+#define DELAY_SLOT { PCinc; SH4_fetch_and_exec(this, 1); }
 
 enum MSIZE {
     DC8 = 1,
@@ -92,10 +92,8 @@ static u32 INTEVT_TABLE[15] = {
 
 void SH4_interrupt_IRL(struct SH4* this, u32 level) {
     this->regs.SPC = this->regs.PC;
-    SH4_IRQ_DBG_printf("\npIQ. SETTING SSR FROM %08x to %08X", this->regs.SSR, SH4_regs_SR_get(&this->regs.SR));
     this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
     this->regs.SGR = this->regs.R[15];
-    SH4_IRQ_DBG_printf("\nChanging RB from %d to 1", this->regs.SR.RB);
 
     u32 old_SR = SH4_regs_SR_get(&this->regs.SR);
     SH4_SR_set(this, old_SR | (1 << 30) | (1 << 29) | (1 << 28));
@@ -111,14 +109,14 @@ encoding interrupts. The interrupt levels are "2" (IRL3:0 = 1101), "4" (IRL3:0 =
      */
 #ifdef SH4_DBG_SUPPORT
     if (dbg.trace_on) {
-        dbg_printf("\nRaising interrupt %d cyc:%llu", level, this->trace_cycles);
+        dbg_printf("\nRaising interrupt %d cyc:%llu", level, this->clock.trace_cycles);
     }
 #endif
     this->regs.INTEVT = INTEVT_TABLE[level];
 }
 
 SH4ins(EMPTY) {
-    printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, this->trace_cycles);
+    printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, this->clock.trace_cycles);
     fflush(stdout);
     dbg_break();
     PCinc;
@@ -169,6 +167,8 @@ SH4ins(MOVWL)
 SH4ins(MOVLL)
 {
     RN = READ32(RM);
+    /*R[n] = Read_32 (R[m]);
+    PC += 2;*/
     PCinc;
 }
 
@@ -799,7 +799,7 @@ SH4ins(SHLR16) { // Rn >> 16 -> [0 -> Rn]
 }
 
 SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
-    //printf("\nBF! %llu", this->trace_cycles);
+    //printf("\nBF! %llu", this->clock.trace_cycles);
     assert(this->regs.SR.T < 2);
     // PC += 2, kind is normal
     // add ((2 * DISP) + 2) * !T
@@ -818,7 +818,7 @@ SH4ins(BF) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop
 }
 
 SH4ins(BFS) { // If T = 0: disp*2 + PC + 4 -> PC, Else: nop, (Delayed branch)
-    //printf("\nBFS! %llu", this->trace_cycles);
+    //printf("\nBFS! %llu", this->clock.trace_cycles);
     // PC is gonna be +4 no matter what, kind is correct
     // then we add 2*disp to that after if T = 0
     /*i64 val = (i64)rPC + 4;
@@ -1057,9 +1057,9 @@ SH4ins(MOVCAL) { // R0 -> (Rn) (without fetching cache block)
 }
 
 SH4ins(NOP) { // No operation
-    if ((this->regs.PC == 0x8c0c0868) || (this->regs.PC == 0x8c0c086A)) {
+    /*if ((this->regs.PC == 0x8c0c0868) || (this->regs.PC == 0x8c0c086A)) {
         dbg_printf("\nWAIT WOAH %08x PC:%08x", this->regs.R[0], this->regs.PC);
-    }
+    }*/
     PCinc;
 }
 
@@ -1091,7 +1091,9 @@ SH4ins(PREF) { // (Rn) -> operand cache
     else if (dbg.trace_on)
     {
 #ifndef LYCODER
+#ifndef REICAST_DIFF
         dbg_printf("\nPREFETCH %08x", RN);
+#endif
 #endif
     }
     //read in (RN & 0xFFFFFFE0) to operand cache
@@ -1100,11 +1102,6 @@ SH4ins(PREF) { // (Rn) -> operand cache
 }
 
 SH4ins(RTE) { // Delayed branch, SH1*,SH2*: stack area -> PC/SR, SH3*,SH4*: SSR/SPC -> SR/PC
-    if (this->regs.PC == 0x8c0c0868) {
-        dbg_printf("\nWAIT RTE %08x!?", this->regs.R[0]);
-        dbg_printf("\nOLD SSR: %08x. NEW SSR: %08x", SH4_regs_SR_get(&this->regs.SR), this->regs.SSR);
-    }
-
     SH4_SR_set(this, this->regs.SSR);
     u32 val = this->regs.SPC;
 

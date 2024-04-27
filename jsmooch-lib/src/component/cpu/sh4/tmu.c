@@ -2,6 +2,7 @@
 // Created by RadDad772 on 3/8/24.
 //
 
+#include "stdlib.h"
 #include "tmu.h"
 #include "sh4_interpreter.h"
 #include "stdio.h"
@@ -9,33 +10,51 @@
 #define SH4_CYCLES_PER_SEC 200000000
 #define tmu_underflow 0x0100
 #define tmu_UNIE      0x0020
-#define TCUSE this->trace_cycles
+#define TCUSE this->clock.timer_cycles
 
 u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter);
 
 /* A lot of the structure and logic here very closely follows Reicast */
 
-#define TOTAL_EXPECTED 5
+#define TOTAL_EXPECTED 14
 static u32 expected_TCNT[] = {
         0xffffffcf,
-        0xffffffcf,
-        0xffffffcf,
-        0xffffffcf,
-        0xffffffcf
+        0xfffea023,
+        0xfffea000,
+        0xfffea000,
+        0xfffe9fee,
+        0xfffe9fee,
+        0xfffe9fcd,
+        0xfffe9fcd,
+        0xfffe9fbb,
+        0xfffe9fbb,
+        0xfffe9faf,
+        0xfffe9faf,
+        0xfffe9faa,
+        0xfffe9faa,
+        0xfffe9fa5,
 };
+
+#define REGTCNT (((u32)(this->tmu.base[ch] - ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch])))) - 0x80A
 
 static u32 read_TMU_TCNT(struct SH4* this, u32 ch, u32 is_regread)
 {
-#ifdef LYCODER
+#ifdef REICAST_DIFF
     static int num = 0;
-    if ((ch == 0) && (this->trace_cycles > 0) && is_regread) {
+    static s64 last_diff = 0;
+    if ((ch == 0) && (this->clock.trace_cycles > 0) && is_regread) {
         num++;
         if (num <= TOTAL_EXPECTED) {
+            u32 r = expected_TCNT[num - 1];
+            u32 diff = r - REGTCNT;
+            printf("\nDIFF: %08x %08lld ch:%d", diff, this->clock.timer_cycles - last_diff, ch);
+            last_diff = this->clock.timer_cycles;
             return expected_TCNT[num - 1];
         }
     }
 #endif
-    return this->tmu.base[ch] - ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch]);
+    printf("\nHEY! %08x", REGTCNT);
+    return REGTCNT;
 }
 
 static i64 read_TMU_TCNT64(struct SH4* this, u32 ch)
@@ -56,7 +75,7 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
         togo = SH4_CYCLES_PER_SEC;
 
     if (this->tmu.mask[ch])
-        scheduler_add(this->scheduler, cycles, SE_bound_function, 0, scheduler_bind_function(this->tmu.scheduled_funcs[ch].func, this->tmu.scheduled_funcs[ch].ptr));
+        scheduler_add(this->scheduler, this->clock.trace_cycles + cycles, SE_bound_function, 0, scheduler_bind_function(this->tmu.scheduled_funcs[ch].func, this->tmu.scheduled_funcs[ch].ptr));
     else
         scheduler_add(this->scheduler, -1, SE_bound_function, 0, scheduler_bind_function(this->tmu.scheduled_funcs[ch].func, this->tmu.scheduled_funcs[ch].ptr));
 }
@@ -64,8 +83,9 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
 
 static void write_TMU_TCNT(struct SH4* this, u32 ch, u32 data)
 {
-    this->tmu.base[ch] = data + ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch]);
-    this->tmu.base64[ch] = data + ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask64[ch]);
+    printf("\nwrite TMU TCNT %llu", this->clock.trace_cycles);
+    this->tmu.base[ch] = data + ((TCUSE >> this->tmu.shift[ch]) & this->tmu.mask[ch]);
+    this->tmu.base64[ch] = data + ((TCUSE >> this->tmu.shift[ch]) & this->tmu.mask64[ch]);
 
     sched_chan_tick(this, ch);
 }
@@ -93,8 +113,11 @@ static void UpdateTMUCounts(struct SH4* this, u32 ch)
 {
     u32 irq_num = 10 + ch;
     // TODO: IRQ stuff
-    //InterruptPend(tmu_intID[reg], TMU_TCR(reg) & tmu_underflow);
-    //InterruptMask(tmu_intID[reg], TMU_TCR(reg) & tmu_UNIE);
+    SH4_interrupt_pend(this, 0x400 + (0x20 * ch), this->tmu.TCR[ch] & 0x100);
+    SH4_interrupt_mask(this, 0x400 + (0x20 * ch), this->tmu.TCR[ch] & 0x200);
+    //InterruptPend(tmu_intID[reg], TMU_TCR(reg) & 0x100);
+    //InterruptMask(tmu_intID[reg], TMU_TCR(reg) & 0x200);
+
 
     if (this->tmu.old_mode[ch] == (this->tmu.TCR[ch] & 7))
         return;
@@ -227,10 +250,29 @@ u64 TMU_read(struct SH4* this, u32 addr, u32 sz, u32* success)
     return 0;
 }
 
+struct sh4ifunc_struct {
+    struct SH4* sh4;
+    u32 ch;
+    u32 set_or_clear; // 0 = clear, 1 = set
+};
+
+//typedef u32 (*scheduler_callback)(void*,u64,i64,u32);
+static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
+{
+    struct sh4ifunc_struct *ifs = (struct sh4ifunc_struct *)ptr;
+    struct SH4* this = ifs->sh4;
+    u32 ch = ifs->ch;
+
+    // TODO: this
+    printf("\nPlease implement this delayed interrupt set/clear function sh4ifunc.");
+    free(ptr);
+}
+
 u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
 {
     struct SH4_tmu_int_struct* is = (struct SH4_tmu_int_struct*) ptr;
     struct SH4* this = is->sh4;
+    printf("\nSCHEDULED CALLBACK!");
     u32 ch = is->ch;
     if (this->tmu.mask[ch]) {
 
@@ -243,11 +285,15 @@ u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
         //64 bit maths to differentiate big values from overflows
         if (tcnt64 <= jitter) {
             //raise interrupt, timer counted down
-            // TODO: IRQ stuff
             this->tmu.TCR[ch] |= tmu_underflow;
+            /*struct sh4ifunc_struct* f = malloc(sizeof(sh4ifunc_struct));
+            f->sh4 = this;
+            f->ch = ch;
+            scheduler_add(&this->scheduler, this->clock.trace_cycles+1, SE_bound_function, ch, scheduler_bind_function(&sh4ifunc, f));*/
+            SH4_interrupt_pend(this, 0x400 + (0x20 * ch), 1);
             //InterruptPend(tmu_intID[ch], 1);
 
-            printf("Interrupt for %d, %d cycles\n", ch, sch_cycle);
+            printf("Interrupt for %d, %lld cycles\n", ch, sch_cycle);
 
             //schedule next trigger by writing the TCNT register
             write_TMU_TCNT(this, ch, tcor + tcnt);

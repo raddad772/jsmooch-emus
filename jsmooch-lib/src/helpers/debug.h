@@ -13,10 +13,11 @@
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
 //#define TRACE_ON_BRK     // Enable tracing on break
-#define DBG_LOG_TO_FILE // log debug to file
-#define DISABLE_BREAK
+//#define DBG_LOG_TO_FILE // log debug to file
+//#define REICAST_DIFF
+//#define DISABLE_BREAK
+
 //#define LYCODER        // lycoder-format traces for easy winmerge
-#define REICAST_DIFF
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 //#define DUMP_LAST_TRACES_ON_BREAK
 //#define TRACE_COLORS
@@ -26,7 +27,8 @@
 #ifdef SH4_IRQ_DBG
 #define SH4_IRQ_DBG_printf(...) printf(__VA_ARGS__)
 #else
-#define SH4_IRQ_DBG_printf(...) (void)0;
+//#define SH4_IRQ_DBG_printf(...) (void)0;
+#define SH4_IRQ_DBG_printf(...) printf(__VA_ARGS__)
 #endif
 
 #define SH4_DBG_SUPPORT

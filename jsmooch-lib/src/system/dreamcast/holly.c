@@ -65,14 +65,14 @@ void holly_recalc_interrupts(struct DC* this)
     if (level2) highest_level = 2;
     if (level4) highest_level = 4;
     if (level6) highest_level = 6;
-    if (highest_level != 0) {
-        //printf(DBGC_RED "\nHIGHEST LEVEL: %d l2:%04x l4:%04x l6:%04x cyc:%llu" DBGC_RST, highest_level, this->io.SB_IML2NRM, this->io.SB_IML4NRM, this->io.SB_IML6NRM, this->sh4.trace_cycles);
+    if ((highest_level != 0) && (dbg.trace_on)) {
+        dbg_printf(DBGC_RED "\nHIGHEST LEVEL: %d l2:%04x l4:%04x l6:%04x cyc:%llu" DBGC_RST, highest_level, this->io.SB_IML2NRM, this->io.SB_IML4NRM, this->io.SB_IML6NRM, this->sh4.clock.trace_cycles);
     }
     //if (highest_level != this->sh4.IRL_irq_level) {
-        //printf("\nINTERRUPT HIGHEST LEVEL CHANGE TO %d cyc:%llu", highest_level, this->sh4.trace_cycles);
+        //printf("\nINTERRUPT HIGHEST LEVEL CHANGE TO %d cyc:%llu", highest_level, this->sh4.clock.trace_cycles);
         //printf("\nIML6NRN: %08x", this->io.SB_IML6NRM & this->io.SB_ISTNRM.u & 0x3FFFFF);
     //}
-    //printf("\nHOLLY RAISING INTERRUPT ON CYCLE %llu", this->sh4.trace_cycles);
+    //printf("\nHOLLY RAISING INTERRUPT ON CYCLE %llu", this->sh4.clock.trace_cycles);
     u32 lv = HOLLY_IRQ_outputs[highest_level];
 #ifdef DCDBG_HOLLY_IRQ
     printf("\nSET HOLLY IRQ OUT LEVEL TO %d", lv);
@@ -145,7 +145,7 @@ void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, 
 {
     if (delay > 0) {
         struct scheduled_bound_function* bf = scheduler_bind_function(&holly_delayed_raise_interrupt, this);
-        scheduler_add(&this->scheduler, (i64)this->sh4.trace_cycles + delay, SE_bound_function, irq_num, bf);
+        scheduler_add(&this->scheduler, (i64)this->sh4.clock.trace_cycles + delay, SE_bound_function, irq_num, bf);
         return;
     }
     u32 imask = 1 << (irq_num & 0xFF);
@@ -156,7 +156,7 @@ void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, 
     else
         this->io.SB_ISTNRM.u |= imask;
 #ifdef SH4_IRQ_DBG
-    printf(DBGC_BLUE "\nHOLLY RAISE INTTERUPT %s val:%08x SB_ISTNRM:%08x SB_ISTEXT:%08x cyc:%llu" DBGC_RST, irq_strings[irq_num & 0xFF], imask, this->io.SB_ISTNRM.u, this->io.SB_ISTEXT.u, this->sh4.trace_cycles);
+    printf(DBGC_BLUE "\nHOLLY RAISE INTTERUPT %s val:%08x SB_ISTNRM:%08x SB_ISTEXT:%08x cyc:%llu" DBGC_RST, irq_strings[irq_num & 0xFF], imask, this->io.SB_ISTNRM.u, this->io.SB_ISTEXT.u, this->sh4.clock.trace_cycles);
 #endif
     holly_recalc_interrupts(this);
 }
@@ -202,7 +202,7 @@ static void holly_TA_list_init(struct DC* this)
 }
 
 static u32 holly_get_frame_cycle(struct DC* this) {
-    return (u32)(this->clock.frame_start_cycle - this->sh4.trace_cycles);
+    return (u32)(this->clock.frame_start_cycle - this->sh4.clock.trace_cycles);
 }
 
 static u32 holly_get_SPG_line(struct DC* this) {
@@ -267,7 +267,7 @@ void holly_write(struct DC* this, u32 addr, u32 val, u32* success)
     }
 
     *success = 0;
-    printf("\nUNKNOWN HOLLY WRITE: %08x data:%08x cyc:%llu", addr, val, this->sh4.trace_cycles);
+    printf("\nUNKNOWN HOLLY WRITE: %08x data:%08x cyc:%llu", addr, val, this->sh4.clock.trace_cycles);
     fflush(stdout);
 }
 

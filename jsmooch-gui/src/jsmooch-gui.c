@@ -441,12 +441,16 @@ int main(int argc, char** argv)
     //dbg_LT_clear();
     //dbg_disable_trace();
     //   dbg_enable_trace();
-    sys->step_master(sys, 10000000); //
+    ///9977400
+    sys->step_master(sys, 65024890); //
+    //sys->step_master(sys, 10000000); //
     dbg_unbreak();
     dbg_enable_trace();
-    sys->step_master(sys, 10000000); //
-    //printf("\n-----traces");
-    //sys->step_master(sys, 800);
+    printf("\nTrace enabled...");
+    sys->step_master(sys, 200);
+    dbg_unbreak();
+    sys->step_master(sys, 20);
+    printf("\nTrace done!");
     dbg_LT_dump();
     dbg_flush();
     return 0;

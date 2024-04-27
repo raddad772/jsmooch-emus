@@ -12,12 +12,27 @@
 #include "tmu.h"
 #include "system/dreamcast/dreamcast.h"
 
+#define SH4_TIMER_IGNORE_DELAY_SLOT
 //#define SH4_BRK 0x8c002774
 
 // Endianness is little.
 
 // disassembly printf args
-#define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", this->trace_cycles, this->regs.PC, SH4_disassembled[SH4_decoded_index][opcode]
+#define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", this->clock.trace_cycles, this->regs.PC, SH4_disassembled[SH4_decoded_index][opcode]
+
+
+#define SH4_CLOCK_DIVIDER 1
+#define SH4_TIMER_MULTIPLIER (8)
+
+void SH4_interrupt_mask(struct SH4* this, u32 level, u32 onoff)
+{
+
+}
+
+void SH4_interrupt_pend(struct SH4* this, u32 level, u32 onoff)
+{
+    printf("\nPLEASE IMPLEMENT SH4 INTERRUPTS!");
+};
 
 void SH4_set_IRL_irq_level(struct SH4* this, u32 level)
 {
@@ -156,17 +171,18 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces
 
 void lycoder_print(struct SH4* this, u32 opcode)
 {
-    dbg_printf("\n%08x %04x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x",
-               this->regs.PC, opcode,
-               this->regs.R[0], this->regs.R[1], this->regs.R[2],
-               this->regs.R[3], this->regs.R[4], this->regs.R[5],
-               this->regs.R[6], this->regs.R[7], this->regs.R[8],
-               this->regs.R[9], this->regs.R[10], this->regs.R[11],
-               this->regs.R[12], this->regs.R[13], this->regs.R[14],
-               this->regs.R[15], SH4_regs_SR_get(&this->regs.SR), SH4_regs_FPSCR_get(&this->regs.FPSCR));
+    if (dbg.trace_on)
+        dbg_printf("\n%08x %04x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x",
+                   this->regs.PC, opcode,
+                   this->regs.R[0], this->regs.R[1], this->regs.R[2],
+                   this->regs.R[3], this->regs.R[4], this->regs.R[5],
+                   this->regs.R[6], this->regs.R[7], this->regs.R[8],
+                   this->regs.R[9], this->regs.R[10], this->regs.R[11],
+                   this->regs.R[12], this->regs.R[13], this->regs.R[14],
+                   this->regs.R[15], SH4_regs_SR_get(&this->regs.SR), SH4_regs_FPSCR_get(&this->regs.FPSCR));
 }
 
-void SH4_fetch_and_exec(struct SH4* this)
+void SH4_fetch_and_exec(struct SH4* this, u32 is_delay_slot)
 {
     u32 opcode = this->fetch_ins(this->mptr, this->regs.PC);
 #ifdef SH4_DBG_SUPPORT
@@ -175,40 +191,47 @@ void SH4_fetch_and_exec(struct SH4* this)
         dbg_break();
     }
 #endif // SH4_BRK
-    this->trace_cycles++;
 #endif
-    this->cycles--;
+
+    this->clock.trace_cycles += SH4_CLOCK_DIVIDER;
+
+#ifdef SH4_TIMER_IGNORE_DELAY_SLOT
+    if (!is_delay_slot)
+#endif
+        this->clock.timer_cycles += SH4_TIMER_MULTIPLIER;
+
+    this->cycles -= SH4_CLOCK_DIVIDER;
     struct SH4_ins_t *ins = &SH4_decoded[SH4_decoded_index][opcode];
 #ifdef DO_LAST_TRACES
     dbg_LT_printf(SH_DISA_P_ARGS);
     SH4_pprint(this, ins, true);
     dbg_LT_endline();
 #endif
-#ifdef LYCODER
+#if defined(LYCODER) || defined(REICAST_DIFF)
     lycoder_print(this, opcode);
-#else // !LYCODER
+#else // !LYCODER and !REICAST_DIFF
 #ifdef SH4_DBG_SUPPORT
     if (dbg.trace_on) {
         dbg_printf(SH_DISA_P_ARGS);
         SH4_pprint(this, ins, false);
     }
 #endif // SH4_DBG_SUPPORT
-#endif // else !LYCODER
+#endif // else !LYCODER and !REICAST_DIFF
 
     ins->exec(this, ins);
 }
 
 void SH4_run_cycles(struct SH4* this, u32 howmany) {
     // fetch
-    this->cycles = (i32)howmany;
+    this->cycles += (i32)howmany;
     while(this->cycles > 0) {
-        SH4_fetch_and_exec(this);
+        SH4_fetch_and_exec(this, 0);
         if ((this->IRL_irq_level != 0xF) && (this->regs.SR.BL == 0) && (((~this->IRL_irq_level) & 15) > this->regs.SR.IMASK)) {
 #ifdef BRK_ON_NMIRQ
             dbg_break();
 #endif
 #ifdef SH4_IRQ_DBG
-#define THING "\nINTERRUPT SERVICED AT %llu R0:%08x SR:%08x SSR:%08x LEVEL:%d IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", this->trace_cycles, this->regs.R[0], SH4_regs_SR_get(&this->regs.SR), this->regs.SSR, this->IRL_irq_level, this->regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u
+#define THING "\nINTERRUPT SERVICED AT %llu R0:%08x SR:%08x SSR:%08x LEVEL:%d IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", this->clock.trace_cycles, this->regs.R[0], SH4_regs_SR_get(&this->regs.SR), this->regs.SSR, this->IRL_irq_level, this->regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u
             dbg_LT_printf(THING);
             printf(THING);
 #undef THING
@@ -219,21 +242,24 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
             SH4_interrupt_IRL(this, this->IRL_irq_level);
         }
 #ifdef SH4_DBG_SUPPORT
-        if (dbg.do_break) break;
+        if (dbg.do_break) {
+            this->cycles = 0;
+            break;
+        }
 #endif
     }
-    this->cycles = 0;
 }
 
 void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
 {
     this->regs.currently_banked_rb = 1;
-    this->trace_cycles = 0;
-    this->trace_cycles_blocks = 0;
+    this->clock.trace_cycles = 0;
+    this->clock.timer_cycles = 0;
+    this->clock.trace_cycles_blocks = 0;
     this->scheduler = scheduler;
     SH4_reset(this);
     generate_fsca_table();
-    //printf("\nINS! %s\n", SH4_disassembled[0x6122]);
+    //printf("\nINS! %s\n", SH4_disassembled[0][0x6772]);
 
     this->mptr = NULL;
     this->fetch_ins = NULL;
@@ -295,8 +321,8 @@ void SH4_SR_set(struct SH4* this, u32 val)
     else should_be = this->regs.SR.RB;
     if (should_be != this->regs.currently_banked_rb) {
 #ifdef SH4_IRQ_DBG
-        dbg_LT_printf(DBGC_RED "\nSWAP REGISTER BANKS cur:%d shouldbe:%d R0:%08x R0_BANKEd:%08x PC:%08X cyc:%llu" DBGC_RST, this->regs.currently_banked_rb, should_be, this->regs.R[0], this->regs.R_[0], this->regs.PC, this->trace_cycles);
-        printf(DBGC_RED "\nSWAP REGISTER BANKS cur:%d shouldbe:%d R0:%08x R0_BANKEd:%08x PC:%08X cyc:%llu" DBGC_RST, this->regs.currently_banked_rb, should_be, this->regs.R[0], this->regs.R_[0], this->regs.PC, this->trace_cycles);
+        dbg_LT_printf(DBGC_RED "\nSWAP REGISTER BANKS cur:%d shouldbe:%d R0:%08x R0_BANKEd:%08x PC:%08X cyc:%llu" DBGC_RST, this->regs.currently_banked_rb, should_be, this->regs.R[0], this->regs.R_[0], this->regs.PC, this->clock.trace_cycles);
+        printf(DBGC_RED "\nSWAP REGISTER BANKS cur:%d shouldbe:%d R0:%08x R0_BANKEd:%08x PC:%08X cyc:%llu" DBGC_RST, this->regs.currently_banked_rb, should_be, this->regs.R[0], this->regs.R_[0], this->regs.PC, this->clock.trace_cycles);
 #endif
         this->regs.currently_banked_rb = should_be;
         swap_register_banks(this);

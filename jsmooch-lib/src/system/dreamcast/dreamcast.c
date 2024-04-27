@@ -41,7 +41,7 @@ static void DC_schedule_frame(struct DC* this);
 static void new_frame(struct DC* this, u32 copy_buf);
 void DCJ_describe_io(JSM, struct cvec* IOs);
 
-#define JITTER 500
+#define JITTER 448
 
 void DC_new(JSM)
 {
@@ -208,7 +208,7 @@ void DCJ_stop(JSM)
 void DCJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
-    out->master_cycle = this->sh4.trace_cycles;
+    out->master_cycle = this->sh4.clock.trace_cycles;
     out->master_frame = this->holly.master_frame;
     out->last_used_buffer = this->holly.display->device.display.last_written;
 }
@@ -228,7 +228,7 @@ void DCJ_killall(JSM)
 static void new_frame(struct DC* this, u32 copy_buf)
 {
     this->clock.frame_cycle = 0;
-    this->clock.frame_start_cycle = (i64)this->sh4.trace_cycles;
+    this->clock.frame_start_cycle = (i64)this->sh4.clock.trace_cycles;
     this->holly.master_frame++;
     this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
     DC_recalc_frame_timing(this);
@@ -313,7 +313,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
     u32 quit = 0;
     i64 cycles_left = (i64)howmany;
 
-    i64 cycles_start = this->sh4.trace_cycles;
+    i64 cycles_start = this->sh4.clock.trace_cycles;
 
     u64 key;
     while(cycles_left > 0) {
@@ -322,9 +322,9 @@ u32 DCJ_step_master(JSM, u32 howmany)
             // handle an event if any exist
             switch ((enum DC_frame_events)key) {
                 case evt_FRAME_START:
-                    printf("\nFRAME START: %llu", this->sh4.trace_cycles);
+                    printf("\nFRAME START: %llu", this->sh4.clock.trace_cycles);
                     this->clock.frame_cycle = 0;
-                    this->clock.frame_start_cycle = (i64)this->sh4.trace_cycles;
+                    this->clock.frame_start_cycle = (i64)this->sh4.clock.trace_cycles;
                     this->clock.in_vblank = 1;
                     break;
                 case evt_VBLANK_IN:
@@ -336,7 +336,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
                 case evt_EMPTY:
                     break;
                 case evt_FRAME_END:
-                    printf("\nEVENT: FRAME END %llu", this->sh4.trace_cycles);
+                    printf("\nEVENT: FRAME END %llu", this->sh4.clock.trace_cycles);
                     new_frame(this, 1);
                     break;
                 default:
@@ -348,23 +348,25 @@ u32 DCJ_step_master(JSM, u32 howmany)
         if (quit || dbg.do_break) {
             break;
         }
-        i64 til_next_event = scheduler_til_next_event(&this->scheduler, this->scheduler.timecode);
+        i64 til_next_event = scheduler_til_next_event(&this->scheduler, this->sh4.clock.trace_cycles);
         if (til_next_event > cycles_left) til_next_event = cycles_left;
 
-        i64 old_cycles = (i64)this->sh4.trace_cycles;
-        u64 old_tcb = this->sh4.trace_cycles_blocks;
-        //this->sh4.trace_cycles_blocks += til_next_event;
+        i64 timer_old_cycles = (i64)this->sh4.clock.timer_cycles;
+        i64 old_cycles = (i64)this->sh4.clock.trace_cycles;
+        u64 old_tcb = this->sh4.clock.trace_cycles_blocks;
+        //this->sh4.clock.trace_cycles_blocks += til_next_event;
         SH4_run_cycles(&this->sh4, til_next_event);
-        i64 ran_cycles = (i64)this->sh4.trace_cycles - old_cycles;
-        //this->sh4.trace_cycles_blocks = old_tcb + ran_cycles;
-        this->sh4.trace_cycles_blocks += ran_cycles;
+        i64 timer_ran_cycles = (i64)this->sh4.clock.timer_cycles - timer_old_cycles;
+        i64 ran_cycles = (i64)this->sh4.clock.trace_cycles - old_cycles;
+        //this->sh4.clock.trace_cycles_blocks = old_tcb + ran_cycles;
+        this->sh4.clock.trace_cycles_blocks += timer_ran_cycles;
         this->clock.frame_cycle += ran_cycles;
         scheduler_ran_cycles(&this->scheduler, ran_cycles);
         cycles_left -= ran_cycles;
 
         if (dbg.do_break) break;
     }
-    printf("\nSTEPS:%lli BRK:%d", this->sh4.trace_cycles - cycles_start, dbg.do_break);
+    printf("\nSTEPS:%lli BRK:%d", this->sh4.clock.trace_cycles - cycles_start, dbg.do_break);
     return steps_done;
 }
 
