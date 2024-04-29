@@ -649,10 +649,10 @@ void TIA_run_cycle(struct atari_TIA* this)
 
     // Convert pixels to the 4 colors
 
-    if((!(this->io.CTRLPF.priority)) && (pf || ball)) color = this->io.COLUPF;
+    if(!this->io.CTRLPF.priority && (pf || ball)) color = this->io.COLUPF;
     if(p1 || m1) color = this->io.COLUP1;
     if(p0 || m0) color = this->io.COLUP0;
-    if((!(this->io.CTRLPF.priority)) && (pf || ball))  color = this->io.COLUPF;
+    if(this->io.CTRLPF.priority && (pf || ball))  color = this->io.COLUPF;
 
     if ((screen_x >= 0) && (screen_x < 160) && (screen_y >= 0) && (screen_y < 228)) { // 228 for NTSC, 243 for PAL
         if (this->io.vblank || hblank) color = 0;
