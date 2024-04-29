@@ -12,7 +12,7 @@
 #include "helpers/physical_io.h"
 
 
-#define DO_DREAMCAST
+//#define DO_DREAMCAST
 
 struct system_io {
     struct CDKRKR {

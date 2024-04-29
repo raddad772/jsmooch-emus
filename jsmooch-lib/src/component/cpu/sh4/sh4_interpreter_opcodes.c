@@ -1741,7 +1741,7 @@ SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
     // thanks to dRk|Raziel for this! using tables dumped from real DC
 
 
-    //cosine(x) = sine(pi/2 + x).
+    //cosine(counter) = sine(pi/2 + counter).
     if (this->regs.FPSCR.PR==0)
     {
         //float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
@@ -1767,8 +1767,8 @@ SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
 #undef IMM
 #undef DISP
 
-/*#define OE(x, ins) opcode = x; sd = &SH4_decoded[opcode]; assert(sd->exec=NULL); sd->exec = &ins
-#define OErmrn(x, ins) OE(x, ins); sd->Rm = rm; sd->Rn = rn*/
+/*#define OE(counter, ins) opcode = counter; sd = &SH4_decoded[opcode]; assert(sd->exec=NULL); sd->exec = &ins
+#define OErmrn(counter, ins) OE(counter, ins); sd->Rm = rm; sd->Rn = rn*/
 /*
              opcode = 0b0110000000000011 | (rm << 8) | (rn << 4);
             sd = &SH4_decoded[opcode];

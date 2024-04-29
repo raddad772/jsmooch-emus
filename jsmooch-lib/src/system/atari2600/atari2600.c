@@ -240,7 +240,6 @@ void atari2600J_get_framevars(JSM, struct framevars* out)
 static void CPU_reset(struct atari2600* this)
 {
     M6502_reset(&this->cpu);
-    printf("\n%08X Addr", this->cpu.pins.Addr);
 }
 
 void atari2600J_reset(JSM)
@@ -416,18 +415,21 @@ u32 atari2600J_finish_scanline(JSM)
     JTHIS;
     atari2600_map_inputs(jsm);
     u32 start_y = this->tia.vcounter;
+    u32 cycles = 0;
     while (this->tia.vcounter == start_y) {
+        cycles++;
         atari2600J_step_master(jsm, 1);
         if (dbg.do_break) break;
     }
+
     return 0;
 }
 
 u32 atari2600J_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    atari2600_map_inputs(jsm);
     this->cycles_left += (i32)howmany;
+    if (howmany > 1) atari2600_map_inputs(jsm);
     while (this->cycles_left > 0) {
         if ((this->master_clock % 3) == 0)
             CPU_run_cycle(this);

@@ -543,10 +543,10 @@ static u32 GB_PPU_bg_tilemap_addr_nowindow(struct GB_PPU* this, u32 lx) {
 /*
 static const unsigned int B[] = {0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF};
 static const unsigned int S[] = {1, 2, 4, 8};
-x = (x | (x << S[3])) & B[3];
-x = (x | (x << S[2])) & B[2];
-x = (x | (x << S[1])) & B[1];
-x = (x | (x << S[0])) & B[0];
+counter = (counter | (counter << S[3])) & B[3];
+counter = (counter | (counter << S[2])) & B[2];
+counter = (counter | (counter << S[1])) & B[1];
+counter = (counter | (counter << S[0])) & B[0];
 
 y = (y | (y << S[3])) & B[3];
 y = (y | (y << S[2])) & B[2];
@@ -636,7 +636,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
     case 0xFF4A: // window Y
         this->io.wy = val;
         return;
-    case 0xFF4B: // window x + 7
+    case 0xFF4B: // window counter + 7
         this->io.wx = val + 1;
         return;
     case 0xFF47: // BGP pallete
@@ -720,7 +720,7 @@ u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val){
             return this->io.lyc;
         case 0xFF4A: // window Y
             return this->io.wy;
-        case 0xFF4B: // window x + 7
+        case 0xFF4B: // window counter + 7
             return (this->io.wx-1);
         case 0xFF47: // BGP
             //if (!this->clock->CPU_can_VRAM) return 0xFF;

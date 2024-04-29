@@ -48,7 +48,15 @@ void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out
         for (u32 x = 0; x < 160; x++) {
             u32* optr = (u32 *)((u8 *)out_buf + (((y * out_width) + x) * 4));
 
-            *optr = TIA_palette[*iptr];
+            u32 col;
+            /*if (*iptr == 19)
+                col = 0xFFFFFFFF;
+            else*/
+                col = TIA_palette[*iptr];
+
+            //col = ((col & 0xFF) << 24) | ((col & 0xFFFFFF00) >> 8);
+            col = (col & 0xFF00FF00) | ((col & 0xFF0000) >> 16) | ((col & 0xFF) << 16);
+            *optr = col;
             iptr++;
         }
     }
@@ -83,8 +91,8 @@ void DMG_present(struct physical_io_device *device, void *out_buf, u32 out_width
 /*function GBC_present(data, imgdata, GB_output_buffer) {
     let gbo = new Uint16Array(GB_output_buffer);
     for (let y = 0; y < 144; y++) {
-        for (let x = 0; x < 160; x++) {
-            let ppui = (y * 160) + x;
+        for (let counter = 0; counter < 160; counter++) {
+            let ppui = (y * 160) + counter;
             let di = ppui * 4;
             let r, g, b;
             let o = gbo[ppui];
@@ -202,9 +210,9 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width
     for (let ry = 0; ry < data.bottom_rendered_line; ry++) {
         let y = ry;
         for (let rx = 0; rx < 256; rx++) {
-            let x = rx;
-            let di = ((y * 256) + x) * 4;
-            let ulai = (y * 256) + x;
+            let counter = rx;
+            let di = ((y * 256) + counter) * 4;
+            let ulai = (y * 256) + counter;
 
             let color = output[ulai];
             let r, g, b;

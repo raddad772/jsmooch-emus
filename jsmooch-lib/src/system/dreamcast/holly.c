@@ -723,7 +723,7 @@ void holly_TA_cmd(struct DC* this) {
 
                 }
             }
-            ///printf("\nXYZ: %f %f %f", x, y, z);
+            ///printf("\nXYZ: %f %f %f", counter, y, z);
             break;
     }
 

@@ -15,6 +15,8 @@ struct atari_TIA {
     // For output to display
     u8 *cur_output;
 
+    u32 missed_vblank;
+
     struct physical_io_device* display;
     u32 cpu_RDY;
 
@@ -24,25 +26,51 @@ struct atari_TIA {
     u32 frames_since_restart;
 
     struct {
+        u32 output;
+    } playfield;
+
+    struct TIA_p{
         u32 size;
-        i32 x;
-        u32 GRP;
-        u32 GRP_cache;
+        i32 counter;
+        i32 pixel_counter;
+        i32 width_counter;
+        u32 GRP[2];
         i32 hm;
+        i32 delay; // VDELP
+        u32 reflect; // REFP
+
+        u32 copy;
+        u32 start_counter;
+        u32 starting;
+
+        u32 output; // current pixel output value
     } p[2];
 
-    struct {
+    struct TIA_m {
         u32 size;
-        i32 x;
+        i32 counter;
         u32 enable;
         i32 hm;
+        u32 locked_to_player;
+
+        u32 copy;
+        u32 start_counter;
+        u32 starting;
+
+        i32 pixel_counter;
+        i32 width_counter;
+
+        u32 output; // current pixel output value
     } m[2];
 
-    struct {
+    struct TIA_ball {
         u32 size;
-        i32 x;
-        u32 enable;
-        u32 enable_cache;
+        i32 counter;
+        u32 enable[2];
+
+        u32 output;
+        i32 delay;
+
         i32 hm;
     } ball;
 
@@ -73,15 +101,20 @@ struct atari_TIA {
         u8 COLUP1;
         u8 COLUPF;
         u8 COLUBK;
-        u8 CTRLPF;
+        union {
+            struct {
+                u8 mirror : 1;
+                u8 score_mode: 1;
+                u8 priority: 1;
+                u8 : 1;
+                u8 ball_size: 2;
+            };
+            u8 u;
+        } CTRLPF;
 
         u32 ENABL_cache; // Vertical delay cache for ENABL
-        u32 REFP[2]; // Player reflect
 
-        u32 VDELP[2];
         u32 VDELBL;
-
-        u32 RESMP[2];
 
         u32 hmoved; // was hmove triggered?
 

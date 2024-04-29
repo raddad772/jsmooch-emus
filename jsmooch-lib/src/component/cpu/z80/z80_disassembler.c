@@ -153,9 +153,9 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                     sprintf(H, "IYH");
                 }
                 switch (x) {
-                    case 0: // x = 0
+                    case 0: // counter = 0
                         switch (z) {
-                            case 0: // x=0 z=0
+                            case 0: // counter=0 z=0
                                 switch (y) {
                                     case 0:
                                         l += sprintf(w, "NOP");
@@ -177,7 +177,7 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                         break;
                                 }
                                 break;
-                            case 1: // x = 0, z = 1
+                            case 1: // counter = 0, z = 1
                                 if (q == 0) {
                                     l += sprintf(w, "LD ");
                                     w += 3;
@@ -195,7 +195,7 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                     l += sprintf(w, ", %s", Z80D_tabl_rp[p]);
                                 }
                                 break;
-                            case 2: // x = 0, z = 2
+                            case 2: // counter = 0, z = 2
                                 switch (p) {
                                     case 0:
                                         if (q == 0) l += sprintf(w, "LD (BC), A");
@@ -226,12 +226,12 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                         break;
                                 }
                                 break;
-                            case 3: // x = 0, z = 3
+                            case 3: // counter = 0, z = 3
                                 if (q == 0) l += sprintf(w, "INC ");
                                 else l += sprintf(w, "DEC ");
                                 l += repl0(&PC, HL, H, L, rt, Z80D_tabl_rp[p], w+4);
                                 break;
-                            case 4: // x = 0 z = 3
+                            case 4: // counter = 0 z = 3
                                 l += sprintf(w, "INC ");
                                 l += repl0(&PC, HL, H, L, rt, Z80D_tabl_r[y], w+4);
                                 break;
@@ -254,7 +254,7 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                             }
                         }
                         break;
-                    case 1: // x = 1
+                    case 1: // counter = 1
                         if ((z == 6) && (y == 6)) l += sprintf(w, "HALT");
                         else {
                             l += sprintf(w, "LD ");
@@ -267,19 +267,19 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                             l += repl0(&PC, HL, H, L, rt, Z80D_tabl_r[z], w);
                         }
                         break;
-                    case 2: {// x = 2
+                    case 2: {// counter = 2
                         u32 a = sprintf(w, "%s ", Z80D_tabl_alu[y]);
                         l += a;
                         w += a;
                         l += repl0(&PC, HL, H, L, rt, Z80D_tabl_r[z], w);
                         break;
                     }
-                    case 3: // x = 3
+                    case 3: // counter = 3
                         switch (z) {
-                            case 0: // x=3 z=0
+                            case 0: // counter=3 z=0
                                 l += sprintf(w, "RET %s", Z80D_tabl_cc[y]);
                                 break;
-                            case 1: // x=3 z=1
+                            case 1: // counter=3 z=1
                                 if (q == 0) {
                                     l += sprintf(w, "POP ");
                                     w += 4;
@@ -306,7 +306,7 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                             case 2:
                                 l += sprintf(w, "JP %s, %04x", Z80D_tabl_cc[y], read16(&PC, rt));
                                 break;
-                            case 3: // x=3 z=3
+                            case 3: // counter=3 z=3
                                 switch (y) {
                                     case 0:
                                         l += sprintf(w, "JP %04x", read16(&PC, rt));
@@ -338,10 +338,10 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                         break;
                                 }
                                 break;
-                            case 4: // x=3 z=4
+                            case 4: // counter=3 z=4
                                 l += sprintf(w, "CALL %s, %04x", Z80D_tabl_cc[y], read16(&PC, rt));
                                 break;
-                            case 5: // x=3 z=5
+                            case 5: // counter=3 z=5
                                 if (q == 0) {
                                     l += sprintf(w, "PUSH ");
                                     w += 5;
@@ -350,10 +350,10 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                 else
                                     l += sprintf(w, "CALL %04x", read16(&PC, rt));
                                 break;
-                            case 6: // x=3 z=6
+                            case 6: // counter=3 z=6
                                 l += sprintf(w, "%s %02x", Z80D_tabl_alu[y], read8(&PC, rt));
                                 break;
-                            case 7: // x=3 z=7
+                            case 7: // counter=3 z=7
                                 l += sprintf(w, "RST %02x", y * 8);
                                 break;
                         }
@@ -381,9 +381,9 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                     case 3:
                         l += sprintf(w, "INVALID NONI NOP");
                         break;
-                    case 1: // 0xED x=1
+                    case 1: // 0xED counter=1
                         switch(z) {
-                            case 0: // 0xED x=1 z=0
+                            case 0: // 0xED counter=1 z=0
                                 if (y == 6) l += sprintf(w, "IN (C)");
                                 else l += sprintf(w, "IN %s, (C)", Z80D_tabl_r[y]);
                                 break;
@@ -391,11 +391,11 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                 if (y == 6) l += sprintf(w, "OUT (C)");
                                 else l += sprintf(w, "OUT %s, (C)", Z80D_tabl_r[y]);
                                 break;
-                            case 2: // 0xED x=1 z=2
+                            case 2: // 0xED counter=1 z=2
                                 if (q == 0) l += sprintf(w, "SBC HL, %s", Z80D_tabl_rp[p]);
                                 else l += sprintf(w, "ADC HL, %s", Z80D_tabl_rp[p]);
                                 break;
-                            case 3: // 0xED x=1 z=3
+                            case 3: // 0xED counter=1 z=3
                                 if (q == 0) l += sprintf(w, "LD (%04x), %s", read16(&PC, rt), Z80D_tabl_rp[p]);
                                 else l += sprintf(w, "LD %s, (%04x)", Z80D_tabl_rp[p], read16(&PC, rt));
                                 break;
@@ -406,15 +406,15 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                 if (y == 1) l += sprintf(w, "RETI");
                                 else l += sprintf(w, "RETN");
                                 break;
-                            case 6: // 0xED x=1 z=6
+                            case 6: // 0xED counter=1 z=6
                                 l += sprintf(w, "IM %s", Z80D_tabl_im[y]);
                                 break;
-                            case 7: // 0xED x=1 z=7
+                            case 7: // 0xED counter=1 z=7
                                 l += sprintf(w, "%s", (char[8][10]){"LD I, A", "LD R, A", "LD A, I", "LD A, R", "RRD", "RLD", "NOP", "NOP"}[y]);
                                 break;
                         }
                         break;
-                    case 2: // 0xED x=2
+                    case 2: // 0xED counter=2
                         if ((z <= 3) && (y >= 4)) {
                             l += sprintf(w, "%s", Z80D_tabl_bli[y][z]);
                         }
@@ -435,20 +435,20 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                 y = (current_byte & 0x38) >> 3;
                 z = (current_byte & 7);
                 switch(x) {
-                    case 0: // CBd x=0
+                    case 0: // CBd counter=0
                         if (z != 6) l += sprintf(w, "LD %s, %s(%s+%s)", Z80D_tabl_r[z], Z80D_tabl_rot[y], IXY, d);
                         else l += sprintf(w, "%s (%s+%s)", Z80D_tabl_rot[y], IXY, d);
                         break;
-                    case 1: // CBd x=1
+                    case 1: // CBd counter=1
                         l += sprintf(w, "BIT %d, (%s+%s)", y, IXY, d);
                         break;
-                    case 2: // CBd x=2
+                    case 2: // CBd counter=2
                         if (z != 6)
                             l += sprintf(w, "LD %s, RES %d, (%s+%s)", Z80D_tabl_r[z], y, IXY, d);
                         else
                             l += sprintf(w, "RES %d, (%s+%s)", y, IXY, d);
                         break;
-                    case 3: // CBd x=3
+                    case 3: // CBd counter=3
                         if (z != 6)
                             l += sprintf(w, "LD %s, SET %d, (%s+%s)", Z80D_tabl_r[z], y, IXY, d);
                         else

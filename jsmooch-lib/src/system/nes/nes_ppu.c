@@ -461,7 +461,7 @@ void cycle_scanline_addr(THIS) {
     if (((this->line_cycle & 7) == 0) && ((this->line_cycle >= 328) || (this->line_cycle <= 256))) {
         // INCREMENT HORIZONTAL SCROLL IN v
         if ((this->io.v & 0x1F) == 0x1F) // If X scroll is 31...
-            this->io.v = (this->io.v & 0xFFE0) ^ 0x0400; // clear x scroll to 0 (& FFE0) and swap nametable (^ 0x400)
+            this->io.v = (this->io.v & 0xFFE0) ^ 0x0400; // clear counter scroll to 0 (& FFE0) and swap nametable (^ 0x400)
         else
             this->io.v++;  // just increment the X scroll
         return;
