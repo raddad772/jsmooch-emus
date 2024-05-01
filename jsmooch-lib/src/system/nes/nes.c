@@ -61,6 +61,7 @@ void NES_new(JSM)
     jsm->pause = &NESJ_pause;
     jsm->stop = &NESJ_stop;
     jsm->describe_io = &NESJ_describe_io;
+    jsm->sideload = NULL;
 }
 
 void NES_delete(JSM)

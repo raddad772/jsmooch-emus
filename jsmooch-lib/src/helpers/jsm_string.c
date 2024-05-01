@@ -43,9 +43,8 @@ void jsm_string_sprintf(struct jsm_string *this, const char* format, ...)
     }
     va_list va;
     va_start(va, format);
-    vsnprintf(this->cur, this->len - (this->cur - this->ptr), format, va);
+    this->cur += vsnprintf(this->cur, this->len - (this->cur - this->ptr), format, va);
     va_end(va);
-    this->cur += strlen(this->cur);
 }
 
 void jsm_string_empty(struct jsm_string *this)

@@ -68,8 +68,6 @@
             };
             u32 u;
         } PTEA;  // 0xFF000034
-        u32 QACR0;  // 0xFF000038
-        u32 QACR1;  // 0xFF00003C
         u32 UKNFF200008;  // 0xFF200008
         u32 UKNFF200014;  // 0xFF200014
         u32 UKNFF200020;  // 0xFF200020

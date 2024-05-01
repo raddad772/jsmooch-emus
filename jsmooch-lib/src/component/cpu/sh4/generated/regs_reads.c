@@ -9,8 +9,6 @@
         case 0xFF000024:  { return this->regs.TRAPA; }
         case 0xFF000028:  { return this->regs.INTEVT; }
         case 0xFF000034:  { return this->regs.PTEA.u; }
-        case 0xFF000038:  { return this->regs.QACR0; }
-        case 0xFF00003C:  { return this->regs.QACR1; }
         case 0xFF200008:  { return this->regs.UKNFF200008; }
         case 0xFF200014:  { return this->regs.UKNFF200014; }
         case 0xFF200020:  { return this->regs.UKNFF200020; }
@@ -54,7 +52,7 @@
         case 0xFFE80004:  { return this->regs.SCIF_SCBRR2; }
         case 0xFFE80008:  { return this->regs.SCIF_SCSCR2; }
         case 0xFFE8000C:  { return this->regs.SCIF_SCFTDR2; }
-        case 0xFFE80010:  { return this->regs.SCIF_SCFSR2; }
+        case 0xFFE80010: { if (sz==DC16) return 0x60; return this->regs.SCIF_SCFSR2; }
         case 0xFFE80014:  { return this->regs.SCIF_SCFRDR2; }
         case 0xFFE80018:  { return this->regs.SCIF_SCFCR2; }
         case 0xFFE8001C:  { return this->regs.SCIF_SCFDR2; }

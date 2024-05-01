@@ -18,6 +18,8 @@
 
 #define IP_BIN
 
+#define sched_printf(...) (void)0
+
 #define JTHIS struct DC* this = (struct DC*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
@@ -40,6 +42,7 @@ void DCJ_disable_tracing(JSM);
 static void DC_schedule_frame(struct DC* this);
 static void new_frame(struct DC* this, u32 copy_buf);
 void DCJ_describe_io(JSM, struct cvec* IOs);
+static void DCJ_sideload(JSM, struct multi_file_set* mfs);
 
 #define JITTER 448
 
@@ -117,6 +120,7 @@ void DC_new(JSM)
     jsm->pause = &DCJ_pause;
     jsm->stop = &DCJ_stop;
     jsm->describe_io = &DCJ_describe_io;
+    jsm->sideload = &DCJ_sideload;
 }
 
 void DC_delete(struct jsm_system* jsm)
@@ -131,6 +135,7 @@ void DC_delete(struct jsm_system* jsm)
     buf_delete(&this->flash.buf);
     scheduler_delete(&this->scheduler);
     holly_delete(this);
+    SH4_delete(&this->sh4);
 
     free(jsm->ptr);
     jsm->ptr = NULL;
@@ -257,7 +262,7 @@ static void DC_schedule_frame(struct DC* this)
     // vblank_in_start @?
     // vblank_out_start @?
     // frame end @200mil
-    printf("\nScheduling frame @ %lld", this->clock.frame_start_cycle);
+    sched_printf("\nScheduling frame @ %lld", this->clock.frame_start_cycle);
     scheduler_add(&this->scheduler, this->clock.frame_start_cycle, SE_keyed_event, evt_FRAME_START, 0);
     scheduler_add(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_in_start, SE_keyed_event, evt_VBLANK_IN, 0);
     scheduler_add(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_out_start, SE_keyed_event, evt_VBLANK_OUT, 0);
@@ -276,31 +281,6 @@ u32 DCJ_finish_scanline(JSM)
     JTHIS;
     assert(1==0);
     return 0;
-}
-
-void DC_scheduler_pprint(struct DC* this)
-{
-    /*for (u32 i = 0; i < this->scheduler.array.used_len; i++) {
-        struct scheduler_event* evt = &this->scheduler.array.events[i];
-        printf("\nSCHED EVENT CYC:%8llu ", evt->timecode);
-        switch(evt->event) {
-            case evt_EMPTY:
-                printf("EMPTY");
-                break;
-            case evt_FRAME_END:
-                printf("FRAME_END");
-                break;
-            case evt_FRAME_START:
-                printf("FRAME_START");
-                break;
-            case evt_VBLANK_IN:
-                printf("VBLANK_IN");
-                break;
-            case evt_VBLANK_OUT:
-                printf("VBLANK_OUT");
-                break;
-        }
-    }*/
 }
 
 u32 DCJ_step_master(JSM, u32 howmany)
@@ -322,7 +302,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
             // handle an event if any exist
             switch ((enum DC_frame_events)key) {
                 case evt_FRAME_START:
-                    printf("\nFRAME START: %llu", this->sh4.clock.trace_cycles);
+                    sched_printf("\nFRAME START: %llu", this->sh4.clock.trace_cycles);
                     this->clock.frame_cycle = 0;
                     this->clock.frame_start_cycle = (i64)this->sh4.clock.trace_cycles;
                     this->clock.in_vblank = 1;
@@ -336,7 +316,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
                 case evt_EMPTY:
                     break;
                 case evt_FRAME_END:
-                    printf("\nEVENT: FRAME END %llu", this->sh4.clock.trace_cycles);
+                    sched_printf("\nEVENT: FRAME END %llu", this->sh4.clock.trace_cycles);
                     new_frame(this, 1);
                     break;
                 default:
@@ -366,7 +346,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
 
         if (dbg.do_break) break;
     }
-    printf("\nSTEPS:%lli BRK:%d", this->sh4.clock.trace_cycles - cycles_start, dbg.do_break);
+    sched_printf("\nSTEPS:%lli BRK:%d", this->sh4.clock.trace_cycles - cycles_start, dbg.do_break);
     return steps_done;
 }
 
@@ -413,25 +393,6 @@ static void DCIO_remove_disc(JSM)
 static void DCIO_insert_disc(JSM, struct multi_file_set *mfs)
 {
     JTHIS;
-    /*
-    struct GDI_image foo;
-    GDI_init(&foo);
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
-    char PATH[500];
-    sprintf(PATH, "%s/Documents/emu/rom/dreamcast/crazy_taxi", homeDir);
-    printf("\nHEY! %s", PATH);
-    GDI_load(PATH, "crazytaxi.gdi", &foo);
-
-    GDI_delete(&foo);
-
- */
     GDI_load(mfs->files[0].path, mfs->files[0].name, &this->gdrom.gdi);
 }
 
@@ -554,4 +515,119 @@ void DCJ_old_load_ROM(JSM, struct multi_file_set* mfs)
     this->sh4.write(this->sh4.mptr, 0x005F8054, 0x00200000, DC32); // FB_R_SOF2
 
     DC_schedule_frame(this);
+}
+
+// Thank you for this Deecey
+static void DC_CPU_state_after_boot_rom(struct DC* this)
+{
+    struct SH4* sh4 = &this->sh4;
+    SH4_SR_set(sh4, 0x400000F1);
+    SH4_regs_FPSCR_set(&sh4->regs, 0x00040001);
+
+    sh4->regs.R[0] = 0xAC0005D8;
+    sh4->regs.R[1] = 0x00000009;
+    sh4->regs.R[2] = 0xAC00940C;
+    sh4->regs.R[3] = 0;
+    sh4->regs.R[4] = 0xAC008300;
+    sh4->regs.R[5] = 0xF4000000;
+    sh4->regs.R[6] = 0xF4002000;
+    sh4->regs.R[7] = 0x00000044;
+    sh4->regs.R[8] = 0;
+    sh4->regs.R[9] = 0;
+    sh4->regs.R[10] = 0;
+    sh4->regs.R[11] = 0;
+    sh4->regs.R[12] = 0;
+    sh4->regs.R[13] = 0;
+    sh4->regs.R[14] = 0;
+    sh4->regs.R[15] = 0;
+
+    sh4->regs.R_[0] = 0xDFFFFFFF;
+    sh4->regs.R_[1] = 0x500000F1;
+    sh4->regs.R_[2] = 0;
+    sh4->regs.R_[3] = 0;
+    sh4->regs.R_[4] = 0;
+    sh4->regs.R_[5] = 0;
+    sh4->regs.R_[6] = 0;
+    sh4->regs.R_[7] = 0;
+
+    sh4->regs.GBR = 0x8C000000;
+    sh4->regs.SSR = 0x40000001;
+    sh4->regs.SPC = 0x8C000776;
+    sh4->regs.SGR = 0x8D000000;
+    sh4->regs.DBR = 0x8C000010;
+    sh4->regs.VBR = 0x8C000000;
+    sh4->regs.PR = 0x0C00043C;
+    sh4->regs.FPUL.u = 0;
+
+    sh4->regs.PC = 0xAC008300; // IP.bin start address
+}
+
+static void DC_RAM_state_after_boot_rom(struct DC* this)
+{
+    memset(&this->RAM[0x00200000], 0, 0x1000000);
+
+    for (u32 i = 0; i < 16; i++) {
+        this->sh4.write(this, 0x8C0000E0 + 2 * i, this->sh4.read(this, 0x800000FE - 2 * i, DC16), DC16);
+    }
+    this->sh4.write(this, 0xA05F74E4, 0x001FFFFF, DC32);
+
+    memcpy(&this->RAM[0x100], ((u8 *)this->BIOS.ptr) + 0x100, 0x3F00);
+    memcpy(&this->RAM[0x8000], ((u8 *)this->BIOS.ptr) + 0x8000, 0x1F800);
+
+    this->sh4.write(this, 0x8C0000B0, 0x8C003C00, DC32);
+    this->sh4.write(this, 0x8C0000B4, 0x8C003D80, DC32);
+    this->sh4.write(this, 0x8C0000B8, 0x8C003D00, DC32);
+    this->sh4.write(this, 0x8C0000BC, 0x8C001000, DC32);
+    this->sh4.write(this, 0x8C0000C0, 0x8C0010F0, DC32);
+    this->sh4.write(this, 0x8C0000E0, 0x8C000800, DC32);
+
+    this->sh4.write(this, 0x8C0000AC, 0xA05F7000, DC32);
+    this->sh4.write(this, 0x8C0000A8, 0xA0200000, DC32);
+    this->sh4.write(this, 0x8C0000A4, 0xA0100000, DC32);
+    this->sh4.write(this, 0x8C0000A0, 0, DC32);
+    this->sh4.write(this, 0x8C00002C, 0, DC32);
+    this->sh4.write(this, 0x8CFFFFF8, 0x8C000128, DC32);
+
+    //         // Load IP.bin from disk (16 first sectors of the last track)
+    //        // FIXME: Here we assume the last track is the 3rd.
+    // TODO
+
+
+    // IP.bin patches
+    this->sh4.write(this, 0xAC0090Db, 0x5113, DC16);
+    this->sh4.write(this, 0xAC00940A, 0xB, DC16);
+    this->sh4.write(this, 0xAC00940C, 0x9, DC16);
+
+    this->sh4.write(this, 0x8C000000, 0x00090009, DC32);
+    this->sh4.write(this, 0x8C000004, 0x001B0009, DC32);
+    this->sh4.write(this, 0x8C000008, 0x0009AFFD, DC32);
+
+    this->sh4.write(this, 0x8C00000C, 0, DC16);
+    this->sh4.write(this, 0x8C00000E, 0, DC16);
+
+    this->sh4.write(this, 0x8C000010, 0x00090009, DC32);
+    this->sh4.write(this, 0x8C000014, 0x0009002B, DC32);
+
+    this->sh4.write(this, 0x8C000018, 0x00090009, DC32);
+    this->sh4.write(this, 0x8C00001C, 0x0009000B, DC32);
+
+    this->sh4.write(this, 0x8C00002C, 0x16, DC8);
+    this->sh4.write(this, 0x8C000064, 0x8C008100, DC32);
+    this->sh4.write(this, 0x8C000090, 0, DC16);
+    this->sh4.write(this, 0x8C000092, -128, DC16);
+
+    this->maple.SB_MDST = 0;
+    this->g2.SB_DDST = 0;
+}
+
+
+// Thanks to Deecey for values to write
+static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
+    JTHIS;
+    DC_CPU_state_after_boot_rom(this);
+    DC_RAM_state_after_boot_rom(this);
+
+    memcpy(&this->RAM[0x10000], mfs->files[0].buf.ptr, mfs->files[0].buf.size);
+    this->sh4.regs.PC = 0xAC010000;
+    // 0xac010000 and start at 0xac010000
 }

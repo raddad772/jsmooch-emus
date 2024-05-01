@@ -9,8 +9,6 @@
         case 0xFF000024: { this->regs.TRAPA = (val & 0xFF); return; }
         case 0xFF000028: { this->regs.INTEVT = (val & 0xFFFF); return; }
         case 0xFF000034: { this->regs.PTEA.u = val & 0x0000000F; return; }
-        case 0xFF000038: { this->regs.QACR0 = val; return; }
-        case 0xFF00003C: { this->regs.QACR1 = val; return; }
         case 0xFF200008: { this->regs.UKNFF200008 = val; return; }
         case 0xFF200014: { this->regs.UKNFF200014 = val; return; }
         case 0xFF200020: { this->regs.UKNFF200020 = val; return; }
@@ -60,7 +58,7 @@
         case 0xFFE80000: { this->regs.SCIF_SCSMR2 = val; return; }
         case 0xFFE80004: { this->regs.SCIF_SCBRR2 = val; return; }
         case 0xFFE80008: { this->regs.SCIF_SCSCR2 = val; return; }
-        case 0xFFE8000C: { this->regs.SCIF_SCFTDR2 = val; return; }
+        case 0xFFE8000C: { this->regs.SCIF_SCFTDR2 = val; console_add(this, val, sz); return; }
         case 0xFFE80010: { this->regs.SCIF_SCFSR2 = val; return; }
         case 0xFFE80014: { this->regs.SCIF_SCFRDR2 = val; return; }
         case 0xFFE80018: { this->regs.SCIF_SCFCR2 = val; return; }

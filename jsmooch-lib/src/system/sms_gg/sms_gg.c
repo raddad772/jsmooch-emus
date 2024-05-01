@@ -107,6 +107,7 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     jsm->enable_tracing = &SMSGGJ_enable_tracing;
     jsm->disable_tracing = &SMSGGJ_disable_tracing;
     jsm->describe_io = &SMSGGJ_describe_io;
+    jsm->sideload = NULL;
 
     SMSGGJ_reset(jsm);
 }

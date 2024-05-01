@@ -295,10 +295,12 @@ access_32, rw
 0xFFE8000C: SCIF_SCFTDR2
 u32
 access_32, rw
+on_write=console_add(this, val, sz);
 
 0xFFE80010: SCIF_SCFSR2
 u32
 access_32, rw
+r_override=if (sz==DC16) return 0x60; return this->regs.SCIF_SCFSR2;
 
 0xFFE80014: SCIF_SCFRDR2
 u32
@@ -344,14 +346,6 @@ OIX: 7
 ICE: 8
 ICI: 11
 IIX: 15
-
-0xFF000038: QACR0
-u32
-access_32, rw
-
-0xFF00003C: QACR1
-u32
-access_32, rw
 
 0xFF800030: PDTRA
 u32

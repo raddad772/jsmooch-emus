@@ -93,6 +93,7 @@ struct SH4_regs {
         struct SH4_mtx MTX;
     } fb[3];
 
+    u32 QACR[2];  // 0xFF000038 + 3C
     // Emulator-internal registers
     u32 currently_banked_rb;
 #include "generated/regs_decls.h"
@@ -148,10 +149,13 @@ struct SH4 {
     u64 (*read)(void*,u32,u32);
     void (*write)(void*,u32,u64,u32);
 
+    struct jsm_string console;
+
     struct scheduler_t* scheduler;
 };
 
 void SH4_init(struct SH4* this, struct scheduler_t* scheduler);
+void SH4_delete(struct SH4* this);
 void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this, u32 is_delay_slot);

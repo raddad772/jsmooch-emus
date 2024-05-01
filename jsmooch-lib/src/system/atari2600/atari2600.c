@@ -89,6 +89,7 @@ void atari2600_new(JSM)
     jsm->pause = &atari2600J_pause;
     jsm->stop = &atari2600J_stop;
     jsm->describe_io = &atari2600J_describe_io;
+    jsm->sideload = NULL;
 
     atari2600J_reset(jsm);
 }

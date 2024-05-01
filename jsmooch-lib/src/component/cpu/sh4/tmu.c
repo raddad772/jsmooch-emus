@@ -53,7 +53,6 @@ static u32 read_TMU_TCNT(struct SH4* this, u32 ch, u32 is_regread)
         }
     }
 #endif
-    printf("\nHEY! %08x", REGTCNT);
     return REGTCNT;
 }
 
@@ -83,7 +82,6 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
 
 static void write_TMU_TCNT(struct SH4* this, u32 ch, u32 data)
 {
-    printf("\nwrite TMU TCNT %llu", this->clock.trace_cycles);
     this->tmu.base[ch] = data + ((TCUSE >> this->tmu.shift[ch]) & this->tmu.mask[ch]);
     this->tmu.base64[ch] = data + ((TCUSE >> this->tmu.shift[ch]) & this->tmu.mask64[ch]);
 

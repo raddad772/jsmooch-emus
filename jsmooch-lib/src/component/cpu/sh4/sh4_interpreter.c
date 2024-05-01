@@ -31,7 +31,7 @@ void SH4_interrupt_mask(struct SH4* this, u32 level, u32 onoff)
 
 void SH4_interrupt_pend(struct SH4* this, u32 level, u32 onoff)
 {
-    printf("\nPLEASE IMPLEMENT SH4 INTERRUPTS!");
+    printf("\nPLEASE IMPLEMENT SH4 INTERRUPTS! %llu", this->clock.trace_cycles);
 };
 
 void SH4_set_IRL_irq_level(struct SH4* this, u32 level)
@@ -250,6 +250,11 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
     }
 }
 
+void SH4_delete(struct SH4* this)
+{
+    jsm_string_delete(&this->console);
+}
+
 void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
 {
     this->regs.currently_banked_rb = 1;
@@ -257,6 +262,7 @@ void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
     this->clock.timer_cycles = 0;
     this->clock.trace_cycles_blocks = 0;
     this->scheduler = scheduler;
+    jsm_string_init(&this->console, 5000);
     SH4_reset(this);
     generate_fsca_table();
     //printf("\nINS! %s\n", SH4_disassembled[0][0x6772]);
@@ -415,6 +421,20 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
     return 0;
 }
 
+static void set_QACR(struct SH4* this, u32 num, u32 val)
+{
+    this->regs.QACR[num] = val;
+    u32 area = (val >> 2) & 7;
+}
+
+static void console_add(struct SH4* this, u32 val, u32 sz)
+{
+    if (sz == DC8) {
+        jsm_string_sprintf(&this->console, "%c", val);
+        printf("\nCONSOLE! %s", this->console.ptr);
+    }
+}
+
 void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
 {
     // 1F000000-1FFFFFFF also mirrors this
@@ -444,6 +464,9 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
     }
 
     switch(up_addr) {
+        case 0x1fe8000c: { }
+        case 0xFF000038: { set_QACR(this, 0, val); return; }
+        case 0xFF00003C: { set_QACR(this, 1, val); return; }
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/regs_writes.c"
     }

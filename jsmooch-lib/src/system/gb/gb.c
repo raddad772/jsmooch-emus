@@ -76,6 +76,8 @@ void GB_new(JSM, enum GB_variants variant)
 	jsm->play = &GBJ_play;
 	jsm->pause = &GBJ_pause;
 	jsm->stop = &GBJ_stop;
+
+    jsm->sideload = NULL;
 }
 
 u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val) {

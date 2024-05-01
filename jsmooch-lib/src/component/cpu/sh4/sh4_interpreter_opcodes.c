@@ -96,17 +96,13 @@ void SH4_interrupt_IRL(struct SH4* this, u32 level) {
     this->regs.SGR = this->regs.R[15];
 
     u32 old_SR = SH4_regs_SR_get(&this->regs.SR);
-    SH4_SR_set(this, old_SR | (1 << 30) | (1 << 29) | (1 << 28));
 
     /*this->regs.SR.MD = 1;
     this->regs.SR.RB = 1;
     this->regs.SR.BL = 1;*/
+    SH4_SR_set(this, old_SR | (1 << 30) | (1 << 29) | (1 << 28));
+
     this->regs.PC = this->regs.VBR + 0x00000600;
-    /*
-     Only the IRL1 and 2 interrupts are used (pull up IRL0 and 3), and these interrupts are used as level
-encoding interrupts. The interrupt levels are "2" (IRL3:0 = 1101), "4" (IRL3:0 = 1011), and "6"
-(IRL3:0 = 1001).
-     */
 #ifdef SH4_DBG_SUPPORT
     if (dbg.trace_on) {
         dbg_printf("\nRaising interrupt %d cyc:%llu", level, this->clock.trace_cycles);
@@ -1082,7 +1078,7 @@ SH4ins(PREF) { // (Rn) -> operand cache
     if ((addr >= 0xE0000000) && (addr <= 0xE3FFFFFF)) {
         u32 sq = (addr >> 5) & 1;
         //const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
-        u32 naddr = addr & 0x03FFFFE0 | (((sq ? this->regs.QACR1 : this->regs.QACR0) & 0b11100) << 24);
+        u32 naddr = addr & 0x03FFFFE0 | (((sq ? this->regs.QACR[1] : this->regs.QACR[0]) & 0b11100) << 24);
         for (u32 i = 0; i < 8; i++) {
             WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
             naddr += 4;

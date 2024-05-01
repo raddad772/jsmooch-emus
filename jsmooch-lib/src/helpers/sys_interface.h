@@ -94,6 +94,8 @@ struct jsm_system {
     void (*pause)(struct jsm_system* jsm);
     void (*stop)(struct jsm_system* jsm);
 
+    void (*sideload)(struct jsm_system* jsm, struct multi_file_set* mfs);
+
     struct cvec IOs;
 };
 
