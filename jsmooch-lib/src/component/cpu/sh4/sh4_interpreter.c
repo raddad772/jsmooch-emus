@@ -11,6 +11,7 @@
 #include "fsca.h"
 #include "tmu.h"
 #include "system/dreamcast/dreamcast.h"
+#include "sh4_interrupts.h"
 
 #define SH4_TIMER_IGNORE_DELAY_SLOT
 //#define SH4_BRK 0x8c002774
@@ -342,6 +343,18 @@ void SH4_reset(struct SH4* this)
      * MD bit = 1, RB bit = 1, BL bit = 1, FD bit = 0,
 I3ñI0 = 1111 (H'F), reserved bits = 0, others
 undefined
+     */
+    /*
+     EXPEVT = H'00000000;
+VBR = H'00000000;
+SR.MD = 1;
+SR.RB = 1;
+SR.BL = 1;
+SR.(I0-I3) = B'1111;
+SR.FD=0;
+Initialize_CPU();
+Initialize_Module(PowerOn);
+PC = H'A0000000;*
      */
     this->regs.VBR = 0;
     this->regs.PC = 0xA0000000;

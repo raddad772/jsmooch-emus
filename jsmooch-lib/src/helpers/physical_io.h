@@ -9,6 +9,50 @@
 #include "helpers/cvec.h"
 #include "helpers/buf.h"
 
+enum JKEYS {
+    JK_0,
+    JK_1,
+    JK_2,
+    JK_3,
+    JK_4,
+    JK_5,
+    JK_6,
+    JK_7,
+    JK_8,
+    JK_9,
+    JK_Q,
+    JK_W,
+    JK_E,
+    JK_R,
+    JK_T,
+    JK_P,
+    JK_O,
+    JK_I,
+    JK_U,
+    JK_Y,
+    JK_A,
+    JK_S,
+    JK_D,
+    JK_F,
+    JK_G,
+    JK_L,
+    JK_K,
+    JK_J,
+    JK_H,
+    JK_Z,
+    JK_X,
+    JK_C,
+    JK_V,
+    JK_M,
+    JK_N,
+    JK_B,
+    JK_ENTER,
+    JK_CAPS,
+    JK_SPACE,
+    JK_SHIFT
+};
+
+
 enum IO_CLASSES {
     HID_NONE,
     HID_DISPLAY,
@@ -83,8 +127,10 @@ struct physical_io_device {
             struct cvec digital_buttons;
         } controller;
 
-        struct {
-
+        struct JSM_KEYBOARD {
+            u32 key_defs[100];
+            u32 key_states[100];
+            u32 num_keys;
         } keyboard;
 
         struct {
@@ -122,7 +168,8 @@ struct physical_io_device {
         } disc_drive;
 
         struct {
-
+            void (*insert_tape)(struct jsm_system *ptr, struct multi_file_set* mfs, struct buf* sram);
+            void (*remove_tape)(struct jsm_system *ptr);
         } audio_cassette;
     } device;
 };

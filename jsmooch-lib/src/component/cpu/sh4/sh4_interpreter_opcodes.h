@@ -44,6 +44,5 @@ extern struct SH4_ins_t SH4_decoded[4][65536];
 extern char SH4_disassembled[4][65536][30];
 extern char SH4_mnemonic[4][65536][30];
 extern struct SH4_ins_t SH4_decoded_by_encoding[65536];
-void SH4_interrupt_IRL(struct SH4* this, u32 level);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_OPCODES_H

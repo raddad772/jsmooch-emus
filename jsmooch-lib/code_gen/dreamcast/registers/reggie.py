@@ -80,6 +80,7 @@ class Register:
         self.or_bitfields = []
         self.address = -1
         self.on_write = None
+        self.data_sz = 'u32'
 
     @property
     def and_bitfield(self) -> Optional[int]:
@@ -120,7 +121,7 @@ class Register:
         indent2 = di(oo.decl_indent + 1)
         indent3 = di(oo.decl_indent + 2)
         if not self.has_and_bits:
-            return '\n' + indent1 + 'u32 ' + self.name + ';  // ' + self.hex_address
+            return '\n' + indent1 + self.data_sz + ' ' + self.name + ';  // ' + self.hex_address
         o = '\n' + indent1 + 'union {  // ' + self.name + '\n'
         o += indent2 + 'struct {\n'
         my_bitfields = sorted(self.and_bitfields, key=lambda x: x.start, reverse=False)
@@ -129,11 +130,11 @@ class Register:
         for bf in my_bitfields:
             if (bf.start - last_end) > 1:
                 insert_bits = (bf.start - last_end) - 1
-                o += indent3 + 'u32 : ' + str(insert_bits) + ';\n'
-            o += indent3 + 'u32 ' + bf.name + ' : ' + str((bf.end - bf.start) + 1) + ';\n'
+                o += indent3 + self.data_sz + ' : ' + str(insert_bits) + ';\n'
+            o += indent3 + self.data_sz + ' ' + bf.name + ' : ' + str((bf.end - bf.start) + 1) + ';\n'
             last_end = bf.end
         o += indent2 + '};\n'
-        o += indent2 + 'u32 u;\n'
+        o += indent2 + self.data_sz + ' u;\n'
         o += indent1 + '} ' + self.name + ';  // ' + self.hex_address
 
         return o
@@ -255,6 +256,10 @@ def parse_regs_file(fname: str, out_path: str) -> None:
             cur_line = fl[lindex]
             lindex += 1
             o.access_datatypes = [fc.strip() for fc in cur_line.split(",")]
+            if 'u16' in o.access_datatypes:
+                o.data_sz = 'u16'
+            elif 'u8' in o.access_datatypes:
+                o.data_sz = 'u8'
             o.has_bitflags = 'flags' in o.access_datatypes
 
             cur_line = fl[lindex]

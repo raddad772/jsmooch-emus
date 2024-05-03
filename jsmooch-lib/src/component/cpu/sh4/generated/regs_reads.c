@@ -43,7 +43,7 @@
         case 0xFFC80034:  { return this->regs.RMONAR; }
         case 0xFFC80038:  { return this->regs.RCR1.u | 0x00000000; }
         case 0xFFC80040:  { return this->regs.RCR2.u | 0x00000000; }
-        case 0xFFD00000:  { return this->regs.ICR; }
+        case 0xFFD00000:  { return this->regs.ICR.u; }
         case 0xFFD00004:  { return this->regs.IPRA.u | 0x00000000; }
         case 0xFFD00008:  { return this->regs.IPRB.u | 0x00000000; }
         case 0xFFD0000C:  { return this->regs.IPRC.u; }

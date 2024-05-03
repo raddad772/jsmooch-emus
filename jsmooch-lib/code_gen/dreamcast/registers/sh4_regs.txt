@@ -208,27 +208,36 @@ _PR: 8-9: 0b10
 _DDT: 15: 0b1
 
 0xFFD00000: ICR
-u32
-access_32, rw
+u16, flags
+access_16, rw
+on_write=SH4_IPR_update(this)
+IRLM: 7
+NMIE: 8
+NMIB: 9
+MAI: 14
+NMIL: 15
 
 0xFFD00004: IPRA
-u32, flags
-access_32, rw
+u16, flags
+access_16, rw
+on_write=SH4_IPR_update(this)
 _RTC: 0-3: 0b0000
 TMU2: 4-7
 TMU1: 8-11
 TMU0: 12-15
 
 0xFFD00008: IPRB
-u32, flags
-access_32, rw
+u16, flags
+access_16, rw
+on_write=SH4_IPR_update(this)
 _SCI: 4-7: 0b0000
 REF: 8-11
 WDT: 12-15
 
 0xFFD0000C: IPRC
 u32, flags
-access_32, rw
+access_16, rw
+on_write=SH4_IPR_update(this)
 UDI: 0-3
 SCIF: 4-7
 DMAC: 8-11

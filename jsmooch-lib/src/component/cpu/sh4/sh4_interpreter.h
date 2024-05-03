@@ -103,9 +103,35 @@ u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
 void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val);
 void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this);
 
-struct SH4_tmu_int_struct {
-    struct SH4* sh4;
-    u32 ch;
+/*
+ * so...is an interrupt pending?
+ * vpend & vmask & decoded_srimaskl
+
+u32 interrupt_vpend; // Vector of pending interrupts
+u32 interrupt_vmask; // Vector of masked interrupts             (-1 inhibits all interrupts)
+u32 decoded_srimask; // Vector of interrupts allowed by SR.IMSK (-1 inhibits all interrupts)
+
+ * decoded_srimask is...
+ *   if BL=1, ~FFFFFFFF=0
+ *   if BL=0, it is...~InterruptLevelBit[IMASK], where InterruptLevelBit is creataed during table sort
+ * interrupts have priorities. siid is, sorted interrupt priority id table
+ *
+ */
+
+enum SH4_interrupts {
+    sh4i_none = 0,
+    sh4i_power_on_or_reset = 1,
+    sh4i_manual_reset = 2,
+    sh4i_ins_tlb_multihit_exception = 4,
+    sh4i_data_tlb_multihit_exception = 8,
+    sh4i_user_break = 0x10,
+    sh4i_ins_addr_error = 0x20,
+    sh4i_ins_tlb_miss = 0x40,
+    sh4i_ins
+};
+
+struct SH4_interrupt_info {
+
 };
 
 struct SH4_clock {
@@ -139,9 +165,6 @@ struct SH4 {
         u64 base64[3];
         u32 mask[3];
         u64 mask64[3];
-
-        struct SH4_tmu_int_struct scheduled_func_structs[3];
-        struct scheduled_bound_function scheduled_funcs[3];
     } tmu;
 
     void *mptr;

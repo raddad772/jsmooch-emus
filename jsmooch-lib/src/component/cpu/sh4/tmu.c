@@ -74,9 +74,9 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
         togo = SH4_CYCLES_PER_SEC;
 
     if (this->tmu.mask[ch])
-        scheduler_add(this->scheduler, this->clock.trace_cycles + cycles, SE_bound_function, 0, scheduler_bind_function(this->tmu.scheduled_funcs[ch].func, this->tmu.scheduled_funcs[ch].ptr));
+        scheduler_add(this->scheduler, this->clock.trace_cycles + cycles, SE_bound_function, ch, scheduler_bind_function(&scheduled_tmu_callback, this));
     else
-        scheduler_add(this->scheduler, -1, SE_bound_function, 0, scheduler_bind_function(this->tmu.scheduled_funcs[ch].func, this->tmu.scheduled_funcs[ch].ptr));
+        scheduler_add(this->scheduler, -1, SE_bound_function, ch, scheduler_bind_function(&scheduled_tmu_callback, this));
 }
 
 
@@ -163,12 +163,6 @@ static void UpdateTMUCounts(struct SH4* this, u32 ch)
 
 void TMU_init(struct SH4* this)
 {
-    for (u32 i = 0; i < 3; i++) {
-        this->tmu.scheduled_func_structs[i].sh4 = this;
-        this->tmu.scheduled_func_structs[i].ch = i;
-        this->tmu.scheduled_funcs[i].ptr = (void *)&this->tmu.scheduled_func_structs[i];
-        this->tmu.scheduled_funcs[i].func = &scheduled_tmu_callback;
-    }
 }
 
 void TMU_reset(struct SH4* this)
@@ -268,10 +262,9 @@ static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
 
 u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
 {
-    struct SH4_tmu_int_struct* is = (struct SH4_tmu_int_struct*) ptr;
-    struct SH4* this = is->sh4;
+    struct SH4* this = (struct SH4*)ptr;
     printf("\nSCHEDULED CALLBACK!");
-    u32 ch = is->ch;
+    u32 ch = key;
     if (this->tmu.mask[ch]) {
 
         u32 tcnt = read_TMU_TCNT(this, ch, 0);

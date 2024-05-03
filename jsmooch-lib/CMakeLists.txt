@@ -154,6 +154,14 @@ add_library(jsmooch-lib
         src/helpers/physical_io.h
         src/helpers/ccircular.c
         src/helpers/ccircular.h
+        src/component/cpu/sh4/sh4_interrupts.c
+        src/component/cpu/sh4/sh4_interrupts.h
+        src/system/zxspectrum/zxspectrum.c
+        src/system/zxspectrum/zxspectrum.h
+        src/system/zxspectrum/tape_deck.c
+        src/system/zxspectrum/tape_deck.h
+        src/system/zxspectrum/ula.c
+        src/system/zxspectrum/ula.h
 )
 
 include_directories(src/)

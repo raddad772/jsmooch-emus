@@ -57,59 +57,7 @@ enum MSIZE {
     DC32 = 4,
     DC64 = 8
 };
-/*
- Source: The interrupt mask bit setting in SR is smaller than the IRL (3ñ0) level, and the BL bit
-in SR is 0 (accepted at instruction boundary).
-• Transition address: VBR + H'0000 0600
-• Transition operations:
-The PC contents immediately after the instruction at kind the interrupt is accepted are set in
-SPC. The SR and R15 contents at the time of acceptance are set in SSR and SGR.
-The code corresponding to the IRL (3ñ0) level is set in INTEVT. See table 19.5, Interrupt
-Exception Handling Sources and Priority Order, for the corresponding codes. The BL, MD,
-and RB bits are set to 1 in SR, and a branch is made to VBR + H'0600. The acceptance level is
-not set in the interrupt mask bits in SR. When the BL bit in SR is 1, the interrupt is masked.
-For details, see Interrupt Controller in the hardware manual.
- */
-// Interrupt!
 
-static u32 INTEVT_TABLE[15] = {
-        0x200,
-        0x220,
-        0x240,
-        0x260,
-        0x280,
-        0x2A0,
-        0x2C0,
-        0x2E0,
-        0x300,
-        0x320,
-        0x340,
-        0x360,
-        0x380,
-        0x3A0,
-        0x3C0
-};
-
-void SH4_interrupt_IRL(struct SH4* this, u32 level) {
-    this->regs.SPC = this->regs.PC;
-    this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
-    this->regs.SGR = this->regs.R[15];
-
-    u32 old_SR = SH4_regs_SR_get(&this->regs.SR);
-
-    /*this->regs.SR.MD = 1;
-    this->regs.SR.RB = 1;
-    this->regs.SR.BL = 1;*/
-    SH4_SR_set(this, old_SR | (1 << 30) | (1 << 29) | (1 << 28));
-
-    this->regs.PC = this->regs.VBR + 0x00000600;
-#ifdef SH4_DBG_SUPPORT
-    if (dbg.trace_on) {
-        dbg_printf("\nRaising interrupt %d cyc:%llu", level, this->clock.trace_cycles);
-    }
-#endif
-    this->regs.INTEVT = INTEVT_TABLE[level];
-}
 
 SH4ins(EMPTY) {
     printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, this->clock.trace_cycles);

@@ -174,23 +174,34 @@
             };
             u32 u;
         } RCR2;  // 0xFFC80040
-        u32 ICR;  // 0xFFD00000
+        union {  // ICR
+            struct {
+                u16 : 7;
+                u16 IRLM : 1;
+                u16 NMIE : 1;
+                u16 NMIB : 1;
+                u16 : 4;
+                u16 MAI : 1;
+                u16 NMIL : 1;
+            };
+            u16 u;
+        } ICR;  // 0xFFD00000
         union {  // IPRA
             struct {
-                u32 : 4;
-                u32 TMU2 : 4;
-                u32 TMU1 : 4;
-                u32 TMU0 : 4;
+                u16 : 4;
+                u16 TMU2 : 4;
+                u16 TMU1 : 4;
+                u16 TMU0 : 4;
             };
-            u32 u;
+            u16 u;
         } IPRA;  // 0xFFD00004
         union {  // IPRB
             struct {
-                u32 : 8;
-                u32 REF : 4;
-                u32 WDT : 4;
+                u16 : 8;
+                u16 REF : 4;
+                u16 WDT : 4;
             };
-            u32 u;
+            u16 u;
         } IPRB;  // 0xFFD00008
         union {  // IPRC
             struct {
