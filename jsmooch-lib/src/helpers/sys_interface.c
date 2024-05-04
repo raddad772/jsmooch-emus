@@ -7,6 +7,7 @@
 #include "system/sms_gg/sms_gg.h"
 #include "system/dreamcast/dreamcast.h"
 #include "system/atari2600/atari2600.h"
+#include "system/zxspectrum/zxspectrum.h"
 #include "helpers/debug.h"
 #include "stdio.h"
 
@@ -38,6 +39,9 @@ struct jsm_system* new_system(enum jsm_systems which)
         case SYS_DREAMCAST:
             DC_new(out);
             break;
+        case SYS_ZX_SPECTRUM:
+            ZXSpectrum_new(out);
+            break;
         default:
             printf("CREATE UNKNOWN SYSTEM!");
             break;
@@ -67,6 +71,9 @@ void jsm_delete(struct jsm_system* jsm)
             break;
         case SYS_DREAMCAST:
             DC_delete(jsm);
+            break;
+        case SYS_ZX_SPECTRUM:
+            ZXSpectrum_delete(jsm);
             break;
         default:
             printf("DELETE UNKNOWN SYSTEM!");

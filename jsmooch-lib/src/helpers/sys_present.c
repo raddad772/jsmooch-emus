@@ -40,6 +40,39 @@ static const u32 TIA_palette[128] = {
         0xffc8fca4, 0xffe0ec9c, 0xfffce08c, 0xffffffff
 };
 
+static const u32 ZXS_palette[2][8][3] = {
+        {{0, 0, 0}, {0, 0, 0xD8}, {0xD8, 0, 0},
+                {0xD8, 0, 0xD8}, {0, 0xD8, 0}, {0, 0xD8, 0xD8},
+                {0xD8, 0xD8, 0}, {0xD8, 0xD8, 0xD8}},
+        {{0, 0, 0}, {0, 0, 0xFF}, {0xFF, 0, 0},
+                {0xFF, 0, 0xFF}, {0, 0xFF, 0}, {0, 0xFF, 0xFF},
+                {0xFF, 0xFF, 0}, {0xFF, 0xFF, 0xFF}}
+};
+
+void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+{
+    u8* output = (u8 *)device->device.display.output[device->device.display.last_written];
+    u8* imgdata = (u8 *)out_buf;
+    for (u32 ry = 0; ry < 304; ry++) {
+        u32 y = ry;
+        for (u32 rx = 0; rx < 352; rx++) {
+            u32 x = rx;
+            u32 di = ((y * 352) + x) * 4;
+            u32 ulai = (y * 352) + x;
+
+            u32 color = output[ulai];
+            u32 pal = (color & 0x08) >> 3;
+            color &= 7;
+
+            imgdata[di] = ZXS_palette[pal][color][0];
+            imgdata[di+1] = ZXS_palette[pal][color][1];
+            imgdata[di+2] = ZXS_palette[pal][color][2];
+            imgdata[di+3] = 255;
+        }
+    }
+
+}
+
 void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* ibuf = (u8 *)device->device.display.output[device->device.display.last_written];
@@ -89,13 +122,13 @@ void DMG_present(struct physical_io_device *device, void *out_buf, u32 out_width
 }
 
 /*function GBC_present(data, imgdata, GB_output_buffer) {
-    let gbo = new Uint16Array(GB_output_buffer);
-    for (let y = 0; y < 144; y++) {
-        for (let counter = 0; counter < 160; counter++) {
-            let ppui = (y * 160) + counter;
-            let di = ppui * 4;
-            let r, g, b;
-            let o = gbo[ppui];
+    u32 gbo = new Uint16Array(GB_output_buffer);
+    for (u32 y = 0; y < 144; y++) {
+        for (u32 counter = 0; counter < 160; counter++) {
+            u32 ppui = (y * 160) + counter;
+            u32 di = ppui * 4;
+            u32 r, g, b;
+            u32 o = gbo[ppui];
             r = (o & 0x1F);
             g = (o >> 5) & 0x1F;
             b = (o >> 10) & 0x1F;
@@ -206,16 +239,16 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width
 
 /*
  * function SMS_present(data, imgdata, SMS_output_buffer, rendered_lines) {
-    let output = new Uint8Array(SMS_output_buffer)
-    for (let ry = 0; ry < data.bottom_rendered_line; ry++) {
-        let y = ry;
-        for (let rx = 0; rx < 256; rx++) {
-            let counter = rx;
-            let di = ((y * 256) + counter) * 4;
-            let ulai = (y * 256) + counter;
+    u32 output = new Uint8Array(SMS_output_buffer)
+    for (u32 ry = 0; ry < data.bottom_rendered_line; ry++) {
+        u32 y = ry;
+        for (u32 rx = 0; rx < 256; rx++) {
+            u32 counter = rx;
+            u32 di = ((y * 256) + counter) * 4;
+            u32 ulai = (y * 256) + counter;
 
-            let color = output[ulai];
-            let r, g, b;
+            u32 color = output[ulai];
+            u32 r, g, b;
             b = ((color >> 4) & 3) * 0x55;
             g = ((color >> 2) & 3) * 0x55;
             r = (color & 3) * 0x55;
@@ -306,6 +339,9 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
             break;
         case SYS_ATARI2600:
             atari2600_present(display, out_buf, out_width, out_height);
+            break;
+        case SYS_ZX_SPECTRUM:
+            zx_spectrum_present(display, out_buf, out_width, out_height);
             break;
         default:
             printf("\nUNKNOWN PRESENT!");
