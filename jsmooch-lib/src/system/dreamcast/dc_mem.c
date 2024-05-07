@@ -15,6 +15,7 @@
 
 #include "helpers/multisize_memaccess.c"
 
+#define QUIT_ON_TOO_MANY
 #define SH4MEM_BRK 0x005F7018
 
 u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz);
@@ -414,10 +415,11 @@ void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
             printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
         fflush(stdout);
         dbg.var++;
+#ifdef QUIT_ON_TOO_MANY
         if (dbg.var > 15) {
             dbg_break();
         }
-
+#endif
     }
 }
 
@@ -454,9 +456,11 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
             printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
         fflush(stdout);
         dbg.var++;
+#ifdef QUIT_ON_TOO_MANY
         if (dbg.var > 15) {
             dbg_break();
         }
+#endif
         return 0;
     }
     return ret;

@@ -51,9 +51,9 @@
         case 0xFFC80038: { this->regs.RCR1.u = (val & 0x00000081) | 0x00000000; return; }
         case 0xFFC80040: { this->regs.RCR2.u = (val & 0x00000080) | 0x00000000; return; }
         case 0xFFD00000: { this->regs.ICR.u = val & 0x0000C380; SH4_IPR_update(this); return; }
-        case 0xFFD00004: { this->regs.IPRA.u = (val & 0x0000FFF0) | 0x00000000; SH4_IPR_update(this); return; }
-        case 0xFFD00008: { this->regs.IPRB.u = (val & 0x0000FF00) | 0x00000000; SH4_IPR_update(this); return; }
-        case 0xFFD0000C: { this->regs.IPRC.u = val & 0x00000FFF; SH4_IPR_update(this); return; }
+        case 0xFFD00004: { this->regs.IPRA.u = val & 0x0000FFFF; SH4_IPR_update(this); return; }
+        case 0xFFD00008: { this->regs.IPRB.u = val & 0x0000FFF0; SH4_IPR_update(this); return; }
+        case 0xFFD0000C: { this->regs.IPRC.u = val & 0x0000FFFF; SH4_IPR_update(this); return; }
         case 0xFFD80010: { this->regs.TCR0 = val; return; }
         case 0xFFE80000: { this->regs.SCIF_SCSMR2 = val; return; }
         case 0xFFE80004: { this->regs.SCIF_SCBRR2 = val; return; }

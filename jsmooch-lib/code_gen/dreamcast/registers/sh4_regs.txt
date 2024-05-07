@@ -221,7 +221,7 @@ NMIL: 15
 u16, flags
 access_16, rw
 on_write=SH4_IPR_update(this)
-_RTC: 0-3: 0b0000
+RTC: 0-3
 TMU2: 4-7
 TMU1: 8-11
 TMU0: 12-15
@@ -230,7 +230,8 @@ TMU0: 12-15
 u16, flags
 access_16, rw
 on_write=SH4_IPR_update(this)
-_SCI: 4-7: 0b0000
+_: 0-3
+SCI1: 4-7
 REF: 8-11
 WDT: 12-15
 
@@ -241,6 +242,7 @@ on_write=SH4_IPR_update(this)
 UDI: 0-3
 SCIF: 4-7
 DMAC: 8-11
+GPIO: 12-15
 
 0xFF800040: PCTRB
 u32

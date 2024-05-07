@@ -57,7 +57,7 @@ void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 o
         u32 y = ry;
         for (u32 rx = 0; rx < 352; rx++) {
             u32 x = rx;
-            u32 di = ((y * 352) + x) * 4;
+            u32 di = ((y * out_width) + x) * 4;
             u32 ulai = (y * 352) + x;
 
             u32 color = output[ulai];

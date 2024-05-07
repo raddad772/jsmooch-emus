@@ -103,36 +103,8 @@ u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
 void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val);
 void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this);
 
-/*
- * so...is an interrupt pending?
- * vpend & vmask & decoded_srimaskl
-
-u32 interrupt_vpend; // Vector of pending interrupts
-u32 interrupt_vmask; // Vector of masked interrupts             (-1 inhibits all interrupts)
-u32 decoded_srimask; // Vector of interrupts allowed by SR.IMSK (-1 inhibits all interrupts)
-
- * decoded_srimask is...
- *   if BL=1, ~FFFFFFFF=0
- *   if BL=0, it is...~InterruptLevelBit[IMASK], where InterruptLevelBit is creataed during table sort
- * interrupts have priorities. siid is, sorted interrupt priority id table
- *
- */
-
-enum SH4_interrupts {
-    sh4i_none = 0,
-    sh4i_power_on_or_reset = 1,
-    sh4i_manual_reset = 2,
-    sh4i_ins_tlb_multihit_exception = 4,
-    sh4i_data_tlb_multihit_exception = 8,
-    sh4i_user_break = 0x10,
-    sh4i_ins_addr_error = 0x20,
-    sh4i_ins_tlb_miss = 0x40,
-    sh4i_ins
-};
-
-struct SH4_interrupt_info {
-
-};
+// Number of SH4 interrupt sources
+#define SH4I_NUM 27
 
 struct SH4_clock {
     i64 trace_cycles;
@@ -140,11 +112,47 @@ struct SH4_clock {
     i64 trace_cycles_blocks;
 };
 
+enum SH4_interrupt_sources {
+    sh4i_nmi = 0,
+    sh4i_irl,
+    sh4i_hitachi_udi,
+    sh4i_gpio_gpioi,
+    sh4i_dmac_dmte0,
+    sh4i_dmac_dmte1,
+    sh4i_dmac_dmte2,
+    sh4i_dmac_dmte3,
+    sh4i_dmac_dmae,
+    sh4i_tmu0_tuni0,
+    sh4i_tmu1_tuni1,
+    sh4i_tmu2_tuni2,
+    sh4i_tmu2_ticpi2,
+    sh4i_rtc_ati,
+    sh4i_rtc_pri,
+    sh4i_rtc_cui,
+    sh4i_sci1_eri,
+    sh4i_sci1_rxi,
+    sh4i_sci1_txi,
+    sh4i_sci1_tei,
+    sh4i_scif_eri,
+    sh4i_scif_rxi,
+    sh4i_scif_bri,
+    sh4i_scif_txi,
+    sh4i_wdt_iti,
+    sh4i_ref_rcmi,
+    sh4i_ref_rovi
+};
+
+struct SH4_interrupt_source {
+    enum SH4_interrupt_sources source;
+    u32 priority;
+    u32 sub_priority;
+    u32 raised;
+    u32 intevt;
+};
+
 struct SH4 {
     struct SH4_regs regs;
     struct SH4_clock clock;
-
-    u32 IRL_irq_level;
 
     i32 cycles;
 
@@ -152,6 +160,10 @@ struct SH4 {
     i32 pp_last_n;
     u8 SQ[2][32]; // store queues!
     u8 OC[8 * 1024]; // Operand Cache!
+
+    struct SH4_interrupt_source interrupt_sources[SH4I_NUM];
+    struct SH4_interrupt_source* interrupt_map[SH4I_NUM];
+    u32 interrupt_highest_priority; // used to compare to IMASK
 
     struct {
         u32 TOCR;
@@ -183,9 +195,6 @@ void SH4_reset(struct SH4* this);
 void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this, u32 is_delay_slot);
 void SH4_SR_set(struct SH4* this, u32 val);
-void SH4_set_IRL_irq_level(struct SH4* this, u32 level);
 void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to);
-void SH4_interrupt_pend(struct SH4* this, u32 level, u32 onoff);
-void SH4_interrupt_mask(struct SH4* this, u32 level, u32 onoff);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

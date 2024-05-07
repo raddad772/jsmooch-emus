@@ -16,6 +16,7 @@
 #include "dreamcast.h"
 #include "holly.h"
 #include "triangle.h"
+#include "component/cpu/sh4/sh4_interrupts.h"
 #include "helpers/multisize_memaccess.c"
 
 void DCDisplayList_reset(struct DCDisplayList* this);

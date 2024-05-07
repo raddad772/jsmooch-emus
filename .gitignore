@@ -20,6 +20,7 @@ jsmooch-gui/ts
 *.gb
 *.bin
 jsmooch-tests/js
+jsmooch-lib/src/js-ext
 
 .idea
 cmake-build-debug/*
@@ -414,3 +415,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/jsmooch-lib/src/jl-ext

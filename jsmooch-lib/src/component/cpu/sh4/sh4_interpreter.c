@@ -16,6 +16,7 @@
 #define SH4_TIMER_IGNORE_DELAY_SLOT
 //#define SH4_BRK 0x8c002774
 
+
 // Endianness is little.
 
 // disassembly printf args
@@ -24,21 +25,6 @@
 
 #define SH4_CLOCK_DIVIDER 1
 #define SH4_TIMER_MULTIPLIER (8)
-
-void SH4_interrupt_mask(struct SH4* this, u32 level, u32 onoff)
-{
-
-}
-
-void SH4_interrupt_pend(struct SH4* this, u32 level, u32 onoff)
-{
-    printf("\nPLEASE IMPLEMENT SH4 INTERRUPTS! %llu", this->clock.trace_cycles);
-};
-
-void SH4_set_IRL_irq_level(struct SH4* this, u32 level)
-{
-    this->IRL_irq_level = level;
-}
 
 static void set_user_mode(struct SH4* this)
 {
@@ -227,7 +213,7 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
     this->cycles += (i32)howmany;
     while(this->cycles > 0) {
         SH4_fetch_and_exec(this, 0);
-        if ((this->IRL_irq_level != 0xF) && (this->regs.SR.BL == 0) && (((~this->IRL_irq_level) & 15) > this->regs.SR.IMASK)) {
+        if ((this->regs.SR.BL == 0) && (this->interrupt_highest_priority > this->regs.SR.IMASK)) {
 #ifdef BRK_ON_NMIRQ
             dbg_break();
 #endif
@@ -237,10 +223,7 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
             printf(THING);
 #undef THING
 #endif
-            if (dbg.trace_on) {
-                dbg_printf("\nIRQ LEVEL:%d IMASK:%d", this->IRL_irq_level, this->regs.SR.IMASK);
-            }
-            SH4_interrupt_IRL(this, this->IRL_irq_level);
+            SH4_interrupt(this);
         }
 #ifdef SH4_DBG_SUPPORT
         if (dbg.do_break) {
@@ -264,6 +247,8 @@ void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
     this->clock.trace_cycles_blocks = 0;
     this->scheduler = scheduler;
     jsm_string_init(&this->console, 5000);
+    SH4_init_interrupt_struct(this->interrupt_sources, this->interrupt_map);
+    this->interrupt_highest_priority = 0;
     SH4_reset(this);
     generate_fsca_table();
     //printf("\nINS! %s\n", SH4_disassembled[0][0x6772]);
@@ -272,7 +257,6 @@ void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
     this->fetch_ins = NULL;
     this->read = NULL;
     this->write = NULL;
-    this->IRL_irq_level = 0;
     TMU_init(this);
     TMU_reset(this);
 }
@@ -444,7 +428,6 @@ static void console_add(struct SH4* this, u32 val, u32 sz)
 {
     if (sz == DC8) {
         jsm_string_sprintf(&this->console, "%c", val);
-        printf("\nCONSOLE! %s", this->console.ptr);
     }
 }
 
@@ -477,7 +460,9 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
     }
 
     switch(up_addr) {
-        case 0x1fe8000c: { }
+        case 0x1fe8000c: {
+
+        }
         case 0xFF000038: { set_QACR(this, 0, val); return; }
         case 0xFF00003C: { set_QACR(this, 1, val); return; }
 // NOLINTNEXTLINE(bugprone-suspicious-include)

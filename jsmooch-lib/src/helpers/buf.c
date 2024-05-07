@@ -59,11 +59,9 @@ int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
     sprintf(OUTPATH, "%s/%s", fpath, fname);
     strncpy(rfb->name, fname, 255);
     strncpy(rfb->path, fpath, 255);
-    printf("\nOUTPATH %s|%s|%s", OUTPATH, fpath, fname);
 
     FILE *fil = fopen(OUTPATH, "rb");
     fseek(fil, 0L, SEEK_END);
-    printf("\nSZ: %d", ftell(fil));
     buf_allocate(&rfb->buf, ftell(fil));
 
     fseek(fil, 0L, SEEK_SET);

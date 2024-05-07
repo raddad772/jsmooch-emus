@@ -232,6 +232,60 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
     printf("\nFast load finish!");
 }
 
+#define SR(reg, pos) this->cpu.regs. reg = infil[pos]
+#define SR2(reg, pos) this->cpu.regs. reg = infil[pos] | (infil[pos] << 8)
+
+static void load_Z80_file(struct ZXSpectrum* this, struct multi_file_set* mfs) {
+    struct buf *b = &mfs->files[0].buf;
+    u8 *infil = b->ptr;
+
+    SR(A, 0);
+    Z80_regs_F_setbyte(&this->cpu.regs.F, infil[1]);
+    SR(C, 2);
+    SR(B, 3);
+    SR(L, 4);
+    SR(H, 5);
+    SR2(PC, 6);
+    SR2(SP, 8);
+    SR(I, 10); // WAIT WHAT?
+    this->cpu.regs.R = infil[10] & 0x7F | ((infil[11] & 1) << 7);
+    this->ula.io.border_color = (infil[11] >> 1) & 7;
+    if ((infil[11] >> 5) & 1) {
+        printf("\nERROR COMPRESSED BLOCK");
+        return;
+    }
+    SR(E, 13);
+    SR(D, 14);
+    SR2(BC_, 15);
+    SR2(DE_, 17);
+    SR2(HL_, 19);
+    this->cpu.regs.AF_ = (infil[21] << 8) | infil[22];
+    SR2(IY, 23);
+    SR2(IX, 25);
+    SR(EI, 27);
+    SR(IFF2, 28);
+    this->cpu.regs.IM = infil[29] & 3;
+    printf("\nINTERRUPT MODE SHOULD BE 2: %d", this->cpu.regs.IM);
+    u32 v = 1;
+    if (infil[6] == infil[7] == 0) {
+        // v2 or 3
+        u32 hlen = (infil[31] << 8) | infil[30];
+        if (hlen == 23) {
+            v = 2;
+        }
+        else if (hlen == 54) {
+            v = 3;
+        }
+        else if (hlen == 55) {
+            v = 31;
+        }
+        else {
+            printf("\nWATI WHAT? %d", hlen);
+        }
+
+    }
+}
+
 static void load_SNA_file(struct ZXSpectrum* this, struct multi_file_set* mfs)
 {
     struct buf* b = &mfs->files[0].buf;
@@ -295,6 +349,9 @@ static void ZXSpectrumIO_insert_tape(JSM, struct multi_file_set *mfs, struct buf
     else if (ends_with(s, ".sna")) {
         load_SNA_file(this, mfs);
     }
+    else if (ends_with(s, ".z80")) {
+        load_Z80_file(this, mfs);
+    }
     else {
         printf("\nCould not detect file type by extension: %s", s);
     }
@@ -336,8 +393,8 @@ void ZXSpectrumJ_describe_io(JSM, struct cvec *IOs)
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
     d->device.display.fps = 50;
-    d->device.display.output[0] = malloc(256*192);
-    d->device.display.output[1] = malloc(256*192);
+    d->device.display.output[0] = malloc(352*304);
+    d->device.display.output[1] = malloc(352*304);
     this->ula.display = d;
     this->ula.cur_output = (u8 *)d->device.display.output[0];
     d->device.display.last_written = 1;
@@ -402,10 +459,13 @@ u32 ZXSpectrumJ_finish_frame(JSM)
 {
     JTHIS;
     u32 current_frame = this->clock.frames_since_restart;
+    u32 scanlines = 0;
     while(current_frame == this->clock.frames_since_restart) {
+        scanlines++;
         ZXSpectrumJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
+    printf("\nScanlines: %d", scanlines);
     return this->ula.display->device.display.last_written;
 }
 

@@ -347,6 +347,8 @@ u32 DCJ_step_master(JSM, u32 howmany)
         if (dbg.do_break) break;
     }
     sched_printf("\nSTEPS:%lli BRK:%d", this->sh4.clock.trace_cycles - cycles_start, dbg.do_break);
+
+    printf("\n\nCONSOLE:\n---\n%s", this->sh4.console.ptr);
     return steps_done;
 }
 
@@ -562,7 +564,7 @@ static void DC_CPU_state_after_boot_rom(struct DC* this)
     sh4->regs.PC = 0xAC008300; // IP.bin start address
 }
 
-static void DC_RAM_state_after_boot_rom(struct DC* this)
+static void DC_RAM_state_after_boot_rom(struct DC* this, struct read_file_buf *IPBIN)
 {
     memset(&this->RAM[0x00200000], 0, 0x1000000);
 
@@ -591,6 +593,10 @@ static void DC_RAM_state_after_boot_rom(struct DC* this)
     //         // Load IP.bin from disk (16 first sectors of the last track)
     //        // FIXME: Here we assume the last track is the 3rd.
     // TODO
+    if (IPBIN) {
+        printf("\nLoading IP.BIN...");
+        memcpy(&this->RAM[0x8000], IPBIN->buf.ptr, 0x8000);
+    }
 
 
     // IP.bin patches
@@ -625,7 +631,7 @@ static void DC_RAM_state_after_boot_rom(struct DC* this)
 static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
     JTHIS;
     DC_CPU_state_after_boot_rom(this);
-    DC_RAM_state_after_boot_rom(this);
+    DC_RAM_state_after_boot_rom(this, &mfs->files[1]);
 
     memcpy(&this->RAM[0x10000], mfs->files[0].buf.ptr, mfs->files[0].buf.size);
     this->sh4.regs.PC = 0xAC010000;

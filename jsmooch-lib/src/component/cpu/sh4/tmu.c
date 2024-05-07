@@ -5,6 +5,7 @@
 #include "stdlib.h"
 #include "tmu.h"
 #include "sh4_interpreter.h"
+#include "sh4_interrupts.h"
 #include "stdio.h"
 
 #define SH4_CYCLES_PER_SEC 200000000
@@ -111,8 +112,14 @@ static void UpdateTMUCounts(struct SH4* this, u32 ch)
 {
     u32 irq_num = 10 + ch;
     // TODO: IRQ stuff
-    SH4_interrupt_pend(this, 0x400 + (0x20 * ch), this->tmu.TCR[ch] & 0x100);
-    SH4_interrupt_mask(this, 0x400 + (0x20 * ch), this->tmu.TCR[ch] & 0x200);
+    SH4_interrupt_pend(this, 0x400 + (0x20 * ch), (this->tmu.TCR[ch] & 0x100) && (this->tmu.TCR[ch] & 0x20)); // underflow
+    if  ((this->tmu.TCR[ch] & 0x100) && (this->tmu.TCR[ch] & 0x200)) {
+        printf("\nRAISING TCR INTERRUPT!");
+        this->tmu.TCR[ch] &= 0xFF;
+    }
+
+
+    //SH4_interrupt_mask(this, 0x400 + (0x20 * ch), this->tmu.TCR[ch] & 0x200);
     //InterruptPend(tmu_intID[reg], TMU_TCR(reg) & 0x100);
     //InterruptMask(tmu_intID[reg], TMU_TCR(reg) & 0x200);
 
@@ -281,7 +288,10 @@ u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
             f->sh4 = this;
             f->ch = ch;
             scheduler_add(&this->scheduler, this->clock.trace_cycles+1, SE_bound_function, ch, scheduler_bind_function(&sh4ifunc, f));*/
-            SH4_interrupt_pend(this, 0x400 + (0x20 * ch), 1);
+            u32 c = sh4i_tmu0_tuni0;
+            if (ch == 1) c = sh4i_tmu1_tuni1;
+            if (ch == 2) c = sh4i_tmu2_tuni2;
+            SH4_interrupt_pend(this, c, 1);
             //InterruptPend(tmu_intID[ch], 1);
 
             printf("Interrupt for %d, %lld cycles\n", ch, sch_cycle);

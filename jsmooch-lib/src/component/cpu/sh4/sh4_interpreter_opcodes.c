@@ -529,7 +529,16 @@ SH4ins(NEG) { // 0 - Rm -> Rn
 }
 
 SH4ins(NEGC) { // 0 - Rm - T -> Rn, borrow -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 temp = 0 - RM;
+    RN = temp - this->regs.SR.T;
+
+    if (0 < temp)
+        this->regs.SR.T = 1;
+    else
+        this->regs.SR.T = 0;
+
+    if (temp < RN)
+        this->regs.SR.T = 1;
     PCinc;
 }
 
@@ -878,7 +887,7 @@ SH4ins(CLRS) { // 0 -> S
 }
 
 SH4ins(CLRT) { // 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = 0;
     PCinc;
 }
 

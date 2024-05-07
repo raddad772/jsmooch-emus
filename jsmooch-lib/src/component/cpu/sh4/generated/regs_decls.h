@@ -188,7 +188,7 @@
         } ICR;  // 0xFFD00000
         union {  // IPRA
             struct {
-                u16 : 4;
+                u16 RTC : 4;
                 u16 TMU2 : 4;
                 u16 TMU1 : 4;
                 u16 TMU0 : 4;
@@ -197,7 +197,8 @@
         } IPRA;  // 0xFFD00004
         union {  // IPRB
             struct {
-                u16 : 8;
+                u16 : 4;
+                u16 SCI1 : 4;
                 u16 REF : 4;
                 u16 WDT : 4;
             };
@@ -208,6 +209,7 @@
                 u32 UDI : 4;
                 u32 SCIF : 4;
                 u32 DMAC : 4;
+                u32 GPIO : 4;
             };
             u32 u;
         } IPRC;  // 0xFFD0000C
