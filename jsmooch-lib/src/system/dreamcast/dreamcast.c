@@ -740,6 +740,7 @@ static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
             cleanup_sym_tbl: if (sym_tbl) free(sym_tbl);
             cleanup_sh_str: if (sh_str) free(sh_str);
             cleanup_sh_table: if (sh_table) free(sh_table);
+            close(fd);
         }
     }
     else {
