@@ -10,6 +10,7 @@
 #include "helpers/sys_interface.h"
 #include "helpers/scheduler.h"
 #include "helpers/cvec.h"
+#include "helpers/elf_helpers.h"
 
 #include "component/cpu/sh4/sh4_interpreter_opcodes.h"
 #include "component/cpu/sh4/sh4_interpreter.h"
@@ -73,6 +74,8 @@ struct DC {
 
     struct DC_controller c1;
     struct DC_controller c2;
+
+    struct elf_symbol_list32 elf_symbols;
 
     u8 RAM[16 * 1024 * 1024];
     u8 VRAM[HOLLY_VRAM_SIZE];

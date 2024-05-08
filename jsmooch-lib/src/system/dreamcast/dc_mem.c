@@ -12,6 +12,7 @@
 #include "gdrom.h"
 #include "maple.h"
 #include "g2.h"
+#include "helpers/elf_helpers.h"
 
 #include "helpers/multisize_memaccess.c"
 
@@ -499,9 +500,34 @@ u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz)
     //return *(u32 *)((u8*)this->flash.buf.ptr + (addr & 0x1FFFF));
 }
 
+static char *ptr_seek(char *ptr, u32 current, u32 pos)
+{
+    if (pos <= current) return ptr;
+    for (u32 i = 0; i < (pos - current); i++) {
+        *ptr = ' ';
+        ptr++;
+        *ptr = 0;
+    }
+    return ptr;
+}
+
 u32 DCfetch_ins(void *ptr, u32 addr)
 {
     u32 val = DCread(ptr, addr, 2, true);
+#ifdef DC_SUPPORT_ELF
+    THIS;
+    struct elf_symbol32* sym = elf_symbol_list32_find(&this->elf_symbols, addr, 0x1FFFFFFF);
+    if (sym != NULL) {
+        char buf[500];
+        char *mptr = buf;
+        mptr += sprintf(mptr, "\nfunc %s", sym->name);
+        mptr = ptr_seek(mptr, mptr - buf, 20);
+        mptr += sprintf(mptr, "(%s)", sym->fname);
+        mptr = ptr_seek(mptr, mptr - buf, 32);
+        mptr += sprintf(mptr, "PC:%08x R4:%08x R5:%08x R6:%08x cycl:%lld", this->sh4.regs.PC, this->sh4.regs.R[4], this->sh4.regs.R[5], this->sh4.regs.R[6], this->sh4.clock.trace_cycles);
+        printf("%s", buf);
+    }
+#endif
 #ifdef SH4_TRACE_INS_FETCH
 #ifdef DO_LAST_TRACES
     dbg_LT_printf(DBGC_TRACE "\n fetchi   (%08x) %04x" DBGC_RST, addr, val);

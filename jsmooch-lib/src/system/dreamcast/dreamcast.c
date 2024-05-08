@@ -16,9 +16,8 @@
 #include "holly.h"
 #include "controller.h"
 
-#define SUPPORT_ELF
-#ifdef SUPPORT_ELF
-#include "vendors/elf-parser/elf-parser.h"
+#ifdef DC_SUPPORT_ELF
+#include "vendor/elf-parser/elf-parser.h"
 #endif
 
 #define IP_BIN
@@ -61,6 +60,7 @@ void DC_new(JSM)
 
     dbg.dcptr = this;
 
+    elf_symbol_list32_init(&this->elf_symbols);
     SH4_init(&this->sh4, &this->scheduler);
     this->described_inputs = 0;
     this->sh4.mptr = (void *)this;
@@ -135,6 +135,7 @@ void DC_delete(struct jsm_system* jsm)
     if (this->gdrom.gdi.num_tracks > 0)
         GDI_delete(&this->gdrom.gdi);
 
+    elf_symbol_list32_delete(&this->elf_symbols);
     buf_delete(&this->BIOS);
     buf_delete(&this->ROM);
     buf_delete(&this->flash.buf);
@@ -631,6 +632,17 @@ static void DC_RAM_state_after_boot_rom(struct DC* this, struct read_file_buf *I
     this->g2.SB_DDST = 0;
 }
 
+static u32 ends_with(const char *str, const char *suffix)
+{
+    if (!str || !suffix)
+        return 0;
+    size_t lenstr = strlen(str);
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix >  lenstr)
+        return 0;
+    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
 
 // Thanks to Deecey for values to write
 static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
@@ -638,9 +650,105 @@ static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
     DC_CPU_state_after_boot_rom(this);
     DC_RAM_state_after_boot_rom(this, &mfs->files[1]);
 
-    memcpy(&this->RAM[0x10000], mfs->files[0].buf.ptr, mfs->files[0].buf.size);
-    this->sh4.regs.PC = 0xAC010000;
 
+#ifdef DC_SUPPORT_ELF
+    if (ends_with(mfs->files[0].name, ".elf")) {
+        char YOYO[500];
+        sprintf(YOYO, "%s/%s", mfs->files[0].path, mfs->files[0].name);
+        printf("\nOPEN ELF %s", YOYO);
+        Elf32_Ehdr eh;        /* elf-header is fixed size */
+        i32 fd = open(YOYO, O_RDONLY | O_SYNC);
+        Elf32_Sym* sym_tbl = NULL;
+        char *str_tabl = NULL;
 
-    // 0xac010000 and start at 0xac010000
+        read_elf_header(fd, &eh);
+        if (!is_ELF(eh)) {
+            printf("\nNOT ELFT!");
+            close(fd);
+            return;
+        }
+        if (is64Bit(eh)) {
+            printf("\nIS 64!");
+            return;
+        } else {
+            Elf32_Shdr *sh_table=NULL;    /* section-header table is variable size */
+            //print_elf_header(eh);
+            this->sh4.regs.PC = eh.e_entry;
+
+            sh_table = malloc(eh.e_shentsize * eh.e_shnum);
+            read_section_header_table(fd, eh, sh_table);
+
+            // Load to RAM and load symbols
+            char *sh_str = read_section(fd, sh_table[eh.e_shstrndx]);
+            for (int i = 0; i < eh.e_shnum; i++) {
+                u32 addr = sh_table[i].sh_addr;
+                if (addr >= 0x8C000000) {
+                    if (addr >= (0x8C000000+0x1000000)) {
+                        printf("\nLoad address too high! %08x", addr);
+                        continue;
+                    }
+                    if ((addr+sh_table[i].sh_size) >= (0x8C000000+0x1000000)) {
+                        printf("\nLoad size too high! %08x", sh_table[i].sh_size);
+                        continue;
+                    }
+                    printf("\nELF loading %s to 0x%08x", (sh_str + sh_table[i].sh_name), sh_table[i].sh_addr);
+                    memcpy(&this->RAM[addr - 0x8C000000], &((u8*)mfs->files[0].buf.ptr)[sh_table[i].sh_offset], sh_table[i].sh_size);
+                }
+                if ((sh_table[i].sh_type == SHT_SYMTAB) || (sh_table[i].sh_type==SHT_DYNSYM)) {
+                    u32 symbol_count;
+                    sym_tbl = (Elf32_Sym*)read_section(fd, sh_table[i]);
+                    u32 str_tbl_ndx = sh_table[i].sh_link;
+                    str_tabl = read_section(fd, sh_table[str_tbl_ndx]);
+
+                    symbol_count = (sh_table[i].sh_size/sizeof(Elf32_Sym));
+                    char *fname = "";
+
+                    for(int j=0; j < symbol_count; j++) {
+                        u32 st_type = ELF32_ST_TYPE(sym_tbl[j].st_info);
+                        if (st_type == STT_FILE) {
+                            fname = (str_tabl + sym_tbl[j].st_name);
+                            continue;
+                        }
+                        if (st_type == STT_SECTION) continue;
+                        if (strlen((str_tabl + sym_tbl[j].st_name)) < 2) continue;
+
+                        if ((st_type == STT_FUNC) || (st_type == STT_OBJECT) || (st_type == STT_NOTYPE)) {
+                            enum elf_symbol32_kind esk;
+                            switch (st_type) {
+                                case STT_FUNC:
+                                    esk = esk_function;
+                                    break;
+                                case STT_OBJECT:
+                                    esk = esk_object;
+                                    break;
+                                case STT_NOTYPE:
+                                    esk = esk_unknown;
+                                    break;
+                                default:
+                                    printf("\nUNKNOWN SYMBOL KIND HERE %d", st_type);
+                                    esk = esk_unknown;
+                                    break;
+                            }
+                            elf_symbol_list32_add(&this->elf_symbols, sym_tbl[j].st_value, fname, (str_tabl + sym_tbl[j].st_name), esk);
+                        }
+                    }
+                }
+            }
+            printf("\nAlso loaded %d symbols.", this->elf_symbols.num);
+
+            cleanup_str_tabl: if (str_tabl) free(str_tabl);
+            cleanup_sym_tbl: if (sym_tbl) free(sym_tbl);
+            cleanup_sh_str: if (sh_str) free(sh_str);
+            cleanup_sh_table: if (sh_table) free(sh_table);
+        }
+    }
+    else {
+        printf("\nNot ELF, loading as .bin...");
+#endif
+        memcpy(&this->RAM[0x10000], mfs->files[0].buf.ptr, mfs->files[0].buf.size);
+        this->sh4.regs.PC = 0xAC010000;
+#ifdef DC_SUPPORT_ELF
+    }
+#endif
 }
+

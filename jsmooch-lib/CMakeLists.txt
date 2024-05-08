@@ -162,6 +162,11 @@ add_library(jsmooch-lib
         src/system/zxspectrum/tape_deck.h
         src/system/zxspectrum/ula.c
         src/system/zxspectrum/ula.h
+        src/vendor/elf-parser/elf-parser.h
+        src/vendor/elf-parser/elf.h
+        src/vendor/elf-parser/elf-parser.c
+        src/helpers/elf_helpers.h
+        src/helpers/elf_helpers.c
 )
 
 include_directories(src/)

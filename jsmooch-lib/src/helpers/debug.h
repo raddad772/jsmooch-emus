@@ -24,6 +24,9 @@
 //#define SH4_TRACE_INS_FETCH
 //#define SH4_IRQ_DBG
 
+#define DC_SUPPORT_ELF
+
+
 #ifdef SH4_IRQ_DBG
 #define SH4_IRQ_DBG_printf(...) printf(__VA_ARGS__)
 #else

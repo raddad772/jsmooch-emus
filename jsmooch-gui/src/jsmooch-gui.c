@@ -420,7 +420,7 @@ int main(int argc, char** argv)
 #ifdef SIDELOAD
     struct multi_file_set sideload_image;
     mfs_init(&sideload_image);
-    grab_ROM(&sideload_image, which, "hello.bin", "kos");
+    grab_ROM(&sideload_image, which, "example.elf", "kos");
     mfs_add_IP_BIN(&sideload_image);
     sys->sideload(sys, &sideload_image);
     mfs_delete(&sideload_image);
