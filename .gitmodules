@@ -1,3 +1,0 @@
-[submodule "jsmooch-lib/src/vendors/elf-parser"]
-	path = jsmooch-lib/src/vendors/elf-parser
-	url = https://github.com/TheCodeArtist/elf-parser.git

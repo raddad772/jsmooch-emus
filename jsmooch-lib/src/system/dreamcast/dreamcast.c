@@ -16,6 +16,11 @@
 #include "holly.h"
 #include "controller.h"
 
+#define SUPPORT_ELF
+#ifdef SUPPORT_ELF
+#include "vendors/elf-parser/elf-parser.h"
+#endif
+
 #define IP_BIN
 
 #define sched_printf(...) (void)0
@@ -635,5 +640,7 @@ static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
 
     memcpy(&this->RAM[0x10000], mfs->files[0].buf.ptr, mfs->files[0].buf.size);
     this->sh4.regs.PC = 0xAC010000;
+
+
     // 0xac010000 and start at 0xac010000
 }
