@@ -18,6 +18,7 @@
         case 0x005F68A4: { this->io.SB_UKN5F68A4 = val; return; }
         case 0x005F68AC: { this->io.SB_UKN5F68AC = val; return; }
         case 0x005F6900: { this->io.SB_ISTNRM.u &= ~val; holly_recalc_interrupts(this)/*; printf("\nSB_ISTNRM wrote: %08llx cyc:%llu", val, this->sh4.trace_cycles);*/; return; }
+        case 0x005F6904: { warn_printf("\nWarning, writes to SB_ISTEXT at 0x005F6904 are not allowed!"); return; }
         case 0x005F6908: { this->io.SB_ISTERR.u &= ~val; holly_recalc_interrupts(this)/*; printf("\nSB_ISTERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/; return; }
         case 0x005F6910: { this->io.SB_IML2NRM = val; holly_recalc_interrupts(this); /*printf("\nSB_IML2NRM wrote: %08llu cyc: %llx", val, this->sh4.trace_cycles)*/; return; }
         case 0x005F6914: { this->io.SB_IML2EXT.u = val & 0x0000000F; holly_recalc_interrupts(this)/*; printf("\nSB_IML2EXT write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/; return; }

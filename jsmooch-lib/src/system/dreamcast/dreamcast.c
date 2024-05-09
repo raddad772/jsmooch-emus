@@ -529,14 +529,15 @@ void DCJ_old_load_ROM(JSM, struct multi_file_set* mfs)
 static void DC_CPU_state_after_boot_rom(struct DC* this)
 {
     struct SH4* sh4 = &this->sh4;
-    SH4_SR_set(sh4, 0x400000F1);
+    //SH4_SR_set(sh4, 0x400000F1);
+    SH4_SR_set(sh4, 0x600000f0);
     SH4_regs_FPSCR_set(&sh4->regs, 0x00040001);
 
-    sh4->regs.R[0] = 0xAC0005D8;
-    sh4->regs.R[1] = 0x00000009;
-    sh4->regs.R[2] = 0xAC00940C;
-    sh4->regs.R[3] = 0;
-    sh4->regs.R[4] = 0xAC008300;
+    sh4->regs.R[0] = 0x8c010000; //0xAC0005D8;
+    sh4->regs.R[1] = 0x00000808; // 0x00000009;
+    sh4->regs.R[2] = 0x8c00e070; // 0xAC00940C;
+    sh4->regs.R[3] = 0x8c010000; // 0;
+    sh4->regs.R[4] = 0x8c010000; //0xAC008300;
     sh4->regs.R[5] = 0xF4000000;
     sh4->regs.R[6] = 0xF4002000;
     sh4->regs.R[7] = 0x00000044;
@@ -547,24 +548,32 @@ static void DC_CPU_state_after_boot_rom(struct DC* this)
     sh4->regs.R[12] = 0;
     sh4->regs.R[13] = 0;
     sh4->regs.R[14] = 0;
-    sh4->regs.R[15] = 0;
+    sh4->regs.R[15] = 0x8c00f400;
 
-    sh4->regs.R_[0] = 0xDFFFFFFF;
-    sh4->regs.R_[1] = 0x500000F1;
-    sh4->regs.R_[2] = 0;
+    sh4->regs.R_[0] = 0x600000F0; 0xDFFFFFFF;
+    sh4->regs.R_[1] = 0x00000808; // 0x500000F1;
+    sh4->regs.R_[2] = 0x8c00e070; // 0;
     sh4->regs.R_[3] = 0;
     sh4->regs.R_[4] = 0;
     sh4->regs.R_[5] = 0;
     sh4->regs.R_[6] = 0;
     sh4->regs.R_[7] = 0;
 
+    sh4->regs.fb[0].U32[4] = 0x3F266666;
+    sh4->regs.fb[0].U32[5] = 0x3FE66666;
+    sh4->regs.fb[0].U32[6] = 0x41840000;
+    sh4->regs.fb[0].U32[7] = 0x3F800000;
+    sh4->regs.fb[0].U32[8] = 0x80000000;
+    sh4->regs.fb[0].U32[9] = 0x80000000;
+    sh4->regs.fb[0].U32[11] = 0x3F800000;
+
     sh4->regs.GBR = 0x8C000000;
     sh4->regs.SSR = 0x40000001;
     sh4->regs.SPC = 0x8C000776;
     sh4->regs.SGR = 0x8D000000;
     sh4->regs.DBR = 0x8C000010;
-    sh4->regs.VBR = 0x8C000000;
-    sh4->regs.PR = 0x0C00043C;
+    sh4->regs.VBR = 0x8c000000; //0x8C000000;
+    sh4->regs.PR = 0x8c00e09c;//0x0C00043C;
     sh4->regs.FPUL.u = 0;
 
     sh4->regs.PC = 0xAC008300; // IP.bin start address

@@ -109,7 +109,7 @@ void maple_dma_init(struct DC* this)
         union MAPLE_CMD cmd;
         cmd.u = DCread((void *)this, caddr, 4, 0);
         caddr+=4;
-        //printf("\nMAPLE CMD %d (%08x): %08x (pattern:%03d transfer_len:%d port: %d)", i, caddr, cmd.u, cmd.pattern, cmd.transfer_len, cmd.port_select);
+        printf("\nMAPLE CMD %d (%08x): %08x (pattern:%03d transfer_len:%d port: %d)", i, caddr, cmd.u, cmd.pattern, cmd.transfer_len, cmd.port_select);
         assert(cmd.pattern == 0b000);
 
         u32 receieve_ptr = DCread((void *)this, caddr, 4, 0);
@@ -125,7 +125,7 @@ void maple_dma_init(struct DC* this)
         u32 more;
         for (u32 rx_ct = 0; rx_ct < 128; rx_ct++) {
             u32 data = maple_port_in(this, cmd.port_select, &more);
-            //printf("\nMAPLE DATA RECV %08x", data);
+            printf("\nMAPLE DATA RECV %08x more:%d", data, more);
             DCwrite((void*)this, receieve_ptr, data, 4);
             receieve_ptr += 4;
             if ((rx_ct == 0) && (data == 0xFFFFFFFF)) break;

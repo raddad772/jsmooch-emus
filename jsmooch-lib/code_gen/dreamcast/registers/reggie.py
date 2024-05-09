@@ -66,6 +66,7 @@ class Register:
         self.access_datatypes = []  # u32, float, flags
         self.access_bits = []  # 8, 16, 32, 64
         self.read = False
+        self.warn_on_write = False
         self.write = False
         self.write_mask = None
         self.w_cond = None
@@ -140,10 +141,16 @@ class Register:
         return o
 
     def switch_write(self, oo: OutOptions, section: str, pref: str, in_var: str) -> str:
-        if (not self.write) or self.w_exclude:
-            return ''
         indent1 = di(oo.switch_indent)
         indent2 = di(oo.switch_indent + 1)
+        if self.warn_on_write:
+            o = ''
+            o += '\n' + indent1 + 'case ' + self.hex_address + ': { warn_printf("\\nWarning, writes to ' + self.name + ' at ' + self.hex_address + ' are not allowed!"); return; }'
+            return o
+
+        if (not self.write) or self.w_exclude:
+            return ''
+
         o = ''
         o += '\n' + indent1 + 'case ' + self.hex_address + ': '
         o += '{ '
@@ -253,6 +260,7 @@ def parse_regs_file(fname: str, out_path: str) -> None:
             addr = int(addr, 0)
             o.address = addr
 
+            # line: u32, flags
             cur_line = fl[lindex]
             lindex += 1
             o.access_datatypes = [fc.strip() for fc in cur_line.split(",")]
@@ -262,6 +270,7 @@ def parse_regs_file(fname: str, out_path: str) -> None:
                 o.data_sz = 'u8'
             o.has_bitflags = 'flags' in o.access_datatypes
 
+            # line: access_32, rw, warn_write
             cur_line = fl[lindex]
             lindex += 1
             o.access_bits = []
@@ -275,6 +284,8 @@ def parse_regs_file(fname: str, out_path: str) -> None:
                     o.write = True
                 elif ac == 'rw':
                     o.read = o.write = True
+                elif ac == 'warn_write':
+                    o.warn_on_write = True
                 else:
                     raise Exception("Unknown meaning of " + ac + " (" + o.name + ")")
 

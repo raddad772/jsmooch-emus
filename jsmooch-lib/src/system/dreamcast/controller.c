@@ -29,7 +29,7 @@ void DC_controller_connect(struct DC* console, int portnum, struct DC_controller
 void DC_controller_write(void *ptr, u32 data)
 {
     struct DC_controller* this = (struct DC_controller*)ptr;
-    //printf("\nDC controller written %08x", data);
+    printf("\nDC controller written data:%08x index:%d", data, this->cmd_index);
     if (this->state == DCC_tx) {
         printf("\nDC CONTROLLER GOT COMMAND DURING TRANSMIT SEQUENCE!");
         return;
@@ -71,6 +71,7 @@ u32 DC_controller_read(void *ptr, u32* more)
     u32 ret = 0xFFFFFFFF;
     switch(this->de_cmd) {
         case 0: // identify yourself!
+            printf("\nIDENTIFY CMD %d", this->cmd_index);
             if (this->cmd_index == 0)
                 this->reply_len = 4;
             ret = reply0_32[this->cmd_index];

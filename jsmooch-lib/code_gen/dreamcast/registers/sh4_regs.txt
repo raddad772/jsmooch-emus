@@ -9,7 +9,7 @@ access_32, w
 
 0xFFC0000C: CPG_WTCSR
 u32, flags
-access_32, w
+access_32, rw
 CKS: 0-2
 IOVF: 3
 WOVF: 4
@@ -256,9 +256,35 @@ access_32, rw
 u32
 access_32, rw
 
-0xFFD80010: TCR0
+0xFF000084: PMCTR1_CTRL
 u32
 access_32, rw
+on_write=printf("\nPerformance counters not implemented...")
+
+0xFF000088: PMCTR2_CTRL
+u32
+access_32, rw
+on_write=printf("\nPerformance counters not implemented...")
+
+0xFF100004: PMCTR1H
+u32
+access_32, r
+r_override=return (this->clock.trace_cycles >> 32) & 0xFFFF
+
+0xFF100008: PMCTR1L
+u32
+access_32, r
+r_override=return this->clock.trace_cycles & 0xFFFFFFFF
+
+ 0xFF10000C: PMCTR2H
+u32
+access_32, r
+r_override=return (this->clock.trace_cycles >> 32) & 0xFFFF
+
+0xFF100010: PMCTR2L
+u32
+access_32, r
+r_override=return this->clock.trace_cycles & 0xFFFFFFFF
 
 0xFF800028: RFCR
 u32
@@ -333,15 +359,39 @@ access_32, rw
 u32
 access_32, rw
 
-0xFF200008: UKNFF200008
+0xFF200008: UBC_BBRA
 u32
 access_32, rw
 
-0xFF200014: UKNFF200014
+0xFF200000: UBC_BARA
 u32
 access_32, rw
 
-0xFF200020: UKNFF200020
+0xFF200004: UBC_BAMRA
+u32
+access_32, rw
+
+0xFF20000C: UBC_BARB
+u32
+access_32, rw
+
+0xFF200010: UBC_BAMRB
+u32
+access_32, rw
+
+0xFF000014: CCN_BASRA
+u32
+access_32, rw
+
+0xFF000018: CCN_BASRB
+u32
+access_32, rw
+
+0xFF200014: UBC_BBRB
+u32
+access_32, rw
+
+0xFF200020: UBC_BRCR
 u32
 access_32, rw
 

@@ -5,6 +5,7 @@
 // Created by Dave on 2/13/2024.
 //
 
+#include <time.h>
 #include "assert.h"
 #include "stdio.h"
 #include "dc_mem.h"
@@ -16,8 +17,12 @@
 
 #include "helpers/multisize_memaccess.c"
 
-#define QUIT_ON_TOO_MANY
-#define SH4MEM_BRK 0x005F7018
+//#define func_printf(...) printf(__VA_ARGS__)
+#define func_printf(...) (void)0
+
+#define QUIT_ON_TOO_MANY 10
+//#define SH4MEM_BRK 0x005F7018
+//#define SH4_INS_BRK 0x80000000
 
 u64 DCread_flash(struct DC* this, u32 addr, u32 *success, u32 sz);
 void G1_write(struct DC* this, u32 addr, u64 val, u32 bits, u32* success);
@@ -106,6 +111,13 @@ static void aica_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
     cW[sz](this->aica.mem, addr & 0x7FFF, val);
 }
 
+static u32 RTC_read(struct DC* this)
+{
+    // Dreamcast epoch is 1950-something, ours is 1970, so...add 20 years!
+    time_t t = time(NULL);
+    return (t + 631152000) & 0xFFFFFFFF;
+}
+
 u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
  {
      MTHIS;
@@ -176,6 +188,14 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
              return this->sb.SB_FFST; // does the fifo status has really to be faked ?
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "generated/area0_reads.c"
+     }
+
+     switch(full_addr) {
+         case 0xA0710000: // upper 16 bits of RTC
+             return RTC_read(this) >> 16;
+         case 0xA0710004: // lower 16 bits of RTC
+             return RTC_read(this) & 0xFFFF;
+
      }
 
      *success = 0;
@@ -411,13 +431,13 @@ void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
         //printf("\nwrite%d unknown addr %08x %08x val %02llu cycle:%llu", dcms(sz), addr & 0x1FFFFFFF, addr, val,
         //       this->sh4.clock.trace_cycles);
         if (addr >= 0xFF000000)
-            printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
+            func_printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
         else
-            printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
-        fflush(stdout);
+            func_printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
+        //fflush(stdout);
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
-        if (dbg.var > 15) {
+        if (dbg.var > QUIT_ON_TOO_MANY) {
             dbg_break();
         }
 #endif
@@ -450,15 +470,15 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
 #endif
 
     if (!success) {
-        printf("\n(READ)");
+        func_printf("\n(READ) %08x", addr);
         if (addr >= 0xFF000000)
-            printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
+            func_printf("\n0x%08X: UKN%08X\nu32\naccess_32, rw\n", addr, addr);
         else
-            printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
-        fflush(stdout);
+            func_printf("\n0x%08X: \nu32\naccess_32, rw\n", addr & 0x1FFFFFFF);
+        //fflush(stdout);
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
-        if (dbg.var > 15) {
+        if (dbg.var > QUIT_ON_TOO_MANY) {
             dbg_break();
         }
 #endif
@@ -514,19 +534,30 @@ static char *ptr_seek(char *ptr, u32 current, u32 pos)
 u32 DCfetch_ins(void *ptr, u32 addr)
 {
     u32 val = DCread(ptr, addr, 2, true);
+#ifdef DC_ELF_PRINT_FUNCS
 #ifdef DC_SUPPORT_ELF
     THIS;
     struct elf_symbol32* sym = elf_symbol_list32_find(&this->elf_symbols, addr, 0x1FFFFFFF);
+#ifdef SH4_INS_BRK
+    if (addr == SH4_INS_BRK) dbg_break();
+#endif
+#ifdef DC_ELF_NO_LOOP_SYMBOLS
+    if ((sym != NULL) && (sym->name[0] != 'L') && (sym->name[1] != '_')) {
+
+#else
     if (sym != NULL) {
+#endif
         char buf[500];
         char *mptr = buf;
-        mptr += sprintf(mptr, "\nfunc %s", sym->name);
+        mptr += sprintf(mptr, "\n--func %s", sym->name);
         mptr = ptr_seek(mptr, mptr - buf, 20);
         mptr += sprintf(mptr, "(%s)", sym->fname);
         mptr = ptr_seek(mptr, mptr - buf, 32);
         mptr += sprintf(mptr, "PC:%08x R4:%08x R5:%08x R6:%08x cycl:%lld", this->sh4.regs.PC, this->sh4.regs.R[4], this->sh4.regs.R[5], this->sh4.regs.R[6], this->sh4.clock.trace_cycles);
-        printf("%s", buf);
+        func_printf("%s", buf);
+        //printf("%s", buf);
     }
+#endif
 #endif
 #ifdef SH4_TRACE_INS_FETCH
 #ifdef DO_LAST_TRACES

@@ -152,6 +152,12 @@ static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces
             dbg_LT_printf("R0:%08x", this->regs.R[0]);
     }
 
+    if (!last_traces)
+        dbg_printf(" IMASK:%x HIGHEST:%x T:%d", this->regs.SR.IMASK, this->interrupt_highest_priority, this->regs.SR.T);
+    else
+        dbg_LT_printf(" IMASK:%x HIGHEST:%x T:%d", this->regs.SR.IMASK, this->interrupt_highest_priority, this->regs.SR.T);
+
+
     this->pp_last_m = last_m;
     this->pp_last_n = last_n;
 }
@@ -218,8 +224,9 @@ void SH4_run_cycles(struct SH4* this, u32 howmany) {
             dbg_break();
 #endif
 #ifdef SH4_IRQ_DBG
-#define THING "\nINTERRUPT SERVICED AT %llu R0:%08x SR:%08x SSR:%08x LEVEL:%d IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", this->clock.trace_cycles, this->regs.R[0], SH4_regs_SR_get(&this->regs.SR), this->regs.SSR, this->IRL_irq_level, this->regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u
+#define THING "\nINTERRUPT SERVICED AT %llu R0:%08x SR:%08x SSR:%08x IMASK:%d SB_ISTNRM:%08x SB_ISTEXT:%08x", this->clock.trace_cycles, this->regs.R[0], SH4_regs_SR_get(&this->regs.SR), this->regs.SSR, this->regs.SR.IMASK, dbg.dcptr->io.SB_ISTNRM.u, dbg.dcptr->io.SB_ISTEXT.u
             dbg_LT_printf(THING);
+            dbg_printf(THING);
             printf(THING);
 #undef THING
 #endif
@@ -413,7 +420,7 @@ u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
         }
     }
 
-    printf("\nMISSED SH4 READ %08x", full_addr);
+    dbg_printf("\nMISSED SH4 READ %08x PC:%08x", full_addr, this->regs.PC);
     *success = 0;
     return 0;
 }
@@ -469,7 +476,7 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
 #include "generated/regs_writes.c"
     }
 
-    printf("\nMISSED SH4 WRITE %08x", full_addr);
+    dbg_printf("\nMISSED SH4 WRITE %08x PC:%08x", full_addr, this->regs.PC);
     *success = 0;
 }
 

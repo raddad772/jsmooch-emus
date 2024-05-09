@@ -40,6 +40,8 @@
             };
             u32 u;
         } MMUCR;  // 0xFF000010
+        u32 CCN_BASRA;  // 0xFF000014
+        u32 CCN_BASRB;  // 0xFF000018
         union {  // CCR
             struct {
                 u32 OCE : 1;
@@ -68,9 +70,19 @@
             };
             u32 u;
         } PTEA;  // 0xFF000034
-        u32 UKNFF200008;  // 0xFF200008
-        u32 UKNFF200014;  // 0xFF200014
-        u32 UKNFF200020;  // 0xFF200020
+        u32 PMCTR1_CTRL;  // 0xFF000084
+        u32 PMCTR2_CTRL;  // 0xFF000088
+        u32 PMCTR1H;  // 0xFF100004
+        u32 PMCTR1L;  // 0xFF100008
+        u32 PMCTR2H;  // 0xFF10000C
+        u32 PMCTR2L;  // 0xFF100010
+        u32 UBC_BARA;  // 0xFF200000
+        u32 UBC_BAMRA;  // 0xFF200004
+        u32 UBC_BBRA;  // 0xFF200008
+        u32 UBC_BARB;  // 0xFF20000C
+        u32 UBC_BAMRB;  // 0xFF200010
+        u32 UBC_BBRB;  // 0xFF200014
+        u32 UBC_BRCR;  // 0xFF200020
         u32 BSCR;  // 0xFF800000
         u32 BCR2;  // 0xFF800004
         u32 WCR1;  // 0xFF800008
@@ -213,7 +225,6 @@
             };
             u32 u;
         } IPRC;  // 0xFFD0000C
-        u32 TCR0;  // 0xFFD80010
         u32 SCIF_SCSMR2;  // 0xFFE80000
         u32 SCIF_SCBRR2;  // 0xFFE80004
         u32 SCIF_SCSCR2;  // 0xFFE80008

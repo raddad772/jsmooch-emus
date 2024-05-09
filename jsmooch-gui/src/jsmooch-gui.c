@@ -484,23 +484,15 @@ int main(int argc, char** argv)
     }
 
 #ifdef DO_DREAMCAST
-
-    //SDL_Log("\n4");
-
-    //dbg_enable_trace();
-    //sys->step_master(sys, 2621310); // 2621319 is out-of-bounds write due to memory at 8C00B7BC being written wrong.
-                                    // memory is written at cycle 58615 PC: 8c0000ea val: 0000
-    //sys->step_master(sys, 58600);
-    //dbg_enable_trace();
-    //sys->step_master(sys, 63);
-    //dbg_LT_clear();
     //dbg_disable_trace();
-    //   dbg_enable_trace();
-    ///9977400
-    sys->step_master(sys, 10000000); //
-    //sys->step_master(sys, 10000000); //
+    //dbg_enable_trace();
+    sys->step_master(sys, 1000000000); //
+    //sys->step_master(sys, 6555144);
+    //sys->step_master(sys, 7328221); //
     dbg_unbreak();
-    dbg_LT_dump();
+    //dbg_enable_trace();
+    //sys->step_master(sys, 500);
+    //dbg_LT_dump();
     dbg_flush();
     return 0;
     /*jsm_present(sys->kind, 0, &iom, window_surface->pixels, 640, 480);

@@ -200,7 +200,7 @@ end_of_tx_ptl: 21
 
 0x005F6904: SB_ISTEXT
 u32, flags
-access_32, r
+access_32, r, warn_write
 gdrom: 0
 aica: 1
 modem: 2

@@ -89,7 +89,7 @@ SH4ins(MOVWI) {
 }
 
 SH4ins(MOVLI) {
-    u32 addr = (rPC & 0xFFFFFFFC) + (DISP*4) + 4;
+    u32 addr = (rPC & 0xFFFFFFFC) + (DISP*4) +4;
     RN = READ32(addr);
     PCinc;
 }
@@ -704,7 +704,7 @@ SH4ins(SHLD) { // If Rm >= 0: Rn << Rm -> Rn, If Rm < 0: Rn >> |Rm| -> [0 -> Rn]
     else if ((RM & 0x1F) == 0)
         RN = 0;
     else
-        RM = (u32)RN >> ((~RM & 0x1F) + 1);
+        RN = (u32)RN >> ((~RM & 0x1F) + 1);
 
     PCinc;
 }
@@ -962,7 +962,8 @@ SH4ins(LDCRn_BANK) { // Rm -> Rn_BANK (n = 0-7)
 }
 
 SH4ins(LDCMRn_BANK) { // (Rm) -> Rn_BANK, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.R_[ins->Rn] = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
@@ -1005,14 +1006,11 @@ SH4ins(LDTLB) { // PTEH/PTEL -> TLB
 }
 
 SH4ins(MOVCAL) { // R0 -> (Rn) (without fetching cache block)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE32(RN, R(0));
     PCinc;
 }
 
 SH4ins(NOP) { // No operation
-    /*if ((this->regs.PC == 0x8c0c0868) || (this->regs.PC == 0x8c0c086A)) {
-        dbg_printf("\nWAIT WOAH %08x PC:%08x", this->regs.R[0], this->regs.PC);
-    }*/
     PCinc;
 }
 
@@ -1162,7 +1160,8 @@ SH4ins(STCRm_BANK) { // Rm_BANK -> Rn (m = 0-7)
 }
 
 SH4ins(STCMRm_BANK) { // Rn-4 -> Rn, Rm_BANK -> (Rn) (m = 0-7)
-    BADOPCODE; // Crash on unimplemented opcode
+    RN -= 4;
+    WRITE32(RN, this->regs.R_[ins->Rm]);
     PCinc;
 }
 

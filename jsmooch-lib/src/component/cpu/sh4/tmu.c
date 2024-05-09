@@ -36,7 +36,8 @@ static u32 expected_TCNT[] = {
         0xfffe9fa5,
 };
 
-#define REGTCNT (((u32)(this->tmu.base[ch] - ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch])))) - 0x80A
+//#define REGTCNT (((u32)(this->tmu.base[ch] - ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch])))) - 0x80A
+#define REGTCNT (((u32)(this->tmu.base[ch] - ((TCUSE >> this->tmu.shift[ch])& this->tmu.mask[ch]))))
 
 static u32 read_TMU_TCNT(struct SH4* this, u32 ch, u32 is_regread)
 {
@@ -65,7 +66,7 @@ static i64 read_TMU_TCNT64(struct SH4* this, u32 ch)
 
 static void sched_chan_tick(struct SH4* this, u32 ch)
 {
-    u32 togo = read_TMU_TCNT(this, ch, 0);
+    u32 togo = read_TMU_TCNT(this, ch, 0) / 8;
     if (togo > SH4_CYCLES_PER_SEC)
         togo = SH4_CYCLES_PER_SEC;
 
@@ -74,8 +75,11 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
     if (cycles > SH4_CYCLES_PER_SEC)
         togo = SH4_CYCLES_PER_SEC;
 
-    if (this->tmu.mask[ch])
-        scheduler_add(this->scheduler, this->clock.trace_cycles + cycles, SE_bound_function, ch, scheduler_bind_function(&scheduled_tmu_callback, this));
+    if (this->tmu.mask[ch]) {
+        scheduler_add(this->scheduler, this->clock.trace_cycles + cycles, SE_bound_function, ch,
+                      scheduler_bind_function(&scheduled_tmu_callback, this));
+        //printf("\nSCHEDULED CH%d AT CYC:%llu FOR CYC:%llu (%d)", ch, this->clock.trace_cycles, this->clock.trace_cycles + cycles, cycles);
+    }
     else
         scheduler_add(this->scheduler, -1, SE_bound_function, ch, scheduler_bind_function(&scheduled_tmu_callback, this));
 }
@@ -93,6 +97,7 @@ static void write_TMU_TCNT(struct SH4* this, u32 ch, u32 data)
 static void turn_onoff(struct SH4* this, u32 ch, u32 on)
 {
     u32 TCNT = read_TMU_TCNT(this, ch, 0);
+    //printf("\nTURN CH%d TO %d cyc:%llu tcyc:%llu", ch, on, this->clock.trace_cycles, this->clock.timer_cycles);
     this->tmu.mask[ch] = on ? 0xFFFFFFFF : 0;
     this->tmu.mask64[ch] = on ? 0xFFFFFFFFFFFFFFFF : 0;
     write_TMU_TCNT(this, ch, TCNT);
@@ -114,7 +119,7 @@ static void UpdateTMUCounts(struct SH4* this, u32 ch)
     // TODO: IRQ stuff
     SH4_interrupt_pend(this, 0x400 + (0x20 * ch), (this->tmu.TCR[ch] & 0x100) && (this->tmu.TCR[ch] & 0x20)); // underflow
     if  ((this->tmu.TCR[ch] & 0x100) && (this->tmu.TCR[ch] & 0x200)) {
-        printf("\nRAISING TCR INTERRUPT!");
+        //printf("\nRAISING TCR INTERRUPT!");
         this->tmu.TCR[ch] &= 0xFF;
     }
 
@@ -238,12 +243,19 @@ u64 TMU_read(struct SH4* this, u32 addr, u32 sz, u32* success)
     switch(addr | 0xF0000000) {
         case 0xFFD80004: // TSTR
             return this->tmu.TSTR;
+        case 0xFFD80010: // TCR0
+            return this->tmu.TCR[0];
+        case 0xFFD8001C: // TCR1
+            return this->tmu.TCR[1];
         case 0xFFD8000C: // TCNT0
             return read_TMU_TCNT(this, 0, 1);
         case 0xFFD80018: // TCNT1
             return read_TMU_TCNT(this, 1, 1);
         case 0xFFD80024: // TCNT2
             return read_TMU_TCNT(this, 2, 1);
+        case 0xFFD80028: // TCR2
+            return this->tmu.TCR[2];
+            break;
     }
     *success = 0;
     return 0;
@@ -270,8 +282,8 @@ static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
 u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
 {
     struct SH4* this = (struct SH4*)ptr;
-    printf("\nSCHEDULED CALLBACK!");
     u32 ch = key;
+    //printf("\nSCHEDULED CALLBACK! %d %08x cyc:%llu tcyc:%llu", ch, this->tmu.mask[ch], this->clock.trace_cycles, this->clock.timer_cycles);
     if (this->tmu.mask[ch]) {
 
         u32 tcnt = read_TMU_TCNT(this, ch, 0);
@@ -294,7 +306,9 @@ u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
             SH4_interrupt_pend(this, c, 1);
             //InterruptPend(tmu_intID[ch], 1);
 
-            printf("Interrupt for %d, %lld cycles\n", ch, sch_cycle);
+            //printf("\nInterrupt for %d, %lld cycles\n", ch, sch_cycle);
+            //printf("\nHIGHEST INTERRUPT: %d", this->interrupt_highest_priority);
+            //printf("\nIMASK: %d", this->regs.SR.IMASK);
 
             //schedule next trigger by writing the TCNT register
             write_TMU_TCNT(this, ch, tcor + tcnt);

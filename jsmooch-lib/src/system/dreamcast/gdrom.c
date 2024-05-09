@@ -299,7 +299,7 @@ static void GDROM_ATA_command(struct DC* this)
 
 void GDROM_write(struct DC* this, u32 addr, u64 val, u32 sz, u32* success)
 {
-    printf("\nGDROM WRITE! %llu", this->sh4.clock.trace_cycles);
+    //printf("\nGDROM WRITE! %llu", this->sh4.clock.trace_cycles);
     addr &= 0x1FFFFFFF;
     //gd_printf("\nGDROM write! %08x %02x %04x %d cycle:%llu", reg | 0x5F7400, reg, val, bits, this->sh4.clock.trace_cycles);
     switch(addr) {

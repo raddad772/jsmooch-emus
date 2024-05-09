@@ -25,7 +25,8 @@
 //#define SH4_IRQ_DBG
 
 #define DC_SUPPORT_ELF
-
+//#define DC_ELF_PRINT_FUNCS
+#define DC_ELF_NO_LOOP_SYMBOLS
 
 #ifdef SH4_IRQ_DBG
 #define SH4_IRQ_DBG_printf(...) printf(__VA_ARGS__)
@@ -43,9 +44,10 @@
 #include "helpers/jsm_string.h"
 
 #define MAX_DEBUG_MSG 2000000
-#define LAST_TRACES_LEN 800
+#define LAST_TRACES_LEN 3000
 #define LAST_TRACES_MSG_LEN 200
 
+#define warn_printf(...) printf(__VA_ARGS__)
 
 struct DC;
 struct last_traces_t {
