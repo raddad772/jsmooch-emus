@@ -94,8 +94,6 @@ struct SH4_regs {
     } fb[3];
 
     u32 QACR[2];  // 0xFF000038 + 3C
-    // Emulator-internal registers
-    u32 currently_banked_rb;
 #include "generated/regs_decls.h"
 };
 

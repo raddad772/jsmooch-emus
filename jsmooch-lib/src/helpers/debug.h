@@ -47,7 +47,8 @@
 #define LAST_TRACES_LEN 3000
 #define LAST_TRACES_MSG_LEN 200
 
-#define warn_printf(...) printf(__VA_ARGS__)
+//#define warn_printf(...) printf(__VA_ARGS__)
+#define warn_printf(...) (void)0
 
 struct DC;
 struct last_traces_t {

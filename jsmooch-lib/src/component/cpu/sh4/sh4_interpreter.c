@@ -248,7 +248,6 @@ void SH4_delete(struct SH4* this)
 
 void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
 {
-    this->regs.currently_banked_rb = 1;
     this->clock.trace_cycles = 0;
     this->clock.timer_cycles = 0;
     this->clock.trace_cycles_blocks = 0;
