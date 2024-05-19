@@ -548,6 +548,7 @@ static void fill_sh4_encodings(void)
 #undef OE
 #undef OEo
 }
+// TODO: make sure we have sz=1 and pr=1 opcodes
 
 void test_sh4()
 {

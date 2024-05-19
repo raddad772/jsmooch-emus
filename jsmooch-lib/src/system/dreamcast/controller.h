@@ -7,6 +7,9 @@
 
 #include "helpers/int.h"
 
+
+
+
 struct DC_inputs {
     u32 a, b, x, y, up, down, left, right, start;
     u32 analog_x, analog_y, analog_l, analog_r;
@@ -22,8 +25,10 @@ struct DC_controller {
     enum DCC state;
     u32 cmd_index;
     u32 cmd[16];
+    u32 reply_cmd;
     u32 de_cmd;
     u32 reply_len;
+    u32 reply_buf[32];
 
     struct cvec* devices;
     u32 device_index;

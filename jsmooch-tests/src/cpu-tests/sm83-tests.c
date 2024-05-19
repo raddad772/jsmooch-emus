@@ -425,7 +425,7 @@ void test_sm83_automated(struct sm83_test_result *out, struct SM83* cpu, struct 
             }
 
             if (cycle->addr != addr) {
-                printf("\nMISMATCH IN PIN ADDR ME:%04x  TEST:%04x  CYCLE:%d", addr, cycle->addr, cyclei);
+                printf("\nMISMATCH IN PIN ADDR ME:%04x  TEST:%04x  STEP:%d", addr, cycle->addr, cyclei);
                 passed = 0;
             }
             if (cycle->data != cpu->pins.D) {

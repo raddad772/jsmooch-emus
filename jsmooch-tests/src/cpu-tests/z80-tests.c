@@ -706,7 +706,7 @@ static void test_z80_automated(struct z80_test_result *out, struct Z80* cpu, str
             addr = cpu->pins.Addr;
 
             if (cycle->addr != addr) {
-                printf("\nMISMATCH IN PIN ADDR ME:%04x  TEST:%04x  CYCLE:%d", addr, cycle->addr, cyclei);
+                printf("\nMISMATCH IN PIN ADDR ME:%04x  TEST:%04x  STEP:%d", addr, cycle->addr, cyclei);
                 passed = 0;
             }
             if ((cycle->data != cpu->pins.D) && (cycle->data != 0xFFFFFFFF)) {

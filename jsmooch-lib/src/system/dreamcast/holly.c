@@ -73,7 +73,7 @@ void holly_recalc_interrupts(struct DC* this)
         //printf("\nINTERRUPT HIGHEST LEVEL CHANGE TO %d cyc:%llu", highest_level, this->sh4.clock.trace_cycles);
         //printf("\nIML6NRN: %08x", this->io.SB_IML6NRM & this->io.SB_ISTNRM.u & 0x3FFFFF);
     //}
-    //printf("\nHOLLY RAISING INTERRUPT ON CYCLE %llu", this->sh4.clock.trace_cycles);
+    //printf("\nHOLLY RAISING INTERRUPT ON STEP %llu", this->sh4.clock.trace_cycles);
     u32 lv = HOLLY_IRQ_outputs[highest_level];
 #ifdef DCDBG_HOLLY_IRQ
     printf("\nSET HOLLY IRQ OUT LEVEL TO %d", lv);

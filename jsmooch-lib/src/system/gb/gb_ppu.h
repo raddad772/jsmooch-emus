@@ -47,7 +47,6 @@ struct GB_px {
     u32 palette;
 };
 
-
 struct GB_pixel_slice_fetcher {
     enum GB_variants variant;
     struct GB_PPU* ppu;

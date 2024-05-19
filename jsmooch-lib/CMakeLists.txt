@@ -167,6 +167,9 @@ add_library(jsmooch-lib
         src/vendor/elf-parser/elf-parser.c
         src/helpers/elf_helpers.h
         src/helpers/elf_helpers.c
+        src/component/cpu/m68000/m68000_internal.h
+        src/component/cpu/m68000/m68000_opcodes.c
+        src/component/cpu/m68000/m68000_opcodes.h
 )
 
 include_directories(src/)

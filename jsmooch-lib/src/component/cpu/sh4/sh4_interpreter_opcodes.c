@@ -1923,6 +1923,8 @@ void do_sh4_decode() {
                     .exec = NULL,
                     .decoded = 0
             };
+            SH4_disassembled[szpr][i][0] = 0;
+            SH4_mnemonic[szpr][i][0] = 0;
         }
     }
 

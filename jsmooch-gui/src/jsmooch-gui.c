@@ -486,7 +486,7 @@ int main(int argc, char** argv)
 #ifdef DO_DREAMCAST
     //dbg_disable_trace();
     //dbg_enable_trace();
-    sys->step_master(sys, 500000000); //
+    sys->step_master(sys, 30000000); //
     //sys->step_master(sys, 6555144);
     //sys->step_master(sys, 7328221); //
     dbg_unbreak();

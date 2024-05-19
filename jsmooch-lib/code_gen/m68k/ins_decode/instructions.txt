@@ -1,0 +1,388 @@
+# this is acomment
+# m and r always become an EA
+# sz only loops 0-2 ever.
+# w loops up to 0..2, through the list of sizes after instruciton name. so 2,4 will loop 0-1. 1,2,4 will loop 0-2
+.ABCD 4 template(X)
+1100 xxx1 0000 Xyyy
+X=0 data_register_direct
+X=1 address_register_indirect_with_predecrement
+
+.ADD 1,2,4 template(dreg_to_ea_S)  # dreg_to_ea_S means S=0 first operand EA, S=1 second operand EA
+1101 dddS wwmm mrrr
+skip1 m=1 if (sz==1)
+skip_S=0 if ((m == 7) && (r >= 5))
+skip_S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.ADDA 2,4 template(_A)    # _A means like ADDA, CMPA, etc. EA is first, address reg is second
+1101 aaaw 11mm mrrr
+skip if ((m == 7) && (r >= 5))
+
+.ADDI 1,2,4 template(ea1)  # ea1 means, one operand, which is EA
+0000 0110 wwmm mrrr
+skip if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.ADDQ 1,2,4 template(ADDQ)  # its own thing
+0101 ddd0 wwmm mrrr
+
+.ADDX 1,2,4 template(X)   # X template means, that the EAs have different meanings as shown below for different X. yyy will go to first argument
+1101 xxx1 ww00 Xyyy
+X=0 data_register_direct
+X=1 address_register_indirect_with_predecrement
+
+.AND 1,2,4 template(dreg_to_ea_S)
+1100 ddd0 wwmm mrrr
+skip S=0 if ((m == 1) || ((m == 7) && (r >= 5)))
+skip S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.ANDI 1,2,4 template(ea1)
+0000 0010 wwmm mrrr
+skip if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.ANDI_TO_CCR 4 0000 0010 0011 1100
+
+.ANDI_TO_SR 4 0000 0010 0111 1100
+
+.ASL 1,2,4 template(imm_dr)   # imm_dr means... first operand will be iii = 0 ? 8 : iii, second operand will be dr
+1110 iii1 ww00 0ddd
+
+.ASL 1,2,4 template(dr_dr)   # dr_dr means both operands are data registers. using s and d where s is operand 1 and d is operand 2
+1110 sss1 ww10 0ddd
+
+.ASL 4 template(ea1)
+1110 0001 11mm mrrr
+skip if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.ASR 1,2,4 template(imm_dr)
+1110 iii0 ww00 0ddd
+
+.ASR 1,2,4 template(dr_dr)
+1110 sss0 ww10 0ddd
+
+.ASR 4 template(ea1)
+1110 0000 11mm mrrr
+skip if ((m <= 1) || ((m == 7) && (r >= 2))
+
+.BCC 4 template(test_displace_jump) # where test 0-15, displacement 0-255. both will be delivered as EA immediate special values
+0110 tttt dddddddd
+skip_if (t<=1)
+
+.BCHG 4,1 template(B2)    # B2 template means, 1st operand will be data reg, second will be ea. m == 0, long, else byte.
+0000 ddd1 01mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.BCHG 4,1 template(B1)    # B1 template means, only one operand which is an EA. m = 0, long. else byte.
+0000 1000 01mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.BCLR 4,1 template(B2)
+0000 ddd1 10mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.BCLR 4,1 template(B1)
+0000 1000 10mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.BRA 4 template(displacement)   # where it'll just bind d 0...255 to a special immediate
+0110 0000 dddd dddd
+
+.BSET 4,1 template(B2)
+0000 ddd1 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2))) 
+
+.BSET 4,1 template(B1)
+0000 1000 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.BSR 4 template(displacement)
+0110 0001 dddd dddd
+
+.BTST 4,1 template(B2)
+0000 ddd1 00mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5)))
+
+BTST 4,1 template(B1)
+0000 1000 00mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 4)))
+
+.CHK 4 template(dr_ea)    # 1st operand will be DR, 2nd EA
+0100 ddd1 10mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5)))
+
+.CLR 1,2,4 template(ea1)
+0100 0010 wwmm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.CMP 1,2,4 template(ea_dr) # 1st operand EA, 2nd DR
+1011 ddd0 wwmm mrrr
+skip_if ((m == 7) && (r >= 5))
+skip1 m=1 if (sz==1)
+
+.CMPA 2,4 template(_A) 
+1011 aaaw 11mm mrrr
+skip_if ((m == 7) && (r >= 5))
+
+.CMPI 1,2,4 template(ea1)
+0000 1100 wwmm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.CMPM 1,2,4 template(_M)    # where _M means, op1 = y, op2 = x, both are addr_reg_ind_with_post_inc
+1011 xxx1 ww00 1yyy
+
+.DBCC 4 template(DBCC)     # where DBCC means, C 0...15 and dreg 0...7, 1st and 2nd ops
+0101 cccc 1100 1ddd
+
+.DIVS 4 template(ea_dr)
+1000 ddd1 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5)))
+
+.DIVU 4 template(ea_dr)
+1000 ddd0 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5)))
+
+.EOR 1,2,4 template(dr_ea)
+1011 ddd1 wwmm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.EORI 1,2,4 template(ea1)
+0000 1010 wwmm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.EORI_TO_CCR 4 0000 1010 0011 1100
+
+.EORI_TO_SR 4 0000 1010 0111 1100
+
+.EXG 4 template(dr_dr)
+1100 sss1 0100 0ddd
+
+.EXG 4 template(ar_ar)   # same as dr_dr but with address registers
+1100 sss1 0100 1ddd
+
+.EXG 4 template(ar_dr)   # same as ar_dr but s is data reg, d is address reg
+1100 sss1 1000 1ddd
+
+.EXT 2,4 template(dr)     # Just one data register
+0100 1000 1w00 0ddd
+
+.ILLEGAL 4 0100 1010 1111 1100
+
+.JMP 4 template(ea1)
+0100 1110 11mm mrrr
+skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
+
+.JSR 4 template(ea1)
+0100 1110 10mm mrrr
+skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
+
+.LEA 4 template(ea_ar)    # 1st operand ea, 2nd operand ar
+0100 aaa1 11mm mrrr
+skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
+
+.LINK 4 template(ar)
+0100 1110 0101 0aaa
+
+.LSL 1,2,4 template(imm_dr)
+1110 iii1 ww00 1ddd
+
+.LSL 1,2,4 template(dr_dr)
+1110 sss1 ww10 1ddd
+
+.LSL 4 template(ea1)
+1110 0011 11mm mrrr
+skip_if ((m <= 1) || ((m == 7) && (r >= 2))
+
+.LSR 1,2,4 template(imm_dr)
+1110 iii0 ww00 1ddd
+
+.LSR 1,2,4 template(dr_dr)
+1110 sss0 ww10 1ddd
+
+.LSR 4 template(ea1)
+1110 0010 11mm mrrr
+skip_if ((m <= 1) || ((m == 7) && (r >= 2))
+
+.MOVE -1,1,4,2 template(MOVE)  # special template for MOVE. which has 2 EA's
+00ww aaab bbcc cddd  
+skip_if (((b == 1) || ((b == 7) && (a >= 2))) || ((c == 7) && (d >= 5)))
+skip1 c=1 if (sz==1)
+
+.MOVEA 2,4 template(ea_ar)
+00ww aaa0 01mm mrrr
+skip_if ((m == 7) && (r >= 5))
+
+.MOVEM_TO_MEM 2,4 template(ea1)
+0100 1000 1wmm mrrr
+skip_if ((m <= 1) || (m == 3) || ((m == 7) && (r >= 2)))
+
+.MOVEM_TO_REG 2,4 template(ea1)
+0100 1100 1wmm mrrr
+skip_if ((m <= 1) || (m == 4) || ((m == 7) && (r >= 4)))
+
+.MOVEP 2,4 template(dr_sea_S)  # where dreg is the first argument, and set EA is second. S=0 EA is first argument S=1 EA is second argument 
+0000 ddd1 1w00 Srrr
+EA=address_register_indirect_with_displacement
+
+.MOVEQ 4 template(imm256_dr)   # imm256_dr means... data register and 8-bit immediate in other order
+0111 ddd0 iiii iiii
+
+.MOVE_FROM_SR 4 template(ea1)
+0100 0000 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.MOVE_TO_CCR 4 template(ea1)
+0100 0100 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5)))
+
+.MOVE_TO_SR 4 template(ea1)
+0100 0110 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5)))
+
+.MOVE_FROM_USP 4 template(ar)
+0100 1110 0110 1aaa
+
+.MOVE_TO_USP 4 template(ar)
+0100 1110 0110 0aaa
+
+.MULS 4 template(ea_dr)
+1100 ddd1 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5)))
+
+.MULU 4 template(ea_dr
+1100 ddd0 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 5))) 
+
+.NBCD 4 template(ea1)
+0100 1000 00mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.NEG 1,2,4 template(ea1)
+0100 0100 wwmm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+  
+.NEGX 1,2,4 template(ea1)
+0100 0000 wwmm mrrr  
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.NOP 4 0100 1110 0111 0001
+
+.NOT 1,2,4 template(ea1)
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.OR 1,2,4 template(dreg_to_ea_S)
+1000 dddS wwmm mrrr
+skip_S=0 if ((m == 1) || ((m == 7) && (r >= 5)))
+skip_S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.ORI 1,2,4 template(ea1)
+0000 0000 wwmm mrrr
+skip_if((m == 1) || ((m == 7) && (r >= 2)))
+
+.ORI_TO_CCR 4 0000 0000 0011 1100
+
+.ORI_TO_SR 4 0000 0000 0111 1100
+
+.PEA 4 template(ea1)
+0100 1000 01mm mrrr
+skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
+
+.RESET 4 0100 1110 0111 0000
+
+.ROL 1,2,4 template(imm_dr)
+1110 iii1 ww01 1ddd
+
+.ROL 1,2,4 template(dr_dr)
+1110 sss1 ww11 1ddd
+
+.ROL 4 template(ea1)
+1110 0111 11mm mrrr
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.ROR 1,2,4 template(imm_dr)
+1110 iii0 ww01 1ddd
+
+.ROR 1,2,4 template(dr_dr)
+1110 sss0 ww11 1ddd
+
+.ROR 4 template(ea1)
+1110 0110 11mm mrrr
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.ROXL 1,2,4 template(imm_dr)
+1110 iii1 ww01 0ddd
+
+.ROXL 1,2,4 template(dr_dr)
+1110 sss1 ww11 0ddd
+
+.ROXL 4 template(ea1)
+1110 0101 11mm mrrr
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.ROXR 1,2,4 template(imm_dr)
+1110 iii0 ww01 0ddd
+
+.ROXR 1,2,4 template(dr_dr)
+1110 sss0 ww11 0ddd
+
+.ROXR 4 template(ea1)
+1110 0100 11mm mrrr
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.RTE 4 0100 1110 0111 0011
+
+.RTR 4 0100 1110 0111 0111
+
+.RTS 0100 1110 0111 0101
+
+.ABCD 4 template(X)
+1100 xxx1 0000 Xyyy
+X=0 data_register_direct
+X=1 address_register_indirect_with_predecrement
+
+.SBCD 4 template(X)
+1000 xxx1 0000 Xyyy
+X=0 data_register_direct
+X=1 address_register_indirect_with_predecrement
+
+.SCC 4 template(test_ea)  # where test_ea means t and EA will be operands
+0101 tttt 11mm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.STOP 4 0100 1110 0111 0010
+
+.SUB 1,2,4 template(dreg_to_ea_S)  # dreg_to_ea_S means S=0 first operand EA, S=1 second operand EA
+1001 dddS wwmm mrrr
+skip_S=0 if ((m == 7) && (r >= 5))
+skip_S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
+
+.SUBA 2,4 template(_A)     # _A means like ADDA, CMPA, etc. EA is first, address reg is second
+1001 aaaw 11mm mrrr
+skip_if ((m == 7) && (r >= 5))
+
+.SUBI 1,2,4 template(ea1)
+0000 0100 wwmm mrrr
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.SUBQ 1,2,4 template(ADDQ)  # same thing as ADDQ but SUBQ
+
+.SUBX 1,2,4 template(X)
+1001 xxx1 ww00 Xyyy
+X=0 data_register_direct
+X=1 address_register_indirect_with_predecrement
+
+.SWAP 4 template(dr)
+0100 1000 0100 0ddd
+
+.TAS 4 template(ea1)
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
+
+.TRAP 4 0100 1110 0111 0110
+
+.TST 1,2,4 template(ea1)
+0100 1010 wwmm mrrr
+skip_if = ((m == 1) || ((m == 7) && (r >= 2)))
+skip1 m=1 if (sz==1)
+
+.UNLK 4 template(ar)
+0100 1110 0101 1aaa
+
+# Set ILLEGAL for all the others
+.ILLEGALS 4 template(ILLEGALS)
