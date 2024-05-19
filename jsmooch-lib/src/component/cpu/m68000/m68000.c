@@ -5,11 +5,13 @@
 #include <string.h>
 
 #include "m68000.h"
+#include "m68000_opcodes.h"
 #include "m68000_internal.h"
 
 void M68k_init(struct M68k* this)
 {
     memset(this, 0, sizeof(*this));
+    do_M68k_decode();
 }
 
 void M68k_delete(struct M68k* this)

@@ -4,39 +4,35 @@
 # w loops up to 0..2, through the list of sizes after instruciton name. so 2,4 will loop 0-1. 1,2,4 will loop 0-2
 .ABCD 4 template(X)
 1100 xxx1 0000 Xyyy
-X=0 data_register_direct
-X=1 address_register_indirect_with_predecrement
 
 .ADD 1,2,4 template(dreg_to_ea_S)  # dreg_to_ea_S means S=0 first operand EA, S=1 second operand EA
 1101 dddS wwmm mrrr
-skip1 m=1 if (sz==1)
+SKIPAFART
 skip_S=0 if ((m == 7) && (r >= 5))
 skip_S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .ADDA 2,4 template(_A)    # _A means like ADDA, CMPA, etc. EA is first, address reg is second
 1101 aaaw 11mm mrrr
-skip if ((m == 7) && (r >= 5))
+skip_if ((m == 7) && (r >= 5))
 
 .ADDI 1,2,4 template(ea1)  # ea1 means, one operand, which is EA
 0000 0110 wwmm mrrr
-skip if ((m == 1) || ((m == 7) && (r >= 2)))
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .ADDQ 1,2,4 template(ADDQ)  # its own thing
 0101 ddd0 wwmm mrrr
 
 .ADDX 1,2,4 template(X)   # X template means, that the EAs have different meanings as shown below for different X. yyy will go to first argument
 1101 xxx1 ww00 Xyyy
-X=0 data_register_direct
-X=1 address_register_indirect_with_predecrement
 
 .AND 1,2,4 template(dreg_to_ea_S)
-1100 ddd0 wwmm mrrr
-skip S=0 if ((m == 1) || ((m == 7) && (r >= 5)))
-skip S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
+1100 dddS wwmm mrrr
+skip_S=0 if ((m == 1) || ((m == 7) && (r >= 5)))
+skip_S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .ANDI 1,2,4 template(ea1)
 0000 0010 wwmm mrrr
-skip if ((m == 1) || ((m == 7) && (r >= 2)))
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .ANDI_TO_CCR 4 0000 0010 0011 1100
 
@@ -50,7 +46,7 @@ skip if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .ASL 4 template(ea1)
 1110 0001 11mm mrrr
-skip if ((m <= 1) || ((m == 7) && (r >= 2)))
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .ASR 1,2,4 template(imm_dr)
 1110 iii0 ww00 0ddd
@@ -60,7 +56,7 @@ skip if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .ASR 4 template(ea1)
 1110 0000 11mm mrrr
-skip if ((m <= 1) || ((m == 7) && (r >= 2))
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .BCC 4 template(test_displace_jump) # where test 0-15, displacement 0-255. both will be delivered as EA immediate special values
 0110 tttt dddddddd
@@ -100,7 +96,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 0000 ddd1 00mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
-BTST 4,1 template(B1)
+.BTST 4,1 template(B1)
 0000 1000 00mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 4)))
 
@@ -188,7 +184,7 @@ skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
 
 .LSL 4 template(ea1)
 1110 0011 11mm mrrr
-skip_if ((m <= 1) || ((m == 7) && (r >= 2))
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .LSR 1,2,4 template(imm_dr)
 1110 iii0 ww00 1ddd
@@ -198,7 +194,7 @@ skip_if ((m <= 1) || ((m == 7) && (r >= 2))
 
 .LSR 4 template(ea1)
 1110 0010 11mm mrrr
-skip_if ((m <= 1) || ((m == 7) && (r >= 2))
+skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .MOVE -1,1,4,2 template(MOVE)  # special template for MOVE. which has 2 EA's
 00ww aaab bbcc cddd  
@@ -218,8 +214,7 @@ skip_if ((m <= 1) || (m == 3) || ((m == 7) && (r >= 2)))
 skip_if ((m <= 1) || (m == 4) || ((m == 7) && (r >= 4)))
 
 .MOVEP 2,4 template(dr_sea_S)  # where dreg is the first argument, and set EA is second. S=0 EA is first argument S=1 EA is second argument 
-0000 ddd1 1w00 Srrr
-EA=address_register_indirect_with_displacement
+0000 ddd1 Sw00 1rrr
 
 .MOVEQ 4 template(imm256_dr)   # imm256_dr means... data register and 8-bit immediate in other order
 0111 ddd0 iiii iiii
@@ -265,6 +260,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 .NOP 4 0100 1110 0111 0001
 
 .NOT 1,2,4 template(ea1)
+0100 0110 wwmm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .OR 1,2,4 template(dreg_to_ea_S)
@@ -274,7 +270,7 @@ skip_S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .ORI 1,2,4 template(ea1)
 0000 0000 wwmm mrrr
-skip_if((m == 1) || ((m == 7) && (r >= 2)))
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .ORI_TO_CCR 4 0000 0000 0011 1100
 
@@ -330,17 +326,13 @@ skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .RTR 4 0100 1110 0111 0111
 
-.RTS 0100 1110 0111 0101
+.RTS 4 0100 1110 0111 0101
 
 .ABCD 4 template(X)
 1100 xxx1 0000 Xyyy
-X=0 data_register_direct
-X=1 address_register_indirect_with_predecrement
 
 .SBCD 4 template(X)
 1000 xxx1 0000 Xyyy
-X=0 data_register_direct
-X=1 address_register_indirect_with_predecrement
 
 .SCC 4 template(test_ea)  # where test_ea means t and EA will be operands
 0101 tttt 11mm mrrr
@@ -362,23 +354,23 @@ skip_if ((m == 7) && (r >= 5))
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .SUBQ 1,2,4 template(ADDQ)  # same thing as ADDQ but SUBQ
+0101 ddd1 wwmm mrrr
 
 .SUBX 1,2,4 template(X)
 1001 xxx1 ww00 Xyyy
-X=0 data_register_direct
-X=1 address_register_indirect_with_predecrement
 
 .SWAP 4 template(dr)
 0100 1000 0100 0ddd
 
 .TAS 4 template(ea1)
+0100 1010 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .TRAP 4 0100 1110 0111 0110
 
 .TST 1,2,4 template(ea1)
 0100 1010 wwmm mrrr
-skip_if = ((m == 1) || ((m == 7) && (r >= 2)))
+skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 skip1 m=1 if (sz==1)
 
 .UNLK 4 template(ar)
