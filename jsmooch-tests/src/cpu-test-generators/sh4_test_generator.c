@@ -449,7 +449,6 @@ static char SKIP_TESTS[NUM_SKIP][17] = {
         "0000nnnn10000011", // PREF (8 writes)
         "0000nnnnmmmm1111", // MACL (2 reads)
         "0100nnnnmmmm1111", // MACW (2 reads)
-
 };
 
 static void generate_test_struct(const char* encoding_str, const char* mnemonic, u32 sz, u32 pr, u32 num, struct SH4_tester *t)
