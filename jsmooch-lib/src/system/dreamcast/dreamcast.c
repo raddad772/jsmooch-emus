@@ -53,7 +53,6 @@ static void DCJ_sideload(JSM, struct multi_file_set* mfs);
 void DC_new(JSM)
 {
     fflush(stdout);
-    do_sh4_decode();
     struct DC* this = (struct DC*)malloc(sizeof(struct DC));
     scheduler_init(&this->scheduler);
     this->scheduler.jitter = JITTER;

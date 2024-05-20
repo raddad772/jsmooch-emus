@@ -9,13 +9,14 @@
 #define JSDEBUG
 #endif
 
+//#define TRACE_FORCE_OFF
 //#define SH4_BRK 0x8c000100
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
 //#define TRACE_ON_BRK     // Enable tracing on break
 //#define DBG_LOG_TO_FILE // log debug to file
 //#define REICAST_DIFF
-//#define DISABLE_BREAK
+#define DISABLE_BREAK
 
 //#define LYCODER        // lycoder-format traces for easy winmerge
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation

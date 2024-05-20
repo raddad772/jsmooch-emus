@@ -62,7 +62,6 @@ enum MSIZE {
 SH4ins(EMPTY) {
     printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, this->clock.trace_cycles);
     fflush(stdout);
-    dbg_break();
     PCinc;
 }
 
@@ -331,7 +330,9 @@ SH4ins(ADDC) { // Rn + Rm + T -> Rn, carry -> T
 }
 
 SH4ins(ADDV) { // Rn + Rm -> Rn, overflow -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 old_rn = RN;
+    RN += RM;
+    this->regs.SR.T = RN < old_rn;
     PCinc;
 }
 
@@ -456,7 +457,11 @@ SH4ins(DIV1) { // 1-step division (Rn / Rm)
 }
 
 SH4ins(DMULS) { // Signed, Rn * Rm -> MACH:MACL, 32 * 32 -> 64 bits
-    BADOPCODE; // Crash on unimplemented opcode
+    i64 rn = (i64)(i32)RN;
+    i64 rm = (i64)(i32)RM;
+    i64 r = rn * rm;
+    this->regs.MACH = (u32)(r >> 32);
+    this->regs.MACL = (u32)(r & 0xFFFFFFFF);
     PCinc;
 }
 
@@ -499,12 +504,26 @@ SH4ins(EXTUW) { // Rm zero-extended from word -> Rn
 }
 
 SH4ins(MACL) { // Signed, (Rn) * (Rm) + MAC -> MAC, 32 * 32 + 64 -> 64 bits
-    BADOPCODE; // Crash on unimplemented opcode
+    i64 rn = (i64)(i32)READ32(RN);
+    i64 rm = (i64)(i32)READ32(RM);
+    RM += 4;
+    RN += 4;
+    i64 mac = ((i64)this->regs.MACH << 32) | this->regs.MACL;
+    i64 r = (RN * RM) + mac;
+    this->regs.MACH = (r >> 32);
+    this->regs.MACL = (r & 0xFFFFFFFF);
     PCinc;
 }
 
 SH4ins(MACW) { // Signed, (Rn) * (Rm) + MAC -> MAC, SH1: 16 * 16 + 42 -> 42 bits, Other: 16 * 16 + 64 -> 64 bits
-    BADOPCODE; // Crash on unimplemented opcode
+    i64 rn = (i64)(i16)READ16(RN);
+    i64 rm = (i64)(i16)READ16(RM);
+    RN += 2;
+    RM += 2;
+    i64 mac = ((i64)this->regs.MACH << 32) | this->regs.MACL;
+    i64 r = (RN * RM) + mac;
+    this->regs.MACH = (u32)(i32)(r >> 32);
+    this->regs.MACL = (u32)(i32)(r & 0xFFFFFFFF);
     PCinc;
 }
 
@@ -561,7 +580,9 @@ SH4ins(SUBC) { // Rn - Rm - T -> Rn, borrow -> T
 }
 
 SH4ins(SUBV) { // Rn - Rm -> Rn, underflow -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 original_rn = RN;
+    RN -= RM;
+    this->regs.SR.T = RN > original_rn;
     PCinc;
 }
 
@@ -576,7 +597,8 @@ SH4ins(ANDI) { // R0 & (zero extend)imm -> R0
 }
 
 SH4ins(ANDM) { // (R0 + GBR) & (zero extend)imm -> (R0 + GBR)
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 r = READ8(R(0) + this->regs.GBR) & IMM & 0xFF;
+    WRITE8(R(0) + this->regs.GBR, r);
     PCinc;
 }
 
@@ -620,7 +642,8 @@ SH4ins(TSTI) { // If R0 & (zero extend)imm = 0: 1 -> T, Else: 0 -> T
 }
 
 SH4ins(TSTM) { // If (R0 + GBR) & (zero extend)imm = 0: 1 -> T, Else 0: -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 tmp = READ8(R(0) + this->regs.GBR);
+    this->regs.SR.T = (tmp & IMM) == 0;
     PCinc;
 }
 
@@ -635,7 +658,8 @@ SH4ins(XORI) { // R0 ^ (zero extend)imm -> R0
 }
 
 SH4ins(XORM) { // (R0 + GBR) ^ (zero extend)imm -> (R0 + GBR)
-    BADOPCODE; // Crash on unimplemented opcode
+    u32 tmp = READ8(R(0) + this->regs.GBR) ^ IMM;
+    WRITE8(R(0) + this->regs.GBR, tmp);
     PCinc;
 }
 
@@ -656,7 +680,9 @@ SH4ins(ROTCR) { // T >> Rn >> T
 }
 
 SH4ins(ROTL) { // T << Rn << MSB
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = RN >> 31;
+    RN <<= 1;
+    RN |= this->regs.SR.T;
     PCinc;
 }
 
@@ -686,7 +712,8 @@ SH4ins(SHAD) { // If Rm >= 0: Rn << Rm -> Rn, If Rm < 0: Rn >> |Rm| -> [MSB -> R
 }
 
 SH4ins(SHAL) { // T << Rn << 0
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = RN >> 31;
+    RN <<= 1;
     PCinc;
 }
 
@@ -877,12 +904,12 @@ SH4ins(RTS) { // PR -> PC, Delayed branch
 }
 
 SH4ins(CLRMAC) { // 0 -> MACH, 0 -> MACL
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.MACH = this->regs.MACL = 0;
     PCinc;
 }
 
 SH4ins(CLRS) { // 0 -> S
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.S = 0;
     PCinc;
 }
 
@@ -952,12 +979,13 @@ SH4ins(LDCDBR) { // Rm -> DBR
 }
 
 SH4ins(LDCMDBR) { // (Rm) -> DBR, Rm+4 -> Rm
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.DBR = READ32(RM);
+    RM += 4;
     PCinc;
 }
 
 SH4ins(LDCRn_BANK) { // Rm -> Rn_BANK (n = 0-7)
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.R_[ins->Rn] = RM;
     PCinc;
 }
 
@@ -1001,7 +1029,6 @@ SH4ins(LDSMPR) { // (Rm) -> PR, Rm+4 -> Rm
 }
 
 SH4ins(LDTLB) { // PTEH/PTEL -> TLB
-    BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 
@@ -1023,7 +1050,6 @@ SH4ins(OCBP) { // Write back and invalidate operand cache block
 }
 
 SH4ins(OCBWB) { // Write back operand cache block
-    BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 
@@ -1048,7 +1074,6 @@ SH4ins(PREF) { // (Rn) -> operand cache
 #endif
     }
     //read in (RN & 0xFFFFFFE0) to operand cache
-    //BADOPCODE; // Crash on unimplemented opcode
     PCinc;
 }
 
@@ -1061,7 +1086,7 @@ SH4ins(RTE) { // Delayed branch, SH1*,SH2*: stack area -> PC/SR, SH3*,SH4*: SSR/
 }
 
 SH4ins(SETS) { // 1 -> S
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.S = 1;
     PCinc;
 }
 
@@ -1122,7 +1147,7 @@ SH4ins(STCMSGR) { // Rn-4 -> Rn, SGR -> (Rn)
 }
 
 SH4ins(STCSSR) { // SSR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    RN = this->regs.SSR;
     PCinc;
 }
 
@@ -1188,7 +1213,7 @@ SH4ins(STSMMACL) { // Rn-4 -> Rn, MACL -> (Rn)
 }
 
 SH4ins(STSPR) { // PR -> Rn
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.PR = RN;
     PCinc;
 }
 
@@ -1199,8 +1224,13 @@ SH4ins(STSMPR) { // Rn-4 -> Rn, PR -> (Rn)
 }
 
 SH4ins(TRAPA) { // SH1*,SH2*: PC/SR -> stack area, (imm*4 + VBR) -> PC, SH3*,SH4*: PC/SR -> SPC/SSR, imm*4 -> TRA, 0x160 -> EXPEVT, VBR + 0x0100 -> PC
-    BADOPCODE; // Crash on unimplemented opcode
-    PCinc;
+    this->regs.TRAPA = IMM << 2;
+    this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
+    this->regs.SPC = this->regs.PC + 2;
+    this->regs.SGR = R(15);
+    SH4_SR_set(this, this->regs.SSR | 0x70000000); // MD, BL, and RB
+    this->regs.EXPEVT = 0x160;
+    this->regs.PC = this->regs.VBR + 0x00000100;
 }
 
 SH4ins(FMOV) { // FRm -> FRn
@@ -1275,27 +1305,27 @@ SH4ins(FMOV_XDDR) { // XDm -> DRn
 }
 
 SH4ins(FMOV_XDXD) { // XDm -> XDn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpXD(ins->Rm) = fpXD(ins->Rn);
     PCinc;
 }
 
 SH4ins(FMOV_LOAD_DR) { // (Rm) -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDRU(ins->Rn) = READ64(RM);
     PCinc;
 }
 
 SH4ins(FMOV_LOAD_XD) { // (Rm) -> XDn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpXDU(ins->Rn) = READ64(RM);
     PCinc;
 }
 
 SH4ins(FMOV_STORE_DR) { // DRm -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE64(RN, fpDRU(ins->Rm));
     PCinc;
 }
 
 SH4ins(FMOV_STORE_XD) { // XDm -> (Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE64(RN, fpDRU(ins->Rm));
     PCinc;
 }
 
@@ -1318,25 +1348,23 @@ SH4ins(FMOV_SAVE_DR) { // Rn-8 -> Rn, DRm -> (Rn)
 }
 
 SH4ins(FMOV_SAVE_XD) { // Rn-8 -> Rn, (Rn) -> XDm
-    // TODO: some people say XD selects bank based on lower bit of m.
-    // some people say it always selects the alternate bank and that bit is ignored
     RN -= 8;
     fpXDU(ins->Rm) = READ64(RN);
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_LOAD_DR) { // (R0 + Rm) -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDRU(ins->Rn) = READ64(R(0) + RM);
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_LOAD_XD) { // (R0 + Rm) -> XDn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpXDU(ins->Rn) = READ64(R(0) + RM);
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_STORE_DR) { // DRm -> (R0 + Rn)
-    BADOPCODE; // Crash on unimplemented opcode
+    WRITE64(R(0) + RN, fpDRU(ins->Rm));
     PCinc;
 }
 
@@ -1366,16 +1394,12 @@ SH4ins(FSTS) { // FPUL -> FRn
 }
 
 SH4ins(FABS) { // FRn & 0x7FFFFFFF -> FRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpFRU(ins->Rn) &= 0x7FFFFFFF;
     PCinc;
 }
 
 SH4ins(FNEG) { // FRn ^ 0x80000000 -> FRn
-    if (this->regs.FPSCR.PR ==0)
-        fpFRU(ins->Rn)^=0x80000000;
-    else
-        fpFRU(ins->Rn&0xE)^=0x80000000;
-
+    fpFRU(ins->Rn)^=0x80000000;
     PCinc;
 }
 
@@ -1509,67 +1533,67 @@ SH4ins(FTRV) { // transform_vector (XMTRX, FVn) -> FVn
 }
 
 SH4ins(FABSDR) { // DRn & 0x7FFFFFFFFFFFFFFF -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDRU(ins->Rn) &= 0x7FFFFFFFFFFFFFFF;
     PCinc;
 }
 
 SH4ins(FNEGDR) { // DRn ^ 0x8000000000000000 -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDRU(ins->Rn) ^= 0x8000000000000000;
     PCinc;
 }
 
 SH4ins(FADDDR) { // DRn + DRm -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) += fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FSUBDR) { // DRn - DRm -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) -= fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FMULDR) { // DRn * DRm -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) *= fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FDIVDR) { // DRn / DRm -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) /= fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FSQRTDR) { // sqrt (DRn) -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) = sqrt(fpDR(ins->Rn));
     PCinc;
 }
 
 SH4ins(FCMP_EQDR) { // If DRn = DRm: 1 -> T, Else: 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = fpDRU(ins->Rn) == fpDRU(ins->Rm);
     PCinc;
 }
 
 SH4ins(FCMP_GTDR) { // If DRn > DRm: 1 -> T, Else: 0 -> T
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.SR.T = fpDR(ins->Rn) > fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FLOAT_double) { // (double)FPUL -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) = (double)this->regs.FPUL.u; // ????? !!!! WHAT!?
     PCinc;
 }
 
 SH4ins(FTRC_double) { // (long)DRm -> FPUL
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.FPUL.u = (u32)(i32)fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FCNVDS) { // double_to_float (DRm) -> FPUL
-    BADOPCODE; // Crash on unimplemented opcode
+    this->regs.FPUL.f = (float)fpDR(ins->Rm);
     PCinc;
 }
 
 SH4ins(FCNVSD) { // float_to_double (FPUL) -> DRn
-    BADOPCODE; // Crash on unimplemented opcode
+    fpDR(ins->Rn) = (double)this->regs.FPUL.f;
     PCinc;
 }
 
@@ -1912,6 +1936,12 @@ static void decode_and_iterate_opcodes(const char* inpt, SH4_ins_func ins, const
 #define OEo(opcstr, func, mn, sz, pr) decode_and_iterate_opcodes(opcstr, func, mn, 1, ((sz<<1) | pr))
 
 void do_sh4_decode() {
+    static int decode_done = 0;
+    if (decode_done) {
+        printf("\nDUPLICATE DECODE DO!?");
+        return;
+    }
+    decode_done = 1;
     for (u32 szpr = 0; szpr < 4; szpr++) {
         for (u32 i = 0; i < 65536; i++) {
             SH4_decoded[szpr][i] = (struct SH4_ins_t) {

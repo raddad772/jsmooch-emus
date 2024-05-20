@@ -252,6 +252,7 @@ void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
     this->clock.timer_cycles = 0;
     this->clock.trace_cycles_blocks = 0;
     this->scheduler = scheduler;
+    do_sh4_decode();
     jsm_string_init(&this->console, 5000);
     SH4_init_interrupt_struct(this->interrupt_sources, this->interrupt_map);
     this->interrupt_highest_priority = 0;
@@ -307,8 +308,8 @@ void SH4_SR_set(struct SH4* this, u32 val)
     else {
         if (this->regs.SR.RB)
         {
-            printf("\nUpdateSR MD=0;RB=1 , this must not happen!"); // reicast says
-            this->regs.SR.RB = 0;//error - must always be 0
+            printf("\nUpdateSR MD=0;RB=1 , this must noUpdateSR MD=0;RB=1 , this must not happen!t happen!"); // reicast says
+            this->regs.SR.RB = 0;//error - must always be 0 if not privileged
         }
         if (old_RB)
             swap_register_banks(this);

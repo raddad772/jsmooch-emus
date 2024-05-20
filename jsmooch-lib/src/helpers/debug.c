@@ -83,7 +83,7 @@ void dbg_seek_in_line(u32 pos)
     }
 }
 
-void construct_path(char* w, const char* who)
+static void construct_path(char* w, const char* who)
 {
     const char *homeDir = getenv("HOME");
 
@@ -158,7 +158,9 @@ void dbg_break()
 
 void dbg_enable_trace()
 {
+#ifndef TRACE_FORCE_OFF
     dbg.trace_on = 1;
+#endif
 }
 
 void dbg_disable_trace()

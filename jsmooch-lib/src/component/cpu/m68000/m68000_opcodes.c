@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "m68000.h"
 #include "m68000_opcodes.h"
 
 struct M68k_ins_t M68k_decoded[65536];
@@ -37,7 +38,8 @@ static void start_read16(struct M68k* this, u32 addr)
     this->instruction.TCU++;            \
 }
 
-M68KINS(RESET)
+void M68K_ins_RESET(struct M68k* this, struct M68k_ins_t *ins) {
+    switch(this->instruction.TCU) {
         // $0 (32-bit), indirect, -> SSP
         // $4 (32-bit) -> PC
         // SR->interrupt level = 7

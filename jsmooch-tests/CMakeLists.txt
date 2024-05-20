@@ -11,6 +11,7 @@ add_executable(jsmooch-tests
         src/cpu-tests/rfb.c
         src/cpu-tests/rfb.h
         src/cpu-test-generators/sh4_test_generator.c
+        src/cpu-test-generators/sh4_test_generator.h
         src/helper-tests/scheduler-tests.c
         src/helper-tests/scheduler-tests.h
         src/cpu-test-generators/myrandom.h

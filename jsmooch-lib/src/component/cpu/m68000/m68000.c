@@ -136,7 +136,7 @@ void M68k_cycle(struct M68k* this)
         M68k_decode(this);
     }
     if (this->state == M68kS_exec) {
-        this->instruction.func(this);
+        this->instruction.func(this, this->instruction.ins);
         // Todo handle finishing bus cycles etc.
 
     }
@@ -145,13 +145,11 @@ void M68k_cycle(struct M68k* this)
     }
 }
 
-#define MF(x) &M68K_ins_##x
-
 void M68k_reset(struct M68k* this)
 {
     this->state = M68kS_exec;
     this->instruction.done = 0;
-    this->instruction.func = MF(RESET);
+    this->instruction.func = &M68K_ins_RESET;
 }
 
 

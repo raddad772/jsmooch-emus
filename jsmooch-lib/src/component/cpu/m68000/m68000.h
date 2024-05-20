@@ -6,7 +6,7 @@
 #define JSMOOCH_EMUS_M68000_H
 
 #include "helpers/int.h"
-
+#include "m68000_opcodes.h"
 
 struct M68k_regs {
     /*
@@ -66,6 +66,7 @@ enum M68k_states {
     M68kS_exec, // execute
 };
 
+struct M68k_ins_t;
 
 struct M68k {
     struct M68k_regs regs;
@@ -88,7 +89,8 @@ struct M68k {
         u32 addr;
         u32 data;
         u32 data32;
-        void (*func)(struct M68k*);
+        void (*func)(struct M68k*, struct M68k_ins_t*);
+        struct M68k_ins_t *ins;
     } instruction;
     u32 wait_steps;
 

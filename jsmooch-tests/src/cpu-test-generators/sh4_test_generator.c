@@ -57,7 +57,7 @@ struct SH4_test_state {
     } fb[3]; // floating-point banked registers, 2 banks + a third for swaps
 };
 
-#define NUMTESTS 10
+#define NUMTESTS 500
 
 #define TCA_READ 1
 #define TCA_WRITE 2
@@ -113,16 +113,16 @@ static u32 encoding_to_mask(const char* encoding_str, u32 m, u32 n, u32 d, u32 i
     n = (n & r.n_mask) << r.n_shift;
     d = (d & r.d_mask) << r.d_shift;
     i = (i & r.i_mask) << r.i_shift;
-
     u32 bit = 1 << 15;
     u32 out = 0;
-    for (u32 l = 0; i < 16; i++) {
-        if (encoding_str[l] == '1')
+    for (u32 l = 0; l < 16; l++) {
+        if (encoding_str[l] == '1') {
             out |= bit;
+        }
         bit >>= 1;
     }
 
-    if (r.m_max) out |= (m << r.m_shift);
+    //if (r.m_max) out |= (m << r.m_shift);
 
     out |= m | n | d | i;
 
@@ -132,6 +132,17 @@ static u32 encoding_to_mask(const char* encoding_str, u32 m, u32 n, u32 d, u32 i
 static u32 valid_rnd_SR(struct sfc32_state *rstate)
 {
     u32 SR = sfc32(rstate) & 0b1110000000000001000001111110011;
+    /*
+     u32 MD; // bit 30. 1 = privileged modeRB, BL, FD, M, Q, IMASK, S, T;
+    u32 RB; //     29. register bank select (privileged only)
+*
+     */
+    if (((SR >> 30) & 1) == 0) { // if MD = 0
+        if (((SR >> 29) & 1) == 1) { // if RB = 1
+            SR &= 0b1010000000000001000001111110011;
+
+        }
+    }
     return SR;
 }
 
@@ -146,22 +157,25 @@ static void random_initial(struct SH4_test_state *ts, struct sfc32_state *rstate
 {
     for (u32 i = 0; i < 16; i++) {
         ts->R[i] = sfc32(rstate);
-        if (i < 8) ts->R[i] = sfc32(rstate);
+        if (i < 8) ts->R_[i] = sfc32(rstate);
         ts->fb[0].U32[i] = sfc32(rstate);
         ts->fb[1].U32[i] = sfc32(rstate);
     }
 #define sR(w) ts-> w = sfc32(rstate)
     sR(PC);
+    ts->PC &= 0xFFFFFFFE;
     sR(GBR);
     sR(SR);
     sR(SSR);
     sR(SPC);
+    ts->SPC &= 0xFFFFFFFE;
     sR(VBR);
     sR(SGR);
     sR(DBR);
     sR(MACL);
     sR(MACH);
     sR(PR);
+    ts->PR &= 0xFFFFFFFE;
     ts->SR = valid_rnd_SR(rstate);
     ts->FPSCR = valid_rnd_FPSCR(rstate, sz, pr);
 #undef sR
@@ -248,7 +262,7 @@ static u32 test_fetch_ins(void *ptr, u32 addr)
 {
     struct generating_test_struct *this = (struct generating_test_struct*)ptr;
     this->ifetch_addr = addr;
-    i64 num = (i64)addr - this->test->test_base;
+    i64 num = ((i64)addr - (i64)this->test->test_base) / 2;
     u32 v;
     if ((num >= 0) && (num < 4)) v = this->test->opcodes[num];
     else v = this->test->opcodes[4];
@@ -296,7 +310,7 @@ static void test_write(void *ptr, u32 addr, u64 val, u32 sz)
     this->write_cycle = this->tester->cpu.clock.trace_cycles;
 }
 
-void construct_path(char* w, const char* who)
+static void construct_path(char* w, const char* who)
 {
     const char *homeDir = getenv("HOME");
 
@@ -400,7 +414,7 @@ static u32 write_opcodes(u8* where, struct sh4test *test)
     return r;
 }
 
-static u8 outbuf[64 * 1024];
+static u8 outbuf[3 * 1024 * 1024];
 
 static void write_tests(struct sh4test_array *ta)
 {
@@ -409,21 +423,11 @@ static void write_tests(struct sh4test_array *ta)
     sprintf(rp, "sh4_json/%s", ta->fname);
     construct_path(fpath, rp);
     remove(fpath);
+    printf("\nWRITE %s", fpath);
 
     FILE *f = fopen(fpath, "wb");
 
     u32 outbuf_idx = 0;
-    /*
-     u32 size
-       u32 size
-       u32 kind
-       ...,
-
-       u32 size
-       u32 kind
-       ...,
-     */
-
     for (u32 tnum = 0; tnum < NUMTESTS; tnum++) {
         struct sh4test *t = &ta->tests[tnum];
         // Write out initial state, final state
@@ -435,14 +439,30 @@ static void write_tests(struct sh4test_array *ta)
         outbuf_idx += write_opcodes(&outbuf[outbuf_idx], t);
         cW[M32](outbuf, outbuf_start, outbuf_idx - outbuf_start);
     }
+    fwrite(outbuf, 1, outbuf_idx, f);
 
     fclose(f);
 }
 
+#define NUM_SKIP 3
+static char SKIP_TESTS[NUM_SKIP][17] = {
+        "0000nnnn10000011", // PREF (8 writes)
+        "0000nnnnmmmm1111", // MACL (2 reads)
+        "0100nnnnmmmm1111", // MACW (2 reads)
+
+};
+
 static void generate_test_struct(const char* encoding_str, const char* mnemonic, u32 sz, u32 pr, u32 num, struct SH4_tester *t)
 {
+    for (u32 i = 0; i < NUM_SKIP; i++) {
+        if (strcmp(encoding_str, SKIP_TESTS[i]) == 0) {
+            printf("\nSKIPPING TEST!");
+            return;
+        }
+    }
     struct sh4test_array *ta = &sh4tests[num];
-    snprintf(ta->fname, sizeof(ta->fname), "%s_sz%d_pr%d.json", encoding_str, sz, pr);
+    printf("\nGENERATING STRUCT FOR %s", encoding_str);
+    snprintf(ta->fname, sizeof(ta->fname), "%s_sz%d_pr%d.json.bin", encoding_str, sz, pr);
     snprintf(ta->encoding, sizeof(ta->encoding), "%s", encoding_str);
 
     ta->sz = sz;
@@ -516,31 +536,17 @@ static void generate_test_struct(const char* encoding_str, const char* mnemonic,
                 }
             }
             c->actions |= TCA_FETCHINS;
+            c->fetch_addr = test_struct.ifetch_addr;
+            c->fetch_val = test_struct.ifetch_data;
         }
-
-        // Now dump to buffer/disk
     }
     write_tests(ta);
 }
 
-static void fill_sh4_encodings(void)
+static void fill_sh4_encodings(struct SH4_tester *t)
 {
-    for (u32 szpr = 0; szpr < 4; szpr++) {
-        for (u32 i = 0; i < 65536; i++) {
-            SH4_decoded[szpr][i] = (struct SH4_ins_t) {
-                    .opcode = i,
-                    .Rn = -1,
-                    .Rm = -1,
-                    .imm = 0,
-                    .disp = 0,
-                    .exec = NULL,
-                    .decoded = 0
-            };
-        }
-    }
-
     u32 r = 0;
-#define OE(opcstr, func, mn) generate_test_struct(opcstr, mn, 0, 0, r, &t); r++
+#define OE(opcstr, func, mn) generate_test_struct(opcstr, mn, 0, 0, r, t); r++
 #define OEo(opcstr, func, mn, sz, pr) (void)0/*generate_test_struct(opcstr, func, mn, 1, ((sz<<1) | pr))*/
 
 #include "component/cpu/sh4/sh4_decodings.c"
@@ -550,12 +556,16 @@ static void fill_sh4_encodings(void)
 }
 // TODO: make sure we have sz=1 and pr=1 opcodes
 
-void test_sh4()
+void generate_sh4_tests()
 {
     struct SH4_tester t;
-    SH4_init(&t.cpu, NULL);
+    struct scheduler_t scheduler;
+    //dbg_enable_trace();
+    scheduler_init(&scheduler);
+    SH4_init(&t.cpu, &scheduler);
 
-    fill_sh4_encodings();
+    fill_sh4_encodings(&t);
+    dbg_flush();
 
     /* Gotta fill these out
     void *mptr;

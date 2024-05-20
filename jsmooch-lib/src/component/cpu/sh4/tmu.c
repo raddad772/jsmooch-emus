@@ -117,7 +117,7 @@ static void UpdateTMUCounts(struct SH4* this, u32 ch)
 {
     u32 irq_num = 10 + ch;
     // TODO: IRQ stuff
-    SH4_interrupt_pend(this, 0x400 + (0x20 * ch), (this->tmu.TCR[ch] & 0x100) && (this->tmu.TCR[ch] & 0x20)); // underflow
+    SH4_interrupt_pend(this, sh4i_tmu0_tuni0 + ch, (this->tmu.TCR[ch] & 0x100) && (this->tmu.TCR[ch] & 0x20)); // underflow
     if  ((this->tmu.TCR[ch] & 0x100) && (this->tmu.TCR[ch] & 0x200)) {
         //printf("\nRAISING TCR INTERRUPT!");
         this->tmu.TCR[ch] &= 0xFF;

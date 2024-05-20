@@ -88,7 +88,7 @@ struct SH4_regs {
         u32 U32[16];
         u64 U64[8];
         float FP32[16];
-        float FP64[8];
+        double FP64[8];
         struct SH4_FV FV[4];
         struct SH4_mtx MTX;
     } fb[3];
