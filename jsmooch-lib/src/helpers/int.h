@@ -90,4 +90,8 @@ typedef int8 i8;
 
 #endif
 
+typedef float f32;
+typedef double f64;
+
 #endif
+

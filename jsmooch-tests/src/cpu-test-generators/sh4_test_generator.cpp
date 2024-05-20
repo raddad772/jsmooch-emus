@@ -15,6 +15,8 @@
 #include "helpers/int.h"
 #include "helpers/multisize_memaccess.c"
 
+#include "../vendor/sh4_core.h"
+
 static void cpSH4(u32 dest, u32 src) {
     /*memcpy(&SH4_decoded[dest], &SH4_decoded[src], 65536*sizeof(struct SH4_ins_t));
     memcpy(&SH4_disassembled[dest][0], &SH4_disassembled[src][0], 65536*30);

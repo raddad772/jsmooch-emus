@@ -10,12 +10,15 @@ add_executable(jsmooch-tests
         src/cpu-tests/z80-tests.h
         src/cpu-tests/rfb.c
         src/cpu-tests/rfb.h
-        src/cpu-test-generators/sh4_test_generator.c
+        src/cpu-test-generators/sh4_test_generator.cpp
         src/cpu-test-generators/sh4_test_generator.h
         src/helper-tests/scheduler-tests.c
         src/helper-tests/scheduler-tests.h
         src/cpu-test-generators/myrandom.h
         src/cpu-test-generators/myrandom.c
+        src/vendor/libswirl/types.h
+        src/vendor/libswirl/sh4_core_regs.cpp
+        src/vendor/libswirl/sh4_interrupts.cpp
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src ${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)
