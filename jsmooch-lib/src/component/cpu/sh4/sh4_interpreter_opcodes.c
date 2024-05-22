@@ -66,6 +66,7 @@ SH4ins(EMPTY) {
 }
 
 SH4ins(MOV) {
+    printf("\nMOV r%d r%d", ins->Rn, ins->Rm);
     RN = RM;
     PCinc;
 }

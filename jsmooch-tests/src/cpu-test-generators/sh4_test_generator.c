@@ -140,7 +140,6 @@ static u32 valid_rnd_SR(struct sfc32_state *rstate)
     if (((SR >> 30) & 1) == 0) { // if MD = 0
         if (((SR >> 29) & 1) == 1) { // if RB = 1
             SR &= 0b1010000000000001000001111110011;
-
         }
     }
     return SR;
@@ -214,7 +213,7 @@ static void copy_state_to_cpu(struct SH4_test_state *st, struct SH4 *sh4)
 
 static void copy_state_from_cpu(struct SH4_test_state *st, struct SH4 *sh4)
 {
-    st->SR = SH4_regs_SR_get(sh4);
+    st->SR = SH4_regs_SR_get(&sh4->regs.SR);
     st->FPSCR = SH4_regs_FPSCR_get(&sh4->regs.FPSCR);
 
 #define CP(rn) st-> rn = sh4->regs. rn
@@ -252,8 +251,9 @@ struct generating_test_struct {
     i64 write_size;
     u64 write_cycle;
 
-    i64 ifetch_addr;
-    u32 ifetch_data;
+    i64 ifetch_addr[4];
+    u32 ifetch_data[4];
+    u32 ifetch_num;
 
     u32 read_num;
 };
@@ -261,12 +261,13 @@ struct generating_test_struct {
 static u32 test_fetch_ins(void *ptr, u32 addr)
 {
     struct generating_test_struct *this = (struct generating_test_struct*)ptr;
-    this->ifetch_addr = addr;
+    this->ifetch_addr[this->ifetch_num] = addr;
     i64 num = ((i64)addr - (i64)this->test->test_base) / 2;
     u32 v;
     if ((num >= 0) && (num < 4)) v = this->test->opcodes[num];
     else v = this->test->opcodes[4];
-    this->ifetch_data = v;
+    this->ifetch_data[this->ifetch_num] = v;
+    this->ifetch_num++;
     return v;
 }
 
@@ -341,7 +342,7 @@ static u32 write_cycles(u8 *where, const struct sh4test *test)
     cW[M32](where, 8, 4);
     u32 r = 12;
 #define W32(v) cW[M32](where, r, v); r += 4
-#define W64(v) cW[M32](where, r, (u64)v); r += 8
+#define W64(v) cW[M32](where, r, (u64)(v)); r += 8
     for (u32 cycle = 0; cycle < 4; cycle++) {
         const struct test_cycle *c = &test->cycles[cycle];
         W32(c->actions);
@@ -485,9 +486,10 @@ static void generate_test_struct(const char* encoding_str, const char* mnemonic,
         tst->test_base = tst->initial.PC;
         tst->opcodes[0] = 9; // NOP
         tst->opcodes[1] = randomize_opcode(encoding_str, &rstate); // opcode we're testing
-        tst->opcodes[2] = 0b0110000100010011; // add R1, R1. So R1 += R1
+
+        tst->opcodes[2] = 0b0011000100011100; // add R1, R1. So R1 += R1
         tst->opcodes[3] = 9; // NOP again
-        tst->opcodes[4] = 0b0110001000100011; // add R2, R2. so R2 += R2. for after a jump
+        tst->opcodes[4] = 0b0011001000101100; // add R2, R2. so R2 += R2. for after a jump
         copy_state_to_cpu(&tst->initial, &t->cpu);
 
         // Make sure our CPU isn't interrupted...
@@ -501,9 +503,13 @@ static void generate_test_struct(const char* encoding_str, const char* mnemonic,
         test_struct.write_addr = test_struct.write_size = -1;
         test_struct.write_value = -1;
         test_struct.write_cycle = 0;
-        test_struct.ifetch_addr = -1;
-        test_struct.ifetch_data = 65536;
+        test_struct.ifetch_num = 0;
         for (u32 j = 0; j < 7; j++) {
+            if (j < 4) {
+                test_struct.ifetch_addr[j] = -1;
+                test_struct.ifetch_data[j] = 65536;
+
+            }
             test_struct.read_addrs[j] = -1;
             test_struct.read_sizes[j] = -1;
             test_struct.read_values[j] = 0;
@@ -535,8 +541,8 @@ static void generate_test_struct(const char* encoding_str, const char* mnemonic,
                 }
             }
             c->actions |= TCA_FETCHINS;
-            c->fetch_addr = test_struct.ifetch_addr;
-            c->fetch_val = test_struct.ifetch_data;
+            c->fetch_addr = test_struct.ifetch_addr[cycle];
+            c->fetch_val = test_struct.ifetch_data[cycle];
         }
     }
     write_tests(ta);
@@ -549,6 +555,7 @@ static void fill_sh4_encodings(struct SH4_tester *t)
 #define OEo(opcstr, func, mn, sz, pr) (void)0/*generate_test_struct(opcstr, func, mn, 1, ((sz<<1) | pr))*/
 
 #include "component/cpu/sh4/sh4_decodings.c"
+    //OE("0000000000001001", &SH4_NOP, "nop"); // No operation
 
 #undef OE
 #undef OEo
