@@ -147,7 +147,7 @@ static u32 valid_rnd_SR(struct sfc32_state *rstate)
 
 static u32 valid_rnd_FPSCR(struct sfc32_state *rstate, u32 sz, u32 pr)
 {
-    u32 FPSCR = sfc32(rstate) & 0b1001000000000000000011;
+    u32 FPSCR = sfc32(rstate) & 0b1111000000000000000011;
     FPSCR |= (sz << 20) | (pr << 19);
     return FPSCR;
 }

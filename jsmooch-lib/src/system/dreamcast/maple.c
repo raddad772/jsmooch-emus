@@ -125,7 +125,7 @@ void maple_dma_init(struct DC* this)
         u32 more;
         for (u32 rx_ct = 0; rx_ct < 128; rx_ct++) {
             u32 data = maple_port_in(this, cmd.port_select, &more);
-            printf("\n%08x more:%d write to %08x", data, more, receieve_ptr);
+            //printf("\n%08x more:%d write to %08x", data, more, receieve_ptr);
             DCwrite((void*)this, receieve_ptr, data, 4);
             receieve_ptr += 4;
             if ((rx_ct == 0) && (data == 0xFFFFFFFF)) break;

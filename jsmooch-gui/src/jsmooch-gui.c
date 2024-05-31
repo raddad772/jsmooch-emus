@@ -13,7 +13,7 @@
 
 
 #define DO_DREAMCAST
-#define SIDELOAD
+//#define SIDELOAD
 
 struct system_io {
     struct CDKRKR {
@@ -483,18 +483,18 @@ int main(int argc, char** argv)
         input_buffer[i] = 0;
     }
 
-#ifdef DO_DREAMCAST
-    //dbg_disable_trace();
-    //dbg_enable_trace();
-    sys->step_master(sys, 30000000); //
-    //sys->step_master(sys, 6555144);
-    //sys->step_master(sys, 7328221); //
-    dbg_unbreak();
-    //dbg_enable_trace();
-    //sys->step_master(sys, 500);
-    //dbg_LT_dump();
-    dbg_flush();
-    return 0;
+    #ifdef DO_DREAMCAST
+        //dbg_disable_trace();
+        //dbg_enable_trace();
+        sys->step_master(sys, 300000000); //
+        //sys->step_master(sys, 6555144);
+        //sys->step_master(sys, 7328221); //
+        dbg_unbreak();
+        dbg_enable_trace();
+        sys->step_master(sys, 500);
+        dbg_LT_dump();
+        dbg_flush();
+        return 0;
     /*jsm_present(sys->kind, 0, &iom, window_surface->pixels, 640, 480);
     SDL_UpdateWindowSurface(window);
     SDL_Delay(20000);

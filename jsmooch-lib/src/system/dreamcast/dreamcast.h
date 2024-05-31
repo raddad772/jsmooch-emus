@@ -154,7 +154,7 @@ struct DC {
             u32 tri_type;
 
             u32 cmd_buffer_index;
-            u8 cmd_buffer[16]; // Up to 16 bytes per command
+            u8 cmd_buffer[64]; // Up to 16 bytes per command
 
             struct DCDisplayList display_lists[5];
         } ta;

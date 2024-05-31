@@ -6,6 +6,7 @@
 #include "cpu-tests/sm83-tests.h"
 #include "cpu-tests/z80-tests.h"
 #include "cpu-test-generators/sh4_test_generator.h"
+#include "cpu-tests/sh4-tests.h"
 #include "helper-tests/scheduler-tests.h"
 #include "helpers/debug.h"
 #include "stdio.h"
@@ -18,5 +19,6 @@ int main()
     //test_sm83();
     //test_z80();
     //generate_sh4();
-    generate_sh4_tests();
+    //generate_sh4_tests();
+    test_sh4();
 }

@@ -2,6 +2,9 @@
 // Created by Dave on 2/10/2024.
 //
 
+#include <fenv.h>
+#pragma STDC FENV_ACCESS ON
+
 #include "assert.h"
 #include "stdio.h"
 #include "string.h"
@@ -47,14 +50,104 @@ u32 SH4_regs_SR_get(struct SH4_regs_SR* this)
             (this->M << 9) | (this->Q << 8) | (this->IMASK << 4) | (this->S << 1) | (this->T);
 }
 
-void SH4_regs_FPSCR_reset(struct SH4_regs_FPSCR* this)
+void SH4_regs_FPSCR_update(struct SH4_regs_FPSCR* this, u32 old_RM, u32 old_DN)
 {
+    // 0=nearest, 1=zero, 2 & 3 = reserved
+    /*assert(this->RM < 2);
+    switch(this->RM) {
+        case 0: // nearest
+            fesetround(FE_TONEAREST);
+            break;
+        case 1: // to zero
+            fesetround(FE_TOWARDZERO);
+            break;
+        case 2:
+        case 3:
+            printf("\nInvalid FPSCR RM %d", this->RM);
+            break;
+    }*/
+    // Thanks to Reicast for this
+/*    if ((old_RM!=RM) || (old_dn!=fpscr.DN))
+    {
+        old_rm=fpscr.RM ;
+        old_dn=fpscr.DN ;*/
 
+        //Correct rounding is required by some games (SOTB, etc)
+#if BUILD_COMPILER == COMPILER_VC
+        if (fpscr.RM == 1)  //if round to 0 , set the flag
+            _controlfp(_RC_CHOP, _MCW_RC);
+        else
+            _controlfp(_RC_NEAR, _MCW_RC);
+
+        if (fpscr.DN)     //denormals are considered 0
+            _controlfp(_DN_FLUSH, _MCW_DN);
+        else
+            _controlfp(_DN_SAVE, _MCW_DN);
+#else
+
+        #if HOST_CPU==CPU_X86 || HOST_CPU==CPU_X64
+
+            u32 temp=0x1f80;	//no flush to zero && round to nearest
+
+			if (fpscr.RM==1)  //if round to 0 , set the flag
+				temp|=(3<<13);
+
+			if (fpscr.DN)     //denormals are considered 0
+				temp|=(1<<15);
+			asm("ldmxcsr %0" : : "m"(temp));
+    #elif HOST_CPU==CPU_ARM
+		static const unsigned int x = 0x04086060;
+		unsigned int y = 0x02000000;
+		if (fpscr.RM==1)  //if round to 0 , set the flag
+			y|=3<<22;
+
+		if (fpscr.DN)
+			y|=1<<24;
+
+
+		int raa;
+
+		asm volatile
+			(
+				"fmrx   %0, fpscr   \n\t"
+				"and    %0, %0, %1  \n\t"
+				"orr    %0, %0, %2  \n\t"
+				"fmxr   fpscr, %0   \n\t"
+				: "=r"(raa)
+				: "r"(x), "r"(y)
+			);
+	#elif HOST_CPU == CPU_ARM64
+		static const unsigned long off_mask = 0x04080000;
+        unsigned long on_mask = 0x02000000;    // DN=1 Any operation involving one or more NaNs returns the Default NaN
+
+        if (this->RM == 1)		// if round to 0, set the flag
+        	on_mask |= 3 << 22;
+
+        if (this->DN)
+        	on_mask |= 1 << 24;	// flush denormalized numbers to zero
+
+        asm volatile
+            (
+                "MRS    x10, FPCR     \n\t"
+                "AND    x10, x10, %0  \n\t"
+                "ORR    x10, x10, %1  \n\t"
+                "MSR    FPCR, x10     \n\t"
+                :
+                : "r"(off_mask), "r"(on_mask)
+            );
+    #else
+		#if !defined(TARGET_EMSCRIPTEN)
+			printf("SetFloatStatusReg: Unsupported platform\n");
+		#endif
+	#endif
+#endif
+    //}
 }
+
 
 u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this)
 {
-    return (this->data & 0b11111111110000000000000000000000) | (this->FR << 21) | (this->SZ << 20) | (this->PR << 19) |
+    return (this->data & 0xFFC00000) | (this->FR << 21) | (this->SZ << 20) | (this->PR << 19) |
             (this->DN << 18) | (this->Cause << 12) | (this->Enable << 7) | (this->Flag << 2) | (this->RM);
 }
 
@@ -67,18 +160,23 @@ void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this)
 
 void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val) {
     // If floating-point select register changed
-    if (this->FPSCR.FR ^ ((val >> 21) & 1)) {
+    if (this->FPSCR.FR != ((val >> 21) & 1)) {
         SH4_regs_FPSCR_bankswitch(this);
     }
+    u32 old_RM = this->FPSCR.RM;
+    u32 old_DN = this->FPSCR.DN;
     this->FPSCR.data = val;
     this->FPSCR.FR = (val >> 21) & 1;
     this->FPSCR.SZ = (val >> 20) & 1;
     this->FPSCR.PR = (val >> 19) & 1;
-    this->FPSCR.DN = (val >> 18) & 63;
+    this->FPSCR.DN = (val >> 18) & 1;
     this->FPSCR.Cause = (val >> 12) & 63;
     this->FPSCR.Enable = (val >> 7) & 63;
     this->FPSCR.Flag = (val >> 2) & 63;
     this->FPSCR.RM = val & 3;
+
+    // Make sure correct FP rounding mode
+    SH4_regs_FPSCR_update(&this->FPSCR, old_RM, old_DN);
 }
 
 static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces)
@@ -252,20 +350,22 @@ void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
     this->clock.timer_cycles = 0;
     this->clock.trace_cycles_blocks = 0;
     this->scheduler = scheduler;
+    this->pp_last_m = this->pp_last_n = -1;
     do_sh4_decode();
     jsm_string_init(&this->console, 5000);
     SH4_init_interrupt_struct(this->interrupt_sources, this->interrupt_map);
     this->interrupt_highest_priority = 0;
     SH4_reset(this);
-    generate_fsca_table();
     //printf("\nINS! %s\n", SH4_disassembled[0][0x6772]);
 
     this->mptr = NULL;
     this->fetch_ins = NULL;
     this->read = NULL;
     this->write = NULL;
+#ifndef TEST_SH4
     TMU_init(this);
     TMU_reset(this);
+#endif
 }
 
 static void swap_register_banks(struct SH4* this)
@@ -286,7 +386,7 @@ void SH4_update_mode(struct SH4* this)
 void SH4_SR_set(struct SH4* this, u32 val)
 {
     // TODO: only do bank switch when MD is proper. DUH!
-
+    val &= 0x700083F3;
     u32 old_RB = this->regs.SR.RB;
 
     this->regs.SR.data = val;
@@ -308,7 +408,7 @@ void SH4_SR_set(struct SH4* this, u32 val)
     else {
         if (this->regs.SR.RB)
         {
-            printf("\nUpdateSR MD=0;RB=1 , this must noUpdateSR MD=0;RB=1 , this must not happen!t happen!"); // reicast says
+            //printf("\nUpdateSR MD=0;RB=1 , this must noUpdateSR MD=0;RB=1 , this must not happen!t happen!"); // reicast says
             this->regs.SR.RB = 0;//error - must always be 0 if not privileged
         }
         if (old_RB)

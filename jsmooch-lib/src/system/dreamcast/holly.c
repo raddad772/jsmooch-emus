@@ -551,7 +551,7 @@ static void set_ta_poly(struct DC* this, enum DCPolyKind kind, u8* buf)
 void holly_TA_cmd(struct DC* this) {
 
     if (this->holly.ta.cmd_buffer_index % 8 != 0) return; // All commands are 8 or 16 bytes long
-
+    assert(this->holly.ta.cmd_buffer_index <= 64);
     union HOLLY_PCW cmd;
     cmd.u = *(u32 *)(&this->holly.ta.cmd_buffer[0]);
     enum HOLLY_PCW_paratype ptype = cmd.para_type;
@@ -671,7 +671,7 @@ void holly_TA_cmd(struct DC* this) {
             break;
         case vertex_parameter:
             printf("\nVERTEX PARAMETER!!!");
-            assert(this->holly.ta.list_type != 10);
+            //assert(this->holly.ta.list_type != 10);
             struct DCDisplayList* display_list = &this->holly.ta.display_lists[this->holly.ta.list_type];
 
             if ((this->holly.ta.list_type == HPL_opaque_mv) || (this->holly.ta.list_type == HPL_translucent_mv)) {
@@ -779,7 +779,7 @@ void holly_TA_FIFO_DMA(struct DC* this, u32 src_addr, u32 tx_len, void *src, u32
     }*/
     printf("\nSRCADDR:%08x LEN:%d", src_addr, tx_len);
     dump_RAM_to_console(src_addr, this->RAM + (src_addr & 0xFFFFFF), tx_len);
-    //holly_TA_FIFO_load(this, src_addr & 0xFFFFFF, tx_len, this->RAM);
+    holly_TA_FIFO_load(this, src_addr & 0xFFFFFF, tx_len, this->RAM);
     this->sh4.regs.DMAC_SAR2 = src_addr + tx_len;
     this->sh4.regs.DMAC_CHCR2.u &= 0xFFFFFFFE;
     this->sh4.regs.DMAC_DMATCR2 = 0x00000000;

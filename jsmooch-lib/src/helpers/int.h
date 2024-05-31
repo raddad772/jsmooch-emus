@@ -2,6 +2,11 @@
 #define _JSMOOCH_INT_H
 
 
+#define COMPILER_CLANG 3
+#define BUILD_COMPILER COMPILER_CLANG
+#define CPU_ARM64 5
+#define HOST_CPU CPU_ARM64
+
 /* If you are somehow on a big-endian platform, you must change this */
 #define ENDIAN_LITTLE
 //#define ENDIAN_BIG
@@ -35,6 +40,9 @@ typedef int16 i16;
 typedef uint8 u8;
 typedef int8 s8;
 typedef int8 i8;
+
+typedef float f32;
+typedef double f64;
 
 #ifndef TRUE
 #define TRUE 1

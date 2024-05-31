@@ -23,6 +23,7 @@
 //#define DUMP_LAST_TRACES_ON_BREAK
 //#define TRACE_COLORS
 //#define SH4_TRACE_INS_FETCH
+#define TEST_SH4
 //#define SH4_IRQ_DBG
 
 #define DC_SUPPORT_ELF
@@ -46,7 +47,7 @@
 
 #define MAX_DEBUG_MSG 2000000
 #define LAST_TRACES_LEN 3000
-#define LAST_TRACES_MSG_LEN 200
+#define LAST_TRACES_MSG_LEN 10
 
 //#define warn_printf(...) printf(__VA_ARGS__)
 #define warn_printf(...) (void)0

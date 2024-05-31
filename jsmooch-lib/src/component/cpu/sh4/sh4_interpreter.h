@@ -56,8 +56,6 @@ struct SH4_regs_FPSCR {
 void SH4_regs_SR_reset(struct SH4_regs_SR* this);
 u32 SH4_regs_SR_get(struct SH4_regs_SR* this);
 
-void SH4_regs_FPSCR_reset(struct SH4_regs_FPSCR* this);
-
 struct SH4_regs {
     u32 R[16]; // registers
     u32 R_[8]; // shadow registers
@@ -97,6 +95,7 @@ struct SH4_regs {
 #include "generated/regs_decls.h"
 };
 
+void SH4_regs_FPSCR_update(struct SH4_regs_FPSCR* this, u32 old_RM, u32 old_DN);
 u32 SH4_regs_FPSCR_get(struct SH4_regs_FPSCR* this);
 void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val);
 void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this);

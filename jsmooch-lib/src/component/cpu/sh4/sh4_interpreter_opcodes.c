@@ -26,11 +26,16 @@
 #define rMACL this->regs.MACL
 #define rMACH this->regs.MACH
 
-#define fpFR(x) this->regs.fb[0].FP32[(x)]
-#define fpFRU(x) this->regs.fb[0].U32[(x)]
+#define fpFR(x) this->regs.fb[0].FP32[(x) ^ 1]
+#define fpFRn fpFR(ins->Rn)
+#define fpFRm fpFR(ins->Rm)
+#define fpFRU(x) this->regs.fb[0].U32[(x) ^ 1]
+#define fpFRUn this->regs.fb[0].U32[ins->Rn ^ 1]
+#define fpFRUm this->regs.fb[0].U32[ins->Rm ^ 1]
 #define fpDR(x) this->regs.fb[0].FP64[(x)]
 #define fpDRU(x) this->regs.fb[0].U64[(x)]
-#define fpXF(x) this->regs.fb[1].FP32[(x)]
+#define fpXF(x) this->regs.fb[1].FP32[(x) ^ 1]
+#define fpXFU(x) this->regs.fb[1].U32[(x) ^ 1]
 #define fpXD(x) this->regs.fb[1].FP64[(x)]
 #define fpXDU(x) this->regs.fb[1].U64[(x)]
 #define fpFV(x) this->regs.fb[0].FV[(x)]
@@ -47,6 +52,11 @@
 #define WRITE32(addr, val) this->write(this->mptr, addr, (val) & 0xFFFFFFFF, DC32)
 #define WRITE64(addr, val) this->write(this->mptr, addr, val, DC64)
 
+
+#define FP64SAVE(addr, from) u64 v = (from); WRITE64(addr, (v << 32) | (v >> 32))
+#define FP64LOAD(addr, to) u64 v = READ64(addr); (to) = (v << 32) | (v >> 32)
+
+
 #define SH4ins(x) void SH4_##x(SH4args)
 
 #define DELAY_SLOT { PCinc; SH4_fetch_and_exec(this, 1); }
@@ -58,6 +68,12 @@ enum MSIZE {
     DC64 = 8
 };
 
+static float fixNaN(float f) {
+    u32 hex = *(u32 *)&f;
+	if ((hex & 0x7fffffff) > 0x7f800000)
+		hex = 0x7fbfffff;
+
+}
 
 SH4ins(EMPTY) {
     printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, this->clock.trace_cycles);
@@ -66,7 +82,6 @@ SH4ins(EMPTY) {
 }
 
 SH4ins(MOV) {
-    printf("\nMOV r%d r%d", ins->Rn, ins->Rm);
     RN = RM;
     PCinc;
 }
@@ -225,7 +240,7 @@ SH4ins(MOVBL0) { // (R0 + Rm) -> sign extension -> Rn
 
 SH4ins(MOVWL0) { // (R0 + Rm) -> sign extension -> Rn
     RN = READ16(RM + R(0));
-    SIGNe16to32(RN);
+    RN = SIGNe16to32(RN);
     PCinc;
 }
 
@@ -331,9 +346,13 @@ SH4ins(ADDC) { // Rn + Rm + T -> Rn, carry -> T
 }
 
 SH4ins(ADDV) { // Rn + Rm -> Rn, overflow -> T
-    u32 old_rn = RN;
+    // Thanks Reicast!
+    s64 br=(s64)(s32)RN+(s64)(s32)RM;
+
+    this->regs.SR.T = (br >=0x80000000) || (br < (s64) (0xFFFFFFFF80000000u));
+
     RN += RM;
-    this->regs.SR.T = RN < old_rn;
+
     PCinc;
 }
 
@@ -581,9 +600,16 @@ SH4ins(SUBC) { // Rn - Rm - T -> Rn, borrow -> T
 }
 
 SH4ins(SUBV) { // Rn - Rm -> Rn, underflow -> T
-    u32 original_rn = RN;
+    /*u32 original_rn = RN;
+    u32 original_rm = RM;
     RN -= RM;
-    this->regs.SR.T = RN > original_rn;
+    this->regs.SR.T = original_rn < original_rm;*/
+
+    s64 br=(s64)(s32)RN-(s64)(s32)RM;
+
+    this->regs.SR.T = (br >=0x80000000) || (br < (s64) (0xFFFFFFFF80000000u));
+    RN -= RM;
+
     PCinc;
 }
 
@@ -925,9 +951,10 @@ SH4ins(LDCSR) { // Rm -> SR
 }
 
 SH4ins(LDCMSR) { // (Rm) -> SR, Rm+4 -> Rm
-    SH4_SR_set(this, READ32(RM) & 0x700083F3);
+    u32 r = READ32(RM) & 0x700083F3;
     RM += 4;
-    PCinc;
+    SH4_SR_set(this, r);
+   PCinc;
 }
 
 SH4ins(LDCGBR) { // Rm -> GBR
@@ -1055,12 +1082,40 @@ SH4ins(OCBWB) { // Write back operand cache block
 }
 
 SH4ins(PREF) { // (Rn) -> operand cache
-    u32 addr = RN & 0xFFFFFFE0;
+/*
+ *     if ((RN>>26) != 0x38) {
+        PCinc;
+        return;
+    }
+    u32 sq = (RN >> 5) & 1;
+    u32 QACR_TR = (this->regs.QACR[sq] << 26) - 0xE0000000;
+    u32 addr = QACR_TR+(RN&~0x1F);
+
     // Flush store queue to RAM!
-    if ((addr >= 0xE0000000) && (addr <= 0xE3FFFFFF)) {
-        u32 sq = (addr >> 5) & 1;
+/*    if ((addr >= 0xE0000000) && (addr <= 0xE3FFFFFF)) {
         //const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
         u32 naddr = addr & 0x03FFFFE0 | (((sq ? this->regs.QACR[1] : this->regs.QACR[0]) & 0b11100) << 24);
+        for (u32 i = 0; i < 8; i++) {
+            WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
+            naddr += 4;
+        }
+    }
+    //if (((addr >> 26) & 0x7) != 4)//Area 4
+    //{
+    u32 naddr = addr;
+    for (u32 i = 0; i < 8; i++) {
+        WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
+        naddr += 4;
+    }
+
+    */
+    u32 addr = RN;
+    // Flush store queue to RAM!
+    if ((addr & 0xEC000000) == 0xE0000000) {
+        u32 sq = (addr >> 5) & 1;
+        //const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
+        // const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
+        u32 naddr = addr & 0x03FFFFE0 | (((this->regs.QACR[sq]) & 0b11100) << 24);
         for (u32 i = 0; i < 8; i++) {
             WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
             naddr += 4;
@@ -1079,10 +1134,9 @@ SH4ins(PREF) { // (Rn) -> operand cache
 }
 
 SH4ins(RTE) { // Delayed branch, SH1*,SH2*: stack area -> PC/SR, SH3*,SH4*: SSR/SPC -> SR/PC
-    SH4_SR_set(this, this->regs.SSR);
     u32 val = this->regs.SPC;
-
     DELAY_SLOT;
+    SH4_SR_set(this, this->regs.SSR);
     rPC = val;
 }
 
@@ -1214,7 +1268,7 @@ SH4ins(STSMMACL) { // Rn-4 -> Rn, MACL -> (Rn)
 }
 
 SH4ins(STSPR) { // PR -> Rn
-    this->regs.PR = RN;
+    RN = this->regs.PR;
     PCinc;
 }
 
@@ -1225,39 +1279,40 @@ SH4ins(STSMPR) { // Rn-4 -> Rn, PR -> (Rn)
 }
 
 SH4ins(TRAPA) { // SH1*,SH2*: PC/SR -> stack area, (imm*4 + VBR) -> PC, SH3*,SH4*: PC/SR -> SPC/SSR, imm*4 -> TRA, 0x160 -> EXPEVT, VBR + 0x0100 -> PC
-    this->regs.TRAPA = IMM << 2;
+/*    this->regs.TRAPA = IMM << 2;
     this->regs.SSR = SH4_regs_SR_get(&this->regs.SR);
     this->regs.SPC = this->regs.PC + 2;
     this->regs.SGR = R(15);
     SH4_SR_set(this, this->regs.SSR | 0x70000000); // MD, BL, and RB
     this->regs.EXPEVT = 0x160;
-    this->regs.PC = this->regs.VBR + 0x00000100;
+    this->regs.PC = this->regs.VBR + 0x00000100;*/
+    PCinc;
 }
 
 SH4ins(FMOV) { // FRm -> FRn
     if (this->regs.FPSCR.SZ == 0) { // 32-bit
-        fpFRU(ins->Rn) = fpFRU(ins->Rm);
+        fpFRUn = fpFRUm;
     }  else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_LOAD) { // (Rm) -> FRn
     if (this->regs.FPSCR.SZ == 0) { // 32-bit
-        fpFRU(ins->Rn) = READ32(RM);
+        fpFRUn = READ32(RM);
     } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_STORE) { // FRm -> (Rn)
     if (this->regs.FPSCR.SZ == 0) { // 32-bit
-        WRITE32(RN, fpFRU(ins->Rm));
+        WRITE32(RN, fpFRUm);
     } else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_RESTORE) { // (Rm) -> FRn, Rm+4 -> Rm
     if (this->regs.FPSCR.SZ == 0) {// float
-        fpFRU(ins->Rn) = READ32(RM);
+        fpFRUn = READ32(RM);
         RM += 4;
     }  else {
         printf("\nWAIT WHAT2? %d %d", this->regs.FPSCR.SZ, this->regs.FPSCR.PR);
@@ -1268,7 +1323,7 @@ SH4ins(FMOV_RESTORE) { // (Rm) -> FRn, Rm+4 -> Rm
 SH4ins(FMOV_SAVE) { // Rn-4 -> Rn, FRm -> (Rn)
     if (this->regs.FPSCR.SZ == 0) { // 32-bit
         RN -= 4;
-        WRITE32(RN, fpFRU(ins->Rm));
+        WRITE32(RN, fpFRUm);
     } else {
         printf("\nWAIT WAHT? %d %d", this->regs.FPSCR.SZ, this->regs.FPSCR.PR);
         BADOPCODE;
@@ -1278,14 +1333,14 @@ SH4ins(FMOV_SAVE) { // Rn-4 -> Rn, FRm -> (Rn)
 
 SH4ins(FMOV_INDEX_LOAD) { // (R0 + Rm) -> FRn
     if (this->regs.FPSCR.SZ == 0) { // 32-bit
-        fpFRU(ins->Rn) = READ32(R(0) + RM);
+        fpFRUn = READ32(R(0) + RM);
     }  else BADOPCODE;
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_STORE) { // FRm -> (R0 + Rn)
     if (this->regs.FPSCR.SZ == 0) { // 32-bit
-        WRITE32(R(0) + RN, fpFRU(ins->Rm));
+        WRITE32(R(0) + RN, fpFRUm);
     } else BADOPCODE;
     PCinc;
 }
@@ -1296,162 +1351,164 @@ SH4ins(FMOV_DR) { // DRm -> DRn
 }
 
 SH4ins(FMOV_DRXD) { // DRm -> XDn
-    fpDR(ins->Rm) = fpXD(ins->Rn);
+    //fpDRU(ins->Rn) = fpXDU(ins->Rm);
+    fpXDU(ins->Rn) = fpDRU(ins->Rm);
     PCinc;
 }
 
 SH4ins(FMOV_XDDR) { // XDm -> DRn
-    fpXD(ins->Rm) = fpDR(ins->Rn);
+    fpDRU(ins->Rn) = fpXDU(ins->Rm);
     PCinc;
 }
 
 SH4ins(FMOV_XDXD) { // XDm -> XDn
-    fpXD(ins->Rm) = fpXD(ins->Rn);
+    fpXD(ins->Rn) = fpXD(ins->Rm);
     PCinc;
 }
 
 SH4ins(FMOV_LOAD_DR) { // (Rm) -> DRn
-    fpDRU(ins->Rn) = READ64(RM);
+    FP64LOAD(RM, fpDRU(ins->Rn));
     PCinc;
 }
 
 SH4ins(FMOV_LOAD_XD) { // (Rm) -> XDn
-    fpXDU(ins->Rn) = READ64(RM);
+    FP64LOAD(RM, fpXDU(ins->Rn));
     PCinc;
 }
 
 SH4ins(FMOV_STORE_DR) { // DRm -> (Rn)
-    WRITE64(RN, fpDRU(ins->Rm));
+    FP64SAVE(RN, fpDRU(ins->Rm));
     PCinc;
 }
 
 SH4ins(FMOV_STORE_XD) { // XDm -> (Rn)
-    WRITE64(RN, fpDRU(ins->Rm));
+    FP64SAVE(RN, fpXDU(ins->Rm));
     PCinc;
 }
 
 SH4ins(FMOV_RESTORE_DR) { // (Rm) -> DRn, Rm + 8 -> Rm
-    fpDRU(ins->Rn) = READ64(RM);
+    FP64LOAD(RM, fpDRU(ins->Rn));
     RM += 8;
     PCinc;
 }
 
 SH4ins(FMOV_RESTORE_XD) { // (Rm) -> XDn, Rm+8 -> Rm
-    fpXDU(ins->Rn) = READ64(RM);
+    FP64LOAD(RM, fpXDU(ins->Rn));
     RM += 8;
     PCinc;
 }
 
 SH4ins(FMOV_SAVE_DR) { // Rn-8 -> Rn, DRm -> (Rn)
     RN -= 8;
-    WRITE64(RN, fpDRU(ins->Rm));
+    FP64SAVE(RN, fpDRU(ins->Rm));
     PCinc;
 }
 
 SH4ins(FMOV_SAVE_XD) { // Rn-8 -> Rn, (Rn) -> XDm
     RN -= 8;
-    fpXDU(ins->Rm) = READ64(RN);
+    FP64SAVE(RN, fpXDU(ins->Rm));
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_LOAD_DR) { // (R0 + Rm) -> DRn
-    fpDRU(ins->Rn) = READ64(R(0) + RM);
+    FP64LOAD(R(0) + RM, fpDRU(ins->Rn));
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_LOAD_XD) { // (R0 + Rm) -> XDn
-    fpXDU(ins->Rn) = READ64(R(0) + RM);
+    FP64LOAD(R(0) + RM, fpXDU(ins->Rn));
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_STORE_DR) { // DRm -> (R0 + Rn)
-    WRITE64(R(0) + RN, fpDRU(ins->Rm));
+    FP64SAVE(R(0) + RN, fpDRU(ins->Rm));
     PCinc;
 }
 
 SH4ins(FMOV_INDEX_STORE_XD) { // XDm -> (R0 + Rn)
-    WRITE64(R(0) + RN, fpXDU(ins->Rm));
+    FP64SAVE(R(0) + RN, fpXDU(ins->Rm));
     PCinc;
 }
 
 SH4ins(FLDI0) { // 0x00000000 -> FRn
-    this->regs.fb[0].U32[ins->Rn] = 0;
+    fpFRn = 0.0f;
     PCinc;
 }
 
 SH4ins(FLDI1) { // 0x3F800000 -> FRn
-    this->regs.fb[0].U32[ins->Rn] = 0x3F800000;
+    fpFRUn = 0x3F800000;
     PCinc;
 }
 
 SH4ins(FLDS) { // FRm -> FPUL
-    this->regs.FPUL.u = this->regs.fb[0].U32[ins->Rm];
+    this->regs.FPUL.u = this->regs.fb[0].U32[ins->Rm ^ 1];
     PCinc;
 }
 
 SH4ins(FSTS) { // FPUL -> FRn
-    fpFR(ins->Rn) = this->regs.FPUL.f;
+    fpFRn = this->regs.FPUL.f;
     PCinc;
 }
 
 SH4ins(FABS) { // FRn & 0x7FFFFFFF -> FRn
-    fpFRU(ins->Rn) &= 0x7FFFFFFF;
+    fpFRUn &= 0x7FFFFFFF;
     PCinc;
 }
 
 SH4ins(FNEG) { // FRn ^ 0x80000000 -> FRn
-    fpFRU(ins->Rn)^=0x80000000;
+    fpFRUn^=0x80000000;
     PCinc;
 }
 
 SH4ins(FADD) { // FRn + FRm -> FRn
-    fpFR(ins->Rn) += fpFR(ins->Rm);
+    fpFRn += fpFRm;
     PCinc;
 }
 
 SH4ins(FSUB) { // FRn - FRm -> FRn
     // TODO: more precision
-    fpFR(ins->Rn) -= fpFR(ins->Rm);
+    fpFRn -= fpFRm;
     PCinc;
 }
 
 SH4ins(FMUL) { // FRn * FRm -> FRn
-    fpFR(ins->Rn) *= fpFR(ins->Rm);
+    fpFRn *= fpFRm;
     PCinc;
 }
 
 SH4ins(FMAC) { // FR0 * FRm + FRn -> FRn
-    double res = (double)fpFR(ins->Rn) + ((double)fpFR(0) * (double)fpFR(ins->Rm));
-    fpFR(ins->Rn) = (float)res;
+    //double res = (double)fpFRn + ((double)fpFR(0) * (double)fpFRm);
+    fpFRn =(f32) ((f64)fpFRn+(f64)fpFR(0) * (f64)fpFRm);
+    //fpFRn = (float)res;
     PCinc;
 }
 
 SH4ins(FDIV) { // FRn / FRm -> FRn
-    fpFR(ins->Rn) /= fpFR(ins->Rm);
+    fpFRn /= fpFRm;
     PCinc;
 }
 
 // Thanks Reicast!
 SH4ins(FSQRT) { // sqrt (FRn) -> FRn
-    fpFR(ins->Rn) = sqrtf(fpFR(ins->Rn));
+    fpFRn = sqrtf(fpFRn);
     //CHECK_FPU_32(fr[n]);
     PCinc;
 }
 
 SH4ins(FCMP_EQ) { // If FRn = FRm: 1 -> T, Else: 0 -> T
-    this->regs.SR.T = !!(fpFR(ins->Rm) == fpFR(ins->Rn));
+    this->regs.SR.T = !!(fpFRm == fpFRn);
     PCinc;
 }
 
 SH4ins(FCMP_GT) { // If FRn > FRm: 1 -> T, Else: 0 -> T
     //TODO: better accuracy
-    this->regs.SR.T = fpFR(ins->Rn) > fpFR(ins->Rm);
+    this->regs.SR.T = fpFRn > fpFRm;
     PCinc;
 }
 
 SH4ins(FLOAT_single) { // (float)FPUL -> FRn
     if (this->regs.FPSCR.PR == 0) { // single precision
-        fpFR(ins->Rn) = (float)((i32)this->regs.FPUL.u);
+        fpFRn = (float)((i32)this->regs.FPUL.u);
     } else { // double precision
         BADOPCODE;
     }
@@ -1459,10 +1516,17 @@ SH4ins(FLOAT_single) { // (float)FPUL -> FRn
 }
 
 // Thanks to the amazing website for how to implement this properly
+
 SH4ins(FTRC_single) { // (long)FRm -> FPUL
-    // TODO make this much better!
-    // x86 overflows oddly, with positive overflow returining INT_MIN
-    this->regs.FPUL.u = (int32)fpFR(ins->Rm);
+    this->regs.FPUL.u = (u32)(s32)(fpFRm < 2147483520.0f ? fpFRm : 2147483520.0f);     // IEEE 754: 0x4effffff
+    // thanks reicast
+    // Intel CPUs convert out of range float numbers to 0x80000000. Manually set the correct sign
+    if (this->regs.FPUL.u == 0x80000000)
+    {
+        if (*(int *)&fpFRm > 0) // Using integer math to avoid issues with Inf and NaN
+            this->regs.FPUL.u;
+    }
+
     PCinc;
 }
 // thanks Reicast
@@ -1470,8 +1534,10 @@ SH4ins(FIPR) { // inner_product (FVm, FVn) -> FR[n+3]
     if (this->regs.FPSCR.PR == 0)
     {
         //clear_cause ();
-        i64 n=ins->Rn & 0xC;
-        i64 m=(ins->Rn & 0x3) << 2;
+        i64 n=(ins->Rn & 3) << 2;
+        i64 m=(ins->Rm & 3) << 2;
+        assert(ins->Rn < 4);
+        assert(ins->Rm < 4);
         float idp;
         idp  = fpFR(n+0) * fpFR(m+0);
         idp += fpFR(n+1) * fpFR(m+1);
@@ -1488,7 +1554,8 @@ SH4ins(FIPR) { // inner_product (FVm, FVn) -> FR[n+3]
 
 // Thanks Reicast!
 SH4ins(FTRV) { // transform_vector (XMTRX, FVn) -> FVn
-    u32 n=ins->Rn&0xC;
+    u32 n=ins->Rn;
+    assert(ins->Rn < 4);
 
     if (this->regs.FPSCR.PR==0)
     {
@@ -1524,7 +1591,6 @@ SH4ins(FTRV) { // transform_vector (XMTRX, FVn) -> FVn
         fpFR(n + 1) = v2;
         fpFR(n + 2) = v3;
         fpFR(n + 3) = v4;
-
     }
     else
     {
@@ -1594,12 +1660,15 @@ SH4ins(FCNVDS) { // double_to_float (DRm) -> FPUL
 }
 
 SH4ins(FCNVSD) { // float_to_double (FPUL) -> DRn
-    fpDR(ins->Rn) = (double)this->regs.FPUL.f;
+    if (this->regs.FPSCR.PR == 1)
+        fpDR(ins->Rn) = (double)this->regs.FPUL.f;
+    else
+        printf("\nInvalid FCNVSD when PR=0");
     PCinc;
 }
 
 SH4ins(LDSFPSCR) { // Rm -> FPSCR
-    SH4_regs_FPSCR_set(&this->regs, RM & 0x003FFFFF);
+    SH4_regs_FPSCR_set(&this->regs, RM); //  & 0x003FFFFF);
     PCinc;
 }
 
@@ -1609,7 +1678,7 @@ SH4ins(STSFPSCR) { // FPSCR -> Rn
 }
 
 SH4ins(LDSMFPSCR) { // (Rm) -> FPSCR, Rm+4 -> Rm
-    SH4_regs_FPSCR_set(&this->regs, READ32(RM) & 0x003FFFFF);
+    SH4_regs_FPSCR_set(&this->regs, READ32(RM));
     RM += 4;
     PCinc;
 }
@@ -1669,14 +1738,14 @@ SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
     }
     else {
         //clear_cause();
-        float n = fpFR(ins->Rn);
+        /*float n = fpFRn;
 
-        switch (fpclassify(fpFR(ins->Rn)))
+        switch (fpclassify(fpFRn))
         {
             case FP_NORMAL:
                 if (n >= 0)
                 {
-                    fpFR(ins->Rn) = 1.0f / sqrtf(n);
+                    fpFRn = 1.0f / sqrtf(n);
                 }
                 else {
                     printf("\nINVALID VALUE FOR FSRRA");
@@ -1685,11 +1754,11 @@ SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
                 break;
 
             case FP_SUBNORMAL:
-                /*if (sign_of (n) == 0)
+                //if (sign_of (n) == 0)
                     fpu_error ();
                 else
                     invalid (n);
-                break;*/
+                break;///
 
             case FP_ZERO:
                 //dz (n, sign_of (n));
@@ -1697,7 +1766,7 @@ SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
 
             case FP_INFINITE:
                 if (n > 0)
-                    fpFR(ins->Rn) = 0;
+                    fpFRn = 0;
                 else
                     break;
                     //invalid (n);
@@ -1706,10 +1775,11 @@ SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
                 //qnan (n);
                 break;
 
-            /*case sNAN:
+            ///case sNAN:
                 //invalid (n);
-                break;*/
-        }
+                break;///
+        }*/
+         fpFRn = (float)(1/sqrtf(fpFRn));
     }
     PCinc;
 }
@@ -1942,6 +2012,7 @@ void do_sh4_decode() {
         printf("\nDUPLICATE DECODE DO!?");
         return;
     }
+    generate_fsca_table();
     decode_done = 1;
     for (u32 szpr = 0; szpr < 4; szpr++) {
         for (u32 i = 0; i < 65536; i++) {
