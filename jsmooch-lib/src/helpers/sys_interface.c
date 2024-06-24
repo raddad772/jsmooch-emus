@@ -8,6 +8,7 @@
 #include "system/dreamcast/dreamcast.h"
 #include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
+#include "system/genesis/genesis.h"
 #include "helpers/debug.h"
 #include "stdio.h"
 
@@ -19,6 +20,9 @@ struct jsm_system* new_system(enum jsm_systems which)
     cvec_lock_reallocs(&out->IOs);
     out->kind = which;
 	switch (which) {
+        case SYS_GENESIS:
+            genesis_new(out);
+            break;
         case SYS_ATARI2600:
             atari2600_new(out);
             break;
@@ -54,6 +58,9 @@ void jsm_delete(struct jsm_system* jsm)
 {
     struct cvec* o = &jsm->IOs;
     switch(jsm->kind) {
+        case SYS_GENESIS:
+            genesis_delete(jsm);
+            break;
         case SYS_ATARI2600:
             atari2600_delete(jsm);
             break;

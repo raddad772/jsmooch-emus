@@ -14,7 +14,7 @@
 void jsm_string_init(struct jsm_string *this, u32 sz)
 {
     this->ptr = this->cur = NULL;
-    this->len = sz;
+    this->allocated_len = sz;
     this->ptr = this->cur = malloc(sz);
     memset(this->ptr, 0, sz);
 }
@@ -26,12 +26,12 @@ void jsm_string_delete(struct jsm_string *this)
         this->ptr = NULL;
     }
     this->cur = NULL;
-    this->len = 0;
+    this->allocated_len = 0;
 }
 
-void jsm_string_seek(struct jsm_string *this, u32 pos)
+void jsm_string_seek(struct jsm_string *this, i32 pos)
 {
-    assert(pos < this->len);
+    assert(pos < this->allocated_len);
     this->cur = this->ptr + pos;
 }
 
@@ -43,8 +43,9 @@ void jsm_string_sprintf(struct jsm_string *this, const char* format, ...)
     }
     va_list va;
     va_start(va, format);
-    this->cur += vsnprintf(this->cur, this->len - (this->cur - this->ptr), format, va);
+    this->cur += vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
     va_end(va);
+    assert((this->cur - this->ptr) < this->allocated_len);
 }
 
 void jsm_string_empty(struct jsm_string *this)
@@ -54,5 +55,15 @@ void jsm_string_empty(struct jsm_string *this)
         return;
     }
     this->cur = this->ptr;
-    memset(this->ptr, 0, this->len);
+    memset(this->ptr, 0, this->allocated_len);
+}
+
+void jsm_string_quickempty(struct jsm_string *this)
+{
+    if (this->ptr == NULL) {
+        assert(1==0);
+        return;
+    }
+    this->cur = this->ptr;
+    *this->cur = 0;
 }

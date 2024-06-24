@@ -46,7 +46,7 @@ u32 cvec_len(struct cvec* this) {
 
 void *cvec_push_back(struct cvec* this)
 {
-    //printf("\nPUSH BACK! %d", this->len);
+    //printf("\nPUSH BACK! %d", this->allocated_len);
     if (this->len >= this->len_allocated) {
         if (this->len_allocated == 0) {
             assert(!this->realloc_locked);

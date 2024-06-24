@@ -11,9 +11,9 @@
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
 
-
+//#define NEWSYS
 #define DO_DREAMCAST
-//#define SIDELOAD
+#define SIDELOAD
 
 struct system_io {
     struct CDKRKR {
@@ -224,8 +224,11 @@ void GET_HOME_BASE_SYS(char *out, enum jsm_systems which, const char* sec_path, 
             sprintf(out, "%s/zx_spectrum", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_PSX:
         case SYS_GENESIS:
+            sprintf(out, "%s/genesis", BASER_PATH);
+            *worked = 1;
+            break;
+        case SYS_PSX:
         case SYS_SNES:
         case SYS_BBC_MICRO:
         case SYS_GG:
@@ -343,7 +346,7 @@ int main(int argc, char** argv)
     enum jsm_systems which = SYS_DREAMCAST;
 #else
     //enum jsm_systems which = SYS_ATARI2600;
-    enum jsm_systems which = SYS_ZX_SPECTRUM;
+    enum jsm_systems which = SYS_GENESIS;
 #endif
     //test_gdi();
     //return 0;
@@ -382,7 +385,7 @@ int main(int argc, char** argv)
 
     struct multi_file_set ROMs;
     mfs_init(&ROMs);
-    u32 worked;
+    u32 worked = 0;
     switch(which) {
         case SYS_NES:
             worked = grab_ROM(&ROMs, which, "mario3.nes", NULL);
@@ -406,6 +409,9 @@ int main(int argc, char** argv)
         case SYS_ZX_SPECTRUM:
             worked = 1;
             break;
+        case SYS_GENESIS:
+            worked = grab_ROM(&ROMs, which, "sonic.md", NULL);
+            break;
         default:
             printf("\nSYS NOT IMPLEMENTED!");
     }
@@ -420,7 +426,7 @@ int main(int argc, char** argv)
 #ifdef SIDELOAD
     struct multi_file_set sideload_image;
     mfs_init(&sideload_image);
-    grab_ROM(&sideload_image, which, "example.elf", "kos");
+    grab_ROM(&sideload_image, which, "gl_matrix.elf", "kos");
     mfs_add_IP_BIN(&sideload_image);
     sys->sideload(sys, &sideload_image);
     mfs_delete(&sideload_image);
@@ -511,6 +517,11 @@ int main(int argc, char** argv)
     //dbg_flush();
 
     //sys->get_framevars(sys, &fv); printf("\nCYCLES! %llu (%llu)", fv.master_cycle, fv.master_cycle - first);
+#endif
+
+#ifdef NEWSYS
+    sys->step_master(sys, 10); //
+
 #endif
     //SDL_Log("TIME! %f", r);
     u32 quit = 0;

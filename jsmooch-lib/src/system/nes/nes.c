@@ -17,20 +17,19 @@
 
 #define THIS struct NES* this
 
-void NESJ_play(JSM);
-void NESJ_pause(JSM);
-void NESJ_stop(JSM);
-void NESJ_get_framevars(JSM, struct framevars* out);
-void NESJ_reset(JSM);
-void NESJ_get_description(JSM, struct machine_description* d);
-void NESJ_killall(JSM);
-u32 NESJ_finish_frame(JSM);
-u32 NESJ_finish_scanline(JSM);
-u32 NESJ_step_master(JSM, u32 howmany);
-void NESJ_load_BIOS(JSM, struct multi_file_set* mfs);
-void NESJ_enable_tracing(JSM);
-void NESJ_disable_tracing(JSM);
-void NESJ_describe_io(JSM, struct cvec* IOs);
+static void NESJ_play(JSM);
+static void NESJ_pause(JSM);
+static void NESJ_stop(JSM);
+static void NESJ_get_framevars(JSM, struct framevars* out);
+static void NESJ_reset(JSM);
+static void NESJ_killall(JSM);
+static u32 NESJ_finish_frame(JSM);
+static u32 NESJ_finish_scanline(JSM);
+static u32 NESJ_step_master(JSM, u32 howmany);
+static void NESJ_load_BIOS(JSM, struct multi_file_set* mfs);
+static void NESJ_enable_tracing(JSM);
+static void NESJ_disable_tracing(JSM);
+static void NESJ_describe_io(JSM, struct cvec* IOs);
 
 void NES_new(JSM)
 {
@@ -46,6 +45,7 @@ void NES_new(JSM)
 
     this->cycles_left = 0;
     this->display_enabled = 1;
+    this->IOs = NULL;
     jsm->ptr = (void*)this;
 
     jsm->finish_frame = &NESJ_finish_frame;
@@ -102,39 +102,6 @@ void NES_delete(JSM)
     jsm->describe_io = NULL;
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id)
-{
-    struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
-    sprintf(b->name, "%s", name);
-    b->state = 0;
-    b->id = 0;
-    b->kind = DBK_BUTTON;
-    b->common_id = common_id;
-}
-
-static void setup_controller(struct NES* this, u32 num, const char*name, u32 connected)
-{
-    struct physical_io_device *d = cvec_push_back(this->IOs);
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
-
-    sprintf(d->device.controller.name, "%s", name);
-    d->id = num;
-    d->kind = HID_CONTROLLER;
-    d->connected = connected;
-
-    struct JSM_CONTROLLER* cnt = &d->device.controller;
-
-    // up down left right a b start select. in that order
-    new_button(cnt, "up", DBCID_co_up);
-    new_button(cnt, "down", DBCID_co_down);
-    new_button(cnt, "left", DBCID_co_left);
-    new_button(cnt, "right", DBCID_co_right);
-    new_button(cnt, "a", DBCID_co_fire1);
-    new_button(cnt, "b", DBCID_co_fire2);
-    new_button(cnt, "start", DBCID_co_start);
-    new_button(cnt, "select", DBCID_co_select);
-}
-
 static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
 {
     JTHIS;
@@ -158,8 +125,10 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     this->IOs = IOs;
 
     // controllers
-    setup_controller(this, 0, "Player 1", 1);
-    setup_controller(this, 1, "Player 2", 0);
+    struct physical_io_device *c1 = cvec_push_back(this->IOs);
+    struct physical_io_device *c2 = cvec_push_back(this->IOs);
+    NES_joypad_setup_pio(c1, 0, "Player 1", 1);
+    NES_joypad_setup_pio(c2, 1, "Player 2", 0);
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -238,12 +207,6 @@ void NESJ_reset(JSM)
     NES_PPU_reset(&this->ppu);
 }
 
-
-void NESJ_get_description(JSM, struct machine_description* d)
-{
-    JTHIS;
-    sprintf(d->name, "Nintendo Entertainment System");
-}
 
 void NESJ_killall(JSM)
 {

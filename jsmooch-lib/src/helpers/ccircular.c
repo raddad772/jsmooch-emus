@@ -13,7 +13,7 @@ void ccircular_init(struct ccircular* this, u32 data_size, u32 prealloc)
     this->data = NULL;
     this->data_sz = data_size;
     this->len_allocated = 0;
-    this->len = 0;
+    this->allocated_len = 0;
     assert(prealloc > 2);
 
     this->data = malloc(data_size * this->len_allocated);

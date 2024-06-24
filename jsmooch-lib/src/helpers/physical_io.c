@@ -2,6 +2,7 @@
 // Created by . on 4/19/24.
 //
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "physical_io.h"
@@ -75,4 +76,14 @@ void physical_io_device_delete(struct physical_io_device* this)
         case HID_NONE:
             break;
     }
+}
+
+void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id)
+{
+    struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
+    sprintf(b->name, "%s", name);
+    b->state = 0;
+    b->id = 0;
+    b->kind = DBK_BUTTON;
+    b->common_id = common_id;
 }

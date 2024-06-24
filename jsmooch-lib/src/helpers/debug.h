@@ -16,14 +16,14 @@
 //#define TRACE_ON_BRK     // Enable tracing on break
 //#define DBG_LOG_TO_FILE // log debug to file
 //#define REICAST_DIFF
-#define DISABLE_BREAK
+//#define DISABLE_BREAK
 
 //#define LYCODER        // lycoder-format traces for easy winmerge
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 //#define DUMP_LAST_TRACES_ON_BREAK
 //#define TRACE_COLORS
 //#define SH4_TRACE_INS_FETCH
-#define TEST_SH4
+//#define TEST_SH4   // this one disables certain TMU functionality due to it causing invonvenient issues with sh4 json tests
 //#define SH4_IRQ_DBG
 
 #define DC_SUPPORT_ELF
@@ -81,6 +81,7 @@ struct jsm_debug_struct {
 struct jsm_debug_read_trace {
     void *ptr;
     u32 (*read_trace)(void *,u32);
+    u32 (*read_trace_m68k)(void *,u32,u32,u32);
 };
 
 extern struct jsm_debug_struct dbg;

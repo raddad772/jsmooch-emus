@@ -6,7 +6,51 @@
 #define JSMOOCH_EMUS_M68000_H
 
 #include "helpers/int.h"
-#include "m68000_opcodes.h"
+#include "m68000_instructions.h"
+
+enum M68kOS {
+    M68kOS_pause1 = 0,
+    M68kOS_prefetch1 = 1,
+    M68kOS_pause2 = 2,
+    M68kOS_prefetch2 = 3,
+    M68kOS_read1 = 4,
+    M68kOS_read2 = 5,
+};
+
+enum M68k_interrupt_vectors {
+    M68kIV_reset = 0,
+    M68kIV_bus_error = 2,
+    M68kIV_address_error = 3,
+    M68kIV_illegal_instruction = 4,
+    M68kIV_zero_divide = 5,
+    M68kIV_chk_instruction = 6,
+    M68kIV_trapv_instruction = 7,
+    M68kIV_privilege_violation = 8,
+    M68kIV_trace = 9,
+    M68kIV_line1010 = 10,
+    M68kIV_line1111 = 11,
+    //M68kIV_format_error = 14, // MC68010 and later only
+    M68kIV_uninitialized_irq = 15,
+    M68kIV_spurious_interrupt = 24, // bus error during IRQ
+    M68kIV_interrupt_l1_autovector = 25,
+    M68kIV_interrupt_l2_autovector = 26,
+    M68kIV_interrupt_l3_autovector = 27,
+    M68kIV_interrupt_l4_autovector = 28,
+    M68kIV_interrupt_l5_autovector = 29,
+    M68kIV_interrupt_l6_autovector = 30,
+    M68kIV_interrupt_l7_autovector = 31,
+    M68kIV_trap_base = 32,
+    M68kIV_user_base = 64
+};
+
+
+enum M68k_function_codes {
+    M68k_FC_user_data = 1,
+    M68k_FC_user_program = 2,
+    M68k_FC_supervisor_data = 5,
+    M68k_FC_supervisor_program = 6,
+    M68k_FC_cpu_space = 7
+};
 
 struct M68k_regs {
     /*
@@ -17,38 +61,36 @@ struct M68k_regs {
     u32 D[8];
     u32 A[8];
     u32 PC;
+
+    u32 ASP; // Alternate stack pointer, holds alternate stack pointer.
     union {
         struct {
-            u16 C: 1;
-            u16 V: 1;
-            u16 Z: 1;
-            u16 N: 1;
-            u16 X: 1;
-
+            u16 C: 1; // carry    1
+            u16 V: 1; // overflow 2
+            u16 Z: 1; // zero     4
+            u16 N: 1; // negative 8
+            u16 X: 1; // extend   10
             u16 _: 3;
 
-            u16 I: 3;
+            u16 I: 3;  // interrupt priority mask
             u16 _2: 2;
-            u16 S: 1;
+            u16 S: 1; // supervisor state
             u16 _3: 1;
-            u16 T: 1;
+            u16 T: 1; // trace mode
         };
         u16 u;
     } SR;
-
-    u32 SSP; // System stack pointer
 
     // Prefetch registers
     u32 IRC; // holds last word prefetched from external memory
     u32 IR; // instruction currently decoding
     u32 IRD; // instruction currently executing
-
 };
 
 struct M68k_pins {
     u32 FC; // Function codes
     u32 Addr;
-    u32 D[2];
+    u32 D;
     u32 DTACK;
     u32 AS; // Address Strobe
     u32 RW; // Read-write
@@ -58,12 +100,22 @@ struct M68k_pins {
 };
 
 enum M68k_states {
-    M68kS_read8,
-    M68kS_read16,
-    M68kS_write8,
-    M68kS_write16,
-    M68kS_decode, // decode
-    M68kS_exec, // execute
+    M68kS_read8 = 0, // 0
+    M68kS_read16, // 1
+    M68kS_read32, // 2
+    M68kS_write8, // 3
+    M68kS_write16, // 4
+    M68kS_write32, // 5
+    M68kS_decode, // decode 6
+    M68kS_read_operands, // operands 7
+    M68kS_write_operand, // operands 8
+    M68kS_exec, // execute 9
+    M68kS_prefetch,
+    M68kS_wait_cycles, // wait cycles to outside world
+    M68kS_exc_group0,
+    M68kS_exc_group1,
+    M68kS_exc_group2,
+
 };
 
 struct M68k_ins_t;
@@ -72,35 +124,99 @@ struct M68k {
     struct M68k_regs regs;
     struct M68k_pins pins;
 
-
-    enum M68k_states state;
-
-    struct {
-        u32 TCU; // Subcycle of like rmw8 etc.
-        u32 addr;
-        u32 data;
-        u32 done;
-        void (*func)(struct M68k*);
-    } bus_cycle;
+    u64 trace_cycles;
+    u32 ins_decoded;
+    u32 testing;
 
     struct {
-        u32 TCU;
-        u32 done;
-        u32 addr;
-        u32 data;
-        u32 data32;
-        void (*func)(struct M68k*, struct M68k_ins_t*);
-        struct M68k_ins_t *ins;
-    } instruction;
-    u32 wait_steps;
+        enum M68k_states current;
+
+        struct {
+            u32 TCU; // Subcycle of like rmw8 etc.
+            u32 addr;
+            u32 data;
+            u32 done;
+            void (*func)(struct M68k*);
+            enum M68k_states next_state;
+            u32 FC;
+        } bus_cycle;
+
+        struct {
+            i32 num;
+            u32 TCU;
+            enum M68k_states next_state;
+        } prefetch;
+
+        struct {
+            u32 state[6]; // which of the 4 from enum M68kOS are left
+
+            u32 TCU;
+
+            u32 cur_op_num;
+            // Op1 and 2 after fetch
+            u32 temp;
+            u32 fast, hold;
+            u32 prefetch[2];
+
+            struct M68k_EA *ea;
+            enum M68k_states next_state;
+        } operands;
 
 
+        struct {
+            i32 cycles_left;
+            enum M68k_states next_state;
+        } wait_cycles;
 
+        struct {
+            u32 TCU;
+            u32 done;
+            u32 result; // used for results
+            i32 prefetch;
+            // Op1 and 2 addresses
+        } instruction;
+
+        struct {
+            u32 addr;
+            u32 ext_words;
+            u32 val;
+        } op[2];
+
+        struct {
+            u32 group;
+            struct {
+                u32 vector;
+                u32 TCU;
+
+                u32 normal_state;
+                u32 addr;
+                u32 IR;
+                u32 SR;
+                u32 PC;
+                u32 first_word;
+                u32 base_addr;
+            } group0;
+            u32 group1_pending;
+        } exception;
+    } state;
+
+    struct {
+        struct jsm_debug_read_trace strct;
+        struct jsm_string str;
+        u32 ok;
+    } trace;
+
+    struct M68k_ins_t *ins;
+    struct M68k_ins_t SPEC_RESET;
 };
 
 void M68k_cycle(struct M68k* this);
 void M68k_init(struct M68k* this);
 void M68k_delete(struct M68k* this);
 void M68k_reset(struct M68k* this);
+u32 M68k_read_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u32 prefetch);
+void M68k_set_SR(struct M68k* this, u32 val);
+u32 M68k_get_SR(struct M68k* this);
+void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct);
 
 #endif //JSMOOCH_EMUS_M68000_H

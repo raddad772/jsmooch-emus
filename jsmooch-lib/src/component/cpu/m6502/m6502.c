@@ -140,7 +140,7 @@ void M6502_cycle(struct M6502* this)
     this->regs.P.I = this->regs.new_I;
     this->regs.TCU++;
     fflush(stdout);
-    if (this->regs.TCU == 1) {
+    if (this->regs.TCU == 1) { // T0
         this->PCO = this->pins.Addr; // Capture PC before it runs away
         this->regs.IR = this->pins.D;
         if (this->regs.NMI_pending && !this->NMI_ack) {

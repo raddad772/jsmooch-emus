@@ -7,7 +7,7 @@
 
 .ADD 1,2,4 template(dreg_to_ea_S)  # dreg_to_ea_S means S=0 first operand EA, S=1 second operand EA
 1101 dddS wwmm mrrr
-SKIPAFART
+SKIPM1
 skip_S=0 if ((m == 7) && (r >= 5))
 skip_S=1 if ((m <= 1) || ((m == 7) && (r >= 2)))
 

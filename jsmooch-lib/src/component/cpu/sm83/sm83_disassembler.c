@@ -6,8 +6,8 @@
 #include "string.h"
 #include "sm83_disassembler.h"
 
-#define R(a) sprintf(*out, a); *out = (*out + strlen(*out)); return
-#define Rn(a, n) sprintf(*out, a, n); *out = (*out + strlen(*out)); return
+#define R(a) return sprintf(w, a)
+#define Rn(a, n) return sprintf(w, a, n)
 
 u32 s8add(u32 PC, u32 val)
 {
@@ -16,9 +16,9 @@ u32 s8add(u32 PC, u32 val)
     return out & 0xFFFF;
 }
 
-static void SM83_disassembleCB(char **out, u32 opcode);
+static u32 SM83_disassembleCB(char *w, u32 opcode);
 
-void SM83_disassemble(char **out, u32 PC, u32 (*peek)(u32)) {
+u32 SM83_disassemble(u32 PC, u32 (*peek)(u32), char *w) {
     u32 opcode = peek(PC);
 
     u32 lo = peek((PC+1) & 0xFFFF);
@@ -228,7 +228,7 @@ void SM83_disassemble(char **out, u32 PC, u32 (*peek)(u32)) {
         case 0xc8: R("ret  z");
         case 0xc9: R("ret");
         case 0xca: Rn("jp   z,$%04x", word);
-        case 0xcb: SM83_disassembleCB(out, lo); return;
+        case 0xcb: return SM83_disassembleCB(w, lo);
         case 0xcc: Rn("call z,$%04x", word);
         case 0xcd: Rn("call $%04x", word);
         case 0xce: Rn("adc  a,$%02x", lo);
@@ -275,7 +275,7 @@ void SM83_disassemble(char **out, u32 PC, u32 (*peek)(u32)) {
     }
 }
 
-static void SM83_disassembleCB(char **out, u32 opcode) {
+static u32 SM83_disassembleCB(char *w, u32 opcode) {
     switch(opcode) {
         case 0x00: R("rlc  b");
         case 0x01: R("rlc  c");

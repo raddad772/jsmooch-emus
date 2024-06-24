@@ -18,6 +18,8 @@ add_executable(jsmooch-tests
         src/cpu-test-generators/myrandom.c
         src/cpu-tests/sh4-tests.c
         src/cpu-tests/sh4-tests.h
+        src/cpu-tests/m68000-tests.c
+        src/cpu-tests/m68000-tests.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src ${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)

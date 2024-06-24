@@ -8,14 +8,14 @@
 #include "z80_disassembler.h"
 #include "z80.h"
 
-const char *Z80D_tabl_r[] = {"B", "C", "D", "E", "H", "L", "(HL)", "A"};
-const char *Z80D_tabl_rp[] = {"BC", "DE", "HL", "SP"};
-const char *Z80D_tabl_rp2[] = {"BC", "DE", "HL", "AF"};
-const char *Z80D_tabl_cc[] = {"NZ", "Z", "NC", "C", "PO", "PE", "P", "M"};
-const char *Z80D_tabl_alu[] = {"ADD A, ", "ADC A, ", "SUB", "SBC A, ", "AND", "XOR", "OR", "CP"};
-const char *Z80D_tabl_rot[] = {"RLC", "RRC", "RL", "RR", "SLA", "SRA", "SSL", "SRL"};
-const char *Z80D_tabl_im[] = {"0", "0/1", "1", "2", "0", "0/1", "1", "2"};
-const char *Z80D_tabl_bli[8][10] = {{}, {}, {}, {},
+static const char *Z80D_tabl_r[] = {"B", "C", "D", "E", "H", "L", "(HL)", "A"};
+static const char *Z80D_tabl_rp[] = {"BC", "DE", "HL", "SP"};
+static const char *Z80D_tabl_rp2[] = {"BC", "DE", "HL", "AF"};
+static const char *Z80D_tabl_cc[] = {"NZ", "Z", "NC", "C", "PO", "PE", "P", "M"};
+static const char *Z80D_tabl_alu[] = {"ADD A, ", "ADC A, ", "SUB", "SBC A, ", "AND", "XOR", "OR", "CP"};
+static const char *Z80D_tabl_rot[] = {"RLC", "RRC", "RL", "RR", "SLA", "SRA", "SSL", "SRL"};
+static const char *Z80D_tabl_im[] = {"0", "0/1", "1", "2", "0", "0/1", "1", "2"};
+static const char *Z80D_tabl_bli[8][10] = {{}, {}, {}, {},
 {"LDI", "CPI", "INI", "OUTI"}, // 4, 0...3
 {"LDD", "CPD", "IND", "OUTD"}, // 5, 0...3
 {"LDIR", "CPIR", "INIR", "OTIR"}, // 6, 0...3
@@ -84,7 +84,6 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
 
     u32 current_prefix = 0x00;
     u32 current_byte = opcode;
-
 
     u32 decoded_bytes = 0;
     sprintf(H, "H");

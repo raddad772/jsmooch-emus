@@ -54,7 +54,7 @@ void dbg_printf(char *format, ...)
     }
     va_list va;
     va_start(va, format);
-    vsnprintf(this->cur, this->len - (this->cur - this->ptr), format, va);
+    vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
     va_end(va);
 
     // Scan for newlines
@@ -63,7 +63,7 @@ void dbg_printf(char *format, ...)
             dbg.msg_last_newline = this->cur;
         this->cur++;
     }
-    if ((this->len - (this->cur - this->ptr)) < 1000) {
+    if ((this->allocated_len - (this->cur - this->ptr)) < 1000) {
         dbg_flush();
     }
 }

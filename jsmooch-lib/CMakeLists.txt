@@ -168,8 +168,23 @@ add_library(jsmooch-lib
         src/helpers/elf_helpers.h
         src/helpers/elf_helpers.c
         src/component/cpu/m68000/m68000_internal.h
-        src/component/cpu/m68000/m68000_opcodes.c
-        src/component/cpu/m68000/m68000_opcodes.h
+        src/component/cpu/m68000/m68000_instructions.c
+        src/component/cpu/m68000/m68000_instructions.h
+        src/system/genesis/genesis.c
+        src/system/genesis/genesis.h
+        src/component/controller/genesis3/genesis3.c
+        src/component/controller/genesis3/genesis3.h
+        src/system/genesis/genesis_vdp.c
+        src/system/genesis/genesis_vdp.h
+        src/system/genesis/genesis_clock.c
+        src/system/genesis/genesis_clock.h
+        src/system/genesis/genesis_cart.c
+        src/system/genesis/genesis_cart.h
+        src/system/genesis/genesis_bus.c
+        src/system/genesis/genesis_bus.h
+        src/component/cpu/m68000/m68000_disassembler.c
+        src/component/cpu/m68000/m68000_disassembler.h
+        src/component/cpu/m68000/m68000_internal.c
 )
 
 include_directories(src/)
