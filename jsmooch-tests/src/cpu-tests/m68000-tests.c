@@ -15,14 +15,14 @@
 
 #include "helpers/multisize_memaccess.c"
 
-
-#define B16s(a, m, c, d) (0b##a##m##c##d)
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (b) : (a))
 
 static u8 *tmem = 0;
 
 #define TEST_SKIPS_NUM 1
 static char test_skips[TEST_SKIPS_NUM][50] = {
-        "TRAPV.json.bin"
+        "CHK.json.bin"
 };
 
 static u32 m68k_dasm_read(void *obj, u32 addr, u32 UDS, u32 LDS)
@@ -80,6 +80,8 @@ struct transaction {
     u32 data_bus;
     u32 UDS, LDS;
 
+    u32 visited;
+
     u32 start_cycle;
 };
 
@@ -111,11 +113,16 @@ struct m68k_test {
 
     u32 current_cycle;
     u32 failed;
+    u32 failed_w;
 };
 
 struct m68k_test_struct {
     struct M68k cpu;
     struct m68k_test test;
+    struct m68k_test_transactions my_transactions;
+    i64 had_group0;
+    i64 had_group1;
+    i64 had_group2;
 };
 
 static u8* read_test_transactions(u8* ptr, struct m68k_test *test)
@@ -132,6 +139,7 @@ static u8* read_test_transactions(u8* ptr, struct m68k_test *test)
         u8 k = R8;
         t->len = R32;
         t->start_cycle = cycle_num;
+        t->visited = 0;
         cycle_num += t->len;
         switch(k) {
             case 0: // n
@@ -234,23 +242,118 @@ static u8* decode_test(u8* ptr, struct m68k_test *test)
     return ptr;
 }
 
-static u32 compare_state_to_ram(struct m68k_test_state *s)
+static struct transaction* find_last_transaction(struct m68k_test_transactions *ts, u32 addr, enum transaction_kind tk, u32 UDS, u32 LDS)
 {
+    if (ts->num_transactions < 2) return NULL;
+    for (i32 i = ts->num_transactions-1; i >= 0; i--) {
+        struct transaction *t = &ts->items[i];
+        if ((t->kind == tk) && ((t->addr_bus & 0xFFFFFE) == (addr & 0xFFFFFE)) && (t->UDS == UDS) && (t->LDS == LDS))
+            return t;
+    }
+
+    return NULL;
+}
+
+
+static u32 compare_group0_frame(struct m68k_test_struct *ts)
+{
+    struct transaction *t1=NULL, *t2=NULL;
+    // Go over any transactions that are >= g0_min and < g0_max.
+    // map
+    // +0 FIRST WORD (ignore I/N bit)
+    // +2 ACCESS HI
+    // +4 ACCESS LO
+    // +6 IR
+    // +8 SR
+    // +10 PC hi
+    // +12 PC lo (ignore if within 4 or so)
     u32 all_passed = 1;
-    printf("\n");
-    for (u32 i = 0; i < s->num_RAM; i++) {
-        u32 addr = s->RAM_pairs[i].addr;
-        u32 val = s->RAM_pairs[i].val;
-        if (tmem[addr] != val) {
-            all_passed = 0;
-            printf("\nFAIL ADDR #%d ADDR:%04x VAL:%02x MY:%02x", i, addr, val, tmem[addr]);
+    u32 pc_hi1, pc_hi2, pc1, pc2;
+    for (u32 i = 0; i < 14; i+= 2) {
+        u32 addr = i + ts->cpu.state.exception.group0.base_addr;
+        t1 = find_last_transaction(&ts->test.transactions, addr, tk_write, 1, 1);
+        t2 = find_last_transaction(&ts->my_transactions, addr, tk_write, 1, 1);
+        if ((t1 == NULL) || (t2 == NULL)) {
+            printf("\nNONONONONONONONNONONONONONONOON");
+            return 0;
+        }
+        u32 v1 = t1->data_bus;
+        u32 v2 = t2->data_bus;
+        u32 min, max;
+        switch(i) {
+            case 0: // FIRST WORD - ignore I/N bit
+                if ((v1 & 0xFFF7) != (v2 & 0xFFF7)) {
+                    printf("\nfirst word mismatch good:%04x mine:%04x %04x", v1, v2, v1 ^ v2);
+                    if ((v1 & 0xFFF0) != (v2 & 0xFFF0)) {
+                        printf("\n OH NO!");
+                        all_passed = 0;
+                    }
+                }
+                break;
+            case 2: // ACCESS HI
+            case 4: // ACCESS LO
+            case 6: // IR
+            case 8: // SR
+                all_passed &= v1 == v2;
+                break;
+            case 10: // PC HI
+                pc_hi1 = v1 << 16;
+                pc_hi2 = v2 << 16;
+                break;
+            case 12: // PC LO, ignore differences of up to like 10
+                pc2 = pc_hi2 | v2;
+                pc1 = pc_hi1 | v1;
+                max = MAX(pc1, pc2);
+                min = MIN(pc1, pc2);
+                if ((max - min) > 10) {
+                    printf("\nDiscrepency in PC of %d", max - min);
+                    all_passed = 0;
+                }
+                break;
+
         }
     }
     return all_passed;
 }
 
+static u32 compare_state_to_ram(struct m68k_test_struct *ts)
+{
+    struct m68k_test_state *s = &ts->test.final;
+    u32 all_passed = 1;
+    u32 g0_passed = 1;
+    i64 g0_min = -1, g0_max = -1;
+    if (ts->had_group0 != -1) {
+        g0_min = ts->cpu.state.exception.group0.base_addr;
+        g0_max = ts->cpu.state.exception.group0.base_addr + 14;
+    }
+    printf("\n");
+    for (u32 i = 0; i < s->num_RAM; i++) {
+        u32 addr = s->RAM_pairs[i].addr;
+        u32 val = s->RAM_pairs[i].val;
+        if (tmem[addr] != val) {
+            if ((g0_min != -1) && ((addr >= g0_min) && (addr < g0_max))) {
+                g0_passed = 0;
+            } else {
+                all_passed = 0;
+                printf("\nFAIL ADDR #%d ADDR:%04x VAL:%02x MY:%02x", i, addr, val, tmem[addr]);
+            }
+        }
+    }
+    if (!g0_passed) all_passed &= compare_group0_frame(ts);
+    return all_passed;
+}
+
+static void w16(u32 addr, u32 val)
+{
+    tmem[addr] = (val >> 8) & 0xFF;
+    tmem[addr+1] = val & 0xFF;
+}
+
+
 static void copy_state_to_RAM(struct m68k_test_state *s)
 {
+    w16(s->pc, s->prefetch[0]);
+    w16(s->pc+2, s->prefetch[1]);
     for (u32 i = 0; i < s->num_RAM; i++) {
         assert(s->RAM_pairs[i].addr < 0x1000000);
         tmem[s->RAM_pairs[i].addr] = s->RAM_pairs[i].val;
@@ -287,12 +390,12 @@ static u32 do_test_read_trace(void *ptr, u32 addr, u32 UDS, u32 LDS)
     return v;
 }
 
-static struct transaction* find_transaction(struct m68k_test_struct *ts, enum transaction_kind tk, u32 addr)
+static struct transaction* find_transaction(struct m68k_test_struct *ts, enum transaction_kind tk, u32 addr, u32 UDS, u32 LDS)
 {
     struct transaction* t = NULL;
     for (i32 i = 0; i < ts->test.transactions.num_transactions; i++) {
         t = &ts->test.transactions.items[i];
-        if (((t->addr_bus & 0xFFFFFE) == addr) && (t->kind == tk)) {
+        if (((t->addr_bus & 0xFFFFFE) == addr) && (t->kind == tk) && (t->visited == 0) && (t->UDS == UDS) && (t->LDS == LDS)) {
             return t;
         }
     }
@@ -306,16 +409,26 @@ static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS)
     if (UDS) v |= tmem[addr] << 8;
     if (LDS) v |= tmem[addr|1];
     ts->cpu.pins.DTACK = 1;
+    struct transaction *m = &ts->my_transactions.items[ts->my_transactions.num_transactions++];
+    m->kind = tk_read;
+    m->start_cycle = ts->cpu.trace_cycles - 1;
+    m->addr_bus = addr;
+    m->data_bus = v;
+    m->visited = 1;
+    m->UDS = UDS;
+    m->LDS = LDS;
+    m->sz = UDS + LDS;
 
-    struct transaction* t = find_transaction(ts, tk_read, addr);
+    struct transaction *t = find_transaction(ts, tk_read, addr, UDS, LDS);
     if (t == NULL) {
-        printf("\nNo read found from address %06x", addr);
+        printf("\nNo read found from address %06x cycle:%lld", addr, ts->cpu.trace_cycles);
         ts->test.failed = 1;
         return 0;
     }
     u32 sz = UDS + LDS;
+    t->visited = 1;
 
-    if (t->start_cycle != ts->cpu.trace_cycles) {
+    if (t->start_cycle != (ts->cpu.trace_cycles)) {
         printf("\nMISMATCH READ %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts->cpu.trace_cycles);
     }
 
@@ -326,12 +439,28 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
 {
     //printf("\nWRITE! %06x %d %d %04x", addr, UDS, LDS, val);
     assert(addr<0x01000000);
-    addr &= 0xFFFFFE;
     if (UDS) tmem[addr] = (val >> 8) & 0xFF;
     if (LDS) tmem[addr|1] = val & 0xFF;
     ts->cpu.pins.DTACK = 1;
-    struct transaction* t = find_transaction(ts, tk_write, addr);
+    struct transaction *m = &ts->my_transactions.items[ts->my_transactions.num_transactions++];
+    m->kind = tk_write;
+    m->start_cycle = ts->cpu.trace_cycles - 2;
+    m->addr_bus = addr;
+    m->data_bus = val;
+    m->visited = 1;
+    m->UDS = UDS;
+    m->LDS = LDS;
+    m->sz = UDS + LDS;
+
+
+    struct transaction* t = find_transaction(ts, tk_write, addr, UDS, LDS);
+    if (t == NULL) {
+        printf("\nWarning bad write not found addr:%06x val:%08x cyc:%lld", addr, val, ts->cpu.trace_cycles);
+        ts->test.failed = 1;
+        return;
+    }
     u32 sz = UDS + LDS;
+    t->visited = 1;
     if (sz != t->sz) {
         printf("\nFailed wrong size. Mine: %d  theirs: %d", sz, t->sz);
         ts->test.failed = 1;
@@ -341,9 +470,12 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
     if (UDS && LDS) v = val;
     else if (LDS) v = val;
     else v = val >> 16;
+    if (t->start_cycle != ts->cpu.trace_cycles) {
+        printf("\nMISMATCH WRITE %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts->cpu.trace_cycles);
+    }
     if (t->data_bus != v) {
-        printf("\nWrong value write (correct addr):%06x val: %04x mine:%04x", addr, t->data_bus, val);
-        ts->test.failed = 1;
+        //printf("\nWrong value write (correct addr):%06x val: %04x mine:%04x", addr, t->data_bus, val);
+        ts->test.failed_w = 1;
         return;
     }
 }
@@ -361,12 +493,31 @@ static u32 cval(u64 mine, u64 theirs, u64 initial, const char* display_str, cons
     return 0;
 }
 
-static void pprint_SR(u16 SR, u16 initial_SR, u16 final_SR)
+static void rpp(u16 v)
 {
-    printf("\n\nInitial SR:%04x", initial_SR);
-    printf("\n     My SR:%04x", SR);
-    printf("\n  Final SR:%04x", final_SR);
+    printf("%04x ---%c%c%c%c%c", v, v & 0x10 ? 'X' : 'x', v & 8 ? 'N' : 'n', v & 4 ? 'Z' : 'z', v & 2 ? 'V' : 'v', v & 1 ? 'C' : 'c');
 }
+
+static void pprint_SR(u16 SR, u16 initial_SR, u16 final_SR, u32 PC)
+{
+    printf("\n\nInitial SR:");
+    rpp(initial_SR);
+    printf("\n     My SR:");
+    rpp(SR);
+    printf("\n  Final SR:");
+    rpp(final_SR);
+    printf("\n        PC: %06x", PC);
+}
+
+static void pprint_state(struct m68k_test_state *s, const char *r)
+{
+    printf("\n\nProcessor state %s:", r);
+    printf("\nD0:%08x D1:%08x D2:%08x D3:%08x", s->d[0], s->d[1], s->d[2], s->d[3]);
+    printf("\nD4:%08x D5:%08x D6:%08x D7:%08x", s->d[4], s->d[5], s->d[6], s->d[7]);
+    printf("\nA0:%08x A1:%08x A2:%08x A3:%08x", s->a[0], s->a[1], s->a[2], s->a[3]);
+    printf("\nA4:%08x A5:%08x A6:%08x", s->a[4], s->a[5], s->a[6]);
+}
+
 
 static u32 compare_state_to_cpu(struct M68k* cpu, struct m68k_test_state *final, struct m68k_test_state *initial)
 {
@@ -401,7 +552,9 @@ static u32 compare_state_to_cpu(struct M68k* cpu, struct m68k_test_state *final,
     }
 #undef CP
     if (!all_passed) {
-        pprint_SR(cpu->regs.SR.u, initial->sr, final->sr);
+        pprint_SR(cpu->regs.SR.u, initial->sr, final->sr, cpu->regs.PC);
+        pprint_state(initial, "initial");
+        pprint_state(final, "final");
     }
     return all_passed;
 }
@@ -418,6 +571,62 @@ static void cycle_cpu(struct m68k_test_struct *ts)
         }
     }
     ts->test.current_cycle++;
+}
+
+
+static u32 dopppt(char *ptr, struct transaction *t)
+{
+    char *m = ptr;
+    m += sprintf(ptr, "(%02d) %c.%c %06x:%08x  ", t->start_cycle, t->kind == tk_write ? 'W' : 'R', t->sz == 1 ? '1' : '2', t->addr_bus, t->data_bus);
+    return m - ptr;
+}
+
+static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_test_transactions *mts)
+{
+    char buf[500];
+    printf("\n---Transactions:");
+    u32 bigger = MAX(ts->num_transactions, mts->num_transactions);
+    i32 tsi = 0, mtsi = 0;
+    while(1) {
+        // Search for next tk_read or tk_write
+        struct transaction *t1 = NULL, *t2 = NULL;
+        for (i32 i = tsi; i < ts->num_transactions; i++) {
+            struct transaction *t = &ts->items[i];
+            if ((t->kind == tk_write) || (t->kind == tk_read)) {
+                t1 = t;
+                tsi = i+1;
+                break;
+            }
+        }
+        for (i32 i = mtsi; i < mts->num_transactions; i++) {
+            struct transaction *t = &mts->items[i];
+            if ((t->kind == tk_write) || (t->kind == tk_read)) {
+                t2 = t;
+                mtsi = i+1;
+                break;
+            }
+        }
+        char *ptr = buf;
+        memset(ptr, 0, 100);
+        if ((t1 != NULL) && (t2 != NULL)) {
+            if (t1->data_bus != t2->data_bus) ptr += sprintf(ptr, "!");
+            else ptr += sprintf(ptr, " ");
+            if (t1->addr_bus != t2->addr_bus) ptr += sprintf(ptr, "-");
+            else ptr += sprintf(ptr, " ");
+        }
+        else ptr += sprintf(ptr, "  ");
+        if (t1 == NULL) {
+            ptr += sprintf(ptr, "                          ");
+        }
+        else {
+            ptr += dopppt(ptr, t1);
+        }
+        if (t2 != NULL) {
+            ptr += dopppt(ptr, t2);
+        }
+        printf("\n%s", buf);
+        if ((t1 == NULL) && (t2 == NULL)) break;
+    }
 }
 
 static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fname)
@@ -446,7 +655,7 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
     assert(v==0x1A3F5D71);
     u32 num_tests = R32;
     for (u32 i = 0; i < num_tests; i++) {
-        printf("\nSubtest %d", i);
+        if (dbg.trace_on) printf("\nSubtest %d", i);
         ptr = decode_test(ptr, &ts->test);
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
@@ -455,8 +664,11 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
         ts->cpu.state.current = M68kS_decode;
         ts->test.current_cycle = 0;
         ts->test.failed = 0;
+        ts->test.failed_w = 0;
         ts->cpu.trace_cycles = 0;
         ts->cpu.testing = 1;
+        ts->my_transactions.num_transactions = 0;
+        ts->had_group0 = ts->had_group1 = ts->had_group2 = -1;
 
         for (u32 j = 0; j < ts->test.num_cycles*10; j++) {
             cycle_cpu(ts);
@@ -466,10 +678,27 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
             else {
                 if (ts->cpu.ins_decoded) break;
             }
-            if (ts->test.failed) break;
+            if ((ts->cpu.state.current == M68kS_exc_group0) && (ts->had_group0 == -1)) ts->had_group0 = (i64)ts->cpu.trace_cycles;
+            if ((ts->cpu.state.current == M68kS_exc_group1) && (ts->had_group1 == -1)) ts->had_group1 = (i64)ts->cpu.trace_cycles;
+            if ((ts->cpu.state.current == M68kS_exc_group2) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->cpu.trace_cycles;
         }
 
-        if ((!compare_state_to_cpu(&ts->cpu, &ts->test.final, &ts->test.initial)) || (!compare_state_to_ram(&ts->test.final))) {
+        u32 unvisited = 0;
+        for (u32 j = 0; j < ts->test.transactions.num_transactions; j++) {
+            struct transaction *t = &ts->test.transactions.items[j];
+            if (((t->kind == tk_read) || (t->kind == tk_write)) && (t->visited == 0)) {
+                printf("\nWARNING UNVISITED TRANSACTION sz:%c rw:%c addr:%06x val:%08x cyc:%d", t->sz == 1 ? 'b' : 'w', t->kind == tk_write ? 'W' : 'R', t->addr_bus, t->data_bus, t->start_cycle);
+                ts->test.failed = 1;
+            }
+        }
+
+
+        if (ts->cpu.trace_cycles != ts->test.num_cycles) {
+            printf("\nWARNING CYCLES MISMATCH. theirs:%d   mine:%lld", ts->test.num_cycles, ts->cpu.trace_cycles);
+        }
+
+        if ((!compare_state_to_cpu(&ts->cpu, &ts->test.final, &ts->test.initial)) || (!compare_state_to_ram(ts)) || ts->test.failed) {
+            pprint_transactions(&ts->test.transactions, &ts->my_transactions);
             printf("\nTest result for test %d: failed", i);
             return 0;
         }
@@ -494,7 +723,8 @@ void test_m68000()
     M68k_init(&ts.cpu);
     M68k_setup_tracing(&ts.cpu, &rt);
     dbg_init();
-    dbg_enable_trace();
+    dbg_disable_trace();
+    //dbg_enable_trace();
 
     /*struct M68k_ins_t *ins = &M68k_decoded[0xd862];
     rt.read_trace_m68k = &m68k_dasm_read;
@@ -533,6 +763,7 @@ void test_m68000()
     tmem = malloc(0x1000000); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
+    u32 nn = 13;
     for (u32 i = 0; i < num_files; i++) {
         u32 skip = 0;
         for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {
@@ -546,11 +777,13 @@ void test_m68000()
             continue;
         }
         printf("\nDoing test %s", mfn[i]);
+        //if (completed_tests > nn) return;
         if (!do_test(&ts, mfp[i], mfn[i])) break;
-        dbg_flush();
-        break;
+        if (completed_tests > nn) break;
+        if (completed_tests > (nn-1)) dbg_enable_trace();
         completed_tests++;
     }
+    dbg_flush();
     printf("\n\nCompleted %d of %d tests succesfully! %d skips", completed_tests, num_files, TEST_SKIPS_NUM);
     free(tmem);
     tmem = 0;

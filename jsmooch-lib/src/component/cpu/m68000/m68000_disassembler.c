@@ -76,8 +76,9 @@ void ins_suffix(const char* ins, u32 sz, struct jsm_string *out, char *spaces)
 }
 
 
-static void dodea(struct M68k_EA *ea, struct M68k_EA *ea2_for_index, struct jsm_string *out, u32 sz, u32 *PC, struct jsm_debug_read_trace *rt)
+static void dodea(struct M68k_EA *ea, u32 IR, struct jsm_string *out, u32 sz, u32 *PC, struct jsm_debug_read_trace *rt)
 {
+    u32 v;
     switch(ea->kind) {
         case 0: // data reg direct
             jss("d%d", ea->reg);
@@ -99,7 +100,9 @@ static void dodea(struct M68k_EA *ea, struct M68k_EA *ea2_for_index, struct jsm_
             return;
         case 6: // ^ index
             //($, hex(read(displacement),ax,dx)
-            jss("($%02x,a%d,d%d)", read_index(PC, rt), ea->reg, ea2_for_index->reg);
+            *PC -= 2;
+            v =  read_pc(PC, rt);
+            jss("($%02x,a%d,d%d)", v & 0xFF, ea->reg, (v >> 12) & 7);
             return;
         case 7: // absolute short
             jss("$%04x.w", read_pc(PC, rt));
@@ -185,7 +188,7 @@ void M68k_disasm_BADINS(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_tr
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
-#define dea(ea, sz) dodea(ea, &ins->ea2, out, sz, &PC, rt)
+#define dea(ea, sz) dodea(ea, 0, out, sz, &PC, rt)
 #define dea2(sz)     dea(&ins->ea1, sz); jss(","); dea(&ins->ea2, sz)
 
 void M68k_disasm_ABCD(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -494,38 +497,40 @@ void M68k_disasm_LINK(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
     print_imm(&PC, rt, ins->sz, 0, out);
 }
 
-void M68k_disasm_LSL(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_LSL_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("lsl", ins->sz, out, "   ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
 }
 
-void M68k_disasm_LSR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_LSL_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("lsl", ins->sz, out, "   ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_LSL_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("lsl", ins->sz, out, "   ");
+    dea(&ins->ea1, ins->sz);
+}
+
+void M68k_disasm_LSR_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("lsr", ins->sz, out, "   ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
+}
+
+void M68k_disasm_LSR_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("lsr", ins->sz, out, "   ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_LSR_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("lsr", ins->sz, out, "   ");
+    dea(&ins->ea1, ins->sz);
 }
 
 void M68k_disasm_MOVE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -536,7 +541,7 @@ void M68k_disasm_MOVE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 
 void M68k_disasm_MOVEA(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    jss("movea   ");
+    ins_suffix("movea", ins->sz, out, " ");
     dea2(ins->sz);
 }
 
@@ -839,6 +844,12 @@ void M68k_disasm_TRAP(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 {
     jss("trap    #%d", ins->ea1.reg);
 }
+
+void M68k_disasm_TRAPV(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    jss("trapv      ");
+}
+
 
 void M68k_disasm_TST(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {

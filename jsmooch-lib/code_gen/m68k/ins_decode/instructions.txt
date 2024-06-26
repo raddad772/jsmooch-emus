@@ -100,7 +100,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 0000 1000 00mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 4)))
 
-.CHK 4 template(dr_ea)    # 1st operand will be DR, 2nd EA
+.CHK 2 template(ea_dr)
 0100 ddd1 10mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
@@ -176,32 +176,32 @@ skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
 .LINK 4 template(ar)
 0100 1110 0101 0aaa
 
-.LSL 1,2,4 template(imm_dr)
+.LSL_qimm_dr 1,2,4 template(imm_dr)
 1110 iii1 ww00 1ddd
 
-.LSL 1,2,4 template(dr_dr)
+.LSL_dr_dr 1,2,4 template(dr_dr)
 1110 sss1 ww10 1ddd
 
-.LSL 4 template(ea1)
+.LSL_ea 4 template(ea1)
 1110 0011 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
-.LSR 1,2,4 template(imm_dr)
+.LSR_qimm_dr 1,2,4 template(imm_dr)
 1110 iii0 ww00 1ddd
 
-.LSR 1,2,4 template(dr_dr)
+.LSR_dr_dr 1,2,4 template(dr_dr)
 1110 sss0 ww10 1ddd
 
-.LSR 4 template(ea1)
+.LSR_ea 4 template(ea1)
 1110 0010 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .MOVE -1,1,4,2 template(MOVE)  # special template for MOVE. which has 2 EA's
-00ww aaab bbcc cddd  
+00ww aaab bbcc cddd
 skip_if (((b == 1) || ((b == 7) && (a >= 2))) || ((c == 7) && (d >= 5)))
 skip1 c=1 if (sz==1)
 
-.MOVEA 2,4 template(ea_ar)
+.MOVEA 2,4 template(ea_ar2)
 00ww aaa0 01mm mrrr
 skip_if ((m == 7) && (r >= 5))
 
@@ -219,7 +219,7 @@ skip_if ((m <= 1) || (m == 4) || ((m == 7) && (r >= 4)))
 .MOVEQ 4 template(imm256_dr)   # imm256_dr means... data register and 8-bit immediate in other order
 0111 ddd0 iiii iiii
 
-.MOVE_FROM_SR 4 template(ea1)
+.MOVE_FROM_SR 2 template(ea1)
 0100 0000 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
@@ -227,7 +227,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 0100 0100 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
-.MOVE_TO_SR 4 template(ea1)
+.MOVE_TO_SR 2 template(ea1)
 0100 0110 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
@@ -366,7 +366,10 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 0100 1010 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
-.TRAP 4 0100 1110 0111 0110
+.TRAP 4 template(trap)
+0100 1110 0100 vvvv
+
+.TRAPV 4 0100 1110 0111 0110
 
 .TST 1,2,4 template(ea1)
 0100 1010 wwmm mrrr

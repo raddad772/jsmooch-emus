@@ -66,25 +66,23 @@ u32 M68k_read_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u
             return this->regs.A[ea->reg];
         case M68k_AM_address_register_indirect_with_postincrement: // 0 ext word
             v = this->regs.A[ea->reg];
-            v += sz;
-            if ((ea->reg == 7) && (sz == 1)) v++;
-            if (!hold) this->regs.A[ea->reg] = v;
+            this->regs.A[ea->reg] += sz;
+            if ((ea->reg == 7) && (sz == 1)) this->regs.A[7]++;
             return v;
         case M68k_AM_address_register_indirect_with_predecrement: // 0 ext word
-            v = this->regs.A[ea->reg] - sz;
-            if ((ea->reg == 7) && (sz == 1)) v--;
-            if (!hold) this->regs.A[ea->reg] = v;
-            return v;
+            this->regs.A[ea->reg] -= sz;
+            if ((ea->reg == 7) && (sz == 1)) this->regs.A[7]--;
+            return this->regs.A[ea->reg];
         case M68k_AM_address_register_indirect_with_displacement: // 1 ext word
             v = (u32)((i64)this->regs.A[ea->reg] + (i64)(i16)(prefetch & 0xFFFF));
             return v;
         case M68k_AM_address_register_indirect_with_index: // 1 ext word
             v = this->regs.A[ea->reg];
-            this->state.operands.temp = prefetch;
-            a = SIGNe8to32(this->state.operands.temp);
-            b = this->state.operands.temp & 0x8000 ? this->regs.A[(this->state.operands.temp >> 12) & 7] : this->regs.D[(this->state.operands.temp >> 12) & 7];
-            if (this->state.operands.temp & 0x800) b = (u32)(i32)(i16)b;
-            return v + a + b;
+            a = SIGNe8to64(prefetch);
+            b = prefetch & 0x8000 ? this->regs.A[(prefetch >> 12) & 7] : this->regs.D[(prefetch >> 12) & 7];
+            if (!(prefetch & 0x800))
+                b = (u32)(i32)(i16)(b & 0xFFFF);
+            return (v + a + b) & 0xFFFFFFFF;
         case M68k_AM_absolute_short_data: // 1 ext word
             // Sign-extend 16-bit prefetch word, and use that
             return SIGNe16to32(prefetch);
@@ -92,14 +90,14 @@ u32 M68k_read_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u
             return prefetch;
         case M68k_AM_program_counter_with_displacement: // 1 ext word
             v = SIGNe16to32(prefetch);
-            return this->regs.PC + v;
+            return this->regs.PC + v - 4;
         case M68k_AM_program_counter_with_index: // 1 ext word
             v = this->regs.PC;
-            this->state.operands.temp = prefetch;
-            a = SIGNe8to32(this->state.operands.temp);
-            b = this->state.operands.temp & 0x8000 ? this->regs.A[(this->state.operands.temp >> 12) & 7] : this->regs.D[(this->state.operands.temp >> 12) & 7];
-            if (this->state.operands.temp & 0x800) b = (u32)(i32)(i16)b;
-            return v + a + b;
+            a = SIGNe8to64(prefetch);
+            b = prefetch & 0x8000 ? this->regs.A[(prefetch >> 12) & 7] : this->regs.D[(prefetch >> 12) & 7];
+            if (!(prefetch & 0x800))
+                b = (u32)(i32)(i16)(b & 0xFFFF);
+            return ((v + a + b) - 4) & 0xFFFFFFFF;
         default:
             printf("\nUNKNOWN EA ADDR %d!", ea->kind);
             assert(1==0);
@@ -120,35 +118,20 @@ u32 M68k_read_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u
 // wait2
 // read2
 
-// After doing a memory read of size 2 or 4 and incrementping PC, this will update prefetches for you 
-static void M68k_rectify_prefetches(struct M68k* this, u32 sz)
-{
-    switch(sz) {
-        case 2:
-            this->regs.IR = this->regs.IRC;
-            this->regs.IRC = this->state.bus_cycle.data;
-            break;
-        case 4:
-            this->regs.IR = this->state.bus_cycle.data >> 16;
-            this->regs.IRC = this->state.bus_cycle.data & 0xFFFF;
-            break;
-        default:
-            assert(1==0);
-    }
-}
 
 void M68k_set_SR(struct M68k* this, u32 val)
 {
     u32 new_s = (val & 0x2000) >> 13;
+    // CCR
+    this->regs.SR.u = (this->regs.SR.u & 0xFFE0) | (val & 0x1F);
+
     if (new_s != this->regs.SR.S) {
-        if (new_s == 1) { // from user to supervisor
-            M68k_transition_to_supervisor(this);
-        }
-        else {
-            M68k_transition_to_user(this);
-        }
+        M68k_swap_ASP(this);
     }
-    this->regs.SR.u = val;
+    this->regs.SR.S = new_s;
+
+    this->regs.SR.I = (val >> 8) & 7;
+    this->regs.SR.T = (val >> 15) & 1;
 }
 
 u32  M68k_get_SR(struct M68k* this) {
@@ -168,7 +151,7 @@ static void M68k_prefetch(struct M68k* this)
         this->state.current = this->state.prefetch.next_state;
         return;
     }
-    M68k_start_read(this, this->regs.PC, 2, MAKE_FC(1), M68kS_prefetch);
+    M68k_start_read(this, this->regs.PC, 2, this->state.prefetch.FC, M68kS_prefetch);
     this->regs.PC += 2;
     this->state.prefetch.TCU = 1;
 }
@@ -178,10 +161,25 @@ static void M68k_read_operands_prefetch(struct M68k* this, u32 opnum)
     // read 16 or 32 bits.
     // move them into
     if (this->state.operands.TCU == 1) {
-        M68k_rectify_prefetches(this, this->state.op[opnum].ext_words << 1);
-        this->state.op[opnum].ext_words = this->state.bus_cycle.data;  // Set the variable with the result
-        this->state.operands.state[(opnum == 1) ? M68kOS_prefetch1 : M68kOS_prefetch2] = 0;
+        u32 v;
+        if (this->state.op[opnum].ext_words == 1) { // 1 prefetch word
+            this->regs.IR = this->regs.IRC;
+            this->regs.IRC = this->state.bus_cycle.data & 0xFFFF;
+            v = this->regs.IR;
+        } else {
+            assert(this->state.op[opnum].ext_words == 2);
+            v = (this->regs.IRC << 16);
+            this->regs.IR = this->state.bus_cycle.data >> 16;
+            this->regs.IRC = this->state.bus_cycle.data & 0xFFFF;
+            v |= this->regs.IR;
+        }
+        this->state.op[opnum].ext_words = v;  // Set the variable with the result
+        this->state.operands.state[(opnum == 0) ? M68kOS_prefetch1 : M68kOS_prefetch2] = 0;
         this->state.operands.TCU = 0;
+        u32 s = this->state.operands.state[(opnum == 0) ? M68kOS_read1 : M68kOS_read2];
+        if (this->state.operands.state[s] == 0) {
+            this->state.op[opnum].val = v;
+        }
         return;
     }
     M68k_start_read(this, this->regs.PC, this->state.op[opnum].ext_words << 1, MAKE_FC(1), M68kS_read_operands);
@@ -200,8 +198,8 @@ static void M68k_read_operands_read(struct M68k* this, u32 opnum)
     }
 
     // setup read
-    this->state.op[opnum].addr = M68k_read_ea_addr(this, &this->ins->ea1, this->ins->sz,
-                                                   (opnum == 1) ? this->state.operands.hold : 0,
+    this->state.op[opnum].addr = M68k_read_ea_addr(this, opnum == 0 ? &this->ins->ea1 : &this->ins->ea2, this->ins->sz,
+                                                    (opnum == 1) ? this->state.operands.hold : 0,
                                                    this->state.op[opnum].ext_words);
     M68k_start_read(this, this->state.op[opnum].addr, this->ins->sz, MAKE_FC(1), M68kS_read_operands);
     this->state.operands.TCU = 1;
@@ -245,29 +243,79 @@ static void M68k_read_operands(struct M68k* this) {
 
 #define EXC_WRITE(val, n, desc) M68k_start_write(this, this->state.exception.group0.base_addr+n, val, 2, M68k_FC_supervisor_data, M68kS_exc_group0)
 
-static void dec_SSP(struct M68k* this, u32 num) {
-    u32 *r = this->regs.SR.S ? &this->regs.A[7] : &this->regs.ASP;
-    *r -= num;
+static void M68k_exc_group1(struct M68k* this)
+{
+    switch(this->state.exception.group1.TCU) {
+        case 0: {
+                // SR
+                // PCH
+                // PCL
+                M68k_dec_SSP(this, 6);
+                this->state.exception.group1.base_addr = M68k_get_SSP(this);
+                this->state.exception.group1.PC = this->regs.PC-2;
+                this->state.exception.group1.SR = M68k_get_SR(this);
+                M68k_start_write(this, this->state.exception.group1.base_addr+4, this->state.exception.group1.PC & 0xFFFF, 2, MAKE_FC(0), M68kS_exc_group1);
+                break;
+            case 1:
+                M68k_start_write(this, this->state.exception.group1.base_addr, this->state.exception.group1.SR, 2, MAKE_FC(0), M68kS_exc_group1);
+                break;
+            case 2:
+                M68k_start_write(this, this->state.exception.group1.base_addr+2, this->state.exception.group1.PC >> 16, 2, MAKE_FC(0), M68kS_exc_group1);
+                break;
+            case 3:
+                M68k_start_read(this, this->state.exception.group1.vector << 2, 4, MAKE_FC(0), M68kS_exc_group1);
+                break;
+            case 4:
+                this->regs.PC = this->state.bus_cycle.data;
+                M68k_start_prefetch(this, 2, 1, M68kS_decode);
+                break;
+        }
+    }
+    this->state.exception.group1.TCU++;
 }
 
-static u32 get_SSP(struct M68k* this) {
-    if (this->regs.SR.S) return this->regs.A[7];
-    return this->regs.ASP;
+static void M68k_exc_group2(struct M68k* this)
+{
+    switch(this->state.exception.group2.TCU) {
+        case 0: {
+            // SR
+            // PCH
+            // PCL
+            M68k_dec_SSP(this, 6);
+            this->state.exception.group2.base_addr = M68k_get_SSP(this);
+            this->state.exception.group2.SR = M68k_get_SR(this);
+            M68k_start_write(this, this->state.exception.group2.base_addr+4, this->state.exception.group2.PC & 0xFFFF, 2, MAKE_FC(0), M68kS_exc_group2);
+            break;
+        case 1:
+            M68k_start_write(this, this->state.exception.group2.base_addr, this->state.exception.group2.SR, 2, MAKE_FC(0), M68kS_exc_group2);
+            break;
+        case 2:
+            M68k_start_write(this, this->state.exception.group2.base_addr+2, this->state.exception.group2.PC >> 16, 2, MAKE_FC(0), M68kS_exc_group2);
+            break;
+        case 3:
+            M68k_start_read(this, this->state.exception.group2.vector << 2, 4, MAKE_FC(0), M68kS_exc_group2);
+            break;
+        case 4:
+            this->regs.PC = this->state.bus_cycle.data;
+            M68k_start_prefetch(this, 2, 1, M68kS_decode);
+            break;
+        }
+    }
+    this->state.exception.group2.TCU++;
 }
 
 static void M68k_exc_group0(struct M68k* this)
 {
-    u32 v;
     switch(this->state.exception.group0.TCU) {
         case 0: { // Save variables and write first word (FC, I/N, R/W). set S, unset T. write PC lo
             this->state.exception.group0.addr = this->state.bus_cycle.addr;
             this->state.exception.group0.IR = this->regs.IRD;
             this->state.exception.group0.SR = M68k_get_SR(this);
             this->state.exception.group0.PC = this->regs.PC - 4; // TODO: should be in vicinity even if there's a jump somehow
-            dec_SSP(this, 14);
-            this->state.exception.group0.base_addr = get_SSP(this);
+            M68k_dec_SSP(this, 14);
+            this->state.exception.group0.base_addr = M68k_get_SSP(this);
             this->state.exception.group0.first_word = (this->pins.FC) | ((this->state.exception.group0.normal_state ^ 1) << 3) | ((this->pins.RW ^ 1) << 4);
-            this->state.exception.group0.first_word |= (this->regs.IRD & 0xFFC0);
+            this->state.exception.group0.first_word |= (this->regs.IRD & 0xFFE0);
             M68k_set_SR(this, (M68k_get_SR(this) | 0x2000) & 0x7FFF); // set bit 13 (S)
             // 2046   +12 PC lo
             // 2042   +8  SR
@@ -300,9 +348,12 @@ static void M68k_exc_group0(struct M68k* this)
         case 7: { // read vector
             M68k_start_read(this, this->state.exception.group0.vector << 2, 4, M68k_FC_supervisor_data, M68kS_exc_group0);
             break; }
-        case 8: { // Load prefetches and go!
+        case 8: {
+            //M68k_start_wait(this, 2, M68kS_exc_group0);
+            break; }
+        case 9: { // Load prefetches and go!
             this->regs.PC = this->state.bus_cycle.data;
-            M68k_start_prefetch(this, 2, M68kS_decode);
+            M68k_start_prefetch(this, 2, 1, M68kS_decode);
             break; }
     }
     this->state.exception.group0.TCU++;
@@ -310,7 +361,6 @@ static void M68k_exc_group0(struct M68k* this)
 
 static void M68k_trace_format(struct M68k* this)
 {
-    printf("\nAM HERE");
     jsm_string_quickempty(&this->trace.str);
     M68k_disassemble(this->regs.PC-2, this->regs.IR, &this->trace.strct, &this->trace.str);
     printf("\nM68k(%04llu)  %06x  %s", this->trace_cycles, this->regs.PC-4, this->trace.str.ptr);
@@ -327,9 +377,15 @@ void M68k_cycle(struct M68k* this)
             case M68kS_exc_group0: {
                 M68k_exc_group0(this);
                 break; }
+            case M68kS_exc_group1: {
+                M68k_exc_group1(this);
+                break; }
+            case M68kS_exc_group2: {
+                M68k_exc_group2(this);
+                break; }
             case M68kS_decode: {
                 if (this->state.exception.group1_pending) {
-                    M68k_start_group1_exception(this);
+                    M68k_start_group1_exception(this, this->state.exception.group1.vector, this->state.exception.group1.wait_cycles);
                     continue;
                 }
                 this->state.exception.group1_pending = 0;

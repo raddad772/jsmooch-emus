@@ -281,8 +281,12 @@ class instruction_block:
         o = None
         if self.template == 'ea1':
             o = self.template_output_1op('m, r', variant, 'ea')
+        elif self.template == 'trap':
+            o = self.template_output_1op('M68k_AM_immediate, v', variant, 'qimm')
         elif self.template == 'ea_ar':
             o = self.template_output_2op('m, r', 'M68k_AM_address_register_direct, a', variant, 'ea_r')
+        elif self.template == 'ea_ar2':
+            o = self.template_output_2op2('m, r', 'M68k_AM_address_register_direct, a', variant, 'ea_r')
         elif self.template == 'ea_dr':
             o = self.template_output_2op('m, r', 'M68k_AM_data_register_direct, d', variant, 'ea_r')
         elif self.template == 'dr':
@@ -306,6 +310,8 @@ class instruction_block:
             o = self.template_output_2op('M68k_AM_immediate, i', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
         elif self.template == 'imm_dr':
             o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
+        elif self.template == 'imm_ea':
+            o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
         elif self.template == 'displacement':
             o = self.template_output_1op('M68k_AM_immediate, d', variant, 'qimm')
         elif self.template == 'ADDQ':
@@ -328,6 +334,8 @@ class instruction_block:
             o = self.template_MOVE(variant)
         elif self.template == 'dreg_to_ea_S':
             o = self.template_dreg_to_ea_S(variant)
+        elif self.template == 'imm16':
+            o = self.template_output_1op('M68k_AM_imm16, 0', variant, 'ea')
 
         if o is not None:
             TEMPLATES_DONE.add(self.template)
@@ -359,6 +367,15 @@ class instruction_block:
         out += ls + self.mk_op(1, op1str)
         out += ls + self.mk_op(2, op2str)
         out += self.bind_data_sizes(ls, variant, ops_str)
+        return out
+
+    def template_output_2op2(self, op1str, op2str, variant, ops_str) -> str:
+        out = self.open_fors()
+        ls = '\n' + self.indent
+        out += self.loop_skip_if(ls)
+        out += ls + self.mk_op(1, op1str)
+        out += ls + self.mk_op(2, op2str)
+        out += self.bind_data_sizes(ls, variant, ops_str, [3,2])
         return out
 
     def template_B2(self, variant) -> str:
@@ -486,10 +503,12 @@ class instruction_block:
         if self.skip_if is None: return ''
         return ls + 'if ' + self.skip_if + ' continue;'
 
-    def bind_data_sizes(self, ls, variant, ops_str) -> str:
+    def bind_data_sizes(self, ls, variant, ops_str, w=None) -> str:
+        if w is None:
+            w = [0, 1, 2, 3]
         out = ''
         for i in range(0, len(self.data_sizes)):
-            out += ls + self.bind_str(self.data_sizes[i], i, variant, ops_str) + ';'
+            out += ls + self.bind_str(self.data_sizes[i], w[i], variant, ops_str) + ';'
         return out
 
 

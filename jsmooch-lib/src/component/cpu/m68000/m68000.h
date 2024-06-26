@@ -145,6 +145,7 @@ struct M68k {
             i32 num;
             u32 TCU;
             enum M68k_states next_state;
+            u32 FC;
         } prefetch;
 
         struct {
@@ -155,7 +156,7 @@ struct M68k {
             u32 cur_op_num;
             // Op1 and 2 after fetch
             u32 temp;
-            u32 fast, hold;
+            u32 fast, hold, reverse;
             u32 prefetch[2];
 
             struct M68k_EA *ea;
@@ -196,6 +197,26 @@ struct M68k {
                 u32 first_word;
                 u32 base_addr;
             } group0;
+
+            struct {
+                u32 vector;
+                u32 TCU;
+                i32 wait_cycles;
+
+                u32 base_addr;
+                u32 SR;
+                u32 PC;
+            } group1;
+
+            struct {
+                u32 vector;
+                u32 TCU;
+                i32 wait_cycles;
+
+                u32 base_addr;
+                u32 SR;
+                u32 PC;
+            } group2;
             u32 group1_pending;
         } exception;
     } state;
@@ -214,9 +235,12 @@ void M68k_cycle(struct M68k* this);
 void M68k_init(struct M68k* this);
 void M68k_delete(struct M68k* this);
 void M68k_reset(struct M68k* this);
+void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct);
+
+
+u32 M68k_get_SSP(struct M68k* this);
 u32 M68k_read_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u32 prefetch);
 void M68k_set_SR(struct M68k* this, u32 val);
 u32 M68k_get_SR(struct M68k* this);
-void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct);
 
 #endif //JSMOOCH_EMUS_M68000_H

@@ -21,16 +21,16 @@ def write_state(state, ptr):
 
     # Registers. Pack as 32 bits BECAUSE
     for a in REG_ORDER:
-        struct.pack_into("I", buffer, ptr, state[a])
+        struct.pack_into("<I", buffer, ptr, state[a])
         ptr += 4
 
     # Prefetch
-    struct.pack_into("II", buffer, ptr, state['prefetch'][0], state['prefetch'][1])
+    struct.pack_into("<II", buffer, ptr, state['prefetch'][0], state['prefetch'][1])
     ptr += 8
 
     # RAM 5-byte values
     # address, value   addr=32bit value=8bit
-    struct.pack_into("I", buffer, ptr, len(state['ram']))
+    struct.pack_into("<I", buffer, ptr, len(state['ram']))
     ptr += 4
     done_addrs = set()
     for addr, val in state['ram']:
@@ -39,10 +39,10 @@ def write_state(state, ptr):
         if addr in done_addrs:
             print('DUPLICATE ADDR', addr)
         done_addrs.add(addr)
-        struct.pack_into("IB", buffer, ptr, addr, val)
+        struct.pack_into("<IB", buffer, ptr, addr, val)
         ptr += 5
 
-    struct.pack_into("II", buffer, state_start, ptr - state_start, 0x01234567)
+    struct.pack_into("<II", buffer, state_start, ptr - state_start, 0x01234567)
     return ptr
 
 
@@ -52,17 +52,17 @@ def write_name(name, ptr):
 
     a = len(name)
     if a > 64: a = 64
-    struct.pack_into("I", buffer, ptr, len(name))
+    struct.pack_into("<I", buffer, ptr, len(name))
     ptr += 4
     for i in range(0, a):
         try:
-            struct.pack_into("B", buffer, ptr, ord(name[i]))
+            struct.pack_into("<B", buffer, ptr, ord(name[i]))
             ptr += 1
         except IndexError:
             print('WAIT WHAT?')
             raise
 
-    struct.pack_into("II", buffer, name_start, ptr - name_start, 0x89ABCDEF)
+    struct.pack_into("<II", buffer, name_start, ptr - name_start, 0x89ABCDEF)
 
     return ptr
 
@@ -78,7 +78,7 @@ def write_transactions(length, transactions, ptr):
     transactions_start = ptr
 
     ptr += 8
-    struct.pack_into("II", buffer, ptr, length, len(transactions))
+    struct.pack_into("<II", buffer, ptr, length, len(transactions))
     ptr += 8
     for t in transactions:
         f = t[0]
@@ -93,16 +93,17 @@ def write_transactions(length, transactions, ptr):
         else:
             print('UNKNOWN KIND?', f)
             continue
-        struct.pack_into("BI", buffer, ptr, tw, t[1])
+        struct.pack_into("<BI", buffer, ptr, tw, t[1])
+        '''print(type(t[1]))
         if t[1] > 200:
-            print('WHAT? ' + str(t[1]))
+            print('WHAT? ' + str(t[1]))'''
         ptr += 5
         if tw == 0: continue
         # r/w/t, len, FC, addr_bus, .b/.w, data_bus
-        struct.pack_into("IIII", buffer, ptr, t[2], t[3], 0 if t[4] == '.b' else 1, t[5])
+        struct.pack_into("<IIII", buffer, ptr, t[2], t[3], 0 if t[4] == '.b' else 1, t[5])
         ptr += 16
 
-    struct.pack_into("II", buffer, transactions_start, ptr - transactions_start, 0x456789AB)
+    struct.pack_into("<II", buffer, transactions_start, ptr - transactions_start, 0x456789AB)
     return ptr
 
 
@@ -114,7 +115,7 @@ def decode_file(fname):
 
     num_tests = len(obj)
 
-    struct.pack_into("ii", buffer, ptr, 0x1A3F5D71, num_tests)
+    struct.pack_into("<ii", buffer, ptr, 0x1A3F5D71, num_tests)
     ptr += 8
 
     for test in obj:
@@ -129,7 +130,7 @@ def decode_file(fname):
         ptr = write_state(test['final'], ptr)
 
         ptr = write_transactions(test['length'], test['transactions'], ptr)
-        struct.pack_into("II", buffer, test_start_ptr, ptr - test_start_ptr, 0xABC12367)
+        struct.pack_into("<II", buffer, test_start_ptr, ptr - test_start_ptr, 0xABC12367)
 
     # for item in obj:
     with open(fname + '.bin', 'wb') as outfile:
