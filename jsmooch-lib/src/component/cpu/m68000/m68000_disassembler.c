@@ -218,9 +218,15 @@ void M68k_disasm_ADDI(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 
 void M68k_disasm_ADDQ(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    jss("addq    %d,", ins->ea1.reg);
+    ins_suffix("addq", ins->sz, out, "  ");
     dea(&ins->ea2, ins->sz);
 }
+
+void M68k_disasm_ADDQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    jss("addq.l    %d,a%d,", ins->ea1.reg, ins->ea2.reg);
+}
+
 
 void M68k_disasm_ADDX(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
@@ -251,38 +257,40 @@ void M68k_disasm_ANDI_TO_SR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_rea
     jss("andi    %04x,sr", read_pc32(&PC, rt));
 }
 
-void M68k_disasm_ASL(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_ASL_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("asl", ins->sz, out, "   ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
 }
 
-void M68k_disasm_ASR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_ASL_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("asl", ins->sz, out, "   ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ASL_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("asl", ins->sz, out, "   ");
+    dea(&ins->ea1, ins->sz);
+}
+
+void M68k_disasm_ASR_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("asr", ins->sz, out, "   ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ASR_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("asr", ins->sz, out, "   ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ASR_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("asr", ins->sz, out, "   ");
+    dea(&ins->ea1, ins->sz);
 }
 
 void M68k_disasm_BCC(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -688,22 +696,42 @@ void M68k_disasm_RESET(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_tra
     jss("reset   ");
 }
 
-void M68k_disasm_ROL(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_ROL_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("rol", ins->sz, out, "   ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
 }
+
+void M68k_disasm_ROL_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("rol", ins->sz, out, "   ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ROL_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("rol", ins->sz, out, "   ");
+    dea(&ins->ea1, ins->sz);
+}
+
+void M68k_disasm_ROR_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("ror", ins->sz, out, "   ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ROR_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("ror", ins->sz, out, "   ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ROR_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("ror", ins->sz, out, "   ");
+    dea(&ins->ea1, ins->sz);
+}
+
 
 void M68k_disasm_ROR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
@@ -810,6 +838,19 @@ void M68k_disasm_SUBI(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 }
 
 void M68k_disasm_SUBQ(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    switch(ins->sz) {
+        case 2:
+            jss("subq.w  #$%02x,", ins->ea1.reg);
+        case 4:
+            jss("subq.l  #$%04x,", ins->ea1.reg);
+        default:
+            assert(1==0);
+    }
+    dea(&ins->ea2, ins->sz);
+}
+
+void M68k_disasm_SUBQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     switch(ins->sz) {
         case 2:

@@ -33,7 +33,7 @@ void genesis_new(JSM)
 {
     struct genesis* this = (struct genesis*)malloc(sizeof(struct genesis));
     Z80_init(&this->z80, 0);
-    M68k_init(&this->m68k);
+    M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock);
     genesis_cart_init(&this->cart);
 

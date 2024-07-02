@@ -2,7 +2,7 @@
 # m and r always become an EA
 # sz only loops 0-2 ever.
 # w loops up to 0..2, through the list of sizes after instruciton name. so 2,4 will loop 0-1. 1,2,4 will loop 0-2
-.ABCD 4 template(X)
+.ABCD 1 template(X)
 1100 xxx1 0000 Xyyy
 
 .ADD 1,2,4 template(dreg_to_ea_S)  # dreg_to_ea_S means S=0 first operand EA, S=1 second operand EA
@@ -38,23 +38,23 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .ANDI_TO_SR 4 0000 0010 0111 1100
 
-.ASL 1,2,4 template(imm_dr)   # imm_dr means... first operand will be iii = 0 ? 8 : iii, second operand will be dr
+.ASL_qimm_dr 1,2,4 template(imm_dr)   # imm_dr means... first operand will be iii = 0 ? 8 : iii, second operand will be dr
 1110 iii1 ww00 0ddd
 
-.ASL 1,2,4 template(dr_dr)   # dr_dr means both operands are data registers. using s and d where s is operand 1 and d is operand 2
+.ASL_dr_dr 1,2,4 template(dr_dr)   # dr_dr means both operands are data registers. using s and d where s is operand 1 and d is operand 2
 1110 sss1 ww10 0ddd
 
-.ASL 4 template(ea1)
+.ASL_ea 2 template(ea1)
 1110 0001 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
-.ASR 1,2,4 template(imm_dr)
+.ASR_qimm_dr 1,2,4 template(imm_dr)
 1110 iii0 ww00 0ddd
 
-.ASR 1,2,4 template(dr_dr)
+.ASR_dr_dr 1,2,4 template(dr_dr)
 1110 sss0 ww10 0ddd
 
-.ASR 4 template(ea1)
+.ASR_ea 2 template(ea1)
 1110 0000 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
@@ -131,7 +131,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 1000 ddd1 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
-.DIVU 4 template(ea_dr)
+.DIVU 2 template(ea_dr)
 1000 ddd0 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
@@ -182,7 +182,7 @@ skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
 .LSL_dr_dr 1,2,4 template(dr_dr)
 1110 sss1 ww10 1ddd
 
-.LSL_ea 4 template(ea1)
+.LSL_ea 2 template(ea1)
 1110 0011 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
@@ -192,7 +192,7 @@ skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 .LSR_dr_dr 1,2,4 template(dr_dr)
 1110 sss0 ww10 1ddd
 
-.LSR_ea 4 template(ea1)
+.LSR_ea 2 template(ea1)
 1110 0010 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
@@ -282,23 +282,23 @@ skip_if ((m <= 1) || (m == 3) || (m == 4) || ((m == 7) && (r >= 4)))
 
 .RESET 4 0100 1110 0111 0000
 
-.ROL 1,2,4 template(imm_dr)
+.ROL_qimm_dr 1,2,4 template(imm_dr)
 1110 iii1 ww01 1ddd
 
-.ROL 1,2,4 template(dr_dr)
+.ROL_dr_dr 1,2,4 template(dr_dr)
 1110 sss1 ww11 1ddd
 
-.ROL 4 template(ea1)
+.ROL_ea 2 template(ea1)
 1110 0111 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
-.ROR 1,2,4 template(imm_dr)
+.ROR_qimm_dr 1,2,4 template(imm_dr)
 1110 iii0 ww01 1ddd
 
-.ROR 1,2,4 template(dr_dr)
+.ROR_dr_dr 1,2,4 template(dr_dr)
 1110 sss0 ww11 1ddd
 
-.ROR 4 template(ea1)
+.ROR_ea 2 template(ea1)
 1110 0110 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
@@ -328,13 +328,10 @@ skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
 .RTS 4 0100 1110 0111 0101
 
-.ABCD 4 template(X)
-1100 xxx1 0000 Xyyy
-
-.SBCD 4 template(X)
+.SBCD 1 template(X)
 1000 xxx1 0000 Xyyy
 
-.SCC 4 template(test_ea)  # where test_ea means t and EA will be operands
+.SCC 1 template(test_ea)  # where test_ea means t and EA will be operands
 0101 tttt 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
@@ -362,7 +359,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 .SWAP 4 template(dr)
 0100 1000 0100 0ddd
 
-.TAS 4 template(ea1)
+.TAS 1 template(ea1)
 0100 1010 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 

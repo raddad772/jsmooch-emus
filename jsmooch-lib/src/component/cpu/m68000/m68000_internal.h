@@ -43,38 +43,42 @@ enum M68k_operand_modes {
     M68k_OM_imm16
 };
 
-struct M68k_DR {
-    u32 num;
-};
-
-struct M68k_AR {
-    u32 num;
-};
-
 struct M68k_EA {
     enum M68k_address_modes kind;
     u32 reg;
 };
 
+#define M68K_RW_ORDER_NORMAL 0
+#define M68K_RW_ORDER_REVERSE 1
+
 struct M68k;
-void M68k_start_read(struct M68k* this, u32 addr, u32 sz, u32 FC, u32 next_state);
-void M68k_start_write(struct M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 next_state);
+void M68k_start_read(struct M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, u32 next_state);
+void M68k_start_write(struct M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 reversed, u32 next_state);
 void M68k_start_prefetch(struct M68k* this, u32 num, u32 is_program, u32 next_state);
-void M68k_start_read_operands(struct M68k* this, u32 fast, u32 hold, u32 next_state);
+void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_state);
+void M68k_start_read_operand_for_ea(struct M68k* this, u32 fast, u32 sz, u32 next_state);
 void M68k_start_write_operand(struct M68k* this, u32 hold, u32 op_num, u32 next_state);
+u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz);
 void M68k_start_wait(struct M68k* this, u32 num, u32 state_after);
-u32 M68k_write_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u32 opnum);
+u32 M68k_read_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u32 prefetch);
 void M68k_transition_to_supervisor(struct M68k* this);
 void M68k_transition_to_user(struct M68k* this);
 void M68k_start_group0_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 was_in_group0_or_1);
 void M68k_start_group1_exception(struct M68k* this, u32 vector_number, i32 wait_cycles);
 void M68k_start_group2_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC);
-void M68k_inc_SSP(struct M68k* this, u32 num);
-void M68k_dec_SSP(struct M68k* this, u32 num);
+u32 M68k_inc_SSP(struct M68k* this, u32 num);
+u32 M68k_dec_SSP(struct M68k* this, u32 num);
 u32 M68k_get_SSP(struct M68k* this);
 void M68k_set_ar(struct M68k* this, u32 num, u32 result, u32 sz);
 void M68k_set_dr(struct M68k* this, u32 num, u32 result, u32 sz);
 void M68k_swap_ASP(struct M68k* this);
+void M68k_exc_group1(struct M68k* this);
+void M68k_exc_group2(struct M68k* this);
+void M68k_exc_group0(struct M68k* this);
+void M68k_prefetch(struct M68k* this);
+void M68k_read_operands_read(struct M68k* this, u32 opnum);
+void M68k_read_operands(struct M68k* this);
+
 
 #define MAKE_FC(is_program) ((this->regs.SR.S << 2) | ((is_program) ? 1 : 2))
 

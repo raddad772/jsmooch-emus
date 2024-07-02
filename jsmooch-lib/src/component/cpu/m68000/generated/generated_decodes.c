@@ -4,11 +4,11 @@
 
             op1 = mk_ea(M68k_AM_data_register_direct, y);
             op2 = mk_ea(M68k_AM_data_register_direct, x);
-            bind_opcode("1100 ...1 0000 ....", 4, &M68k_ins_ABCD, &M68k_disasm_ABCD, (x << 9) | y, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1100 ...1 0000 ....", 1, &M68k_ins_ABCD, &M68k_disasm_ABCD, (x << 9) | y, &op1, &op2, 0, M68k_OM_r_r);
 
             op1 = mk_ea(M68k_AM_address_register_indirect_with_predecrement, y);
             op2 = mk_ea(M68k_AM_address_register_indirect_with_predecrement, x);
-            bind_opcode("1100 ...1 0000 ....", 4, &M68k_ins_ABCD, &M68k_disasm_ABCD, (x << 9) | y | 8, &op1, &op2, 0, M68k_OM_ea_ea);
+            bind_opcode("1100 ...1 0000 ....", 1, &M68k_ins_ABCD, &M68k_disasm_ABCD, (x << 9) | y | 8, &op1, &op2, 0, M68k_OM_ea_ea);
         }
     }
 
@@ -40,8 +40,8 @@
                 if ((m == 7) && (r >= 5)) continue;
                 op1 = mk_ea(m, r);
                 op2 = mk_ea(M68k_AM_address_register_direct, a);
-                bind_opcode("1101 ...0 .11. ....", 2, &M68k_ins_ADDA, &M68k_disasm_ADDA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
-                bind_opcode("1101 ...1 .11. ....", 4, &M68k_ins_ADDA, &M68k_disasm_ADDA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1101 ...0 11.. ....", 2, &M68k_ins_ADDA, &M68k_disasm_ADDA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1101 ...1 11.. ....", 4, &M68k_ins_ADDA, &M68k_disasm_ADDA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
             }
         }
     }
@@ -63,8 +63,8 @@
                 op1 = mk_ea(M68k_AM_quick_immediate, d ? d : 8);
                 if (m == 1) {
                     op2 = mk_ea(M68k_AM_address_register_direct, r);
-                    bind_opcode("0101 ...0 01.. ....", 2, &M68k_ins_ADDQ, &M68k_disasm_ADDQ, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
-                    bind_opcode("0101 ...0 10.. ....", 4, &M68k_ins_ADDQ, &M68k_disasm_ADDQ, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
+                    bind_opcode("0101 ...0 01.. ....", 2, &M68k_ins_ADDQ_ar, &M68k_disasm_ADDQ_ar, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
+                    bind_opcode("0101 ...0 10.. ....", 4, &M68k_ins_ADDQ_ar, &M68k_disasm_ADDQ_ar, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
                 }
                 else {
                     op2 = mk_ea(m, r);
@@ -133,9 +133,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_immediate, i ? i : 8);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...1 0000 0...", 1, &M68k_ins_ASL, &M68k_disasm_ASL, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...1 0100 0...", 2, &M68k_ins_ASL, &M68k_disasm_ASL, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...1 1000 0...", 4, &M68k_ins_ASL, &M68k_disasm_ASL, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...1 0000 0...", 1, &M68k_ins_ASL_qimm_dr, &M68k_disasm_ASL_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...1 0100 0...", 2, &M68k_ins_ASL_qimm_dr, &M68k_disasm_ASL_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...1 1000 0...", 4, &M68k_ins_ASL_qimm_dr, &M68k_disasm_ASL_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
         }
     }
 
@@ -143,9 +143,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_data_register_direct, s);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...1 0010 0...", 1, &M68k_ins_ASL, &M68k_disasm_ASL, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...1 0110 0...", 2, &M68k_ins_ASL, &M68k_disasm_ASL, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...1 1010 0...", 4, &M68k_ins_ASL, &M68k_disasm_ASL, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
+            bind_opcode("1110 ...1 0010 0...", 1, &M68k_ins_ASL_dr_dr, &M68k_disasm_ASL_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...1 0110 0...", 2, &M68k_ins_ASL_dr_dr, &M68k_disasm_ASL_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...1 1010 0...", 4, &M68k_ins_ASL_dr_dr, &M68k_disasm_ASL_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
         }
     }
 
@@ -153,7 +153,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m <= 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("1110 0001 11.. ....", 4, &M68k_ins_ASL, &M68k_disasm_ASL, (m << 3) | r, &op1, NULL, 2, M68k_OM_ea);
+            bind_opcode("1110 0001 11.. ....", 2, &M68k_ins_ASL_ea, &M68k_disasm_ASL_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
@@ -161,9 +161,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_immediate, i ? i : 8);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...0 0000 0...", 1, &M68k_ins_ASR, &M68k_disasm_ASR, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...0 0100 0...", 2, &M68k_ins_ASR, &M68k_disasm_ASR, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...0 1000 0...", 4, &M68k_ins_ASR, &M68k_disasm_ASR, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...0 0000 0...", 1, &M68k_ins_ASR_qimm_dr, &M68k_disasm_ASR_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...0 0100 0...", 2, &M68k_ins_ASR_qimm_dr, &M68k_disasm_ASR_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...0 1000 0...", 4, &M68k_ins_ASR_qimm_dr, &M68k_disasm_ASR_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
         }
     }
 
@@ -171,9 +171,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_data_register_direct, s);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...0 0010 0...", 1, &M68k_ins_ASR, &M68k_disasm_ASR, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...0 0110 0...", 2, &M68k_ins_ASR, &M68k_disasm_ASR, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...0 1010 0...", 4, &M68k_ins_ASR, &M68k_disasm_ASR, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
+            bind_opcode("1110 ...0 0010 0...", 1, &M68k_ins_ASR_dr_dr, &M68k_disasm_ASR_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...0 0110 0...", 2, &M68k_ins_ASR_dr_dr, &M68k_disasm_ASR_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...0 1010 0...", 4, &M68k_ins_ASR_dr_dr, &M68k_disasm_ASR_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
         }
     }
 
@@ -181,7 +181,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m <= 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("1110 0000 11.. ....", 4, &M68k_ins_ASR, &M68k_disasm_ASR, (m << 3) | r, &op1, NULL, 2, M68k_OM_ea);
+            bind_opcode("1110 0000 11.. ....", 2, &M68k_ins_ASR_ea, &M68k_disasm_ASR_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
@@ -328,8 +328,8 @@
                 if ((m == 7) && (r >= 5)) continue;
                 op1 = mk_ea(m, r);
                 op2 = mk_ea(M68k_AM_address_register_direct, a);
-                bind_opcode("1011 ...0 .11. ....", 2, &M68k_ins_CMPA, &M68k_disasm_CMPA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
-                bind_opcode("1011 ...1 .11. ....", 4, &M68k_ins_CMPA, &M68k_disasm_CMPA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1011 ...0 11.. ....", 2, &M68k_ins_CMPA, &M68k_disasm_CMPA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1011 ...1 11.. ....", 4, &M68k_ins_CMPA, &M68k_disasm_CMPA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
             }
         }
     }
@@ -379,7 +379,7 @@
                 if ((m == 1) || ((m == 7) && (r >= 5))) continue;
                 op1 = mk_ea(m, r);
                 op2 = mk_ea(M68k_AM_data_register_direct, d);
-                bind_opcode("1000 ...0 11.. ....", 4, &M68k_ins_DIVU, &M68k_disasm_DIVU, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1000 ...0 11.. ....", 2, &M68k_ins_DIVU, &M68k_disasm_DIVU, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
             }
         }
     }
@@ -437,8 +437,8 @@
 
     for (u32 d = 0; d < 8; d++) {
         op1 = mk_ea(M68k_AM_data_register_direct, d);
-        bind_opcode("0100 1000 10.0 00..", 2, &M68k_ins_EXT, &M68k_disasm_EXT, d, &op1, NULL, 0, M68k_OM_r);
-        bind_opcode("0100 1000 11.0 00..", 4, &M68k_ins_EXT, &M68k_disasm_EXT, d, &op1, NULL, 0, M68k_OM_r);
+        bind_opcode("0100 1000 1000 0...", 2, &M68k_ins_EXT, &M68k_disasm_EXT, d, &op1, NULL, 0, M68k_OM_r);
+        bind_opcode("0100 1000 1100 0...", 4, &M68k_ins_EXT, &M68k_disasm_EXT, d, &op1, NULL, 0, M68k_OM_r);
     }
 
     bind_opcode("0100 1010 1111 1100", 4, &M68k_ins_ILLEGAL, &M68k_disasm_ILLEGAL, 0, NULL, NULL, 0, M68k_OM_none);
@@ -499,7 +499,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m <= 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("1110 0011 11.. ....", 4, &M68k_ins_LSL_ea, &M68k_disasm_LSL_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
+            bind_opcode("1110 0011 11.. ....", 2, &M68k_ins_LSL_ea, &M68k_disasm_LSL_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
@@ -527,7 +527,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m <= 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("1110 0010 11.. ....", 4, &M68k_ins_LSR_ea, &M68k_disasm_LSR_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
+            bind_opcode("1110 0010 11.. ....", 2, &M68k_ins_LSR_ea, &M68k_disasm_LSR_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
@@ -581,13 +581,13 @@
 
             op1 = mk_ea(M68k_AM_address_register_indirect_with_displacement, r);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("0000 ...1 .0.0 01..", 2, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r, &op1, &op2, 0, M68k_OM_ea_r);
-            bind_opcode("0000 ...1 .1.0 01..", 4, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r, &op1, &op2, 0, M68k_OM_ea_r);
+            bind_opcode("0000 ...1 .000 1...", 2, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r, &op1, &op2, 0, M68k_OM_ea_r);
+            bind_opcode("0000 ...1 .100 1...", 4, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r, &op1, &op2, 0, M68k_OM_ea_r);
 
             op1 = mk_ea(M68k_AM_data_register_direct, d);
             op2 = mk_ea(M68k_AM_address_register_indirect_with_displacement, r);
-            bind_opcode("0000 ...1 .0.0 01..", 2, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r | 0x80, &op1, &op2, 0, M68k_OM_r_ea);
-            bind_opcode("0000 ...1 .1.0 01..", 4, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r | 0x80, &op1, &op2, 0, M68k_OM_r_ea);
+            bind_opcode("0000 ...1 .000 1...", 2, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r | 0x80, &op1, &op2, 0, M68k_OM_r_ea);
+            bind_opcode("0000 ...1 .100 1...", 4, &M68k_ins_MOVEP, &M68k_disasm_MOVEP, (d << 9) | r | 0x80, &op1, &op2, 0, M68k_OM_r_ea);
         }
     }
 
@@ -745,9 +745,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_immediate, i ? i : 8);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...1 0001 1...", 1, &M68k_ins_ROL, &M68k_disasm_ROL, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...1 0101 1...", 2, &M68k_ins_ROL, &M68k_disasm_ROL, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...1 1001 1...", 4, &M68k_ins_ROL, &M68k_disasm_ROL, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...1 0001 1...", 1, &M68k_ins_ROL_qimm_dr, &M68k_disasm_ROL_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...1 0101 1...", 2, &M68k_ins_ROL_qimm_dr, &M68k_disasm_ROL_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...1 1001 1...", 4, &M68k_ins_ROL_qimm_dr, &M68k_disasm_ROL_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
         }
     }
 
@@ -755,9 +755,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_data_register_direct, s);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...1 0011 1...", 1, &M68k_ins_ROL, &M68k_disasm_ROL, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...1 0111 1...", 2, &M68k_ins_ROL, &M68k_disasm_ROL, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...1 1011 1...", 4, &M68k_ins_ROL, &M68k_disasm_ROL, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
+            bind_opcode("1110 ...1 0011 1...", 1, &M68k_ins_ROL_dr_dr, &M68k_disasm_ROL_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...1 0111 1...", 2, &M68k_ins_ROL_dr_dr, &M68k_disasm_ROL_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...1 1011 1...", 4, &M68k_ins_ROL_dr_dr, &M68k_disasm_ROL_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
         }
     }
 
@@ -765,7 +765,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m <= 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("1110 0111 11.. ....", 4, &M68k_ins_ROL, &M68k_disasm_ROL, (m << 3) | r, &op1, NULL, 2, M68k_OM_ea);
+            bind_opcode("1110 0111 11.. ....", 2, &M68k_ins_ROL_ea, &M68k_disasm_ROL_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
@@ -773,9 +773,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_immediate, i ? i : 8);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...0 0001 1...", 1, &M68k_ins_ROR, &M68k_disasm_ROR, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...0 0101 1...", 2, &M68k_ins_ROR, &M68k_disasm_ROR, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
-            bind_opcode("1110 ...0 1001 1...", 4, &M68k_ins_ROR, &M68k_disasm_ROR, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...0 0001 1...", 1, &M68k_ins_ROR_qimm_dr, &M68k_disasm_ROR_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...0 0101 1...", 2, &M68k_ins_ROR_qimm_dr, &M68k_disasm_ROR_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("1110 ...0 1001 1...", 4, &M68k_ins_ROR_qimm_dr, &M68k_disasm_ROR_qimm_dr, (i << 9) | d, &op1, &op2, 0, M68k_OM_qimm_r);
         }
     }
 
@@ -783,9 +783,9 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_data_register_direct, s);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("1110 ...0 0011 1...", 1, &M68k_ins_ROR, &M68k_disasm_ROR, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...0 0111 1...", 2, &M68k_ins_ROR, &M68k_disasm_ROR, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
-            bind_opcode("1110 ...0 1011 1...", 4, &M68k_ins_ROR, &M68k_disasm_ROR, (s << 9) | d, &op1, &op2, 1, M68k_OM_r_r);
+            bind_opcode("1110 ...0 0011 1...", 1, &M68k_ins_ROR_dr_dr, &M68k_disasm_ROR_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...0 0111 1...", 2, &M68k_ins_ROR_dr_dr, &M68k_disasm_ROR_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
+            bind_opcode("1110 ...0 1011 1...", 4, &M68k_ins_ROR_dr_dr, &M68k_disasm_ROR_dr_dr, (s << 9) | d, &op1, &op2, 0, M68k_OM_r_r);
         }
     }
 
@@ -793,7 +793,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m <= 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("1110 0110 11.. ....", 4, &M68k_ins_ROR, &M68k_disasm_ROR, (m << 3) | r, &op1, NULL, 2, M68k_OM_ea);
+            bind_opcode("1110 0110 11.. ....", 2, &M68k_ins_ROR_ea, &M68k_disasm_ROR_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
@@ -864,24 +864,11 @@
 
             op1 = mk_ea(M68k_AM_data_register_direct, y);
             op2 = mk_ea(M68k_AM_data_register_direct, x);
-            bind_opcode("1100 ...1 0000 ....", 4, &M68k_ins_ABCD, &M68k_disasm_ABCD, (x << 9) | y, &op1, &op2, 1, M68k_OM_r_r);
+            bind_opcode("1000 ...1 0000 ....", 1, &M68k_ins_SBCD, &M68k_disasm_SBCD, (x << 9) | y, &op1, &op2, 0, M68k_OM_r_r);
 
             op1 = mk_ea(M68k_AM_address_register_indirect_with_predecrement, y);
             op2 = mk_ea(M68k_AM_address_register_indirect_with_predecrement, x);
-            bind_opcode("1100 ...1 0000 ....", 4, &M68k_ins_ABCD, &M68k_disasm_ABCD, (x << 9) | y | 8, &op1, &op2, 1, M68k_OM_ea_ea);
-        }
-    }
-
-    for (u32 x = 0; x < 8; x++) {
-        for (u32 y = 0; y < 8; y++) {
-
-            op1 = mk_ea(M68k_AM_data_register_direct, y);
-            op2 = mk_ea(M68k_AM_data_register_direct, x);
-            bind_opcode("1000 ...1 0000 ....", 4, &M68k_ins_SBCD, &M68k_disasm_SBCD, (x << 9) | y, &op1, &op2, 0, M68k_OM_r_r);
-
-            op1 = mk_ea(M68k_AM_address_register_indirect_with_predecrement, y);
-            op2 = mk_ea(M68k_AM_address_register_indirect_with_predecrement, x);
-            bind_opcode("1000 ...1 0000 ....", 4, &M68k_ins_SBCD, &M68k_disasm_SBCD, (x << 9) | y | 8, &op1, &op2, 0, M68k_OM_ea_ea);
+            bind_opcode("1000 ...1 0000 ....", 1, &M68k_ins_SBCD, &M68k_disasm_SBCD, (x << 9) | y | 8, &op1, &op2, 0, M68k_OM_ea_ea);
         }
     }
 
@@ -891,7 +878,7 @@
                 if ((m == 1) || ((m == 7) && (r >= 2))) continue;
                 op1 = mk_ea(M68k_AM_immediate, t);
                 op2 = mk_ea(m, r);
-                bind_opcode("0101 .... 11.. ....", 4, &M68k_ins_SCC, &M68k_disasm_SCC, (t << 8) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_ea);
+                bind_opcode("0101 .... 11.. ....", 1, &M68k_ins_SCC, &M68k_disasm_SCC, (t << 8) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_ea);
             }
         }
     }
@@ -926,8 +913,8 @@
                 if ((m == 7) && (r >= 5)) continue;
                 op1 = mk_ea(m, r);
                 op2 = mk_ea(M68k_AM_address_register_direct, a);
-                bind_opcode("1001 ...0 .11. ....", 2, &M68k_ins_SUBA, &M68k_disasm_SUBA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
-                bind_opcode("1001 ...1 .11. ....", 4, &M68k_ins_SUBA, &M68k_disasm_SUBA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1001 ...0 11.. ....", 2, &M68k_ins_SUBA, &M68k_disasm_SUBA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1001 ...1 11.. ....", 4, &M68k_ins_SUBA, &M68k_disasm_SUBA, (a << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
             }
         }
     }
@@ -949,8 +936,8 @@
                 op1 = mk_ea(M68k_AM_quick_immediate, d ? d : 8);
                 if (m == 1) {
                     op2 = mk_ea(M68k_AM_address_register_direct, r);
-                    bind_opcode("0101 ...1 01.. ....", 2, &M68k_ins_SUBQ, &M68k_disasm_SUBQ, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
-                    bind_opcode("0101 ...1 10.. ....", 4, &M68k_ins_SUBQ, &M68k_disasm_SUBQ, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
+                    bind_opcode("0101 ...1 01.. ....", 2, &M68k_ins_SUBQ_ar, &M68k_disasm_SUBQ_ar, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
+                    bind_opcode("0101 ...1 10.. ....", 4, &M68k_ins_SUBQ_ar, &M68k_disasm_SUBQ_ar, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_qimm_r);
                 }
                 else {
                     op2 = mk_ea(m, r);
@@ -988,7 +975,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m == 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("0100 1010 11.. ....", 4, &M68k_ins_TAS, &M68k_disasm_TAS, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
+            bind_opcode("0100 1010 11.. ....", 1, &M68k_ins_TAS, &M68k_disasm_TAS, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 

@@ -31,5 +31,7 @@ void do_M68k_decode(); // call this before using core
 
 extern struct M68k_ins_t M68k_decoded[65536];
 void M68k_ins_RESET(struct M68k* this, struct M68k_ins_t *ins);
+void M68k_ins_DIVU(struct M68k* this, struct M68k_ins_t *ins);
+void M68k_ins_MOVEM_TO_REG(struct M68k* this, struct M68k_ins_t *ins);
 
 #endif //JSMOOCH_EMUS_M68000_INSTRUCTIONS_H

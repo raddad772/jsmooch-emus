@@ -85,6 +85,8 @@ struct M68k_regs {
     u32 IRC; // holds last word prefetched from external memory
     u32 IR; // instruction currently decoding
     u32 IRD; // instruction currently executing
+
+    u32 tmp; // temporary register
 };
 
 struct M68k_pins {
@@ -128,11 +130,14 @@ struct M68k {
     u32 ins_decoded;
     u32 testing;
 
+    u32 megadrive_bug;
+
     struct {
         enum M68k_states current;
 
         struct {
             u32 TCU; // Subcycle of like rmw8 etc.
+            u32 reversed;
             u32 addr;
             u32 data;
             u32 done;
@@ -156,7 +161,9 @@ struct M68k {
             u32 cur_op_num;
             // Op1 and 2 after fetch
             u32 temp;
-            u32 fast, hold, reverse;
+            u32 fast;
+            u32 sz;
+            u32 can_reverse;
             u32 prefetch[2];
 
             struct M68k_EA *ea;
@@ -181,6 +188,7 @@ struct M68k {
             u32 addr;
             u32 ext_words;
             u32 val;
+            u32 reversed;
         } op[2];
 
         struct {
@@ -232,14 +240,12 @@ struct M68k {
 };
 
 void M68k_cycle(struct M68k* this);
-void M68k_init(struct M68k* this);
+void M68k_init(struct M68k* this, u32 megadrive_bug);
 void M68k_delete(struct M68k* this);
 void M68k_reset(struct M68k* this);
 void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct);
 
 
-u32 M68k_get_SSP(struct M68k* this);
-u32 M68k_read_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 hold, u32 prefetch);
 void M68k_set_SR(struct M68k* this, u32 val);
 u32 M68k_get_SR(struct M68k* this);
 

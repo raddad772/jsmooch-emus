@@ -162,7 +162,7 @@ class instruction_block:
             nd = w.num_digits
             if nd == 1:
                 o_l = o[:sa]
-                o_r = o[sa:]
+                o_r = o[sa + 1:]
             else:
                 o_l = o[:sa - 1]
                 o_r = o[sa + 1:]
@@ -200,7 +200,8 @@ class instruction_block:
             # m==1 (sz==1)
 
         o += 'bind_opcode("'
-        o += (self.make_W_string(val) + '", ' + str(sz) + ', &M68k_ins_' + self.name + ', &M68k_disasm_' + self.name + ', ' + self.outshifts + ', ')
+        o += (self.make_W_string(val) + '", ' + str(
+            sz) + ', &M68k_ins_' + self.name + ', &M68k_disasm_' + self.name + ', ' + self.outshifts + ', ')
         if self.op1 is not None:
             o += '&op1, '
         else:
@@ -294,13 +295,16 @@ class instruction_block:
         elif self.template == 'dr_ea':
             o = self.template_output_2op('M68k_AM_data_register_direct, d', 'm, r', variant, 'r_ea')
         elif self.template == 'dr_dr':
-            o = self.template_output_2op('M68k_AM_data_register_direct, s', 'M68k_AM_data_register_direct, d', variant, 'r_r')
+            o = self.template_output_2op('M68k_AM_data_register_direct, s', 'M68k_AM_data_register_direct, d', variant,
+                                         'r_r')
         elif self.template == 'ar':
             o = self.template_output_1op('M68k_AM_address_register_direct, a', variant, 'r')
         elif self.template == 'ar_ar':  # using s and d where s is operand 1 and d is operand 2
-            o = self.template_output_2op('M68k_AM_address_register_direct, s', 'M68k_AM_address_register_direct, d', variant, 'r_r')
+            o = self.template_output_2op('M68k_AM_address_register_direct, s', 'M68k_AM_address_register_direct, d',
+                                         variant, 'r_r')
         elif self.template == 'ar_dr':  # using s and d where s is operand 1 and d is operand 2
-            o = self.template_output_2op('M68k_AM_address_register_direct, s', 'M68k_AM_data_register_direct, d', variant, 'r_r')
+            o = self.template_output_2op('M68k_AM_address_register_direct, s', 'M68k_AM_data_register_direct, d',
+                                         variant, 'r_r')
         elif self.template == '_A':
             o = self.template_output_2op('m, r', 'M68k_AM_address_register_direct, a', variant, 'ea_r')
         elif self.template == '_M':
@@ -309,9 +313,11 @@ class instruction_block:
         elif self.template == 'imm256_dr':  # imm, data
             o = self.template_output_2op('M68k_AM_immediate, i', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
         elif self.template == 'imm_dr':
-            o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
+            o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant,
+                                         'qimm_r')
         elif self.template == 'imm_ea':
-            o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant, 'qimm_r')
+            o = self.template_output_2op('M68k_AM_immediate, i ? i : 8', 'M68k_AM_data_register_direct, d', variant,
+                                         'qimm_r')
         elif self.template == 'displacement':
             o = self.template_output_1op('M68k_AM_immediate, d', variant, 'qimm')
         elif self.template == 'ADDQ':
@@ -375,7 +381,7 @@ class instruction_block:
         out += self.loop_skip_if(ls)
         out += ls + self.mk_op(1, op1str)
         out += ls + self.mk_op(2, op2str)
-        out += self.bind_data_sizes(ls, variant, ops_str, [3,2])
+        out += self.bind_data_sizes(ls, variant, ops_str, [3, 2])
         return out
 
     def template_B2(self, variant) -> str:
@@ -484,6 +490,8 @@ class instruction_block:
         out += self.loop_skip_if(ls)
 
         self.op2 = 1
+        n1 = self.name
+        self.name = n1 + '_ar'
 
         out += ls + self.mk_op(1, 'M68k_AM_quick_immediate, d ? d : 8')
         out += ls + 'if (m == 1) {'
@@ -492,6 +500,7 @@ class instruction_block:
         out += ls + '    ' + self.bind_str(4, 2, variant, 'qimm_r') + ';'
         out += ls + '}'
         out += ls + 'else {'
+        self.name = n1
         out += ls + '    op2 = mk_ea(m, r);'
         out += ls + '    ' + self.bind_str(1, 0, variant, 'qimm_ea') + ';'
         out += ls + '    ' + self.bind_str(2, 1, variant, 'qimm_ea') + ';'
@@ -517,13 +526,11 @@ M68k_PATH = JSMOOCH_LIB_PATH + '/component/cpu/m68000/generated'
 
 
 def main():
-
     def write_file(fname, lines):
         if os.path.exists(fname):
             os.unlink(fname)
         with open(fname, 'w') as outfile:
             outfile.writelines(lines)
-
 
     lines = []
     code_blocks = []
@@ -571,9 +578,12 @@ def main():
              '#include "component/cpu/m68000/m68000.h"\n',
              '\n'
              ]
+
     def fn(o) -> str:
         return 'void M68k_disasm_' + o + '(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)'
 
+    disasm_funcs.append('SUBQ_ar')
+    disasm_funcs.append('ADDQ_ar')
     for func_name in disasm_funcs:
         out_name = fn(func_name) + ';\n'
         lines.append(out_name)
@@ -588,10 +598,9 @@ def main():
         lines.append('}\n')
         lines.append('\n')
 
-
     lines = ['#include <stdio.h>\n',
-        '#include "generated_disasm.h"\n',
-         '\n']
+             '#include "generated_disasm.h"\n',
+             '\n']
     for func_name in disasm_funcs:
         lines.append(fn(func_name) + '\n')
         unimplemented_template(lines)
@@ -606,6 +615,16 @@ def main():
         print('        BADINS;')
         print('INS_END')
         print('')
+
+
+def main2():
+    a = instruction_block()
+    bi = "1011 aaaw 11mm mrrr"
+    a.bitcode = bi
+    a.parse_bitcode()
+    b = a.opcode_str_01_only
+    print("BITCODE IN : " + bi.replace(' ', ''))
+    print("BITCODE OUT: " + b)
 
 
 if __name__ == '__main__':
