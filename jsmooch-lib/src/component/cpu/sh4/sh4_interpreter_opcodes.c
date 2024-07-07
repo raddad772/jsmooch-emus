@@ -1786,20 +1786,13 @@ SH4ins(FSRRA) { //1.0 / sqrt (FRn) -> FRn
 
 SH4ins(FSCA) { // sin (FPUL) -> FRn, cos (FPUL) -> FR[n+1]
     // thanks to dRk|Raziel for this! using tables dumped from real DC
-
-
-    //cosine(counter) = sine(pi/2 + counter).
     if (this->regs.FPSCR.PR==0)
     {
-        //float real_pi=(((float)(s32)fpul)/65536)*(2*pi);
         u32 n = ins->Rn & 0xE;
         u32 pi_index=(u16)this->regs.FPUL.u;
 
         fpFR(n | 0) = SH4_sin_table[pi_index];//sinf(real_pi);
         fpFR(n | 1) = SH4_sin_table[0x4000 + pi_index];//cosf(real_pi);    // -> no need for warparound, sin_table has 0x4000 more entries
-
-        //CHECK_FPU_32(fr[n]);
-        //CHECK_FPU_32(fr[n+1]);
     }
     else {
         BADOPCODE;

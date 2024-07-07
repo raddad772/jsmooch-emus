@@ -213,7 +213,7 @@ skip_if ((m <= 1) || (m == 3) || ((m == 7) && (r >= 2)))
 0100 1100 1wmm mrrr
 skip_if ((m <= 1) || (m == 4) || ((m == 7) && (r >= 4)))
 
-.MOVEP 2,4 template(dr_sea_S)  # where dreg is the first argument, and set EA is second. S=0 EA is first argument S=1 EA is second argument 
+.MOVEP 2,4 template(dr_sea_S)  # where dreg is the first argument, and set EA is second. S=0 EA is first argument S=1 EA is second argument
 0000 ddd1 Sw00 1rrr
 
 .MOVEQ 4 template(imm256_dr)   # imm256_dr means... data register and 8-bit immediate in other order
@@ -245,7 +245,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 1100 ddd0 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5))) 
 
-.NBCD 4 template(ea1)
+.NBCD 1PREF template(ea1)
 0100 1000 00mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
@@ -302,23 +302,23 @@ skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 1110 0110 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
-.ROXL 1,2,4 template(imm_dr)
+.ROXL_qimm_dr 1,2,4 template(imm_dr)
 1110 iii1 ww01 0ddd
 
-.ROXL 1,2,4 template(dr_dr)
+.ROXL_dr_dr 1,2,4 template(dr_dr)
 1110 sss1 ww11 0ddd
 
-.ROXL 4 template(ea1)
+.ROXL_ea 2 template(ea1)
 1110 0101 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 
-.ROXR 1,2,4 template(imm_dr)
+.ROXR_qimm_dr 1,2,4 template(imm_dr)
 1110 iii0 ww01 0ddd
 
-.ROXR 1,2,4 template(dr_dr)
+.ROXR_dr_dr 1,2,4 template(dr_dr)
 1110 sss0 ww11 0ddd
 
-.ROXR 4 template(ea1)
+.ROXR_ea 2 template(ea1)
 1110 0100 11mm mrrr
 skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 

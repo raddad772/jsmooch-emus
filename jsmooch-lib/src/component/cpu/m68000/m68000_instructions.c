@@ -51,7 +51,6 @@ static u32 ADD(struct M68k* this, u32 op1, u32 op2, u32 sz, u32 extend)
     this->regs.SR.C = !!((carries ^ overflow) & msb32[sz]);
     this->regs.SR.V = !!(overflow & msb32[sz]);
     this->regs.SR.Z = !!((clip32[sz] & result) ? 0 : (extend ? this->regs.SR.Z : 1));
-    printf("\nRESULT:%08x SZ:%d", result, sz);
     this->regs.SR.N = sgn32(result,sz) < 0;
     this->regs.SR.X = this->regs.SR.C;
 
@@ -158,6 +157,42 @@ static u32 ROR(struct M68k* this, u32 result, u32 shift, u32 sz)
 
     return clip32[sz] & result;
 }
+
+static u32 ROXL(struct M68k* this, u32 result, u32 shift, u32 sz)
+{
+    u32 carry = this->regs.SR.X;
+    for (u32 i = 0; i < shift; i++) {
+        u32 extend = carry;
+        carry = !!(result & msb32[sz]);
+        result = result << 1 | extend;
+    }
+
+    this->regs.SR.C = this->regs.SR.X = carry;
+    this->regs.SR.V = 0;
+    this->regs.SR.Z = (clip32[sz] & result) == 0;
+    this->regs.SR.N = !!(msb32[sz] & result);
+
+    return clip32[sz] & result;
+}
+
+static u32 ROXR(struct M68k* this, u32 result, u32 shift, u32 sz)
+{
+    u32 carry = this->regs.SR.X;
+    for (u32 i = 0; i < shift; i++) {
+        u32 extend = carry;
+        carry = result & 1;
+        result >>= 1;
+        if (extend) result |= msb32[sz];
+    }
+
+    this->regs.SR.C = this->regs.SR.X = carry;
+    this->regs.SR.V = 0;
+    this->regs.SR.Z = (clip32[sz] & result) == 0;
+    this->regs.SR.N = !!(msb32[sz] & result);
+
+    return clip32[sz] & result;
+}
+
 
 static u32 SUB(struct M68k* this, u32 op1, u32 op2, u32 sz, u32 extend)
 {
@@ -328,7 +363,7 @@ INS_END
 
 M68KINS(TAS)
     STEP0
-        M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+        M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
     STEP(1)
         this->state.instruction.result = this->state.op[0].val | 0x80;
         M68k_start_wait(this, 2, M68kS_exec);
@@ -352,7 +387,7 @@ INS_END
 
 M68KINS(ABCD)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0);
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -379,7 +414,7 @@ INS_END
 
 M68KINS(ADD)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 0);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -415,7 +450,7 @@ INS_END
                 default:\
                     assert(1==0);\
             }\
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
 
 
 M68KINS(ADDI)
@@ -442,7 +477,7 @@ INS_END
 M68KINS(ADDQ)
         STEP0
             // if op2 is AR, size is ignored and it uses long
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 0);
             //printf("\nop1:%08x  op2:%08x  result:%08x...%08x", this->state.instruction.result);
@@ -457,7 +492,7 @@ INS_END
 
 M68KINS(ADDX_sz4_predec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 2);
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
         STEP(2)
@@ -474,7 +509,7 @@ INS_END
 
 M68KINS(ADDX_sz4_nopredec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 2);
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -488,7 +523,7 @@ INS_END
 
 M68KINS(ADDX_sz1_2)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -513,7 +548,7 @@ INS_END_NOSWITCH
 
 M68KINS(AND)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -579,7 +614,7 @@ INS_END
 
 M68KINS(ASL_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = ASL(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -614,7 +649,7 @@ INS_END
 
 M68KINS(ASR_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = ASR(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -668,26 +703,20 @@ M68KINS(BSET)
             BADINS;
 INS_END
 
-/*
- * 0 - currently exec, IRD  -4
- * 0 - IR (next instruction) -4
- * 2 - IRC   -2
- * 4 - next fetch  -0
- */
-
 M68KINS(BSR)
-       STEP0
+        STEP0
+            M68k_start_wait(this, 2, M68kS_exec);
+        STEP(1)
            // at this point, my PC is 6 ahead of actual executing instruction. so we must write -4 to stack
-           this->regs.PC -= 2;
            this->regs.A[7] -= 4;
            if (ins->ea1.reg != 0) {
-               M68k_start_write(this, this->regs.A[7], this->regs.PC, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
+               M68k_start_write(this, this->regs.A[7], this->regs.PC-2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
            }
            else {
-               M68k_start_write(this, this->regs.A[7], this->regs.PC+2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
+               M68k_start_write(this, this->regs.A[7], this->regs.PC, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
            }
-           //this->regs.PC -= 2;
-        STEP(1)
+           this->regs.PC -= 2;
+        STEP(2)
             i32 offset;
             if (ins->ea1.reg != 0) {
                 offset = ins->ea1.reg;
@@ -696,12 +725,11 @@ M68KINS(BSR)
             else {
                 offset = SIGNe16to32(this->regs.IRC);
             }
-            printf("\nBSR PC %06x   OFFS %08x", this->regs.PC, offset);
 
             this->regs.PC += offset;
-            printf("\nNEW PC! %06x", this->regs.PC);
+            this->regs.IPC = this->regs.PC;
             M68k_start_prefetch(this, 2, 0, M68kS_exec);
-        STEP(2)
+        STEP(3)
 INS_END
 
 M68KINS(BTST)
@@ -711,7 +739,7 @@ INS_END
 
 M68KINS(CHK)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             u32 target = this->state.op[0].val;
             u32 source = this->state.op[1].val;
@@ -738,7 +766,7 @@ INS_END
 
 M68KINS(CLR)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -754,7 +782,7 @@ INS_END
 
 M68KINS(CMP)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             CMP(this, sgn32(this->state.op[0].val, ins->sz), sgn32(this->state.op[1].val, ins->sz), ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -765,7 +793,7 @@ INS_END
 
 M68KINS(CMPA)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             // Ignore size for operand 2
             this->state.op[1].val = this->regs.A[ins->ea2.reg];
@@ -789,7 +817,7 @@ INS_END
 
 M68KINS(CMPM)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             CMP(this, sgn32(this->state.op[0].val, ins->sz), sgn32(this->state.op[1].val, ins->sz), ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -808,7 +836,7 @@ INS_END
 
 export_M68KINS(DIVU)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->regs.tmp = this->regs.PC - 2;
             // ea is divisor
@@ -850,7 +878,7 @@ INS_END
 
 M68KINS(EOR)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -895,14 +923,33 @@ M68KINS(EORI_TO_SR)
         STEP(4)
 INS_END
 
+
 M68KINS(EXG)
         STEP0
-            BADINS;
+            this->state.op[0].val = M68k_get_r(this, &ins->ea1, ins->sz);
+           M68k_set_r(this, &ins->ea1, M68k_get_r(this, &ins->ea2, ins->sz), ins->sz);
+           M68k_set_r(this, &ins->ea2, this->state.op[0].val, ins->sz);
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(1)
+            M68k_start_wait(this, 2, M68kS_exec);
+        STEP(2)
 INS_END
 
 M68KINS(EXT)
         STEP0
-            BADINS;
+            // auto result = (i8)read<Byte>(with); // byte for word, word for long
+            M68k_start_read_operands(this, 0, ins->sz >> 1, M68kS_exec, 0);
+        STEP(1)
+            // prefetch();
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(2)
+            //write<Word>(with, result);
+            this->state.instruction.result = sgn32(this->state.op[0].val, ins->sz >> 1);
+            M68k_start_write_operand(this, 0, 0, M68kS_exec);
+        STEP(3)
+            this->regs.SR.C = this->regs.SR.V = 0;
+            this->regs.SR.Z = (this->state.instruction.result & clip32[ins->sz]) == 0;
+            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
 INS_END
 
 M68KINS(ILLEGAL)
@@ -921,6 +968,7 @@ M68KINS(JSR)
             printf("\nEXT WRODS: %d", this->state.op[0].ext_words);
             if (this->state.op[0].ext_words == 2) M68k_start_read(this, this->regs.PC, 2, MAKE_FC(1), 0, M68kS_exec);
             this->regs.PC += this->state.op[0].ext_words << 1;
+            this->regs.IPC = this->regs.PC;
         STEP(1)
             // If the operand had two words, assemble from IRC and bus_cycle.data
             u32 prefetch = 0;
@@ -978,7 +1026,7 @@ INS_END
 
 M68KINS(LSL_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = LSL(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1013,7 +1061,7 @@ INS_END
 
 M68KINS(LSR_ea)
         STEP0
-           M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+           M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = LSR(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1022,14 +1070,40 @@ M68KINS(LSR_ea)
         STEP(3)
 INS_END
 
-M68KINS(MOVE)
+M68KINS(MOVE_l)
+    STEP0
+        BADINS;
+INS_END
+
+M68KINS_NOSWITCH(MOVE)
+    //if (ins->sz == 4) return M68k_ins_MOVE_l(this, ins);
+    switch(this->state.instruction.TCU) {
         STEP0
-            BADINS;
+            printf("\n0");
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
+        STEP(1)
+            printf("\n1");
+            this->state.instruction.result = this->state.op[0].val;
+            this->regs.SR.C = this->regs.SR.V = 0;
+            this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+            printf("\nRESULT! %08x", this->state.instruction.result);
+            if (ins->ea2.kind == M68k_AM_address_register_indirect_with_predecrement)
+                M68k_start_prefetch(this, 1, 1, M68kS_exec);
+            else
+                M68k_start_write_operand(this, 0, 1, M68kS_exec);
+        STEP(2)
+            printf("\n2");
+            if (ins->ea2.kind == M68k_AM_address_register_indirect_with_predecrement)
+                M68k_start_write_operand(this, 0, 1, M68kS_exec);
+            else
+                M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(3)
 INS_END
 
 M68KINS(MOVEA)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             u32 v = this->state.op[0].val;
             if (ins->sz == 2) v = SIGNe8to32(v);
@@ -1039,6 +1113,7 @@ M68KINS(MOVEA)
 INS_END
 
 M68KINS(MOVEM_TO_MEM)
+        // TODO: verify this. we disagreed with CLK
         STEP0
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
@@ -1050,7 +1125,7 @@ M68KINS(MOVEM_TO_MEM)
              * Read memory, stick into register.
              * If we're not loop 0, then we have something for the old register
              */
-            M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec, 0);
         STEP(2)
             this->state.op[0].val = M68k_read_ea_addr(this, &ins->ea1, 4, 1, this->state.op[0].ext_words);
         STEP(3)
@@ -1108,7 +1183,7 @@ export_M68KINS(MOVEM_TO_REG)
              * Read memory, stick into register.
              * If we're not loop 0, then we have something for the old register
              */
-            M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec, 0);
         STEP(2)
             this->state.op[0].val = M68k_read_ea_addr(this, &ins->ea1, 4, 1, this->state.op[0].ext_words);
         STEP(3)
@@ -1156,10 +1231,54 @@ export_M68KINS(MOVEM_TO_REG)
         STEP(6)
 INS_END
 
-M68KINS(MOVEP)
-        STEP0
-            BADINS;
+M68KINS(MOVEP_dr_ea)
+    STEP0
+        M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec, 0);
+    STEP(1)
+        this->state.op[0].val = this->regs.D[ins->ea1.reg]; // data
+        this->state.op[1].val = M68k_read_ea_addr(this, &ins->ea2, ins->sz, 0, this->state.op[1].ext_words);
+        this->state.op[1].addr = ins->sz * 8; // shift
+        this->state.operands.cur_op_num = 0; // i
+    STEP(2) // loop
+        this->state.op[1].addr -= 8;
+        M68k_start_write(this, this->state.op[1].val, (this->state.op[0].val >> this->state.op[1].addr) & 0xFF, 1, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
+        this->state.op[1].val += 2;
+        this->state.operands.cur_op_num++;
+        if (this->state.operands.cur_op_num < ins->sz) {
+            this->state.instruction.TCU--;
+        }
+    STEP(3)
+        M68k_start_prefetch(this, 1, 1, M68kS_exec);
+    STEP(4)
 INS_END
+
+M68KINS(MOVEP_ea_dr)
+    STEP0
+        M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec, 0);
+    STEP(1)
+        //this->regs.D[ins->ea2.reg];      // data
+        this->state.operands.cur_op_num = 0; // i
+        this->state.op[0].addr = ins->sz * 8;// shift
+        this->state.op[0].val = M68k_read_ea_addr(this, &ins->ea1, ins->sz, 0, this->state.op[0].ext_words);
+    STEP(2)
+        if (this->state.operands.cur_op_num > 0)
+            this->regs.D[ins->ea2.reg] |= this->state.bus_cycle.data << this->state.op[0].addr;
+        this->state.op[0].addr -= 8;
+        this->regs.D[ins->ea2.reg] &= ~(0xff << this->state.op[0].addr);
+        M68k_start_read(this, this->state.op[0].val, 1, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
+        this->state.op[0].val += 2;
+        this->state.operands.cur_op_num++;
+        if (this->state.operands.cur_op_num < ins->sz) this->state.instruction.TCU--;
+    STEP(3)
+        this->regs.D[ins->ea2.reg] |= this->state.bus_cycle.data << this->state.op[0].addr;
+        M68k_start_prefetch(this, 1, 1, M68kS_exec);
+    STEP(4)
+INS_END
+
+M68KINS_NOSWITCH(MOVEP)
+    if (ins->ea1.kind == M68k_AM_data_register_direct) return M68k_ins_MOVEP_dr_ea(this, ins);
+    else return M68k_ins_MOVEP_ea_dr(this, ins);
+INS_END_NOSWITCH
 
 M68KINS(MOVEQ)
         STEP0
@@ -1168,7 +1287,7 @@ INS_END
 
 M68KINS(MOVE_FROM_SR)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -1189,7 +1308,20 @@ INS_END
 
 M68KINS(MOVE_TO_SR)
         STEP0
-            BADINS;
+            if (!this->regs.SR.S) {
+                M68k_start_group1_exception(this, M68kIV_privilege_violation, 0);
+                return;
+            }
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0);
+        STEP(1)
+            M68k_start_wait(this, 4, M68kS_exec);
+        STEP(2)
+            u32 data = (this->regs.SR.u & 0x58E0) | (this->state.op[0].val & 0xA71F);
+            M68k_set_SR(this, data);
+            M68k_start_wait(this, 4, M68kS_exec);
+        STEP(3)
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(4)
 INS_END
 
 M68KINS(MOVE_TO_USP)
@@ -1209,17 +1341,56 @@ INS_END
 
 M68KINS(NBCD)
         STEP0
-            BADINS;
+            M68k_start_read_operands(this, 0, 1, M68kS_exec, 0);
+        STEP(1)
+            u32 source = this->state.op[0].val;
+            u32 target = 0u;
+            u32 result = target - source - this->regs.SR.X;
+            u32 c = 0, v = 0;
+
+            u32 adjustLo = !!((target ^ source ^ result) & 0x10);
+            u32 adjustHi = !!(result & 0x100);
+
+            if(adjustLo) {
+                u32 previous = result;
+                result -= 0x06;
+                c  = !!((~previous & 0x80) & ( result & 0x80));
+                v |= !!((previous & 0x80) & (~result & 0x80));
+            }
+
+            if(adjustHi) {
+                u32 previous = result;
+                result -= 0x60;
+                c  = 1;
+                v |= !!((previous & 0x80) & (~result & 0x80));
+            }
+            this->state.instruction.result = result;
+
+            this->regs.SR.C = this->regs.SR.X = c;
+            this->regs.SR.V = v;
+
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(2)
+            M68k_start_write_operand(this, 0, 0, M68kS_exec);
+        STEP(3)
+            if ((ins->ea1.kind == M68k_AM_data_register_direct) || (ins->ea1.kind == M68k_AM_address_register_direct))
+                M68k_start_wait(this, 2, M68kS_exec);
+        STEP(4)
+            this->regs.SR.Z = (0xFF & this->state.instruction.result) ? 0 : this->regs.SR.Z;
+            this->regs.SR.N = !!(0x80 & this->state.instruction.result);
 INS_END
 
 M68KINS(NEG)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            printf("\n---READ OPS pc:%06x ipc:%06x", this->regs.PC, this->regs.IPC);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
+            printf("\n---PREFETCH");
             this->state.instruction.result = SUB(this, this->state.op[0].val, 0, ins->sz, 0);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
-            if ((ins->ea1.kind == M68k_AM_address_register_direct) || (ins->ea1.kind == M68k_AM_data_register_direct)) {
+            printf("\n---Optional wait");
+            if ((ins->sz == 4) && ((ins->ea1.kind == M68k_AM_address_register_direct) || (ins->ea1.kind == M68k_AM_data_register_direct))) {
                 M68k_start_wait(this, 2, M68kS_exec);
             }
         STEP(3)
@@ -1229,7 +1400,7 @@ INS_END
 
 M68KINS(NEGX)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -1249,7 +1420,7 @@ INS_END
 
 M68KINS(NOT)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = (~this->state.op[0].val) & clip32[ins->sz];
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1264,7 +1435,7 @@ INS_END
 
 M68KINS(OR)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = OR(this, this->state.op[0].val, this->state.op[1].val, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1287,8 +1458,6 @@ M68KINS(ORI)
         STEP(2)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
-            printf("\nOP0 VAL: %08x", this->state.op[0].val);
-            printf("\nOp1 VAL: %08x", this->state.instruction.result);
             this->state.instruction.result = OR(this, this->state.instruction.result, this->state.op[0].val, ins->sz);
             M68k_start_write_operand(this, 0, 0, M68kS_exec);
         STEP(4)
@@ -1319,7 +1488,7 @@ INS_END
 
 M68KINS(PEA)
         STEP0
-            M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.op[0].addr = M68k_read_ea_addr(this, &this->ins->ea1, this->ins->sz,
                                                             0, this->state.op[0].ext_words);
@@ -1369,7 +1538,7 @@ INS_END
 
 M68KINS(ROL_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = ROL(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1403,7 +1572,7 @@ INS_END
 
 M68KINS(ROR_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = ROR(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1412,14 +1581,72 @@ M68KINS(ROR_ea)
         STEP(3)
 INS_END
 
-M68KINS(ROXL)
+M68KINS(ROXL_qimm_dr)
         STEP0
-            BADINS;
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(1)
+            M68k_start_wait(this, (ins->sz == 4 ? 4 : 2) + ins->ea1.reg * 2, M68kS_exec);
+        STEP(2)
+            this->state.instruction.result = ROXL(this, this->regs.D[ins->ea2.reg], ins->ea1.reg, ins->sz);
+            M68k_set_dr(this, ins->ea2.reg, this->state.instruction.result, ins->sz);
+        STEP(3)
 INS_END
 
-M68KINS(ROXR)
+M68KINS(ROXL_dr_dr)
         STEP0
-            BADINS;
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(1)
+            u32 cnt = this->regs.D[ins->ea1.reg] & 63;
+            M68k_start_wait(this, (ins->sz == 4 ? 4 : 2) + cnt * 2, M68kS_exec);
+        STEP(2)
+            u32 cnt = this->regs.D[ins->ea1.reg] & 63;
+            this->state.instruction.result = ROXL(this, this->regs.D[ins->ea2.reg], cnt, ins->sz);
+            M68k_set_dr(this, ins->ea2.reg, this->state.instruction.result, ins->sz);
+INS_END
+
+M68KINS(ROXL_ea)
+        STEP0
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
+        STEP(1)
+            this->state.instruction.result = ROXL(this, this->state.op[0].val, 1, ins->sz);
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(2)
+            M68k_start_write_operand(this, 0, 0, M68kS_exec);
+        STEP(3)
+INS_END
+
+M68KINS(ROXR_qimm_dr)
+        STEP0
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(1)
+            M68k_start_wait(this, (ins->sz == 4 ? 4 : 2) + ins->ea1.reg * 2, M68kS_exec);
+        STEP(2)
+            this->state.instruction.result = ROXR(this, this->regs.D[ins->ea2.reg], ins->ea1.reg, ins->sz);
+            M68k_set_dr(this, ins->ea2.reg, this->state.instruction.result, ins->sz);
+        STEP(3)
+INS_END
+
+M68KINS(ROXR_dr_dr)
+        STEP0
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(1)
+            u32 cnt = this->regs.D[ins->ea1.reg] & 63;
+            M68k_start_wait(this, (ins->sz == 4 ? 4 : 2) + cnt * 2, M68kS_exec);
+        STEP(2)
+            u32 cnt = this->regs.D[ins->ea1.reg] & 63;
+            this->state.instruction.result = ROXR(this, this->regs.D[ins->ea2.reg], cnt, ins->sz);
+            M68k_set_dr(this, ins->ea2.reg, this->state.instruction.result, ins->sz);
+INS_END
+
+M68KINS(ROXR_ea)
+        STEP0
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
+        STEP(1)
+            this->state.instruction.result = ROXR(this, this->state.op[0].val, 1, ins->sz);
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(2)
+            M68k_start_write_operand(this, 0, 0, M68kS_exec);
+        STEP(3)
 INS_END
 
 M68KINS(RTE)
@@ -1461,7 +1688,7 @@ INS_END
 
 M68KINS(SCC)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -1488,7 +1715,19 @@ INS_END
 
 M68KINS(SUBA)
         STEP0
-            BADINS;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
+        STEP(1)
+            i32 a = sgn32(this->state.op[0].val, ins->sz);
+            i32 b = (i32)this->state.op[1].val;
+            this->state.instruction.result = b - a;
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(2)
+            M68k_set_ar(this, ins->ea2.reg, this->state.instruction.result, ins->sz);
+            if ((ins->sz != 4) || (ins->ea1.kind == M68k_AM_data_register_direct) || (ins->ea1.kind == M68k_AM_address_register_direct) || (ins->ea1.kind == M68k_AM_immediate))
+                M68k_start_wait(this, 4, M68kS_exec);
+            else
+                M68k_start_wait(this, 2, M68kS_exec);
+        STEP(3)
 INS_END
 
 M68KINS(SUBI)
@@ -1508,7 +1747,7 @@ INS_END
 
 M68KINS(SUBX_sz4_predec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             this->regs.A[ins->ea2.reg] += 4;
@@ -1526,7 +1765,7 @@ INS_END
 
 M68KINS(SUBX_sz4_nopredec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -1539,7 +1778,7 @@ INS_END
 
 M68KINS(SUBX_sz1_2)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -1587,7 +1826,7 @@ INS_END
 
 M68KINS(TST)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0);
         STEP(1)
             this->regs.SR.C = this->regs.SR.V = 0;
             u32 v = clip32[ins->sz] & this->state.op[0].val;

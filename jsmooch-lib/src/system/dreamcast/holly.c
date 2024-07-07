@@ -19,21 +19,11 @@
 #include "component/cpu/sh4/sh4_interrupts.h"
 #include "helpers/multisize_memaccess.c"
 
-void DCDisplayList_reset(struct DCDisplayList* this);
-
 static void holly_soft_reset(struct DC* this)
 {
     printf("\nHOLLY soft reset!");
     this->holly.ta.cmd_buffer_index = 0;
     this->holly.ta.list_type = HPL_none;
-    this->holly.ta.cur_poly.valid = 0;
-    this->holly.ta.cur_volume.valid = 0;
-    this->holly.ta.user_tile_clip.valid = 0;
-    cvec_clear(&this->holly.ta.volume_triangles);
-    cvec_clear(&this->holly.ta.opaque_modifier_volumes);
-    cvec_clear(&this->holly.ta.translucent_modifier_volumes);
-    for (u32 i = 0; i < 5; i++)
-        DCDisplayList_reset(&this->holly.ta.display_lists[i]);
 }
 
 #define NI 0b1111
@@ -193,13 +183,6 @@ static void holly_TA_list_init(struct DC* this)
     }
     this->holly.ta.cmd_buffer_index = 0;
     this->holly.ta.list_type = HPL_none;
-    this->holly.ta.cur_volume.valid = 0;
-    this->holly.ta.cur_poly.valid = 0;
-    this->holly.ta.user_tile_clip.valid = 0;
-
-    cvec_clear(&this->holly.ta.opaque_modifier_volumes);
-    cvec_clear(&this->holly.ta.translucent_modifier_volumes);
-    cvec_clear(&this->holly.ta.volume_triangles);
 }
 
 static u32 holly_get_frame_cycle(struct DC* this) {
@@ -290,452 +273,26 @@ void holly_vblank_out(struct DC* this) {
     }
 }
 
-void DCDisplayList_reset(struct DCDisplayList* this)
-{
-    cvec_clear(&this->vertex_parameters);
-    cvec_clear(&this->vertex_strips);
-    this->next_first_vertex_parameters_index = 0;
-}
-
 enum VolumeInstruction {
     VI_Normal = 0,
     VI_InsideLastPolygon = 1,
     VI_OutsideLastPolygon = 2,
 };
 
-struct DCGenericGlobalParameter {
-    union HOLLY_PCW pcw;
-    union HOLLY_ISP_TSP_IWORD isp_tsp_word;
-    union HOLLY_TSP_IWORD tsp_word;
-    union HOLLY_TEX_CTRL texture_ctrl;
-} __attribute__((packed));
-
-static void holly_TA_check_end_of_modifier_volume(struct DC* this)
-{
-    if ((this->holly.ta.list_type == HPL_opaque_mv) || (this->holly.ta.list_type == HPL_translucent_mv)) {
-        if (this->holly.ta.cur_volume.valid) {
-                // from Deecey FIXME: I should probably honor _ta_user_tile_clip here too... Given the examples in the doc, modifier volume can also be clipped.
-
-                this->holly.ta.cur_volume.triangle_count = this->holly.ta.volume_triangles.len - this->holly.ta.cur_volume.first_triangle_index;
-                if (this->holly.ta.cur_volume.triangle_count > 0) {
-                    if (this->holly.ta.list_type == HPL_opaque_mv) {
-                        cvec_push_back_copy(&this->holly.ta.opaque_modifier_volumes, &this->holly.ta.cur_volume);
-                    } else {
-                        cvec_push_back_copy(&this->holly.ta.translucent_modifier_volumes, &this->holly.ta.cur_volume);
-                    }
-                }
-                this->holly.ta.cur_volume.valid = 0;
-        }
-    }
-}
-
-static void holly_TA_handle_object_list_set(struct DC* this) {
-    union HOLLY_PCW parameter_control_word;
-    parameter_control_word.u = *(u32 *) &this->holly.ta.cmd_buffer[0];
-    assert(parameter_control_word.para_type == ctrl_object_list_set);
-
-    if (this->holly.ta.list_type == HPL_none) {
-        printf("\nLIST TYPE SET! %d", parameter_control_word.list_type);
-        this->holly.ta.list_type = parameter_control_word.list_type;
-        DCDisplayList_reset(&this->holly.ta.display_lists[this->holly.ta.list_type]);
-    }
-    printf(DBGC_RED "\nUnimplemented ObjectListSet" DBGC_RST);
-    // FIXME: Really not sure if I need to do any thing here...
-    //        Is it meant to separate objects by tiles? Are they already submitted elsewhere anyway?
-    if (false) {
-        /*const object_list_set = @as(*ObjectListSet, @ptrCast(&this->holly.ta.command_buffer)).*;
-        const param_base = this->_get_register(u32, .PARAM_BASE).*;
-        const ta_alloc_ctrl = this->_get_register(TA_ALLOC_CTRL, .TA_ALLOC_CTRL).*;
-        std.debug.assert(ta_alloc_ctrl.OPB_Mode == 0);
-        const addr = 4 * object_list_set.object_pointer; // 32bit word address
-        while (true) {
-            const object = @as(*u32, @ptrCast(&this->vram[addr])).*;
-            if (object & 0x80000000 == 0) {
-                // Triangle Strip
-                const strip_addr = param_base + 4 * (object & 0x1FFFFF);
-                _ = strip_addr;
-            } else {
-                switch ((object >> 29) & 0b11) {
-                    0b00 => {
-                        // Triangle Array
-                        @panic("Unimplemented Triangle Array");
-                    },
-                    0b01 => {
-                        // Quad Array
-                        @panic("Unimplemented Quad Array");
-                    },
-                    0b11 => {
-                        std.debug.assert(object & 0b11 == 0);
-                        // Object Pointer Block Link
-                        if (object & 0x10000000 == 0x10000000) {
-                            // End of list
-                            break;
-                        } else {
-                            @panic("Unimplemented Object Pointer Block Link");
-                        }
-                    },
-                    else => {
-                        @panic("Invalid Object type");
-                    },
-                }
-            }
-            addr += 4;
-        }*/
-    }
-}
-
-
-static enum DCVertexParamKind obj_control_to_vertex_parameter_format(union HOLLY_PCW pcw) {
-    u32 bit_masked = pcw.u & 0x79;
-    switch(bit_masked) {
-        case 0x0:
-            return DCVP0;
-        case 0x1:
-            return DCVP0;
-        case 0x10:
-            return DCVP1;
-        case 0x20:
-            return DCVP2;
-        case 0x30:
-            return DCVP2;
-        case 0x8:
-            return DCVP3;
-        case 0x9:
-            return DCVP4;
-        case 0x18:
-            return DCVP5;
-        case 0x19:
-            return DCVP6;
-        case 0x28:
-            return DCVP7;
-        case 0x38:
-            return DCVP7;
-        case 0x29:
-            return DCVP8;
-        case 0x39:
-            return DCVP8;
-        case 0x40:
-            return DCVP9;
-        case 0x60:
-            return DCVP10;
-        case 0x70:
-            return DCVP10;
-        case 0x48:
-            return DCVP11;
-        case 0x49:
-            return DCVP12;
-        case 0x68:
-            return DCVP13;
-        case 0x78:
-            return DCVP13;
-        case 0x69:
-            return DCVP14;
-        case 0x79:
-            return DCVP14;
-    }
-    printf("\nWHAT!?!?!??!");
-    return 0;
-}
-
-u32 vertex_parameter_size(enum DCVertexParamKind kind) {
-    switch(kind) {
-        case DCVP0: return 256/8;
-        case DCVP1: return 256/8;
-        case DCVP2: return 256/8;
-        case DCVP3: return 256/8;
-        case DCVP4: return 256/8;
-        case DCVP5: return 512/8;
-        case DCVP6: return 512/8;
-        case DCVP7: return 256/8;
-        case DCVP8: return 256/8;
-        case DCVP9: return 256/8;
-        case DCVP10: return 256/8;
-        case DCVP11: return 512/8;
-        case DCVP12: return 512/8;
-        case DCVP13: return 512/8;
-        case DCVP14: return 512/8;
-        case DCVPSP0: return 512/8;
-        case DCVPSP1: return 512/8;
-        default:
-            printf("\nUNKNOWN VERTEX PARAMETER FORMAT WTF %d", kind);
-            printf("\nUNKNOWN VERTEX PARAMETER FORMAT WTF %d", kind);
-            printf("\nUNKNOWN VERTEX PARAMETER FORMAT WTF %d", kind);
-            printf("\nUNKNOWN VERTEX PARAMETER FORMAT WTF %d", kind);
-            printf("\nUNKNOWN VERTEX PARAMETER FORMAT WTF %d", kind);
-            return 0;
-    }
-}
-
-static enum DCPolyKind obj_control_to_polygon_format(union HOLLY_PCW pcw) {
-    u32 bit_masked = pcw.u & 0x7D; // Thanks Deecey! Except odd ones can't happen...TODO: verify?
-    switch(bit_masked) {
-        /* THANK YOU DEECEY! */
-        case 0x0: return DCP_type0;
-        case 0x1: return DCP_type0;
-        case 0x4: return DCP_type0;
-        case 0x5: return DCP_type0;
-        case 0x10: return DCP_type0;
-        case 0x20: return DCP_type1;
-        case 0x30: return DCP_type0;
-        case 0x40: return DCP_type3;
-        case 0x60: return DCP_type4;
-        case 0x70: return DCP_type3;
-        case 0x8: return DCP_type0;
-        case 0xc: return DCP_type0;
-        case 0x9: return DCP_type0;
-        case 0xd: return DCP_type0;
-        case 0x18: return DCP_type0;
-        case 0x1c: return DCP_type0;
-        case 0x19: return DCP_type0;
-        case 0x1d: return DCP_type0;
-        case 0x28: return DCP_type1;
-        case 0x2c: return DCP_type2;
-        case 0x29: return DCP_type1;
-        case 0x2d: return DCP_type2;
-        case 0x38: return DCP_type0;
-        case 0x3c: return DCP_type0;
-        case 0x39: return DCP_type0;
-        case 0x3d: return DCP_type0;
-        case 0x48: return DCP_type3;
-        case 0x4c: return DCP_type3;
-        case 0x49: return DCP_type3;
-        case 0x4d: return DCP_type3;
-        case 0x68: return DCP_type4;
-        case 0x6c: return DCP_type4;
-        case 0x69: return DCP_type4;
-        case 0x6d: return DCP_type4;
-        case 0x78: return DCP_type3;
-        case 0x7c: return DCP_type3;
-        case 0x79: return DCP_type3;
-        case 0x7d: return DCP_type3;
-    }
-}
-
-static u32 polygon_format_size(enum DCPolyKind kind)
-{
-    switch(kind) {
-        case DCP_type0:
-            return 256/8;
-        case DCP_type1:
-            return 256/8;
-        case DCP_type2:
-            return 512/8;
-        case DCP_type3:
-            return 256/8;
-        case DCP_type4:
-            return 512/8;
-        default:
-            assert(1==0);
-            printf("\nINVALID SIZERRR");
-            return -1;
-    }
-}
-
-static void set_ta_poly(struct DC* this, enum DCPolyKind kind, u8* buf)
-{
-/*
-                    this->holly.ta.current_polygon = switch (format) {
-                        .PolygonType0 => .{ .PolygonType0 = @as(*PolygonType0, @ptrCast(&this->holly.ta.command_buffer)).* },
-                        .PolygonType1 => .{ .PolygonType1 = @as(*PolygonType1, @ptrCast(&this->holly.ta.command_buffer)).* },
-                        .PolygonType2 => .{ .PolygonType2 = @as(*PolygonType2, @ptrCast(&this->holly.ta.command_buffer)).* },
-                        .PolygonType3 => .{ .PolygonType3 = @as(*PolygonType3, @ptrCast(&this->holly.ta.command_buffer)).* },
-                        .PolygonType4 => .{ .PolygonType4 = @as(*PolygonType4, @ptrCast(&this->holly.ta.command_buffer)).* },
-                        else => @panic("Invalid polygon format"),
-                    };
- */
-    this->holly.ta.cur_poly.valid = 1;
-    this->holly.ta.cur_poly.kind = kind;
-    memcpy(&this->holly.ta.cur_poly.data, &this->holly.ta.cmd_buffer[0], polygon_format_size(kind));
-}
-
 void holly_TA_cmd(struct DC* this) {
 
     if (this->holly.ta.cmd_buffer_index % 8 != 0) return; // All commands are 8 or 16 bytes long
     assert(this->holly.ta.cmd_buffer_index <= 64);
     union HOLLY_PCW cmd;
-    cmd.u = *(u32 *)(&this->holly.ta.cmd_buffer[0]);
+    //cmd.u = *(u32 *)(&this->holly.ta.cmd_buffer[0]);
     enum HOLLY_PCW_paratype ptype = cmd.para_type;
-    printf("\nWORKING ON LIST %d", this->holly.ta.list_type);
-
-    switch(ptype) {
-        case ctrl_end_of_list:
-            printf("\nEND OF LIST!");
-            holly_TA_check_end_of_modifier_volume(this);
-            switch(this->holly.ta.list_type) {
-                case HPL_opaque:
-                    holly_raise_interrupt(this, hirq_opaque_list, 800);
-                    break;
-                case HPL_opaque_mv:
-                    holly_raise_interrupt(this, hirq_opaque_modifier_list, 800);
-                    break;
-                case HPL_translucent:
-                    holly_raise_interrupt(this, hirq_translucent_list, 800);
-                    break;
-                case HPL_translucent_mv:
-                    holly_raise_interrupt(this, hirq_translucent_modifier_list, 800);
-                    break;
-                case HPL_punchthru:
-                    holly_raise_interrupt(this, hirq_punchthru, 800);
-                    break;
-                case HPL_none:
-                    break;
-                default:
-                    printf("\nIMPOSSIBLE!");
-                    break;
-            }
-            this->holly.ta.cur_poly.valid = 0;
-            this->holly.ta.list_type = HPL_none;
-            break;
-        case ctrl_user_tile_clip:
-            printf("\nUSER TILE CLIP!");
-            struct DCUserTileClip *user_tile_clip = (struct DCUserTileClip*)&this->holly.ta.cmd_buffer[0];
-            this->holly.ta.user_tile_clip = (struct DCUserTileClipInfo) {
-                    .valid = 1,
-                    .user_clip_usage = DCUCU_disable,
-                    .x = 32 * user_tile_clip->user_clip_x_min,
-                    .y = 32 * user_tile_clip->user_clip_y_min,
-                    .width = 32 * (1 + user_tile_clip->user_clip_x_max - user_tile_clip->user_clip_x_min),
-                    .height = 32 * (1 + user_tile_clip->user_clip_y_max - user_tile_clip->user_clip_y_min),
-            };
-            break;
-        case ctrl_object_list_set:
-            printf("\nOBJ LIST SET!");
-            holly_TA_handle_object_list_set(this);
-            break;
-        case ctrl_reserved:
-            printf("\nRESERVED!");
-            break;
-        case global_polygon_or_modifier_volume:
-            printf("\nPOLY OR MODIFIER VOLUME!");
-            if (this->holly.ta.list_type == HPL_none) {
-                printf("\nSET LIST TYPE %d", cmd.list_type);
-                this->holly.ta.list_type = cmd.list_type;
-                assert(this->holly.ta.list_type < 5);
-                DCDisplayList_reset(&this->holly.ta.display_lists[this->holly.ta.list_type]);
-            }
-
-            if (cmd.group_en == 1) {
-                if (this->holly.ta.user_tile_clip.valid) {
-                    this->holly.ta.user_tile_clip.user_clip_usage = cmd.user_clip;
-                }
-            }
-
-            if ((this->holly.ta.list_type == HPL_opaque_mv) || (this->holly.ta.list_type == HPL_translucent_mv)) {
-                union HOLLY_MVI modifier_volume;
-                modifier_volume.u = *(u32 *)(&this->holly.ta.cmd_buffer[0]); // TODO: is this correct?
-                // New modifier volume starts
-                holly_TA_check_end_of_modifier_volume(this);
-                if (!this->holly.ta.cur_volume.valid) {
-                    this->holly.ta.cur_volume = (struct DCModifierVolume) {
-                            .valid = 1,
-                            .parameter_control_word = cmd,
-                            .instructions = modifier_volume,
-                            .first_triangle_index = this->holly.ta.volume_triangles.len
-                    };
-                    if (modifier_volume.volume_instruction == VI_OutsideLastPolygon) {
-                        printf("\nunsupported exclusion modifier volume.");
-                    }
-                }
-            } else {
-                // NOTE: "Four bits in the ISP/TSP Instruction Word are overwritten with the corresponding bit values from the Parameter Control Word."
-                struct DCGenericGlobalParameter* global_parameter = (struct DCGenericGlobalParameter*)(&this->holly.ta.cmd_buffer[0]);
-
-                global_parameter->isp_tsp_word.texture = global_parameter->pcw.texture;
-                global_parameter->isp_tsp_word.offset = global_parameter->pcw.offset;
-                global_parameter->isp_tsp_word.gouraud = global_parameter->pcw.gouraud;
-                global_parameter->isp_tsp_word.uv_16bit = global_parameter->pcw.uv_is_16bit;
-
-                enum DCPolyKind format = obj_control_to_polygon_format(cmd);
-                if (this->holly.ta.cmd_buffer_index < polygon_format_size(format)) return;
-
-                set_ta_poly(this, format, this->holly.ta.cmd_buffer);
-            }
-            break;
-        case global_sprite:
-            printf("\nSPRITE!");
-            if (this->holly.ta.list_type == HPL_none) {
-                this->holly.ta.list_type = cmd.list_type;
-                DCDisplayList_reset(&this->holly.ta.display_lists[this->holly.ta.list_type]);
-            }
-
-            if (cmd.group_en == 1) {
-                if (this->holly.ta.user_tile_clip.valid) {
-                    this->holly.ta.user_tile_clip.user_clip_usage = cmd.user_clip;
-                }
-            }
-
-            set_ta_poly(this, DCP_sprite, &this->holly.ta.cmd_buffer[0]);
-            break;
-        case global_reserved:
-            printf("\nGLOBAL RESERVED!");
-            break;
-        case vertex_parameter:
-            printf("\nVERTEX PARAMETER!!!");
-            //assert(this->holly.ta.list_type != 10);
-            struct DCDisplayList* display_list = &this->holly.ta.display_lists[this->holly.ta.list_type];
-
-            if ((this->holly.ta.list_type == HPL_opaque_mv) || (this->holly.ta.list_type == HPL_translucent_mv)) {
-                if (this->holly.ta.cmd_buffer_index < sizeof(struct DCModifierVolumeParameter)) return;
-                struct DCModifierVolumeParameter *mvp = cvec_push_back(&this->holly.ta.volume_triangles);
-                memcpy(mvp, &this->holly.ta.cmd_buffer[0], sizeof(struct DCModifierVolumeParameter));
-
-                // NOTE: I feel like the documentation contradicts itself here, volume == 1 is said to indicate the last triangle of a modifier volume,
-                //       but the example use an extra global parameter to end the modifier volume. The later seem correct in practice.
-                //           if (parameter_control_word.obj_control.volume == 1) end_volume()?
-            } else {
-                if (this->holly.ta.cur_poly.valid == 0) {
-                    printf("\n    No current polygon! Current list type: %d", this->holly.ta.list_type);
-                }
-
-                struct DCGenericGlobalParameter* polygon_obj_control = (struct DCGenericGlobalParameter* )&this->holly.ta.cur_poly.data[0];
-                switch (this->holly.ta.cur_poly.kind) {
-                    case DCP_sprite: {
-                        assert(cmd.end_of_strip == 1); // Sanity check: For Sprites/Quads, each vertex parameter describes an entire polygon.
-                        struct DCVertexParam* vp = (struct DCVertexParam *)cvec_push_back(&display_list->vertex_parameters);
-                        if (polygon_obj_control->texture_ctrl.u == 0) {
-                            if (this->holly.ta.cmd_buffer_index < vertex_parameter_size(DCVPSP0)) return;
-                            vp->kind = DCVPSP0;
-                        }
-                        else {
-                            if (this->holly.ta.cmd_buffer_index < vertex_parameter_size(DCVPSP1)) return;
-                            vp->kind = DCVPSP1;
-                        }
-                        memcpy(vp->data, &this->holly.ta.cmd_buffer[0], vertex_parameter_size(vp->kind));
-                        break;
-                    }
-                    default: {
-                        enum DCVertexParamKind format = obj_control_to_vertex_parameter_format(cmd);
-                        if (this->holly.ta.cmd_buffer_index < vertex_parameter_size(format)) return;
-                        struct DCVertexParam* vp = (struct DCVertexParam *)cvec_push_back(&(display_list->vertex_parameters));
-                        vp->kind = format;
-                        memcpy(vp->data, &this->holly.ta.cmd_buffer[0], vertex_parameter_size(format));
-                    }
-                }
-
-                if (cmd.end_of_strip == 1) {
-                    struct DCVertexStrip* vs = cvec_push_back(&display_list->vertex_strips);
-                    vs->user_clip.valid = 0;
-                    memcpy(&vs->polygon, &this->holly.ta.cur_poly, sizeof(struct DCPoly));
-                    if (this->holly.ta.user_tile_clip.valid && (this->holly.ta.user_tile_clip.user_clip_usage != 0))
-                        memcpy(&vs->user_clip, &this->holly.ta.user_tile_clip, sizeof(struct DCUserTileClipInfo));
-                    vs->verter_parameter_index = display_list->next_first_vertex_parameters_index;
-                    vs->verter_parameter_count = cvec_len(&display_list->vertex_parameters) - display_list->next_first_vertex_parameters_index;
-                    display_list->next_first_vertex_parameters_index = cvec_len(&display_list->vertex_parameters);
-
-                }
-            }
-            ///printf("\nXYZ: %f %f %f", counter, y, z);
-            break;
-    }
-
-    this->holly.ta.cmd_buffer_index = 0;
 }
 
 void holly_TA_FIFO_load(struct DC* this, u32 src_addr, u32 tx_len, void* src)
 {
     u32 bytes_tx = 0;
     for (u32 i = 0; i < tx_len; i+= 8) {
-        memcpy(&this->holly.ta.cmd_buffer[this->holly.ta.cmd_buffer_index], (src+src_addr+i), tx_len);
+        //memcpy(&this->holly.ta.cmd_buffer[this->holly.ta.cmd_buffer_index], (src+src_addr+i), tx_len);
         this->holly.ta.cmd_buffer_index += 8;
         printf("\nSZ: %d", this->holly.ta.cmd_buffer_index);
         bytes_tx += 8;
@@ -800,37 +357,12 @@ void holly_reset(struct DC* this)
 }
 
 
-static void DCDisplayList_init(struct DCDisplayList* this)
-{
-    this->valid = 0;
-    this->next_first_vertex_parameters_index = 0;
-    cvec_init(&this->vertex_parameters, sizeof(struct DCVertexParam), 64);
-    cvec_init(&this->vertex_strips, sizeof(struct DCVertexStrip), 64);
-}
-
-static void DCDisplayList_delete(struct DCDisplayList* this)
-{
-    this->valid = 0;
-    cvec_delete(&this->vertex_strips);
-    cvec_delete(&this->vertex_parameters);
-}
-
 void holly_init(struct DC* this)
 {
-    cvec_init(&this->holly.ta.opaque_modifier_volumes, sizeof(struct DCModifierVolume), 64);
-    cvec_init(&this->holly.ta.translucent_modifier_volumes, sizeof(struct DCModifierVolume), 64);
-    cvec_init(&this->holly.ta.volume_triangles, sizeof(struct DCModifierVolumeParameter), 64);
-    for (u32 i = 0; i < 5; i++) {
-        DCDisplayList_init(&this->holly.ta.display_lists[i]);
-    }
+    cvec_init(&this->holly.ta.cmd_buffer, 1, 2*1024*1024);
 }
 
 void holly_delete(struct DC* this)
 {
-    cvec_delete(&this->holly.ta.translucent_modifier_volumes);
-    cvec_delete(&this->holly.ta.opaque_modifier_volumes);
-    cvec_delete(&this->holly.ta.volume_triangles);
-    for (u32 i = 0; i < 5; i++) {
-        DCDisplayList_delete(&this->holly.ta.display_lists[i]);
-    }
+    cvec_delete(&this->holly.ta.cmd_buffer);
 }

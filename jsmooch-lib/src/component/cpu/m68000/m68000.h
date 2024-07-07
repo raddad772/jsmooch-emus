@@ -60,6 +60,7 @@ struct M68k_regs {
      */
     u32 D[8];
     u32 A[8];
+    u32 IPC;
     u32 PC;
 
     u32 ASP; // Alternate stack pointer, holds alternate stack pointer.

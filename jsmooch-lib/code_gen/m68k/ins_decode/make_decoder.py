@@ -303,7 +303,7 @@ class instruction_block:
             o = self.template_output_2op('M68k_AM_address_register_direct, s', 'M68k_AM_address_register_direct, d',
                                          variant, 'r_r')
         elif self.template == 'ar_dr':  # using s and d where s is operand 1 and d is operand 2
-            o = self.template_output_2op('M68k_AM_address_register_direct, s', 'M68k_AM_data_register_direct, d',
+            o = self.template_output_2op('M68k_AM_address_register_direct, d', 'M68k_AM_data_register_direct, s',
                                          variant, 'r_r')
         elif self.template == '_A':
             o = self.template_output_2op('m, r', 'M68k_AM_address_register_direct, a', variant, 'ea_r')

@@ -61,13 +61,6 @@ void DC_delete(struct jsm_system* system);
 
 #define HOLLY_VRAM_SIZE 8*1024*1024
 
-struct DCDisplayList {
-    u32 valid;
-    struct cvec vertex_strips; //std.ArrayList(VertexStrip) = undefined,
-    struct cvec vertex_parameters; //std.ArrayList(VertexParameter) = undefined,
-    u32 next_first_vertex_parameters_index;
-};
-
 struct DC {
     struct SH4 sh4;
     struct SH4_memaccess_t sh4mem;
@@ -144,19 +137,11 @@ struct DC {
 
         struct {
             enum HOLLY_PCW_listtype list_type;
-            struct DCPoly cur_poly;
-            struct DCModifierVolume cur_volume;
-            struct DCUserTileClipInfo user_tile_clip;
 
-            struct cvec opaque_modifier_volumes;
-            struct cvec translucent_modifier_volumes;
-            struct cvec volume_triangles;
             u32 tri_type;
 
             u32 cmd_buffer_index;
-            u8 cmd_buffer[64]; // Up to 16 bytes per command
-
-            struct DCDisplayList display_lists[5];
+            struct cvec cmd_buffer;
         } ta;
 
         struct physical_io_device* display;

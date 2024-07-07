@@ -732,56 +732,40 @@ void M68k_disasm_ROR_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_tr
     dea(&ins->ea1, ins->sz);
 }
 
-
-void M68k_disasm_ROR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
-{
-    ins_suffix("ror", ins->sz, out, "   ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
-}
-
-void M68k_disasm_ROXL(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_ROXL_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("roxl", ins->sz, out, "  ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
 }
 
-void M68k_disasm_ROXR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_ROXL_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("roxl", ins->sz, out, "  ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ROXL_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("roxl", ins->sz, out, "  ");
+    dea(&ins->ea1, ins->sz);
+}
+
+void M68k_disasm_ROXR_qimm_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("roxr", ins->sz, out, "  ");
-    switch(ins->variant) {
-        case 0:
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 2:
-            dea(&ins->ea1, ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ROXR_dr_dr(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("roxr", ins->sz, out, "  ");
+    dea2(ins->sz);
+}
+
+void M68k_disasm_ROXR_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("roxr", ins->sz, out, "  ");
+    dea(&ins->ea1, ins->sz);
 }
 
 void M68k_disasm_RTE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)

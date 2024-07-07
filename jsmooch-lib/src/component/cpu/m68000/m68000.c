@@ -100,6 +100,7 @@ void M68k_cycle(struct M68k* this)
                     return;
                 }
                 M68k_decode(this);
+                this->regs.IPC = this->regs.PC;
                 this->ins_decoded = 1;
                 this->state.current = M68kS_exec;
                 if (dbg.trace_on && this->trace.ok) {
