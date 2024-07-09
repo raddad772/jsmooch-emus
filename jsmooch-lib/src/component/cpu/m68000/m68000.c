@@ -53,6 +53,7 @@ void M68k_set_SR(struct M68k* this, u32 val)
 {
     u32 new_s = (val & 0x2000) >> 13;
     // CCR
+    //this->regs.SR.u = val & 0xA71F; //(this->regs.SR.u & 0xFFE0) | (val & 0x1F);
     this->regs.SR.u = (this->regs.SR.u & 0xFFE0) | (val & 0x1F);
 
     if (new_s != this->regs.SR.S) {
@@ -95,15 +96,15 @@ void M68k_cycle(struct M68k* this)
                     continue;
                 }
                 this->state.exception.group1_pending = 0;
-                if (this->testing && this->trace_cycles > 0) {
+                if (this->testing && this->trace_cycles > 0) { // FOR TESTING JSONs
                     this->ins_decoded = 1;
                     return;
                 }
                 M68k_decode(this);
-                this->regs.IPC = this->regs.PC;
                 this->ins_decoded = 1;
                 this->state.current = M68kS_exec;
                 if (dbg.trace_on && this->trace.ok) {
+                    printf("\nHERE!");
                     M68k_trace_format(this);
                 }
                 break; }
