@@ -104,7 +104,6 @@ void M68k_cycle(struct M68k* this)
                 this->ins_decoded = 1;
                 this->state.current = M68kS_exec;
                 if (dbg.trace_on && this->trace.ok) {
-                    printf("\nHERE!");
                     M68k_trace_format(this);
                 }
                 break; }

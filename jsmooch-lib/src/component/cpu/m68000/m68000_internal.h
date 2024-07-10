@@ -57,7 +57,7 @@ void M68k_start_write(struct M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 
 void M68k_start_prefetch(struct M68k* this, u32 num, u32 is_program, u32 next_state);
 void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold);
 void M68k_start_read_operand_for_ea(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states);
-void M68k_start_write_operand(struct M68k* this, u32 hold, u32 op_num, u32 next_state);
+void M68k_start_write_operand(struct M68k* this, u32 hold, u32 op_num, u32 next_state, u32 allow_reverse);
 u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz);
 void M68k_start_wait(struct M68k* this, u32 num, u32 state_after);
 u32 M68k_read_ea_addr(struct M68k* this, uint32 opnum, u32 sz, u32 hold, u32 prefetch);

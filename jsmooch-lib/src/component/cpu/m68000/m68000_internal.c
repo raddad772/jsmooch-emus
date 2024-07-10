@@ -111,6 +111,7 @@ void M68k_start_group0_exception(struct M68k* this, u32 vector_number, i32 wait_
 {
     //M68k_start_wait(this, 1, M68kS_exc_group0);
     //this->state.current = M68kS_exc_group0;
+    printf("\nGROUP0 CYC:%lld ADDR:%08x", this->trace_cycles, this->state.bus_cycle.addr);
     this->state.exception.group0.vector = vector_number;
     this->state.exception.group0.TCU = 0;
     this->state.exception.group0.normal_state = !was_in_group0_or_1;
@@ -141,8 +142,7 @@ void M68k_start_group2_exception(struct M68k* this, u32 vector_number, i32 wait_
     this->state.current = M68kS_exc_group2;
     this->state.exception.group2.TCU = 0;
     this->state.exception.group2.vector = vector_number;
-    this->state.exception.group2.PC = PC;
-    M68k_set_SR(this, (M68k_get_SR(this) & 0b0000011100011111) | 0x2000);
+    this->state.exception.group2.PC = PC-2;
 
     if (wait_cycles > 0)
         M68k_start_wait(this, wait_cycles, M68kS_exc_group2);
@@ -227,6 +227,7 @@ void M68k_start_prefetch(struct M68k* this, u32 num, u32 is_program, u32 next_st
 
 void M68k_start_read(struct M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, u32 next_state)
 {
+    printf("\nHEY THERE START READ %08x", addr);
     switch(sz) {
         case 1:
             this->state.current = M68kS_read8;
@@ -316,7 +317,10 @@ u32 M68k_read_ea_addr(struct M68k* this, uint32 opnum, u32 sz, u32 hold, u32 pre
             v = this->regs.A[ea->reg] + sz;
             c = this->regs.A[ea->reg];
             if ((ea->reg == 7) && (sz == 1)) v++;
-            if (!hold) this->regs.A[ea->reg] = v;
+            if (!hold) {
+                printf("\n....NOT HOLDING! %08x", this->regs.A[ea->reg]);
+                this->regs.A[ea->reg] = v;
+            }
             else {
                 this->state.op[opnum].held = 1;
                 this->state.op[opnum].new_val = v;
@@ -383,7 +387,7 @@ static u32 M68k_write_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32
     }
 }
 
-void M68k_start_write_operand(struct M68k* this, u32 hold, u32 op_num, u32 next_state)
+void M68k_start_write_operand(struct M68k* this, u32 hold, u32 op_num, u32 next_state, u32 allow_reverse)
 {
     this->state.operands.TCU = 0;
     this->state.operands.cur_op_num = op_num;
@@ -409,7 +413,7 @@ void M68k_start_write_operand(struct M68k* this, u32 hold, u32 op_num, u32 next_
         this->state.current = next_state;
         return;
     }
-    M68k_start_write(this, addr, this->state.instruction.result, this->ins->sz, MAKE_FC(0), this->state.op[op_num].reversed, next_state);
+    M68k_start_write(this, addr, this->state.instruction.result, this->ins->sz, MAKE_FC(0), allow_reverse & this->state.op[op_num].reversed, next_state);
 }
 
 u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz)
@@ -448,7 +452,9 @@ static void eval_ea_wait(struct M68k* this, u32 num_ea, u32 opnum, u32 sz)
     this->state.op[opnum].ext_words = M68k_AM_ext_words(ea->kind, sz);
 
     // Reverse our read/write 32-bit order if this is a predecrement
-    this->state.op[opnum].reversed = ea->kind == M68k_AM_address_register_indirect_with_predecrement && this->state.operands.can_reverse;
+    this->state.op[opnum].reversed = ea->kind == M68k_AM_address_register_indirect_with_predecrement;// && this->state.operands.can_reverse;
+    this->state.op[opnum].reversed = 1;
+    //printf("\nREVERSED? %d %d(%d)", this->state.op[opnum].reversed, ea->kind, opnum);
 
     // Prefetch if >0 ext words
     this->state.operands.state[prefetchnum] = this->state.op[opnum].ext_words != 0;
@@ -537,10 +543,9 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
     this->state.op[0].reversed = this->state.op[1].reversed = 0;
     this->state.op[0].t = this->state.op[1].t = 0;
     this->state.op[0].held = this->state.op[1].held = 0;
-    this->state.op[0].hold = this->state.op[1].hold = 0;
+    this->state.op[0].hold = this->state.op[1].hold = hold;
     this->state.op[0].new_val = this->state.op[1].new_val = 0;
     this->state.operands.next_state = next_state;
-    this->state.op[0].hold = hold;
     u32 no_fetches = 0;
     struct M68k_ins_t *ins = this->ins;
     switch(this->ins->operand_mode) {
@@ -607,8 +612,7 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
             assert(1==0);
     }
     if (no_fetches) {
-        this->state.current = next_state;
-        return;
+        if (!wait_states) this->state.current = next_state;
     }
 }
 
@@ -736,6 +740,7 @@ void M68k_read_operands_read(struct M68k* this, u32 opnum)
 
 void M68k_read_operands(struct M68k* this) {
     i32 state = -1;
+    printf("\nREAD OPERANDS!");
     for (u32 i = 0; i < 6; i++) {
         if (this->state.operands.state[i] > 0) {
             state = (i32)i;
@@ -811,26 +816,27 @@ void M68k_exc_group2(struct M68k* this)
             this->state.exception.group2.base_addr = M68k_get_SSP(this);
             this->state.exception.group2.SR = M68k_get_SR(this);
             M68k_start_write(this, this->state.exception.group2.base_addr+4, this->state.exception.group2.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
-                break;
-            case 1:
-                M68k_start_write(this, this->state.exception.group2.base_addr, this->state.exception.group2.SR, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
-                break;
-            case 2:
-                M68k_start_write(this, this->state.exception.group2.base_addr+2, this->state.exception.group2.PC >> 16, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
-                break;
-            case 3:
-                M68k_start_read(this, this->state.exception.group2.vector << 2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
-                break;
-            case 4:
-                this->regs.PC = this->state.bus_cycle.data;
-                M68k_start_prefetch(this, 1, 1, M68kS_exc_group2);
-                break;
-            case 5:
-                M68k_start_wait(this, 2, M68kS_exc_group2);
-                break;
-            case 6:
-                M68k_start_prefetch(this, 1, 1, M68kS_decode);
-                break;
+            break;
+        case 1:
+            M68k_start_write(this, this->state.exception.group2.base_addr, this->state.exception.group2.SR, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
+            break;
+        case 2:
+            M68k_start_write(this, this->state.exception.group2.base_addr+2, this->state.exception.group2.PC >> 16, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
+            break;
+        case 3:
+            M68k_start_read(this, this->state.exception.group2.vector << 2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
+            break;
+        case 4:
+            this->regs.PC = this->state.bus_cycle.data;
+            M68k_start_prefetch(this, 1, 1, M68kS_exc_group2);
+            break;
+        case 5:
+            M68k_start_wait(this, 2, M68kS_exc_group2);
+            break;
+        case 6:
+            M68k_set_SR(this, (M68k_get_SR(this) & 0b0000011100011111) | 0x2000);
+            M68k_start_prefetch(this, 1, 1, M68kS_decode);
+            break;
         }
     }
     this->state.exception.group2.TCU++;

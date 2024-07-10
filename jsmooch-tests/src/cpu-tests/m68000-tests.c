@@ -31,7 +31,7 @@ static char test_skips[TEST_SKIPS_NUM][50] = {
         //"MOVEM.w.json.bin",
         //"SUBA.l.json.bin",
         //"DIVS.json.bin",
-        "TRAPV.json.bin"
+        "CHK.json.bin"
 };
 
 static u32 m68k_dasm_read(void *obj, u32 addr, u32 UDS, u32 LDS)
@@ -941,7 +941,7 @@ void test_m68000()
     tmem = malloc(0x1000000); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
-    u32 nn = 5; //43;
+    u32 nn = 11; //43;
     for (u32 i = 0; i < num_files; i++) {
         u32 skip = 0;
         for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {
