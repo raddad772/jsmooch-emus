@@ -140,6 +140,7 @@ struct M68k {
             u32 TCU; // Subcycle of like rmw8 etc.
             u32 reversed;
             u32 addr;
+            u32 original_addr;
             u32 data;
             u32 done;
             void (*func)(struct M68k*);
@@ -164,7 +165,7 @@ struct M68k {
             u32 temp;
             u32 fast;
             u32 sz;
-            u32 can_reverse;
+            u32 allow_reverse;
             u32 prefetch[2];
 
             struct M68k_EA *ea;
@@ -182,6 +183,7 @@ struct M68k {
             u32 done;
             u32 result; // used for results
             i32 prefetch;
+            u32 temp;
             // Op1 and 2 addresses
         } instruction;
 

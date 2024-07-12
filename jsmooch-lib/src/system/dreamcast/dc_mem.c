@@ -351,7 +351,7 @@ void DC_mem_init(struct DC* this)
         u32 area = areas[i];
         MAP(area + 0x00, &read_area0, &write_area0, this);
         MAP(area + 0x04, &read_area1, &write_area1, this);
-        //MAP(0x08, read_area2, write_area2);
+        //MAP(0x08, read_area[1], write_area[1]);
         MAP(area + 0x0C, &read_area3, &write_area3, this);
         MAP(area + 0x10, &read_area4, &write_area4, this);
         //MAP(0x14, read_area5, write_area5);

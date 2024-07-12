@@ -29,18 +29,18 @@ enum M68k_address_modes {
 };
 
 enum M68k_operand_modes {
-    M68k_OM_none,
-    M68k_OM_r,
-    M68k_OM_r_r,
-    M68k_OM_ea_r,
-    M68k_OM_r_ea,
-    M68k_OM_ea,
-    M68k_OM_ea_ea,
-    M68k_OM_qimm,
-    M68k_OM_qimm_qimm,
-    M68k_OM_qimm_r,
-    M68k_OM_qimm_ea,
-    M68k_OM_imm16
+    M68k_OM_none = 0,
+    M68k_OM_r = 1,
+    M68k_OM_r_r = 2,
+    M68k_OM_ea_r = 3,
+    M68k_OM_r_ea = 4,
+    M68k_OM_ea = 5,
+    M68k_OM_ea_ea = 6,
+    M68k_OM_qimm = 7,
+    M68k_OM_qimm_qimm = 8,
+    M68k_OM_qimm_r = 9,
+    M68k_OM_qimm_ea = 10,
+    M68k_OM_imm16 = 11
 };
 
 struct M68k_EA {
@@ -55,15 +55,13 @@ struct M68k;
 void M68k_start_read(struct M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, u32 next_state);
 void M68k_start_write(struct M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 reversed, u32 next_state);
 void M68k_start_prefetch(struct M68k* this, u32 num, u32 is_program, u32 next_state);
-void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold);
-void M68k_start_read_operand_for_ea(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states);
-void M68k_start_write_operand(struct M68k* this, u32 hold, u32 op_num, u32 next_state, u32 allow_reverse);
+void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse);
+void M68k_start_read_operand_for_ea(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse);
+void M68k_start_write_operand(struct M68k* this, u32 commit, u32 op_num, u32 next_state, u32 allow_reverse, u32 force_reverse);
 u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz);
 void M68k_start_wait(struct M68k* this, u32 num, u32 state_after);
 u32 M68k_read_ea_addr(struct M68k* this, uint32 opnum, u32 sz, u32 hold, u32 prefetch);
-void M68k_transition_to_supervisor(struct M68k* this);
-void M68k_transition_to_user(struct M68k* this);
-void M68k_start_group0_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 was_in_group0_or_1);
+void M68k_start_group0_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 was_in_group0_or_1, u32 addr);
 void M68k_start_group1_exception(struct M68k* this, u32 vector_number, i32 wait_cycles);
 void M68k_start_group2_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC);
 u32 M68k_inc_SSP(struct M68k* this, u32 num);
@@ -80,7 +78,8 @@ void M68k_read_operands_read(struct M68k* this, u32 opnum);
 void M68k_read_operands(struct M68k* this);
 u32 M68k_get_r(struct M68k* this, struct M68k_EA *ea, u32 sz);
 void M68k_set_r(struct M68k* this, struct M68k_EA *ea, u32 val, u32 sz);
-
+void M68k_finalize_ea(struct M68k* this, u32 opnum);
+void M68k_read_operands_prefetch(struct M68k* this, u32 opnum);
 
 #define MAKE_FC(is_program) ((this->regs.SR.S << 2) | ((is_program) ? 1 : 2))
 

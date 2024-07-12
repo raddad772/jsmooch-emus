@@ -22,7 +22,7 @@ struct M68k_ins_t {
     M68k_ins_func exec;
     M68k_disassemble_t disasm;
     enum M68k_operand_modes operand_mode;
-    struct M68k_EA ea1, ea2;
+    struct M68k_EA ea[2];
 };
 
 struct M68k;
