@@ -80,6 +80,7 @@ u32 M68k_get_r(struct M68k* this, struct M68k_EA *ea, u32 sz);
 void M68k_set_r(struct M68k* this, struct M68k_EA *ea, u32 val, u32 sz);
 void M68k_finalize_ea(struct M68k* this, u32 opnum);
 void M68k_read_operands_prefetch(struct M68k* this, u32 opnum);
+void M68k_adjust_IPC(struct M68k* this, u32 opnum, u32 sz);
 
 #define MAKE_FC(is_program) ((this->regs.SR.S << 2) | ((is_program) ? 1 : 2))
 

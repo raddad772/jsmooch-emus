@@ -100,6 +100,8 @@ struct M68k_pins {
     u32 IPL; // Interrupt request level
     u32 UDS;
     u32 LDS;
+
+    u32 RESET;
 };
 
 enum M68k_states {
@@ -184,6 +186,7 @@ struct M68k {
             u32 result; // used for results
             i32 prefetch;
             u32 temp;
+            u32 temp2;
             // Op1 and 2 addresses
         } instruction;
 

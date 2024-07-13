@@ -12,17 +12,18 @@
 #include "m68000_internal.h"
 #include "m68000_disassembler.h"
 
-void M68k_disasm_RESET(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
+void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_init(struct M68k* this, u32 megadrive_bug)
 {
     memset(this, 0, sizeof(struct M68k));
     do_M68k_decode();
     this->SPEC_RESET.sz = 4;
     this->SPEC_RESET.operand_mode = M68k_OM_none;
-    this->SPEC_RESET.disasm = &M68k_disasm_RESET;
-    this->SPEC_RESET.exec = &M68k_ins_RESET;
+    this->SPEC_RESET.disasm = &M68k_disasm_RESET_POWER;
+    this->SPEC_RESET.exec = &M68k_ins_RESET_POWER;
     this->megadrive_bug = megadrive_bug;
-    jsm_string_init(&this->trace.str, 100);
+    this->pins.RESET = 0;
+    jsm_string_init(&this->trace.str, 1000);
 }
 
 void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct)

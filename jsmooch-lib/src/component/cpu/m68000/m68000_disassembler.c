@@ -298,21 +298,18 @@ void M68k_disasm_BCC(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace
     jss("b%s     $%02x", conditions[ins->ea[0].reg], ins->ea[1].reg);
 }
 
-void M68k_disasm_BCHG(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BCHG_dr_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("bchg", ins->sz, out, "  ");
-    switch(ins->variant) {
-        case 1:
-        dea2(ins->sz);
-            return;
-        case 0:
-            dea(&ins->ea[0], ins->sz);
-            return;
-        default:
-            printf("\n!?!?!?");
-            assert(1==0);
-    }
+    dea2(ins->sz);
 }
+
+void M68k_disasm_BCHG_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("bchg", ins->sz, out, "  ");
+    dea(&ins->ea[0], ins->sz);
+}
+
 
 void M68k_disasm_BCLR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
@@ -357,21 +354,16 @@ void M68k_disasm_BSR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace
     jss("bsr     $%02x", ins->ea[0].reg);
 }
 
-void M68k_disasm_BTST(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BTST_dr_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("btst", ins->sz, out, "  ");
-    switch(ins->variant) {
-        case 0:
-            dea2(ins->sz);
-            return;
-        case 1:
-            dea(&ins->ea[0], ins->sz);
-            return;
-        default:
-            printf("\nWHAAAT?");
-            assert(1==0);
-            return;
-    }
+    dea2(ins->sz);
+}
+
+void M68k_disasm_BTST_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("btst", ins->sz, out, "  ");
+    dea(&ins->ea[0], ins->sz);
 }
 
 void M68k_disasm_CHK(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -413,7 +405,7 @@ void M68k_disasm_CMPM(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 
 void M68k_disasm_DBCC(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    jss("db%s    d%d,$%04x", ins->ea[0].reg, read_disp(&PC, rt));
+    jss("db%s    d%d,$%04x", conditions[ins->ea[0].reg], ins->ea[0].reg, read_disp(&PC, rt));
 }
 
 void M68k_disasm_DIVS(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -470,7 +462,7 @@ void M68k_disasm_EXG(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace
 
 void M68k_disasm_EXT(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    ins_suffix("ext", ins->sz, 0, "   ");
+    ins_suffix("ext", ins->sz, out, "   ");
     dea(&ins->ea[0], ins->sz);
 }
 
@@ -691,6 +683,12 @@ void M68k_disasm_PEA(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace
     dea(&ins->ea[0], 4);
 }
 
+void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    jss("reset(pwr)");
+}
+
+
 void M68k_disasm_RESET(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     jss("reset   ");
@@ -824,10 +822,15 @@ void M68k_disasm_SUBI(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 void M68k_disasm_SUBQ(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     switch(ins->sz) {
+        case 1:
+            jss("subq.b  #$%01x", ins->ea[0].reg);
+            break;
         case 2:
             jss("subq.w  #$%02x,", ins->ea[0].reg);
+            break;
         case 4:
             jss("subq.l  #$%04x,", ins->ea[0].reg);
+            break;
         default:
             assert(1==0);
     }
@@ -839,8 +842,10 @@ void M68k_disasm_SUBQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_t
     switch(ins->sz) {
         case 2:
             jss("subq.w  #$%02x,", ins->ea[0].reg);
+            break;
         case 4:
             jss("subq.l  #$%04x,", ins->ea[0].reg);
+            break;
         default:
             assert(1==0);
     }

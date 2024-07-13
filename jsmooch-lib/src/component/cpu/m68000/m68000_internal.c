@@ -18,10 +18,10 @@ static u32 get_dr(struct M68k* this, u32 num, u32 sz)
     return this->regs.D[num] & clip32[sz];
 }
 
-static void M68k_adjust_IPC(struct M68k* this, u32 opnum)
+void M68k_adjust_IPC(struct M68k* this, u32 opnum, u32 sz)
 {
     u32 ex_words = this->state.op[opnum].ext_words;
-    //if (dbg.trace_on) printf("\nOLD IPC: %08x", this->regs.IPC);
+    if (dbg.trace_on) printf("\nOLD IPC: %08x", this->regs.IPC);
     u32 kind0 = this->ins->ea[0].kind;
     u32 kind1 = this->ins->ea[1].kind;
     u32 kk = this->ins->ea[opnum].kind;
@@ -48,44 +48,86 @@ static void M68k_adjust_IPC(struct M68k* this, u32 opnum)
         case M68k_OM_qimm_ea:
         case M68k_OM_r_ea:
             //if (dbg.trace_on) printf("\nAM! %d", kk);
-            switch(kk) {
-                case M68k_AM_absolute_short_data:
-                    break;
-                case M68k_AM_absolute_long_data:
-                    this->regs.IPC += 2; break;
-                default:
-                    this->regs.IPC -= 2; break;
+            if (sz == 4) {
+                switch (kk) {
+                    case M68k_AM_absolute_short_data:
+                        break;
+                    case M68k_AM_absolute_long_data:
+                        this->regs.IPC += 2;
+                        break;
+                    default:
+                        this->regs.IPC -= 2;
+                        break;
+                }
+            }
+            else {
+                printf("\nkk: %d", kk);
+                switch(kk) {
+                    case M68k_AM_address_register_indirect_with_displacement:
+                    case M68k_AM_address_register_indirect_with_index:
+                    case M68k_AM_address_register_indirect_with_postincrement:
+                    case M68k_AM_address_register_indirect:
+                        this->regs.IPC -= 2;
+                        break;
+                    case M68k_AM_absolute_long_data:
+                        this->regs.IPC += 2;
+                        break;
+                }
             }
             break;
         case M68k_OM_ea:
-            //if (dbg.trace_on) printf("\nAM:%d", kind0);
-            switch(kind0) {
-                case M68k_AM_absolute_long_data:
-                    this->regs.IPC += 2; break;
-                case M68k_AM_address_register_indirect:
-                case M68k_AM_address_register_indirect_with_postincrement:
-                case M68k_AM_address_register_indirect_with_displacement:
-                case M68k_AM_program_counter_with_displacement:
-                case M68k_AM_program_counter_with_index:
-                case M68k_AM_address_register_indirect_with_index:
-                    this->regs.IPC -= 2; break;
-                case M68k_AM_address_register_indirect_with_predecrement:
-                    if (this->ins->sz == 4) this->regs.IPC -= 2;
-                    break;
-                default:
-                    break;
+            if (sz == 4) {
+                switch (kind0) {
+                    case M68k_AM_absolute_long_data:
+                        this->regs.IPC += 2;
+                        break;
+                    case M68k_AM_address_register_indirect:
+                    case M68k_AM_address_register_indirect_with_postincrement:
+                    case M68k_AM_address_register_indirect_with_displacement:
+                    case M68k_AM_program_counter_with_displacement:
+                    case M68k_AM_program_counter_with_index:
+                    case M68k_AM_address_register_indirect_with_index:
+                        this->regs.IPC -= 2;
+                        break;
+                    case M68k_AM_address_register_indirect_with_predecrement:
+                        if (this->ins->sz == 4) this->regs.IPC -= 2;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else {
+                switch(kind0) {
+                    case M68k_AM_absolute_long_data:
+                        this->regs.IPC += 2; break;
+                    case M68k_AM_address_register_indirect_with_postincrement:
+                    case M68k_AM_address_register_indirect_with_displacement:
+                    case M68k_AM_address_register_indirect_with_index:
+                    case M68k_AM_address_register_indirect:
+                    case M68k_AM_program_counter_with_displacement:
+                    case M68k_AM_program_counter_with_index:
+                        this->regs.IPC -= 2; break;
+                    default:
+                        break;
+                }
             }
             break;
         case M68k_OM_ea_ea: {
             u32 mk = opnum == 0 ? kind0 : kind1;
-            //if (dbg.trace_on) printf("\n-.-.OPNUM%d AM:%d", opnum, mk);
-            this->regs.IPC += ex_words << 1;
+            if (dbg.trace_on) printf("\n-.-.OPNUM%d AM:%d", opnum, mk);
+            switch(kk) {
+                //case M68k_AM_address_register_indirect_with_predecrement:
+                case M68k_AM_address_register_indirect_with_postincrement:
+                    this->regs.IPC -= 2;
+                default:
+                    this->regs.IPC += ex_words << 1;
+            }
             break; }
         default:
             this->regs.IPC += ex_words << 1;
             break;
     }
-    //if (dbg.trace_on) printf("\nNEW IPC: %08x", this->regs.IPC);
+    if (dbg.trace_on) printf("\nNEW IPC: %08x", this->regs.IPC);
 }
 
 static u32 get_ar(struct M68k* this, u32 num, u32 sz)
@@ -280,7 +322,9 @@ void M68k_bus_cycle_write(struct M68k* this)
             if (this->state.current != M68kS_write8) {
                 if (this->state.bus_cycle.addr & 1) {
                     u32 addr = this->state.bus_cycle.original_addr;
-                    //if (this->state.bus_cycle.reversed) addr += 2;
+                    if ((this->state.current == M68kS_write32) && (this->state.bus_cycle.reversed)) {
+                        addr += 2;
+                    }
                     M68k_start_group0_exception(this, M68kIV_address_error, 7, am_in_group0_or_1(this), addr);
                     return;
                 }
@@ -297,6 +341,7 @@ void M68k_bus_cycle_write(struct M68k* this)
 
 void M68k_start_prefetch(struct M68k* this, u32 num, u32 is_program, u32 next_state)
 {
+    if (dbg.trace_on) printf("\nSTART PREFETCH AT PC:%08x", this->regs.PC);
     this->state.current = M68kS_prefetch;
     this->state.prefetch.num = (i32)num;
     this->state.prefetch.TCU = 0;
@@ -524,7 +569,7 @@ u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz)
         case M68k_AM_absolute_long_data:
             return 2;
         case M68k_AM_immediate:
-            return sz >> 1;
+            return (sz >> 1) ? sz >> 1 : 1;
         default:
             assert(1==0);
     }
@@ -641,7 +686,7 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
     switch(ins->operand_mode) {
         case M68k_OM_none:
             no_fetches = 1;
-            M68k_adjust_IPC(this, 0);
+            M68k_adjust_IPC(this, 0, sz);
             break;
         case M68k_OM_qimm:
             this->state.op[0].val = ins->ea[0].reg;
@@ -660,7 +705,7 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
         case M68k_OM_r:
             this->state.op[0].val = M68k_get_r(this, &ins->ea[0], sz);
             no_fetches = 1;
-            M68k_adjust_IPC(this, 0);
+            M68k_adjust_IPC(this, 0, sz);
             break;
         case M68k_OM_r_r:
             this->state.op[0].val = M68k_get_r(this, &ins->ea[0], sz);
@@ -673,7 +718,7 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
             this->state.op[1].val = M68k_get_r(this, &ins->ea[1], sz);
             eval_ea_wait(this, 1, 0, sz);
             if (!this->state.operands.state[M68kOS_prefetch1]) {
-                M68k_adjust_IPC(this, 0);
+                M68k_adjust_IPC(this, 0, sz);
             }
             break;
         case M68k_OM_r_ea:
@@ -682,15 +727,16 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
             this->state.operands.state[M68kOS_prefetch2] = 1;
             eval_ea_wait(this, 1, 1, sz);
             if (!this->state.operands.state[M68kOS_prefetch2]) {
-                M68k_adjust_IPC(this, 1);
+                M68k_adjust_IPC(this, 1, sz);
             }
+            printf("\nR EA KIND:%d", this->ins->ea[1].kind);
             break;
         case M68k_OM_ea: {
             if (!is_immediate(this->ins->ea[0].kind)) this->state.operands.state[M68kOS_read1] = 1;
             this->state.operands.state[M68kOS_prefetch1] = 1;
             eval_ea_wait(this, 1, 0, sz);
             if (!this->state.operands.state[M68kOS_prefetch1]) {
-                M68k_adjust_IPC(this, 0);
+                M68k_adjust_IPC(this, 0, sz);
             }
             break; }
         case M68k_OM_ea_ea:
@@ -699,10 +745,10 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
             eval_ea_wait(this, 2, 0, sz);
             eval_ea_wait(this, 2, 1, sz);
             if (!this->state.operands.state[M68kOS_prefetch1]) {
-                M68k_adjust_IPC(this, 0);
+                M68k_adjust_IPC(this, 0, sz);
             }
             if (!this->state.operands.state[M68kOS_prefetch2]) {
-                M68k_adjust_IPC(this, 1);
+                M68k_adjust_IPC(this, 1, sz);
             }
             break;
         case M68k_OM_qimm_ea:
@@ -711,7 +757,7 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
             this->state.op[0].val = ins->ea[0].reg;
             eval_ea_wait(this, 1, 1, sz);
             if (!this->state.operands.state[M68kOS_prefetch2]) {
-                M68k_adjust_IPC(this, 1);
+                M68k_adjust_IPC(this, 1, sz);
             }
             break;
         case M68k_OM_imm16:
@@ -822,7 +868,7 @@ void M68k_read_operands_prefetch(struct M68k* this, u32 opnum)
         return;
     }
     M68k_start_read(this, this->regs.PC, this->state.op[opnum].ext_words << 1, MAKE_FC(1), M68K_RW_ORDER_NORMAL, M68kS_read_operands);
-    M68k_adjust_IPC(this, opnum);
+    M68k_adjust_IPC(this, opnum, this->ins->sz);
     this->state.operands.TCU = 1;
 }
 

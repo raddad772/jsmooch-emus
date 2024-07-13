@@ -62,11 +62,11 @@ skip_if ((m <= 1) || ((m == 7) && (r >= 2)))
 0110 tttt dddddddd
 skip_if (t<=1)
 
-.BCHG 4,1 template(B2)    # B2 template means, 1st operand will be data reg, second will be ea. m == 0, long, else byte.
+.BCHG_dr_ea 4,1 template(B2)    # B2 template means, 1st operand will be data reg, second will be ea. m == 0, long, else byte.
 0000 ddd1 01mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
-.BCHG 4,1 template(B1)    # B1 template means, only one operand which is an EA. m = 0, long. else byte.
+.BCHG_ea 4,1 template(B1)    # B1 template means, only one operand which is an EA. m = 0, long. else byte.
 0000 1000 01mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
@@ -92,11 +92,11 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 .BSR 4 template(displacement)
 0110 0001 dddd dddd
 
-.BTST 4,1 template(B2)
+.BTST_dr_ea 4,1 template(B2)
 0000 ddd1 00mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
-.BTST 4,1 template(B1)
+.BTST_ea 4,1 template(B1)
 0000 1000 00mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 4)))
 
@@ -237,15 +237,15 @@ skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 .MOVE_TO_USP 4 template(ar)
 0100 1110 0110 0aaa
 
-.MULS 4 template(ea_dr)
+.MULS 2 template(ea_dr)
 1100 ddd1 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
-.MULU 4 template(ea_dr
+.MULU 2 template(ea_dr
 1100 ddd0 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5))) 
 
-.NBCD 1PREF template(ea1)
+.NBCD 1 template(ea1)
 0100 1000 00mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 

@@ -109,13 +109,13 @@ void M68k_disasm_BCC(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
-void M68k_disasm_BCHG(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BCHG_dr_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
-void M68k_disasm_BCHG(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BCHG_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
@@ -157,13 +157,13 @@ void M68k_disasm_BSR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
-void M68k_disasm_BTST(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BTST_dr_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
-void M68k_disasm_BTST(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BTST_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
