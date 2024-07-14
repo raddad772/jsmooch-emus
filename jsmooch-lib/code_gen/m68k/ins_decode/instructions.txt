@@ -70,22 +70,22 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 0000 1000 01mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
-.BCLR 4,1 template(B2)
+.BCLR_dr_ea 4,1 template(B2)
 0000 ddd1 10mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
-.BCLR 4,1 template(B1)
+.BCLR_ea 4,1 template(B1)
 0000 1000 10mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
 .BRA 4 template(displacement)   # where it'll just bind d 0...255 to a special immediate
 0110 0000 dddd dddd
 
-.BSET 4,1 template(B2)
+.BSET_dr_ea 4,1 template(B2)
 0000 ddd1 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2))) 
 
-.BSET 4,1 template(B1)
+.BSET_ea 4,1 template(B1)
 0000 1000 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 

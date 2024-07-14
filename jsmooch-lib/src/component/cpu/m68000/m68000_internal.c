@@ -224,15 +224,15 @@ void M68k_start_group0_exception(struct M68k* this, u32 vector_number, i32 wait_
 {
     //M68k_start_wait(this, 1, M68kS_exc_group0);
     //this->state.current = M68kS_exc_group0;
-    printf("\n\n----------------\n------GROUP0 CYC:%lld ADDR:%08x", this->trace_cycles, this->state.bus_cycle.addr);
+    if (dbg.trace_on) printf("\n\n----------------\n------GROUP0 CYC:%lld ADDR:%08x", this->trace_cycles, this->state.bus_cycle.addr);
     this->state.exception.group0.vector = vector_number;
     this->state.exception.group0.TCU = 0;
     this->state.exception.group0.normal_state = !was_in_group0_or_1;
     this->state.exception.group0.addr = addr;
     this->state.current = M68kS_exc_group0;
-    printf("\nSSP: %08x", M68k_get_SSP(this));
+    if (dbg.trace_on) printf("\nSSP: %08x", M68k_get_SSP(this));
     if (wait_cycles > 0) {
-        printf("\nSTART WAIT!!!");
+        if (dbg.trace_on) printf("\nSTART WAIT!!!");
         M68k_start_wait(this, wait_cycles + 1, M68kS_exc_group0);
     }
     // SR cooy
@@ -682,7 +682,7 @@ void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_stat
     this->state.operands.next_state = next_state;
     u32 no_fetches = 0;
     struct M68k_ins_t *ins = this->ins;
-    //printf("\nOM: %d", ins->operand_mode);
+    printf("\nOM: %d", ins->operand_mode);
     switch(ins->operand_mode) {
         case M68k_OM_none:
             no_fetches = 1;

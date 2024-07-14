@@ -310,21 +310,16 @@ void M68k_disasm_BCHG_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_t
     dea(&ins->ea[0], ins->sz);
 }
 
-
-void M68k_disasm_BCLR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BCLR_dr_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-
     ins_suffix("bclr", ins->sz, out, "  ");
-    switch(ins->variant) {
-        case 0:
-            dea2(ins->sz);
-            return;
-        case 1:
-            dea(&ins->ea[0], ins->sz);
-            return;
-        default:
-            assert(1==0);
-    }
+    dea2(ins->sz);
+}
+
+void M68k_disasm_BCLR_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("bclr", ins->sz, out, "  ");
+    dea(&ins->ea[0], ins->sz);
 }
 
 void M68k_disasm_BRA(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -332,22 +327,18 @@ void M68k_disasm_BRA(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace
     jss("bra     $%02x", ins->ea[0].reg);
 }
 
-void M68k_disasm_BSET(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+void M68k_disasm_BSET_dr_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("bset", ins->sz, out, "  ");
-    switch(ins->variant) {
-        case 0:
-            dea2(ins->sz);
-            return;
-        case 1:
-            dea(&ins->ea[0], ins->sz);
-            return;
-        default:
-            printf("\nWHAAAT?");
-            assert(1==0);
-            return;
-    }
+    dea2(ins->sz);
 }
+
+void M68k_disasm_BSET_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    ins_suffix("bset", ins->sz, out, "  ");
+    dea(&ins->ea[0], ins->sz);
+}
+
 
 void M68k_disasm_BSR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {

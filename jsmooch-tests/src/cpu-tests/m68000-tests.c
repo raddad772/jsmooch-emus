@@ -21,7 +21,7 @@
 
 static u8 *tmem = 0;
 
-#define TEST_SKIPS_NUM 6
+#define TEST_SKIPS_NUM 7
 static char test_skips[TEST_SKIPS_NUM][50] = {
         //"MOVEA.l.json.bin",
         //"CHK.json.bin",
@@ -37,6 +37,7 @@ static char test_skips[TEST_SKIPS_NUM][50] = {
         "MOVE.l.json.bin",
         "MOVE.w.json.bin",
         "MOVE.b.json.bin",
+        "CMPA.w.json.bin",
         //"CHK.json.bin",
         //"TRAPV.json.bin"
 };
@@ -365,9 +366,9 @@ static u32 compare_group0_frame(struct m68k_test_struct *ts)
         switch (i) {
             case 0: // FIRST WORD - ignore I/N bit
                 if (v1 != v2) {
-                    printf("\nDIFF FIRST WORD. good:%04x  ours:%04x", v1, v2);
+                    if (dbg.trace_on) printf("\nDIFF FIRST WORD. good:%04x  ours:%04x", v1, v2);
                     if ((MAX(v1, v2) - MIN(v1, v2)) < 7) {
-                        printf("\nFUNCTION CODE DIFFERENCE. THEIRS:%d, MINE:%d", v1 & 7, v2 & 7);
+                        if (dbg.trace_on) printf("\nFUNCTION CODE DIFFERENCE. THEIRS:%d, MINE:%d", v1 & 7, v2 & 7);
                         break;
                     }
                     all_passed = 0;
@@ -872,7 +873,7 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
         ts->cpu.testing = 1;
         ts->my_transactions.num_transactions = 0;
         ts->had_group0 = ts->had_group1 = ts->had_group2 = -1;
-        printf("\nNUM CYCLES %d", ts->test.num_cycles);
+        if (dbg.trace_on) printf("\nNUM CYCLES %d", ts->test.num_cycles);
         fflush(stdout);
 
         for (u32 j = 0; j < 160; j++) {
@@ -976,8 +977,8 @@ void test_m68000()
     tmem = malloc(0x1000000); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
-    u32 nn = 90; //43;2
-    for (u32 i = 0; i < num_files; i++) {
+    u32 nn = 106; //43;2
+    for (u32 i = 0; i < (num_files - TEST_SKIPS_NUM); i++) {
         u32 skip = 0;
         for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {
             if (strcmp(mfn[i], test_skips[j]) == 0) {

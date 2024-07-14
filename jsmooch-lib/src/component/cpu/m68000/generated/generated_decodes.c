@@ -221,8 +221,8 @@
                 if ((m == 1) || ((m == 7) && (r >= 2))) continue;
                 op1 = mk_ea(M68k_AM_data_register_direct, d);
                 op2 = mk_ea(m, r);
-                if (m == 0) bind_opcode("0000 ...1 10.. ....", 4, &M68k_ins_BCLR, &M68k_disasm_BCLR, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
-                else        bind_opcode("0000 ...1 10.. ....", 1, &M68k_ins_BCLR, &M68k_disasm_BCLR, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
+                if (m == 0) bind_opcode("0000 ...1 10.. ....", 4, &M68k_ins_BCLR_dr_ea, &M68k_disasm_BCLR_dr_ea, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
+                else        bind_opcode("0000 ...1 10.. ....", 1, &M68k_ins_BCLR_dr_ea, &M68k_disasm_BCLR_dr_ea, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
             }
         }
     }
@@ -231,8 +231,8 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m == 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            if (m == 0) bind_opcode("0000 1000 10.. ....", 4, &M68k_ins_BCLR, &M68k_disasm_BCLR, (m << 3) | r, &op1, NULL, 1, M68k_OM_ea);
-            else        bind_opcode("0000 1000 10.. ....", 1, &M68k_ins_BCLR, &M68k_disasm_BCLR, (m << 3) | r, &op1, NULL, 1, M68k_OM_ea);
+            if (m == 0) bind_opcode("0000 1000 10.. ....", 4, &M68k_ins_BCLR_ea, &M68k_disasm_BCLR_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
+            else        bind_opcode("0000 1000 10.. ....", 1, &M68k_ins_BCLR_ea, &M68k_disasm_BCLR_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
@@ -247,8 +247,8 @@
                 if ((m == 1) || ((m == 7) && (r >= 2))) continue;
                 op1 = mk_ea(M68k_AM_data_register_direct, d);
                 op2 = mk_ea(m, r);
-                if (m == 0) bind_opcode("0000 ...1 11.. ....", 4, &M68k_ins_BSET, &M68k_disasm_BSET, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
-                else        bind_opcode("0000 ...1 11.. ....", 1, &M68k_ins_BSET, &M68k_disasm_BSET, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
+                if (m == 0) bind_opcode("0000 ...1 11.. ....", 4, &M68k_ins_BSET_dr_ea, &M68k_disasm_BSET_dr_ea, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
+                else        bind_opcode("0000 ...1 11.. ....", 1, &M68k_ins_BSET_dr_ea, &M68k_disasm_BSET_dr_ea, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_r_ea);
             }
         }
     }
@@ -257,8 +257,8 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m == 1) || ((m == 7) && (r >= 2))) continue;
             op1 = mk_ea(m, r);
-            if (m == 0) bind_opcode("0000 1000 11.. ....", 4, &M68k_ins_BSET, &M68k_disasm_BSET, (m << 3) | r, &op1, NULL, 1, M68k_OM_ea);
-            else        bind_opcode("0000 1000 11.. ....", 1, &M68k_ins_BSET, &M68k_disasm_BSET, (m << 3) | r, &op1, NULL, 1, M68k_OM_ea);
+            if (m == 0) bind_opcode("0000 1000 11.. ....", 4, &M68k_ins_BSET_ea, &M68k_disasm_BSET_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
+            else        bind_opcode("0000 1000 11.. ....", 1, &M68k_ins_BSET_ea, &M68k_disasm_BSET_ea, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 
