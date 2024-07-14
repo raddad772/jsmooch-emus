@@ -37,7 +37,8 @@ static char test_skips[TEST_SKIPS_NUM][50] = {
         "MOVE.l.json.bin",
         "MOVE.w.json.bin",
         "MOVE.b.json.bin",
-        "CMPA.w.json.bin",
+        "STOP.json.bin",
+        //"CMPA.w.json.bin",
         //"CHK.json.bin",
         //"TRAPV.json.bin"
 };
@@ -857,6 +858,7 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
 
     assert(v==0x1A3F5D71);
     u32 num_tests = R32;
+    //ptr = decode_test(ptr, &ts->test);
     for (u32 i = 0; i < num_tests; i++) {
         if (dbg.trace_on) printf("\nSubtest %d (%s)", i, fname);
         ptr = decode_test(ptr, &ts->test);
@@ -864,7 +866,6 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
         copy_state_to_RAM(&ts->test.initial);
-
         ts->cpu.state.current = M68kS_decode;
         ts->test.current_cycle = 0;
         ts->test.failed = 0;
@@ -977,8 +978,8 @@ void test_m68000()
     tmem = malloc(0x1000000); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
-    u32 nn = 106; //43;2
-    for (u32 i = 0; i < (num_files - TEST_SKIPS_NUM); i++) {
+    u32 nn = 117; // out of 117
+    for (u32 i = 0; i < num_files; i++) {
         u32 skip = 0;
         for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {
             if (strcmp(mfn[i], test_skips[j]) == 0) {

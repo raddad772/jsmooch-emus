@@ -138,11 +138,21 @@ void M68k_cycle(struct M68k* this)
                     this->state.wait_cycles.cycles_left--;
                 }
                 break; }
+            case M68kS_stopped: {
+                printf("\nSTOPPED!");
+                quit = 1;
+                break; }
             default:
                 assert(1==0);
         }
     }
     this->trace_cycles++;
+}
+
+void M68k_unstop(struct M68k* this)
+{
+    if (this->state.current == M68kS_stopped)
+        this->state.current = this->state.stopped.next_state;
 }
 
 void M68k_reset(struct M68k* this)

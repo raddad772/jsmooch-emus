@@ -611,7 +611,7 @@
         for (u32 r = 0; r < 8; r++) {
             if ((m == 1) || ((m == 7) && (r >= 5))) continue;
             op1 = mk_ea(m, r);
-            bind_opcode("0100 0100 11.. ....", 4, &M68k_ins_MOVE_TO_CCR, &M68k_disasm_MOVE_TO_CCR, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
+            bind_opcode("0100 0100 11.. ....", 2, &M68k_ins_MOVE_TO_CCR, &M68k_disasm_MOVE_TO_CCR, (m << 3) | r, &op1, NULL, 0, M68k_OM_ea);
         }
     }
 

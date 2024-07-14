@@ -120,7 +120,7 @@ enum M68k_states {
     M68kS_exc_group0,
     M68kS_exc_group1,
     M68kS_exc_group2,
-
+    M68kS_stopped,
 };
 
 struct M68k_ins_t;
@@ -237,6 +237,10 @@ struct M68k {
             } group2;
             u32 group1_pending;
         } exception;
+
+        struct {
+            enum M68k_states next_state;
+        } stopped;
     } state;
 
     struct {
@@ -254,7 +258,7 @@ void M68k_init(struct M68k* this, u32 megadrive_bug);
 void M68k_delete(struct M68k* this);
 void M68k_reset(struct M68k* this);
 void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct);
-
+void M68k_unstop(struct M68k* this);
 
 void M68k_set_SR(struct M68k* this, u32 val);
 u32 M68k_get_SR(struct M68k* this);

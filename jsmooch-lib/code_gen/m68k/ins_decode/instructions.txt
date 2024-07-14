@@ -223,7 +223,7 @@ skip_if ((m <= 1) || (m == 4) || ((m == 7) && (r >= 4)))
 0100 0000 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 
-.MOVE_TO_CCR 4 template(ea1)
+.MOVE_TO_CCR 2 template(ea1)
 0100 0100 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 
