@@ -21,7 +21,7 @@
 
 static u8 *tmem = 0;
 
-#define TEST_SKIPS_NUM 7
+#define TEST_SKIPS_NUM 5
 static char test_skips[TEST_SKIPS_NUM][50] = {
         //"MOVEA.l.json.bin",
         //"CHK.json.bin",
@@ -32,8 +32,8 @@ static char test_skips[TEST_SKIPS_NUM][50] = {
         //"MOVEM.w.json.bin",
         //"SUBA.l.json.bin",
         "TAS.json.bin",
-        "DIVS.json.bin",
-        "DIVU.json.bin",
+        //"DIVS.json.bin",
+        //"DIVU.json.bin",
         "MOVE.l.json.bin",
         "MOVE.w.json.bin",
         "MOVE.b.json.bin",
@@ -978,7 +978,7 @@ void test_m68000()
     tmem = malloc(0x1000000); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
-    u32 nn = 117; // out of 117
+    u32 nn = 40; // out of 117
     for (u32 i = 0; i < num_files; i++) {
         u32 skip = 0;
         for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {

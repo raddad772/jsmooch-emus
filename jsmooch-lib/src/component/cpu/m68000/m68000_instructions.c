@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <math.h>
 
 #include "m68000.h"
 #include "m68000_instructions.h"
@@ -18,29 +20,6 @@
 
 #define FORCE_REVERSE 1
 #define NO_FORCE 0
-
-static u32 get_cycles_add_reg_lag(struct M68k* this, enum M68k_address_modes kind)
-{
-    printf("\n??? %d", kind);
-    switch(kind) {
-        case M68k_AM_address_register_indirect_with_postincrement:
-        case M68k_AM_address_register_indirect_with_predecrement:
-        case M68k_AM_address_register_indirect:
-        case M68k_AM_address_register_indirect_with_index:
-        case M68k_AM_address_register_indirect_with_displacement:
-        case M68k_AM_absolute_long_data:
-        case M68k_AM_absolute_short_data:
-        case M68k_AM_program_counter_with_displacement:
-        case M68k_AM_program_counter_with_index:
-                return 2;
-        case M68k_AM_data_register_direct:
-        case M68k_AM_address_register_direct:
-        case M68k_AM_immediate:
-            return 4;
-        default: assert(1==0);
-    }
-}
-
 
 struct M68k_ins_t M68k_decoded[65536];
 
@@ -147,30 +126,8 @@ static u32 ASR(struct M68k* this, u32 result, u32 shift, u32 sz)
     return clip32[sz] & result;
 }
 
-
-static u16 CMP16(struct M68k* this, u16 source, u16 target)
-{
-    printf("\n16.lhs:%04x  rhs:%04x", target, source);
-    u16 result = (target - source) & 0xFFFF;
-    printf("\nresult: %04x", result);
-    u16 carries = target ^ source ^ result;
-    u16 overflow = (target ^ result) & (source ^ target);
-
-    this->regs.SR.C = !!((carries ^ overflow) & 0x8000);
-    this->regs.SR.V = !!(overflow & 0x8000);
-    this->regs.SR.Z = (result & 0xFFFF) == 0;
-    this->regs.SR.N = sgn32(result, 2) < 0;
-
-    return result;
-}
-
 static u32 CMP(struct M68k* this, u32 source, u32 target, u32 sz) {
-    if (sz == 2) return CMP16(this, source, target);
-    //target &= clip32[sz];
-    //source &= clip32[sz];
-    printf("\nlhs:%08x  rhs:%08x", target, source);
     u32 result = (target - source) & clip32[sz];
-    printf("\nresult: %08x", result);
     u32 carries = target ^ source ^ result;
     u32 overflow = (target ^ result) & (source ^ target);
 
@@ -200,8 +157,6 @@ static u32 ROL(struct M68k* this, u32 result, u32 shift, u32 sz)
 
 static u32 ROR(struct M68k* this, u32 result, u32 shift, u32 sz)
 {
-    //printf("\nSHIFT %d %d", shift, shift & ((8 * sz) - 1));
-    //shift &= (8 * sz) - 1;
     u32 carry = 0;
     for (u32 i = 0; i < shift; i++) {
         carry = result & 1;
@@ -260,7 +215,6 @@ static u32 SUB(struct M68k* this, u32 op1, u32 op2, u32 sz, u32 extend, u32 chan
     u32 target = clip32[sz] & op2;
     u32 source = clip32[sz] & op1;
     u32 result = target - source - (extend ? this->regs.SR.X : 0);
-    printf("\nT:%08x - S:%08x", target, source);
     u32 carries = target ^ source ^ result;
     u32 overflow = (target ^ result) & (source ^ target);
 
@@ -370,7 +324,6 @@ static u32 condition(struct M68k* this, u32 condition) {
 
 static void M68k_set_IPC(struct M68k* this) {
     this->regs.IPC = this->regs.PC;
-    //if (dbg.trace_on) printf("\nSET IPC %08x", this->regs.IPC);
 }
 
 #define STEP0 case 0: { \
@@ -891,7 +844,6 @@ M68KINS(BCLR_dr_ea)
             if (ins->ea[0].kind == M68k_AM_immediate) {
                 numcycles = 4;
             }
-            printf("\nNUM %d",this->state.op[0].val);
             if (this->state.op[0].val >= 16) {
                 numcycles = numcycles ? 6 : 4;
             }
@@ -915,7 +867,6 @@ M68KINS(BCLR_ea)
             M68k_start_write_operand(this, 0, 0, M68kS_exec, ALLOW_REVERSE, NO_FORCE);
         STEP(4)
             u32 nomc = 0;
-            printf("\nNOMC: %d", this->state.op[0].val);
             if (this->state.op[0].val >= 16) nomc = 2;
             if ((ins->sz == 4) && (ins->ea[0].kind == M68k_AM_data_register_direct)) {
                 //if (ins->ea[1].kind == M68k_AM_data_register_direct) nomc += 2;
@@ -957,7 +908,7 @@ M68KINS(BSET_dr_ea)
             if (ins->ea[1].kind == M68k_AM_immediate) {
                 numcycles = 2;
             }
-            if ((ins->ea[1].kind == M68k_AM_data_register_direct)) {
+            if (ins->ea[1].kind == M68k_AM_data_register_direct) {
                 if (ins->ea[0].kind == M68k_AM_data_register_direct) numcycles = 2;
                 //else numcycles = 4;
                 else numcycles = 4;
@@ -1264,13 +1215,123 @@ INS_END
 
 M68KINS(DIVS)
         STEP0
-            BADINS;
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+        STEP(1)
+            i32 divisor = sgn32(this->state.op[0].val, 2);
+            i32 dividend =(i32)this->regs.D[ins->ea[1].reg];
+
+            if (divisor == 0) {
+                M68k_start_group2_exception(this, M68kIV_zero_divide, 4, this->regs.PC - 4);
+                this->regs.SR.u &= 0xFFF0; // Clear ZNVC
+                break;
+            }
+
+            i32 result = dividend / divisor;
+            i32 quotient = dividend % divisor;
+
+            this->regs.SR.C = this->regs.SR.Z = 0;
+            u32 ticks = 8;
+            if (dividend < 0)
+                ticks += 2;
+           u32 divi32 = (u32)abs(dividend);
+           u32 divo32 = (u32)abs(divisor) << 16;
+           if ((divi32 >= divo32) && (divisor != -32768)) {
+               // Overflow (detected before calculation)
+               M68k_start_wait(this, ticks+4, M68kS_exec);
+               this->regs.SR.V = this->regs.SR.N = 1;
+               this->state.instruction.result = dividend;
+               break;
+            }
+
+            // Simulate the cycle time
+            if (divisor < 0) {
+                // +2 for negative divisor
+                ticks += 2;
+            }
+            else if (dividend < 0) {
+                // +4 for positive divisor, negative dividend
+                ticks += 4;
+            }
+            u16 zeroes_num = (abs(result) | 1);
+            u32 zeroes_count = 16 - __builtin_popcount(zeroes_num);
+            ticks += 108 + zeroes_count*2;
+
+            this->state.instruction.result = (((u32)(u16)quotient) << 16) | (result & 0xFFFF);
+            if ((result > 32767) || (result < -32768)) {
+                this->regs.SR.V = 1;
+                this->regs.SR.N = 1;
+                this->state.instruction.result = dividend;
+                M68k_start_wait(this, ticks+0, M68kS_exec);
+                break;
+            }
+            M68k_start_wait(this, ticks, M68kS_exec);
+
+            this->regs.SR.Z = result == 0;
+            this->regs.SR.N = !!(result & 0x8000);
+            this->regs.SR.V = 0;
+        STEP(2)
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+            this->regs.D[ins->ea[1].reg] = this->state.instruction.result;
+        STEP(3)
 INS_END
 
 export_M68KINS(DIVU)
         STEP0
-            BADINS
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            this->state.instruction.temp = 0;
+            this->state.instruction.temp2 = 0;
+        STEP(1)
+            u32 divisor = this->state.op[0].val;
+            u32 dividend = this->regs.D[ins->ea[1].reg];
+            if (divisor == 0) {
+                M68k_start_group2_exception(this, M68kIV_zero_divide, 4, this->regs.PC - 4);
+                break;
+            }
+            u32 result = dividend / divisor;
+            u32 quotient = dividend % divisor;
+
+            u32 ticks = 0;
+
+            this->regs.SR.C = this->regs.SR.Z = 0;
+            ticks += 6;
+            this->state.instruction.result = (quotient << 16) | result;
+            if (result > 0xFFFF) {
+                this->regs.SR.V = 1;
+                this->regs.SR.N = 1;
+                M68k_start_wait(this, 6, M68kS_exec);
+                this->state.instruction.result = dividend;
+                break;
+            }
+
+            divisor <<= 16;
+
+            u32 last_msb = 0;
+            for (u32 i = 0; i < 15; i++) {
+                ticks += 4;
+                last_msb = (dividend & 0x80000000) != 0;
+                dividend <<= 1;
+                if (!last_msb) {
+                    ticks += 2;
+                    if (dividend < divisor) {
+                        ticks += 2;
+                    }
+                }
+
+                if (last_msb || (dividend >= divisor)) {
+                    dividend -= divisor;
+                }
+            }
+            ticks += 6;
+            M68k_start_wait(this, ticks, M68kS_exec);
+            this->regs.SR.Z = result == 0;
+            this->regs.SR.N = !!(result & 0x8000);
+            this->regs.SR.V = 0;
+        STEP(2)
+            this->regs.D[ins->ea[1].reg] = this->state.instruction.result;
+            M68k_start_prefetch(this, 1, 1, M68kS_exec);
+        STEP(3)
 INS_END
+
 
 M68KINS(EOR)
         STEP0
@@ -1406,7 +1467,6 @@ M68KINS(JMP)
             // #3 M68k(0000)  032f6e  jmp     $4ef8.w  needs -2
             this->regs.IPC = this->regs.PC;
             u32 kk = ins->ea[0].kind;
-            printf("\nKK: %d", kk);
             switch(kk) {
                 case M68k_AM_address_register_indirect_with_displacement:
                 case M68k_AM_address_register_indirect_with_index:
@@ -1600,7 +1660,6 @@ INS_END
 
 static void correct_IPC_MOVE_l_pf0(struct M68k* this, u32 opnum)
 {
-    printf("\nHERE WITH AM:%d altAM:%d IPC:%08x", this->ins->ea[opnum].kind, this->ins->ea[opnum ^ 1].kind, this->regs.IPC);
     switch(this->ins->ea[opnum].kind) {
         case M68k_AM_address_register_indirect:
         case M68k_AM_address_register_indirect_with_predecrement:
@@ -1616,22 +1675,6 @@ static void correct_IPC_MOVE_l_pf0(struct M68k* this, u32 opnum)
         default:
             break;
     }
-    printf("\nNEW IPC: %08x", this->regs.IPC);
-
-}
-
-
-static void correct_IPC_MOVE_l_r0(struct M68k* this, u32 opnum)
-{
-    printf("\nHERE WITH AM:%d IPC:%08x", this->ins->ea[opnum].kind, this->regs.IPC);
-    switch(this->ins->ea[opnum].kind) {
-        case M68k_AM_address_register_indirect_with_displacement:
-            this->regs.IPC += 4; break;
-        default:
-            break;
-    }
-    printf("\nNEW IPC: %08x", this->regs.IPC);
-
 }
 
 
@@ -1834,7 +1877,6 @@ M68KINS(MOVEA)
             u32 v = this->state.op[0].val;
             if (ins->sz == 2) v = SIGNe16to32(v);
             if (ins->sz == 1) v = SIGNe8to32(v);
-            printf("\nV! %08x", v);
             this->regs.A[ins->ea[1].reg] = v;
             //M68k_set_ar(this, ins->ea[1].reg, v, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1849,11 +1891,6 @@ M68KINS(MOVEM_TO_MEM)
             this->state.op[1].val = this->regs.IR;
             this->state.op[1].addr = 0;
             this->state.instruction.result = 200;
-            /*
-             * Simulate loop with addr.
-             * Read memory, stick into register.
-             * If we're not loop 0, then we have something for the old register
-             */
             u32 waits = 0;
             if (ins->ea[0].kind == M68k_AM_address_register_indirect_with_index)
                 waits = 2;
@@ -1914,7 +1951,6 @@ struct m68k_gentest_item a = (struct m68k_gentest_item) { .name = "Hello", .full
 
 export_M68KINS(MOVEM_TO_REG)
         STEP0
-            printf("\nTO REG");
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
             this->state.op[1].val = this->regs.IR;
@@ -1979,7 +2015,6 @@ INS_END
 
 M68KINS(MOVEP_dr_ea)
     STEP0
-        printf("\nTHIS NUM1");
         M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec, 0, HOLD, NO_REVERSE);
     STEP(1)
         this->state.op[0].val = this->regs.D[ins->ea[0].reg]; // data
@@ -2001,7 +2036,6 @@ INS_END
 
 M68KINS(MOVEP_ea_dr)
     STEP0
-        printf("\nTHIS NUM2 ea_dr");
         M68k_start_read_operand_for_ea(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE);
     STEP(1)
         //this->regs.D[ins->ea[1].reg];      // data

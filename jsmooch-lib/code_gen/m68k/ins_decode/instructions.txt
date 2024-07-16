@@ -127,7 +127,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 .DBCC 4 template(DBCC)     # where DBCC means, C 0...15 and dreg 0...7, 1st and 2nd ops
 0101 cccc 1100 1ddd
 
-.DIVS 4 template(ea_dr)
+.DIVS 2 template(ea_dr)
 1000 ddd1 11mm mrrr
 skip_if ((m == 1) || ((m == 7) && (r >= 5)))
 

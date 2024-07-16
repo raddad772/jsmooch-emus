@@ -368,7 +368,7 @@
                 if ((m == 1) || ((m == 7) && (r >= 5))) continue;
                 op1 = mk_ea(m, r);
                 op2 = mk_ea(M68k_AM_data_register_direct, d);
-                bind_opcode("1000 ...1 11.. ....", 4, &M68k_ins_DIVS, &M68k_disasm_DIVS, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
+                bind_opcode("1000 ...1 11.. ....", 2, &M68k_ins_DIVS, &M68k_disasm_DIVS, (d << 9) | (m << 3) | r, &op1, &op2, 0, M68k_OM_ea_r);
             }
         }
     }
