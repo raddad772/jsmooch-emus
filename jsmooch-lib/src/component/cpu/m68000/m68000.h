@@ -195,7 +195,7 @@ struct M68k {
             u32 ext_words;
             u32 val;
             u32 reversed;
-            u32 t;
+            u32 t, t2;
 
             u32 held, hold;
             u32 new_val;

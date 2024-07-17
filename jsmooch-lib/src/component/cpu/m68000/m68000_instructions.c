@@ -1783,11 +1783,10 @@ M68KINS(MOVE_l)
                     break;
             }
             if (this->state.operands.state[M68kOS_read2]) {
-                this->state.op[1].hold = 0;
+                this->state.op[1].hold = 1;
                 M68k_read_operands_read(this, 1);
                 this->state.bus_cycle.next_state = M68kS_exec;
-                if (this->state.bus_cycle.next_state != M68kS_exc_group0) this->state.current = M68kS_exec;
-                printf("\nCancel read2 for write!");
+                this->state.current = M68kS_exec;
             } else {
                 this->state.current = M68kS_exec;
             }
@@ -1837,9 +1836,411 @@ M68KINS(MOVE_l)
             this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
 INS_END
 
+
+
+
+M68KINS(MOVE_12_2)
+        STEP0
+            u32 k = ins->ea[0].kind;
+            u32 k2 = ins->ea[1].kind;
+            u32 numcycles = 0;
+            switch(k) {
+                case M68k_AM_address_register_indirect_with_index:
+                case M68k_AM_program_counter_with_index:
+                    numcycles = 2;
+                    break;
+            }
+            if (numcycles) M68k_start_wait(this, 2, M68kS_exec);
+        STEP(1)
+            HOLD_WORD_POSTINC;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            this->state.current = M68kS_exec;
+            // Do prefetch 0
+            if (this->state.operands.state[M68kOS_prefetch1]) {
+                printf("\nbegin prefetch 0 on cyc %lld", this->trace_cycles);
+                this->state.operands.TCU = 0;
+                M68k_read_operands_prefetch(this, 0);
+                this->state.bus_cycle.next_state = M68kS_exec;
+                this->regs.IPC -= 4;
+            }
+        STEP(2)
+            // finish prefecth 0
+            this->state.op[0].t = this->state.operands.state[M68kOS_prefetch1];
+            this->state.op[1].t2 = 0;
+            if (this->state.op[0].t) {
+                printf("\nFinish prefetch 0");
+                if (!this->state.operands.state[M68kOS_read1]) this->regs.IPC += 4;
+                M68k_read_operands_prefetch(this, 0);
+                this->state.operands.TCU = 0;
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+
+            // Do pause if needed, in between p0 and r0
+            u32 k = ins->ea[0].kind;
+            u32 k2 = ins->ea[1].kind;
+            u32 numcycles = 0;
+            switch(k) {
+                case M68k_AM_address_register_indirect_with_predecrement:
+                    numcycles = 2; break;
+            }
+            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
+            // -(A7), (d8, A3, Xn)
+        STEP(3)
+            // Do read 0
+            if (this->state.operands.state[M68kOS_read1]) {
+                printf("\nBegin read 0 on cyc:%lld", this->trace_cycles);
+                M68k_read_operands_read(this, 0);
+                this->state.bus_cycle.next_state = M68kS_exec;
+                correct_IPC_MOVE_l_pf0(this, 0);
+            }
+        STEP(4)
+            // Finish read 0
+            if (this->state.operands.state[M68kOS_read1]) {
+                if (this->state.op[0].t) this->regs.IPC += 4;
+                M68k_read_operands_read(this, 0);
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+
+            // Potentially wait, in between r0 and p1
+            u32 k = this->ins->ea[0].kind;
+            u32 k2 = this->ins->ea[1].kind;
+            u32 numcycles = 0;
+            switch(k2) {
+                case M68k_AM_address_register_indirect_with_index:
+                    numcycles = 2;
+                    break;
+            }
+            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
+        STEP(5)
+            this->state.instruction.result = this->state.op[0].val;
+            // Do prefetch 1
+            if (ins->sz == 2) {
+                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+            }
+        STEP(6)
+            if (this->state.operands.state[M68kOS_prefetch2]) {
+                printf("\nStart prefetch 1 PAUSE:%d", this->state.operands.state[M68kOS_pause2]);
+                M68k_read_operands_prefetch(this, 1);
+                if ((ins->ea[1].kind == M68k_AM_absolute_long_data) && (ins->ea[0].kind != M68k_AM_address_register_direct) && (ins->ea[0].kind != M68k_AM_data_register_direct)) {
+                    this->state.current = M68kS_read16;
+                    this->state.op[1].t2 = 1;
+                }
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+
+        STEP(7)
+            if (this->state.operands.state[M68kOS_prefetch2]) {
+                printf("\nFinish prefetch 1");
+                if (this->state.op[1].t2) {
+                    printf("\nTOP PATH");
+                    this->regs.IR = this->regs.IRC;
+                    this->regs.IRC = this->state.bus_cycle.data & 0xFFFF;
+                    this->state.op[1].addr = ((this->regs.IR << 16) | this->regs.IRC);
+                    this->regs.PC += 2;
+                }
+                else {
+                    printf("\nBOTTOM PATH");
+                    M68k_read_operands_prefetch(this, 1);
+                }
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+        STEP(8)
+            printf("\nTTETET%d %d",this->state.operands.state[M68kOS_read2], ins->ea[1].kind);
+            u32 doit = 1;
+            switch(ins->ea[1].kind) {
+                case M68k_AM_absolute_long_data:
+                    if (!this->state.op[1].t2) {
+                        this->state.op[1].addr = M68k_read_ea_addr(this, 1, ins->sz, NO_HOLD, this->state.op[1].ext_words);
+                        printf("\nEXT_WORDS: %08x", this->state.op[1].ext_words);
+                    }
+                    [[fallthrough]];
+                case M68k_AM_imm16:
+                case M68k_AM_imm32:
+                case M68k_AM_immediate:
+                    printf("\nCANCEL READ!!!");
+                    this->state.operands.state[M68kOS_read2] = 0;
+                    break;
+                    break;
+                default:
+                    break;
+            }
+            if (this->state.operands.state[M68kOS_read2]) {
+                this->state.op[1].hold = 1;
+                this->state.operands.TCU = 0;
+                M68k_read_operands_read(this, 1);
+                this->state.bus_cycle.next_state = M68kS_exec;
+                this->state.current = M68kS_exec;
+                printf("\nCancel read2 for write! HELD? %d", this->state.op[1].held);
+            } else {
+                this->state.current = M68kS_exec;
+            }
+            this->regs.SR.C = this->regs.SR.V = 0;
+            printf("\nYO KIND %d", ins->ea[1].kind);
+            switch(ins->ea[1].kind) {
+                case M68k_AM_address_register_indirect:
+                default:
+                    this->state.instruction.temp = NO_REVERSE;
+                    this->state.op[0].addr = NO_REVERSE;
+                    break;
+            }
+            this->state.op[1].t = 0;
+            printf("\n?%d", ins->ea[1].kind);
+            switch(ins->ea[1].kind) {
+                case M68k_AM_address_register_indirect_with_predecrement:
+                    this->state.op[1].t = 1;
+                    break;
+                default:
+                    break;
+            }
+            if (this->state.op[1].t) {
+                printf("\nPREFETCH FIRST");
+                M68k_start_prefetch(this, 1, 1, M68kS_exec);
+            }
+            else {
+                printf("\nWRITE FIRST!");
+                M68k_start_write_operand(this, 0, 1, M68kS_exec, this->state.instruction.temp, this->state.op[0].addr);
+            }
+        STEP(9)
+            if (this->state.op[1].t) {
+                printf("\nWRITE SECOND!");
+                M68k_start_write_operand(this, 1, 1, M68kS_exec, ALLOW_REVERSE, 0);
+            }
+            else {
+                printf("\nPREFETCH SECOND!");
+                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+                if (this->state.op[1].t2)
+                    M68k_start_prefetch(this, 2, 1, M68kS_exec);
+                else
+                    M68k_start_prefetch(this, 1, 1, M68kS_exec);
+            }
+        STEP(10)
+            if ((ins->ea[1].kind == M68k_AM_address_register_indirect_with_postincrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) {
+                this->regs.A[ins->ea[1].reg] = this->state.op[1].new_val;
+            }
+            this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+INS_END
+
+
+M68KINS(MOVE_12)
+        STEP0
+        // 039 MOVE.w D0, (d8, A3, Xn) 3780
+        // has +2 delay for first read
+        // 027 MOVE.w D6, -(A3) 3706  has no +2 delay for first read
+        // 041 MOVE.w (d8, PC, Xn), D5 3a3b   has no +2 on first, but has i on second
+        // 001 MOVE.w (d16, A3), (d8, A2, Xn) 35ab has no +2 on first
+        // 006 MOVE.w -(A7), (d8, A3, Xn) 37a7 DOES have +2
+        // 044 MOVE.w (d8, A0, Xn), (d8, A1, Xn) 33b0 has +2
+            u32 k = ins->ea[0].kind;
+            u32 k2 = ins->ea[1].kind;
+            u32 numcycles = 0;
+            printf("\n\n\nk:%d k2:%d", k, k2);
+            switch(k) {
+                case M68k_AM_address_register_indirect_with_predecrement: {
+                    numcycles = 2;
+                    break; }
+                case M68k_AM_program_counter_with_index: {
+                    numcycles = 2;
+                    break; }
+                case M68k_AM_address_register_indirect_with_index: {
+                    //if (k2 != M68k_AM_address_register_indirect_with_index)
+                        numcycles = 2;
+                    break; }
+                case M68k_AM_data_register_direct: {
+                    if (k2 == M68k_AM_address_register_indirect_with_index)
+                        numcycles = 2;
+                    break; }
+                case M68k_AM_address_register_direct: {
+                    printf("\nk2: %d", k2);
+                    if ((k2 == M68k_AM_address_register_indirect_with_predecrement) ||
+                            (k2 == M68k_AM_address_register_indirect_with_index))
+                        numcycles = 2;
+                    break; }
+                default:
+                        numcycles = 0;
+            }
+            printf("\n--INITIAL WAIT %d", numcycles);
+            if (numcycles) M68k_start_wait(this, 2, M68kS_exec);
+        STEP(1)
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, NO_REVERSE);
+            this->state.current = M68kS_exec;
+            // Do prefetch 0
+            if (this->state.operands.state[M68kOS_prefetch1]) {
+                printf("\nbegin prefetch 0 on cyc %lld", this->trace_cycles);
+                this->state.operands.TCU = 0;
+                M68k_read_operands_prefetch(this, 0);
+                this->state.bus_cycle.next_state = M68kS_exec;
+                this->regs.IPC -= 4;
+            }
+        STEP(2)
+            // finish prefecth 0
+            this->state.op[0].t = this->state.operands.state[M68kOS_prefetch1];
+            if (this->state.op[0].t) {
+                printf("\nFinish prefetch 0");
+                if (!this->state.operands.state[M68kOS_read1]) this->regs.IPC += 4;
+                M68k_read_operands_prefetch(this, 0);
+                this->state.operands.TCU = 0;
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+            // Do pause if needed
+            /*if (this->state.operands.state[M68kOS_read1] && this->state.operands.state[M68kOS_pause1]) {
+                printf("\nWAIT 2. CYC:%lld", this->trace_cycles);
+                M68k_start_wait(this, 2, M68kS_exec);
+            }*/
+        STEP(3)
+            // Do read 0
+            if (this->state.operands.state[M68kOS_read1]) {
+                printf("\nBegin read 0 on cyc:%lld", this->trace_cycles);
+                M68k_read_operands_read(this, 0);
+                this->state.bus_cycle.next_state = M68kS_exec;
+                correct_IPC_MOVE_l_pf0(this, 0);
+            }
+        STEP(4)
+            // Finish read 0
+            if (this->state.operands.state[M68kOS_read1]) {
+                if (this->state.op[0].t) this->regs.IPC += 4;
+                printf("\nFinish read 0");
+                M68k_read_operands_read(this, 0);
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+            // Potentially wait
+            u32 k0 = this->ins->ea[0].kind;
+            u32 k1 = this->ins->ea[1].kind;
+        STEP(5)
+            this->state.instruction.result = this->state.op[0].val;
+            // Do prefetch 1
+            if (ins->sz == 2) {
+                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+            }
+            // DONT DO IT FOR 050 MOVE.w -(A0), -(A0) 3120
+            if ((ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) && (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) {
+            }
+            else {//if (this->state.operands.state[M68kOS_pause2]) {
+                switch(ins->ea[0].kind) {
+                    case M68k_AM_data_register_direct:
+                    case M68k_AM_address_register_direct:
+                    case M68k_AM_address_register_indirect_with_displacement:
+                    case M68k_AM_address_register_indirect_with_postincrement:
+                    case M68k_AM_absolute_short_data:
+                    case M68k_AM_absolute_long_data:
+                    case M68k_AM_address_register_indirect_with_index:
+
+                        // 024 MOVE.w (A6), (d8, A6, Xn) 3d96 between read0 and prefetch1
+
+                        //case M68k_AM_address_register_indirect_with_predecrement:
+                    // 006 MOVE.w -(A7), (d8, A3, Xn) 37a7 <-- second + 2
+                    // 050 MOVE.w -(A0), -(A0) 3120
+
+                        //case M68k_AM_address_register_indirect_with_predecrement:
+                        break;
+                    default:
+                        printf("\nSTART PAUSE2 AT cyc:%lld", this->trace_cycles);
+                        M68k_start_wait(this, 2, M68kS_exec);
+                        break;
+                }
+            }
+        STEP(6)
+            if (this->state.operands.state[M68kOS_prefetch2]) {
+                printf("\nStart prefetch 1 PAUSE:%d", this->state.operands.state[M68kOS_pause2]);
+                M68k_read_operands_prefetch(this, 1);
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+
+        STEP(7)
+            u32 nomc = 0;
+            switch(ins->ea[0].kind) {
+                case M68k_AM_address_register_indirect: {
+                    nomc = 2;
+                    break; }
+            }
+            if (nomc) M68k_start_wait(this, nomc, M68kS_exec);
+        STEP(8)
+            // finish prefecth 1
+            if (this->state.operands.state[M68kOS_prefetch2]) {
+                printf("\nFinish prefetch 1");
+                M68k_read_operands_prefetch(this, 1);
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+            printf("\nTTETET%d %d",this->state.operands.state[M68kOS_read2], ins->ea[1].kind);
+            u32 doit = 1;
+            switch(ins->ea[1].kind) {
+                case M68k_AM_imm16:
+                case M68k_AM_imm32:
+                case M68k_AM_immediate:
+                case M68k_AM_absolute_long_data:
+                    printf("\nCANCEL READ!!!");
+                    this->state.operands.state[M68kOS_read2] = 0;
+                    break;
+                default:
+                    break;
+            }
+            if (this->state.operands.state[M68kOS_read2]) {
+                this->state.op[1].hold = 1;
+                this->state.operands.TCU = 0;
+                printf("\nA0 BEFORE %08x", this->regs.A[0]);
+                M68k_read_operands_read(this, 1);
+                printf("\nA0 AFTER %08x", this->regs.A[0]);
+                this->state.bus_cycle.next_state = M68kS_exec;
+                this->state.current = M68kS_exec;
+                printf("\nCancel read2 for write! HELD? %d", this->state.op[1].held);
+            } else {
+                this->state.current = M68kS_exec;
+            }
+            this->regs.SR.C = this->regs.SR.V = 0;
+            printf("\nYO KIND %d", ins->ea[1].kind);
+            switch(ins->ea[1].kind) {
+                case M68k_AM_address_register_indirect:
+                default:
+                    this->state.instruction.temp = NO_REVERSE;
+                    this->state.op[0].addr = NO_REVERSE;
+                    break;
+            }
+            this->state.op[1].t = 0;
+            printf("\n?%d", ins->ea[1].kind);
+            switch(ins->ea[1].kind) {
+                case M68k_AM_absolute_long_data:
+                    if (ins->ea[0].kind != M68k_AM_address_register_indirect)
+                        this->state.op[1].t = 1;
+                    break;
+                case M68k_AM_address_register_indirect_with_predecrement:
+                    this->state.op[1].t = 1;
+                    break;
+                default:
+                    break;
+            }
+            if (this->state.op[1].t) {
+                printf("\nPREFETCH FIRST");
+                M68k_start_prefetch(this, 1, 1, M68kS_exec);
+            }
+            else {
+                printf("\nWRITE FIRST!");
+                M68k_start_write_operand(this, 0, 1, M68kS_exec, this->state.instruction.temp, this->state.op[0].addr);
+            }
+        STEP(9)
+            if (this->state.op[1].t) {
+                printf("\nWRITE SECOND!");
+                M68k_start_write_operand(this, 1, 1, M68kS_exec, ALLOW_REVERSE, 0);
+            }
+            else {
+                printf("\nPREFETCH SECOND!");
+                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+                M68k_start_prefetch(this, 1, 1, M68kS_exec);
+            }
+        STEP(10)
+            if ((ins->ea[1].kind == M68k_AM_address_register_indirect_with_postincrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) {
+                this->regs.A[ins->ea[1].reg] = this->state.op[1].new_val;
+            }
+            this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+INS_END
+
 export_M68KINS_NOSWITCH(MOVE)
-    //if (ins->sz == 4) return M68k_ins_MOVE_l(this, ins);
-    return M68k_ins_MOVE_l(this, ins);
+    if (ins->sz == 4) return M68k_ins_MOVE_l(this, ins);
+    return M68k_ins_MOVE_12_2(this, ins);
     switch(this->state.instruction.TCU) {
         STEP0
             M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);

@@ -882,7 +882,7 @@ void M68k_read_operands_read(struct M68k* this, u32 opnum)
         this->state.operands.TCU = 0;
         return;
     }
-
+    printf("\nHOLD? %d", this->state.op[opnum].hold);
     // setup read
     this->state.op[opnum].addr = M68k_read_ea_addr(this, opnum, this->state.operands.sz,
                                                    this->state.op[opnum].hold,
