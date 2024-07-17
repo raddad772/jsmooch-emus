@@ -1922,7 +1922,8 @@ M68KINS(MOVE_12_2)
             if (this->state.operands.state[M68kOS_prefetch2]) {
                 printf("\nStart prefetch 1 PAUSE:%d", this->state.operands.state[M68kOS_pause2]);
                 M68k_read_operands_prefetch(this, 1);
-                if ((ins->ea[1].kind == M68k_AM_absolute_long_data) && (ins->ea[0].kind != M68k_AM_address_register_direct) && (ins->ea[0].kind != M68k_AM_data_register_direct)) {
+                printf("\n\n-----HEY!!! %d", ins->ea[0].kind);
+                if ((ins->ea[1].kind == M68k_AM_absolute_long_data) && (ins->ea[0].kind != M68k_AM_address_register_direct) && (ins->ea[0].kind != M68k_AM_data_register_direct) && (ins->ea[0].kind != M68k_AM_immediate)) {
                     this->state.current = M68kS_read16;
                     this->state.op[1].t2 = 1;
                 }
