@@ -87,7 +87,7 @@ struct M68k_regs {
     u32 IR; // instruction currently decoding
     u32 IRD; // instruction currently executing
 
-    u32 tmp; // temporary register
+    u32 next_SR_T; // temporary register
 };
 
 struct M68k_pins {
@@ -169,6 +169,7 @@ struct M68k {
             u32 sz;
             u32 allow_reverse;
             u32 prefetch[2];
+            u32 read_fc;
 
             struct M68k_EA *ea;
             enum M68k_states next_state;
@@ -260,7 +261,7 @@ void M68k_reset(struct M68k* this);
 void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct);
 void M68k_unstop(struct M68k* this);
 
-void M68k_set_SR(struct M68k* this, u32 val);
+void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t);
 u32 M68k_get_SR(struct M68k* this);
 
 #endif //JSMOOCH_EMUS_M68000_H

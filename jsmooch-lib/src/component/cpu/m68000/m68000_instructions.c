@@ -307,6 +307,10 @@ static u32 condition(struct M68k* this, u32 condition) {
 
 #define HOLD_WORD_POSTINC             u32 hold = HOLD;\
                     if ((ins->sz == 2) && ((ins->ea[0].kind == M68k_AM_address_register_indirect_with_postincrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_postincrement))) hold = NO_HOLD
+#define HOLD_WORD_POSTINC_PREDEC             u32 hold = HOLD;\
+                    if ((ins->sz == 2) && ((ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) || (ins->ea[0].kind == M68k_AM_address_register_indirect_with_postincrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_postincrement)) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) hold = NO_HOLD
+#define HOLDL_l_predec_no if ((ins->sz == 4) && ((ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement))) hold = NO_HOLD
+#define HOLDW_imm_predec_no if ((ins->sz == 2) && (ins->ea[0].kind == M68k_AM_quick_immediate) && (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) hold = 0;
 
 
 #define DELAY_IF_REGWRITE(k, n) if ((ins->sz == 4) && ((k == M68k_AM_data_register_direct) || (k == M68k_AM_address_register_direct))) M68k_start_wait(this, n, M68kS_exec);
@@ -387,7 +391,7 @@ INS_END
 
 M68KINS(TAS)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = this->state.op[0].val | 0x80;
             M68k_start_wait(this, 2, M68kS_exec);
@@ -410,7 +414,7 @@ INS_END
 
 M68KINS(ABCD)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -437,8 +441,9 @@ INS_END
 
 M68KINS(ADD)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 0);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -463,8 +468,9 @@ INS_END
 
 M68KINS(ADDA)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             u32 a = sgn32(this->state.op[0].val, ins->sz);
             u32 b = this->regs.A[ins->ea[1].reg];
@@ -480,7 +486,7 @@ M68KINS(ADDA)
         STEP(3)
 INS_END
 
-#define STARTI(do_hold) \
+#define STARTI(force, allow) \
             this->state.instruction.result = this->regs.IRC;\
             M68k_start_prefetch(this, (ins->sz >> 1) ? (ins->sz >> 1) : 1, 1, M68kS_exec);\
         STEP(1)\
@@ -499,15 +505,15 @@ INS_END
                     assert(1==0);\
             }  \
             this->regs.IPC += 4;                            \
-            HOLD_WORD_POSTINC;            \
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC; \
+            HOLDL_l_predec_no;                              \
+        M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, (force ? allow : (allow & hold)), NO_REVERSE, MAKE_FC(0));
 
 
 M68KINS(ADDI)
         STEP0
         if (ins->sz == 2) this->regs.IPC -= 2;
-        HOLD_WORD_POSTINC;
-        STARTI(hold)
+        STARTI(0,1);
         STEP(2)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
@@ -532,8 +538,9 @@ INS_END
 
 M68KINS(ADDQ)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 0);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -553,7 +560,7 @@ INS_END
 
 M68KINS(ADDX_sz4_predec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             this->regs.A[ins->ea[1].reg] += 2;
@@ -571,7 +578,7 @@ INS_END
 
 M68KINS(ADDX_sz4_nopredec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -585,7 +592,7 @@ INS_END
 
 M68KINS(ADDX_sz1_2)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ADD(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -609,8 +616,10 @@ INS_END_NOSWITCH
 
 M68KINS(AND)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            if (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement) hold = 0;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -629,7 +638,7 @@ M68KINS(ANDI)
         STEP0
             if (ins->sz == 2)
                 this->regs.IPC -= 2;
-        STARTI(HOLD);
+        STARTI(0,1);
         STEP(2)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
@@ -667,7 +676,7 @@ M68KINS(ANDI_TO_SR)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
             u32 data = this->regs.IR & M68k_get_SR(this);
-            M68k_set_SR(this, data);
+            M68k_set_SR(this, data, 1);
             M68k_start_wait(this, 8, M68kS_exec);
         STEP(2)
             M68k_start_read(this, this->regs.PC - 2, 2, MAKE_FC(1), 0, M68kS_exec);
@@ -701,7 +710,7 @@ INS_END
 
 M68KINS(ASL_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ASL(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -735,7 +744,7 @@ INS_END
 
 M68KINS(ASR_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ASR(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -768,7 +777,7 @@ INS_END
 M68KINS(BCHG_dr_ea)
         STEP0
             // test then invert a bit. size 4 or 1
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.op[0].val &= bitsize[ins->sz] - 1;
             this->state.instruction.result = this->state.op[1].val;
@@ -798,7 +807,7 @@ M68KINS(BCHG_ea)
             this->state.op[1].val = this->regs.IRC;
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(2)
             this->state.instruction.result = this->state.op[0].val;
             this->state.op[0].val = this->state.op[1].val & (bitsize[ins->sz] - 1);
@@ -822,7 +831,7 @@ INS_END
 
 M68KINS(BCLR_dr_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.op[0].val &= bitsize[ins->sz] - 1;
             this->state.instruction.result = this->state.op[1].val;
@@ -856,7 +865,7 @@ M68KINS(BCLR_ea)
             this->state.op[1].val = this->regs.IRC;
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(2)
             this->state.instruction.result = this->state.op[0].val;
             this->state.op[0].val = this->state.op[1].val & (bitsize[ins->sz] - 1);
@@ -894,7 +903,7 @@ INS_END
 
 M68KINS(BSET_dr_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.op[0].val &= bitsize[ins->sz] - 1;
             this->state.instruction.result = this->state.op[1].val;
@@ -928,7 +937,7 @@ M68KINS(BSET_ea)
             this->state.op[1].val = this->regs.IRC;
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(2)
             this->state.instruction.result = this->state.op[0].val;
             this->state.op[0].val = this->state.op[1].val & (bitsize[ins->sz] - 1);
@@ -973,13 +982,13 @@ M68KINS(BSR)
 
             this->regs.PC += offset;
             this->regs.IPC = this->regs.PC;
-            M68k_start_prefetch(this, 2, 0, M68kS_exec);
+            M68k_start_prefetch(this, 2, 1, M68kS_exec);
         STEP(3)
 INS_END
 
 M68KINS(BTST_dr_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.op[0].val &= bitsize[ins->sz] - 1;
             this->state.instruction.result = this->state.op[1].val;
@@ -1010,7 +1019,7 @@ M68KINS(BTST_ea)
             this->state.op[1].val = this->regs.IRC;
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(2)
             this->state.instruction.result = this->state.op[0].val;
             this->state.op[0].val = this->state.op[1].val & (bitsize[ins->sz] - 1);
@@ -1032,7 +1041,7 @@ INS_END
 
 M68KINS(CHK)
         STEP0
-            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             if (ins->ea[0].kind == M68k_AM_address_register_indirect) M68k_start_wait(this, 2, M68kS_exec);
         STEP(2)
@@ -1083,8 +1092,9 @@ INS_END
 
 M68KINS(CLR)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -1101,8 +1111,9 @@ INS_END
 
 M68KINS(CMP)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             CMP(this, sgn32(this->state.op[0].val, ins->sz), sgn32(this->state.op[1].val, ins->sz), ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1113,8 +1124,9 @@ INS_END
 
 M68KINS(CMPA)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             // Ignore size for operand 2
             CMP(this, sgn32(this->state.op[0].val, ins->sz), this->regs.A[ins->ea[1].reg], 4);
@@ -1128,7 +1140,7 @@ M68KINS(CMPI)
         STEP0
             if (ins->sz == 2) this->regs.IPC -= 2;
             //this->regs.IPC -= 2;
-            STARTI(NO_HOLD);
+            STARTI(0, 1);
         STEP(2)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
@@ -1180,7 +1192,7 @@ M68KINS(DBCC)
             }
         STEP(2)
             if (this->state.instruction.temp) {
-                M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+                M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
             }
             else {
                 this->regs.PC += 2;
@@ -1215,7 +1227,7 @@ INS_END
 
 M68KINS(DIVS)
         STEP0
-            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             i32 divisor = sgn32(this->state.op[0].val, 2);
             i32 dividend =(i32)this->regs.D[ins->ea[1].reg];
@@ -1277,7 +1289,7 @@ INS_END
 
 export_M68KINS(DIVU)
         STEP0
-            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
             this->state.instruction.temp = 0;
             this->state.instruction.temp2 = 0;
         STEP(1)
@@ -1335,8 +1347,9 @@ INS_END
 
 M68KINS(EOR)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -1351,8 +1364,7 @@ INS_END
 M68KINS(EORI)
         STEP0
             if (ins->sz == 2) this->regs.IPC -= 2;
-            HOLD_WORD_POSTINC;
-            STARTI(hold);
+            STARTI(0,1);
         STEP(2)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
@@ -1389,8 +1401,8 @@ M68KINS(EORI_TO_SR)
             }
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
-            u32 data = this->regs.IR ^ M68k_get_SR(this);
-            M68k_set_SR(this, data);
+            u32 data = (this->regs.IR & 0xA71F) ^ this->regs.SR.u;
+            M68k_set_SR(this, data, 1);
             M68k_start_wait(this, 8, M68kS_exec);
         STEP(2)
             M68k_start_read(this, this->regs.PC - 2, 2, MAKE_FC(1), 0, M68kS_exec);
@@ -1414,7 +1426,7 @@ INS_END
 M68KINS(EXT)
         STEP0
             // auto result = (i8)read<Byte>(with); // byte for word, word for long
-            M68k_start_read_operands(this, 0, ins->sz >> 1, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz >> 1, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             // prefetch();
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1492,7 +1504,7 @@ M68KINS(JMP)
             // abs short, abs long, pc rel index, pc rel displ.
             // all require another read.
             this->state.instruction.result = M68k_read_ea_addr(this, 0, 4, NO_HOLD, prefetch);
-            M68k_start_read(this, this->state.instruction.result, 2, MAKE_FC(0), NO_REVERSE, M68kS_exec);
+            M68k_start_read(this, this->state.instruction.result, 2, MAKE_FC(1), NO_REVERSE, M68kS_exec);
             this->state.instruction.result += 2;
         STEP(3)
             this->regs.IR = this->regs.IRC;
@@ -1543,11 +1555,8 @@ M68KINS(JSR)
             } else if (this->state.op[0].ext_words == 1) {// Else if it had 1 assemble from IRC
                 prefetch = this->regs.IRC;
             }
-            // 2, 5, 6 and 7 0-3  . addr reg ind, ind with index, ind with displ.
-            // abs short, abs long, pc rel index, pc rel displ.
-            // all require another read.
             this->state.instruction.result = M68k_read_ea_addr(this, 0, 4, NO_HOLD, prefetch);
-            M68k_start_read(this, this->state.instruction.result, 2, MAKE_FC(0), NO_REVERSE, M68kS_exec);
+            M68k_start_read(this, this->state.instruction.result, 2, MAKE_FC(1), NO_REVERSE, M68kS_exec);
             this->state.instruction.result += 2;
         STEP(3)
             this->regs.IR = this->regs.IRC;
@@ -1614,7 +1623,7 @@ INS_END
 
 M68KINS(LSL_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = LSL(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1649,7 +1658,7 @@ INS_END
 
 M68KINS(LSR_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = LSR(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -1678,28 +1687,33 @@ static void correct_IPC_MOVE_l_pf0(struct M68k* this, u32 opnum)
 }
 
 
-M68KINS(MOVE_l)
+export_M68KINS(MOVE)
         STEP0
-        u32 k = ins->ea[0].kind;
-        u32 numcycles = 0;
-        if ((k == M68k_AM_address_register_indirect_with_predecrement) ||\
-           (k == M68k_AM_address_register_indirect_with_index))
-           numcycles = 2;
-        if ((k == M68k_AM_address_register_direct) || (k == M68k_AM_data_register_direct)) {
+            u32 k = ins->ea[0].kind;
             u32 k2 = ins->ea[1].kind;
-            printf("\nk2: %d", k2);
-            if ((k2 == M68k_AM_address_register_indirect_with_predecrement) ||\
-                (k2 == M68k_AM_address_register_indirect_with_index))
-                numcycles = 2;
-        }
-        if (numcycles) M68k_start_wait(this, 2, M68kS_exec);
+            u32 numcycles = 0;
+            switch(k) {
+                case M68k_AM_address_register_indirect_with_index:
+                case M68k_AM_program_counter_with_index:
+                    numcycles = 2;
+                    break;
+            }
+            if (numcycles) M68k_start_wait(this, 2, M68kS_exec);
         STEP(1)
-            printf("\nSTEP1");
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            // 1 ext word, 2 reads       1 read
+            // 042 MOVE.l (d8, A6, Xn), -(A4) 2936  needs hold
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
+            if ((ins->sz == 4) && (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement))
+                this->state.op[1].hold = HOLD;
+            if ((ins->sz == 4) && (ins->ea[0].kind == M68k_AM_address_register_indirect_with_postincrement))
+                this->state.op[0].hold = HOLD;
+            if ((ins->sz == 2) && (ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement))
+                this->state.op[1].hold = NO_HOLD;
             this->state.current = M68kS_exec;
             // Do prefetch 0
             if (this->state.operands.state[M68kOS_prefetch1]) {
-                printf("\nbegin prefetch 0");
                 this->state.operands.TCU = 0;
                 M68k_read_operands_prefetch(this, 0);
                 this->state.bus_cycle.next_state = M68kS_exec;
@@ -1708,790 +1722,447 @@ M68KINS(MOVE_l)
         STEP(2)
             // finish prefecth 0
             this->state.op[0].t = this->state.operands.state[M68kOS_prefetch1];
+            this->state.op[1].t2 = 0;
             if (this->state.op[0].t) {
-                printf("\nFinish prefetch 0");
                 if (!this->state.operands.state[M68kOS_read1]) this->regs.IPC += 4;
                 M68k_read_operands_prefetch(this, 0);
                 this->state.operands.TCU = 0;
                 this->state.bus_cycle.next_state = M68kS_exec;
             }
+
+            // Do pause if needed, in between p0 and r0
+            u32 k = ins->ea[0].kind;
+            u32 k2 = ins->ea[1].kind;
+            u32 numcycles = 0;
+            switch(k) {
+                case M68k_AM_address_register_indirect_with_predecrement:
+                    numcycles = 2; break;
+            }
+            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
+            // -(A7), (d8, A3, Xn)
+        STEP(3)
             // Do read 0
             if (this->state.operands.state[M68kOS_read1]) {
-                printf("\nBegin read 0");
-                M68k_read_operands_read(this, 0);
+
+                //023 MOVE.w (xxx).w, (A3) needs +2
+                //041 MOVE.w (d8, PC, Xn), D5 needs +4
+                //044 MOVE.w (d8, A0, Xn), (d8, A1, Xn)
+                //051 MOVE.w (d8, A6, Xn), D7 needs +2
+                //011 MOVE.w (A1), (d8, A7, Xn) needs -2
+                //064 MOVE.w (A5), (A6) needs -2
+                //060 MOVE.w (A2), D7 needs +2
+                // 014 MOVE.w -(A4), D1 needs +2
+                u32 k = ins->ea[0].kind;
+                u32 k2 = ins->ea[1].kind;
+                switch(k) {
+                    case M68k_AM_address_register_indirect_with_postincrement:
+                        switch(k2) {
+                            case M68k_AM_address_register_indirect_with_postincrement:
+                                this->regs.IPC += 2;
+                                break;
+                        }
+                        break;
+                    case M68k_AM_address_register_indirect:
+                        // 011 MOVE.w (A1), (d8, A7, Xn)
+                        if (k2 != M68k_AM_data_register_direct)
+                            this->regs.IPC -= 2;
+                        if (k2 == M68k_AM_address_register_indirect_with_postincrement)
+                            this->regs.IPC += 2;
+                        break;
+                    case M68k_AM_address_register_indirect_with_predecrement:
+                        switch(k2) {
+                            case M68k_AM_address_register_indirect_with_postincrement:
+                                this->regs.IPC += 2;
+                                break;
+                        }
+                        break;
+                    case M68k_AM_program_counter_with_displacement:
+                    case M68k_AM_address_register_indirect_with_displacement:
+                        switch(k2) {
+                            case M68k_AM_data_register_direct:
+                                this->regs.IPC += 4;
+                                break;
+                            case M68k_AM_address_register_indirect_with_postincrement:
+                                this->regs.IPC += 2;
+                                break;
+                        }
+                        break;
+                    case M68k_AM_absolute_short_data:
+                        switch(k2) {
+                            case M68k_AM_address_register_indirect:
+                            case M68k_AM_address_register_indirect_with_index:
+                            case M68k_AM_data_register_direct:
+                            case M68k_AM_address_register_indirect_with_displacement:
+                            case M68k_AM_address_register_indirect_with_predecrement:
+                                this->regs.IPC += 2;
+                                break;
+                            case M68k_AM_address_register_indirect_with_postincrement:
+                                this->regs.IPC += 4;
+                                break;
+                        }
+                        break;
+                    case M68k_AM_address_register_indirect_with_index:
+                        // MOVE.w (d8, A0, Xn), (d8, A1, Xn) NOT
+                        // (d8, A6, Xn), D7
+                        switch(k2) {
+                            case M68k_AM_data_register_direct:
+                                this->regs.IPC += 4;
+                                break;
+                            case M68k_AM_address_register_indirect_with_postincrement:
+                                this->regs.IPC += 2;
+                                break;
+                        }
+                        break;
+                    case M68k_AM_absolute_long_data:
+                        // 066 MOVE.w (xxx).l, (A5)+   +4
+                        // 075 MOVE.w (xxx).l, (d16, A6) -2
+                        switch(k2) {
+                            case M68k_AM_data_register_direct:
+                            case M68k_AM_address_register_indirect_with_postincrement:
+                                this->regs.IPC += 4;
+                                break;
+                            case M68k_AM_address_register_indirect:
+                            case M68k_AM_address_register_indirect_with_index:
+                            case M68k_AM_address_register_indirect_with_displacement:
+                            case M68k_AM_address_register_indirect_with_predecrement:
+                                this->regs.IPC += 2;
+                                break;
+                        }
+                        break;
+                    case M68k_AM_program_counter_with_index:
+                        switch(k2) {
+                            case M68k_AM_address_register_indirect_with_postincrement:
+                                this->regs.IPC += 2;
+                                break;
+                            case M68k_AM_data_register_direct:
+                                this->regs.IPC += 4;
+                                break;
+                        }
+
+                        break;
+                }
+                //001 MOVE.w (d16, A3), (d8, A2, Xn) needs -0
+                //006 MOVE.w -(A7), (d8, A3, Xn) needs -2
+                // 070 MOVE.w (A3)+, (d8, A7, Xn)  needs +2
+                // 011 MOVE.w (A1), (d8, A7, Xn)
+
+                M68k_read_operands_read(this, 0, 1);
                 this->state.bus_cycle.next_state = M68kS_exec;
-                correct_IPC_MOVE_l_pf0(this, 0);
+                if (ins->sz == 4) correct_IPC_MOVE_l_pf0(this, 0);
             }
-        STEP(3)
+        STEP(4)
             // Finish read 0
             if (this->state.operands.state[M68kOS_read1]) {
                 if (this->state.op[0].t) this->regs.IPC += 4;
-                printf("\nFinish read 0");
-                M68k_read_operands_read(this, 0);
+                M68k_read_operands_read(this, 0, 1);
                 this->state.bus_cycle.next_state = M68kS_exec;
             }
-            // Potentially wait
-            u32 k0 = this->ins->ea[0].kind;
-            u32 k1 = this->ins->ea[1].kind;
-            printf("\nPOTWAIT 0:%d, 1:%d", k0, k1);
-            u32 numwait = 0;
-            u32 doit = 0;
-            switch(k0) {
-                case M68k_AM_address_register_indirect_with_postincrement:
+
+            // Potentially wait, in between r0 and p1
+            u32 k = this->ins->ea[0].kind;
+            u32 k2 = this->ins->ea[1].kind;
+            u32 numcycles = 0;
+            switch(k2) {
                 case M68k_AM_address_register_indirect_with_index:
-                    switch (k1) {
+                    numcycles = 2;
+                    break;
+            }
+            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
+        STEP(5)
+            this->state.instruction.result = this->state.op[0].val;
+            // Do prefetch 1
+            if (ins->sz == 2) {
+                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
+                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+            }
+        STEP(6)
+            if (this->state.operands.state[M68kOS_prefetch2]) {
+                M68k_read_operands_prefetch(this, 1);
+                if ((ins->ea[1].kind == M68k_AM_absolute_long_data) && (ins->ea[0].kind != M68k_AM_address_register_direct) && (ins->ea[0].kind != M68k_AM_data_register_direct) && (ins->ea[0].kind != M68k_AM_immediate)) {
+                    this->state.current = M68kS_read16;
+                    this->state.op[1].t2 = 1;
+                }
+                // 006 MOVE.w -(A7), (d8, A3, Xn) needs +2
+                //if (ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) this->regs.IPC += 2;
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+
+        STEP(7)
+            if (this->state.operands.state[M68kOS_prefetch2]) {
+                if (this->state.op[1].t2) {
+                    this->regs.IR = this->regs.IRC;
+                    this->regs.IRC = this->state.bus_cycle.data & 0xFFFF;
+                    this->state.op[1].addr = ((this->regs.IR << 16) | this->regs.IRC);
+                    this->regs.PC += 2;
+                }
+                else {
+                    M68k_read_operands_prefetch(this, 1);
+                }
+                this->state.bus_cycle.next_state = M68kS_exec;
+            }
+        STEP(8)
+            u32 doit = 1;
+            switch(ins->ea[1].kind) {
+                case M68k_AM_absolute_long_data:
+                    if (!this->state.op[1].t2) {
+                        this->state.op[1].addr = M68k_read_ea_addr(this, 1, ins->sz, NO_HOLD, this->state.op[1].ext_words);
+                    }
+                    [[fallthrough]];
+                case M68k_AM_imm16:
+                case M68k_AM_imm32:
+                case M68k_AM_immediate:
+                    this->state.operands.state[M68kOS_read2] = 0;
+                    break;
+                    break;
+                default:
+                    break;
+            }
+            if (this->state.operands.state[M68kOS_read2]) {
+                this->state.op[1].hold = 1;
+                this->state.operands.TCU = 0;
+                // 023 MOVE.w (xxx).w, (A3)  needs -2
+                M68k_read_operands_read(this, 1, 0);
+                this->state.bus_cycle.next_state = M68kS_exec;
+                this->state.current = M68kS_exec;
+            } else {
+                this->state.current = M68kS_exec;
+            }
+            this->regs.SR.C = this->regs.SR.V = 0;
+            switch(ins->ea[1].kind) {
+                case M68k_AM_address_register_indirect:
+                default:
+                    this->state.instruction.temp = NO_REVERSE;
+                    this->state.op[0].addr = NO_REVERSE;
+                    break;
+            }
+            this->state.op[1].t = 0;
+            switch(ins->ea[1].kind) {
+                case M68k_AM_address_register_indirect_with_predecrement:
+                    this->state.op[1].t = 1;
+                    break;
+                default:
+                    break;
+            }
+            if (this->state.op[1].t) {
+                M68k_start_prefetch(this, 1, 1, M68kS_exec);
+            }
+            else {
+                if (ins->sz <= 2) {
+                    u32 k = this->ins->ea[0].kind;
+                    u32 k2 = this->ins->ea[1].kind;
+                    switch(k) {
+                        case M68k_AM_program_counter_with_displacement:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_program_counter_with_index:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_index:
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_address_register_indirect_with_postincrement:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect:
+                                case M68k_AM_address_register_indirect_with_postincrement:
+                                    this->regs.IPC += 2;
+                                    break;
+                                case M68k_AM_absolute_long_data:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
                         case M68k_AM_address_register_indirect_with_index:
-                            numwait = 2;
+                            // 088 MOVE.w (d8, A3, Xn), (A6)+ -2
+                            // 045 MOVE.w (d8, A5, Xn), (d16, A3) -2
+                            switch(k2) {
+                                case M68k_AM_data_register_direct:
+                                    this->regs.IPC += 2;
+                                    break;
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                case M68k_AM_address_register_indirect_with_index:
+                                case M68k_AM_absolute_short_data:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_data_register_direct:
+                            /*switch(k2) {
+                                case M68k_AM_absolute_short_data:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }*/
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect:
+                                case M68k_AM_address_register_indirect_with_postincrement:
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                case M68k_AM_address_register_indirect_with_index:
+                                    this->regs.IPC += 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_address_register_direct:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                case M68k_AM_address_register_indirect_with_index:
+                                case M68k_AM_address_register_indirect_with_postincrement:
+                                case M68k_AM_address_register_indirect:
+                                    this->regs.IPC += 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_address_register_indirect_with_displacement:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_index:
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                    this->regs.IPC -= 2;
+                                    break;
+                                case M68k_AM_absolute_long_data:
+                                    this->regs.IPC -= 4;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_address_register_indirect:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_postincrement:
+                                case M68k_AM_address_register_indirect:
+                                    this->regs.IPC += 2;
+                                    break;
+                                case M68k_AM_absolute_long_data:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_absolute_short_data:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_postincrement:
+                                case M68k_AM_absolute_short_data:
+                                    this->regs.IPC -= 2;
+                                    break;
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                case M68k_AM_address_register_indirect_with_index:
+                                    this->regs.IPC -= 4;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_absolute_long_data:
+                            // 093 MOVE.w (xxx).l, (A3)
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect:
+                                case M68k_AM_absolute_short_data:
+                                    this->regs.IPC -= 2;
+                                    break;
+                                case M68k_AM_address_register_indirect_with_index:
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                    this->regs.IPC -= 4;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_address_register_indirect_with_predecrement:
+                            switch(k2) {
+                                case M68k_AM_absolute_long_data:
+                                    this->regs.IPC -= 4;
+                                    break;
+                                case M68k_AM_address_register_indirect_with_displacement:
+                                case M68k_AM_address_register_indirect_with_index:
+                                case M68k_AM_absolute_short_data:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_immediate:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_postincrement:
+                                    this->regs.IPC += 2;
+                                    break;
+                                case M68k_AM_absolute_short_data:
+                                case M68k_AM_address_register_indirect_with_index:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
                             break;
                         default:
-                            numwait = 0;
                             break;
                     }
-                    break;
-            }
-            if (numwait) M68k_start_wait(this, numwait, M68kS_exec);
-        STEP(4)
-            this->state.instruction.result = this->state.op[0].val;
-            // Do prefetch 1
-            if (ins->sz == 2) {
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-            }
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nStart prefetch 1");
-                M68k_read_operands_prefetch(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-        STEP(5)
-            // finish prefecth 1
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nFinish prefetch 1");
-                M68k_read_operands_prefetch(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-            printf("\nTTETET%d %d",this->state.operands.state[M68kOS_read2], ins->ea[1].kind);
-            u32 doit = 1;
-            switch(ins->ea[1].kind) {
-                case M68k_AM_imm16:
-                case M68k_AM_imm32:
-                case M68k_AM_immediate:
-                case M68k_AM_absolute_long_data:
-                    printf("\nCANCEL READ!!!");
-                    this->state.operands.state[M68kOS_read2] = 0;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.operands.state[M68kOS_read2]) {
-                this->state.op[1].hold = 1;
-                M68k_read_operands_read(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                this->state.current = M68kS_exec;
-            } else {
-                this->state.current = M68kS_exec;
-            }
-            this->regs.SR.C = this->regs.SR.V = 0;
-            printf("\nYO KIND %d", ins->ea[1].kind);
-            switch(ins->ea[1].kind) {
-                case M68k_AM_address_register_indirect:
-                default:
-                    this->state.instruction.temp = NO_REVERSE;
-                    this->state.op[0].addr = NO_REVERSE;
-                    break;
-            }
-            this->state.op[1].t = 0;
-            printf("\n?%d", ins->ea[1].kind);
-            switch(ins->ea[1].kind) {
-                case M68k_AM_absolute_long_data:
-                    if (ins->ea[0].kind != M68k_AM_address_register_indirect)
-                        this->state.op[1].t = 1;
-                    break;
-                case M68k_AM_address_register_indirect_with_predecrement:
-                    this->state.op[1].t = 1;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.op[1].t) {
-                printf("\nPREFETCH FIRST");
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            }
-            else {
-                printf("\nWRITE FIRST!");
-                M68k_start_write_operand(this, 1, 1, M68kS_exec, this->state.instruction.temp, this->state.op[0].addr);
-            }
-        STEP(6)
-            if (this->state.op[1].t) {
-                printf("\nWRITE SECOND!");
-                M68k_start_write_operand(this, 1, 1, M68kS_exec, ALLOW_REVERSE, 0);
-            }
-            else {
-                printf("\nPREFETCH SECOND!");
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            }
-        STEP(7)
-            this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-INS_END
-
-
-
-
-M68KINS(MOVE_12_2)
-        STEP0
-            u32 k = ins->ea[0].kind;
-            u32 k2 = ins->ea[1].kind;
-            u32 numcycles = 0;
-            switch(k) {
-                case M68k_AM_address_register_indirect_with_index:
-                case M68k_AM_program_counter_with_index:
-                    numcycles = 2;
-                    break;
-            }
-            if (numcycles) M68k_start_wait(this, 2, M68kS_exec);
-        STEP(1)
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
-            this->state.current = M68kS_exec;
-            // Do prefetch 0
-            if (this->state.operands.state[M68kOS_prefetch1]) {
-                printf("\nbegin prefetch 0 on cyc %lld", this->trace_cycles);
-                this->state.operands.TCU = 0;
-                M68k_read_operands_prefetch(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                this->regs.IPC -= 4;
-            }
-        STEP(2)
-            // finish prefecth 0
-            this->state.op[0].t = this->state.operands.state[M68kOS_prefetch1];
-            this->state.op[1].t2 = 0;
-            if (this->state.op[0].t) {
-                printf("\nFinish prefetch 0");
-                if (!this->state.operands.state[M68kOS_read1]) this->regs.IPC += 4;
-                M68k_read_operands_prefetch(this, 0);
-                this->state.operands.TCU = 0;
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-
-            // Do pause if needed, in between p0 and r0
-            u32 k = ins->ea[0].kind;
-            u32 k2 = ins->ea[1].kind;
-            u32 numcycles = 0;
-            switch(k) {
-                case M68k_AM_address_register_indirect_with_predecrement:
-                    numcycles = 2; break;
-            }
-            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
-            // -(A7), (d8, A3, Xn)
-        STEP(3)
-            // Do read 0
-            if (this->state.operands.state[M68kOS_read1]) {
-                printf("\nBegin read 0 on cyc:%lld", this->trace_cycles);
-                M68k_read_operands_read(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                correct_IPC_MOVE_l_pf0(this, 0);
-            }
-        STEP(4)
-            // Finish read 0
-            if (this->state.operands.state[M68kOS_read1]) {
-                if (this->state.op[0].t) this->regs.IPC += 4;
-                M68k_read_operands_read(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-
-            // Potentially wait, in between r0 and p1
-            u32 k = this->ins->ea[0].kind;
-            u32 k2 = this->ins->ea[1].kind;
-            u32 numcycles = 0;
-            switch(k2) {
-                case M68k_AM_address_register_indirect_with_index:
-                    numcycles = 2;
-                    break;
-            }
-            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
-        STEP(5)
-            this->state.instruction.result = this->state.op[0].val;
-            // Do prefetch 1
-            if (ins->sz == 2) {
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-            }
-        STEP(6)
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nStart prefetch 1 PAUSE:%d", this->state.operands.state[M68kOS_pause2]);
-                M68k_read_operands_prefetch(this, 1);
-                printf("\n\n-----HEY!!! %d", ins->ea[0].kind);
-                if ((ins->ea[1].kind == M68k_AM_absolute_long_data) && (ins->ea[0].kind != M68k_AM_address_register_direct) && (ins->ea[0].kind != M68k_AM_data_register_direct) && (ins->ea[0].kind != M68k_AM_immediate)) {
-                    this->state.current = M68kS_read16;
-                    this->state.op[1].t2 = 1;
                 }
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-
-        STEP(7)
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nFinish prefetch 1");
-                if (this->state.op[1].t2) {
-                    printf("\nTOP PATH");
-                    this->regs.IR = this->regs.IRC;
-                    this->regs.IRC = this->state.bus_cycle.data & 0xFFFF;
-                    this->state.op[1].addr = ((this->regs.IR << 16) | this->regs.IRC);
-                    this->regs.PC += 2;
-                }
-                else {
-                    printf("\nBOTTOM PATH");
-                    M68k_read_operands_prefetch(this, 1);
-                }
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-        STEP(8)
-            printf("\nTTETET%d %d",this->state.operands.state[M68kOS_read2], ins->ea[1].kind);
-            u32 doit = 1;
-            switch(ins->ea[1].kind) {
-                case M68k_AM_absolute_long_data:
-                    if (!this->state.op[1].t2) {
-                        this->state.op[1].addr = M68k_read_ea_addr(this, 1, ins->sz, NO_HOLD, this->state.op[1].ext_words);
-                        printf("\nEXT_WORDS: %08x", this->state.op[1].ext_words);
-                    }
-                    [[fallthrough]];
-                case M68k_AM_imm16:
-                case M68k_AM_imm32:
-                case M68k_AM_immediate:
-                    printf("\nCANCEL READ!!!");
-                    this->state.operands.state[M68kOS_read2] = 0;
-                    break;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.operands.state[M68kOS_read2]) {
-                this->state.op[1].hold = 1;
-                this->state.operands.TCU = 0;
-                M68k_read_operands_read(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                this->state.current = M68kS_exec;
-                printf("\nCancel read2 for write! HELD? %d", this->state.op[1].held);
-            } else {
-                this->state.current = M68kS_exec;
-            }
-            this->regs.SR.C = this->regs.SR.V = 0;
-            printf("\nYO KIND %d", ins->ea[1].kind);
-            switch(ins->ea[1].kind) {
-                case M68k_AM_address_register_indirect:
-                default:
-                    this->state.instruction.temp = NO_REVERSE;
-                    this->state.op[0].addr = NO_REVERSE;
-                    break;
-            }
-            this->state.op[1].t = 0;
-            printf("\n?%d", ins->ea[1].kind);
-            switch(ins->ea[1].kind) {
-                case M68k_AM_address_register_indirect_with_predecrement:
-                    this->state.op[1].t = 1;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.op[1].t) {
-                printf("\nPREFETCH FIRST");
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            }
-            else {
-                printf("\nWRITE FIRST!");
                 M68k_start_write_operand(this, 0, 1, M68kS_exec, this->state.instruction.temp, this->state.op[0].addr);
             }
         STEP(9)
             if (this->state.op[1].t) {
-                printf("\nWRITE SECOND!");
-                M68k_start_write_operand(this, 1, 1, M68kS_exec, ALLOW_REVERSE, 0);
+                u32 commit = 0;
+                // 019 MOVE.l -(A3), (xxx).l needs commit 0
+                if (ins->sz <= 2) commit = 1;
+
+                // 027 MOVE.w D6, -(A3) needs +0
+                // 037 MOVE.w (d16, A6), -(A0) needs +0
+                // 038 MOVE.w (A0)+, -(A4) needs +2
+                if (ins->sz <= 2) {
+                    u32 k = ins->ea[0].kind;
+                    u32 k2 = ins->ea[1].kind;
+                    //if (k2 == M68k_AM_address_register_indirect_with_predecrement)
+                    //    this->regs.IPC += 2;
+                    switch (k) {
+                        case M68k_AM_address_register_indirect:
+                            this->regs.IPC += 2;
+                            break;
+                        case M68k_AM_address_register_indirect_with_postincrement:
+                            if (k2 == M68k_AM_address_register_indirect_with_predecrement)
+                                this->regs.IPC += 2;
+                            break;
+                        case M68k_AM_absolute_short_data:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_predecrement:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
+                        case M68k_AM_absolute_long_data:
+                            switch(k2) {
+                                case M68k_AM_address_register_indirect_with_predecrement:
+                                    this->regs.IPC -= 2;
+                                    break;
+                            }
+                            break;
+                    }
+                }
+                M68k_start_write_operand(this, commit, 1, M68kS_exec, ALLOW_REVERSE, 0);
             }
             else {
-                printf("\nPREFETCH SECOND!");
                 this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
                 this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
+                M68k_finalize_ea(this, 1);
                 if (this->state.op[1].t2)
                     M68k_start_prefetch(this, 2, 1, M68kS_exec);
                 else
                     M68k_start_prefetch(this, 1, 1, M68kS_exec);
             }
         STEP(10)
+            if (this->state.op[1].t)
+                M68k_finalize_ea(this, 1);
+
             if ((ins->ea[1].kind == M68k_AM_address_register_indirect_with_postincrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) {
                 this->regs.A[ins->ea[1].reg] = this->state.op[1].new_val;
             }
             this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
             this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-INS_END
-
-M68KINS(MOVE_12_3)
-        STEP0
-            u32 k = ins->ea[0].kind;
-            u32 k2 = ins->ea[1].kind;
-            u32 numcycles = 0;
-            switch(k) {
-                case M68k_AM_address_register_indirect_with_index:
-                case M68k_AM_program_counter_with_index:
-                    numcycles = 2;
-                    break;
-            }
-            if (numcycles) M68k_start_wait(this, 2, M68kS_exec);
-        STEP(1)
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
-            this->state.current = M68kS_exec;
-            // Do prefetch 0
-            if (this->state.operands.state[M68kOS_prefetch1]) {
-                printf("\nbegin prefetch 0 on cyc %lld", this->trace_cycles);
-                this->state.operands.TCU = 0;
-                M68k_read_operands_prefetch(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                this->regs.IPC -= 4;
-            }
-        STEP(2)
-            // finish prefecth 0
-            this->state.op[0].t = this->state.operands.state[M68kOS_prefetch1];
-            this->state.op[1].t2 = 0;
-            if (this->state.op[0].t) {
-                printf("\nFinish prefetch 0");
-                if (!this->state.operands.state[M68kOS_read1]) this->regs.IPC += 4;
-                M68k_read_operands_prefetch(this, 0);
-                this->state.operands.TCU = 0;
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-
-            // Do pause if needed, in between p0 and r0
-            u32 k = ins->ea[0].kind;
-            u32 k2 = ins->ea[1].kind;
-            u32 numcycles = 0;
-            switch(k) {
-                case M68k_AM_address_register_indirect_with_predecrement:
-                    numcycles = 2; break;
-            }
-            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
-            // -(A7), (d8, A3, Xn)
-        STEP(3)
-            // Do read 0
-            if (this->state.operands.state[M68kOS_read1]) {
-                printf("\nBegin read 0 on cyc:%lld", this->trace_cycles);
-                M68k_read_operands_read(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                correct_IPC_MOVE_l_pf0(this, 0);
-            }
-        STEP(4)
-            // Finish read 0
-            if (this->state.operands.state[M68kOS_read1]) {
-                if (this->state.op[0].t) this->regs.IPC += 4;
-                M68k_read_operands_read(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-
-            // Potentially wait, in between r0 and p1
-            u32 k = this->ins->ea[0].kind;
-            u32 k2 = this->ins->ea[1].kind;
-            u32 numcycles = 0;
-            switch(k2) {
-                case M68k_AM_address_register_indirect_with_index:
-                    numcycles = 2;
-                    break;
-            }
-            if (numcycles) M68k_start_wait(this, numcycles, M68kS_exec);
-        STEP(5)
-            this->state.instruction.result = this->state.op[0].val;
-            // Do prefetch 1
-            if (ins->sz == 2) {
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-            }/*
-            else {
-                this->regs.SR.Z = this->regs.SR.N = 0;
-            }*/
-        STEP(6)
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nStart prefetch 1 PAUSE:%d", this->state.operands.state[M68kOS_pause2]);
-                M68k_read_operands_prefetch(this, 1);
-                printf("\n\n-----HEY!!! %d", ins->ea[0].kind);
-                if ((ins->ea[1].kind == M68k_AM_absolute_long_data) && (ins->ea[0].kind != M68k_AM_address_register_direct) && (ins->ea[0].kind != M68k_AM_data_register_direct) && (ins->ea[0].kind != M68k_AM_immediate)) {
-                    this->state.current = M68kS_read16;
-                    this->state.op[1].t2 = 1;
-                }
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-
-        STEP(7)
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nFinish prefetch 1");
-                if (this->state.op[1].t2) {
-                    printf("\nTOP PATH");
-                    this->regs.IR = this->regs.IRC;
-                    this->regs.IRC = this->state.bus_cycle.data & 0xFFFF;
-                    this->state.op[1].addr = ((this->regs.IR << 16) | this->regs.IRC);
-                    this->regs.PC += 2;
-                }
-                else {
-                    printf("\nBOTTOM PATH");
-                    // #35 (Ax)+, (xxx).w    wants not set to 0....
-                    M68k_read_operands_prefetch(this, 1);
-                    if (ins->ea[1].kind != M68k_AM_absolute_short_data) if (ins->sz == 4) this->regs.SR.Z = this->regs.SR.N = 0;
-                }
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-        STEP(8)
-            u32 doit = 1;
-            switch(ins->ea[1].kind) {
-                case M68k_AM_absolute_long_data:
-                    if (!this->state.op[1].t2) {
-                        this->state.op[1].addr = M68k_read_ea_addr(this, 1, ins->sz, NO_HOLD, this->state.op[1].ext_words);
-                        printf("\nEXT_WORDS: %08x", this->state.op[1].ext_words);
-                    }
-                    [[fallthrough]];
-                case M68k_AM_imm16:
-                case M68k_AM_imm32:
-                case M68k_AM_immediate:
-                    printf("\nCANCEL READ!!!");
-                    this->state.operands.state[M68kOS_read2] = 0;
-                    break;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.operands.state[M68kOS_read2]) {
-                this->state.op[1].hold = 1;
-                this->state.operands.TCU = 0;
-                M68k_read_operands_read(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                this->state.current = M68kS_exec;
-                printf("\nCancel read2 for write! HELD? %d", this->state.op[1].held);
-            } else {
-                this->state.current = M68kS_exec;
-            }
-            // #3  (ax+displacement), (Ax) wants V set to 0.
-            // #46 Dx, Dx          wants cleared at some point...
-            // #58 Dx, (Ax+index) wants V not touched yet.
-            this->regs.SR.C = 0;
-            if ((ins->sz == 4) && (ins->ea[0].kind != M68k_AM_data_register_direct))
-                 this->regs.SR.V = 0;
-            printf("\nYO KIND %d", ins->ea[1].kind);
-            switch(ins->ea[1].kind) {
-                case M68k_AM_address_register_indirect:
-                default:
-                    this->state.instruction.temp = NO_REVERSE;
-                    this->state.op[0].addr = NO_REVERSE;
-                    break;
-            }
-            this->state.op[1].t = 0;
-            switch(ins->ea[1].kind) {
-                case M68k_AM_address_register_indirect_with_predecrement:
-                    this->state.op[1].t = 1;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.op[1].t) {
-                printf("\nPREFETCH FIRST");
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            }
-            else {
-                printf("\nWRITE FIRST! %08x", this->state.instruction.result);
-                if ((ins->sz == 4) && (ins->ea[1].kind == M68k_AM_address_register_indirect)) {
-                    // #3  (Ax+disp), (Ax)   wants this not happen. Z set, N not
-                    // #50 (Ax)+, (Ax) wants N and Z set
-                    // #55 Dx, (Ax) wants the setting of flags not to have happened
-                    // #56 (Ax+ disp), (Ax)
-                    // #57 (Ax), (Ax+index)
-                    if (ins->ea[0].kind != M68k_AM_address_register_indirect_with_displacement) {
-                        this->regs.IPC += 2;
-                    }
-                    if ((ins->ea[0].kind != M68k_AM_data_register_direct)) {
-                        printf("\nSETZ!!!");
-                        this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                    } else
-                        printf("\nNOSETZ!!!");
-                    if  (ins->ea[0].kind == M68k_AM_address_register_indirect_with_postincrement)
-                        this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-                }
-                M68k_start_write_operand(this, 0, 1, M68kS_exec, this->state.instruction.temp, this->state.op[0].addr);
-            }
-        STEP(9)
-            this->regs.SR.V = 0;
-            if (this->state.op[1].t) {
-                printf("\nWRITE SECOND! %08x", this->state.instruction.result);
-                if (ins->sz == 4) this->regs.IPC -= 4;
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-                M68k_start_write_operand(this, 1, 1, M68kS_exec, ALLOW_REVERSE, 0);
-            }
-            else {
-                printf("\nPREFETCH SECOND!");
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-                if (this->state.op[1].t2)
-                    M68k_start_prefetch(this, 2, 1, M68kS_exec);
-                else
-                    M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            }
-        STEP(10)
-            if ((ins->ea[1].kind == M68k_AM_address_register_indirect_with_postincrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) {
-                this->regs.A[ins->ea[1].reg] = this->state.op[1].new_val;
-            }
-            this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-INS_END
-
-
-
-M68KINS(MOVE_12)
-        STEP0
-        // 039 MOVE.w D0, (d8, A3, Xn) 3780
-        // has +2 delay for first read
-        // 027 MOVE.w D6, -(A3) 3706  has no +2 delay for first read
-        // 041 MOVE.w (d8, PC, Xn), D5 3a3b   has no +2 on first, but has i on second
-        // 001 MOVE.w (d16, A3), (d8, A2, Xn) 35ab has no +2 on first
-        // 006 MOVE.w -(A7), (d8, A3, Xn) 37a7 DOES have +2
-        // 044 MOVE.w (d8, A0, Xn), (d8, A1, Xn) 33b0 has +2
-            u32 k = ins->ea[0].kind;
-            u32 k2 = ins->ea[1].kind;
-            u32 numcycles = 0;
-            printf("\n\n\nk:%d k2:%d", k, k2);
-            switch(k) {
-                case M68k_AM_address_register_indirect_with_predecrement: {
-                    numcycles = 2;
-                    break; }
-                case M68k_AM_program_counter_with_index: {
-                    numcycles = 2;
-                    break; }
-                case M68k_AM_address_register_indirect_with_index: {
-                    //if (k2 != M68k_AM_address_register_indirect_with_index)
-                        numcycles = 2;
-                    break; }
-                case M68k_AM_data_register_direct: {
-                    if (k2 == M68k_AM_address_register_indirect_with_index)
-                        numcycles = 2;
-                    break; }
-                case M68k_AM_address_register_direct: {
-                    printf("\nk2: %d", k2);
-                    if ((k2 == M68k_AM_address_register_indirect_with_predecrement) ||
-                            (k2 == M68k_AM_address_register_indirect_with_index))
-                        numcycles = 2;
-                    break; }
-                default:
-                        numcycles = 0;
-            }
-            printf("\n--INITIAL WAIT %d", numcycles);
-            if (numcycles) M68k_start_wait(this, 2, M68kS_exec);
-        STEP(1)
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, HOLD, NO_REVERSE);
-            this->state.current = M68kS_exec;
-            // Do prefetch 0
-            if (this->state.operands.state[M68kOS_prefetch1]) {
-                printf("\nbegin prefetch 0 on cyc %lld", this->trace_cycles);
-                this->state.operands.TCU = 0;
-                M68k_read_operands_prefetch(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                this->regs.IPC -= 4;
-                if (ins->sz == 4) {
-                    this->regs.SR.N = this->regs.SR.Z = 0;
-                }
-            }
-        STEP(2)
-            // finish prefecth 0
-            this->state.op[0].t = this->state.operands.state[M68kOS_prefetch1];
-            if (this->state.op[0].t) {
-                printf("\nFinish prefetch 0");
-                if (!this->state.operands.state[M68kOS_read1]) this->regs.IPC += 4;
-                M68k_read_operands_prefetch(this, 0);
-                this->state.operands.TCU = 0;
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-            // Do pause if needed
-            /*if (this->state.operands.state[M68kOS_read1] && this->state.operands.state[M68kOS_pause1]) {
-                printf("\nWAIT 2. CYC:%lld", this->trace_cycles);
-                M68k_start_wait(this, 2, M68kS_exec);
-            }*/
-        STEP(3)
-            // Do read 0
-            if (this->state.operands.state[M68kOS_read1]) {
-                printf("\nBegin read 0 on cyc:%lld", this->trace_cycles);
-                M68k_read_operands_read(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                correct_IPC_MOVE_l_pf0(this, 0);
-            }
-        STEP(4)
-            // Finish read 0
-            if (this->state.operands.state[M68kOS_read1]) {
-                if (this->state.op[0].t) this->regs.IPC += 4;
-                printf("\nFinish read 0");
-                M68k_read_operands_read(this, 0);
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-            // Potentially wait
-            u32 k0 = this->ins->ea[0].kind;
-            u32 k1 = this->ins->ea[1].kind;
-        STEP(5)
-            this->state.instruction.result = this->state.op[0].val;
-            // Do prefetch 1
-            if (ins->sz == 2) {
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-            }
-            // DONT DO IT FOR 050 MOVE.w -(A0), -(A0) 3120
-            if ((ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) && (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) {
-            }
-            else {//if (this->state.operands.state[M68kOS_pause2]) {
-                switch(ins->ea[0].kind) {
-                    case M68k_AM_data_register_direct:
-                    case M68k_AM_address_register_direct:
-                    case M68k_AM_address_register_indirect_with_displacement:
-                    case M68k_AM_address_register_indirect_with_postincrement:
-                    case M68k_AM_absolute_short_data:
-                    case M68k_AM_absolute_long_data:
-                    case M68k_AM_address_register_indirect_with_index:
-
-                        // 024 MOVE.w (A6), (d8, A6, Xn) 3d96 between read0 and prefetch1
-
-                        //case M68k_AM_address_register_indirect_with_predecrement:
-                    // 006 MOVE.w -(A7), (d8, A3, Xn) 37a7 <-- second + 2
-                    // 050 MOVE.w -(A0), -(A0) 3120
-
-                        //case M68k_AM_address_register_indirect_with_predecrement:
-                        break;
-                    default:
-                        printf("\nSTART PAUSE2 AT cyc:%lld", this->trace_cycles);
-                        M68k_start_wait(this, 2, M68kS_exec);
-                        break;
-                }
-            }
-        STEP(6)
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nStart prefetch 1 PAUSE:%d", this->state.operands.state[M68kOS_pause2]);
-                M68k_read_operands_prefetch(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-
-        STEP(7)
-            u32 nomc = 0;
-            switch(ins->ea[0].kind) {
-                case M68k_AM_address_register_indirect: {
-                    nomc = 2;
-                    break; }
-            }
-            if (nomc) M68k_start_wait(this, nomc, M68kS_exec);
-        STEP(8)
-            // finish prefecth 1
-            if (this->state.operands.state[M68kOS_prefetch2]) {
-                printf("\nFinish prefetch 1");
-                M68k_read_operands_prefetch(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-            }
-            printf("\nTTETET%d %d",this->state.operands.state[M68kOS_read2], ins->ea[1].kind);
-            u32 doit = 1;
-            switch(ins->ea[1].kind) {
-                case M68k_AM_imm16:
-                case M68k_AM_imm32:
-                case M68k_AM_immediate:
-                case M68k_AM_absolute_long_data:
-                    printf("\nCANCEL READ!!!");
-                    this->state.operands.state[M68kOS_read2] = 0;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.operands.state[M68kOS_read2]) {
-                this->state.op[1].hold = 1;
-                this->state.operands.TCU = 0;
-                M68k_read_operands_read(this, 1);
-                this->state.bus_cycle.next_state = M68kS_exec;
-                this->state.current = M68kS_exec;
-                printf("\nCancel read2 for write! HELD? %d", this->state.op[1].held);
-            } else {
-                this->state.current = M68kS_exec;
-            }
-            this->regs.SR.C = this->regs.SR.V = 0;
-            printf("\nYO KIND %d", ins->ea[1].kind);
-            switch(ins->ea[1].kind) {
-                case M68k_AM_address_register_indirect:
-                default:
-                    this->state.instruction.temp = NO_REVERSE;
-                    this->state.op[0].addr = NO_REVERSE;
-                    break;
-            }
-            this->state.op[1].t = 0;
-            printf("\n?%d", ins->ea[1].kind);
-            switch(ins->ea[1].kind) {
-                case M68k_AM_absolute_long_data:
-                    if (ins->ea[0].kind != M68k_AM_address_register_indirect)
-                        this->state.op[1].t = 1;
-                    break;
-                case M68k_AM_address_register_indirect_with_predecrement:
-                    this->state.op[1].t = 1;
-                    break;
-                default:
-                    break;
-            }
-            if (this->state.op[1].t) {
-                printf("\nPREFETCH FIRST");
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            }
-            else {
-                printf("\nWRITE FIRST!");
-                if (ins->sz == 4) this->regs.IPC += 2;
-                M68k_start_write_operand(this, 0, 1, M68kS_exec, this->state.instruction.temp, this->state.op[0].addr);
-            }
-        STEP(9)
-            if (this->state.op[1].t) {
-                printf("\nWRITE SECOND!");
-                M68k_start_write_operand(this, 1, 1, M68kS_exec, ALLOW_REVERSE, 0);
-            }
-            else {
-                printf("\nPREFETCH SECOND!");
-                this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-                this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            }
-        STEP(10)
-            if ((ins->ea[1].kind == M68k_AM_address_register_indirect_with_postincrement) || (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)) {
-                this->regs.A[ins->ea[1].reg] = this->state.op[1].new_val;
-            }
-            this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-INS_END
-
-export_M68KINS_NOSWITCH(MOVE)
-    if (ins->sz == 4) return M68k_ins_MOVE_12_2(this, ins);
-    return M68k_ins_MOVE_12_2(this, ins);
-    switch(this->state.instruction.TCU) {
-        STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
-            this->state.instruction.result = this->state.operands.state[M68kOS_read2];
-            this->state.operands.state[M68kOS_read2] = 0;
-            printf("\nEAK 0:%d 1:%d    EXW 0:%d 1:%d", ins->ea[0].kind, ins->ea[1].kind, this->state.op[0].ext_words, this->state.op[1].ext_words);
-        STEP(1)
-            if (this->state.instruction.result) { // Set up address for read we cancelled
-                this->state.operands.TCU = 0;
-                M68k_read_operands_read(this, 1);
-                M68k_read_operands_read(this, 1);
-                this->state.current = M68kS_exec;
-            }
-            this->state.instruction.result = this->state.op[0].val;
-            this->regs.SR.C = this->regs.SR.V = 0;
-            this->regs.SR.Z = (clip32[ins->sz] & this->state.instruction.result) == 0;
-            this->regs.SR.N = !!(this->state.instruction.result & msb32[ins->sz]);
-            if (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-            else
-                M68k_start_write_operand(this, 0, 1, M68kS_exec, 1, 0);
-        STEP(2)
-            if (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement)
-                M68k_start_write_operand(this, 0, 1, M68kS_exec, 1, 0);
-            else
-                M68k_start_prefetch(this, 1, 1, M68kS_exec);
-        STEP(3)
 INS_END
 
 M68KINS(MOVEA)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            //if (ins->sz == 4)
+            // 000 MOVEA.l (d16, Ax), Ax
+            // FC(0) for operand read
+            //
+            // 046 MOVEA.l (d8, PC, Xn), Ax
+            // FC(1) for operand read
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             u32 v = this->state.op[0].val;
             if (ins->sz == 2) v = SIGNe16to32(v);
@@ -2503,7 +2174,6 @@ M68KINS(MOVEA)
 INS_END
 
 M68KINS(MOVEM_TO_MEM)
-        // TODO: verify this. we disagreed with CLK
         STEP0
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
@@ -2611,7 +2281,10 @@ export_M68KINS(MOVEM_TO_REG)
                 // Start a read
                 this->state.instruction.result = index;
                 if (ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) this->state.op[0].val -= ins->sz;
-                M68k_start_read(this, this->state.op[0].val, ins->sz, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
+                u32 fc = MAKE_FC(0);
+                if ((ins->ea[0].kind == M68k_AM_program_counter_with_index) || (ins->ea[0].kind == M68k_AM_program_counter_with_displacement))
+                    fc = MAKE_FC(1);
+                M68k_start_read(this, this->state.op[0].val, ins->sz, fc, M68K_RW_ORDER_NORMAL, M68kS_exec);
                 if (ins->ea[0].kind != M68k_AM_address_register_indirect_with_predecrement) this->state.op[0].val += ins->sz;
             }
         STEP(4)
@@ -2624,7 +2297,10 @@ export_M68KINS(MOVEM_TO_REG)
             if (ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) {
                 this->state.op[0].val -= 2;
             }
-            M68k_start_read(this, this->state.op[0].val, 2, MAKE_FC(0), 0, M68kS_exec);
+            u32 fc = MAKE_FC(0);
+            if ((ins->ea[0].kind == M68k_AM_program_counter_with_index) || (ins->ea[0].kind == M68k_AM_program_counter_with_displacement))
+                fc = MAKE_FC(1);
+            M68k_start_read(this, this->state.op[0].val, 2, fc, 0, M68kS_exec);
         STEP(5)
             if (ins->ea[0].kind == M68k_AM_address_register_indirect_with_predecrement) M68k_set_ar(this, ins->ea[0].reg, this->state.op[0].val, 4);
             if (ins->ea[0].kind == M68k_AM_address_register_indirect_with_postincrement) M68k_set_ar(this, ins->ea[0].reg, this->state.op[0].val, 4);
@@ -2693,7 +2369,7 @@ INS_END
 
 M68KINS(MOVE_FROM_SR)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -2710,7 +2386,7 @@ M68KINS(MOVE_FROM_USP)
                 M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-4);
                 return;
             }
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -2723,12 +2399,12 @@ INS_END
 
 M68KINS(MOVE_TO_CCR)
         STEP0
-            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->regs.IPC -= 2;
             this->regs.PC -= 2;
             u32 data = (this->regs.SR.u & 0xFFE0) | (this->state.op[0].val & 0x001F);
-            M68k_set_SR(this, data);
+            M68k_set_SR(this, data, 0);
             M68k_start_wait(this, 4, M68kS_exec);
         STEP(2)
             M68k_start_prefetch(this, 2, 1, M68kS_exec);
@@ -2741,14 +2417,14 @@ M68KINS(MOVE_TO_SR)
                 M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-4);
                 return;
             }
-            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->regs.IPC -= 2;
             this->regs.PC -= 2;
             M68k_start_wait(this, 4, M68kS_exec);
         STEP(2)
-            u32 data = (this->regs.SR.u & 0x58E0) | (this->state.op[0].val & 0xA71F);
-            M68k_set_SR(this, data);
+            u32 data = (this->state.op[0].val & 0xA71F);
+            M68k_set_SR(this, data, 1);
             M68k_start_prefetch(this, 2, 1, M68kS_exec);
         STEP(3)
 INS_END
@@ -2759,7 +2435,7 @@ M68KINS(MOVE_TO_USP)
                 M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 4);
                 return;
             }
-            M68k_start_read_operands(this, 0, 4, M68kS_exec, 0, NO_HOLD, NO_REVERSE);
+            M68k_start_read_operands(this, 0, 4, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             // We're in supervisor, so we'll always be ASP
             this->regs.ASP = this->state.op[0].val;
@@ -2769,7 +2445,7 @@ INS_END
 
 M68KINS(MULS)
         STEP0
-            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = (i16)this->state.op[0].val * (i16)this->state.op[1].val;
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -2794,7 +2470,7 @@ INS_END
 
 M68KINS(MULU)
         STEP0
-            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, NO_HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = (u16)this->state.op[0].val * (u16)this->state.op[1].val;
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -2820,7 +2496,7 @@ INS_END
 
 M68KINS(NBCD)
         STEP0
-            M68k_start_read_operands(this, 0, 1, M68kS_exec, 0, 1, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, 1, M68kS_exec, 0, 1, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             u32 source = this->state.op[0].val;
             u32 target = 0u;
@@ -2861,8 +2537,9 @@ INS_END
 
 M68KINS(NEG)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, 0, ins->sz, 0, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -2877,8 +2554,9 @@ INS_END
 
 M68KINS(NEGX)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -2902,8 +2580,9 @@ INS_END
 
 M68KINS(NOT)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = (~this->state.op[0].val) & clip32[ins->sz];
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -2918,8 +2597,9 @@ INS_END
 
 M68KINS(OR)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = OR(this, this->state.op[0].val, this->state.op[1].val, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -2939,7 +2619,7 @@ INS_END
 M68KINS(ORI)
         STEP0
             if (ins->sz == 2) this->regs.IPC -= 2;
-            STARTI(HOLD);
+            STARTI(0,1);
         STEP(2)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
@@ -2975,7 +2655,7 @@ M68KINS(ORI_TO_SR)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
             u32 data = this->regs.IR | M68k_get_SR(this);
-            M68k_set_SR(this, data);
+            M68k_set_SR(this, data, 1);
             M68k_start_wait(this, 8, M68kS_exec);
         STEP(2)
             M68k_start_read(this, this->regs.PC - 2, 2, MAKE_FC(1), 0, M68kS_exec);
@@ -3050,7 +2730,7 @@ INS_END
 
 M68KINS(ROL_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ROL(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -3084,7 +2764,7 @@ INS_END
 
 M68KINS(ROR_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ROR(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -3118,7 +2798,7 @@ INS_END
 
 M68KINS(ROXL_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ROXL(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -3152,7 +2832,7 @@ INS_END
 
 M68KINS(ROXR_ea)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = ROXR(this, this->state.op[0].val, 1, ins->sz);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -3171,11 +2851,12 @@ M68KINS(RTE)
             M68k_inc_SSP(this, 6);
             M68k_start_read(this, this->state.instruction.result+0, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
         STEP(1)
-            M68k_set_SR(this, this->state.bus_cycle.data);
-            M68k_start_read(this, this->state.instruction.result+2, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
+            this->state.op[1].val = MAKE_FC(0);
+            M68k_set_SR(this, this->state.bus_cycle.data, 1);
+            M68k_start_read(this, this->state.instruction.result+2, 2, this->state.op[1].val, M68K_RW_ORDER_NORMAL, M68kS_exec);
         STEP(2)
             this->state.op[0].val = this->state.bus_cycle.data << 16;
-            M68k_start_read(this, this->state.instruction.result+4, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exec);
+            M68k_start_read(this, this->state.instruction.result+4, 2, this->state.op[1].val, M68K_RW_ORDER_NORMAL, M68kS_exec);
         STEP(3)
             this->state.op[0].val |= this->state.bus_cycle.data;
             this->regs.IPC -= 2;
@@ -3215,7 +2896,7 @@ INS_END
 
 M68KINS(SBCD)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -3243,7 +2924,7 @@ INS_END
 
 M68KINS(SCC)
         STEP0
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
@@ -3268,7 +2949,7 @@ M68KINS(STOP)
             this->state.instruction.result = this->regs.IRC;
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
-            M68k_set_SR(this, this->state.instruction.result);
+            M68k_set_SR(this, this->state.instruction.result, 0);
             this->state.current = M68kS_stopped;
             this->state.stopped.next_state = M68kS_exec;
         STEP(2)
@@ -3280,11 +2961,11 @@ INS_END
 
 M68KINS(SUB)
         STEP0
-            HOLD_WORD_POSTINC;
-            // #61 M68k(0000)  43d8b6  sub.w   (a3)+,d7 - needs NO_HOLD
-            // #121 M68k(0000)  72e20a  sub.w   d1,(a5)+ - needs NO_HOLD
-            //u32 hold = HOLD;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            if ((ins->sz == 2) && (ins->ea[0].kind == M68k_AM_data_register_direct) && (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement))
+                hold = 0;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 0, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -3310,8 +2991,9 @@ INS_END
 
 M68KINS(SUBA)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             u32 a = sgn32(this->state.op[0].val, ins->sz);
             u32 b = this->regs.A[ins->ea[1].reg];
@@ -3326,10 +3008,19 @@ M68KINS(SUBA)
         STEP(3)
 INS_END
 
-M68KINS(SUBI)
+M68KINS(SUBI_21)
         STEP0
             if (ins->sz == 2) this->regs.IPC -= 2;
-            STARTI(HOLD);
+            STARTI(1, 0);
+        STEP(2)
+        STEP(3)
+INS_END
+
+M68KINS_NOSWITCH(SUBI)
+    if ((ins->sz <= 2) && (this->state.instruction.TCU < 2)) return M68k_ins_SUBI_21(this, ins);
+    switch(this->state.instruction.TCU) {
+        STEP0
+            STARTI(0, 1);
         STEP(2)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
@@ -3344,8 +3035,9 @@ INS_END
 
 M68KINS(SUBQ)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 0, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
@@ -3376,7 +3068,7 @@ INS_END
 
 M68KINS(SUBX_sz4_predec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, HOLD, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1, 1);
             this->regs.A[ins->ea[1].reg] += 4;
@@ -3394,7 +3086,7 @@ INS_END
 
 M68KINS(SUBX_sz4_nopredec)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -3407,7 +3099,7 @@ INS_END
 
 M68KINS(SUBX_sz1_2)
         STEP0
-            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE);
+            M68k_start_read_operands(this, 1, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 1, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec); // all prefetches are done before writes
@@ -3454,7 +3146,7 @@ M68KINS(TRAPV)
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
             if (this->regs.SR.V) {
-                M68k_start_group2_exception(this, M68kIV_trapv_instruction, 0, this->regs.PC-4);
+                M68k_start_group2_exception(this, M68kIV_trapv_instruction, 0, this->regs.PC-2);
                 return;
             }
         STEP(2)
@@ -3462,8 +3154,9 @@ INS_END
 
 M68KINS(TST)
         STEP0
-            HOLD_WORD_POSTINC;
-            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE);
+            HOLD_WORD_POSTINC_PREDEC;
+            HOLDL_l_predec_no;
+            M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, hold, NO_REVERSE, MAKE_FC(0));
         STEP(1)
             this->regs.SR.C = this->regs.SR.V = 0;
             u32 v = clip32[ins->sz] & this->state.op[0].val;

@@ -55,7 +55,7 @@ struct M68k;
 void M68k_start_read(struct M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, u32 next_state);
 void M68k_start_write(struct M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 reversed, u32 next_state);
 void M68k_start_prefetch(struct M68k* this, u32 num, u32 is_program, u32 next_state);
-void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse);
+void M68k_start_read_operands(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse, u32 read_fc);
 void M68k_start_read_operand_for_ea(struct M68k* this, u32 fast, u32 sz, u32 next_state, u32 wait_states, u32 hold, u32 allow_reverse);
 void M68k_start_write_operand(struct M68k* this, u32 commit, u32 op_num, u32 next_state, u32 allow_reverse, u32 force_reverse);
 u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz);
@@ -74,7 +74,7 @@ void M68k_exc_group1(struct M68k* this);
 void M68k_exc_group2(struct M68k* this);
 void M68k_exc_group0(struct M68k* this);
 void M68k_prefetch(struct M68k* this);
-void M68k_read_operands_read(struct M68k* this, u32 opnum);
+void M68k_read_operands_read(struct M68k* this, u32 opnum, u32 commit);
 void M68k_read_operands(struct M68k* this);
 u32 M68k_get_r(struct M68k* this, struct M68k_EA *ea, u32 sz);
 void M68k_set_r(struct M68k* this, struct M68k_EA *ea, u32 val, u32 sz);
@@ -82,7 +82,7 @@ void M68k_finalize_ea(struct M68k* this, u32 opnum);
 void M68k_read_operands_prefetch(struct M68k* this, u32 opnum);
 void M68k_adjust_IPC(struct M68k* this, u32 opnum, u32 sz);
 
-#define MAKE_FC(is_program) ((this->regs.SR.S << 2) | ((is_program) ? 1 : 2))
+#define MAKE_FC(is_program) ((this->regs.SR.S ? 4 : 0) | ((is_program) ? 2 : 1))
 
 
 #endif //JSMOOCH_EMUS_M68000_INTERNAL_H

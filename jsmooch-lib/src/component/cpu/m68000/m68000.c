@@ -23,6 +23,7 @@ void M68k_init(struct M68k* this, u32 megadrive_bug)
     this->SPEC_RESET.exec = &M68k_ins_RESET_POWER;
     this->megadrive_bug = megadrive_bug;
     this->pins.RESET = 0;
+    this->regs.next_SR_T = 0;
     jsm_string_init(&this->trace.str, 1000);
 }
 
@@ -50,7 +51,7 @@ static void M68k_decode(struct M68k* this)
     this->state.instruction.prefetch = 1; // 1 prefetches are needed currently
 }
 
-void M68k_set_SR(struct M68k* this, u32 val)
+void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t)
 {
     u32 new_s = (val & 0x2000) >> 13;
     // CCR
@@ -63,7 +64,8 @@ void M68k_set_SR(struct M68k* this, u32 val)
     this->regs.SR.S = new_s;
 
     this->regs.SR.I = (val >> 8) & 7;
-    this->regs.SR.T = (val >> 15) & 1;
+    this->regs.next_SR_T = (val >> 15) & 1;
+    if (immediate_t || (this->regs.next_SR_T == 0)) this->regs.SR.T = this->regs.next_SR_T;
 }
 
 
@@ -102,6 +104,8 @@ void M68k_cycle(struct M68k* this)
                     return;
                 }
                 M68k_decode(this);
+                // This must be done AFTER interrupt, trace, etc. processing
+                this->regs.SR.T = this->regs.next_SR_T;
                 this->ins_decoded = 1;
                 this->state.current = M68kS_exec;
                 if (dbg.trace_on && this->trace.ok) {

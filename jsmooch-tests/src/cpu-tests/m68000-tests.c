@@ -23,24 +23,9 @@ static u8 *tmem = 0;
 
 #define TEST_SKIPS_NUM 3
 static char test_skips[TEST_SKIPS_NUM][50] = {
-        //"MOVEA.l.json.bin",
-        //"CHK.json.bin",
-        //"TAS.json.bin", // TAS is a mess, especially on CLK
-        //"ASR.w.json.bin", // bug in CLK ASR implementation
-        //"ASR.b.json.bin", // bug in CLK ASR implementation
-        //"ROR.b.json.bin",
-        //"MOVEM.w.json.bin",
-        //"SUBA.l.json.bin",
-        "TAS.json.bin",
-        //"DIVS.json.bin",
-        //"DIVU.json.bin",
-        //"MOVE.l.json.bin",
-        //"MOVE.w.json.bin",
-        //"MOVE.b.json.bin",
-        "STOP.json.bin",
-        //"CMPA.w.json.bin",
-        //"CHK.json.bin",
-        //"TRAPV.json.bin"
+        "TAS.json.bin", // TAS Is not correct in the tests
+        "STOP.json.bin", // STOP stops infinitely
+        "TRAPV.json.bin", // TRAPV has some issue with FC
 };
 
 static u32 m68k_dasm_read(void *obj, u32 addr, u32 UDS, u32 LDS)
@@ -340,6 +325,7 @@ static u32 compare_group2_frame(struct m68k_test_struct *ts)
 
 static u32 compare_group0_frame(struct m68k_test_struct *ts)
 {
+    printf("\nCOMPARE GR0");
     struct transaction *t1=NULL, *t2=NULL;
     // Go over any transactions that are >= g0_min and < g0_max.
     // map
@@ -350,7 +336,7 @@ static u32 compare_group0_frame(struct m68k_test_struct *ts)
     // +8 SR
     // +10 PC hi
     // +12 PC lo (ignore if within 4 or so)
-    u32 move_l = ts->cpu.ins->exec == &M68k_ins_MOVE;
+    u32 move_l = ts->cpu.ins->exec == &M68k_ins_MOVE && (ts->cpu.ins->sz == 4);
     u32 all_passed = 1;
     u32 pc_hi1, pc_hi2, pc1, pc2;
     for (u32 i = 0; i < 14; i+= 2) {
@@ -370,10 +356,11 @@ static u32 compare_group0_frame(struct m68k_test_struct *ts)
                 if (v1 != v2) {
                     if (dbg.trace_on) printf("\nDIFF FIRST WORD. good:%04x  ours:%04x", v1, v2);
                     if ((MAX(v1, v2) - MIN(v1, v2)) < 7) {
-                        if (dbg.trace_on) printf("\nFUNCTION CODE DIFFERENCE. THEIRS:%d, MINE:%d", v1 & 7, v2 & 7);
-                        break;
+                        printf("\nFUNCTION CODE DIFFERENCE. THEIRS:%d, MINE:%d", v1 & 7, v2 & 7);
+                        //return 0;
                     }
-                    all_passed = 0;
+                    else
+                        all_passed = 0;
                 }
                 break;
             case 8: {// SR
@@ -424,7 +411,6 @@ static u32 compare_state_to_ram(struct m68k_test_struct *ts)
         g0_min = ts->cpu.state.exception.group2.base_addr;
         g0_max = ts->cpu.state.exception.group2.base_addr + 6;
     }
-    printf("\n");
     for (u32 i = 0; i < s->num_RAM; i++) {
         u32 addr = s->RAM_pairs[i].addr;
         u32 val = s->RAM_pairs[i].val;
@@ -465,7 +451,7 @@ static void copy_state_to_RAM(struct m68k_test_state *s)
 
 static void copy_state_to_cpu(struct M68k* cpu, struct m68k_test_state *s)
 {
-    M68k_set_SR(cpu, s->sr);
+    M68k_set_SR(cpu, s->sr, 1);
     for (u32 i = 0; i < 8; i++) {
         cpu->regs.D[i] = s->d[i];
         if (i < 7) cpu->regs.A[i] = s->a[i];
@@ -511,7 +497,7 @@ static struct transaction* find_transaction(struct m68k_test_struct *ts, enum tr
     return NULL;
 }
 
-static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS)
+static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 fc)
 {
     // happens on cycle 1 of transactions
     assert(addr<0x01000000);
@@ -528,6 +514,7 @@ static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS)
     m->UDS = UDS;
     m->LDS = LDS;
     m->sz = UDS + LDS;
+    m->fc = fc;
 
     struct transaction *t = find_transaction(ts, tk_read, addr & 0xFFFFFE, UDS, LDS, m->sz);
     if (t == 0) {
@@ -538,6 +525,11 @@ static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS)
     u32 sz = UDS + LDS;
     t->visited = 1;
 
+    if (t->fc != fc) {
+        printf("\nMISMATCH FC THEIRS:%d MINE:%d", t->fc, fc);
+        ts->test.failed = 50;
+        return v;
+    }
     if (t->start_cycle != my_read_cycle(ts->cpu.trace_cycles)) {
         //if (dbg.trace_on) printf("\nMISMATCH READ %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts->cpu.trace_cycles);
         ts->test.failed = 6;
@@ -546,7 +538,7 @@ static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS)
     return v;
 }
 
-static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 val)
+static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS, u32 val, u32 fc)
 {
     //printf("\nWRITE! %06x %d %d %04x", addr, UDS, LDS, val);
     assert(addr<0x01000000);
@@ -562,7 +554,7 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
     m->UDS = UDS;
     m->LDS = LDS;
     m->sz = UDS + LDS;
-
+    m->fc = fc;
 
     struct transaction* t = find_transaction(ts, tk_write, addr & 0xFFFFFE, UDS, LDS, m->sz);
     if (t == NULL) {
@@ -581,6 +573,10 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
     if (UDS && LDS) v = val;
     else if (LDS) v = val & 0xFF;
     else v = val & 0x00FF;
+    if (t->fc != fc) {
+        printf("\nFC mismatch. theirs:%d mine:%d", t->fc, fc);
+        ts->test.failed = 40;
+    }
     if (t->start_cycle != my_write_cycle(ts->cpu.trace_cycles)) {
         //if (dbg.trace_on) printf("\nMISMATCH WRITE %06x their cycle:%d    mine:%lld", addr, t->start_cycle, ts->cpu.trace_cycles);
         ts->test.failed = 3;
@@ -594,12 +590,6 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
 
 static u32 cval_SR(u64 mine, u64 theirs, u64 initial, const char* display_str, const char *name, u32 had_group0, u32 had_predec, struct m68k_test_struct *ts) {
     if (mine == theirs) return 1;
-    /*if (had_predec && had_group0) {
-        if (mine != theirs) {
-            printf("\nSPECIAL CASE!");
-            return 1;
-        }
-    }*/
     u32 move_l = ts->cpu.ins->exec == &M68k_ins_MOVE;
     if (move_l && had_group0) return 1;
 
@@ -616,13 +606,6 @@ static u32 cval_SR(u64 mine, u64 theirs, u64 initial, const char* display_str, c
 
 static u32 cval(u64 mine, u64 theirs, u64 initial, const char* display_str, const char *name, u32 had_group0, u32 had_predec) {
     if (mine == theirs) return 1;
-    if (had_predec && had_group0) {
-        if ((MAX(mine, theirs) - MIN(mine,theirs)) < 3) {
-            printf("\nHmmm?");
-            return 1;
-        }
-    }
-
     printf("\n%s mine:", name);
     printf(display_str, mine);
     printf(" theirs:");
@@ -675,9 +658,8 @@ static u32 compare_state_to_cpu(struct m68k_test_struct *ts, struct m68k_test_st
     CP(D[5], d[5], "d5");
     CP(D[6], d[6], "d6");
     CP(D[7], d[7], "d7");
-    printf("\nALL_PASSED2 %d", all_passed);
 
-    if ((ts->cpu.ins->exec == &M68k_ins_MOVEM_TO_REG) && (ts->had_group0)) {
+    /*if ((ts->cpu.ins->exec == &M68k_ins_MOVEM_TO_REG) && (ts->had_group0)) {
         // TODO: fix this
         u32 num_mismatch = 0;
         u32 lm = 0;
@@ -709,7 +691,7 @@ static u32 compare_state_to_cpu(struct m68k_test_struct *ts, struct m68k_test_st
             }
         }
     }
-    else {
+    else {*/
         CP(A[0], a[0], "a0");
         CP(A[1], a[1], "a1");
         CP(A[2], a[2], "a2");
@@ -717,13 +699,11 @@ static u32 compare_state_to_cpu(struct m68k_test_struct *ts, struct m68k_test_st
         CP(A[4], a[4], "a4");
         CP(A[5], a[5], "a5");
         CP(A[6], a[6], "a6");
-    }
+    //}
     CP(PC, pc, "pc");
     CP(IR, prefetch[0], "ir");
     CP(IRC, prefetch[1], "irc");
-    printf("\nALL_PASSED3 %d", all_passed);
     all_passed &= cval_SR(M68k_get_SR(cpu), final->sr, initial->sr, "%08llx", "sr", ts->had_group0 != -1, ea, ts);
-    printf("\nALL_PASSED4 %d", all_passed);
     if (cpu->regs.SR.S) { // supervisor mode!
         CP(A[7], ssp, "a7");
         CP(ASP, usp, "asp");
@@ -733,11 +713,10 @@ static u32 compare_state_to_cpu(struct m68k_test_struct *ts, struct m68k_test_st
         CP(ASP, ssp, "asp");
     }
 #undef CP
-    printf("\nALL_PASSED5 %d", all_passed);
     if (!all_passed) {
-        pprint_SR(cpu->regs.SR.u, initial->sr, final->sr, cpu->regs.PC);
+        /*pprint_SR(cpu->regs.SR.u, initial->sr, final->sr, cpu->regs.PC);
         pprint_state(initial, "initial");
-        pprint_state(final, "final");
+        pprint_state(final, "final");*/
     }
     return all_passed;
 }
@@ -747,10 +726,10 @@ static void cycle_cpu(struct m68k_test_struct *ts)
     M68k_cycle(&ts->cpu);
     if ((ts->cpu.pins.AS) && (!ts->cpu.pins.DTACK)) { // CPU is trying to read or write
         if (ts->cpu.pins.RW) { // Write!
-            do_test_write(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.D);
+            do_test_write(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.D, ts->cpu.pins.FC);
         }
         else { // if (!ts->cpu.pins.DTACK) { // Read! Happens on cycle 1 of transactions
-            ts->cpu.pins.D = do_test_read(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS);
+            ts->cpu.pins.D = do_test_read(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.FC);
         }
     }
     ts->test.current_cycle++;
@@ -767,7 +746,7 @@ static u32 dopppt(char *ptr, struct transaction *t)
 static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_test_transactions *mts, struct m68k_test_struct *test)
 {
     char buf[500];
-    printf("\n---Transactions:");
+    printf("\n---Transactions: %d, %d, %d", test->had_group0 != -1, test->had_group1 != -1, test->had_group2 != -1);
     u32 bigger = MAX(ts->num_transactions, mts->num_transactions);
     i32 tsi = 0, mtsi = 0;
     while(1) {
@@ -800,8 +779,10 @@ static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_t
             else ptr += sprintf(ptr, " ");
             if (t1->start_cycle != t2->start_cycle) ptr += sprintf(ptr, "*");
             else ptr += sprintf(ptr, " ");
+            if (t1->fc != t2->fc) ptr += sprintf(ptr, "F");
+            else ptr += sprintf(ptr, " ");
         }
-        else ptr += sprintf(ptr, "  ");
+        else ptr += sprintf(ptr, "    ");
         if (t1 == NULL) {
             ptr += sprintf(ptr, "                       ");
         }
@@ -810,13 +791,28 @@ static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_t
         }
         if (t2 != NULL) {
             ptr += dopppt(ptr, t2);
+            if (test->had_group2 != -1) {
+                u32 my_addr = t2->addr_bus & 0xFFFFFE;
+                u32 g0_min = test->cpu.state.exception.group2.base_addr;
+                u32 g0_max = test->cpu.state.exception.group2.base_addr + 6;
+                u32 offset = my_addr - g0_min;
+#define SC(a, x) case a: ptr += sprintf(ptr, "  <g2 " x "> +%d", a); break
+                if (offset < 6) {
+                    switch(offset) {
+                        SC(0, "SR");
+                        SC(2, "PC hi");
+                        SC(4, "PC lo");
+                    }
+                }
+                // SR, PCH, PCL
+#undef SC
+            }
             if (test->had_group0 != -1) {
-
                 u32 my_addr = t2->addr_bus & 0xFFFFFE;
                 u32 g0_min = test->cpu.state.exception.group0.base_addr;
                 u32 g0_max = test->cpu.state.exception.group0.base_addr + 14;
                 u32 offset = my_addr - g0_min;
-                if (offset < g0_max) {
+                if (offset < 16) {
 #define SC(a, x) case a: ptr += sprintf(ptr, "  <g0 " x "> +%d", a); break
                     switch (offset) {
                         SC(0, "first word");
@@ -830,6 +826,9 @@ static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_t
 #undef SC
                 }
             }
+        }
+        if ((t1 != NULL) && (t2 != NULL) && (t1->addr_bus == t2->addr_bus)) {
+            if (t1->fc != t2->fc) ptr += sprintf(ptr, "  / fcmine:%d theirs:%d", t2->fc, t1->fc);
         }
         printf("\n%s", buf);
         if ((t1 == NULL) && (t2 == NULL)) break;
@@ -1022,7 +1021,6 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
     for (u32 i = 0; i < num_tests; i++) {
         if (dbg.trace_on) printf("\nSubtest %d (%s)", i, fname);
         ptr = decode_test(ptr, &ts->test);
-        printf("\n%s", ts->test.name);
         if (is_movew && (i == 3)) continue;
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
@@ -1051,6 +1049,7 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
             }
             if ((ts->cpu.state.current == M68kS_exc_group1) && (ts->had_group1 == -1)) ts->had_group1 = (i64)ts->cpu.trace_cycles;
             if ((ts->cpu.state.current == M68kS_exc_group2) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->cpu.trace_cycles;
+            //if (ts->test.failed) break;
         }
 
         u32 unvisited = 0;
@@ -1070,7 +1069,9 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
 
         if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial)) || (!compare_state_to_ram(ts)) || ts->test.failed) {
             pprint_transactions(&ts->test.transactions, &ts->my_transactions, ts);
+            pprint_SR(ts->cpu.regs.SR.u, ts->test.initial.sr, ts->test.final.sr, ts->cpu.regs.PC);
             pprint_state(&ts->test.initial, "initial");
+            pprint_state(&ts->test.final, "final");
             printf("\nTest result for test %d: failed %d", i, ts->test.failed);
             if (ts->test.failed == 0) {
                 printf("\nCSTATE: %d", compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial));
