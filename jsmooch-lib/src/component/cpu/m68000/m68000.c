@@ -22,8 +22,6 @@ void M68k_init(struct M68k* this, u32 megadrive_bug)
     this->SPEC_RESET.disasm = &M68k_disasm_RESET_POWER;
     this->SPEC_RESET.exec = &M68k_ins_RESET_POWER;
     this->megadrive_bug = megadrive_bug;
-    this->pins.RESET = 0;
-    this->regs.next_SR_T = 0;
     jsm_string_init(&this->trace.str, 1000);
 }
 
@@ -76,6 +74,28 @@ static void M68k_trace_format(struct M68k* this)
     printf("\nM68k(%04llu)  %06x  %s", this->trace_cycles, this->regs.PC-4, this->trace.str.ptr);
 }
 
+void M68k_set_interrupt_level(struct M68k* this, u32 val)
+{
+    if ((this->pins.IPL < 7) && (val == 7)) {
+        this->state.nmi = 1;
+        // Signal it to happen!
+        this->state.exception.interrupt.on_next_instruction = 1;
+    }
+    this->pins.IPL = val;
+}
+
+static u32 M68k_process_interrupts(struct M68k* this)
+{
+    if (this->state.exception.interrupt.on_next_instruction) {
+        this->state.exception.interrupt.on_next_instruction = 0;
+        this->state.exception.interrupt.PC = this->regs.PC - 4;
+        this->state.exception.interrupt.TCU = 0;
+        this->state.current = M68kS_exc_interrupt;
+        return 1;
+    }
+    return 0;
+}
+
 void M68k_cycle(struct M68k* this)
 {
     //printf("\n\nNew cycle %d", this->trace_cycles);
@@ -84,25 +104,26 @@ void M68k_cycle(struct M68k* this)
         // only functions that cause "work" (i.e. cycles to pass) cause a quit.
         // so waiting for cycles, or doing bus transactions.
         switch(this->state.current) {
+            case M68kS_bus_cycle_iaq:
+                M68k_bus_cycle_iaq(this);
+                quit = 1;
+                break;
+            case M68kS_exc_interrupt: {
+                M68k_exc_interrupt(this);
+                break;
+            }
             case M68kS_exc_group0: {
                 M68k_exc_group0(this);
                 break; }
-            case M68kS_exc_group1: {
-                M68k_exc_group1(this);
-                break; }
-            case M68kS_exc_group2: {
-                M68k_exc_group2(this);
+            case M68kS_exc_group12: {
+                M68k_exc_group12(this);
                 break; }
             case M68kS_decode: {
-                if (this->state.exception.group1_pending) {
-                    M68k_start_group1_exception(this, this->state.exception.group1.vector, this->state.exception.group1.wait_cycles);
-                    continue;
-                }
-                this->state.exception.group1_pending = 0;
                 if (this->testing && this->trace_cycles > 0) { // FOR TESTING JSONs
                     this->ins_decoded = 1;
                     return;
                 }
+                if (M68k_process_interrupts(this)) break;
                 M68k_decode(this);
                 // This must be done AFTER interrupt, trace, etc. processing
                 this->regs.SR.T = this->regs.next_SR_T;
@@ -143,8 +164,11 @@ void M68k_cycle(struct M68k* this)
                 }
                 break; }
             case M68kS_stopped: {
-                printf("\nSTOPPED!");
-                quit = 1;
+                M68k_sample_interrupts(this);
+                if (this->state.exception.interrupt.on_next_instruction)
+                    this->state.current = M68kS_exec;
+                else
+                    quit = 1;
                 break; }
             default:
                 assert(1==0);

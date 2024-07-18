@@ -94,8 +94,9 @@ struct M68k_pins {
     u32 FC; // Function codes
     u32 Addr;
     u32 D;
-    u32 DTACK;
-    u32 AS; // Address Strobe
+    u32 DTACK; // Data ack. set externally
+    u32 VPA; // VPA vectored interrupt select
+    u32 AS; // Address Strobe. set interally
     u32 RW; // Read-write
     u32 IPL; // Interrupt request level
     u32 UDS;
@@ -118,9 +119,10 @@ enum M68k_states {
     M68kS_prefetch,
     M68kS_wait_cycles, // wait cycles to outside world
     M68kS_exc_group0,
-    M68kS_exc_group1,
-    M68kS_exc_group2,
+    M68kS_exc_group12,
     M68kS_stopped,
+    M68kS_bus_cycle_iaq,
+    M68kS_exc_interrupt,
 };
 
 struct M68k_ins_t;
@@ -137,6 +139,8 @@ struct M68k {
 
     struct {
         enum M68k_states current;
+        u32 nmi;
+        u32 internal_interrupt_level;
 
         struct {
             u32 TCU; // Subcycle of like rmw8 etc.
@@ -225,23 +229,34 @@ struct M68k {
                 u32 base_addr;
                 u32 SR;
                 u32 PC;
-            } group1;
+                u32 group;
+            } group12;
 
             struct {
-                u32 vector;
                 u32 TCU;
-                i32 wait_cycles;
 
+                // Indicates we have an interrupt to process
+                u32 on_next_instruction;
+
+                // For saving
                 u32 base_addr;
                 u32 SR;
                 u32 PC;
-            } group2;
+            } interrupt;
+
             u32 group1_pending;
         } exception;
 
         struct {
             enum M68k_states next_state;
         } stopped;
+
+        struct {
+            u32 ilevel;
+            u32 TCU;
+            u32 autovectored;
+            u32 vector_number;
+        } bus_cycle_iaq;
     } state;
 
     struct {

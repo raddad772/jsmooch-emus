@@ -230,27 +230,68 @@ void M68k_start_group0_exception(struct M68k* this, u32 vector_number, i32 wait_
     // tracing off
 }
 
-void M68k_start_group1_exception(struct M68k* this, u32 vector_number, i32 wait_cycles)
+void M68k_start_group12_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC, u32 groupnum)
 {
-    this->state.current = M68kS_exc_group1;
-    this->state.exception.group1.TCU = 0;
-    this->state.exception.group1.vector = vector_number;
-    //this->state.exception.group1.PC = PC;
-    M68k_set_SR(this, (M68k_get_SR(this) & 0b0000011100011111) | 0x2000, 1);
+    this->state.current = M68kS_exc_group12;
+    this->state.exception.group12.TCU = 0;
+    this->state.exception.group12.vector = vector_number;
+    this->state.exception.group12.PC = PC - 2;
+    this->state.exception.group12.group = groupnum;
 
     if (wait_cycles > 0)
-        M68k_start_wait(this, wait_cycles, M68kS_exc_group1);
+        M68k_start_wait(this, wait_cycles, M68kS_exc_group12);
+}
+
+// Bus cycle for acknowledging interrupt
+void M68k_bus_cycle_iaq(struct M68k* this)
+{
+    switch(this->state.bus_cycle_iaq.TCU) {
+        case 0:
+            this->state.bus_cycle_iaq.autovectored = 0;
+            this->pins.DTACK = 0;
+            this->pins.UDS = this->pins.LDS = 0;
+            this->pins.FC = 7;
+            this->pins.RW = 0;
+            this->pins.AS = this->pins.DTACK = 0;
+            break;
+        case 1:
+            this->pins.AS = 1;
+            this->state.bus_cycle_iaq.ilevel = this->pins.IPL;
+            // Set A1-3 to ilevel
+            this->pins.Addr = this->state.bus_cycle_iaq.ilevel << 1;
+            break;
+        case 2:
+            if (this->pins.DTACK) { // Vectored interrupt
+                this->state.bus_cycle_iaq.vector_number = this->pins.D;
+                break;
+            }
+            else if (this->pins.VPA) { // Autovectored interrupt
+                this->state.bus_cycle_iaq.vector_number = 0x18 + this->state.bus_cycle_iaq.ilevel;
+                this->state.bus_cycle_iaq.autovectored = 1;
+                break;
+            }
+            // Loop this over and over
+            this->state.bus_cycle_iaq.TCU--;
+            break;
+        case 3:
+            this->pins.FC = 0;
+            this->pins.AS = 0;
+            this->pins.DTACK = 0;
+            this->pins.VPA = 0;
+            this->state.current = M68kS_exc_interrupt;
+            break;
+    }
+    this->state.bus_cycle_iaq.TCU++;
 }
 
 void M68k_start_group2_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC)
 {
-    this->state.current = M68kS_exc_group2;
-    this->state.exception.group2.TCU = 0;
-    this->state.exception.group2.vector = vector_number;
-    this->state.exception.group2.PC = PC-2;
+    M68k_start_group12_exception(this, vector_number, wait_cycles, PC, 2);
+}
 
-    if (wait_cycles > 0)
-        M68k_start_wait(this, wait_cycles, M68kS_exc_group2);
+void M68k_start_group1_exception(struct M68k* this, u32 vector_number, i32 wait_cycles, u32 PC)
+{
+    M68k_start_group12_exception(this, vector_number, wait_cycles, PC, 1);
 }
 
 // this is duplicated in m68000_opcodes.c
@@ -908,75 +949,96 @@ void M68k_read_operands(struct M68k* this) {
     }
 }
 
-#define EXC_WRITE(val, n, desc) M68k_start_write(this, this->state.exception.group0.base_addr+n, val, 2, M68k_FC_supervisor_data, M68K_RW_ORDER_NORMAL, M68kS_exc_group0)
-
-void M68k_exc_group1(struct M68k* this)
+void M68k_sample_interrupts(struct M68k* this)
 {
-    switch(this->state.exception.group1.TCU) {
-        case 0: {
-            // SR
-            // PCH
-            // PCL
-            M68k_dec_SSP(this, 6);
-            this->state.exception.group1.base_addr = M68k_get_SSP(this);
-            this->state.exception.group1.PC = this->regs.PC;
-            this->state.exception.group1.SR = M68k_get_SR(this);
-            M68k_start_write(this, this->state.exception.group1.base_addr+4, this->state.exception.group1.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group1);
-            break;
-            case 1:
-                M68k_start_write(this, this->state.exception.group1.base_addr, this->state.exception.group1.SR, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group1);
-            break;
-            case 2:
-                M68k_start_write(this, this->state.exception.group1.base_addr+2, this->state.exception.group1.PC >> 16, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group1);
-            break;
-            case 3:
-                M68k_start_read(this, this->state.exception.group1.vector << 2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group1);
-            break;
-            case 4:
-                this->regs.PC = this->state.bus_cycle.data;
-            M68k_start_prefetch(this, 2, 1, M68kS_decode);
-            break;
-        }
-    }
-    this->state.exception.group1.TCU++;
+    if (this->pins.IPL <= this->regs.SR.I) return;
+    if (this->pins.IPL == 0) return;
+    this->state.exception.interrupt.on_next_instruction = 1;
 }
 
-void M68k_exc_group2(struct M68k* this)
+
+
+#define EXC_WRITE(val, n, desc) M68k_start_write(this, this->state.exception.group0.base_addr+n, val, 2, M68k_FC_supervisor_data, M68K_RW_ORDER_NORMAL, M68kS_exc_group0)
+
+void M68k_exc_interrupt(struct M68k* this)
 {
-    switch(this->state.exception.group2.TCU) {
+    switch(this->state.exception.interrupt.TCU) {
+        case 0:
+            M68k_dec_SSP(this, 6);
+            this->state.exception.interrupt.base_addr = M68k_get_SSP(this);
+            this->state.exception.interrupt.SR = M68k_get_SR(this);
+            this->state.exception.interrupt.PC = this->regs.PC - 4;
+            M68k_set_SR(this, (this->state.exception.interrupt.SR & 0x5FFF) | 0x2000, 1);
+            M68k_start_wait(this, 6, M68kS_exc_interrupt);
+            break;
+        case 1: // write SR
+            M68k_start_write(this, this->state.exception.interrupt.base_addr, this->state.exception.interrupt.SR, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_interrupt);
+            break;
+        case 2: // do interrupt acknowledge cycle
+            this->state.current = M68kS_bus_cycle_iaq;
+            this->state.bus_cycle_iaq.TCU = 0;
+            break;
+        case 3:
+            this->state.internal_interrupt_level = this->state.bus_cycle_iaq.ilevel;
+            M68k_start_wait(this, 4, M68kS_exec);
+            break;
+        case 4: // PC HI
+            M68k_start_write(this, this->state.exception.interrupt.base_addr + 4, this->state.exception.interrupt.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_interrupt);
+            break;
+        case 5: // PC LO
+            M68k_start_write(this, this->state.exception.interrupt.base_addr + 2, this->state.exception.interrupt.PC >> 16, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_interrupt);
+            break;
+        case 6: // Read vector
+            M68k_start_read(this, this->state.bus_cycle_iaq.vector_number << 2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_interrupt);
+            break;
+        case 7: // Prefetch
+            this->regs.PC = this->state.bus_cycle.data;
+            M68k_start_prefetch(this, 1, 1, M68kS_exc_interrupt);
+            break;
+        case 8: // Idle
+            M68k_start_wait(this, 2, M68kS_exc_interrupt);
+            break;
+        case 9: // Final prefetch before start executing
+            M68k_start_prefetch(this, 1, 1, M68kS_decode);
+            break;
+    }
+}
+
+void M68k_exc_group12(struct M68k* this)
+{
+    switch(this->state.exception.group12.TCU) {
         case 0: {
             // SR
             // PCH
             // PCL
             M68k_dec_SSP(this, 6);
-            this->state.exception.group2.base_addr = M68k_get_SSP(this);
-            this->state.exception.group2.SR = M68k_get_SR(this);
-            M68k_set_SR(this, (this->state.exception.group2.SR & 0x5FFF) | 0x2000, 1);
-            M68k_start_write(this, this->state.exception.group2.base_addr+4, this->state.exception.group2.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
+            this->state.exception.group12.base_addr = M68k_get_SSP(this);
+            this->state.exception.group12.SR = M68k_get_SR(this);
+            M68k_set_SR(this, (this->state.exception.group12.SR & 0x5FFF) | 0x2000, 1);
+            M68k_start_write(this, this->state.exception.group12.base_addr + 4, this->state.exception.group12.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group12);
             break;
         case 1:
-            M68k_start_write(this, this->state.exception.group2.base_addr, this->state.exception.group2.SR, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
+            M68k_start_write(this, this->state.exception.group12.base_addr, this->state.exception.group12.SR, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group12);
             break;
         case 2:
-            M68k_start_write(this, this->state.exception.group2.base_addr+2, this->state.exception.group2.PC >> 16, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
+            M68k_start_write(this, this->state.exception.group12.base_addr + 2, this->state.exception.group12.PC >> 16, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group12);
             break;
         case 3:
-            M68k_start_read(this, this->state.exception.group2.vector << 2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group2);
+            M68k_start_read(this, this->state.exception.group12.vector << 2, 4, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_group12);
             break;
         case 4:
             this->regs.PC = this->state.bus_cycle.data;
-            M68k_start_prefetch(this, 1, 1, M68kS_exc_group2);
+            M68k_start_prefetch(this, 1, 1, M68kS_exc_group12);
             break;
         case 5:
-            M68k_start_wait(this, 2, M68kS_exc_group2);
+            M68k_start_wait(this, 2, M68kS_exc_group12);
             break;
         case 6:
-            M68k_set_SR(this, (M68k_get_SR(this) & 0b0000011100011111) | 0x2000, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_decode);
             break;
         }
     }
-    this->state.exception.group2.TCU++;
+    this->state.exception.group12.TCU++;
 }
 
 void M68k_exc_group0(struct M68k* this)

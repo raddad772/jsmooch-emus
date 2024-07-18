@@ -302,7 +302,7 @@ static u32 compare_group12_frame(struct m68k_test_struct *ts, u32 base_addr)
         switch(i) {
             case 0:
                 /*if ((MAX(v1, v2) - MIN(v1, v2)) <= 4) {
-                    printf("\nPassing PC based on group2 disagreement");
+                    printf("\nPassing PC based on group12 disagreement");
                     return 1;
                 }*/
                 return v1 == v2;
@@ -315,12 +315,12 @@ static u32 compare_group12_frame(struct m68k_test_struct *ts, u32 base_addr)
 
 static u32 compare_group1_frame(struct m68k_test_struct *ts)
 {
-    return compare_group12_frame(ts, ts->cpu.state.exception.group1.base_addr);
+    return compare_group12_frame(ts, ts->cpu.state.exception.group12.base_addr);
 }
 
 static u32 compare_group2_frame(struct m68k_test_struct *ts)
 {
-    return compare_group12_frame(ts, ts->cpu.state.exception.group2.base_addr);
+    return compare_group12_frame(ts, ts->cpu.state.exception.group12.base_addr);
 }
 
 static u32 compare_group0_frame(struct m68k_test_struct *ts)
@@ -404,12 +404,12 @@ static u32 compare_state_to_ram(struct m68k_test_struct *ts)
         g0_max = ts->cpu.state.exception.group0.base_addr + 14;
     }
     if (ts->had_group1 != -1) {
-        g0_min = ts->cpu.state.exception.group1.base_addr;
-        g0_max = ts->cpu.state.exception.group1.base_addr + 6;
+        g0_min = ts->cpu.state.exception.group12.base_addr;
+        g0_max = ts->cpu.state.exception.group12.base_addr + 6;
     }
     if (ts->had_group2 != -1) {
-        g0_min = ts->cpu.state.exception.group2.base_addr;
-        g0_max = ts->cpu.state.exception.group2.base_addr + 6;
+        g0_min = ts->cpu.state.exception.group12.base_addr;
+        g0_max = ts->cpu.state.exception.group12.base_addr + 6;
     }
     for (u32 i = 0; i < s->num_RAM; i++) {
         u32 addr = s->RAM_pairs[i].addr;
@@ -793,8 +793,8 @@ static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_t
             ptr += dopppt(ptr, t2);
             if (test->had_group2 != -1) {
                 u32 my_addr = t2->addr_bus & 0xFFFFFE;
-                u32 g0_min = test->cpu.state.exception.group2.base_addr;
-                u32 g0_max = test->cpu.state.exception.group2.base_addr + 6;
+                u32 g0_min = test->cpu.state.exception.group12.base_addr;
+                u32 g0_max = test->cpu.state.exception.group12.base_addr + 6;
                 u32 offset = my_addr - g0_min;
 #define SC(a, x) case a: ptr += sprintf(ptr, "  <g2 " x "> +%d", a); break
                 if (offset < 6) {
@@ -1047,8 +1047,7 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
             if ((ts->cpu.state.current == M68kS_exc_group0) && (ts->had_group0 == -1)) {
                 ts->had_group0 = (i64)ts->cpu.trace_cycles;
             }
-            if ((ts->cpu.state.current == M68kS_exc_group1) && (ts->had_group1 == -1)) ts->had_group1 = (i64)ts->cpu.trace_cycles;
-            if ((ts->cpu.state.current == M68kS_exc_group2) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->cpu.trace_cycles;
+            if ((ts->cpu.state.current == M68kS_exc_group12) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->cpu.trace_cycles;
             //if (ts->test.failed) break;
         }
 
