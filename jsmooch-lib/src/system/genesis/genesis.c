@@ -9,6 +9,7 @@
 #include "genesis.h"
 #include "genesis_bus.h"
 #include "genesis_cart.h"
+#include "genesis_vdp.h"
 
 #define JTHIS struct genesis* this = (struct genesis*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -29,6 +30,19 @@ static void genesisJ_enable_tracing(JSM);
 static void genesisJ_disable_tracing(JSM);
 static void genesisJ_describe_io(JSM, struct cvec* IOs);
 
+/*
+    u32 (*read_trace)(void *,u32);
+    u32 (*read_trace_m68k)(void *,u32,u32,u32);
+ */
+u32 DUMMY_READ(void *e, u32 a) {
+    return 0;
+}
+
+u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
+    struct genesis* this = (struct genesis*)ptr;
+    return genesis_mainbus_read(this, addr, UDS, LDS, this->m68k.pins.D, 0);
+}
+
 void genesis_new(JSM)
 {
     struct genesis* this = (struct genesis*)malloc(sizeof(struct genesis));
@@ -36,6 +50,14 @@ void genesis_new(JSM)
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock);
     genesis_cart_init(&this->cart);
+    ym2612_init(&this->ym2612);
+    SN76489_init(&this->psg);
+
+    struct jsm_debug_read_trace dt;
+    dt.read_trace = &DUMMY_READ;
+    dt.read_trace_m68k = &read_trace_m68k;
+    dt.ptr = (void*)this;
+    M68k_setup_tracing(&this->m68k, &dt);
 
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
@@ -63,6 +85,7 @@ void genesis_delete(JSM) {
     JTHIS;
 
     M68k_delete(&this->m68k);
+    ym2612_delete(&this->ym2612);
 
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
@@ -95,8 +118,6 @@ static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sra
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
     genesis_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
-    //genesis_mapper_set_which(&this->bus, this->cart.header.mapper_number);
-    //this->bus.set_cart(this, &this->cart);
     genesisJ_reset(jsm);
 }
 
@@ -188,7 +209,10 @@ void genesisJ_reset(JSM)
     JTHIS;
     Z80_reset(&this->z80);
     M68k_reset(&this->m68k);
+    SN76489_reset(&this->psg);
+    ym2612_reset(&this->ym2612);
     genesis_clock_reset(&this->clock);
+    printf("\nGenesis reset!");
 }
 
 
@@ -240,10 +264,12 @@ u32 genesisJ_finish_scanline(JSM)
 u32 genesisJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
+    this->clock.mem_break = 0;
     this->jsm.cycles_left += howmany;
     while (this->jsm.cycles_left >= 0) {
         i32 biggest_step = MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock);
         this->jsm.cycles_left -= biggest_step;
+        this->clock.master_cycle_count++;
         this->clock.m68k.cycles_til_clock -= biggest_step;
         this->clock.z80.cycles_til_clock -= biggest_step;
         this->clock.vdp.cycles_til_clock -= biggest_step;
@@ -257,7 +283,7 @@ u32 genesisJ_step_master(JSM, u32 howmany)
         }
         if (this->clock.vdp.cycles_til_clock <= 0) {
             this->clock.vdp.cycles_til_clock += this->clock.vdp.clock_divisor;
-            genesis_cycle_vdp(this);
+            genesis_VDP_cycle(this);
         }
 
         if (dbg.do_break) break;

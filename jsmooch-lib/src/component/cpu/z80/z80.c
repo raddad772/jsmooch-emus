@@ -244,8 +244,6 @@ void Z80_ins_cycles(struct Z80* this)
         // data latch T2
         case 0: // already handled by fetch of next instruction starting
             Z80_set_pins_opcode(this);
-            //this->regs.rprefix = Z80P_HL;
-            //this->regs.prefix = 0;
             break;
         case 1: // T1 MREQ, RD
             if (this->regs.HALT) { this->regs.TCU = 0; break; }
@@ -260,8 +258,6 @@ void Z80_ins_cycles(struct Z80* this)
                     Z80_set_instruction(this, Z80_S_IRQ);
                     if (dbg.brk_on_NMIRQ) {
                         dbg_break();
-                        //console.log('NMI', this->trace_cycles);
-                        //dbg.break(D_RESOURCE_TYPES.Z80);
                     }
                 } else if (this->IRQ_pending && this->regs.IFF1 && (!(this->regs.EI))) {
                     this->pins.D = 0xFF;
@@ -271,7 +267,6 @@ void Z80_ins_cycles(struct Z80* this)
                     this->pins.D = 0xFF;
                     Z80_set_instruction(this, Z80_S_IRQ);
                     if (dbg.brk_on_NMIRQ) {
-                        //console.log(this->trace_cycles);
                         dbg_break();
                     }
                 }
@@ -286,7 +281,6 @@ void Z80_ins_cycles(struct Z80* this)
             this->pins.Addr = (this->regs.I << 8) | this->regs.R;
             break;
         case 3: // T3 not much here
-            //this->pins.MRQ = 0;
             // If we need to fetch another, start that and set TCU back to 1
             Z80_regs_inc_R(&this->regs);
             if (this->regs.t[0] == 0xDD) { this->regs.prefix = 0xDD; this->regs.rprefix = Z80P_IX; this->regs.TCU = -1; break; }

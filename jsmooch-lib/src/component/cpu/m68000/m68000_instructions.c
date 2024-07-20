@@ -2990,6 +2990,7 @@ INS_END
 
 M68KINS(STOP)
         STEP0
+            printf("\nSTOP!");
             if (!this->regs.SR.S) {
                 M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-2);
                 return;

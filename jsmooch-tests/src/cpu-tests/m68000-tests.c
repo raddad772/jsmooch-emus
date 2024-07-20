@@ -728,7 +728,7 @@ static void cycle_cpu(struct m68k_test_struct *ts)
         if (ts->cpu.pins.RW) { // Write!
             do_test_write(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.D, ts->cpu.pins.FC);
         }
-        else { // if (!ts->cpu.pins.DTACK) { // Read! Happens on cycle 1 of transactions
+        else {
             ts->cpu.pins.D = do_test_read(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.FC);
         }
     }

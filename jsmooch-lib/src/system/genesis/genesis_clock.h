@@ -12,8 +12,12 @@ struct genesis_clock {
     u64 master_frame;
     u64 frames_since_reset;
 
+    u32 mem_break;
+
     struct {
-        i32 sx, sy;
+        i32 hcount, vcount;
+        u32 hblank, vblank;
+        u32 field;
         i32 clock_divisor;
         i32 cycles_til_clock;
     } vdp;

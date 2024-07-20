@@ -11,9 +11,9 @@
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
 
-//#define NEWSYS
-#define DO_DREAMCAST
-#define SIDELOAD
+#define NEWSYS
+//#define DO_DREAMCAST
+//#define SIDELOAD
 
 struct system_io {
     struct CDKRKR {
@@ -520,8 +520,15 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef NEWSYS
-    sys->step_master(sys, 10); //
-
+    float start = SDL_GetTicks();
+    sys->step_master(sys, 2 * 53000000); //
+    float end = SDL_GetTicks();
+    printf("\nTicks taken: %f", end - start);
+    return 0;
+    dbg_unbreak();
+    dbg_enable_trace();
+    sys->step_master(sys, 500);
+    return 0;
 #endif
     //SDL_Log("TIME! %f", r);
     u32 quit = 0;

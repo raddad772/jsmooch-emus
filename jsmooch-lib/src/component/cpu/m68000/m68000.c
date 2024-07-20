@@ -66,20 +66,107 @@ void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t)
     if (immediate_t || (this->regs.next_SR_T == 0)) this->regs.SR.T = this->regs.next_SR_T;
 }
 
+static void pprint_ea(struct M68k* this, u32 opnum)
+{
+    struct M68k_ins_t *ins = this->ins;
+    struct M68k_EA *ea = &ins->ea[opnum];
+    u32 kind = 0; // 0 = NONE, 1 = addr reg, 2 = data reg, 3 = EA
+    if (opnum == 0) {
+        switch(ins->operand_mode) {
+            case M68k_OM_none:
+                break;
+            case M68k_OM_ea_r:
+            case M68k_OM_ea:
+            case M68k_OM_ea_ea:
+                if (ea->kind == M68k_AM_data_register_direct) kind = 2;
+                else if (ea->kind == M68k_AM_address_register_indirect) kind = 1;
+                else kind = 3;
+                break;
+            case M68k_OM_r:
+            case M68k_OM_r_ea:
+            case M68k_OM_r_r:
+                if (ea->kind == M68k_AM_data_register_direct)
+                    kind = 2;
+                else
+                    kind = 1;
+                break;
+            case M68k_OM_qimm_qimm:
+            case M68k_OM_qimm_r:
+                break;
+            default:
+                printf("\nFORGOT DISASM1 FOR OM %d", ins->operand_mode);
+                break;
+        }
+    }
+    else {
+        switch(ins->operand_mode) {
+            case M68k_OM_r:
+            case M68k_OM_ea:
+            case M68k_OM_none:
+                break;
+            case M68k_OM_r_r:
+            case M68k_OM_ea_r:
+            case M68k_OM_qimm_r:
+                if (ea->kind == M68k_AM_data_register_direct)
+                    kind = 2;
+                else
+                    kind = 1;
+                break;
+            case M68k_OM_r_ea:
+            case M68k_OM_qimm_ea:
+            case M68k_OM_ea_ea:
+                if (ea->kind == M68k_AM_data_register_direct) kind = 2;
+                else if (ea->kind == M68k_AM_address_register_indirect) kind = 1;
+                else kind = 3;
+                break;
+            case M68k_OM_qimm_qimm:
+                break;
+            default:
+                printf("\nFORGOT DISASM2 FOR OM %d", ins->operand_mode);
+                break;
+        }
+    }
+    if (kind == 3) {
+        kind = 0;
+        switch(ea->kind) {
+            case M68k_AM_address_register_indirect_with_predecrement:
+            case M68k_AM_address_register_indirect:
+            case M68k_AM_address_register_indirect_with_postincrement:
+            case M68k_AM_address_register_indirect_with_displacement:
+            case M68k_AM_address_register_indirect_with_index:
+            case M68k_AM_address_register_direct:
+                kind = 1; // addr reg
+                break;
+        }
+    }
+    switch(kind) {
+        case 0:
+            break;
+        case 1: // addr reg
+            printf("A%d:%08x", ea->reg, this->regs.A[ea->reg]);
+            break;
+        case 2: // data reg
+            printf("D%d:%08x", ea->reg, this->regs.D[ea->reg]);
+    }
+    if ((kind != 0) && (opnum == 0)) printf("  ");
+}
 
 static void M68k_trace_format(struct M68k* this)
 {
     jsm_string_quickempty(&this->trace.str);
     M68k_disassemble(this->regs.PC-2, this->regs.IR, &this->trace.strct, &this->trace.str);
-    printf("\nM68k(%04llu)  %06x  %s", this->trace_cycles, this->regs.PC-4, this->trace.str.ptr);
+    int a = printf("\nM68k(%04llu)  %06x  %s", this->trace_cycles, this->regs.PC-4, this->trace.str.ptr);
+    if (a < 45) printf("%*s", 45 - a, "");
+    char ad[2][9] = { {}, {} };
+    printf("SR:%04x  ", this->regs.SR.u);
+    pprint_ea(this, 0);
+    pprint_ea(this, 1);
 }
 
 void M68k_set_interrupt_level(struct M68k* this, u32 val)
 {
     if ((this->pins.IPL < 7) && (val == 7)) {
         this->state.nmi = 1;
-        // Signal it to happen!
-        this->state.exception.interrupt.on_next_instruction = 1;
     }
     this->pins.IPL = val;
 }
@@ -98,7 +185,6 @@ static u32 M68k_process_interrupts(struct M68k* this)
 
 void M68k_cycle(struct M68k* this)
 {
-    //printf("\n\nNew cycle %d", this->trace_cycles);
     u32 quit = 0;
     while (!quit) {
         // only functions that cause "work" (i.e. cycles to pass) cause a quit.

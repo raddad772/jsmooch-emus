@@ -17,7 +17,7 @@ void genesis_clock_init(struct genesis_clock* this)
 void genesis_clock_reset(struct genesis_clock* this)
 {
     this->master_frame = 0;
-    this->vdp.sx = this->vdp.sy = 0;
+    this->vdp.hcount = this->vdp.vcount = 0;
 }
 
 void genesis_clock_ntsc(struct genesis_clock* this)

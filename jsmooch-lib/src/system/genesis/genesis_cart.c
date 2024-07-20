@@ -57,14 +57,15 @@ void genesis_cart_delete(struct genesis_cart *this)
     buf_delete(&this->RAM);
 }
 
+static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
+#define UDSMASK UDS_mask[((UDS) << 1) | (LDS)]
+
 // Carts are read in 16 bits at a time
-u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 UDS, u32 LDS)
+u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect)
 {
     u8* ptr = &((u8 *)this->ROM.ptr)[addr & this->ROM_mask];
     // Carts are big-endian, 16-bit
-    if (UDS && LDS) return (ptr[0] << 8) | ptr[1];
-    if (UDS) return ptr[0] << 8;
-    return ptr[1];
+    return ((ptr[0] << 8) | ptr[1]) & mask;
 }
 
 u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz)
@@ -113,7 +114,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
     this->header.rom_checksum = bswap_16(*(u16 *)tptr);
     tptr += 2;
 
-#define CK(w, k) this->header.devices_supported[i] = sega_cart_device_##k; break
+#define CK(w, k) case w: this->header.devices_supported[i] = sega_cart_device_##k; break
     char *cptr = tptr;
     for (u32 i = 0; i < 16; i++) {
         switch(cptr[i]) {
@@ -136,6 +137,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
             CK('D', download);
             default:
                 printf("\nUnknown device %c", cptr[i]);
+                break;
             case ' ':
                 this->header.devices_supported[i] = sega_cart_device_none;
                 break;
@@ -257,9 +259,9 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
         }
     }
 
-    printf("\nCOPYRIGHT %s", this->header.copyright);
-    printf("\nTITLE %s", this->header.title_domestic);
-    printf("\nROM END %08x", this->header.rom_addr_end);
+    printf("\nCOPYRIGHT: %s", this->header.copyright);
+    printf("\nTITLE: %s", this->header.title_domestic);
+    printf("\nROM END: %08x", this->header.rom_addr_end);
 
     //bswap_16_array(&this->ROM.ptr, this->ROM.size);
     return 1;

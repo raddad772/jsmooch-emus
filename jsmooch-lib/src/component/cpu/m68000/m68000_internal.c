@@ -951,8 +951,11 @@ void M68k_read_operands(struct M68k* this) {
 
 void M68k_sample_interrupts(struct M68k* this)
 {
-    if (this->pins.IPL <= this->regs.SR.I) return;
-    if (this->pins.IPL == 0) return;
+    if (!this->state.nmi) {
+        if (this->pins.IPL <= this->regs.SR.I) return;
+        if (this->pins.IPL == 0) return;
+    }
+    this->state.nmi = 0;
     this->state.exception.interrupt.on_next_instruction = 1;
 }
 

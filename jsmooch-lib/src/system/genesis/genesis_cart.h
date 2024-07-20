@@ -21,7 +21,6 @@ enum genesis_cart_kinds {
 };
 
 enum sega_cart_devices_supported {
-    sega_cart_device_none,
     sega_cart_device_cnt_3button,
     sega_cart_device_cnt_6button,
     sega_cart_device_cnt_master_system,
@@ -39,6 +38,7 @@ enum sega_cart_devices_supported {
     sega_cart_device_segacd,
     sega_cart_device_floppy,
     sega_cart_device_download,
+    sega_cart_device_none,
 };
 
 
@@ -91,7 +91,7 @@ struct genesis_cart {
 
 void genesis_cart_init(struct genesis_cart* this);
 void genesis_cart_delete(struct genesis_cart *this);
-u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 UDS, u32 LDS);
+u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect);
 
 u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz);
 
