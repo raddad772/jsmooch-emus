@@ -522,12 +522,16 @@ int main(int argc, char** argv)
 #ifdef NEWSYS
     float start = SDL_GetTicks();
     sys->step_master(sys, 2 * 53000000); //
-    float end = SDL_GetTicks();
-    printf("\nTicks taken: %f", end - start);
-    return 0;
+    //sys->step_master(sys, 18323050);
+    //sys->step_master(sys, 393260);
+    /*float end = SDL_GetTicks();
+    printf("\nTicks taken: %f", end - start);*/
+    //return 0;
+    //dbg_unbreak();
     dbg_unbreak();
     dbg_enable_trace();
     sys->step_master(sys, 500);
+    dbg_flush();
     return 0;
 #endif
     //SDL_Log("TIME! %f", r);

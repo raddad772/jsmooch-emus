@@ -137,9 +137,10 @@ void Z80_init(struct Z80* this, u32 CMOS)
 
 #define THIS struct Z80* this
 
-void Z80_setup_tracing(struct Z80* this, struct jsm_debug_read_trace* dbg_read_trace)
+void Z80_setup_tracing(struct Z80* this, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer)
 {
     jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
+    this->trace_cycles_ptr = trace_cycle_pointer;
 }
 
 void Z80_enable_tracing(struct Z80* this)
@@ -379,15 +380,15 @@ void Z80_trace_format(struct Z80* this)
 {
     char t[250];
     if (this->regs.IR == 0x101) {
-        dbg_printf("\nZ80(%06llu)          RESET", this->trace_cycles);
+        dbg_printf(DBGC_Z80 "\nZ80    (%06llu)           RESET" DBGC_RST, *this->trace_cycles_ptr);
         return;
     }
     //Z80(   931)    008C  LDIR          TCU:1 PC:008E  A:00 B:1F C:F5 D:C0 E:0B H:C0 L:0A SP:DFF0 IX:0000 IY:0000 I:00 R:5E WZ:008D F:sZyhxPnc
     u32 b = this->read_trace.read_trace(this->read_trace.ptr, this->PCO);
     Z80_disassemble(this->PCO, b, &this->read_trace, t);
-    dbg_printf("\nZ80(%06llu)    %04x  %s", this->trace_cycles, this->PCO, t);
-    dbg_seek_in_line(35);
-    dbg_printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d",
+    dbg_printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s", *this->trace_cycles_ptr, this->PCO, t);
+    dbg_seek_in_line(TRACE_BRK_POS);
+    dbg_printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,
                this->PCO, this->regs.A, this->regs.B, this->regs.C, this->regs.D, this->regs.E,
                this->regs.H, this->regs.L, this->regs.SP, this->regs.IX, this->regs.IY, this->regs.I, this->regs.R,
                this->regs.WZ, Z80_regs_F_getbyte(&this->regs.F), this->regs.TCU);
@@ -395,7 +396,7 @@ void Z80_trace_format(struct Z80* this)
 
 void Z80_lycoder_print(struct Z80* this)
 {
-    dbg_printf("\n%08d %04X %02X%02X %02X%02X %02X%02X %02X%02X %04X %04X", this->trace_cycles, this->regs.PC, this->regs.A,
+    dbg_printf("\n%08d %04X %02X%02X %02X%02X %02X%02X %02X%02X %04X %04X", *this->trace_cycles_ptr, this->regs.PC, this->regs.A,
                Z80_regs_F_getbyte(&this->regs.F), this->regs.B, this->regs.C, this->regs.D, this->regs.E,
                this->regs.H, this->regs.L, this->regs.IX, this->regs.IY);
 }

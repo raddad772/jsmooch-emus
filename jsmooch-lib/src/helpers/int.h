@@ -1,7 +1,6 @@
 #ifndef _JSMOOCH_INT_H
 #define _JSMOOCH_INT_H
 
-
 #define COMPILER_CLANG 3
 #define BUILD_COMPILER COMPILER_CLANG
 #define CPU_ARM64 5

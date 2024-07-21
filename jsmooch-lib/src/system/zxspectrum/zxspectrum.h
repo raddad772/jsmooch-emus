@@ -31,6 +31,8 @@ struct ZXSpectrum {
         i32 ula_x, ula_y;
         u32 ula_frame_cycle;
 
+        u64 master_cycles;
+
         struct {
             u32 bit;
             u32 count;

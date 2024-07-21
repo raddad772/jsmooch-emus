@@ -131,9 +131,9 @@ struct M68k {
     struct M68k_regs regs;
     struct M68k_pins pins;
 
-    u64 trace_cycles;
     u32 ins_decoded;
     u32 testing;
+    u64 *trace_cycles;
 
     u32 megadrive_bug;
 
@@ -273,8 +273,9 @@ void M68k_cycle(struct M68k* this);
 void M68k_init(struct M68k* this, u32 megadrive_bug);
 void M68k_delete(struct M68k* this);
 void M68k_reset(struct M68k* this);
-void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct);
+void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
 void M68k_unstop(struct M68k* this);
+void M68k_set_interrupt_level(struct M68k* this, u32 val);
 
 void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t);
 u32 M68k_get_SR(struct M68k* this);

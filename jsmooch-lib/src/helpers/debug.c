@@ -43,18 +43,18 @@ void dbg_clear_msg()
     dbg.msg_last_newline = dbg.msg.cur;
 }
 
-void dbg_printf(char *format, ...)
+int dbg_printf(char *format, ...)
 {
-    if (!dbg.trace_on) return;
+    if (!dbg.trace_on) return 0;
     struct jsm_string*this = &dbg.msg;
     // do jsm_sprintf, basically, minus one line
     if (this->ptr == NULL) {
         assert(1==0);
-        return;
+        return 0;
     }
     va_list va;
     va_start(va, format);
-    vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
+    int a = vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
     va_end(va);
 
     // Scan for newlines
@@ -66,6 +66,7 @@ void dbg_printf(char *format, ...)
     if ((this->allocated_len - (this->cur - this->ptr)) < 1000) {
         dbg_flush();
     }
+    return a;
 }
 
 void dbg_seek_in_line(u32 pos)

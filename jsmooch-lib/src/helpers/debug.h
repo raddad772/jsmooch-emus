@@ -21,7 +21,7 @@
 //#define LYCODER        // lycoder-format traces for easy winmerge
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 //#define DUMP_LAST_TRACES_ON_BREAK
-//#define TRACE_COLORS
+#define TRACE_COLORS
 //#define SH4_TRACE_INS_FETCH
 //#define TEST_SH4   // this one disables certain TMU functionality due to it causing invonvenient issues with sh4 json tests
 //#define SH4_IRQ_DBG
@@ -38,7 +38,7 @@
 #endif
 
 #define SH4_DBG_SUPPORT
-//#define Z80_DBG_SUPPORT
+#define Z80_DBG_SUPPORT
 #define M6502_DBG_SUPPORT
 #define SM83_DBG_SUPPORT
 
@@ -86,7 +86,7 @@ struct jsm_debug_read_trace {
 
 extern struct jsm_debug_struct dbg;
 
-void dbg_printf(char *format, ...);
+int dbg_printf(char *format, ...);
 void dbg_seek_in_line(u32 pos);
 void dbg_flush();
 void dbg_clear_msg();
@@ -150,7 +150,11 @@ void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, struct jsm_debug_read
 #endif
 
 #define DBGC_TRACE DBGC_RST
-#define DBGC_READ DBGC_GREEN
-#define DBGC_WRITE DBGC_RED
+#define DBGC_READ DBGC_YELLOW
+#define DBGC_WRITE DBGC_CYAN
+#define DBGC_M68K DBGC_GREEN
+#define DBGC_Z80 DBGC_RED
+
+#define TRACE_BRK_POS 55
 
 #endif //JSMOOCH_EMUS_DEBUG_H

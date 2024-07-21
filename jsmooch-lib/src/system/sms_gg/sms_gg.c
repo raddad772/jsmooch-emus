@@ -53,7 +53,7 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     struct jsm_debug_read_trace a;
     a.ptr = (void *)this;
     a.read_trace = &SMSGG_CPU_read_trace;
-    Z80_setup_tracing(&this->cpu, &a);
+    Z80_setup_tracing(&this->cpu, &a, &this->clock.master_cycles);
 
     // bus init
     SMSGG_gamepad_init(&this->io.controllerA, variant, 1);

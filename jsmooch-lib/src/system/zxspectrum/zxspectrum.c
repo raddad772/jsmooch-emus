@@ -50,7 +50,7 @@ void ZXSpectrum_new(JSM)
     struct jsm_debug_read_trace a;
     a.ptr = (void *)this;
     a.read_trace = &ZXSpectrum_CPU_read_trace;
-    Z80_setup_tracing(&this->cpu, &a);
+    Z80_setup_tracing(&this->cpu, &a, &this->clock.master_cycles);
 
     Z80_reset(&this->cpu);
 

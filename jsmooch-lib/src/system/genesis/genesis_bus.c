@@ -17,14 +17,13 @@
 static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
 #define UDSMASK UDS_mask[((UDS) << 1) | (LDS)]
 
-static u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect);
 static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val);
 
 
 void gen_test_dbg_break(struct genesis* this)
 {
     this->clock.mem_break++;
-    if (this->clock.mem_break > 10) {
+    if (this->clock.mem_break > 100) {
         dbg_break();
         printf("\nBREAK AT CYCLE %lld", this->clock.master_cycle_count);
     }
@@ -42,6 +41,8 @@ void genesis_z80_reset_line(struct genesis* this, u32 enabled)
         ym2612_reset(&this->ym2612);
     }
     this->io.z80.reset_line = enabled;
+    printf("\nZ80 RESET LINE SET TO %d cyc:%lld", this->io.z80.reset_line, this->clock.master_cycle_count);
+    if (!this->io.z80.reset_line) dbg_break();
 }
 
 static u16 read_version_register(struct genesis* this, u32 mask)
@@ -61,6 +62,8 @@ void genesis_mainbus_write_a1k(struct genesis* this, u32 addr, u16 val, u16 mask
     switch(addr) {
         case 0xA11010: // Z80 BUSREQ
             this->io.z80.bus_request = ((val >> 8) & 1);
+            if (this->io.z80.bus_request) if (this->io.z80.reset_line) this->io.z80.bus_ack = 1;
+            printf("\nZ80 BUSREQ:%d cycle:%lld", this->io.z80.bus_request, this->clock.master_cycle_count);
             break;
         case 0xA11200: // Z80 reset line
             // 1 = no reset. 0 = reset. so invert it
@@ -93,7 +96,6 @@ u16 genesis_mainbus_read_a1k(struct genesis* this, u32 addr, u16 old, u16 mask, 
          *   1         0       0
          */
             return (!(this->io.z80.bus_ack && !this->io.z80.reset_line)) << 8;
-
     }
 
     gen_test_dbg_break(this);
@@ -109,8 +111,12 @@ u16 genesis_mainbus_read(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 o
         return genesis_cart_read(&this->cart, addr, mask, has_effect);
     // $A00000	$A0FFFF, audio RAM
     if ((addr >= 0xA00000) && (addr < 0xA10000)) {
-        if (UDS) v |= genesis_z80_bus_read(this, addr & 0x7FFE, old >> 8, has_effect) << 8;
-        if (LDS) v |= genesis_z80_bus_read(this, (addr & 0x7FFE) | 1, old & 0xFF, has_effect);
+        if (UDS) {
+            v = genesis_z80_bus_read(this, addr & 0x7FFE, old >> 8, has_effect) << 8;
+            if (LDS) v |= (v >> 8);
+        }
+        else
+            v = genesis_z80_bus_read(this, (addr & 0x7FFE) | 1, old & 0xFF, has_effect);
         return v;
     }
     if ((addr >= 0xA10000) && (addr < 0xA12000)) {
@@ -122,8 +128,7 @@ u16 genesis_mainbus_read(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 o
     if (addr >= 0xFF0000)
         return this->RAM[(addr & 0xFFFF)>>1] & mask;
 
-
-    printf("\nWARNING BAD MAIN WRITE AT %06x %d%d cycle:%lld", addr, UDS, LDS, this->clock.master_cycle_count);
+    printf("\nWARNING BAD MAIN READ AT %06x %d%d cycle:%lld", addr, UDS, LDS, this->clock.master_cycle_count);
     gen_test_dbg_break(this);
     return old;
 }
@@ -138,7 +143,7 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
 
     if ((addr >= 0xA00000) && (addr < 0xA10000)) {
         if (UDS) genesis_z80_bus_write(this, addr & 0x7FFE, val >> 8);
-        if (LDS) genesis_z80_bus_write(this, (addr & 0x7FFE) | 1, val & 0xFF);
+        else genesis_z80_bus_write(this, (addr & 0x7FFE) | 1, val & 0xFF);
         return;
     }
 
@@ -155,25 +160,25 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
         this->RAM[addr] = (this->RAM[addr] & ~mask) | (val & mask);
         return;
     }
-    printf("\nWARNING BAD MAIN WRITE AT %06x: %04x %d%d cycle:%lld", addr, val, UDS, LDS, this->clock.master_cycle_count);
+    printf("\nWARNING BAD MAIN WRITE1 AT %06x: %04x %d%d cycle:%lld", addr, val, UDS, LDS, this->clock.master_cycle_count);
     gen_test_dbg_break(this);
 }
 
 static void genesis_z80_mainbus_write(struct genesis* this, u32 addr, u8 val)
 {
-    printf("\nZ80 attempted write to mainbus at %06x on cycle %lld", addr, this->clock.master_cycle_count);
+    printf("\nZ80 attempted write to mainbus at %06x on cycle %lld BAR:%08x", addr, this->clock.master_cycle_count, this->io.z80.bank_address_register);
 }
 
 static u8 genesis_z80_mainbus_read(struct genesis* this, u32 addr, u8 old, u32 has_effect)
 {
-    return genesis_mainbus_read(this, ((u32)(addr & 0xFFFE) | this->io.z80_bank_address_register), (addr & 1) ^ 1, addr & 1, 0, 1) >> (((addr & 1) ^ 1) * 8);
+    return genesis_mainbus_read(this, ((u32)(addr & 0xFFFE) | this->io.z80.bank_address_register), (addr & 1) ^ 1, addr & 1, 0, 1) >> (((addr & 1) ^ 1) * 8);
 }
 
 static u8 genesis_z80_ym2612_read(struct genesis* this, u32 addr, u8 old, u32 has_effect) {
     return ym2612_read(&this->ym2612, addr & 3, old, has_effect);
 }
 
-static u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect)
+u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect)
 {
     if (addr < 0x2000)
         return this->ARAM[addr];
@@ -227,6 +232,7 @@ static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val)
 
 void genesis_cycle_m68k(struct genesis* this)
 {
+
     M68k_cycle(&this->m68k);
     if (this->m68k.pins.FC == 7) {
         // Auto-vector interrupts!
@@ -237,21 +243,39 @@ void genesis_cycle_m68k(struct genesis* this)
         if (!this->m68k.pins.RW) { // read
             this->io.m68k.open_bus_data = this->m68k.pins.D = genesis_mainbus_read(this, this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->io.m68k.open_bus_data, 1);
             this->m68k.pins.DTACK = 1;
+            if (dbg.trace_on) {
+                dbg_printf(DBGC_READ "\nr.M68k(%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycle_count, this->m68k.pins.Addr, this->m68k.pins.D);
+            }
         }
         else { // write
             genesis_mainbus_write(this, this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
-            this->m68k.pins.DTACK = 1;
+            this->m68k.pins.DTACK = !this->io.m68k.VDP_FIFO_stall;
+            if (dbg.trace_on) {
+                dbg_printf(DBGC_WRITE "\nw.M68k(%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycle_count, this->m68k.pins.Addr, this->m68k.pins.D);
+            }
         }
     }
 }
 
-void genesis_m68k_vblank(struct genesis* this, u32 level)
+void genesis_m68k_line_count_irq(struct genesis* this, u32 level)
 {
+    // TODO: multiplex/priority encode these
+    if (level) printf("\nM68k line count irq! cycle:%lld", this->clock.master_cycle_count);
+    if ((this->m68k.pins.IPL == 4) || (this->m68k.pins.IPL == 0))
+        M68k_set_interrupt_level(&this->m68k, 4 * level);
+}
 
+void genesis_m68k_vblank_irq(struct genesis* this, u32 level)
+{
+    // TODO: multiplex/priority encode these
+    //if (level) printf("\nM68K vblank irq! cycle:%lld", this->clock.master_cycle_count);
+    if ((this->m68k.pins.IPL == 6) || (this->m68k.pins.IPL == 0))
+        M68k_set_interrupt_level(&this->m68k, 6 * level);
 }
 
 void genesis_z80_interrupt(struct genesis* this, u32 level)
 {
+    //if ((this->z80.pins.IRQ == 0) && level) printf("\nZ80 IRQ PIN SET!");
     this->z80.pins.IRQ = level;
 }
 
@@ -268,6 +292,9 @@ void genesis_cycle_z80(struct genesis* this)
     if (this->z80.pins.RD) {
         if (this->z80.pins.MRQ) {
             this->z80.pins.D = genesis_z80_bus_read(this, this->z80.pins.Addr, this->z80.pins.D, 1);
+            if (dbg.trace_on) {
+                dbg_printf(DBGC_READ "\nr.Z80 (%lld)   %06x  v:%02x" DBGC_RST, this->clock.master_cycle_count, this->z80.pins.Addr, this->z80.pins.D);
+            }
         }
         else if (this->z80.pins.IO) {
             // All Z80 IO requests return 0xFF
@@ -278,6 +305,9 @@ void genesis_cycle_z80(struct genesis* this)
         if (this->z80.pins.MRQ) {
             // All Z80 IO requests are ignored
             genesis_z80_bus_write(this, this->z80.pins.Addr, this->z80.pins.D);
+            if (dbg.trace_on) {
+                dbg_printf(DBGC_WRITE "\nw.Z80 (%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycle_count, this->z80.pins.Addr, this->z80.pins.D);
+            }
         }
     }
     // Bus request/ack at end of cycle

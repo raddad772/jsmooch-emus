@@ -17,9 +17,12 @@ struct genesis_clock {
     struct {
         i32 hcount, vcount;
         u32 hblank, vblank;
+        u32 hblank_fast;
         u32 field;
         i32 clock_divisor;
         i32 cycles_til_clock;
+        u32 line_size;
+        u32 line_mclock;
     } vdp;
 
     struct {

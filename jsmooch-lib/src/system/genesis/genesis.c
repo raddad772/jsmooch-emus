@@ -34,13 +34,14 @@ static void genesisJ_describe_io(JSM, struct cvec* IOs);
     u32 (*read_trace)(void *,u32);
     u32 (*read_trace_m68k)(void *,u32,u32,u32);
  */
-u32 DUMMY_READ(void *e, u32 a) {
-    return 0;
+u32 read_trace_z80(void *ptr, u32 addr) {
+    struct genesis* this = (struct genesis*)ptr;
+    return genesis_z80_bus_read(this, addr, this->z80.pins.D, 0);
 }
 
 u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
     struct genesis* this = (struct genesis*)ptr;
-    return genesis_mainbus_read(this, addr, UDS, LDS, this->m68k.pins.D, 0);
+    return genesis_mainbus_read(this, addr, UDS, LDS, this->io.m68k.open_bus_data, 0);
 }
 
 void genesis_new(JSM)
@@ -50,14 +51,16 @@ void genesis_new(JSM)
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock);
     genesis_cart_init(&this->cart);
+    genesis_VDP_init(this);
     ym2612_init(&this->ym2612);
     SN76489_init(&this->psg);
 
     struct jsm_debug_read_trace dt;
-    dt.read_trace = &DUMMY_READ;
+    dt.read_trace = &read_trace_z80;
     dt.read_trace_m68k = &read_trace_m68k;
     dt.ptr = (void*)this;
-    M68k_setup_tracing(&this->m68k, &dt);
+    M68k_setup_tracing(&this->m68k, &dt, &this->clock.master_cycle_count);
+    Z80_setup_tracing(&this->z80, &dt, &this->clock.master_cycle_count);
 
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
@@ -212,6 +215,11 @@ void genesisJ_reset(JSM)
     SN76489_reset(&this->psg);
     ym2612_reset(&this->ym2612);
     genesis_clock_reset(&this->clock);
+    genesis_VDP_reset(this);
+    this->io.z80.reset_line = 1;
+    this->io.z80.reset_line_count = 500;
+    this->io.z80.bus_request = this->io.z80.bus_ack = 1;
+    this->io.m68k.VDP_FIFO_stall = 0;
     printf("\nGenesis reset!");
 }
 
@@ -269,7 +277,7 @@ u32 genesisJ_step_master(JSM, u32 howmany)
     while (this->jsm.cycles_left >= 0) {
         i32 biggest_step = MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock);
         this->jsm.cycles_left -= biggest_step;
-        this->clock.master_cycle_count++;
+        this->clock.master_cycle_count+= biggest_step;
         this->clock.m68k.cycles_til_clock -= biggest_step;
         this->clock.z80.cycles_til_clock -= biggest_step;
         this->clock.vdp.cycles_til_clock -= biggest_step;
@@ -282,8 +290,8 @@ u32 genesisJ_step_master(JSM, u32 howmany)
             genesis_cycle_z80(this);
         }
         if (this->clock.vdp.cycles_til_clock <= 0) {
-            this->clock.vdp.cycles_til_clock += this->clock.vdp.clock_divisor;
             genesis_VDP_cycle(this);
+            this->clock.vdp.cycles_til_clock += this->clock.vdp.clock_divisor;
         }
 
         if (dbg.do_break) break;
