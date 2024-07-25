@@ -18,9 +18,9 @@ int main()
     dbg.trace_on = 0;
     //test_scheduler();
     //test_sm83();
-    //test_z80();
+    test_z80();
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();
-    test_m68000();
+    //test_m68000();
 }

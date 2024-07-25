@@ -153,7 +153,7 @@ static void construct_path(char *out, u32 iclass, u32 ins)
 
     char *tp = out;
     tp += sprintf(tp, "%s", homeDir);
-    tp += sprintf(tp, "/dev/jsmoo/misc/tests/GeneratedTests/z80/v1");
+    tp += sprintf(tp, "/dev/z80_json/v1");
 
     tp += sprintf(tp, "%s/", test_path);
     if (iclass != 0)
@@ -604,7 +604,7 @@ static void test_z80_automated(struct z80_test_result *out, struct Z80* cpu, str
 
     u32 last_pc;
     u32 ins;
-    cpu->trace_cycles = 1;
+    *cpu->trace.cycles = 1;
     for (u32 i = 0; i < 1000; i++) {
         out->failed_test_struct = &tests[i];
         struct jsontest *test = &tests[i];
@@ -801,11 +801,21 @@ u32 test_z80_ins(struct Z80* cpu, u32 iclass, u32 ins, u32 is_call)
     return result.passed;
 }
 
+u32 read_trace_z80(void *ptr, u32 addr)
+{
+    return test_RAM[addr];
+}
+
 void test_z80()
 {
     dbg_init();
     struct Z80 cpu;
+    u64 trace_cycles = 0;
+    struct jsm_debug_read_trace rd;
+    rd.ptr = NULL;
+    rd.read_trace = &read_trace_z80;
     Z80_init(&cpu, 0);
+    Z80_setup_tracing(&cpu, &rd, &trace_cycles);
     u32 test_classes[7] = {0, 0xCB, 0xED, 0xDD, 0xFD, 0xDDCB, 0xFDCB};
     u32 start_test = 0;
     u32 start_class = 0;

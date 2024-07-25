@@ -206,7 +206,7 @@ static u32 M68k_process_interrupts(struct M68k* this)
             dbg_printf(DBGC_M68K "\n M68K  (%06llu)  !!!!    INTERRUPT level:%d!" DBGC_RST, *this->trace.cycles, this->state.exception.interrupt.new_I);
         }
         if (dbg.breaks.m68000.irq) {
-            dbg_break("M68K IRQ FIRE");
+            dbg_break("M68K IRQ FIRE", *this->trace.cycles);
         }
         return 1;
     }

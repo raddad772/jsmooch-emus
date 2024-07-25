@@ -26,7 +26,6 @@ struct ZXSpectrum {
     struct {
         u32 frames_since_restart;
         u32 master_frame;
-        u32 master_clocks_per_line;
 
         i32 ula_x, ula_y;
         u32 ula_frame_cycle;

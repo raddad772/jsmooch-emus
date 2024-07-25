@@ -104,7 +104,6 @@ void SH4_regs_FPSCR_bankswitch(struct SH4_regs* this);
 #define SH4I_NUM 27
 
 struct SH4_clock {
-    i64 trace_cycles;
     i64 timer_cycles;
     i64 trace_cycles_blocks;
 };
@@ -158,6 +157,14 @@ struct SH4 {
     u8 SQ[2][32]; // store queues!
     u8 OC[8 * 1024]; // Operand Cache!
 
+    struct {
+        u32 ok;
+        u64 *cycles;
+        u64 my_cycles;
+    } trace;
+
+    struct jsm_debug_read_trace read_trace;
+
     struct SH4_interrupt_source interrupt_sources[SH4I_NUM];
     struct SH4_interrupt_source* interrupt_map[SH4I_NUM];
     u32 interrupt_highest_priority; // used to compare to IMASK
@@ -193,5 +200,6 @@ void SH4_run_cycles(struct SH4* this, u32 howmany);
 void SH4_fetch_and_exec(struct SH4* this, u32 is_delay_slot);
 void SH4_SR_set(struct SH4* this, u32 val);
 void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to);
+void SH4_setup_tracing(struct SH4* this, struct jsm_debug_read_trace *rt, u64 *trace_cycles);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

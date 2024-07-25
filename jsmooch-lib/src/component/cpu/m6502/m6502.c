@@ -65,9 +65,10 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
 
     this->NMI_ack = this->NMI_old = 0;
 
-    this->trace_on = 0;
+    this->trace.ok = 0;
     this->PCO = 0;
-    this->trace_cycles = 0;
+    this->trace.cycles = &this->trace.my_cycles;
+    this->trace.my_cycles = 0;
 
     this->IRQ_count = 0;
     this->first_reset = 1;
@@ -104,22 +105,22 @@ void M6502_reset(struct M6502* this) {
     this->pins.D = M6502_OP_RESET;
 }
 
-void M6502_enable_tracing(struct M6502* this, struct jsm_debug_read_trace *dbg_read_trace)
+void M6502_setup_tracing(struct M6502* this, struct jsm_debug_read_trace *dbg_read_trace, u64 *trace_cycles)
 {
-    this->trace_on = 1;
+    this->trace.ok = 1;
+    this->trace.cycles = trace_cycles;
     jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
+
 }
 
 void M6502_disable_tracing(struct M6502* this)
 {
-    this->trace_on = 0;
 }
 
 void M6502_cycle(struct M6502* this)
 {
     fflush(stdout);
     // Perform 1 processor cycle
-    this->trace_cycles++;
     if (this->regs.HLT || this->regs.STP) return;
     if ((this->pins.IRQ) && (this->regs.P.I == 0)) {
         this->IRQ_count++;
@@ -148,13 +149,13 @@ void M6502_cycle(struct M6502* this)
             this->regs.NMI_pending = false;
             this->regs.IR = M6502_OP_NMI;
             if (dbg.brk_on_NMIRQ) {
-                dbg_break("M6502 NMI");
+                dbg_break("M6502 NMI", *this->trace.cycles);
             }
         } else if (this->regs.IRQ_pending) {
             this->regs.IRQ_pending = false;
             this->regs.IR = M6502_OP_IRQ;
             if (dbg.brk_on_NMIRQ) {
-                dbg_break("M6502 IRQ");
+                dbg_break("M6502 IRQ", *this->trace.cycles);
             }
         }
         fflush(stdout);
@@ -162,13 +163,14 @@ void M6502_cycle(struct M6502* this)
         if (this->current_instruction == this->opcode_table[2]) { // TODO: this doesn't work with illegal opcodes or m65c02
             printf("INVALID OPCODE %02x", this->regs.IR);
             fflush(stdout);
-            dbg_break("INVALID 6502 OPCODE");
+            dbg_break("INVALID 6502 OPCODE", *this->trace.cycles);
         }
-        if (this->trace_on) {
+        if (dbg.trace_on) {
             //dbg.traces.add(TRACERS.M6502, this->clock.trace_cycles-1, this->trace_format(this->disassemble(), this->PCO));
         }
     }
     this->NMI_ack = false;
 
     this->current_instruction(&this->regs, &this->pins);
+    this->trace.my_cycles++;
 }

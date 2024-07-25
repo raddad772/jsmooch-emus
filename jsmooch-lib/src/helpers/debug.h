@@ -66,7 +66,7 @@ struct cpu_trace_struct {
     u32 instruction;
     u32 mem;
     u32 ifetch;
-    u32 IO;
+    u32 io;
 };
 
 struct cpu_break_struct {
@@ -140,9 +140,8 @@ void dbg_disable_cpu_trace(enum debug_sources source);
 void dbg_init();
 void dbg_add_msg(char *what);
 char *dbg_get_msg();
-void dbg_clear_msg();
 void dbg_delete();
-void dbg_break(const char *reason);
+void dbg_break(const char *reason, u64 cycles);
 void dbg_unbreak();
 
 void LT_init(struct last_traces_t* this);
@@ -194,10 +193,14 @@ void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, struct jsm_debug_read
 
 #define DBGC_TRACE DBGC_RST
 #define DBGC_READ DBGC_YELLOW
-#define DBGC_WRITE DBGC_CYAN
+#define DBGC_WRITE DBGC_RED
 #define DBGC_M68K DBGC_GREEN
-#define DBGC_Z80 DBGC_RED
+#define DBGC_Z80 DBGC_CYAN
 
 #define TRACE_BRK_POS 55
+
+#define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
+
+#pragma clang diagnostic ignored "-Wswitch"
 
 #endif //JSMOOCH_EMUS_DEBUG_H

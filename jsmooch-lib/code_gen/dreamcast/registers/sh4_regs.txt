@@ -269,22 +269,22 @@ on_write=printf("\nPerformance counters not implemented...")
 0xFF100004: PMCTR1H
 u32
 access_32, r
-r_override=return (this->clock.trace_cycles >> 32) & 0xFFFF
+r_override=return (*this->trace.cycles >> 32) & 0xFFFF
 
 0xFF100008: PMCTR1L
 u32
 access_32, r
-r_override=return this->clock.trace_cycles & 0xFFFFFFFF
+r_override=return *this->trace.cycles & 0xFFFFFFFF
 
  0xFF10000C: PMCTR2H
 u32
 access_32, r
-r_override=return (this->clock.trace_cycles >> 32) & 0xFFFF
+r_override=return (*this->trace.cycles >> 32) & 0xFFFF
 
 0xFF100010: PMCTR2L
 u32
 access_32, r
-r_override=return this->clock.trace_cycles & 0xFFFFFFFF
+r_override=return *this->trace.cycles & 0xFFFFFFFF
 
 0xFF800028: RFCR
 u32

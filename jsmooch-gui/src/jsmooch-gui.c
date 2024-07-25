@@ -11,7 +11,7 @@
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
 
-#define NEWSYS
+//#define NEWSYS
 //#define DO_DREAMCAST
 //#define SIDELOAD
 
@@ -346,7 +346,8 @@ int main(int argc, char** argv)
     enum jsm_systems which = SYS_DREAMCAST;
 #else
     //enum jsm_systems which = SYS_ATARI2600;
-    enum jsm_systems which = SYS_GENESIS;
+    //enum jsm_systems which = SYS_GENESIS;
+    enum jsm_systems which = SYS_ZX_SPECTRUM;
 #endif
     //test_gdi();
     //return 0;
@@ -593,7 +594,7 @@ int main(int argc, char** argv)
         }*/
         //if (fv.master_cycle >= 120965401) {
         if (fv.master_frame >= 240) {
-            dbg_break(">240 FRAMES");
+            dbg_break(">240 FRAMES", fv.master_cycle);
             dbg.do_break = 1;
         }
         if (dbg.do_break) {
@@ -601,14 +602,18 @@ int main(int argc, char** argv)
             if (did_break == 0) {
                 //sys->step_master(sys, 1200);
                 dbg_enable_trace();
-                dbg_disable_cpu_trace(DS_z80);
-                dbg_enable_cpu_trace(DS_m68000);
+                dbg_enable_cpu_trace(DS_z80);
+                //dbg_enable_cpu_trace(DS_m68000);
                 dbg.traces.m68000.mem = 1;
                 dbg.traces.m68000.instruction = 1;
+                dbg.traces.z80.instruction = 1;
+                dbg.traces.z80.mem = 1;
+                dbg.traces.z80.io = 0;
+                dbg.brk_on_NMIRQ = 1;
                 dbg.do_break = 0;
                 dbg_unbreak();
                 printf("\nTHEN BREAK...");
-                sys->step_master(sys, 12000);
+                sys->step_master(sys, 120000);
                 dbg_flush();
                 dbg_disable_trace();
                 break;

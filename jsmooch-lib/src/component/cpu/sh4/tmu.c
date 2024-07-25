@@ -76,7 +76,7 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
         togo = SH4_CYCLES_PER_SEC;
 
     if (this->tmu.mask[ch]) {
-        scheduler_add(this->scheduler, this->clock.trace_cycles + cycles, SE_bound_function, ch,
+        scheduler_add(this->scheduler, *this->trace.cycles + cycles, SE_bound_function, ch,
                       scheduler_bind_function(&scheduled_tmu_callback, this));
         //printf("\nSCHEDULED CH%d AT CYC:%llu FOR CYC:%llu (%d)", ch, this->clock.trace_cycles, this->clock.trace_cycles + cycles, cycles);
     }
@@ -277,6 +277,7 @@ static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
     // TODO: this
     printf("\nPlease implement this delayed interrupt set/clear function sh4ifunc.");
     free(ptr);
+    return 0;
 }
 
 u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)

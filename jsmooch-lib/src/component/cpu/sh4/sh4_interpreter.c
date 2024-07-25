@@ -23,7 +23,7 @@
 // Endianness is little.
 
 // disassembly printf args
-#define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", this->clock.trace_cycles, this->regs.PC, SH4_disassembled[SH4_decoded_index][opcode]
+#define SH_DISA_P_ARGS "\ncyc:%05d  %08x %s   ", *this->trace.cycles, this->regs.PC, SH4_disassembled[SH4_decoded_index][opcode]
 
 
 #define SH4_CLOCK_DIVIDER 1
@@ -284,7 +284,7 @@ void SH4_fetch_and_exec(struct SH4* this, u32 is_delay_slot)
 #endif // SH4_BRK
 #endif
 
-    this->clock.trace_cycles += SH4_CLOCK_DIVIDER;
+    *this->trace.cycles += SH4_CLOCK_DIVIDER;
 
 #ifdef SH4_TIMER_IGNORE_DELAY_SLOT
     if (!is_delay_slot)
@@ -346,7 +346,9 @@ void SH4_delete(struct SH4* this)
 
 void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
 {
-    this->clock.trace_cycles = 0;
+    this->trace.my_cycles = 0;
+    this->trace.ok = 0;
+    this->trace.cycles = &this->trace.my_cycles;
     this->clock.timer_cycles = 0;
     this->clock.trace_cycles_blocks = 0;
     this->scheduler = scheduler;
@@ -585,6 +587,13 @@ void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to)
     to->ptr = (void *)this;
     to->read = &SH4_ma_read;
     to->write = &SH4_ma_write;
+}
+
+void SH4_setup_tracing(struct SH4* this, struct jsm_debug_read_trace *rt, u64 *trace_cycles)
+{
+    this->trace.ok = 1;
+    jsm_copy_read_trace(&this->read_trace, rt);
+    this->trace.cycles = trace_cycles;
 }
 
 /* syscalls - https://mc.pp.se/dc/syscalls.html

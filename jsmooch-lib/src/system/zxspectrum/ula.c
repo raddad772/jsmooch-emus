@@ -28,7 +28,7 @@ static u32 ZXSpectrum_keyboard_halfrows_consts[8] = {
         0x08, 0x10, 0x04, 0x20, 0x02, 0x40, 0x01, 0x80
 };
 
-static u32 ula_readmem(struct ZXSpectrum* this, u32 addr) {
+static u32 ula_readmem(struct ZXSpectrum* this, u16 addr) {
     return this->RAM[addr - 0x4000];
 }
 
@@ -36,9 +36,16 @@ static void scanline_vblank(struct ZXSpectrum* bus)
 {
     BTHIS;
     bus->clock.contended = false;
-    if ((bus->clock.ula_y == 0) && (bus->clock.ula_x == 16)) {
-        if (!this->first_vblank) ZXSpectrum_notify_IRQ(bus, 1);
-        this->first_vblank = false;
+    if (bus->clock.ula_y == 0) {
+        switch(bus->clock.ula_x) {
+            case 16: // IRQ up
+                if (!this->first_vblank) ZXSpectrum_notify_IRQ(bus, 1);
+                break;
+            case 80: // IRQ down
+                if (!this->first_vblank) ZXSpectrum_notify_IRQ(bus, 0);
+                this->first_vblank = false;
+                break;
+        }
     }
 }
 
@@ -90,17 +97,6 @@ static void scanline_visible(struct ZXSpectrum* bus)
             bus->clock.contended = true;
             break;
         case 6: {// fetch next bg
-            //let addr = dx >> 3;
-            // 76 210 543
-            // &0xC0
-            //    &7
-            //        &0x38
-            /*addr |= ((dy & 0x38) >> 3);
-            addr |= ((dy & 7) << 3);
-            addr |= (dy & 0xC0);*/
-            /*addr |= ((dy & 0x38) << 2);
-            addr |= ((dy & 7) << 8);
-            addr |= ((dy & 0xC0) << 5);*/
             u32 addr = 0x4000 | ((dy & 0xC0) << 5) | ((dy & 7) << 8) | ((dy & 0x38) << 2) | (dx >> 3);
             u32 val = ula_readmem(bus, addr);
             // Only 2 shifts left before we need this data
@@ -114,7 +110,6 @@ static void scanline_visible(struct ZXSpectrum* bus)
     u32 out_bit = ((this->bg_shift & 0x80) >> 7) ^ this->attr.flash;
     this->bg_shift <<= 1;
     this->cur_output[bo] = this->attr.colors[out_bit];
-    
 }
 
 void ZXSpectrum_ULA_init(struct ZXSpectrum_ULA* this)
@@ -153,7 +148,7 @@ static u32 kb_scan_row(struct ZXSpectrum_ULA* this, u32 *row) {
         u32 key = row[i];
         //u32 kp = this->kb_buffer[key];
         u32 kp = 0;
-        kp = +(!kp);
+        kp ^= 1;
         out |= kp << i;
     }
     return out;
@@ -172,6 +167,7 @@ u32 ZXSpectrum_ULA_reg_read(struct ZXSpectrum* bus, u32 addr) {
         if (hi & i) out &= kb_scan_row(this, ZXSpectrum_keyboard_halfrows[i]);
     }
     
+    //return out;
     return out;
 }
 
@@ -194,21 +190,19 @@ static void new_scanline(struct ZXSpectrum* bus)
     bus->clock.ula_y++;
     this->screen_y++;
     if (bus->clock.ula_y == 312) {
-        // NEW FRAME TIME DUDE!
-        this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
-        this->display->device.display.last_written ^= 1;
-
         bus->clock.ula_y = 0;
         bus->clock.ula_frame_cycle = 0;
         this->screen_y = -8;
         bus->clock.frames_since_restart++;
         bus->clock.flash.count--;
-        if (bus->clock.flash.count == 0) {
+        if (bus->clock.flash.count <= 0) {
             bus->clock.flash.count = 16;
             bus->clock.flash.bit ^= 1;
         }
 
         // Swap buffer we're drawing to...
+        this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
+        this->display->device.display.last_written ^= 1;
     }
 
     /*lines 0-7 are vblank

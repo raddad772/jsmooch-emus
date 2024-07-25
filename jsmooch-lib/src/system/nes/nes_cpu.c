@@ -96,21 +96,6 @@ u32 NES_CPU_read_trace(void *tr, u32 addr) {
     return nes->bus.CPU_read(nes, addr, 0, 0);
 }
 
-void r2A03_enable_tracing(RT) {
-    if (this->tracing) return;
-    struct jsm_debug_read_trace a;
-    a.ptr = (void *)this->nes;
-    a.read_trace = &NES_CPU_read_trace;
-    M6502_enable_tracing(&this->cpu, &a);
-    this->tracing = 1;
-}
-
-void r2A03_disable_tracing(RT) {
-    if (!this->tracing) return;
-    M6502_disable_tracing(&this->cpu);
-    this->tracing = 0;
-}
-
 void r2A03_notify_NMI(RT, u32 level) {
     this->cpu.pins.NMI = level > 0 ? 1 : 0;
 }

@@ -123,14 +123,13 @@ void Z80_init(struct Z80* this, u32 CMOS)
     Z80_pins_init(&this->pins);
 
     this->CMOS = CMOS;
-    this->prefix_was = 0;
-    this->trace_ok = 0;
+    this->trace.ok = 0;
 
     this->IRQ_pending = this->NMI_pending = this->NMI_ack = 0;
 
-    this->trace_on = 0;
-    this->trace_cycles = this->last_trace_cycle = 0;
-
+    this->trace.last_cycle = 0;
+    this->trace.cycles = &this->trace.my_cycles;
+    this->trace.my_cycles = 0;
     this->current_instruction = NULL;
 
     this->PCO = 0;
@@ -141,18 +140,8 @@ void Z80_init(struct Z80* this, u32 CMOS)
 void Z80_setup_tracing(struct Z80* this, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer)
 {
     jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
-    this->trace_cycles_ptr = trace_cycle_pointer;
-    this->trace_ok = 1;
-}
-
-void Z80_enable_tracing(struct Z80* this)
-{
-    this->trace_on = 1;
-}
-
-void Z80_disable_tracing(struct Z80* this)
-{
-    this->trace_on = 0;
+    this->trace.cycles = trace_cycle_pointer;
+    this->trace.ok = 1;
 }
 
 u32 Z80_prefix_to_codemap(u32 prefix) {
@@ -230,7 +219,6 @@ void Z80_set_instruction(struct Z80* this, u32 to)
 {
     this->regs.IR = to;
     this->current_instruction = Z80_fetch_decoded(this->regs.IR, this->regs.prefix);
-    this->prefix_was = this->regs.prefix;
     this->regs.TCU = 0;
     this->regs.prefix = 0;
     this->regs.rprefix = Z80P_HL;
@@ -260,17 +248,16 @@ void Z80_ins_cycles(struct Z80* this)
                     this->pins.IRQ_maskable = false;
                     Z80_set_instruction(this, Z80_S_IRQ);
                     if (dbg.brk_on_NMIRQ) {
-                        dbg_break("Z80 NMI");
+                        dbg_break("Z80 NMI", *this->trace.cycles);
                     }
                 } else if (this->IRQ_pending && this->regs.IFF1 && (!(this->regs.EI))) {
-                    this->pins.D = 0xFF;
                     this->regs.PC = (this->regs.PC - 1) & 0xFFFF;
                     this->pins.IRQ_maskable = true;
                     this->regs.IRQ_vec = 0x38;
                     this->pins.D = 0xFF;
                     Z80_set_instruction(this, Z80_S_IRQ);
                     if (dbg.brk_on_NMIRQ) {
-                        dbg_break("Z80 IRQ");
+                        dbg_break("Z80 IRQ", *this->trace.cycles);
                     }
                 }
             }
@@ -382,13 +369,13 @@ void Z80_trace_format(struct Z80* this)
 {
     char t[250];
     if (this->regs.IR == 0x101) {
-        dbg_printf(DBGC_Z80 "\nZ80    (%06llu)           RESET" DBGC_RST, *this->trace_cycles_ptr);
+        dbg_printf(DBGC_Z80 "\nZ80    (%06llu)           RESET" DBGC_RST, *this->trace.cycles);
         return;
     }
     //Z80(   931)    008C  LDIR          TCU:1 PC:008E  A:00 B:1F C:F5 D:C0 E:0B H:C0 L:0A SP:DFF0 IX:0000 IY:0000 I:00 R:5E WZ:008D F:sZyhxPnc
     u32 b = this->read_trace.read_trace(this->read_trace.ptr, this->PCO);
     Z80_disassemble(this->PCO, b, &this->read_trace, t);
-    dbg_printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s", *this->trace_cycles_ptr, this->PCO, t);
+    dbg_printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s", *this->trace.cycles, this->PCO, t);
     dbg_seek_in_line(TRACE_BRK_POS);
     dbg_printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,
                this->PCO, this->regs.A, this->regs.B, this->regs.C, this->regs.D, this->regs.E,
@@ -398,7 +385,7 @@ void Z80_trace_format(struct Z80* this)
 
 void Z80_lycoder_print(struct Z80* this)
 {
-    dbg_printf("\n%08d %04X %02X%02X %02X%02X %02X%02X %02X%02X %04X %04X", *this->trace_cycles_ptr, this->regs.PC, this->regs.A,
+    dbg_printf("\n%08d %04X %02X%02X %02X%02X %02X%02X %02X%02X %04X %04X", *this->trace.cycles, this->regs.PC, this->regs.A,
                Z80_regs_F_getbyte(&this->regs.F), this->regs.B, this->regs.C, this->regs.D, this->regs.E,
                this->regs.H, this->regs.L, this->regs.IX, this->regs.IY);
 }
@@ -406,7 +393,7 @@ void Z80_lycoder_print(struct Z80* this)
 void Z80_cycle(struct Z80* this)
 {
     this->regs.TCU++;
-    this->trace_cycles++;
+    this->trace.my_cycles++;
 #ifdef Z80_TRACE_BRK
     if (this->trace_cycles == Z80_TRACE_BRK) {
         printf("\nTRACE BREAK!");
@@ -426,7 +413,7 @@ void Z80_cycle(struct Z80* this)
         }
 #else
         if (dbg.trace_on && this->regs.TCU == 1 && dbg.traces.z80.instruction) {
-            this->last_trace_cycle = this->PCO;
+            this->trace.last_cycle = this->PCO;
             Z80_trace_format(this);
         }
 #endif // LYBODER

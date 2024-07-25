@@ -137,14 +137,17 @@ void dbg_unbreak()
     dbg.do_break = false;
 }
 
-void dbg_break(const char *reason)
+void dbg_break(const char *reason, u64 cycles)
 {
 #ifdef DISABLE_BREAK
     printf("\nBREAK IGNORED!");
 #else
     dbg.do_break = true;
     //assert(1==2);
-    printf("\nBREAK! %s", reason);
+    if (cycles != 0)
+        printf("\nBREAK! %s cyc:%lld", reason, cycles);
+    else
+        printf("\nBREAK! %s", reason);
 #endif
     fflush(stdout);
 #ifdef DUMP_LAST_TRACES_ON_BREAK

@@ -291,7 +291,7 @@ static void cpu_cycle(struct SMSGG* this)
 #ifndef LYCODER
             if (dbg.trace_on) {
                 // Z80(    25)r   0006   $18     TCU:1
-                dbg_printf("\n\e[0;32mSMS(%06llu)r   %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+                dbg_printf(DBGC_Z80 "\nSMS(%06llu)r   %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
                 //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_read('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, null, this->cpu.regs.TCU));
             }
 #endif
@@ -299,17 +299,17 @@ static void cpu_cycle(struct SMSGG* this)
             this->cpu.pins.D = this->cpu_in(this, this->cpu.pins.Addr, this->cpu.pins.D, 1);
 #ifndef LYCODER
             if (dbg.trace_on)
-                dbg_printf("\nSMS(%06llu)in  %04x   $%02x         TCU:%d", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+                dbg_printf(DBGC_Z80 "\nSMS(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
 #endif
         }
     }
     if (this->cpu.pins.WR) {
         if (this->cpu.pins.MRQ) { // write RAM
-            if (dbg.trace_on && (this->cpu.last_trace_cycle != this->cpu.trace_cycles)) {
+            if (dbg.trace_on && (this->cpu.trace.last_cycle != *this->cpu.trace.cycles)) {
                 //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_write('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
-                this->cpu.last_trace_cycle = this->cpu.trace_cycles;
+                this->cpu.trace.last_cycle = *this->cpu.trace.cycles;
 #ifndef LYCODER
-                dbg_printf("\n\e[0;34mSMS(%06llu)wr  %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+                dbg_printf(DBGC_Z80 "\nSMS(%06llu)wr  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
 #endif
             }
             SMSGG_bus_write(this, this->cpu.pins.Addr, this->cpu.pins.D);
@@ -317,7 +317,7 @@ static void cpu_cycle(struct SMSGG* this)
             this->cpu_out(this, this->cpu.pins.Addr, this->cpu.pins.D);
 #ifndef LYCODER
             if (dbg.trace_on)
-                dbg_printf("\n\e[0;34mSMS(%06llu)out %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+                dbg_printf(DBGC_Z80 "\nSMS(%06llu)out %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
 #endif
         }
     }

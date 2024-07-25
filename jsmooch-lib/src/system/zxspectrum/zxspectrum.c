@@ -41,6 +41,12 @@ void ZXSpectrum_new(JSM)
     this->described_inputs = 0;
     memset(&this->clock, 0, sizeof(this->clock));
     this->clock.flash.count = 16;
+    /*
+         this.master_clocks_per_line = 448;
+                 this.irq_ula_cycle = 113144
+        this.irq_cpu_cycle = 56572
+
+ */
 
     ZXSpectrum_ULA_init(&this->ula);
     ZXSpectrum_tape_deck_init(this);
@@ -118,7 +124,6 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_di
 }
 
 
-
 static u32 ZXSpectrum_keyboard_keymap[40] = {
         JK_1, JK_2, JK_3, JK_4, JK_5,
         JK_0, JK_9, JK_8, JK_7, JK_6,
@@ -160,13 +165,13 @@ static u32 ends_with(const char *str, const char *suffix)
     return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
 
-static u32 cpu_readmem(struct ZXSpectrum* this, u32 addr)
+static u8 cpu_readmem(struct ZXSpectrum* this, u16 addr)
 {
     if (addr < 0x4000) return this->ROM[addr];
     return this->RAM[addr - 0x4000];
 }
 
-static void cpu_writemem(struct ZXSpectrum* this, u32 addr, u32 val)
+static void cpu_writemem(struct ZXSpectrum* this, u16 addr, u8 val)
 {
     if (addr < 0x4000) return;
     this->RAM[addr - 0x4000] = (u8)val;
@@ -177,7 +182,6 @@ u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr)
     struct ZXSpectrum* this = (struct ZXSpectrum*)ptr;
     return cpu_readmem(this, addr);
 }
-
 
 static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
 {
@@ -478,6 +482,7 @@ u32 ZXSpectrumJ_finish_scanline(JSM)
         ZXSpectrum_CPU_cycle(this);
         ZXSpectrum_ULA_cycle(this);
         ZXSpectrum_ULA_cycle(this);
+        this->clock.master_cycles += 2;
         if (dbg.do_break) break;
     }
     return 0;
@@ -485,45 +490,39 @@ u32 ZXSpectrumJ_finish_scanline(JSM)
 
 static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this)
 {
-    if (this->clock.contended && ((this->cpu.pins.Addr - 0x4000) < 0x4000)) return;
+    //if (this->clock.contended && ((this->cpu.pins.Addr - 0x4000) < 0x4000)) return;
     if (this->cpu.pins.RD) {
         if (this->cpu.pins.MRQ) {// read ROM/RAM
             this->cpu.pins.D = cpu_readmem(this, this->cpu.pins.Addr);
             if ((this->cpu.pins.Addr == 0x056B) && (this->cpu.regs.PC == 0x056C)) { // Fast tape load hack time!
+                assert(1==2);
                 printf("\nquick LOAD trigger");
                 // return RET
                 this->cpu.pins.D = 0xC9;
                 // do quickload
                 ZXSpectrum_fast_load(this);
             }
-            if (dbg.trace_on) {
-                dbg_printf("\n\e[0;32mZXS(%06llu)r   %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles,
-                           this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
-            }
+
+            printif(z80.mem, DBGC_Z80 "\nZXS(%06llu)r   %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
         } else if (this->cpu.pins.IO) { // read IO port
             this->cpu.pins.D = ZXSpectrum_ULA_reg_read(this, this->cpu.pins.Addr);
-            if (dbg.trace_on)
-                dbg_printf("\nZXS(%06llu)in  %04x   $%02x         TCU:%d", this->cpu.trace_cycles, this->cpu.pins.Addr,
-                           this->cpu.pins.D, this->cpu.regs.TCU);
+            printif(z80.io, DBGC_Z80"\nZXS(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
         }
     }
+    Z80_cycle(&this->cpu);
     if (this->cpu.pins.WR) {
         if (this->cpu.pins.MRQ) {// write ROM/RAM
-            if (dbg.trace_on && (this->cpu.last_trace_cycle != this->cpu.trace_cycles)) {
-                this->cpu.last_trace_cycle = this->cpu.trace_cycles;
-                dbg_printf("\n\e[0;34mSMS(%06llu)wr  %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+            if (dbg.trace_on && (this->cpu.trace.last_cycle != *this->cpu.trace.cycles)) {
+                this->cpu.trace.last_cycle = *this->cpu.trace.cycles;
+                printif(z80.mem, DBGC_Z80 "\nZ80(%06llu)wr  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
             }
             cpu_writemem(this, this->cpu.pins.Addr, this->cpu.pins.D);
         }
         else if (this->cpu.pins.IO) {// write IO
             ZXSpectrum_ULA_reg_write(this, this->cpu.pins.Addr, this->cpu.pins.D);
-            if (dbg.trace_on)
-                dbg_printf("\n\e[0;34mSMS(%06llu)out %04x   $%02x         TCU:%d\e[0;37m", this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
+            printif(z80.io, DBGC_Z80 "\nZ80(%06llu)out %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
         }
     }
-
-    Z80_cycle(&this->cpu);
-
 }
 
 u32 ZXSpectrumJ_step_master(JSM, u32 howmany)
@@ -535,6 +534,7 @@ u32 ZXSpectrumJ_step_master(JSM, u32 howmany)
         ZXSpectrum_CPU_cycle(this);
         ZXSpectrum_ULA_cycle(this);
         ZXSpectrum_ULA_cycle(this);
+        this->clock.master_cycles += 2;
         if (dbg.do_break) break;
     }
     return 0;

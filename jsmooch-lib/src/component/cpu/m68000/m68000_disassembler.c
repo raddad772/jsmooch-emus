@@ -188,7 +188,6 @@ void M68k_disasm_BADINS(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_tr
 {
     //printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
-    dbg_break("BAD DISASSEMBLY");
 }
 
 #define dea(ea, sz) dodea(ea, 0, out, sz, &PC, rt)

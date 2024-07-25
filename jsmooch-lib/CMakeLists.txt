@@ -193,6 +193,8 @@ add_library(jsmooch-lib
         src/system/mac/mac_internal.h
 )
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+
 include_directories(src/)
 
 install(TARGETS jsmooch-lib

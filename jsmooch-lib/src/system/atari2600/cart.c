@@ -30,7 +30,7 @@ void atari2600_cart_bus_cycle(struct atari2600_cart* this, u32 addr, u32 *data, 
 
 void atari2600_cart_load_ROM_from_RAM(struct atari2600_cart* this, char *fil, u64 file_sz, char* file_name)
 {
-    printf("\nAllocate cart %ull", file_sz);
+    printf("\nAllocate cart %lld", file_sz);
     buf_allocate(&this->ROM, file_sz);
     memcpy(this->ROM.ptr, fil, file_sz);
     printf("\nROM SIZE %d", this->ROM.size);
@@ -41,7 +41,7 @@ void atari2600_cart_load_ROM_from_RAM(struct atari2600_cart* this, char *fil, u6
         this->addr_mask = 0xFFF;
     }
     else {
-        printf("\nUnsupported cart sixe %d", file_sz);
+        printf("\nUnsupported cart sixe %lld", file_sz);
         return;
     }
 }

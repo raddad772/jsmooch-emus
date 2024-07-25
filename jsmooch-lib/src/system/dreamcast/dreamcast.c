@@ -61,6 +61,10 @@ void DC_new(JSM)
 
     elf_symbol_list32_init(&this->elf_symbols);
     SH4_init(&this->sh4, &this->scheduler);
+    struct jsm_debug_read_trace rt;
+    rt.ptr = (void *)this;
+    SH4_setup_tracing(&this->sh4, &rt, &this->trace_cycles);
+    this->trace_cycles = 0;
     this->described_inputs = 0;
     this->sh4.mptr = (void *)this;
     this->sh4.read = &DCread_noins;
@@ -218,7 +222,7 @@ void DCJ_stop(JSM)
 void DCJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
-    out->master_cycle = this->sh4.clock.trace_cycles;
+    out->master_cycle = this->trace_cycles;
     out->master_frame = this->holly.master_frame;
     out->last_used_buffer = this->holly.display->device.display.last_written;
 }
@@ -238,7 +242,7 @@ void DCJ_killall(JSM)
 static void new_frame(struct DC* this, u32 copy_buf)
 {
     this->clock.frame_cycle = 0;
-    this->clock.frame_start_cycle = (i64)this->sh4.clock.trace_cycles;
+    this->clock.frame_start_cycle = (i64)this->trace_cycles;
     this->holly.master_frame++;
     this->clock.interrupt.vblank_in_yet = this->clock.interrupt.vblank_out_yet = 0;
     DC_recalc_frame_timing(this);
@@ -298,7 +302,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
     u32 quit = 0;
     i64 cycles_left = (i64)howmany;
 
-    i64 cycles_start = this->sh4.clock.trace_cycles;
+    i64 cycles_start = this->trace_cycles;
 
     u64 key;
     while(cycles_left > 0) {
@@ -307,9 +311,9 @@ u32 DCJ_step_master(JSM, u32 howmany)
             // handle an event if any exist
             switch ((enum DC_frame_events)key) {
                 case evt_FRAME_START:
-                    sched_printf("\nFRAME START: %llu", this->sh4.clock.trace_cycles);
+                    sched_printf("\nFRAME START: %llu", this->trace_cycles);
                     this->clock.frame_cycle = 0;
-                    this->clock.frame_start_cycle = (i64)this->sh4.clock.trace_cycles;
+                    this->clock.frame_start_cycle = (i64)this->trace_cycles;
                     this->clock.in_vblank = 1;
                     break;
                 case evt_VBLANK_IN:
@@ -321,7 +325,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
                 case evt_EMPTY:
                     break;
                 case evt_FRAME_END:
-                    sched_printf("\nEVENT: FRAME END %llu", this->sh4.clock.trace_cycles);
+                    sched_printf("\nEVENT: FRAME END %llu", this->trace_cycles);
                     new_frame(this, 1);
                     break;
                 default:
@@ -333,17 +337,17 @@ u32 DCJ_step_master(JSM, u32 howmany)
         if (quit || dbg.do_break) {
             break;
         }
-        i64 til_next_event = scheduler_til_next_event(&this->scheduler, this->sh4.clock.trace_cycles);
+        i64 til_next_event = scheduler_til_next_event(&this->scheduler, this->trace_cycles);
         if (til_next_event > cycles_left) til_next_event = cycles_left;
 
         i64 timer_old_cycles = (i64)this->sh4.clock.timer_cycles;
-        i64 old_cycles = (i64)this->sh4.clock.trace_cycles;
+        i64 old_cycles = (i64)this->trace_cycles;
         u64 old_tcb = this->sh4.clock.trace_cycles_blocks;
-        //this->sh4.clock.trace_cycles_blocks += til_next_event;
+        //this->trace_cycles_blocks += til_next_event;
         SH4_run_cycles(&this->sh4, til_next_event);
         i64 timer_ran_cycles = (i64)this->sh4.clock.timer_cycles - timer_old_cycles;
-        i64 ran_cycles = (i64)this->sh4.clock.trace_cycles - old_cycles;
-        //this->sh4.clock.trace_cycles_blocks = old_tcb + ran_cycles;
+        i64 ran_cycles = (i64)this->trace_cycles - old_cycles;
+        //this->trace_cycles_blocks = old_tcb + ran_cycles;
         this->sh4.clock.trace_cycles_blocks += timer_ran_cycles;
         this->clock.frame_cycle += ran_cycles;
         scheduler_ran_cycles(&this->scheduler, ran_cycles);
@@ -351,7 +355,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
 
         if (dbg.do_break) break;
     }
-    sched_printf("\nSTEPS:%lli BRK:%d", this->sh4.clock.trace_cycles - cycles_start, dbg.do_break);
+    sched_printf("\nSTEPS:%lli BRK:%d", this->trace_cycles - cycles_start, dbg.do_break);
 
     printf("\n\nCONSOLE:\n---\n%s", this->sh4.console.ptr);
     return steps_done;
@@ -549,7 +553,7 @@ static void DC_CPU_state_after_boot_rom(struct DC* this)
     sh4->regs.R[14] = 0;
     sh4->regs.R[15] = 0x8c00f400;
 
-    sh4->regs.R_[0] = 0x600000F0; 0xDFFFFFFF;
+    sh4->regs.R_[0] = 0x600000F0; // 0xDFFFFFFF;
     sh4->regs.R_[1] = 0x00000808; // 0x500000F1;
     sh4->regs.R_[2] = 0x8c00e070; // 0;
     sh4->regs.R_[3] = 0;
@@ -744,10 +748,10 @@ static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
             }
             printf("\nAlso loaded %d symbols.", this->elf_symbols.num);
 
-            cleanup_str_tabl: if (str_tabl) free(str_tabl);
-            cleanup_sym_tbl: if (sym_tbl) free(sym_tbl);
-            cleanup_sh_str: if (sh_str) free(sh_str);
-            cleanup_sh_table: if (sh_table) free(sh_table);
+            if (str_tabl) free(str_tabl);
+            if (sym_tbl) free(sym_tbl);
+            if (sh_str) free(sh_str);
+            if (sh_table) free(sh_table);
             close(fd);
         }
     }

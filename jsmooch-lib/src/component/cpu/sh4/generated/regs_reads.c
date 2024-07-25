@@ -13,10 +13,10 @@
         case 0xFF000034:  { return this->regs.PTEA.u; }
         case 0xFF000084:  { return this->regs.PMCTR1_CTRL; }
         case 0xFF000088:  { return this->regs.PMCTR2_CTRL; }
-        case 0xFF100004: { return (this->clock.trace_cycles >> 32) & 0xFFFF; }
-        case 0xFF100008: { return this->clock.trace_cycles & 0xFFFFFFFF; }
-        case 0xFF10000C: { return (this->clock.trace_cycles >> 32) & 0xFFFF; }
-        case 0xFF100010: { return this->clock.trace_cycles & 0xFFFFFFFF; }
+        case 0xFF100004: { return (*this->trace.cycles >> 32) & 0xFFFF; }
+        case 0xFF100008: { return *this->trace.cycles & 0xFFFFFFFF; }
+        case 0xFF10000C: { return (*this->trace.cycles >> 32) & 0xFFFF; }
+        case 0xFF100010: { return *this->trace.cycles & 0xFFFFFFFF; }
         case 0xFF200000:  { return this->regs.UBC_BARA; }
         case 0xFF200004:  { return this->regs.UBC_BAMRA; }
         case 0xFF200008:  { return this->regs.UBC_BBRA; }

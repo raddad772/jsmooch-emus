@@ -60,7 +60,7 @@ static void gdrom_dma_start(struct DC* this)
 static void DC_write_C2DST(struct DC* this, u32 val)
 {
     if (this->io.SB_C2DST) { // TA FIFO DMA!
-        printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", this->sh4.clock.trace_cycles);
+        printf(DBGC_GREEN "\nTA FIFO DMA START! %llu", this->trace_cycles);
         u32 addr = this->io.SB_C2DSTAT;
         if (addr == 0) addr = 0x10000000;
         // TA polygon FIFO
@@ -209,8 +209,8 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
     addr &= 0x1FFFFFFF;
 
      if (addr <= 0x001FFFFF) {
-         dbg_break("DC BIOS write");
-         printf("\nBIOS write %08x %llu", addr, this->sh4.clock.trace_cycles);
+         dbg_break("DC BIOS write", this->trace_cycles);
+         printf("\nBIOS write %08x %llu", addr, this->trace_cycles);
          return;
      }
     if ((full_addr >= 0x7C000000) && (full_addr <= 0x7FFFFFFF)) {
@@ -438,7 +438,7 @@ void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
         if (dbg.var > QUIT_ON_TOO_MANY) {
-            dbg_break("TOO MANY BAD ACCESS");
+            dbg_break("TOO MANY BAD ACCESS", this->trace_cycles);
         }
 #endif
     }
@@ -479,7 +479,7 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
         if (dbg.var > QUIT_ON_TOO_MANY) {
-            dbg_break("TOO MANY BAD ACCESS");
+            dbg_break("TOO MANY BAD ACCESS", this->trace_cycles);
         }
 #endif
         return 0;

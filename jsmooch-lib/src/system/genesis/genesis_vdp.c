@@ -31,8 +31,6 @@
 #define SLOW_MCLOCKS_START (SC_SLOW_SLOTS*5)
 #define HBLANK_START 1280
 
-#define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
-
 //    UDS<<2 + LDS           neither   just LDS   just UDS    UDS+LDS
 static u32 write_maskmem[4] = { 0,     0xFF00,    0x00FF,      0 };
 

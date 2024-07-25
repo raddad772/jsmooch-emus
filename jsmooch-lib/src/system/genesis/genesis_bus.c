@@ -24,7 +24,7 @@ void gen_test_dbg_break(struct genesis* this, const char *where)
 {
     this->clock.mem_break++;
     if (this->clock.mem_break > 5) {
-        dbg_break(where);
+        dbg_break(where, this->clock.master_cycle_count);
         printf("\nBREAK AT CYCLE %lld", this->clock.master_cycle_count);
     }
 }
@@ -219,6 +219,8 @@ u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect)
     if (addr >= 0x8000) {
         return genesis_z80_mainbus_read(this, addr, old, has_effect);
     }
+    printf("\nUnhandled Z80 read to %04x", addr);
+    return old;
 }
 
 

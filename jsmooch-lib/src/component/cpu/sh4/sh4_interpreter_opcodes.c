@@ -76,7 +76,7 @@ static float fixNaN(float f) {
 }
 
 SH4ins(EMPTY) {
-    printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, this->clock.trace_cycles);
+    printf("\nUNKNOWN OPCODE EXECUTION ATTEMPTED: %08x %04x %llu", this->regs.PC, ins->opcode, *this->trace.cycles);
     fflush(stdout);
     PCinc;
 }
@@ -1122,7 +1122,7 @@ SH4ins(SETT) { // 1 -> T
 }
 
 SH4ins(SLEEP) { // Sleep or standby
-    dbg_break("Sh4 SLEEP");
+    dbg_break("Sh4 SLEEP", *this->trace.cycles);
     dbg_LT_dump();
     PCinc;
 }

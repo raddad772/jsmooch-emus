@@ -65,6 +65,8 @@ struct DC {
     struct SH4 sh4;
     struct SH4_memaccess_t sh4mem;
 
+    u64 trace_cycles;
+
     struct DC_controller c1;
     struct DC_controller c2;
 

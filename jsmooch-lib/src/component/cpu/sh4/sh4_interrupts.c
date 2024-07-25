@@ -50,7 +50,7 @@ void SH4_interrupt(struct SH4* this) {
     this->regs.INTEVT = src->intevt;
 #ifdef SH4_DBG_SUPPORT
     if (dbg.trace_on) {
-        dbg_printf("\nRaising interrupt %d cyc:%llu", this->clock.trace_cycles);
+        dbg_printf("\nRaising interrupt %d cyc:%llu", *this->trace.cycles);
     }
 #endif
     if (src->source != sh4i_irl) src->raised = 0; // IRL is de-asserted externally

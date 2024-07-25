@@ -96,6 +96,7 @@ struct sh4_test_overview {
     struct SH4 cpu;
     struct scheduler_t scheduler;
     struct sh4test current_test;
+    u64 trace_cycles;
 };
 
 static char *construct_path(char* w, const char* who)
@@ -411,7 +412,8 @@ static u32 do_test(struct sh4_test_overview *ts, const char*file, const char *fn
 
         ts->cpu.interrupt_highest_priority = 0;
         ts->cpu.cycles = 0;
-        ts->cpu.clock.trace_cycles = 0;
+        ts->cpu.trace.cycles = &ts->trace_cycles;
+        ts->trace_cycles = 0;
         ts->current_test.read_failed = 0;
         ts->current_test.write_failed = 0;
         SH4_run_cycles(&ts->cpu, 4);
@@ -440,8 +442,8 @@ static u32 do_test(struct sh4_test_overview *ts, const char*file, const char *fn
 u32 test_fetch_ins(void *ptr, u32 addr)
 {
     struct sh4_test_overview *t = (struct sh4_test_overview *)ptr;
-    assert(t->cpu.clock.trace_cycles < 5);
-    struct test_cycle *c = &t->current_test.cycles[t->cpu.clock.trace_cycles];
+    assert(t->trace_cycles < 5);
+    struct test_cycle *c = &t->current_test.cycles[t->trace_cycles];
     u32 base_addr = t->current_test.initial.PC;
 
 
@@ -458,7 +460,7 @@ u32 test_fetch_ins(void *ptr, u32 addr)
 static u64 test_read(void *ptr, u32 addr, u32 sz)
 {
     struct sh4_test_overview *t = (struct sh4_test_overview *)ptr;
-    assert(t->cpu.clock.trace_cycles < 5);
+    assert(t->trace_cycles < 5);
     struct test_cycle *c = &t->current_test.cycles[1];
     t->current_test.read_addr = addr;
     if (c->read_addr != addr) {
@@ -471,7 +473,7 @@ static u64 test_read(void *ptr, u32 addr, u32 sz)
 static void test_write(void *ptr, u32 addr, u64 val, u32 sz)
 {
     struct sh4_test_overview *t = (struct sh4_test_overview *)ptr;
-    assert(t->cpu.clock.trace_cycles < 5);
+    assert(t->trace_cycles < 5);
     struct test_cycle *c = &t->current_test.cycles[1];
     t->current_test.write_addr = addr;
     t->current_test.write_val = val;

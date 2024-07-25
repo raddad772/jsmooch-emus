@@ -107,17 +107,16 @@ struct Z80 {
     struct Z80_regs regs;
     struct Z80_pins pins;
     u32 CMOS;
-    u32 prefix_was;
     u32 IRQ_pending;
     u32 NMI_pending;
     u32 NMI_ack;
 
-    u64 *trace_cycles_ptr;
-    u32 trace_ok;
-
-    u32 trace_on;
-    u64 trace_cycles;
-    u64 last_trace_cycle;
+    struct {
+        u32 ok;
+        u64 *cycles;
+        u64 last_cycle;
+        u64 my_cycles;
+    } trace;
 
     Z80_ins_func current_instruction;
 
@@ -133,8 +132,6 @@ void Z80_cycle(struct Z80* this);
 void Z80_notify_NMI(struct Z80* this, u32 level);
 void Z80_notify_IRQ(struct Z80* this, u32 level);
 void Z80_setup_tracing(struct Z80* this, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
-void Z80_enable_tracing(struct Z80* this);
-void Z80_disable_tracing(struct Z80* this);
 
 
 #endif //JSMOOCH_EMUS_Z80_H

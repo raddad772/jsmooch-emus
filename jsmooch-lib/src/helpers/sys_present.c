@@ -40,34 +40,31 @@ static const u32 TIA_palette[128] = {
         0xffc8fca4, 0xffe0ec9c, 0xfffce08c, 0xffffffff
 };
 
-static const u32 ZXS_palette[2][8][3] = {
-        {{0, 0, 0}, {0, 0, 0xD8}, {0xD8, 0, 0},
-                {0xD8, 0, 0xD8}, {0, 0xD8, 0}, {0, 0xD8, 0xD8},
-                {0xD8, 0xD8, 0}, {0xD8, 0xD8, 0xD8}},
-        {{0, 0, 0}, {0, 0, 0xFF}, {0xFF, 0, 0},
-                {0xFF, 0, 0xFF}, {0, 0xFF, 0}, {0, 0xFF, 0xFF},
-                {0xFF, 0xFF, 0}, {0xFF, 0xFF, 0xFF}}
+static const u32 ZXS_palette[2][8] = {
+        {0xFF000000, 0xFF0000D8, 0xFFD80000,
+         0xFFD800D8, 0xFF00D800, 0xFF00D8D8,
+         0xFFD8D800, 0xFFD8D8D8},
+         {0xFF000000, 0xFF0000FF, 0xFFFF0000,
+          0xFFFF00FF, 0xFF00FF00, 0xFF00FFFF,
+          0xFFFFFF00, 0xFFFFFFFF}
 };
 
 void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->device.display.output[device->device.display.last_written];
-    u8* imgdata = (u8 *)out_buf;
+    u32* imgdata = (u32 *)out_buf;
     for (u32 ry = 0; ry < 304; ry++) {
         u32 y = ry;
         for (u32 rx = 0; rx < 352; rx++) {
             u32 x = rx;
-            u32 di = ((y * out_width) + x) * 4;
+            u32 di = ((y * out_width) + x);
             u32 ulai = (y * 352) + x;
 
             u32 color = output[ulai];
             u32 pal = (color & 0x08) >> 3;
             color &= 7;
 
-            imgdata[di] = ZXS_palette[pal][color][0];
-            imgdata[di+1] = ZXS_palette[pal][color][1];
-            imgdata[di+2] = ZXS_palette[pal][color][2];
-            imgdata[di+3] = 255;
+            imgdata[di] = ZXS_palette[pal][color];
         }
     }
 

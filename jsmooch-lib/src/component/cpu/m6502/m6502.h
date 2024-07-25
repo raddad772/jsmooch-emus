@@ -62,8 +62,11 @@ struct M6502 {
     u32 NMI_ack, NMI_old, IRQ_count;
 
     u32 PCO;
-    u64 trace_cycles;
-    u32 trace_on;
+    struct {
+        u32 ok;
+        u64 *cycles;
+        u64 my_cycles;
+    } trace;
 
     u32 first_reset;
 
@@ -76,7 +79,6 @@ struct M6502 {
 void M6502_init(struct M6502 *this, M6502_ins_func *opcode_set);
 void M6502_cycle(struct M6502* this);
 void M6502_reset(struct M6502* this);
-void M6502_enable_tracing(struct M6502* this, struct jsm_debug_read_trace* dbg_read_trace);
-void M6502_disable_tracing(struct M6502* this);
+void M6502_setup_tracing(struct M6502* this, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
 
 #endif //JSMOOCH_EMUS_M6502_H
