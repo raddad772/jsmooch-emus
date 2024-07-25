@@ -148,13 +148,13 @@ void M6502_cycle(struct M6502* this)
             this->regs.NMI_pending = false;
             this->regs.IR = M6502_OP_NMI;
             if (dbg.brk_on_NMIRQ) {
-                dbg_break();
+                dbg_break("M6502 NMI");
             }
         } else if (this->regs.IRQ_pending) {
             this->regs.IRQ_pending = false;
             this->regs.IR = M6502_OP_IRQ;
             if (dbg.brk_on_NMIRQ) {
-                dbg_break();
+                dbg_break("M6502 IRQ");
             }
         }
         fflush(stdout);
@@ -162,7 +162,7 @@ void M6502_cycle(struct M6502* this)
         if (this->current_instruction == this->opcode_table[2]) { // TODO: this doesn't work with illegal opcodes or m65c02
             printf("INVALID OPCODE %02x", this->regs.IR);
             fflush(stdout);
-            dbg_break();
+            dbg_break("INVALID 6502 OPCODE");
         }
         if (this->trace_on) {
             //dbg.traces.add(TRACERS.M6502, this->clock.trace_cycles-1, this->trace_format(this->disassemble(), this->PCO));

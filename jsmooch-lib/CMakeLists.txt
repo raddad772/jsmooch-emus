@@ -187,6 +187,10 @@ add_library(jsmooch-lib
         src/component/cpu/m68000/m68000_internal.c
         src/system/dreamcast/aica_mem.h
         src/component/audio/ym2612/ym2612.c
+        src/system/genesis/genesis_controllerport.c
+        src/system/mac/mac.h
+        src/system/mac/mac_internal.c
+        src/system/mac/mac_internal.h
 )
 
 include_directories(src/)

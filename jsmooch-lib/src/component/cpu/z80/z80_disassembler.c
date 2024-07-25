@@ -92,7 +92,7 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
     // So we don"t loop forever
     // Decode regular
     while(decoded_bytes < 16) {
-        // First decide what to do: update prefix or decode
+        // First decide what to do: refresh prefix or decode
         if (current_byte == 0xDD) {
             current_prefix = 0xDD;
             decoded_bytes++;

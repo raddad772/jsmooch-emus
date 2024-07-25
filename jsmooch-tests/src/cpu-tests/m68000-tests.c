@@ -357,7 +357,7 @@ static u32 compare_group0_frame(struct m68k_test_struct *ts)
                 if (v1 != v2) {
                     if (dbg.trace_on) printf("\nDIFF FIRST WORD. good:%04x  ours:%04x", v1, v2);
                     if ((MAX(v1, v2) - MIN(v1, v2)) < 7) {
-                        printf("\nFUNCTION CODE DIFFERENCE. THEIRS:%d, MINE:%d", v1 & 7, v2 & 7);
+                        printf("\nFUNCTION CODE DIFFERENCE. THEIRS:%d, MINE:%d, %04x, %04x", v1 & 7, v2 & 7, v1, v2);
                         //return 0;
                     }
                     else
@@ -421,6 +421,7 @@ static u32 compare_state_to_ram(struct m68k_test_struct *ts)
                 g0_passed = 0;
             } else {
                 printf("\nFAIL ADDR #%d ADDR:%04x VAL:%02x MY:%04x", i, addr, val, mmem);
+                //all_passed = 0;
             }
         }
     }
@@ -725,6 +726,7 @@ static u32 compare_state_to_cpu(struct m68k_test_struct *ts, struct m68k_test_st
 static void cycle_cpu(struct m68k_test_struct *ts)
 {
     M68k_cycle(&ts->cpu);
+    ts->trace_cycles++;
     if ((ts->cpu.pins.AS) && (!ts->cpu.pins.DTACK)) { // CPU is trying to read or write
         if (ts->cpu.pins.RW) { // Write!
             do_test_write(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.D, ts->cpu.pins.FC);
@@ -733,8 +735,6 @@ static void cycle_cpu(struct m68k_test_struct *ts)
             ts->cpu.pins.D = do_test_read(ts, ts->cpu.pins.Addr, ts->cpu.pins.UDS, ts->cpu.pins.LDS, ts->cpu.pins.FC);
         }
     }
-    ts->trace_cycles++;
-    ts->test.current_cycle++;
 }
 
 
@@ -1028,7 +1028,6 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
         copy_state_to_RAM(&ts->test.initial);
         ts->cpu.state.current = M68kS_decode;
-        ts->test.current_cycle = 0;
         ts->test.failed = 0;
         ts->test.failed_w = 0;
         ts->trace_cycles = 0;
@@ -1052,6 +1051,7 @@ static u32 do_test(struct m68k_test_struct *ts, const char*file, const char *fna
             if ((ts->cpu.state.current == M68kS_exc_group12) && (ts->had_group2 == -1)) ts->had_group2 = (i64)ts->trace_cycles;
             //if (ts->test.failed) break;
         }
+        ts->trace_cycles--;
 
         u32 unvisited = 0;
         for (u32 j = 0; j < ts->test.transactions.num_transactions; j++) {
@@ -1099,8 +1099,7 @@ void test_m68000()
     rt.ptr = (void *)&ts;
 
     M68k_init(&ts.cpu, 0);
-    M68k_setup_tracing(&ts.cpu, &rt);
-    ts.cpu.trace_cycles = &ts.trace_cycles;
+    M68k_setup_tracing(&ts.cpu, &rt, &ts.trace_cycles);
     dbg_init();
     dbg_disable_trace();
     //dbg_enable_trace();
@@ -1119,6 +1118,9 @@ void test_m68000()
     char mfp[500][500];
     char mfn[500][500];
     int num_files = 0;
+
+    dbg.traces.m68000.instruction = 1;
+    dbg.traces.m68000.mem = 1;
 
     if (dp != NULL)
     {
@@ -1142,7 +1144,7 @@ void test_m68000()
     tmem = malloc(0x1000000); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
-    u32 nn = 121; // out of 121
+    u32 nn = 123; // out of 123
     for (u32 i = 0; i < num_files; i++) {
         u32 skip = 0;
         for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {

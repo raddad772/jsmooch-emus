@@ -472,9 +472,13 @@ int main(int argc, char** argv)
                         case DBCID_ch_reset:
                             inputs.ch_reset = db;
                             continue;
+                        default:
+                            continue;
                     }
                 }
                 continue;
+            default:
+                break;
         }
     }
     assert(controller1);
@@ -521,17 +525,47 @@ int main(int argc, char** argv)
 
 #ifdef NEWSYS
     float start = SDL_GetTicks();
-    sys->step_master(sys, 2 * 53000000); //
+    u32 c;
+    c = 73377752 - 1000;
+    //c = 47395691 - 2500;
+    //c = 47391011 - 150;
+    //c =   46528328 - 200;
+    //c =     93377808;// - 400;
+//    c =  47392303 - 250;
+
+    //sys->step_master(sys, 47380050); //
+    sys->step_master(sys, c);
+    //                  47 395 691
+    // Z80 enable - 47371674
+    // wait on interrupt - 47380193
+    // IRQ fire - 47380277
+
     //sys->step_master(sys, 18323050);
     //sys->step_master(sys, 393260);
     /*float end = SDL_GetTicks();
     printf("\nTicks taken: %f", end - start);*/
     //return 0;
     //dbg_unbreak();
+    struct framevars fvr;
+    sys->get_framevars(sys, &fvr);
+    printf("\nBREAK CYCLE: %lld", fvr.master_cycle);
     dbg_unbreak();
     dbg_enable_trace();
-    sys->step_master(sys, 500);
+    dbg.traces.m68000.instruction = 1;
+    dbg.traces.m68000.mem = 1;
+    dbg.traces.m68000.ifetch = 0;
+    dbg.traces.m68000.irq = 1;
+    dbg.traces.z80.mem = 0;
+    dbg.traces.dma = 0;
+    dbg.traces.vdp = 0;
+    dbg.traces.vram = 0;
+    dbg.traces.fifo = 0;
+    dbg.breaks.m68000.irq = 0;
+    dbg.traces.z80.instruction = 0;
+    sys->step_master(sys, 17500);
     dbg_flush();
+    sys->get_framevars(sys, &fvr);
+    printf("\nFINAL CYCLE: %lld", fvr.master_cycle);
     return 0;
 #endif
     //SDL_Log("TIME! %f", r);
@@ -542,7 +576,6 @@ int main(int argc, char** argv)
     u32 did_break = 0;
     u32 loops = 0;
     while(!quit) {
-        printf("\nFRAME!"); fflush(stdout);
         float start = SDL_GetTicks();
         while(SDL_PollEvent(&event)) {
             quit = handle_keys_gb(&event, input_buffer);
@@ -550,16 +583,35 @@ int main(int argc, char** argv)
 
         map_inputs(input_buffer, &inputs, sys);
         sys->finish_frame(sys);
+        printf("\nFRAME FINISHED!");
         sys->get_framevars(sys, &fv);
+        printf("MCYCLE: %lld", fv.master_cycle);
+        printf("\nFRAME! %lld", fv.master_frame); fflush(stdout);
+        /*if (fv.master_cycle >= 120965401) {
+            dbg_break();
+            dbg.do_break = 1;
+        }*/
+        //if (fv.master_cycle >= 120965401) {
+        if (fv.master_frame >= 240) {
+            dbg_break(">240 FRAMES");
+            dbg.do_break = 1;
+        }
         if (dbg.do_break) {
             //break;
             if (did_break == 0) {
+                //sys->step_master(sys, 1200);
                 dbg_enable_trace();
+                dbg_disable_cpu_trace(DS_z80);
+                dbg_enable_cpu_trace(DS_m68000);
+                dbg.traces.m68000.mem = 1;
+                dbg.traces.m68000.instruction = 1;
                 dbg.do_break = 0;
                 dbg_unbreak();
-                sys->step_master(sys, 150);
+                printf("\nTHEN BREAK...");
+                sys->step_master(sys, 12000);
                 dbg_flush();
                 dbg_disable_trace();
+                break;
             }
             if (did_break == 1) break;
             did_break++;

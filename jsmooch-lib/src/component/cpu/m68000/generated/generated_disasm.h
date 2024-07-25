@@ -115,6 +115,9 @@ void M68k_disasm_TRAP(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 void M68k_disasm_TRAPV(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_disasm_TST(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_disasm_UNLK(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
+void M68k_disasm_ILLEGALS(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
+void M68k_disasm_ALINE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
+void M68k_disasm_FLINE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_disasm_SUBQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_disasm_ADDQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 

@@ -133,7 +133,6 @@ struct M68k {
 
     u32 ins_decoded;
     u32 testing;
-    u64 *trace_cycles;
 
     u32 megadrive_bug;
 
@@ -237,6 +236,7 @@ struct M68k {
 
                 // Indicates we have an interrupt to process
                 u32 on_next_instruction;
+                u32 new_I;
 
                 // For saving
                 u32 base_addr;
@@ -263,6 +263,7 @@ struct M68k {
         struct jsm_debug_read_trace strct;
         struct jsm_string str;
         u32 ok;
+        u64 *cycles;
     } trace;
 
     struct M68k_ins_t *ins;

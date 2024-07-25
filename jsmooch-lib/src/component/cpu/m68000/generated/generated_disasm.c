@@ -655,6 +655,18 @@ void M68k_disasm_UNLK(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
 }
 
+void M68k_disasm_ILLEGALS(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
+    jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
+}
+
+void M68k_disasm_ALINE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
+    jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
+}
+
 void M68k_disasm_SUBQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);

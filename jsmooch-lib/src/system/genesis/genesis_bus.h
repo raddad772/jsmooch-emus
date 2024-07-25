@@ -14,8 +14,12 @@
 #include "component/audio/sn76489/sn76489.h"
 #include "component/audio/ym2612/ym2612.h"
 
+#include "component/controller/genesis3/genesis3.h"
+
+#include "genesis.h"
 #include "genesis_clock.h"
 #include "genesis_cart.h"
+#include "genesis_controllerport.h"
 
 enum vertical_scroll_modes {
     VSM_fullscreen = 0,
@@ -36,15 +40,15 @@ enum interlace_modes{
 };
 
 enum slot_kinds {
-    slot_hscroll_data,
-    slot_layer_a_mapping,
-    slot_layer_a_pattern,
-    slot_layer_b_mapping,
-    slot_layer_b_pattern,
-    slot_sprite_mapping,
-    slot_sprite_pattern,
-    slot_external_access,
-    slot_refresh_cycle
+    slot_hscroll_data=1,
+    slot_layer_a_mapping=2,
+    slot_layer_a_pattern=3,
+    slot_layer_b_mapping=4,
+    slot_layer_b_pattern=5,
+    slot_sprite_mapping=6,
+    slot_sprite_pattern=7,
+    slot_external_access=8,
+    slot_refresh_cycle=9
 };
 
 enum FIFO_target {
@@ -79,15 +83,18 @@ struct genesis {
 
             u32 plane_a_table_addr, plane_b_table_addr, window_table_addr;
             u32 sprite_table_addr;
+            u32 sprite_generator_addr;
 
-            u32 bg_color, bg_palette_line;
+            u32 bg_color;
 
             u32 blank_left_8_pixels;
             u32 enable_virq;
             u32 enable_line_irq;
             u32 enable_dma;
-            u32 freeze_hv_on_level2_irq;
-            u32 enable_display, enable_display2;
+            u32 counter_latch;
+            u16 counter_latch_value;
+            u32 enable_overlay, enable_display;
+            u32 vram_mode;
             u32 cell30; // 30 cell mode (PAL)
             u32 mode5;
             enum vertical_scroll_modes vscroll_mode; // 1 = 16-pixel columns, 0 = one word for whole screen
@@ -97,7 +104,6 @@ struct genesis {
             u32 enable_shadow_highlight;
 
             u32 hscroll_addr;
-            u32 auto_increment;
 
             u32 foreground_width, foreground_height;
 
@@ -108,30 +114,37 @@ struct genesis {
             u32 window_draw_L_to_R;
             u32 window_draw_top_to_bottom;
 
-            struct {
-                u32 latch;
-                u32 val;
-            } command;
         } io;
 
         struct {
-            i32 len; // in words
-            u32 source_addr; // in words
-            u32 dest_addr; // in words
+            u32 address; // in words
             u32 direction;
             u32 active;
             u32 fill_value;
+            u32 latch;
+            u32 ready;
+            u32 pending;
+            u32 val;
+            u32 target;
+            u32 increment;
+            u32 delay;
+        } command;
+
+        struct {
+            i32 len; // in words
+            u32 mode;
+            u32 wait;
+            u32 delay;
+            u32 active;
+            u32 source;
+            u16 data;
+            u32 read;
         } dma;
 
         u32 cycle;
 
-        struct {
-            u32 latch;
-            u32 val;
-        } command;
-
         // there's...h32, h40, vblank/off
-        enum slot_kinds slot_array[3][428];
+        enum slot_kinds slot_array[4][212];
 
         u32 sc_count, sc_slot;
         u32 sc_array;
@@ -151,8 +164,20 @@ struct genesis {
             } slots[5];
             u32 len;
             u32 head;
-            u32 has_extra;
+
+            struct genesis_vdp_prefetch {
+                u32 UDS, LDS;
+                u32 addr;
+                u16 val;
+            } prefetch;
         } fifo;
+
+        struct {
+            u32 hscroll;
+            u32 screen_x;
+            u32 screen_y;
+        } line;
+
     } vdp;
 
     u16 RAM[32768]; // RAM is stored little-endian for some reason
@@ -176,13 +201,22 @@ struct genesis {
         struct {
             u32 open_bus_data;
             u32 VDP_FIFO_stall;
+            u32 VDP_prefetch_stall;
+            u32 stuck;
         } m68k;
+
+        struct genesis_controller_port controller_port1;
+        struct genesis_controller_port controller_port2;
+
     } io;
+
+    struct genesis_controller_3button controller1;
+    struct genesis_controller_3button controller2;
 };
 
 void genesis_cycle_m68k(struct genesis* this);
 void genesis_cycle_z80(struct genesis* this);
-void gen_test_dbg_break(struct genesis* this);
+void gen_test_dbg_break(struct genesis* this, const char *where);
 u16 genesis_mainbus_read(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
 void genesis_z80_interrupt(struct genesis* this, u32 level);
 void genesis_m68k_vblank_irq(struct genesis* this, u32 level);

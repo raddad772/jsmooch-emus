@@ -72,7 +72,7 @@ static float fixNaN(float f) {
     u32 hex = *(u32 *)&f;
 	if ((hex & 0x7fffffff) > 0x7f800000)
 		hex = 0x7fbfffff;
-
+    return f;
 }
 
 SH4ins(EMPTY) {
@@ -1082,39 +1082,10 @@ SH4ins(OCBWB) { // Write back operand cache block
 }
 
 SH4ins(PREF) { // (Rn) -> operand cache
-/*
- *     if ((RN>>26) != 0x38) {
-        PCinc;
-        return;
-    }
-    u32 sq = (RN >> 5) & 1;
-    u32 QACR_TR = (this->regs.QACR[sq] << 26) - 0xE0000000;
-    u32 addr = QACR_TR+(RN&~0x1F);
-
-    // Flush store queue to RAM!
-/*    if ((addr >= 0xE0000000) && (addr <= 0xE3FFFFFF)) {
-        //const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
-        u32 naddr = addr & 0x03FFFFE0 | (((sq ? this->regs.QACR[1] : this->regs.QACR[0]) & 0b11100) << 24);
-        for (u32 i = 0; i < 8; i++) {
-            WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
-            naddr += 4;
-        }
-    }
-    //if (((addr >> 26) & 0x7) != 4)//Area 4
-    //{
-    u32 naddr = addr;
-    for (u32 i = 0; i < 8; i++) {
-        WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
-        naddr += 4;
-    }
-
-    */
     u32 addr = RN;
     // Flush store queue to RAM!
     if ((addr & 0xEC000000) == 0xE0000000) {
         u32 sq = (addr >> 5) & 1;
-        //const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
-        // const ext_addr = (addr & 0x03FFFFE0) | (((cpu.read_p4_register(u32, if (sq_addr.sq == 0) .QACR0 else .QACR1) & 0b11100) << 24));
         u32 naddr = addr & 0x03FFFFE0 | (((this->regs.QACR[sq]) & 0b11100) << 24);
         for (u32 i = 0; i < 8; i++) {
             WRITE32(naddr, *(u32*)&this->SQ[sq][i<<2]);
@@ -1151,8 +1122,7 @@ SH4ins(SETT) { // 1 -> T
 }
 
 SH4ins(SLEEP) { // Sleep or standby
-    dbg_break();
-    printf("\nBREAK FOR SLEEP!");
+    dbg_break("Sh4 SLEEP");
     dbg_LT_dump();
     PCinc;
 }
@@ -1524,7 +1494,7 @@ SH4ins(FTRC_single) { // (long)FRm -> FPUL
     if (this->regs.FPUL.u == 0x80000000)
     {
         if (*(int *)&fpFRm > 0) // Using integer math to avoid issues with Inf and NaN
-            this->regs.FPUL.u;
+            this->regs.FPUL.u--;
     }
 
     PCinc;

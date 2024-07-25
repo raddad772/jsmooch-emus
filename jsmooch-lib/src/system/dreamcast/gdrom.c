@@ -158,7 +158,7 @@ static void GDROM_process_spi_cmd(struct DC* this) {
 
         default:
             printf("\nUNKNOWN SPI COMMAND %02x", (u32)this->gdrom.packet_cmd.data_8[0]);
-            dbg_break();
+            dbg_break("UNKNOWN SPI COMMAND");
             break;
     }
 }

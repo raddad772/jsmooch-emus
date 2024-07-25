@@ -166,6 +166,7 @@ void M68k_bus_cycle_read(struct M68k* this)
             this->pins.AS = 1;
             break;
         case 2:
+            this->pins.AS = 0;
             if (!this->pins.DTACK) // insert wait state
                 this->state.bus_cycle.TCU--;
             break;
@@ -341,6 +342,7 @@ void M68k_bus_cycle_write(struct M68k* this)
             break; }
         case 2: {
             // This is annoying
+            this->pins.AS = 0;
             if (!this->pins.DTACK) // insert wait state
                 this->state.bus_cycle.TCU--;
             break; }
@@ -957,9 +959,8 @@ void M68k_sample_interrupts(struct M68k* this)
     }
     this->state.nmi = 0;
     this->state.exception.interrupt.on_next_instruction = 1;
+    //dbg_printf("\nSET ONI cyc:%lld  IPL:%d   I:%d   %d", *this->trace.cycles, this->pins.IPL, this->regs.SR.I, this->state.nmi);
 }
-
-
 
 #define EXC_WRITE(val, n, desc) M68k_start_write(this, this->state.exception.group0.base_addr+n, val, 2, M68k_FC_supervisor_data, M68K_RW_ORDER_NORMAL, M68kS_exc_group0)
 
@@ -972,6 +973,7 @@ void M68k_exc_interrupt(struct M68k* this)
             this->state.exception.interrupt.SR = M68k_get_SR(this);
             this->state.exception.interrupt.PC = this->regs.PC - 4;
             M68k_set_SR(this, (this->state.exception.interrupt.SR & 0x5FFF) | 0x2000, 1);
+            if (this->regs.SR.I < this->state.exception.interrupt.new_I) this->regs.SR.I = this->state.exception.interrupt.new_I;
             M68k_start_wait(this, 6, M68kS_exc_interrupt);
             break;
         case 1: // write SR
@@ -983,7 +985,7 @@ void M68k_exc_interrupt(struct M68k* this)
             break;
         case 3:
             this->state.internal_interrupt_level = this->state.bus_cycle_iaq.ilevel;
-            M68k_start_wait(this, 4, M68kS_exec);
+            M68k_start_wait(this, 4, M68kS_exc_interrupt);
             break;
         case 4: // PC HI
             M68k_start_write(this, this->state.exception.interrupt.base_addr + 4, this->state.exception.interrupt.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_interrupt);
@@ -1005,6 +1007,7 @@ void M68k_exc_interrupt(struct M68k* this)
             M68k_start_prefetch(this, 1, 1, M68kS_decode);
             break;
     }
+    this->state.exception.interrupt.TCU++;
 }
 
 void M68k_exc_group12(struct M68k* this)

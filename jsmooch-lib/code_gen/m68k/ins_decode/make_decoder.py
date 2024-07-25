@@ -342,6 +342,8 @@ class instruction_block:
             o = self.template_dreg_to_ea_S(variant)
         elif self.template == 'imm16':
             o = self.template_output_1op('M68k_AM_imm16, 0', variant, 'ea')
+        elif self.template == 'LINE':
+            o = self.template_output_line()
 
         if o is not None:
             TEMPLATES_DONE.add(self.template)
@@ -357,6 +359,12 @@ class instruction_block:
         else:
             self.op2 = 1
         return 'op' + str(n) + ' = mk_ea(' + v + ');'
+
+    def template_output_line(self) -> str:
+        out = self.open_fors()
+        ls = '\n' + self.indent
+        out += self.bind_data_sizes(ls, '0', 'none')
+        return out
 
     def template_output_1op(self, op1str, variant, ops_str) -> str:
         out = self.open_fors()

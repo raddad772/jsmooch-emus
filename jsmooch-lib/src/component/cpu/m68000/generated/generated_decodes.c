@@ -1000,3 +1000,8 @@
         op1 = mk_ea(M68k_AM_address_register_direct, a);
         bind_opcode("0100 1110 0101 1...", 4, &M68k_ins_UNLK, &M68k_disasm_UNLK, a, &op1, NULL, 0, M68k_OM_r);
     }
+
+    for (u32 d = 0; d < 4096; d++) {
+        bind_opcode("1111 .... .... ....", 4, &M68k_ins_FLINE, &M68k_disasm_FLINE, d, NULL, NULL, 0, M68k_OM_none);
+        bind_opcode("1010 .... .... ....", 4, &M68k_ins_ALINE, &M68k_disasm_ALINE, d, NULL, NULL, 0, M68k_OM_none);
+    }

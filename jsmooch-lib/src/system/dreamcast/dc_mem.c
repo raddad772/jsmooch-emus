@@ -209,7 +209,7 @@ u64 read_area0(void* ptr, u32 addr, enum DC_MEM_SIZE sz, u32* success)
     addr &= 0x1FFFFFFF;
 
      if (addr <= 0x001FFFFF) {
-         dbg_break();
+         dbg_break("DC BIOS write");
          printf("\nBIOS write %08x %llu", addr, this->sh4.clock.trace_cycles);
          return;
      }
@@ -438,7 +438,7 @@ void DCwrite(void *ptr, u32 addr, u64 val, u32 sz) {
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
         if (dbg.var > QUIT_ON_TOO_MANY) {
-            dbg_break();
+            dbg_break("TOO MANY BAD ACCESS");
         }
 #endif
     }
@@ -479,7 +479,7 @@ u64 DCread(void *ptr, u32 addr, u32 sz, bool is_ins_fetch)
         dbg.var++;
 #ifdef QUIT_ON_TOO_MANY
         if (dbg.var > QUIT_ON_TOO_MANY) {
-            dbg_break();
+            dbg_break("TOO MANY BAD ACCESS");
         }
 #endif
         return 0;

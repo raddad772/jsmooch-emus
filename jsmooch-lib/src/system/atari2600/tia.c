@@ -575,7 +575,7 @@ void TIA_new_line(struct atari_TIA* this)
     this->io.hmoved = 0;
 
     if (this->vcounter > 262) { // 312 for PAL. this is just in case a game missed vblank
-        printf("\nVCOUNTER>262 update output! %d", this->master_frame + 1);
+        printf("\nVCOUNTER>262 refresh output! %d", this->master_frame + 1);
         this->vcounter = 0;
 
         flip_buffer(this);

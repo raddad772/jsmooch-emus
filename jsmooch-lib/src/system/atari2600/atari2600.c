@@ -290,7 +290,7 @@ void atari2600_map_inputs(JSM)
     B_GET(select, 4);
 #undef B_GET
 
-    // Now update input stuff! YAY!
+    // Now refresh input stuff! YAY!
     this->tia.io.INPT[0] = this->tia.io.INPT[1] = this->tia.io.INPT[2] = this->tia.io.INPT[3] = this->tia.io.INPT[4] = this->tia.io.INPT[5] = 0;
     this->riot.io.SWCHA = 0;
     this->riot.io.SWCHB &= 0b11001011; // Combat stores 3 bits of data in here

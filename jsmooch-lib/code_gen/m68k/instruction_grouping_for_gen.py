@@ -19,10 +19,22 @@ def main():
     with open(FPATH) as infile:
         js = json.load(infile)
 
+    for i in range(0, 4096):
+        opcodeA = "%0.2X" % (0xA000 + i)
+        opcodeF = "%0.2X" % (0xF000 + i)
+        if opcodeA in js:
+            raise Exception('CRAP!')
+        if opcodeF in js:
+            raise Exception('CRAP2!')
+        js[opcodeA] = 'ILLEGAL_LINEA'
+        js[opcodeF] = 'ILLEGAL_LINEF'
+
     opcode_to_disasm = dict()
 
     for opcode, disasm in js.items():
+        print(type(opcode), opcode)
         suffix = None
+        print(opcode, disasm)
         r = disasm.split(' ')
         iname = r[0]
         if iname == 'None':

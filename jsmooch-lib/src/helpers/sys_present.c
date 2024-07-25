@@ -263,6 +263,34 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width
 
  */
 
+void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+{
+    //u16 *smso = (u16 *)device->device.display.output[device->device.display.last_written];
+    u16 *smso = (u16 *)device->device.display.output[0];
+    u32 w = out_width;//256 - (overscan_left + overscan_right);
+    u8 *img8 = (u8 *) out_buf;
+    for (u32 ry = 0; ry < 224; /*data.bottom_rendered_line; */ ry++) {
+        u32 y = ry;
+        u32 outyw = y * w;
+        for (u32 rx = 0; rx < 320; rx++) {
+            u32 x = rx;
+            u32 di = ((y * 320) + x);
+            u32 b_out = (outyw + x) * 4;
+
+            u32 color = smso[di];
+            //printf("\nCOLOR? %d", color);
+            u32 r, g, b;
+            b = (color & 15) * 16;
+            g = (color & 15) * 16;
+            r = (color & 15) * 16;
+            img8[b_out] = b;
+            img8[b_out+1] = g;
+            img8[b_out+2] = r;
+            img8[b_out+3] = 255;
+        }
+    }
+}
+
 
 void SMS_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
@@ -289,6 +317,7 @@ void SMS_present(struct physical_io_device *device, void *out_buf, u32 out_width
         }
     }
 }
+
 
 void GG_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
@@ -318,6 +347,9 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
 void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 out_width, u32 out_height)
 {
     switch(which) {
+        case SYS_GENESIS:
+            genesis_present(display, out_buf, out_width, out_height);
+            break;
         case SYS_DMG:
             DMG_present(display, out_buf, out_width, out_height);
             break;

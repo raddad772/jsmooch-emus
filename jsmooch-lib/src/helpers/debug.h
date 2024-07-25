@@ -61,14 +61,43 @@ struct last_traces_t {
     char *curptr;
 };
 
+struct cpu_trace_struct {
+    u32 irq;
+    u32 instruction;
+    u32 mem;
+    u32 ifetch;
+    u32 IO;
+};
+
+struct cpu_break_struct {
+    u32 PC;
+    u32 irq;
+};
+
 #define MAX_DEBUG_MSG 2000000
 struct jsm_debug_struct {
     u32 do_break;
+    u32 did_breakpoint;
     u32 brk_on_NMIRQ;
 
     u32 first_flush;
 
     u32 trace_on;
+    struct {
+        struct cpu_trace_struct z80;
+        struct cpu_trace_struct m68000;
+
+        u32 dma;
+        u32 vram;
+        u32 fifo;
+        u32 vdp;
+    } traces;
+
+    struct {
+        struct cpu_break_struct z80;
+        struct cpu_break_struct m68000;
+    } breaks;
+
     u32 watch;
     struct jsm_string msg;
     char *msg_last_newline;
@@ -94,12 +123,26 @@ void dbg_clear_msg();
 void dbg_enable_trace();
 void dbg_disable_trace();
 
+enum debug_sources {
+    DS_none,
+    DS_z80,
+    DS_65816,
+    DS_nes6502,
+    DS_m6502,
+    DS_m68000,
+    DS_spc700
+};
+
+void dbg_enable_cpu_trace(enum debug_sources source);
+void dbg_disable_cpu_trace(enum debug_sources source);
+
+
 void dbg_init();
 void dbg_add_msg(char *what);
 char *dbg_get_msg();
 void dbg_clear_msg();
 void dbg_delete();
-void dbg_break();
+void dbg_break(const char *reason);
 void dbg_unbreak();
 
 void LT_init(struct last_traces_t* this);

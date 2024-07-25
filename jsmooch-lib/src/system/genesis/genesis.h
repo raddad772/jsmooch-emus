@@ -9,6 +9,12 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
+enum genesis_controller_kinds {
+    genesis_controller_none = 0,
+    genesis_controller_3button,
+    genesis_controller_6button
+};
+
 void genesis_new(struct jsm_system* system);
 void genesis_delete(struct jsm_system* system);
 

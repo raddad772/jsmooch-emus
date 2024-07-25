@@ -378,3 +378,9 @@ skip1 m=1 if (sz==1)
 
 # Set ILLEGAL for all the others
 .ILLEGALS 4 template(ILLEGALS)
+
+.ALINE 4 template(LINE)
+1010 dddd dddd dddd
+
+.FLINE 4 template(LINE)
+1111 dddd dddd dddd

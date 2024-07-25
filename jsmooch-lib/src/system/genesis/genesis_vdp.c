@@ -2,6 +2,13 @@
 // Created by . on 6/1/24.
 //
 
+/*
+ * NOTE: parts of the DMA subsystem are almost directly from Ares.
+ * I wanted to get it right and write a good article about it. Finding accurate
+ *  info was VERY difficult, so I kept very close to the best source of
+ *  info I could find - Ares.
+ */
+
 #include <assert.h>
 #include <stdio.h>
 
@@ -11,7 +18,8 @@
 
 #define SC_ARRAY_H32      0
 #define SC_ARRAY_H40      1
-#define SC_ARRAY_DISABLED 2
+#define SC_ARRAY_DISABLED 2 // H32 timing
+#define SC_ARRAY_H40_VBLANK 3
 
 
 #define MCLOCKS_PER_LINE 3420
@@ -22,6 +30,66 @@
 #define HSYNC_GOES_ON (SC_HSYNC_GOES_ON*5)
 #define SLOW_MCLOCKS_START (SC_SLOW_SLOTS*5)
 #define HBLANK_START 1280
+
+#define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
+
+//    UDS<<2 + LDS           neither   just LDS   just UDS    UDS+LDS
+static u32 write_maskmem[4] = { 0,     0xFF00,    0x00FF,      0 };
+
+static void set_m68k_dtack(struct genesis* this)
+{
+    printf("\nYAR");
+    //this->m68k.pins.DTACK = !(this->io.m68k.VDP_FIFO_stall | this->io.m68k.VDP_prefetch_stall);
+    //this->io.m68k.stuck = !this->m68k.pins.DTACK;
+}
+
+
+static u16 read_VSRAM(struct genesis* this, u16 addr)
+{
+    if (addr > 39) addr = 0;
+    return this->vdp.VSRAM[addr];
+}
+
+static void write_VSRAM(struct genesis* this, u16 addr, u16 val)
+{
+    if (addr > 39) addr = 0;
+    this->vdp.VSRAM[addr] = val;
+    if (dbg.trace_on && dbg.traces.vram) {
+        dbg_printf("\nWRITE VSRAM addr:%d val:04x cyc:%d", addr, val, *this->m68k.trace.cycles);
+    }
+}
+
+static u16 read_CRAM(struct genesis* this, u16 addr)
+{
+    u16 data = this->vdp.CRAM[addr & 63];
+    u16 o = ((data & 7) << 1);
+    o |= ((data >> 3) & 7) << 5;
+    o |= ((data >> 6) & 7) << 9;
+    return o;
+}
+
+static void write_CRAM(struct genesis* this, u16 addr, u16 val)
+{
+    u16 o = ((val >> 1) & 7);
+    o |= ((val >> 5) & 7) << 3;
+    o |= ((val >> 9) & 7) << 6;
+    if (addr > 63) addr = 0;
+    if (dbg.trace_on && dbg.traces.vram) {
+        dbg_printf("\nWRITE CRAM addr:%d val:04x cyc:%d", addr, o, *this->m68k.trace.cycles);
+    }
+    this->vdp.CRAM[addr] = o;
+}
+
+static u16 read_counter(struct genesis* this)
+{
+    if (this->vdp.io.counter_latch) return this->vdp.io.counter_latch_value;
+    u16 vcnt = this->clock.vdp.vcount;
+    if (this->vdp.io.interlace_mode & 1) {
+        if (this->vdp.io.interlace_mode & 2) vcnt <<= 1;
+        vcnt = (vcnt & 0xFFFE) | ((vcnt >> 8) ^ 1);
+    }
+    return vcnt << 8 | this->clock.vdp.hcount;
+}
 
 void init_slot_tables(struct genesis* this)
 {
@@ -60,16 +128,55 @@ void init_slot_tables(struct genesis* this)
 
     // Now do h40
     s = this->vdp.slot_array[SC_ARRAY_H40];
-    
+    s[0] = slot_hscroll_data;
+    SR(1,5,slot_sprite_pattern);
+    s[5] = slot_layer_a_mapping;
+    s[6] = slot_sprite_pattern;
+    s[7] = s[8] = slot_layer_a_pattern;
+    s[9] = slot_layer_b_mapping;
+    s[10] = slot_sprite_pattern;
+    s[11] = s[12] = slot_layer_b_pattern;
+
+    sn = 13;
+    for (u32 j = 0; j < 5; j++) {
+        for (u32 x = 0; x < 4; x++) {
+            S(slot_layer_a_mapping);
+            if (x == 3) { S(slot_refresh_cycle); }
+            else { S(slot_external_access); }
+            S(slot_layer_a_pattern);
+            S(slot_layer_a_pattern);
+            S(slot_layer_b_mapping);
+            S(slot_sprite_mapping);
+            S(slot_layer_b_pattern);
+            S(slot_layer_b_pattern);
+        }
+    }
+
+    SR(173,175, slot_external_access);
+    SR(175,198, slot_sprite_pattern);
+    s[198] = slot_external_access;
+    SR(199, 209, slot_sprite_pattern);
 
     // Now do rendering disabled
     s = this->vdp.slot_array[SC_ARRAY_DISABLED];
+    //TODO: fill this
+    // FOR NOW just put in 1 refersh slot every 16
+    for (u32 i = 0; i < 171; i++) {
+        if ((i & 7) == 0) { S(slot_external_access); }
+        else { S(slot_refresh_cycle); }
+    }
 
+    // Now do vblank H40
+    s = this->vdp.slot_array[SC_ARRAY_H40];
+    for (u32 i = 0; i < 211; i++) {
+        if ((i & 7) == 0) { S(slot_refresh_cycle); }
+        else { S(slot_external_access); }
+    }
 }
 #undef S
 #undef SR
 
-void VDP_init(struct genesis* this)
+void genesis_VDP_init(struct genesis* this)
 {
     init_slot_tables(this);
 }
@@ -101,7 +208,7 @@ static void vblank(struct genesis* this, u32 new_value)
     }
 
     if (new_value) {
-        this->vdp.sc_slot = SC_ARRAY_DISABLED; //
+        this->vdp.sc_slot = SC_ARRAY_DISABLED + this->vdp.io.h40; //
     }
 
     set_clock_divisor(this);
@@ -115,6 +222,8 @@ static void new_frame(struct genesis* this)
     this->clock.vdp.field ^= 1;
     this->clock.vdp.vcount = 0;
     this->clock.vdp.vblank = 0;
+    this->vdp.cur_output = this->vdp.display->device.display.output[this->vdp.display->device.display.last_written];
+    this->vdp.display->device.display.last_written ^= 1;
 
     set_clock_divisor(this);
 }
@@ -126,15 +235,21 @@ static void latch_vcounter(struct genesis* this)
 
 static void set_sc_array(struct genesis* this)
 {
-    if ((this->clock.vdp.vblank) || (!this->vdp.io.enable_display)) this->vdp.sc_array = SC_ARRAY_DISABLED;
+    if ((this->clock.vdp.vblank) || (!this->vdp.io.enable_display)) {
+        this->vdp.sc_array = SC_ARRAY_DISABLED + this->vdp.io.h40;
+    }
     else this->vdp.sc_array = this->vdp.io.h40;
 }
 
 static void new_scanline(struct genesis* this)
 {
-    hblank(this, 0);
     this->clock.vdp.hcount = 0;
     this->clock.vdp.vcount++;
+
+    this->vdp.line.hscroll = 0;
+    this->vdp.line.screen_x = 0;
+    this->vdp.line.screen_y = this->clock.vdp.vcount;
+
     this->clock.vdp.line_mclock -= MCLOCKS_PER_LINE;
     this->vdp.sc_count = 0;
     this->vdp.sc_slot = 0;
@@ -167,20 +282,162 @@ static void new_scanline(struct genesis* this)
     set_sc_array(this);
 }
 
-static u16 fifo_empty(struct genesis* this)
+static u32 fifo_empty(struct genesis* this)
 {
     return this->vdp.fifo.len == 0;
 }
 
-static u16 fifo_full(struct genesis* this)
+static u32 fifo_overfull(struct genesis* this)
 {
-    return this->vdp.fifo.len >= 4;
+    return this->vdp.fifo.len > 4;
 }
+
+static u16 read_VRAM_byte(struct genesis* this, u16 addr)
+{
+    if (addr & 1) return this->vdp.VRAM[addr >> 1] & 0xFF;
+    return this->vdp.VRAM[addr >> 1] >> 8;
+}
+
+static void FIFO_advance(struct genesis* this)
+{
+    this->vdp.fifo.head = (this->vdp.fifo.head + 1) % 5;
+    this->vdp.fifo.len--;
+    if (dbg.trace_on && dbg.traces.fifo) dbg_printf("\nFIFO_advance. new head: %d, new len: %d", this->vdp.fifo.head, this->vdp.fifo.len);
+    assert(this->vdp.fifo.len<6);
+    if (this->io.m68k.VDP_FIFO_stall) {
+        this->io.m68k.VDP_FIFO_stall = 0;
+        printf("\nDONE2");
+        set_m68k_dtack(this);
+    }
+}
+
+static void write_VRAM_byte(struct genesis* this, u16 addr, u16 val)
+{
+    if (dbg.trace_on && dbg.traces.vram)
+        dbg_printf("\nVRAM WRITE addr:%d val:%02x", addr, val);
+    if (val != 0) dbg_printf("\nVRAM WRITE addr:%d val:%02x cyc:%lld", addr, val, *this->m68k.trace.cycles);
+    u32 LDS = addr & 1;
+    u32 UDS = LDS ^ 1;
+    u32 mask = write_maskmem[LDS  + (UDS << 1)];
+    addr &= 0xFFFF;
+    this->vdp.VRAM[addr >> 1] = (this->vdp.VRAM[addr >> 1] & mask) | (val & ~mask);
+}
+
+static u32 prefetch_run(struct genesis* this)
+{
+    struct genesis_vdp_prefetch *pf = &this->vdp.fifo.prefetch;
+    if (pf->UDS && pf->LDS) return 0; // prefetch is full
+
+    u32 target = this->vdp.command.target;
+    if (target == 0 && this->vdp.io.vram_mode == 0) {
+        pf->LDS = pf->UDS = 1;
+        pf->val = (read_VRAM_byte(this, this->vdp.command.address & 0xFFFE) << 8) | (read_VRAM_byte(this, (this->vdp.command.address & 0xFFFE) | 1));
+        this->vdp.command.ready = 1;
+        return 1;
+    }
+
+    if (target == 0 && this->vdp.io.vram_mode == 1) {
+        pf->UDS = pf->LDS = 1;
+        pf->val = read_VRAM_byte(this, this->vdp.command.address | 1);
+        pf->val |= (pf->val << 8);
+        this->vdp.command.ready = 1;
+        return 1;
+    }
+
+    if (target == 4) {
+        pf->UDS = pf->LDS = 1;
+        pf->val = read_VSRAM(this,this->vdp.command.address >> 1);
+        pf->val = (pf->val & 0x07FF) | (this->vdp.fifo.slots[this->vdp.fifo.head].val & 0xF800);
+        this->vdp.command.ready = 1;
+        return 1;
+    }
+
+    if (target == 8) {
+        pf->UDS = pf->LDS = 1;
+        pf->val = read_CRAM(this, this->vdp.command.address >> 1);
+        pf->val = ((pf->val & 0x0EEE) | (this->vdp.fifo.slots[this->vdp.fifo.head].val & ~0x0EEE)) & 0xFFFF;
+        this->vdp.command.ready = 1;
+        return 1;
+    }
+
+    if (target == 12) {
+        pf->UDS = pf->LDS = 1;
+        pf->val = read_VRAM_byte(this, this->vdp.command.address ^ 1);
+        pf->val |= (pf->val << 8);
+        this->vdp.command.ready = 1;
+        return 1;
+    }
+
+    pf->UDS = pf->LDS = 1;
+    this->vdp.command.ready = 1;
+    printif(fifo, "\nREAD PREFETCH TARGET %d", target);
+    return 1;
+}
+
+
+static u32 fifo_full(struct genesis* this)
+{
+    return this->vdp.fifo.len > 3;
+}
+
+// Discharge 1 FIFO entry, if external slot is available.
+static u32 run_FIFO(struct genesis* this) {
+    // Empty FIFO, don't bother...
+    if (this->vdp.fifo.len == 0) {
+        if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: FIFO EMPTY");
+        assert(this->io.m68k.VDP_FIFO_stall == 0);
+        return 0;
+    }
+    struct genesis_vdp_fifo_slot *e = &this->vdp.fifo.slots[this->vdp.fifo.head];
+
+    struct genesis_vdp_fifo_slot *slot0 = &this->vdp.fifo.slots[this->vdp.fifo.head];
+    if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: using slot %d", this->vdp.fifo.head);
+    if (slot0->target == 1 && this->vdp.io.vram_mode == 0) {
+        if (slot0->LDS) {
+            slot0->LDS = 0;
+            write_VRAM_byte(this, slot0->addr ^ 1, slot0->val & 0xFF);
+            if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: WROTE BYTE addr:%04x byte:%02x", slot0->addr ^ 1, slot0->val & 0xFF);
+            return 1;
+        }
+        if (slot0->UDS) {
+            slot0->UDS = 0;
+            write_VRAM_byte(this, slot0->addr, slot0->val >> 8);
+            if (this->vdp.command.pending && this->vdp.dma.mode == 2) {
+                this->vdp.dma.data = slot0->val;
+                this->vdp.dma.wait = 0;
+            }
+            FIFO_advance(this);
+            if (dbg.traces.fifo) dbg_printf("\nFIFO WROTE BYTE AND SLIMMED %d", this->vdp.fifo.len);
+            return 1;
+        }
+        assert(1==2);
+    }
+
+    if (slot0->target == 1 && this->vdp.io.vram_mode == 1)
+        write_VRAM_byte(this, slot0->addr | 1, slot0->val & 0xFF);
+    else if (slot0->target == 3)
+        write_CRAM(this, slot0->addr >> 1, slot0->val);
+    else if (slot0->target == 5)
+        write_VSRAM(this, slot0->addr >> 1, slot0->val);
+    else
+        if (dbg.traces.fifo) dbg_printf("\nWarning, FIFO write target? %d addr:%04x val:%04x", slot0->target, slot0->addr, slot0->val);
+
+    if ((this->vdp.command.pending) && (this->vdp.dma.mode == 2)) {
+        struct genesis_vdp_fifo_slot *slot1 = &(this->vdp.fifo.slots[(this->vdp.fifo.head + 1) % 5]);
+        this->vdp.dma.data = slot1->val;
+        this->vdp.dma.wait = 0;
+    }
+
+    slot0->UDS = slot0->LDS = 0;
+    FIFO_advance(this);
+    return 1;
+}
+
 
 static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
 {
     if (rn >= 24) {
-        printf("\nWARNING illegal VDP register write %d %04x on cycle:%lld", rn, val, this->clock.master_cycle_count);
+        if (dbg.traces.vdp) dbg_printf("\nWARNING illegal VDP register write %d %04x on cycle:%lld", rn, val, this->clock.master_cycle_count);
         return;
     }
     struct genesis_vdp* vdp = &this->vdp;
@@ -190,35 +447,40 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
         case 0: // Mode Register 1
             vdp->io.blank_left_8_pixels = (val >> 5) & 1;
             vdp->io.enable_line_irq = (val >> 4) & 1;
-            vdp->io.freeze_hv_on_level2_irq = (val >> 1) & 1;
-            vdp->io.enable_display = (val & 1) ^ 1;
+            if ((!vdp->io.counter_latch) && (val & 2))
+                vdp->io.counter_latch_value = read_counter(this);
+            vdp->io.counter_latch = (val >> 1) & 1;
+            vdp->io.enable_overlay = (val & 1) ^ 1;
+            // TODO: handle more bits
             return;
         case 1: // Mode regiser 2
-            vdp->io.enable_display2 = (val >> 6) & 1;
+            vdp->io.vram_mode = (val >> 7) & 1;
+            vdp->io.enable_display = (val >> 6) & 1;
             vdp->io.enable_virq = (val >> 5) & 1;
             vdp->io.enable_dma = (val >> 4) & 1;
             vdp->io.cell30 = (val >> 3) & 1;
+            // TODO: handle more bits
             if (vdp->io.cell30) printf("\nWARNING PAL DISPLAY 240 SELECTED");
-            vdp->io.mode5 = val & 1;
+            vdp->io.mode5 = (val >> 2) & 1;
             if (!vdp->io.mode5) printf("\nWARNING MODE5 DISABLED");
             return;
         case 2: // Plane A table location
-            vdp->io.plane_a_table_addr = (val & 0x1C) << 10;
+            vdp->io.plane_a_table_addr = (val & 0b11111000) << 9;
             return;
         case 3: // Window nametable location
-            vdp->io.window_table_addr = (val & 0x3E) << 10; // lowest bit ignored in H40
+            vdp->io.window_table_addr = (val & 0b1111110) << 9; // lowest bit ignored in H40
             return;
         case 4: // Plane B location
-            vdp->io.plane_b_table_addr = (val & 7) << 13;
+            vdp->io.plane_b_table_addr = (val & 7) << 12;
             return;
         case 5: // Sprite table location
-            vdp->io.sprite_table_addr = (val & 0x7F) << 9; // lowest bit ignored in H40
+            vdp->io.sprite_table_addr = (val & 0xFF) << 8; // lowest bit ignored in H40
             return;
         case 6: // um
+            vdp->io.sprite_generator_addr = (vdp->io.sprite_generator_addr & 0x7FFF) | (((val >> 5) & 1) << 15);
             return;
         case 7:
-            vdp->io.bg_color = val & 15;
-            vdp->io.bg_palette_line = (val >> 4) & 3;
+            vdp->io.bg_color = val & 63;
             return;
         case 8: // master system hscroll
             return;
@@ -233,6 +495,7 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
             vdp->io.hscroll_mode = val & 3;
             return;
         case 12: // Mode register 4
+            // TODO: handle more of these
             vdp->io.h32 = (val & 1) == 0;
             vdp->io.h40 = (val & 1) != 0;
             set_sc_array(this);
@@ -240,16 +503,15 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
             if (vdp->io.h40) printf("\n40-cell 320 pixel mode selected");
             set_clock_divisor(this);
             vdp->io.enable_shadow_highlight = (val >> 3) & 1;
-            u32 im = (val >> 1) & 3;
-            vdp->io.interlace_mode = (im == 2) ? 0 : im;
+            vdp->io.interlace_mode = (val >> 1) & 3;
             return;
         case 13: // horizontal scroll data addr
-            vdp->io.hscroll_addr = (val & 0x3F) << 10;
+            vdp->io.hscroll_addr = (val & 0x7F) << 9;
             return;
         case 14: // mostly unused
             return;
         case 15:
-            vdp->io.auto_increment = val;
+            vdp->command.increment = val;
             return;
         case 16:
             va = (val &3);
@@ -296,77 +558,74 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
             vdp->dma.len = (vdp->dma.len & 0xFF00) | (val & 0xFF);
             return;
         case 20:
-            vdp->dma.len = ((vdp->dma.len & 0xFF) | (val << 8) & 0xFF00);
+            vdp->dma.len = (vdp->dma.len & 0xFF) | ((val << 8) & 0xFF00);
             return;
         case 21:
-            vdp->dma.source_addr = (vdp->dma.source_addr & 0xFFFF00) | (val & 0xFF);
+            vdp->dma.source = (vdp->dma.source & 0xFFFF00) | (val & 0xFF);
             return;
         case 22:
-            vdp->dma.source_addr = (vdp->dma.source_addr & 0xFF00FF) | ((val << 8) & 0xFF00);
+            vdp->dma.source = (vdp->dma.source & 0xFF00FF) | ((val << 8) & 0xFF00);
             return;
         case 23:
-            vdp->dma.source_addr = (vdp->dma.source_addr & 0xFFFF) | (((val & 0xFF) << 16) & 0x3F0000);
-            vdp->dma.direction = (val >> 6) & 3;
+            vdp->dma.source = (vdp->dma.source & 0xFFFF) | (((val & 0xFF) << 16) & 0x3F0000);
+            vdp->dma.mode = (val >> 6) & 3;
             return;
     }
-    printf("\nUNHANDLED WRITE TO VDP REG:%d val:%04x", rn, val);
+}
+
+static void dma_test_enable(struct genesis* this)
+{
+    if (this->vdp.command.pending && !this->vdp.dma.wait && this->vdp.dma.mode <= 1) {
+        this->vdp.dma.active = 1;
+        dbg_printf("\nDMA GO! dest:%04x len:%d cyc:%lld", this->vdp.command.address, this->vdp.dma.len, *this->m68k.trace.cycles);
+    }
+    else {
+        dbg_printf("\nDMA STOP!");
+        this->vdp.dma.active = 0;
+    }
 }
 
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
-    if (this->vdp.command.latch == 0) {
-        // Collect first 16 bits of word
-        // Write register if it's correct kind
-        if (((val >> 7) & 7) == 0b100) {
-            this->vdp.command.latch = 0;
-            u32 rn = (val >> 8) & 0x1F;
-            write_vdp_reg(this, rn, val & 0xFF, mask);
-            return;
-        }
-
-        this->vdp.command.latch = 1;
-        this->vdp.command.val = val << 16;
-        return;
-    }
-    if (this->vdp.command.latch == 2) {
-        printf("\nERROR IT SHOULD NEVER BE 2! cyc:%lld", this->clock.master_cycle_count);
+    printif(vdp, "\nVDP controlport write: %04x", val);
+    if (this->vdp.command.latch) {
         this->vdp.command.latch = 0;
+        // bis 14-16 = data 0-2
+        this->vdp.command.address = (this->vdp.command.address & 0x3FFF) | ((val & 7) << 14);
+        this->vdp.command.target = (this->vdp.command.target & 0b0011) | ((val >> 2) & 0b1100);
+        printif(vdp, "\nSET TARGET %d FROM VAL %04x", this->vdp.command.target, val);
+        this->vdp.command.ready = ((val >> 6) & 1) | (this->vdp.command.target & 1);
+        this->vdp.command.pending |= ((val >> 7) & 1) & this->vdp.io.enable_dma;
+
+        if ((this->vdp.command.target & 1) == 0) {
+            this->vdp.fifo.prefetch.UDS = this->vdp.fifo.prefetch.LDS = 0;
+        }
+        if (this->vdp.command.pending && this->vdp.dma.mode == 1) this->vdp.dma.delay = 4;
+        this->vdp.dma.wait = this->vdp.dma.mode == 2;
+        dma_test_enable(this);
         return;
     }
 
-    // Write final 16 bits of command and start DMA if it's enabled
-    this->vdp.command.latch = 0;
-    this->vdp.command.val |= val;
-    val = this->vdp.command.val;
-    u32 bit76 = (val & 0b11000000) >> 6;
+    this->vdp.command.target = (this->vdp.command.target & 0b1100) | ((val >> 14) & 3);
+    printif(dma, "\nSET TARGET2 %d from %04x", this->vdp.command.target, val);
+    this->vdp.command.ready = 1;
 
-    this->vdp.dma.dest_addr = ((val >> 16) & 0x7FFE) | ((val & 3) << 14);
-
-    this->vdp.command.latch = 0;
-
-    if (bit76 == 0b10) { // Start m68k->VRAM transfer
-        u32 cd = ((val >> 31) & 1) | ((val >> 3) & 2);
-        assert(cd < 3); // 0 1 and 2 are valid values for us
-        this->vdp.dma.direction = cd;
-        this->vdp.dma.active = this->vdp.io.enable_dma;
-        printf("\nM68k->%d transfer started cyc:%lld", cd, this->clock.master_cycle_count);
+    if (((val >> 14) & 3) != 2) {
+        // bits 0-13
+        // 14, 15 = 4, 8 = C, 3
+        this->vdp.command.address = (this->vdp.command.address & 0x1C000) | (val & 0x3FFFF);
+        this->vdp.command.latch = 1;
+        return;
     }
-    else if (bit76 == 0x0b11) { // Start VRAM->VRAM or VRAM fill
-        if ((this->vdp.dma.source_addr & 0xB00000) == 0xB00000) {// VRAM->VRAM
-            this->vdp.dma.direction = 3;
-            this->vdp.dma.active = this->vdp.io.enable_dma;
-            printf("\nVRAM->VRAM transfer started cyc:%lld", this->clock.master_cycle_count);
-        }
-        else {  // VRAM fill
-            printf("\nVRAM fill primed cyc:%lld", this->clock.master_cycle_count);
-            this->vdp.dma.direction = 4;
-            this->vdp.command.latch = 2;
-        }
-    }
+
+    u32 reg = (val >> 8) & 31;
+    write_vdp_reg(this, reg, val, mask);
 }
 
 static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
 {
+    this->vdp.command.latch = 0;
+
     u16 v = 0; // NTSC only for now
     v |= this->vdp.dma.active; // no DMA yet
     v |= this->clock.vdp.hblank << 2;
@@ -391,6 +650,15 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
     return v;
 }
 
+static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
+{
+    this->vdp.command.latch = 0;
+    this->vdp.command.ready = 0;
+    // TODO: this
+    this->vdp.command.address += this->vdp.command.increment;
+
+    return 0;
+}
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
 {
@@ -403,12 +671,19 @@ u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, 
     addr = (addr & 0x1F) | 0xC00000;
 
     switch(addr) {
+        case 0xC00000: // VDP data port
+        case 0xC00002: // VDP data port
+            return read_data_port(this, old, mask) & mask;
         case 0xC00004: // VDP control
-            return read_control_port(this, old, has_effect);
+        case 0xC00006: // VDP control
+            return read_control_port(this, old, has_effect) & mask;
+        case 0xC00008:
+        case 0xC0000C:
+            return read_counter(this) & mask;
     }
 
     printf("\nBAD VDP READ addr:%06x cycle:%lld", addr, this->clock.master_cycle_count);
-    gen_test_dbg_break(this);
+    gen_test_dbg_break(this, "vdp_mainbus_read");
     return old;
 }
 
@@ -425,6 +700,45 @@ void genesis_VDP_z80_write(struct genesis* this, u32 addr, u8 val)
     if ((addr >= 0x7F00) && (addr < 0x7F20)) {
         genesis_VDP_mainbus_write(this, (addr & 0x1E) | 0xC00000, val, 0xFF);
     }
+}
+
+static void fifo_write(struct genesis* this, u32 target, u16 dest_addr, u16 val)
+{
+    u32 slot = (this->vdp.fifo.head + this->vdp.fifo.len) % 5;
+    this->vdp.fifo.len++;
+    assert(this->vdp.fifo.len < 6);
+    struct genesis_vdp_fifo_slot *e = &this->vdp.fifo.slots[slot];
+
+    printif(fifo, "\nFIFO WRITE addr:%04x val:%04x target:%d slot:%d len:%d", dest_addr, val, target, slot, this->vdp.fifo.len);
+
+    e->addr = dest_addr;
+    e->val = val;
+    e->UDS = 1;
+    e->LDS = 1;
+    e->target = target;
+}
+
+static void write_data_port(struct genesis* this, u16 val, u16 mask, u32 is_cpu)
+{
+    if (dbg.traces.vdp) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
+    this->vdp.command.latch = 0;
+    this->vdp.command.ready = 1;
+
+    if (is_cpu && fifo_full(this)) {
+        if (fifo_overfull(this)) assert(1==2);
+        /*this->io.m68k.VDP_FIFO_stall = 1; // We're going to over-fill the FIFO and stall m68k until it's back to normal
+        printf("\nDONE1");
+        set_m68k_dtack(this);
+        dbg_printf("\nPausing the m68k....");*/
+        // no stalls...
+        run_FIFO(this);
+        run_FIFO(this);
+        run_FIFO(this);
+    }
+
+    fifo_write(this, this->vdp.command.target, this->vdp.command.address, val);
+    //run_FIFO(this);
+    this->vdp.command.address += this->vdp.command.increment;
 }
 
 void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask)
@@ -445,34 +759,16 @@ void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask
     addr = (addr & 0x1F) | 0xC00000;
     switch(addr) {
         case 0xC00000: // VDP data port
-            if (this->vdp.command.latch == 2) {
-                this->vdp.dma.fill_value = val >> 8;
-                this->vdp.dma.active = this->vdp.io.enable_dma;
-                this->vdp.command.latch = 0; // Nothing is latched. 1 = 1 word is latched. 2 = 2 words are latched, only happens for fill mode
-                printf("\nDMA FILL STARTED TO:%04x len:%d cycle:%lld", this->vdp.dma.dest_addr, this->vdp.dma.len, this->clock.master_cycle_count);
-                return;
-            }
-
-            // No DMA fill start, just a plain write to VRAM
-            if (fifo_full(this)) this->io.m68k.VDP_FIFO_stall = 1; // We're going to over-fill the FIFO and stall m68k until it's back to normal
-
-            u32 slot = (this->vdp.fifo.head + this->vdp.fifo.len) % 5;
-            this->vdp.fifo.len = this->vdp.fifo.len + 1;
-            assert(this->vdp.fifo.len < 6);
-            struct genesis_vdp_fifo_slot *e = &this->vdp.fifo.slots[slot];
-
-            e->addr = this->vdp.dma.dest_addr;
-            e->val = val;
-            e->UDS = !!(mask & 0xFF00);
-            e->LDS = !!(mask & 0xFF);
-            e->target = ft_VRAM;
-            break;
+        case 0xC00002:
+            write_data_port(this, val, mask, 1);
+            return;
         case 0xC00004: // VDP control
+        case 0xC00006:
             write_control_port(this, val, mask);
             return;
     }
-    //printf("\nBAD VDP WRITE addr:%06x val:%04x cycle:%lld", addr, val, this->clock.master_cycle_count);
-    gen_test_dbg_break(this);
+    printf("\nBAD VDP WRITE addr:%06x val:%04x cycle:%lld", addr, val, this->clock.master_cycle_count);
+    gen_test_dbg_break(this, "vdp_mainbus_write");
 }
 
 void genesis_VDP_reset(struct genesis* this)
@@ -490,116 +786,157 @@ static void do_pixel(struct genesis* this)
     // Render a pixel!
 }
 
-//    UDS<<2 + LDS           neither   just LDS   just UDS    UDS+LDS
-static u32 write_maskmem[4] = { 0,     0xFF00,    0x00FF,      0 };
-
-
-inline void inc_source_addr(struct genesis* this)
+static void DMA_load_FIFO_load(struct genesis* this)
 {
-    // Increment only the lower 16 (17) bits
-    this->vdp.dma.source_addr = (this->vdp.dma.source_addr & 0xFF0000) | ((this->vdp.dma.source_addr + (this->vdp.io.auto_increment >> 1)) & 0xFFFF);
-}
+    if (this->vdp.dma.delay > 0) { this->vdp.dma.delay--; printif(dma, "\nLOAD DELAY %d", this->vdp.dma.delay); return; }
+    if (fifo_full(this)) { if (dbg.traces.fifo) dbg_printf("\nLOAD FIFO FULL"); return; }
 
-static void DMA_load_FIFO(struct genesis* this)
-{
-    if (!this->vdp.dma.active) return;
-    if (this->vdp.fifo.len >= 4) return; // We DO want to load up if we already have 4...
+    u32 addr = ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source << 1);
+    u16 data = genesis_mainbus_read(this, addr, 1, 1, this->io.m68k.open_bus_data, 1);
+    write_data_port(this, data, 0xFFFF, 0);
+    if (dbg.traces.fifo) dbg_printf("\nLOADED val:%04x addr:%06x!", data, addr);
 
-    // Don't move head, since we're adding to the tail.
-    u32 slot = (this->vdp.fifo.head + this->vdp.fifo.len) % 5;
-    this->vdp.fifo.len++;
-
-    struct genesis_vdp_fifo_slot *e = &this->vdp.fifo.slots[slot];
-
-    // 00 = m68k->VRAM. 01 = m68k->CRAM. 10 = m68k->VSRAM. 11 = VRAM->VRAM
-    // xfer 1 byte to VRAM, or 2 bytes to VSRAM/CRAM
-    u32 src_addr = (this->vdp.dma.source_addr & 0x7FFFFF) << 1;
-    e->addr = this->vdp.dma.dest_addr;
-    e->UDS = e->LDS = 1;
-    switch(this->vdp.dma.direction) {
-        case 0: // m68k->VRAM, 1 byte at a time
-            e->target = ft_VRAM;
-            e->val = genesis_mainbus_read(this, src_addr, 1, 1, 0, 1);
-            break;
-        case 1: // m68k->CRAM
-            e->target = ft_CRAM;
-            e->val = genesis_mainbus_read(this, src_addr, 1, 1, 0, 1);
-            break;
-        case 2: // m68k->VSRAM
-            e->target = ft_VSRAM;
-            e->val = genesis_mainbus_read(this, src_addr, 1, 1, 0, 1);
-            break;
-        case 3: // VRAM->VRAM
-            e->target = ft_VRAM;
-            e->val = this->vdp.VRAM[(src_addr & 0xFFFF) >> 1];
-            break;
-        case 4: // fill VRAM
-            e->target = ft_VRAM;
-            e->val = this->vdp.dma.fill_value | (this->vdp.dma.fill_value << 8);
-            break;
-        default:
-            assert(1==0);
-    }
-
-    inc_source_addr(this);
-    this->vdp.dma.dest_addr = (this->vdp.dma.dest_addr + 1) & 0xFFFF;
-    this->vdp.dma.len--;
-    if (this->vdp.dma.len <= 0) {
-        this->vdp.dma.active = 0;
-        printf("\nDMA TRANSFER FINISH AT CYCLE %lld", this->clock.master_cycle_count);
+    this->vdp.dma.source = (this->vdp.dma.source & 0xFF0000) | ((this->vdp.dma.source + 1) & 0xFFFF);
+    if (--this->vdp.dma.len == 0) {
+        this->vdp.command.pending = 0;
+        dma_test_enable(this);
     }
 }
 
-// Discharge 1 FIFO entry, if external slot is available. Also refills it if DMA is ongoing
-static void discharge_FIFO(struct genesis* this)
+static void DMA_load_FIFO_fill(struct genesis* this)
 {
-    // Empty FIFO, don't bother...
-    if (this->vdp.fifo.len == 0) {
-        assert(this->io.m68k.VDP_FIFO_stall == 0);
+    switch(this->vdp.command.target) {
+        case 1:
+            write_VRAM_byte(this, this->vdp.command.address ^ 1, this->vdp.dma.data >> 8);
+            break;
+        case 3:
+            this->vdp.CRAM[this->vdp.command.address] = this->vdp.dma.data;
+            break;
+        case 5:
+            this->vdp.VSRAM[this->vdp.command.address] = this->vdp.dma.data;
+            break;
+    }
+    this->vdp.dma.source = (this->vdp.dma.source & 0xFF0000) | ((this->vdp.dma.source + 1) & 0xFFFF);
+    if (--this->vdp.dma.len == 0) {
+        this->vdp.command.pending = 0;
+        dma_test_enable(this);
+    }
+}
+
+static void DMA_load_FIFO_copy(struct genesis* this)
+{
+    if (!this->vdp.dma.read) {
+        this->vdp.dma.read = 1;
+        this->vdp.dma.data = read_VRAM_byte(this, this->vdp.dma.source ^ 1);
         return;
     }
-    struct genesis_vdp_fifo_slot *e = &this->vdp.fifo.slots[this->vdp.fifo.head];
+    this->vdp.dma.read = 0;
+    write_VRAM_byte(this, this->vdp.command.address ^ 1, this->vdp.dma.data);
 
-    u32 shorten_fifo = 1;
-
-    // Do the write
-    u32 vi = write_maskmem[(e->UDS << 1) + e->LDS];
-    switch(e->target) {
-        case ft_VRAM: { // 1 byte at a time. So first do UDS and bail, then do LDS next time an complete
-            u32 v = this->vdp.VRAM[e->addr & 0xFFFE];
-            if (e->UDS) { // Write high byte, DO NOT shorten FIFO! 1 byte at a time...
-                this->vdp.VRAM[e->addr & 0xFFFE] = (v & 0xFF) | (e->val & 0xFF00);
-                e->UDS = 0;
-                shorten_fifo = 0;
-            }
-            else { // Write low byte, DO shorten FIFO!
-                this->vdp.VRAM[e->addr & 0xFFFE] = (v & 0xFF00) | (e->val & 0xFF);
-                e->LDS = 0;
-            }
-            break; }
-        case ft_CRAM: { // 16 bits at a time
-            u32 addr = e->addr & 63;
-            // TODO: addr >> 1 ?
-            this->vdp.CRAM[addr] = (this->vdp.CRAM[addr] & vi) | (e->val & (~vi)) & ;
-            break; }
-        case ft_VSRAM: { // 16 bits at a time
-            u32 addr = e->addr % 20;
-            this->vdp.VSRAM[addr] = (this->vdp.VSRAM[addr] & vi) | (e->val & (~vi)) & ;
-            break; }
-        default:
-            assert(1==0);
-            break;
+    this->vdp.dma.source = (this->vdp.dma.source & 0xFF0000) | ((this->vdp.dma.source + 1) & 0xFFFF);
+    if (--this->vdp.dma.len == 0) {
+        this->vdp.command.pending = 0;
+        dma_test_enable(this);
     }
+}
 
-    if (shorten_fifo) {
-        this->vdp.fifo.len--;
-        this->vdp.fifo.head = (this->vdp.fifo.head + 1) % 5;
-        if ((!this->vdp.dma.active) && (this->io.m68k.VDP_FIFO_stall)) { // Unpause m68k if it was previously held up by this
-            this->io.m68k.VDP_FIFO_stall = 0;
-            this->m68k.pins.DTACK = 1;
+static u32 DMA_load_FIFO(struct genesis* this)
+{
+    if (this->vdp.command.pending && !this->vdp.dma.wait) {
+        if (this->vdp.dma.mode <= 1 && !fifo_full(this)) {
+            printif(dma, "\nDMA LOAD FIFO!");
+            DMA_load_FIFO_load(this);
+            return 1;
         }
-        DMA_load_FIFO(this);
+        else if (this->vdp.dma.mode == 2 && fifo_empty(this)) {
+            if (dbg.traces.dma) dbg_printf("\nDMA FILL!");
+            DMA_load_FIFO_fill(this);
+            return 1;
+        }
+        else if (this->vdp.dma.mode == 3) {
+            if (dbg.traces.dma) dbg_printf("\nDMA LOAD COPY!");
+            DMA_load_FIFO_copy(this);
+            return 1;
+        }
+        printif(dma, "\nDMA FALL THRU? %d", this->vdp.dma.mode);
     }
+    return 0;
+}
+
+
+static void render_8_pixels(struct genesis* this)
+{
+
+}
+
+static u16 read_VRAM(struct genesis* this, u16 addr) {
+    return this->vdp.VRAM[addr >> 1];
+}
+
+static void render_8_more(struct genesis* this)
+{
+    // OK, get our x pos by doing ((sc - 13) * 2) - xscroll
+    u32 xpos = this->vdp.line.screen_x;
+    u32 ypos = this->vdp.line.screen_y;
+    ypos = (ypos % 224);
+    this->vdp.line.screen_x += 8;
+
+    // Get pattern table
+    // 2 bytes per entry. same number as plane size y * (2 * io.foreground_width) + (x * 2)
+
+    u32 pa = ((ypos >> 3) * 2 * this->vdp.io.foreground_width) + ((xpos >> 3) * 2);
+    u32 pattern_addr[2] = { pa + this->vdp.io.plane_a_table_addr, pa + this->vdp.io.plane_b_table_addr };
+    u32 pattern_entry[2] = { read_VRAM(this, pattern_addr[0]), read_VRAM(this, pattern_addr[1]) };
+
+    u32 tile_number[2] = {pattern_entry[0] & 0x3FF, pattern_entry[1] & 0x3FF};
+
+    u32 tile_addr[2] = { (tile_number[0] << 4), (tile_number[1] << 4)};
+
+    u32 myx = (2 * 320 * ypos) + xpos;
+
+    u16 *optr = this->vdp.display->device.display.output[0] + (320 * ypos) + xpos;
+
+    u8* tile_ptr[2] = { };
+
+    tile_ptr[0] = ((u8*)this->vdp.VRAM) + (tile_addr[0]) + ((ypos & 7) << 2);
+    for (u32 i = 0; i < 4; i++) {
+        u8 px2 = *tile_ptr[0];
+        tile_ptr[0]++;
+        if (px2 != 0) printf("\nPX2 x:%d y:%d", xpos+i, ypos);
+
+        /**optr = px2 >> 4;
+        optr++;
+        *optr = px2 & 15;
+        optr++;*/
+        u32 v = 0;
+        u32 r = (this->clock.master_frame & 3);
+        if (xpos == 20) v = 15;
+        if ( r == 0) {
+            if (ypos == 0) v = 15;
+        }
+        else if (r == 1) {
+            if (ypos == 50) v = 15;
+        }
+        else {
+            if (ypos == 200) v = 15;
+        }
+        *optr = v;
+        optr++;
+        *optr = v;
+        optr++;
+    }
+
+    // + 4 * (ypos & 7)
+
+    // Get attribute
+
+    // Get actual pattern
+}
+
+static void render_left_column(struct genesis* this)
+{
+    // Fetch left column. Discard xscroll pixels, render the rest.
+    this->vdp.line.screen_x += 8;
 }
 
 void genesis_VDP_cycle(struct genesis* this)
@@ -621,21 +958,59 @@ void genesis_VDP_cycle(struct genesis* this)
 
     // 4 of our cycles per SC transfer
     this->vdp.sc_count = (this->vdp.sc_count + 1) & 3;
-    if (this->vdp.sc_count == 0) this->vdp.sc_slot++;
+    if (this->vdp.sc_count == 0) {
+        this->vdp.sc_slot++;
+        // Do FIFO if this is an external slot
+        if (this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot] == slot_external_access) {
+            if (dbg.trace_on && dbg.traces.fifo)
+                dbg_printf("\nGOT EXT", *this->m68k.trace.cycles);
+            if (!run_FIFO(this)) prefetch_run(this);
+            DMA_load_FIFO(this);
+        }
+        else {
+            if (dbg.trace_on && dbg.traces.fifo)
+                dbg_printf("\nGOT SLOT:%d ARR:%d CYC:%lld SCC:%d ARRAY:%d", this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot], this->vdp.sc_array, *this->m68k.trace.cycles, this->vdp.sc_slot, this->vdp.sc_array);
+        }
+    }
 
-    // Do FIFO if this is an external slot
-    if (this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot] == slot_external_access) discharge_FIFO(this);
-
-    // 2 cycles per pixel
-    this->vdp.cycle ^= 1;
-    if (!this->vdp.cycle) return;
 
     if (this->vdp.sc_slot == SC_HSYNC_GOES_OFF) hblank(this, 0);
     if (this->vdp.sc_slot == SC_HSYNC_GOES_ON) hblank(this, 1);
 
     // Add a pixel
-    this->clock.vdp.hcount++;
 
+    /*
+     * move this to take effect on HV read, not for all our tracking, for now
+    if(this->vdp.io.h40) {
+        // hcount 0-b5, e4-ff
+        if(this->clock.vdp.hcount == 0xb6) this->clock.vdp.hcount = 0xe4;
+    } else {
+        // hcount 0-93, e9-ff
+        if(this->clock.vdp.hcount == 0x94) this->clock.vdp.hcount = 0xe9;
+    }
+
+     *
+     */
+
+    // 2 cycles per pixel
+    this->vdp.cycle ^= 1;
+
+    // Do last 8 pixels
+    if(this->vdp.io.h32) {
+        // 1 sc count = 4 serial clocks. 2 serial clocks per pixel. so
+        // 1 sc count = 2 pixels
+        // we want to do 8 pixels every 4 SC count
+        i32 r = ((i32)this->vdp.sc_slot - 13) >> 1;
+        if (r == 0) render_left_column(this);
+        else if (((r & 3) == 0) && (this->vdp.sc_slot < 142)) render_8_more(this);
+    } else {
+        i32 r = ((i32)this->vdp.sc_slot - 13) >> 1;
+        if (r == 0) render_left_column(this);
+        else if (((r & 3) == 0) && (this->vdp.sc_slot < 175)) render_8_more(this);
+    }
+
+
+    this->clock.vdp.hcount++;
     if (this->clock.vdp.line_mclock >= MCLOCKS_PER_LINE)
         new_scanline(this);
 }

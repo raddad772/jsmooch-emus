@@ -117,24 +117,26 @@ static void dodea(struct M68k_EA *ea, u32 IR, struct jsm_string *out, u32 sz, u3
             jss("($%02x,d%d,PC)", read_index(PC, rt), ea->reg);
             return;
         case 11: {// AM quick immediate
-            switch (sz) {
+            jss("%d", ea->reg);
+            return; }
+        case M68k_AM_immediate: {// other immediates
+            //1 or two words depending on size
+            u32 n;
+            switch(sz) {
                 case 1:
-                    jss("#$%02x", read_index(PC, rt));
+                    n = read_pc(PC, rt);
+                    jss("$%x", n);
                     break;
                 case 2:
-                    jss("#$%04x", read_pc(PC, rt));
+                    n = read_pc(PC, rt);
+                    jss("$%x", n);
                     break;
                 case 4:
-                    jss("#$%08x", read_pc32(PC, rt));
-                    break;
-                default:
-                    assert(1==0);
+                    n = read_pc32(PC, rt);
+                    jss("$%x", n);
                     break;
             }
             return; }
-        case 53: // other immediates
-            jss("%d", ea->reg);
-            return;
         default:
             jss("???");
             printf("\nHOW DID I GET HERE!?");
@@ -184,8 +186,9 @@ static void print_imm(u32 *PC, struct jsm_debug_read_trace *rt, u32 sz, u32 do_c
 
 void M68k_disasm_BADINS(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
+    //printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
+    dbg_break("BAD DISASSEMBLY");
 }
 
 #define dea(ea, sz) dodea(ea, 0, out, sz, &PC, rt)
@@ -219,7 +222,8 @@ void M68k_disasm_ADDI(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 void M68k_disasm_ADDQ(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("addq", ins->sz, out, "  ");
-    dea(&ins->ea[1], ins->sz);
+    dea2(ins->sz);
+    //dea(&ins->ea[1], ins->sz);
 }
 
 void M68k_disasm_ADDQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -579,14 +583,14 @@ void M68k_disasm_MOVE_FROM_SR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_r
 
 void M68k_disasm_MOVE_TO_CCR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    jss("move    ");
+    jss("move   ");
     dea(&ins->ea[0], 1);
     jss(",ccr");
 }
 
 void M68k_disasm_MOVE_TO_SR(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    jss("move    ");
+    jss("move   ");
     dea(&ins->ea[0], 2);
     jss(",sr");
 }
@@ -874,7 +878,7 @@ void M68k_disasm_TRAPV(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_tra
 
 void M68k_disasm_TST(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    ins_suffix("tst", ins->sz, out, "   ");
+    ins_suffix("tst", ins->sz, out, "  ");
     dea(&ins->ea[0], ins->sz);
 }
 
@@ -883,6 +887,16 @@ void M68k_disasm_UNLK(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
     jss("unlk    a%d", ins->ea[0].reg);
 }
 
+
+void M68k_disasm_ALINE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    jss("illegal  a-line");
+}
+
+void M68k_disasm_FLINE(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+{
+    jss("illegal  f-line");
+}
 
 void M68k_disassemble(u32 PC, u16 IR, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {

@@ -389,6 +389,18 @@ INS_END
 
 #define BADINS { printf("\nUNIMPLEMENTED INSTRUCTION! %s", __func__); assert(1==0); }
 
+M68KINS(ALINE)
+        STEP0
+            M68k_start_group2_exception(this, M68kIV_line1010, 4, this->regs.PC-2);
+        STEP(1)
+INS_END
+
+M68KINS(FLINE)
+        STEP0
+            M68k_start_group2_exception(this, M68kIV_line1111, 4, this->regs.PC-2);
+        STEP(1)
+INS_END
+
 M68KINS(TAS)
         STEP0
             M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
@@ -3097,9 +3109,9 @@ M68KINS(SUBQ)
             this->state.instruction.result = SUB(this, this->state.op[0].val, this->state.op[1].val, ins->sz, 0, 1);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(2)
-            if (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement) {
+            /*if (ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement) {
                 this->state.instruction.result += ins->sz;
-            }
+            }*/
             M68k_start_write_operand(this, 0, 1, M68kS_exec, ALLOW_REVERSE, NO_FORCE);
         STEP(3)
             if ((ins->ea[1].kind == M68k_AM_data_register_direct) && (ins->sz == 4)) {
@@ -3254,11 +3266,14 @@ static u32 M68k_disasm_BAD(struct M68k_ins_t *ins, struct jsm_debug_read_trace *
 }
 
 
-static void M68k_ins_NOINS(struct M68k* this, struct M68k_ins_t *ins)
-{
-    printf("\nERROR UNIMPLEMENTED M68K INSTRUCTION %04x at PC %06x", ins->opcode, this->regs.PC);
-    assert(1==0);
-}
+M68KINS(NOINS)
+    STEP0
+        printf("\nERROR UNIMPLEMENTED M68K INSTRUCTION %04x at PC %06x cyc:%lld", ins->opcode, this->regs.PC, *this->trace.cycles);
+        //assert(1==0);
+        dbg_break("UNIMPLEMENTED INSTRUCTION");
+        M68k_start_wait(this, 2, M68kS_exec);
+    STEP(1)
+INS_END
 
 #undef M68KINS
 #undef INS_END

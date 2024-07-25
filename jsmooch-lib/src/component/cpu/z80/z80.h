@@ -113,6 +113,7 @@ struct Z80 {
     u32 NMI_ack;
 
     u64 *trace_cycles_ptr;
+    u32 trace_ok;
 
     u32 trace_on;
     u64 trace_cycles;

@@ -12,6 +12,9 @@
 #include "m68000_internal.h"
 #include "m68000_disassembler.h"
 
+//#define M68K_TESTING
+
+
 void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_init(struct M68k* this, u32 megadrive_bug)
 {
@@ -31,7 +34,7 @@ void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct, u
     this->trace.strct.ptr = strct->ptr;
     this->trace.strct.read_trace = strct->read_trace;
     this->trace.ok = 1;
-    this->trace_cycles = trace_cycle_pointer;
+    this->trace.cycles = trace_cycle_pointer;
 }
 
 void M68k_delete(struct M68k* this)
@@ -43,6 +46,11 @@ static void M68k_decode(struct M68k* this)
 {
     u32 IRD = this->regs.IR;
     this->regs.IRD = IRD;
+    /*if ((((this->regs.PC-4) & 0xFFFFFF) == 0x0029AC) && (!dbg.did_breakpoint)) {
+        dbg_break("M68K PC BREAKPOINT");
+        dbg.did_breakpoint =1;
+        //printf("\nBREAK FOR WAIT ON INTERRUPT!! cycle:%d", *this->trace.cycles);
+    }*/
     struct M68k_ins_t *ins = &M68k_decoded[IRD & 0xFFFF];
     this->state.instruction.TCU = 0;
     this->ins = ins;
@@ -75,6 +83,7 @@ static void pprint_ea(struct M68k* this, u32 opnum)
     if (opnum == 0) {
         switch(ins->operand_mode) {
             case M68k_OM_none:
+            case M68k_OM_qimm:
                 break;
             case M68k_OM_ea_r:
             case M68k_OM_ea:
@@ -93,6 +102,7 @@ static void pprint_ea(struct M68k* this, u32 opnum)
                 break;
             case M68k_OM_qimm_qimm:
             case M68k_OM_qimm_r:
+            case M68k_OM_qimm_ea:
                 break;
             default:
                 printf("\nFORGOT DISASM1 FOR OM %d", ins->operand_mode);
@@ -120,6 +130,7 @@ static void pprint_ea(struct M68k* this, u32 opnum)
                 else if (ea->kind == M68k_AM_address_register_indirect) kind = 1;
                 else kind = 3;
                 break;
+            case M68k_OM_qimm:
             case M68k_OM_qimm_qimm:
                 break;
             default:
@@ -137,6 +148,9 @@ static void pprint_ea(struct M68k* this, u32 opnum)
             case M68k_AM_address_register_indirect_with_index:
             case M68k_AM_address_register_direct:
                 kind = 1; // addr reg
+                break;
+            default:
+                kind = 0;
                 break;
         }
     }
@@ -157,14 +171,18 @@ static void M68k_trace_format(struct M68k* this)
     jsm_string_quickempty(&this->trace.str);
     M68k_disassemble(this->regs.PC-2, this->regs.IR, &this->trace.strct, &this->trace.str);
     u64 tc;
-    if (this->trace_cycles == 0) tc = 0;
-    else tc = *this->trace_cycles;
+    if (this->trace.cycles == 0) tc = 0;
+    else tc = *this->trace.cycles;
+#ifdef  M68K_TESTING
+    printf(DBGC_M68K "\nM68k  (%04llu)   %06x  %s" DBGC_RST, tc, this->regs.PC-4, this->trace.str.ptr);
+#else
     dbg_printf(DBGC_M68K "\nM68k  (%04llu)   %06x  %s", tc, this->regs.PC-4, this->trace.str.ptr);
     dbg_seek_in_line(TRACE_BRK_POS);
     dbg_printf("SR:%04x  ", this->regs.SR.u);
     pprint_ea(this, 0);
     pprint_ea(this, 1);
     dbg_printf(DBGC_RST);
+#endif
 }
 
 void M68k_set_interrupt_level(struct M68k* this, u32 val)
@@ -181,8 +199,15 @@ static u32 M68k_process_interrupts(struct M68k* this)
         this->state.exception.interrupt.on_next_instruction = 0;
         this->state.exception.interrupt.PC = this->regs.PC - 4;
         this->state.exception.interrupt.TCU = 0;
+        this->state.exception.interrupt.new_I = this->pins.IPL;
         this->state.current = M68kS_exc_interrupt;
-        printf("\nM68K IRQ FIRE!");
+        //printf("\nM68K IRQ FIRE! cyc:%lld", *this->trace.cycles);
+        if (dbg.trace_on && dbg.traces.m68000.irq) {
+            dbg_printf(DBGC_M68K "\n M68K  (%06llu)  !!!!    INTERRUPT level:%d!" DBGC_RST, *this->trace.cycles, this->state.exception.interrupt.new_I);
+        }
+        if (dbg.breaks.m68000.irq) {
+            dbg_break("M68K IRQ FIRE");
+        }
         return 1;
     }
     return 0;
@@ -211,7 +236,7 @@ void M68k_cycle(struct M68k* this)
                 break; }
             case M68kS_decode: {
 #ifdef M68K_TESTING
-                if (this->testing && *this->trace_cycles > 0) { // FOR TESTING JSONs
+                if (this->testing && *this->trace.cycles > 0) { // FOR TESTING JSONs
                     this->ins_decoded = 1;
                     return;
                 }
@@ -222,7 +247,7 @@ void M68k_cycle(struct M68k* this)
                 this->regs.SR.T = this->regs.next_SR_T;
                 this->ins_decoded = 1;
                 this->state.current = M68kS_exec;
-                if (dbg.trace_on && this->trace.ok) {
+                if (dbg.trace_on && this->trace.ok && dbg.traces.m68000.instruction) {
                     M68k_trace_format(this);
                 }
                 break; }
@@ -279,7 +304,9 @@ void M68k_reset(struct M68k* this)
 {
     this->state.current = M68kS_exec;
     this->state.instruction.done = 0;
+    M68k_set_SR(this, (M68k_get_SR(this) & 0x1F) | 0x2700, 1);
     this->ins = &this->SPEC_RESET;
     this->state.instruction.TCU = 0;
     this->state.instruction.prefetch = 0;
+    this->regs.A[3] = 4;
 }

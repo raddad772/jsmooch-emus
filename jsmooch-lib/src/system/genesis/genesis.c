@@ -141,6 +141,8 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device *c2 = cvec_push_back(this->jsm.IOs);
     genesis3_setup_pio(c1, 0, "Player 1", 1);
     genesis3_setup_pio(c2, 1, "Player 2", 0);
+    this->controller1.pio = c1;
+    this->controller2.pio = c2;
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -167,12 +169,15 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
     d->device.display.fps = 60;
-    d->device.display.output[0] = malloc(320*448*2);
-    d->device.display.output[1] = malloc(328*448*2);
+    d->device.display.output[0] = malloc(320*224*2);
+    d->device.display.output[1] = malloc(320*224*2);
     this->vdp.display = d;
     this->vdp.cur_output = (u16 *)d->device.display.output[0];
     d->device.display.last_written = 1;
     d->device.display.last_displayed = 1;
+
+    //genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
+    //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }
 
 void genesisJ_enable_tracing(JSM)
@@ -202,9 +207,10 @@ void genesisJ_stop(JSM)
 void genesisJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
-    //out->master_frame = this->clock.master_frame;
-    //out->x = this->ppu.line_cycle;
-    //out->scanline = this->clock.ppu_y;
+    out->master_frame = this->clock.master_frame;
+    out->x = this->clock.vdp.hcount;
+    out->scanline = this->clock.vdp.vcount;
+    out->master_cycle = this->clock.master_cycle_count;
 }
 
 void genesisJ_reset(JSM)
@@ -220,6 +226,7 @@ void genesisJ_reset(JSM)
     this->io.z80.reset_line_count = 500;
     this->io.z80.bus_request = this->io.z80.bus_ack = 1;
     this->io.m68k.VDP_FIFO_stall = 0;
+    this->io.m68k.VDP_prefetch_stall = 0;
     printf("\nGenesis reset!");
 }
 
@@ -243,6 +250,7 @@ u32 genesisJ_finish_frame(JSM)
 u32 genesisJ_finish_scanline(JSM)
 {
     JTHIS;
+    genesisJ_step_master(jsm, 3420);
     /*i32 cpu_step = (i32)this->clock.timing.cpu_divisor;
     i64 ppu_step = (i64)this->clock.timing.ppu_divisor;
     i32 done = 0;
@@ -273,7 +281,9 @@ u32 genesisJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
     this->clock.mem_break = 0;
-    this->jsm.cycles_left += howmany;
+    //this->jsm.cycles_left += howmany;
+    this->jsm.cycles_left = howmany;
+    if(dbg.trace_on) printf("\nCYCLES LEFT? %lld", this->jsm.cycles_left);
     while (this->jsm.cycles_left >= 0) {
         i32 biggest_step = MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock);
         this->jsm.cycles_left -= biggest_step;

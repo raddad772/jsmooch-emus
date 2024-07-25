@@ -848,7 +848,7 @@ int json_get_string_size(struct json_parse_state_s *state, size_t is_key) {
   /* one more byte for null terminator ending the string! */
   state->data_size++;
 
-  /* update offset. */
+  /* refresh offset. */
   state->offset = offset;
 
   return 0;
@@ -893,10 +893,10 @@ int json_get_key_size(struct json_parse_state_s *state) {
         state->dom_size += sizeof(struct json_string_s);
       }
 
-      /* update offset. */
+      /* refresh offset. */
       state->offset = offset;
 
-      /* update data_size. */
+      /* refresh data_size. */
       state->data_size = data_size;
 
       return 0;
@@ -1334,7 +1334,7 @@ int json_get_number_size(struct json_parse_state_s *state) {
   /* one more byte for null terminator ending the number string! */
   state->data_size++;
 
-  /* update offset. */
+  /* refresh offset. */
   state->offset = offset;
 
   return 0;
@@ -1579,7 +1579,7 @@ void json_parse_string(struct json_parse_state_s *state,
   /* move data along. */
   state->data += bytes_written;
 
-  /* update offset. */
+  /* refresh offset. */
   state->offset = offset;
 }
 
@@ -1614,7 +1614,7 @@ void json_parse_key(struct json_parse_state_s *state,
       /* move data along. */
       state->data += size;
 
-      /* update offset. */
+      /* refresh offset. */
       state->offset = offset;
     }
   } else {
@@ -1940,7 +1940,7 @@ void json_parse_number(struct json_parse_state_s *state,
   data[bytes_written++] = '\0';
   /* move data along. */
   state->data += bytes_written;
-  /* update offset. */
+  /* refresh offset. */
   state->offset = offset;
 }
 

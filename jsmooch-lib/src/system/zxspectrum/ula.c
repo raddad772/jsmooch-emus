@@ -37,7 +37,7 @@ static void scanline_vblank(struct ZXSpectrum* bus)
     BTHIS;
     bus->clock.contended = false;
     if ((bus->clock.ula_y == 0) && (bus->clock.ula_x == 16)) {
-        if (!this->first_vblank) ZXSpectrum_notify_IRQ(this, 1);
+        if (!this->first_vblank) ZXSpectrum_notify_IRQ(bus, 1);
         this->first_vblank = false;
     }
 }

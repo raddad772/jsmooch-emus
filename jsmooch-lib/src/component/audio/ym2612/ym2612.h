@@ -11,6 +11,14 @@ struct ym2612 {
     struct {
 
     } pins;
+
+    struct {
+        u32 line;
+    } timer_a;
+
+    struct {
+        u32 line;
+    } timer_b;
 };
 
 void ym2612_init(struct ym2612* this);

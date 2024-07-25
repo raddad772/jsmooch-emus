@@ -137,13 +137,14 @@ void dbg_unbreak()
     dbg.do_break = false;
 }
 
-void dbg_break()
+void dbg_break(const char *reason)
 {
 #ifdef DISABLE_BREAK
     printf("\nBREAK IGNORED!");
 #else
     dbg.do_break = true;
-    printf("\nBREAK!");
+    //assert(1==2);
+    printf("\nBREAK! %s", reason);
 #endif
     fflush(stdout);
 #ifdef DUMP_LAST_TRACES_ON_BREAK
@@ -167,6 +168,36 @@ void dbg_enable_trace()
 void dbg_disable_trace()
 {
     dbg.trace_on = 0;
+}
+
+void dbg_enable_cpu_trace(enum debug_sources source)
+{
+    switch(source) {
+        case DS_z80:
+            dbg.traces.z80.instruction = 1;
+            break;
+        case DS_m68000:
+            dbg.traces.m68000.instruction = 1;
+            break;
+        default:
+            printf("\nFORGOT THIS80");
+            break;
+    }
+}
+
+void dbg_disable_cpu_trace(enum debug_sources source)
+{
+    switch(source) {
+        case DS_z80:
+            dbg.traces.z80.instruction = 0;
+            break;
+        case DS_m68000:
+            dbg.traces.m68000.instruction = 0;
+            break;
+        default:
+            printf("\nFORGOT THIS87");
+            break;
+    }
 }
 
 
