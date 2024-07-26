@@ -20,7 +20,6 @@ void ZXSpectrumJ_pause(JSM);
 void ZXSpectrumJ_stop(JSM);
 void ZXSpectrumJ_get_framevars(JSM, struct framevars* out);
 void ZXSpectrumJ_reset(JSM);
-void ZXSpectrumJ_get_description(JSM, struct machine_description* d);
 void ZXSpectrumJ_killall(JSM);
 u32 ZXSpectrumJ_finish_frame(JSM);
 u32 ZXSpectrumJ_finish_scanline(JSM);
@@ -194,19 +193,19 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
     u32 F = cpu->regs.AF_ & 0xFF;
     u32 actually_load = (F & 1) == 1; // 0 = VERIFY
     cpu->regs.H = 0;
-    cpu->regs.L = *(u8 *)&td->TAPE.ptr[td->head_pos];
+    cpu->regs.L = *(u8 *)&td->TAPE_binary.ptr[td->head_pos];
     cpu->regs.H ^= cpu->regs.L;
     td->head_pos++;
-    if (td->head_pos >= td->TAPE.size) td->head_pos = 0;
+    if (td->head_pos >= td->TAPE_binary.size) td->head_pos = 0;
     if ((A ^ cpu->regs.H) != 0) { // Early-return
         return;
     }
     u32 DE = (cpu->regs.D << 8) | cpu->regs.E;
     u32 IX = cpu->regs.IX;
     while(DE > 0) {
-        cpu->regs.L = *(u8*)&td->TAPE.ptr[td->head_pos];
+        cpu->regs.L = *(u8*)&td->TAPE_binary.ptr[td->head_pos];
         td->head_pos++;
-        if (td->head_pos >= td->TAPE.size) td->head_pos = 0;
+        if (td->head_pos >= td->TAPE_binary.size) td->head_pos = 0;
         cpu->regs.H ^= cpu->regs.L;
         if (actually_load) {
             cpu_writemem(this, IX, cpu->regs.L);
@@ -215,9 +214,9 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
         IX = (IX + 1) & 0xFFFF;
     }
     // Last byte is not loaded into RAM
-    cpu->regs.L = *(u8*)&td->TAPE.ptr[td->head_pos];
+    cpu->regs.L = *(u8*)&td->TAPE_binary.ptr[td->head_pos];
     td->head_pos++;
-    if (td->head_pos >= td->TAPE.size) td->head_pos = 0;
+    if (td->head_pos >= td->TAPE_binary.size) td->head_pos = 0;
     cpu->regs.H ^= cpu->regs.L;
 
     cpu->regs.D = cpu->regs.E = 0xFF;
@@ -347,6 +346,9 @@ static void ZXSpectrumIO_insert_tape(JSM, struct multi_file_set *mfs, struct buf
 {
     JTHIS;
     char *s = mfs->files[0].name;
+    if (ends_with(s, ".pzx")) {
+        ZXSpectrum_tape_deck_load_pzx(this, mfs);
+    }
     if (ends_with(s, ".tap")) {
         ZXSpectrum_tape_deck_load(this, mfs);
     }
@@ -361,11 +363,32 @@ static void ZXSpectrumIO_insert_tape(JSM, struct multi_file_set *mfs, struct buf
     }
 }
 
-static void ZXSpectrumIO_remove_tape(JSM)
+static void ZXSpectrumIO_play(JSM)
 {
+    JTHIS;
+    ZXSpectrum_tape_deck_play(this);
 }
 
-void ZXSpectrumJ_describe_io(JSM, struct cvec *IOs)
+
+static void ZXSpectrumIO_stop(JSM)
+{
+    JTHIS;
+    ZXSpectrum_tape_deck_stop(this);
+}
+
+static void ZXSpectrumIO_rewind(JSM)
+{
+    JTHIS;
+    ZXSpectrum_tape_deck_rewind(this);
+}
+
+static void ZXSpectrumIO_remove_tape(JSM)
+{
+    JTHIS;
+    ZXSpectrum_tape_deck_remove(this);
+}
+
+ void ZXSpectrumJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -390,6 +413,9 @@ void ZXSpectrumJ_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(d, HID_AUDIO_CASSETTE, 1, 1, 1, 0);
     d->device.audio_cassette.insert_tape = &ZXSpectrumIO_insert_tape;
     d->device.audio_cassette.remove_tape = &ZXSpectrumIO_remove_tape;
+    d->device.audio_cassette.rewind = &ZXSpectrumIO_rewind;
+    d->device.audio_cassette.play = &ZXSpectrumIO_play;
+    d->device.audio_cassette.stop = &ZXSpectrumIO_stop;
     this->tape_deck.IOs = IOs;
     this->tape_deck.tape_deck_index = 2;
 
@@ -448,12 +474,6 @@ void ZXSpectrumJ_reset(JSM)
 }
 
 
-void ZXSpectrumJ_get_description(JSM, struct machine_description* d)
-{
-    JTHIS;
-    sprintf(d->name, "Nintendo Entertainment System");
-}
-
 void ZXSpectrumJ_killall(JSM)
 {
 
@@ -490,17 +510,21 @@ u32 ZXSpectrumJ_finish_scanline(JSM)
 
 static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this)
 {
-    //if (this->clock.contended && ((this->cpu.pins.Addr - 0x4000) < 0x4000)) return;
+    if (this->clock.contended && ((this->cpu.pins.Addr - 0x4000) < 0x4000)) return;
+    Z80_cycle(&this->cpu);
     if (this->cpu.pins.RD) {
         if (this->cpu.pins.MRQ) {// read ROM/RAM
             this->cpu.pins.D = cpu_readmem(this, this->cpu.pins.Addr);
+
             if ((this->cpu.pins.Addr == 0x056B) && (this->cpu.regs.PC == 0x056C)) { // Fast tape load hack time!
-                assert(1==2);
-                printf("\nquick LOAD trigger");
-                // return RET
-                this->cpu.pins.D = 0xC9;
-                // do quickload
-                ZXSpectrum_fast_load(this);
+                // QuickLOAD only for binary. We need to translate to binary in future...
+                if (this->tape_deck.kind == tdk_binary) {
+                    printf("\nquick LOAD trigger");
+                    // return RET
+                    this->cpu.pins.D = 0xC9;
+                    // do quickload
+                    ZXSpectrum_fast_load(this);
+                }
             }
 
             printif(z80.mem, DBGC_Z80 "\nZXS(%06llu)r   %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
@@ -509,7 +533,6 @@ static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this)
             printif(z80.io, DBGC_Z80"\nZXS(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
         }
     }
-    Z80_cycle(&this->cpu);
     if (this->cpu.pins.WR) {
         if (this->cpu.pins.MRQ) {// write ROM/RAM
             if (dbg.trace_on && (this->cpu.trace.last_cycle != *this->cpu.trace.cycles)) {

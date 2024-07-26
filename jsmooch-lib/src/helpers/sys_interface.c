@@ -9,6 +9,7 @@
 #include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
+#include "system/mac/mac.h"
 #include "helpers/debug.h"
 #include "stdio.h"
 
@@ -31,6 +32,9 @@ struct jsm_system* new_system(enum jsm_systems which)
 			break;
         case SYS_GBC:
             GB_new(out, GBC);
+            break;
+        case SYS_MAC512K:
+            mac_new(out, mac512k);
             break;
         case SYS_NES:
             NES_new(out);
@@ -68,6 +72,8 @@ void jsm_delete(struct jsm_system* jsm)
         case SYS_GBC:
             GB_delete(jsm);
             break;
+        case SYS_MAC512K:
+            mac_delete(jsm);
         case SYS_NES:
             NES_delete(jsm);
             break;

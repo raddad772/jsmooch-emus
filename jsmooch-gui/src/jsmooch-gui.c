@@ -161,6 +161,11 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             sprintf(BIOS_PATH, "%s/zx_spectrum", BASE_PATH);
             mfs_add("zx48.rom", BIOS_PATH, BIOSes);
             break;
+        case SYS_MAC512K:
+            has_bios = 1;
+            sprintf(BIOS_PATH, "%s/mac", BASE_PATH);
+            mfs_add("mac512k.rom", BIOS_PATH, BIOSes);
+            break;
         case SYS_PSX:
         case SYS_GENESIS:
         case SYS_SNES:
@@ -226,6 +231,10 @@ void GET_HOME_BASE_SYS(char *out, enum jsm_systems which, const char* sec_path, 
             break;
         case SYS_GENESIS:
             sprintf(out, "%s/genesis", BASER_PATH);
+            *worked = 1;
+            break;
+        case SYS_MAC512K:
+            sprintf(out, "%s/mac", BASER_PATH);
             *worked = 1;
             break;
         case SYS_PSX:
@@ -347,7 +356,8 @@ int main(int argc, char** argv)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    enum jsm_systems which = SYS_ZX_SPECTRUM;
+    //enum jsm_systems which = SYS_ZX_SPECTRUM;
+    enum jsm_systems which = SYS_MAC512K;
 #endif
     //test_gdi();
     //return 0;
@@ -407,6 +417,7 @@ int main(int argc, char** argv)
         case SYS_DREAMCAST:
             worked = grab_ROM(&ROMs, which, "crazytaxi.gdi", "crazy_taxi");
             break;
+        case SYS_MAC512K:
         case SYS_ZX_SPECTRUM:
             worked = 1;
             break;
@@ -527,7 +538,8 @@ int main(int argc, char** argv)
 #ifdef NEWSYS
     float start = SDL_GetTicks();
     u32 c;
-    c = 73377752 - 1000;
+    c = 242600;
+    //c = 73377752 - 1000;
     //c = 47395691 - 2500;
     //c = 47391011 - 150;
     //c =   46528328 - 200;
@@ -563,7 +575,7 @@ int main(int argc, char** argv)
     dbg.traces.fifo = 0;
     dbg.breaks.m68000.irq = 0;
     dbg.traces.z80.instruction = 0;
-    sys->step_master(sys, 17500);
+    sys->step_master(sys, 500);
     dbg_flush();
     sys->get_framevars(sys, &fvr);
     printf("\nFINAL CYCLE: %lld", fvr.master_cycle);

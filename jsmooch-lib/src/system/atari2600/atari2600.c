@@ -321,50 +321,6 @@ void atari2600_map_inputs(JSM)
     this->tia.io.INPT[5] |= (this->controller2_in.fire << 7);
 }
 
-void atari2600J_get_description(JSM, struct machine_description* d)
-{
-    JTHIS;
-    sprintf(d->name, "Atari 2600 VCS");
-    d->fps = 60;
-    d->timing = frame;
-    d->display_standard = MD_NTSC;
-    d->x_resolution = 160;
-    d->y_resolution = 240;
-    d->xrh = 4;
-    d->xrw = 5;
-
-    d->overscan.top = 8;
-    d->overscan.bottom = 8;
-    d->overscan.left = 8;
-    d->overscan.right = 8;
-
-    d->out_size = (160 * 240 * 4);
-
-    struct input_map_keypoint* k;
-
-    k = &d->keymap[0];
-    k->buf_pos = 0;
-    sprintf(k->name, "up");
-
-    k = &d->keymap[1];
-    k->buf_pos = 1;
-    sprintf(k->name, "down");
-
-    k = &d->keymap[2];
-    k->buf_pos = 2;
-    sprintf(k->name, "left");
-
-    k = &d->keymap[3];
-    k->buf_pos = 3;
-    sprintf(k->name, "right");
-
-    k = &d->keymap[4];
-    k->buf_pos = 4;
-    sprintf(k->name, "fire");
-
-    d->keymap_size = 5;
-}
-
 void atari2600J_killall(JSM)
 {
 

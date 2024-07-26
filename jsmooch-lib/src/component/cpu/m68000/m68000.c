@@ -46,8 +46,8 @@ static void M68k_decode(struct M68k* this)
 {
     u32 IRD = this->regs.IR;
     this->regs.IRD = IRD;
-    /*if ((((this->regs.PC-4) & 0xFFFFFF) == 0x0029AC) && (!dbg.did_breakpoint)) {
-        dbg_break("M68K PC BREAKPOINT");
+    /*if ((((this->regs.PC-4) & 0xFFFFFF) == 0x4001d0) && (!dbg.did_breakpoint)) {
+        dbg_break("M68K PC BREAKPOINT", *this->trace.cycles);
         dbg.did_breakpoint =1;
         //printf("\nBREAK FOR WAIT ON INTERRUPT!! cycle:%d", *this->trace.cycles);
     }*/
@@ -120,8 +120,10 @@ static void pprint_ea(struct M68k* this, u32 opnum)
             case M68k_OM_qimm_r:
                 if (ea->kind == M68k_AM_data_register_direct)
                     kind = 2;
-                else
+                else if (ea->kind == M68k_AM_address_register_direct)
                     kind = 1;
+                else
+                    assert(1==2);
                 break;
             case M68k_OM_r_ea:
             case M68k_OM_qimm_ea:
@@ -139,7 +141,6 @@ static void pprint_ea(struct M68k* this, u32 opnum)
         }
     }
     if (kind == 3) {
-        kind = 0;
         switch(ea->kind) {
             case M68k_AM_address_register_indirect_with_predecrement:
             case M68k_AM_address_register_indirect:

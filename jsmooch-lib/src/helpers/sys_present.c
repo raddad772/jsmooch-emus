@@ -49,6 +49,24 @@ static const u32 ZXS_palette[2][8] = {
           0xFFFFFF00, 0xFFFFFFFF}
 };
 
+void mac512k_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+{
+    u8* output = (u8 *)device->device.display.output[device->device.display.last_written];
+    u32* imgdata = (u32 *)out_buf;
+    for (u32 ry = 0; ry < 342; ry++) {
+        u32 y = ry;
+        for (u32 rx = 0; rx < 512; rx++) {
+            u32 x = rx;
+            u32 di = ((y * out_width) + x);
+            u32 ulai = (y * 512) + x;
+
+            u32 color = output[ulai];
+
+            imgdata[di] = color ? 0xFF000000 : 0xFFFFFFFF;
+        }
+    }
+}
+
 void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->device.display.output[device->device.display.last_written];
@@ -355,6 +373,9 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
             break;
         case SYS_NES:
             NES_present(display, out_buf, out_width, out_height);
+            break;
+        case SYS_MAC512K:
+            mac512k_present(display, out_buf, out_width, out_height);
             break;
         case SYS_SMS1:
         case SYS_SMS2:

@@ -399,7 +399,7 @@ void M68k_disasm_CMPM(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 
 void M68k_disasm_DBCC(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    jss("db%s    d%d,$%04x", conditions[ins->ea[0].reg], ins->ea[0].reg, read_disp(&PC, rt));
+    jss("db%s    d%d,$%04x", conditions[ins->ea[0].reg], ins->ea[1].reg, read_disp(&PC, rt));
 }
 
 void M68k_disasm_DIVS(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)

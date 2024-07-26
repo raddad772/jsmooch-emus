@@ -142,8 +142,8 @@ add_library(jsmooch-lib
         src/component/cpu/m68000/m68000.h
         src/component/cpu/m6502/m6502_opcodes.c
         src/component/cpu/m6502/m6502_opcodes.h
-        src/component/misc/m6532.c
-        src/component/misc/m6532.h
+        src/component/misc/m6532/m6532.c
+        src/component/misc/m6532/m6532.h
         src/system/atari2600/atari2600.c
         src/system/atari2600/atari2600.h
         src/system/atari2600/cart.c
@@ -191,6 +191,11 @@ add_library(jsmooch-lib
         src/system/mac/mac.h
         src/system/mac/mac_internal.c
         src/system/mac/mac_internal.h
+        src/system/mac/mac.c
+        src/system/mac/mac_display.c
+        src/system/mac/mac_display.h
+        src/component/misc/via6522/via6522.c
+        src/component/misc/via6522/via6522.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

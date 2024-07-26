@@ -8,7 +8,8 @@
 #include "helpers/sys_interface.h"
 
 enum mac_variants {
-    mac128k = 0
+    mac128k = 0,
+    mac512k = 1
 };
 
 void mac_new(struct jsm_system* jsm, enum mac_variants variant);

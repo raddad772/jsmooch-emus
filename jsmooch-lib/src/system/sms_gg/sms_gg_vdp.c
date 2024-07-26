@@ -346,7 +346,6 @@ static void scanline_visible(struct SMSGG_VDP* this)
     this->sprite_color = 0;
     if (this->bus->clock.hpos == 0) {
         this->latch.hscroll = this->io.hscroll;
-        this->latch.vscroll = this->io.vscroll;
 
         sprite_setup(this);
         this->doi = (this->bus->clock.vpos * 256);
@@ -412,6 +411,7 @@ static void new_frame(struct SMSGG_VDP* this)
     this->bus->clock.frames_since_restart++;
     this->bus->clock.vpos = 0;
     this->bus->clock.vdp_frame_cycle = 0;
+    this->latch.vscroll = this->io.vscroll;
     this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
     this->display->device.display.last_written ^= 1;
 }

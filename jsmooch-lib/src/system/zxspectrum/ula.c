@@ -35,7 +35,7 @@ static u32 ula_readmem(struct ZXSpectrum* this, u16 addr) {
 static void scanline_vblank(struct ZXSpectrum* bus)
 {
     BTHIS;
-    bus->clock.contended = false;
+    bus->clock.contended = 0;
     if (bus->clock.ula_y == 0) {
         switch(bus->clock.ula_x) {
             case 16: // IRQ up
@@ -77,7 +77,7 @@ static void scanline_visible(struct ZXSpectrum* bus)
     u32 bo = (this->screen_y * 352) + this->screen_x;
     if (((this->screen_x >= 0) && (this->screen_x < 48)) ||
         (this->screen_x >= 304)) {
-        bus->clock.contended = false;
+        bus->clock.contended = 0;
         this->cur_output[bo] = this->io.border_color;
         return;
     }
@@ -87,14 +87,14 @@ static void scanline_visible(struct ZXSpectrum* bus)
     switch(dx & 7) {
         case 0: // Contention off
             this->bg_shift = this->next_bg_shift;
-            bus->clock.contended = false;
+            bus->clock.contended = 0;
             u32 brt = (this->next_attr & 0x40) ? 8 : 0;
             this->attr.flash = ((this->next_attr & 0x80) >> 7) & bus->clock.flash.bit;
             this->attr.colors[0] = ((this->next_attr >> 3) & 7) + brt;
             this->attr.colors[1] = (this->next_attr & 7) + brt;
             break;
         case 2:
-            bus->clock.contended = true;
+            bus->clock.contended = 1;
             break;
         case 6: {// fetch next bg
             u32 addr = 0x4000 | ((dy & 0xC0) << 5) | ((dy & 7) << 8) | ((dy & 0x38) << 2) | (dx >> 3);
@@ -130,7 +130,7 @@ void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus)
 {
     BTHIS;
     bus->clock.ula_frame_cycle = bus->clock.ula_x = bus->clock.ula_y = 0;
-    bus->clock.contended = false;
+    bus->clock.contended = 0;
     bus->clock.flash.bit = 0;
     bus->clock.flash.count = 16;
     bus->clock.frames_since_restart = 0;

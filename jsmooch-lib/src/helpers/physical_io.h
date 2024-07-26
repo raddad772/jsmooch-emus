@@ -47,9 +47,47 @@ enum JKEYS {
     JK_N,
     JK_B,
     JK_ENTER,
+    JK_UP,
+    JK_DOWN,
+    JK_LEFT,
+    JK_RIGHT,
+    JK_TAB,
+    JK_TILDE,
+    JK_BACKSPACE,
     JK_CAPS,
     JK_SPACE,
-    JK_SHIFT
+    JK_SHIFT,
+    JK_RSHIFT,
+    JK_OPTION, // MAC option key
+    JK_CMD,    // MAC cmd key
+    JK_MINUS,
+    JK_EQUALS,
+    JK_SQUARE_BRACKET_LEFT,
+    JK_SQUARE_BRACKET_RIGHT,
+    JK_COMMA,
+    JK_SEMICOLON,
+    JK_APOSTROPHE,
+    JK_SLASH_FW,
+    JK_SLASH_BW,
+    JK_DOT,
+    JK_NUM0,
+    JK_NUM1,
+    JK_NUM2,
+    JK_NUM3,
+    JK_NUM4,
+    JK_NUM5,
+    JK_NUM6,
+    JK_NUM7,
+    JK_NUM8,
+    JK_NUM9,
+    JK_NUM_ENTER,
+    JK_NUM_DOT,
+    JK_NUM_PLUS,
+    JK_NUM_MINUS,
+    JK_NUM_DIVIDE,
+    JK_NUM_STAR,
+    JK_NUM_LOCK,
+    JK_NUM_CLEAR
 };
 
 
@@ -133,43 +171,46 @@ struct physical_io_device {
             u32 num_keys;
         } keyboard;
 
-        struct {
+        struct JSM_DISPLAY{
             float fps;
             void *output[2];
             u32 last_written;
             u32 last_displayed;
         } display;
 
-        struct {
+        struct JSM_MOUSE{
 
         } mouse;
 
-        struct {
+        struct JSM_CHASSIS{
             struct cvec indicators;
             struct cvec digital_buttons;
         } chassis;
 
-        struct {
+        struct JSM_AUDIO_CHANNEL{
             u32 sample_rate;
             void *samples[2];
             u32 last_written;
         } audio_channel;
 
-        struct {
+        struct JSM_CARTRIDGE_PORT{
             void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct buf* sram);
             void (*unload_cart)(struct jsm_system *ptr);
         } cartridge_port;
 
-        struct {
+        struct JSM_DISC_DRIVE{
             void (*insert_disc)(struct jsm_system *ptr, struct multi_file_set* mfs);
             void (*remove_disc)(struct jsm_system *ptr);
             void (*close_drive)(struct jsm_system *ptr);
             void (*open_drive)(struct jsm_system *ptr);
         } disc_drive;
 
-        struct {
+        struct JSM_AUDIO_CASSETTE{
             void (*insert_tape)(struct jsm_system *ptr, struct multi_file_set* mfs, struct buf* sram);
             void (*remove_tape)(struct jsm_system *ptr);
+            void (*rewind)(struct jsm_system *ptr);
+            void (*play)(struct jsm_system *ptr);
+            void (*stop)(struct jsm_system *ptr);
         } audio_cassette;
     } device;
 };
