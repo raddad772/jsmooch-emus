@@ -49,15 +49,15 @@ struct scheduler_t {
     struct scheduler_event* first_event;
 };
 
-//void scheduler_allocate(struct scheduler_t* this, u32 howmany);
+//void scheduler_allocate(struct scheduler_t*, u32 howmany);
 
-void scheduler_init(struct scheduler_t* this);
-void scheduler_delete(struct scheduler_t* this);
-void scheduler_clear(struct scheduler_t* this);
-void scheduler_add(struct scheduler_t* this, i64 timecode, enum scheduler_event_kind event_kind, u64 key, struct scheduled_bound_function* bound_func);
-i64 scheduler_til_next_event(struct scheduler_t* this, i64 timecode); // Returns time til next event
-u64 scheduler_next_event_if_any(struct scheduler_t* this);
-void scheduler_ran_cycles(struct scheduler_t* this, i64 howmany);
+void scheduler_init(struct scheduler_t*);
+void scheduler_delete(struct scheduler_t*);
+void scheduler_clear(struct scheduler_t*);
+void scheduler_add(struct scheduler_t*, i64 timecode, enum scheduler_event_kind event_kind, u64 key, struct scheduled_bound_function* bound_func);
+i64 scheduler_til_next_event(struct scheduler_t*, i64 timecode); // Returns time til next event
+u64 scheduler_next_event_if_any(struct scheduler_t*);
+void scheduler_ran_cycles(struct scheduler_t*, i64 howmany);
 
 struct scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr);
 

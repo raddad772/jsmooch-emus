@@ -85,15 +85,15 @@ struct SMSGG_VDP {
     void (*scanline_cycle)(struct SMSGG_VDP*);
 };
 
-void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems variant);
-void SMSGG_VDP_cycle(struct SMSGG_VDP* this);
-void SMSGG_VDP_reset(struct SMSGG_VDP* this);
-void SMSGG_VDP_write_control(struct SMSGG_VDP* this, u32 val);
-u32 SMSGG_VDP_read_status(struct SMSGG_VDP* this);
-u32 SMSGG_VDP_read_vcounter(struct SMSGG_VDP* this);
-void SMSGG_VDP_write_data(struct SMSGG_VDP* this, u32 val);
-u32 SMSGG_VDP_read_data(struct SMSGG_VDP* this);
-u32 SMSGG_VDP_read_hcounter(struct SMSGG_VDP* this);
+void SMSGG_VDP_init(struct SMSGG_VDP*, struct SMSGG* bus, enum jsm_systems variant);
+void SMSGG_VDP_cycle(struct SMSGG_VDP*);
+void SMSGG_VDP_reset(struct SMSGG_VDP*);
+void SMSGG_VDP_write_control(struct SMSGG_VDP*, u32 val);
+u32 SMSGG_VDP_read_status(struct SMSGG_VDP*);
+u32 SMSGG_VDP_read_vcounter(struct SMSGG_VDP*);
+void SMSGG_VDP_write_data(struct SMSGG_VDP*, u32 val);
+u32 SMSGG_VDP_read_data(struct SMSGG_VDP*);
+u32 SMSGG_VDP_read_hcounter(struct SMSGG_VDP*);
 
 
 #endif //JSMOOCH_EMUS_SMS_GG_VDP_H

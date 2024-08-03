@@ -59,9 +59,9 @@ struct NES_mapper_MMC3b {
 
 void NES_mapper_MMC3b_init(struct NES_mapper* mapper, struct NES* nes);
 void NES_mapper_MMC3b_delete(struct NES_mapper* mapper);
-void MMC3b_map_init(struct MMC3b_map* this);
-void MMC3b_map_set(struct MMC3b_map* this, u32 addr, u32 offset, u32 ROM, u32 RAM);
-void MMC3b_map_write(struct MMC3b_map* this, u32 addr, u32 val);
-u32 MMC3b_map_read(struct MMC3b_map* this, u32 addr, u32 val);
+void MMC3b_map_init(struct MMC3b_map*);
+void MMC3b_map_set(struct MMC3b_map*, u32 addr, u32 offset, u32 ROM, u32 RAM);
+void MMC3b_map_write(struct MMC3b_map*, u32 addr, u32 val);
+u32 MMC3b_map_read(struct MMC3b_map*, u32 addr, u32 val);
 
 #endif //JSMOOCH_EMUS_MMC3B_H

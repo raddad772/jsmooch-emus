@@ -12,7 +12,7 @@ struct nespad_inputs {
     u32 a, b, start, select, up, down, left, right;
 };
 
-void nespad_inputs_init(struct nespad_inputs* this);
+void nespad_inputs_init(struct nespad_inputs*);
 
 struct NES_joypad {
     u32 counter, latched, joynum;
@@ -22,9 +22,9 @@ struct NES_joypad {
     u32 device_index;
 };
 
-void NES_joypad_init(struct NES_joypad* this, u32 joynum);
-void NES_joypad_latch(struct NES_joypad *this, u32 what);
-u32 NES_joypad_data(struct NES_joypad* this);
+void NES_joypad_init(struct NES_joypad*, u32 joynum);
+void NES_joypad_latch(struct NES_joypad *, u32 what);
+u32 NES_joypad_data(struct NES_joypad*);
 void NES_joypad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected);
 
 

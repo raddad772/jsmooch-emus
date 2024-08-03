@@ -296,6 +296,6 @@ enum holly_interrupt_masks {
     hirq_gdrom_cmd = holly_ext | 0
 };
 
-void DC_mem_init(struct DC* this);
+void DC_mem_init(struct DC*);
 
 #endif //JSMOOCH_EMUS_DREAMCAST_H

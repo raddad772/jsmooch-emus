@@ -33,8 +33,8 @@ struct system_io {
         struct HID_digital_button* select;
     } p[2];
     struct kb {
-        SDL_KeyCode
-        struct HID_digital_button* 1
+        //SDL_KeyCode
+        //struct HID_digital_button* 1
     };
     struct HID_digital_button* ch_power;
     struct HID_digital_button* ch_reset;
@@ -44,8 +44,8 @@ struct system_io {
 
 void map_inputs(const u32 *input_buffer, struct system_io* inputs, struct jsm_system *jsm)
 {
-    struct CDKRKR* p1 = &inputs->p[0];
-    struct CDKRKR* p2 = &inputs->p[1];
+    struct system_io::CDKRKR *p1 = &inputs->p[0];
+    struct system_io::CDKRKR *p2 = &inputs->p[1];
     // Arrows
     if (p1->up) p1->up->state = input_buffer[0];
     if (p1->down) p1->down->state = input_buffer[1];
@@ -120,7 +120,7 @@ void test_gdi() {
     }
 
     char PATH[500];
-    sprintf(PATH, "%s/Documents/emu/rom/dreamcast/crazy_taxi", homeDir);
+    snprintf(PATH, sizeof(PATH), "%s/Documents/emu/rom/dreamcast/crazy_taxi", homeDir);
     printf("\nHEY! %s", PATH);
     GDI_load(PATH, "crazy_taxi/crazytaxi.gdi", &foo);
 
@@ -139,50 +139,50 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             homeDir = pwd->pw_dir;
     }
 
-    sprintf(BASE_PATH, "%s/Documents/emu/bios", homeDir);
+    snprintf(BASE_PATH, sizeof(BASE_PATH), "%s/Documents/emu/bios", homeDir);
 
     u32 has_bios = 0;
     switch(which) {
         case SYS_SMS1:
         case SYS_SMS2:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/master_system", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/master_system", BASE_PATH);
             mfs_add("bios13fx.sms", BIOS_PATH, BIOSes);
             break;
         case SYS_DREAMCAST:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/dreamcast", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/dreamcast", BASE_PATH);
             mfs_add("dc_boot.bin", BIOS_PATH, BIOSes);
             mfs_add("dc_flash.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_DMG:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/gameboy", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gameboy", BASE_PATH);
             mfs_add("gb_bios.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_GBC:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/gameboy", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gameboy", BASE_PATH);
             mfs_add("gbc_bios.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_ZX_SPECTRUM:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/zx_spectrum", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
             mfs_add("zx48.rom", BIOS_PATH, BIOSes);
             break;
         case SYS_MAC128K:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/mac", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
             mfs_add("mac128k.rom", BIOS_PATH, BIOSes);
             break;
         case SYS_MAC512K:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/mac", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
             mfs_add("mac512k.rom", BIOS_PATH, BIOSes);
             break;
         case SYS_MACPLUS_1MB:
             has_bios = 1;
-            sprintf(BIOS_PATH, "%s/mac", BASE_PATH);
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
             mfs_add("macplus_1mb.rom", BIOS_PATH, BIOSes);
             break;
         case SYS_PSX:
@@ -203,7 +203,7 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
 
 
 
-void GET_HOME_BASE_SYS(char *out, enum jsm_systems which, const char* sec_path, u32 *worked)
+void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const char* sec_path, u32 *worked)
 {
     char BASE_PATH[500];
     char BASER_PATH[500];
@@ -215,47 +215,47 @@ void GET_HOME_BASE_SYS(char *out, enum jsm_systems which, const char* sec_path, 
             homeDir = pwd->pw_dir;
     }
 
-    sprintf(BASER_PATH, "%s/Documents/emu/rom", homeDir);
+    snprintf(BASER_PATH, 500, "%s/Documents/emu/rom", homeDir);
 
     u32 has_bios = 0;
     switch(which) {
         case SYS_SMS1:
         case SYS_SMS2:
-            sprintf(out, "%s/master_system", BASER_PATH);
+            snprintf(out, out_sz, "%s/master_system", BASER_PATH);
             *worked = 1;
             break;
         case SYS_DREAMCAST:
             if (sec_path)
-                sprintf(out, "%s/dreamcast/%s", BASER_PATH, sec_path);
+                snprintf(out, out_sz, "%s/dreamcast/%s", BASER_PATH, sec_path);
             else
-                sprintf(out, "%s/dreamcast", BASER_PATH);
+                snprintf(out, out_sz, "%s/dreamcast", BASER_PATH);
             *worked = 1;
             break;
         case SYS_DMG:
         case SYS_GBC:
-            sprintf(out, "%s/gameboy", BASER_PATH);
+            snprintf(out, out_sz, "%s/gameboy", BASER_PATH);
             *worked = 1;
             break;
         case SYS_ATARI2600:
-            sprintf(out, "%s/atari2600", BASER_PATH);
+            snprintf(out, out_sz, "%s/atari2600", BASER_PATH);
             *worked = 1;
             break;
         case SYS_NES:
-            sprintf(out, "%s/nes", BASER_PATH);
+            snprintf(out, out_sz, "%s/nes", BASER_PATH);
             *worked = 1;
             break;
         case SYS_ZX_SPECTRUM:
-            sprintf(out, "%s/zx_spectrum", BASER_PATH);
+            snprintf(out, out_sz, "%s/zx_spectrum", BASER_PATH);
             *worked = 1;
             break;
         case SYS_GENESIS:
-            sprintf(out, "%s/genesis", BASER_PATH);
+            snprintf(out, out_sz, "%s/genesis", BASER_PATH);
             *worked = 1;
             break;
         case SYS_MAC512K:
         case SYS_MAC128K:
         case SYS_MACPLUS_1MB:
-            sprintf(out, "%s/mac", BASER_PATH);
+            snprintf(out, out_sz, "%s/mac", BASER_PATH);
             *worked = 1;
             break;
         case SYS_PSX:
@@ -278,7 +278,7 @@ void mfs_add_IP_BIN(struct multi_file_set* mfs)
     char ROM_PATH[255];
     u32 worked = 0;
 
-    GET_HOME_BASE_SYS(BASE_PATH, SYS_DREAMCAST, NULL, &worked);
+    GET_HOME_BASE_SYS(BASE_PATH, 255, SYS_DREAMCAST, NULL, &worked);
     if (worked == 0) return;
 
     mfs_add("IP.BIN", BASE_PATH, mfs);
@@ -291,7 +291,7 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
     char ROM_PATH[255];
     u32 worked = 0;
 
-    GET_HOME_BASE_SYS(BASE_PATH, which, sec_path, &worked);
+    GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
 
     if (!worked) return 0;
     mfs_add(fname, BASE_PATH, ROMs);
@@ -306,7 +306,7 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
         case SYS_ZX_SPECTRUM:
         case SYS_DREAMCAST:
             for (u32 i = 0; i < cvec_len(IOs); i++) {
-                pio = cvec_get(IOs, i);
+                pio = (struct physical_io_device*)cvec_get(IOs, i);
                 if (pio->kind == HID_DISC_DRIVE) {
                     pio->device.disc_drive.insert_disc(sys, mfs);
                     break;
@@ -321,7 +321,7 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
     }
     pio = NULL;
     for (u32 i = 0; i < cvec_len(IOs); i++) {
-        pio = cvec_get(IOs, i);
+        pio = (struct physical_io_device*)cvec_get(IOs, i);
         if (pio->kind == HID_CART_PORT) break;
         pio = NULL;
     }
@@ -335,7 +335,7 @@ static void setup_controller(struct system_io* io, struct physical_io_device* pi
 {
     struct cvec* dbs = &pio->device.controller.digital_buttons;
     for (u32 i = 0; i < cvec_len(dbs); i++) {
-        struct HID_digital_button* db = cvec_get(dbs, i);
+        struct HID_digital_button* db = (struct HID_digital_button*)cvec_get(dbs, i);
         switch(db->common_id) {
             case DBCID_co_up:
                 io->p[pnum].up = db;
@@ -474,9 +474,9 @@ int main(int argc, char** argv)
     struct physical_io_device* display = NULL;
     struct physical_io_device* chassis = NULL;
     for (u32 i = 0; i < cvec_len(IOs); i++) {
-        struct physical_io_device* pio = cvec_get(IOs, i);
+        struct physical_io_device* pio = (struct physical_io_device*)cvec_get(IOs, i);
         switch(pio->kind) {
-            case HID_CONTROLLER:
+            case HID_CONTROLLER: {
                 if (controller1 == NULL) {
                     controller1 = pio;
                     setup_controller(&inputs, pio, 0);
@@ -485,18 +485,18 @@ int main(int argc, char** argv)
                     controller2 = pio;
                     setup_controller(&inputs, pio, 1);
                 }
-                continue;
-            case HID_KEYBOARD:
+                continue; }
+            case HID_KEYBOARD: {
                 controller1 = pio;
-                continue;
-            case HID_DISPLAY:
+                continue; }
+            case HID_DISPLAY: {
                 display = pio;
-                continue;
-            case HID_CHASSIS:
+                continue; }
+            case HID_CHASSIS: {
                 chassis = pio;
                 struct cvec* dbs = &chassis->device.chassis.digital_buttons;
                 for (u32 j = 0; j < cvec_len(dbs); j++) {
-                    struct HID_digital_button* db = cvec_get(dbs, j);
+                    struct HID_digital_button* db = (struct HID_digital_button*)cvec_get(dbs, j);
                     switch(db->common_id) {
                         case DBCID_ch_pause:
                             inputs.ch_pause = db;
@@ -511,7 +511,7 @@ int main(int argc, char** argv)
                             continue;
                     }
                 }
-                continue;
+                break; }
             default:
                 break;
         }

@@ -46,22 +46,22 @@ union HOLLY_ISP_TSP_IWORD {
     u32 u;
 };
 
-void holly_init(struct DC*this);
-void holly_delete(struct DC* this);
+void holly_init(struct DC*);
+void holly_delete(struct DC*);
 
-void holly_write(struct DC* this, u32 addr, u32 val, u32* success);
-u64 holly_read(struct DC* this, u32 addr, u32* success);
-void holly_reset(struct DC* this);
-void DC_recalc_frame_timing(struct DC* this);
-void holly_vblank_in(struct DC* this);
-void holly_vblank_out(struct DC* this);
+void holly_write(struct DC*, u32 addr, u32 val, u32* success);
+u64 holly_read(struct DC*, u32 addr, u32* success);
+void holly_reset(struct DC*);
+void DC_recalc_frame_timing(struct DC*);
+void holly_vblank_in(struct DC*);
+void holly_vblank_out(struct DC*);
 
 enum holly_interrupt_masks;
-void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, i64 delay);
-void holly_lower_interrupt(struct DC* this, enum holly_interrupt_masks irq_num);
-void holly_eval_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, u32 is_true);
-void holly_recalc_interrupts(struct DC* this);
+void holly_raise_interrupt(struct DC*, enum holly_interrupt_masks irq_num, i64 delay);
+void holly_lower_interrupt(struct DC*, enum holly_interrupt_masks irq_num);
+void holly_eval_interrupt(struct DC*, enum holly_interrupt_masks irq_num, u32 is_true);
+void holly_recalc_interrupts(struct DC*);
 
-void holly_TA_FIFO_DMA(struct DC* this, u32 src_addr, u32 tx_len, void *src, u32 src_len);
+void holly_TA_FIFO_DMA(struct DC*, u32 src_addr, u32 tx_len, void *src, u32 src_len);
 
 #endif //JSMOOCH_EMUS_HOLLY_H

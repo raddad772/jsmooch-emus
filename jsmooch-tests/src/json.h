@@ -641,7 +641,7 @@ int json_skip_all_skippables(struct json_parse_state_s *state) {
 
       did_consume = json_skip_whitespace(state);
 
-      /* This should really be checked on access, not in front of every call.
+      /* should really be checked on access, not in front of every call.
        */
       if (state->offset >= size) {
         state->error = json_parse_error_premature_end_of_buffer;
@@ -1479,7 +1479,7 @@ void json_parse_string(struct json_parse_state_s *state,
       case 'u': {
         codepoint = 0;
         if (!json_hexadecimal_value(&src[offset], 4, &codepoint)) {
-          return; /* this shouldn't happen as the value was already validated.
+          return; /* shouldn't happen as the value was already validated.
                    */
         }
 
@@ -1692,7 +1692,7 @@ void json_parse_object(struct json_parse_state_s *state, int is_global_object,
     state->dom += sizeof(struct json_object_element_s);
 
     if (json_null == previous) {
-      /* this is our first element, so record it in our object. */
+      /* is our first element, so record it in our object. */
       object->start = element;
     } else {
       previous->next = element;
@@ -1808,7 +1808,7 @@ void json_parse_array(struct json_parse_state_s *state,
     state->dom += sizeof(struct json_array_element_s);
 
     if (json_null == previous) {
-      /* this is our first element, so record it in our array. */
+      /* is our first element, so record it in our array. */
       array->start = element;
     } else {
       previous->next = element;

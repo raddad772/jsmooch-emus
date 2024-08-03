@@ -19,6 +19,6 @@ void jsm_string_delete(struct jsm_string *str);
 void jsm_string_seek(struct jsm_string *str, i32 pos);
 void jsm_string_sprintf(struct jsm_string *str, const char* format, ...);
 void jsm_string_empty(struct jsm_string *str);
-void jsm_string_quickempty(struct jsm_string *this);
+void jsm_string_quickempty(struct jsm_string *);
 
 #endif //JSMOOCH_EMUS_JSM_STRING_H

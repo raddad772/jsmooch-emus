@@ -10,9 +10,9 @@
 struct NES_PPU;
 struct NES;
 typedef void (*PPU_linerender_func)(struct NES_PPU*);
-void NES_PPU_init(struct NES_PPU* this, struct NES *nes);
-u32 NES_PPU_cycle(struct NES_PPU* this, u32 howmany);
-void NES_PPU_reset(struct NES_PPU* this);
+void NES_PPU_init(struct NES_PPU*, struct NES *nes);
+u32 NES_PPU_cycle(struct NES_PPU*, u32 howmany);
+void NES_PPU_reset(struct NES_PPU*);
 void NES_bus_PPU_write_regs(struct NES* nes, u32 addr, u32 val);
 u32 NES_bus_PPU_read_regs(struct NES* nes, u32 addr, u32 val, u32 has_effect);
 

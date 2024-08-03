@@ -20,14 +20,14 @@ struct SMSGG_controller_port {
     void* attached_device;
 };
 
-void SMSGG_controller_port_init(struct SMSGG_controller_port* this, enum jsm_systems variant, u32 which);
-u32 SMSGG_controller_port_read(struct SMSGG_controller_port* this);
-void SMSGG_controller_port_reset(struct SMSGG_controller_port* this);
+void SMSGG_controller_port_init(struct SMSGG_controller_port*, enum jsm_systems variant, u32 which);
+u32 SMSGG_controller_port_read(struct SMSGG_controller_port*);
+void SMSGG_controller_port_reset(struct SMSGG_controller_port*);
 
 struct SMSGG;
 
 u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);
-void SMSGG_bus_cpu_out_sms1(struct SMSGG* this, u32 addr, u32 val);
+void SMSGG_bus_cpu_out_sms1(struct SMSGG*, u32 addr, u32 val);
 u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);
 
 

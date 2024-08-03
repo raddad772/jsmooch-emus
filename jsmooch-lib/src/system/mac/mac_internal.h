@@ -139,19 +139,19 @@ struct mac {
     } rtc;
 };
 
-u16 mac_mainbus_read(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
+u16 mac_mainbus_read(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
 
-void mac_step_bus(struct mac* this);
+void mac_step_bus(struct mac*);
 
-void mac_mainbus_write(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 val);
-u16 mac_mainbus_read(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
+void mac_mainbus_write(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 val);
+u16 mac_mainbus_read(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
 
-u16 mac_mainbus_read_via(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect);
-void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val);
-u16 mac_mainbus_read_iwm(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect);
-void mac_mainbus_write_iwm(struct mac* this, u32 addr, u16 mask, u16 val);
-u16 mac_mainbus_read_scc(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect);
-void mac_mainbus_write_scc(struct mac* this, u32 addr, u16 mask, u16 val);
-void mac_reset_via(struct mac* this);
+u16 mac_mainbus_read_via(struct mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
+void mac_mainbus_write_via(struct mac*, u32 addr, u16 mask, u16 val);
+u16 mac_mainbus_read_iwm(struct mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
+void mac_mainbus_write_iwm(struct mac*, u32 addr, u16 mask, u16 val);
+u16 mac_mainbus_read_scc(struct mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
+void mac_mainbus_write_scc(struct mac*, u32 addr, u16 mask, u16 val);
+void mac_reset_via(struct mac*);
 
 #endif //JSMOOCH_EMUS_MAC_INTERNAL_H

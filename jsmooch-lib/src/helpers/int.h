@@ -1,6 +1,10 @@
 #ifndef _JSMOOCH_INT_H
 #define _JSMOOCH_INT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define COMPILER_CLANG 3
 #define BUILD_COMPILER COMPILER_CLANG
 #define CPU_ARM64 5
@@ -96,6 +100,10 @@ typedef double f64;
 #define from_little64(x) bswap_64(x)
 
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

@@ -214,12 +214,12 @@ struct genesis {
     struct genesis_controller_3button controller2;
 };
 
-void genesis_cycle_m68k(struct genesis* this);
-void genesis_cycle_z80(struct genesis* this);
-void gen_test_dbg_break(struct genesis* this, const char *where);
-u16 genesis_mainbus_read(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
-void genesis_z80_interrupt(struct genesis* this, u32 level);
-void genesis_m68k_vblank_irq(struct genesis* this, u32 level);
-void genesis_m68k_line_count_irq(struct genesis* this, u32 level);
-u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect);
+void genesis_cycle_m68k(struct genesis*);
+void genesis_cycle_z80(struct genesis*);
+void gen_test_dbg_break(struct genesis*, const char *where);
+u16 genesis_mainbus_read(struct genesis*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
+void genesis_z80_interrupt(struct genesis*, u32 level);
+void genesis_m68k_vblank_irq(struct genesis*, u32 level);
+void genesis_m68k_line_count_irq(struct genesis*, u32 level);
+u8 genesis_z80_bus_read(struct genesis*, u16 addr, u8 old, u32 has_effect);
 #endif //JSMOOCH_EMUS_GENESIS_BUS_H

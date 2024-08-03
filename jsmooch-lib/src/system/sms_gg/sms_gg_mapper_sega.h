@@ -42,14 +42,14 @@ struct SMSGG_mapper_sega {
     } bios;
 };
 
-void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm_systems variant);
-void SMSGG_mapper_sega_delete(struct SMSGG_mapper_sega* this);
-void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega* this, u32 to);
-void SMSGG_mapper_sega_reset(struct SMSGG_mapper_sega* this);
+void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega*, enum jsm_systems variant);
+void SMSGG_mapper_sega_delete(struct SMSGG_mapper_sega*);
+void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega*, u32 to);
+void SMSGG_mapper_sega_reset(struct SMSGG_mapper_sega*);
 struct SMSGG;
 u32 SMSGG_bus_read(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);
 void SMSGG_bus_write(struct SMSGG* bus, u32 addr, u32 val);
-void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega* this, struct buf *BIOS);
-void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* inbuf);
+void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega*, struct buf *BIOS);
+void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega*, struct buf* inbuf);
 
 #endif //JSMOOCH_EMUS_SMS_GG_MAPPER_SEGA_H

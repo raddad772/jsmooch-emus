@@ -5,6 +5,11 @@
 #ifndef JSMOOCH_EMUS_DEBUG_H
 #define JSMOOCH_EMUS_DEBUG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #if !defined(NDEBUG)
 #define JSDEBUG
 #endif
@@ -107,13 +112,15 @@ struct jsm_debug_struct {
 
     struct last_traces_t last_traces;
     u32 var;
-    struct DC* dcptr;
+    struct DC *dcptr;
 };
 
 struct jsm_debug_read_trace {
     void *ptr;
-    u32 (*read_trace)(void *,u32);
-    u32 (*read_trace_m68k)(void *,u32,u32,u32);
+
+    u32 (*read_trace)(void *, u32);
+
+    u32 (*read_trace_m68k)(void *, u32, u32, u32);
 };
 
 extern struct jsm_debug_struct dbg;
@@ -147,11 +154,11 @@ void dbg_delete();
 void dbg_break(const char *reason, u64 cycles);
 void dbg_unbreak();
 
-void LT_init(struct last_traces_t* this);
-void LT_printf(struct last_traces_t* this, char *format, ...);
-void LT_endline(struct last_traces_t* this);
-void LT_seek_in_line(struct last_traces_t* this, u32 where);
-void LT_dump_to_dbg(struct last_traces_t* this);
+void LT_init(struct last_traces_t *);
+void LT_printf(struct last_traces_t *, char *format, ...);
+void LT_endline(struct last_traces_t *);
+void LT_seek_in_line(struct last_traces_t *, u32 where);
+void LT_dump_to_dbg(struct last_traces_t *);
 
 #ifdef DO_LAST_TRACES
 #define dbg_LT_printf(...) LT_printf(&dbg.last_traces, __VA_ARGS__)
@@ -204,6 +211,11 @@ void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, struct jsm_debug_read
 
 #define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
 
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wswitch"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //JSMOOCH_EMUS_DEBUG_H

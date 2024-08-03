@@ -50,12 +50,12 @@ struct GB_bus {
 	u8* BIOS;
 };
 
-void GB_bus_init(struct GB_bus* this, struct GB_clock *clock);
-void GB_bus_delete(struct GB_bus *this);
-void GB_bus_reset(struct GB_bus *this);
-u32 GB_bus_PPU_read(struct GB_bus* this, u32 addr);
-u32 GB_bus_CPU_read(struct GB_bus* this, u32 addr, u32 val, u32 has_effect);
-void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val);
-void GB_bus_set_cart(struct GB_bus* this, struct GB_cart* cart);
+void GB_bus_init(struct GB_bus*, struct GB_clock *clock);
+void GB_bus_delete(struct GB_bus *);
+void GB_bus_reset(struct GB_bus *);
+u32 GB_bus_PPU_read(struct GB_bus*, u32 addr);
+u32 GB_bus_CPU_read(struct GB_bus*, u32 addr, u32 val, u32 has_effect);
+void GB_bus_CPU_write(struct GB_bus*, u32 addr, u32 val);
+void GB_bus_set_cart(struct GB_bus*, struct GB_cart* cart);
 
 #endif

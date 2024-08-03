@@ -33,10 +33,10 @@ struct SN76489 {
     u32 io_kind; // 0 = tone, 1 = volume
 };
 
-void SN76489_init(struct SN76489* this);
-void SN76489_cycle(struct SN76489* this);
-i16 SN76489_mix_sample(struct SN76489* this);
-void SN76489_reset(struct SN76489* this);
-void SN76489_write_data(struct SN76489* this, u32 val);
+void SN76489_init(struct SN76489*);
+void SN76489_cycle(struct SN76489*);
+i16 SN76489_mix_sample(struct SN76489*);
+void SN76489_reset(struct SN76489*);
+void SN76489_write_data(struct SN76489*, u32 val);
 
 #endif //JSMOOCH_EMUS_SN76489_H

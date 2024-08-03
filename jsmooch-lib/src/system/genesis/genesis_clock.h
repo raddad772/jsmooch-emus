@@ -51,7 +51,7 @@ struct genesis_clock {
                  / 4 = ~13MHz VDP
  */
 
-void genesis_clock_init(struct genesis_clock* this );
-void genesis_clock_reset(struct genesis_clock* this);
+void genesis_clock_init(struct genesis_clock* );
+void genesis_clock_reset(struct genesis_clock*);
 
 #endif //JSMOOCH_EMUS_GENESIS_CLOCK_H

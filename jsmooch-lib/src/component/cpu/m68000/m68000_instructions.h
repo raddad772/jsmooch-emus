@@ -12,7 +12,7 @@
 struct M68k;
 struct M68k_ins_t;
 
-typedef void (*M68k_ins_func)(struct M68k* this, struct M68k_ins_t *ins);
+typedef void (*M68k_ins_func)(struct M68k*, struct M68k_ins_t *ins);
 typedef void (*M68k_disassemble_t)(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 
 struct M68k_ins_t {
@@ -30,9 +30,9 @@ struct M68k;
 void do_M68k_decode(); // call this before using core
 
 extern struct M68k_ins_t M68k_decoded[65536];
-void M68k_ins_RESET_POWER(struct M68k* this, struct M68k_ins_t *ins);
-void M68k_ins_DIVU(struct M68k* this, struct M68k_ins_t *ins);
-void M68k_ins_MOVEM_TO_REG(struct M68k* this, struct M68k_ins_t *ins);
-void M68k_ins_MOVE(struct M68k* this, struct M68k_ins_t *ins);
+void M68k_ins_RESET_POWER(struct M68k*, struct M68k_ins_t *ins);
+void M68k_ins_DIVU(struct M68k*, struct M68k_ins_t *ins);
+void M68k_ins_MOVEM_TO_REG(struct M68k*, struct M68k_ins_t *ins);
+void M68k_ins_MOVE(struct M68k*, struct M68k_ins_t *ins);
 
 #endif //JSMOOCH_EMUS_M68000_INSTRUCTIONS_H

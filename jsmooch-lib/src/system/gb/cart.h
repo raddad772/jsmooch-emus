@@ -33,8 +33,8 @@ struct GB_cart {
 
 
 void GB_cart_init(struct GB_cart* cart, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
-void GB_cart_delete(struct GB_cart* this);
-void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, u64 size);
+void GB_cart_delete(struct GB_cart*);
+void GB_cart_load_ROM_from_RAM(struct GB_cart*, void* ibuf, u64 size);
 
 
 #endif

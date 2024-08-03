@@ -38,8 +38,8 @@ struct SMSGG {
     u32 described_inputs;
     u32 last_frame;
 
-    u32 (*cpu_in)(struct SMSGG* this, u32, u32, u32);
-    void (*cpu_out)(struct SMSGG* this, u32, u32);
+    u32 (*cpu_in)(struct SMSGG*, u32, u32, u32);
+    void (*cpu_out)(struct SMSGG*, u32, u32);
 
     struct {
         struct SMSGG_gamepad controllerA;
@@ -53,6 +53,6 @@ struct SMSGG {
     } io;
 };
 
-void SMSGG_bus_notify_IRQ(struct SMSGG* this, u32 level);
+void SMSGG_bus_notify_IRQ(struct SMSGG*, u32 level);
 
 #endif //JSMOOCH_EMUS_SMS_GG_H

@@ -47,6 +47,6 @@ struct ZXSpectrum {
 
 };
 
-void ZXSpectrum_notify_IRQ(struct ZXSpectrum* this, u32 level);
+void ZXSpectrum_notify_IRQ(struct ZXSpectrum*, u32 level);
 
 #endif //JSMOOCH_EMUS_ZXSPECTRUM_H

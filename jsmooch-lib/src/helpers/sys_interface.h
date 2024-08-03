@@ -1,6 +1,10 @@
 #ifndef JSMOOCH_SYS_INTERFACE_H
 #define JSMOOCH_SYS_INTERFACE_H
 
+#ifdef __cplusplus
+extern "C" {
+
+#endif
 #include "int.h"
 #include "enums.h"
 #include "buf.h"
@@ -101,5 +105,9 @@ struct jsm_system {
 
 struct jsm_system* new_system(enum jsm_systems which);
 void jsm_delete(struct jsm_system* which);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

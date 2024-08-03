@@ -19,9 +19,9 @@ struct M6502_P {
     u32 N;
 };
 
-void M6502_P_init(struct M6502_P *this);
-void M6502_regs_P_setbyte(struct M6502_P* this, u32 val);
-u32 M6502_regs_P_getbyte(struct M6502_P* this);
+void M6502_P_init(struct M6502_P *);
+void M6502_regs_P_setbyte(struct M6502_P*, u32 val);
+u32 M6502_regs_P_getbyte(struct M6502_P*);
 
 struct M6502_regs {
     u32 A, X, Y;
@@ -52,8 +52,8 @@ struct M6502_pins {
     u32 RDY;
 };
 
-void M6502_regs_init(struct M6502_regs* this);
-void M6502_pins_init(struct M6502_pins* this);
+void M6502_regs_init(struct M6502_regs*);
+void M6502_pins_init(struct M6502_pins*);
 
 struct M6502 {
     struct M6502_regs regs;
@@ -76,9 +76,9 @@ struct M6502 {
     M6502_ins_func *opcode_table;
 };
 
-void M6502_init(struct M6502 *this, M6502_ins_func *opcode_set);
-void M6502_cycle(struct M6502* this);
-void M6502_reset(struct M6502* this);
-void M6502_setup_tracing(struct M6502* this, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
+void M6502_init(struct M6502 *, M6502_ins_func *opcode_set);
+void M6502_cycle(struct M6502*);
+void M6502_reset(struct M6502*);
+void M6502_setup_tracing(struct M6502*, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
 
 #endif //JSMOOCH_EMUS_M6502_H

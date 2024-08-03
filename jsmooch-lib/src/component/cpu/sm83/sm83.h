@@ -71,17 +71,17 @@ struct SM83 {
     struct jsm_debug_read_trace read_trace;
 };
 
-void SM83_regs_F_setbyte(struct SM83_regs_F* this, u32 val);
-u32 SM83_regs_F_getbyte(struct SM83_regs_F* this);
-void SM83_regs_F_init(struct SM83_regs_F* this);
-void SM83_regs_init(struct SM83_regs* this);
-void SM83_pins_init(struct SM83_pins* this);
+void SM83_regs_F_setbyte(struct SM83_regs_F*, u32 val);
+u32 SM83_regs_F_getbyte(struct SM83_regs_F*);
+void SM83_regs_F_init(struct SM83_regs_F*);
+void SM83_regs_init(struct SM83_regs*);
+void SM83_pins_init(struct SM83_pins*);
 
-void SM83_init(struct SM83* this); // Initializes SM83 processor struct. Use before using the struct
-void SM83_cycle(struct SM83* this); // Runs SM83 cycle
-void SM83_reset(struct SM83* this); // Resets SM83 processor
-void SM83_enable_tracing(struct SM83* this, struct jsm_debug_read_trace *dbg_read_trace);
-void SM83_disable_tracing(struct SM83* this);
+void SM83_init(struct SM83*); // Initializes SM83 processor struct. Use before using the struct
+void SM83_cycle(struct SM83*); // Runs SM83 cycle
+void SM83_reset(struct SM83*); // Resets SM83 processor
+void SM83_enable_tracing(struct SM83*, struct jsm_debug_read_trace *dbg_read_trace);
+void SM83_disable_tracing(struct SM83*);
 
 
 #endif

@@ -89,10 +89,10 @@ struct genesis_cart {
 };
 
 
-void genesis_cart_init(struct genesis_cart* this);
-void genesis_cart_delete(struct genesis_cart *this);
-u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect);
+void genesis_cart_init(struct genesis_cart*);
+void genesis_cart_delete(struct genesis_cart *);
+u16 genesis_cart_read(struct genesis_cart *, u32 addr, u32 mask, u32 has_effect);
 
-u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz);
+u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart*, char* fil, u64 fil_sz);
 
 #endif //JSMOOCH_EMUS_GENESIS_CART_H

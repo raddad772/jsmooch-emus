@@ -237,7 +237,7 @@ void GDI_GetToc(struct GDI_image *this, u32* to, u32 area)
 
 }
 
-void GDI_load(char *folder, char *filename, struct GDI_image *img)
+void GDI_load(char *folder, const char *filename, struct GDI_image *img)
 {
     struct GDI_image *this = img;
     sprintf(this->path, "%s/%s", folder, filename);

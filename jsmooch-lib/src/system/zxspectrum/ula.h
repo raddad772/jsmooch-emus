@@ -33,8 +33,8 @@ struct ZXSpectrum_ULA {
     } io;
 };
 
-void ZXSpectrum_ULA_init(struct ZXSpectrum_ULA* this);
-void ZXSpectrum_ULA_delete(struct ZXSpectrum_ULA* this);
+void ZXSpectrum_ULA_init(struct ZXSpectrum_ULA*);
+void ZXSpectrum_ULA_delete(struct ZXSpectrum_ULA*);
 
 void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus);
 void ZXSpectrum_ULA_cycle(struct ZXSpectrum* bus);

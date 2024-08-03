@@ -217,8 +217,8 @@ struct physical_io_device {
     } device;
 };
 
-void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
-void physical_io_device_delete(struct physical_io_device* this);
+void physical_io_device_init(struct physical_io_device*, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
+void physical_io_device_delete(struct physical_io_device*);
 void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id);
 
 #endif //JSMOOCH_EMUS_PHYSICAL_IO_H

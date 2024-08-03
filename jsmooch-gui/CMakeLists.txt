@@ -1,7 +1,7 @@
 set(CMAKE_C_STANDARD 11)
 
 add_executable(jsmooch-gui
-        src/jsmooch-gui.c
+        src/jsmooch-gui.cpp
         src/jsmooch-gui.h
         ../jsmooch-lib/src/component/cpu/z80/z80_opcodes.c
 )

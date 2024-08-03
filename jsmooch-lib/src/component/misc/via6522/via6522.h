@@ -43,9 +43,9 @@ struct via6522 {
     } trace;
 };
 
-void via6522_init(struct via6522* this, u64* trace_cycles);
-void via6522_delete(struct via6522* this);
-void via6522_write(struct via6522* this, u8 addr, u8 val);
-u8 via6522_read(struct via6522* this, u8 addr, u8 old);
+void via6522_init(struct via6522*, u64* trace_cycles);
+void via6522_delete(struct via6522*);
+void via6522_write(struct via6522*, u8 addr, u8 val);
+u8 via6522_read(struct via6522*, u8 addr, u8 old);
 
 #endif //JSMOOCH_EMUS_VIA6522_H

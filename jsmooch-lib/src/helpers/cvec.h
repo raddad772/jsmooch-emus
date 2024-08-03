@@ -24,17 +24,17 @@ struct cvec_iterator {
     u32 index;
 };
 
-void cvec_init(struct cvec* this, u32 data_size, u32 prealloc);
-void cvec_delete(struct cvec* this);
-u32 cvec_len(struct cvec* this);
-void *cvec_push_back(struct cvec* this);
-void *cvec_pop_back(struct cvec* this);
-void cvec_clear(struct cvec* this);
-void *cvec_get(struct cvec* this, u32 index);
-void *cvec_get_unsafe(struct cvec* this, u32 index);
-void cvec_lock_reallocs(struct cvec* this); // For locking reallocs to preserve pointers
-void cvec_push_back_copy(struct cvec* this, void *src);
+void cvec_init(struct cvec*, u32 data_size, u32 prealloc);
+void cvec_delete(struct cvec*);
+u32 cvec_len(struct cvec*);
+void *cvec_push_back(struct cvec*);
+void *cvec_pop_back(struct cvec*);
+void cvec_clear(struct cvec*);
+void *cvec_get(struct cvec*, u32 index);
+void *cvec_get_unsafe(struct cvec*, u32 index);
+void cvec_lock_reallocs(struct cvec*); // For locking reallocs to preserve pointers
+void cvec_push_back_copy(struct cvec*, void *src);
 
-void cvec_iterator_init(struct cvec_iterator* this);
+void cvec_iterator_init(struct cvec_iterator*);
 
 #endif //JSMOOCH_EMUS_CVEC_H

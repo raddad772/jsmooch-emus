@@ -13,6 +13,6 @@ struct NES_bus {
 };
 
 struct NES;
-void NES_bus_init(struct NES_bus* this, struct NES* nes, struct NES_clock* clock);
+void NES_bus_init(struct NES_bus*, struct NES* nes, struct NES_clock* clock);
 
 #endif //JSMOOCH_EMUS_NES_BUS_H

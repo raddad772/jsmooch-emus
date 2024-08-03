@@ -40,7 +40,7 @@ struct NES_clock {
     u32 frame_odd;
 };
 
-void NES_clock_init(struct NES_clock* this);
-void NES_clock_reset(struct NES_clock* this);
+void NES_clock_init(struct NES_clock*);
+void NES_clock_reset(struct NES_clock*);
 
 #endif //JSMOOCH_EMUS_NES_CLOCK_H

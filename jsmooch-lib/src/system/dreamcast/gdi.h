@@ -5,6 +5,10 @@
 #ifndef JSMOOCH_EMUS_GDI_H
 #define JSMOOCH_EMUS_GDI_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "helpers/buf.h"
 #include "helpers/int.h"
 
@@ -20,7 +24,7 @@ struct GDI_track {
     u32 sector_size;
     u32 offset;
 
-    u8* data;
+    u8 *data;
     u32 data_sz;
 };
 
@@ -33,11 +37,11 @@ struct GDI_image {
 };
 
 enum ISO9660_VD {
-    boot_record=0,
-    primary_volume_descriptor=1,
-    supplementary_volume_descriptor=2,
-    volume_partition_descriptor=3,
-    terminator=255
+    boot_record = 0,
+    primary_volume_descriptor = 1,
+    supplementary_volume_descriptor = 2,
+    volume_partition_descriptor = 3,
+    terminator = 255
 };
 
 struct ISO9660_directroy_dt {
@@ -111,9 +115,13 @@ struct ISO9660_volume_descriptor {
     u32 path_version;
 };
 
-void GDI_init(struct GDI_image *this);
-void GDI_delete(struct GDI_image *this);
-void GDI_load(char *folder, char *filename, struct GDI_image *img);
-void GDI_GetToc(struct GDI_image *this, u32* toc, u32 area);
+void GDI_init(struct GDI_image *);
+void GDI_delete(struct GDI_image *);
+void GDI_load(char *folder, const char *filename, struct GDI_image *img);
+void GDI_GetToc(struct GDI_image *, u32 *toc, u32 area);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //JSMOOCH_EMUS_GDI_H

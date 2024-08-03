@@ -22,11 +22,11 @@ struct SMSGG_gamepad {
     u32 device_index;
 };
 
-void smspad_inputs_init(struct smspad_inputs* this);
-void SMSGG_gamepad_init(struct SMSGG_gamepad* this, enum jsm_systems variant, u32 num);
-void SMSGG_gamepad_buffer_input(struct SMSGG_gamepad* this, struct smspad_inputs* src);
-u32 SMSGG_gamepad_read(struct SMSGG_gamepad* this);
-void SMSGG_gamepad_latch(struct SMSGG_gamepad* this);
+void smspad_inputs_init(struct smspad_inputs*);
+void SMSGG_gamepad_init(struct SMSGG_gamepad*, enum jsm_systems variant, u32 num);
+void SMSGG_gamepad_buffer_input(struct SMSGG_gamepad*, struct smspad_inputs* src);
+u32 SMSGG_gamepad_read(struct SMSGG_gamepad*);
+void SMSGG_gamepad_latch(struct SMSGG_gamepad*);
 
 
 #endif //JSMOOCH_EMUS_SMS_GAMEPAD_H

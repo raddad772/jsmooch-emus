@@ -22,8 +22,8 @@ struct NES_a12_watcher {
     struct NES_clock* clock;
 };
 
-void a12_watcher_init(struct NES_a12_watcher* this, struct NES_clock* clock);
-enum a12_r a12_watcher_update(struct NES_a12_watcher* this, u32 addr);
+void a12_watcher_init(struct NES_a12_watcher*, struct NES_clock* clock);
+enum a12_r a12_watcher_update(struct NES_a12_watcher*, u32 addr);
 
 
 #endif //JSMOOCH_EMUS_A12_WATCHER_H

@@ -12,9 +12,9 @@ struct buf {
     u32 size;
 };
 
-void buf_init(struct buf* this);
-void buf_allocate(struct buf* this, u64 size);
-void buf_delete(struct buf* this);
+void buf_init(struct buf*);
+void buf_allocate(struct buf*, u64 size);
+void buf_delete(struct buf*);
 void buf_copy(struct buf* dst, struct buf* src);
 
 struct read_file_buf {
@@ -23,7 +23,7 @@ struct read_file_buf {
     char name[255];
 };
 
-void rfb_init(struct read_file_buf* this);
+void rfb_init(struct read_file_buf*);
 void rfb_delete(struct read_file_buf *rfb);
 int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb);
 
@@ -33,8 +33,8 @@ struct multi_file_set {
     struct read_file_buf files[MFS_MAX];
 };
 
-void mfs_init(struct multi_file_set* this);
-void mfs_delete(struct multi_file_set* this);
-void mfs_add(const char *fname, const char *fpath, struct multi_file_set *this);
+void mfs_init(struct multi_file_set*);
+void mfs_delete(struct multi_file_set*);
+void mfs_add(const char *fname, const char *fpath, struct multi_file_set *);
 
 #endif //JSMOOCH_EMUS_BUF_H
