@@ -10,6 +10,6 @@
 
 void mac_step_display2(struct mac* this);
 void mac_display_reset(struct mac* this);
-u32 mac_display_in_drawing(struct mac* this);
+u32 mac_display_in_hblank(struct mac* this);
 
 #endif //JSMOOCH_EMUS_MAC_DISPLAY_H

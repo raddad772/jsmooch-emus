@@ -124,7 +124,7 @@ skip_if ((m == 1) || ((m == 7) && (r >= 2)))
 .CMPM 1,2,4 template(_M)    # where _M means, op1 = y, op2 = x, both are addr_reg_ind_with_post_inc
 1011 xxx1 ww00 1yyy
 
-.DBCC 4 template(DBCC)     # where DBCC means, C 0...15 and dreg 0...7, 1st and 2nd ops
+.DBCC 2 template(DBCC)     # where DBCC means, C 0...15 and dreg 0...7, 1st and 2nd ops
 0101 cccc 1100 1ddd
 
 .DIVS 2 template(ea_dr)

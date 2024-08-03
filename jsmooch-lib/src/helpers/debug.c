@@ -107,7 +107,7 @@ void dbg_flush()
 #endif
 #ifdef DBG_LOG_TO_FILE
     char fpath[250];
-    construct_path(fpath, "sh4.log");
+    construct_path(fpath, "m68k.log");
     if (dbg.first_flush) {
         dbg.first_flush = 0;
         remove(fpath);

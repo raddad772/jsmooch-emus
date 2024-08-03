@@ -64,6 +64,7 @@ void M68k_start_group2_exception(struct M68k* this, u32 vector_number, i32 wait_
 u32 M68k_inc_SSP(struct M68k* this, u32 num);
 u32 M68k_dec_SSP(struct M68k* this, u32 num);
 u32 M68k_get_SSP(struct M68k* this);
+void M68k_set_SSP(struct M68k* this, u32 to);
 void M68k_set_ar(struct M68k* this, u32 num, u32 result, u32 sz);
 void M68k_set_dr(struct M68k* this, u32 num, u32 result, u32 sz);
 void M68k_swap_ASP(struct M68k* this);

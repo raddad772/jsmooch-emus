@@ -372,7 +372,7 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
             poll_pause(this);
         }
 #ifdef LYCODER
-        if (this->cpu.trace_cycles > 8000000) break;
+        if (*this->cpu.trace.cycles > 8000000) break;
 #endif
         if (dbg.do_break) break;
         this->clock.master_cycles++;

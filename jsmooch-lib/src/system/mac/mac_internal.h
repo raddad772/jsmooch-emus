@@ -48,12 +48,36 @@ struct mac {
         } state;
     } via;
 
+    struct {
+        struct {
+            u8 aData, aCtl, bData, bCtl;
+        } regs;
+    } scc;
+
+    struct {
+        struct {
+            u32 on;
+        } io;
+    } sound;
+
+    struct {
+        struct {
+            u8 CA0, CA1, CA2, LSTRB, ENABLE;
+            u8 Q6, Q7;
+            u8 SELECT;
+        } lines;
+        struct {
+            u8 DIRTN, CSTIN, STEP;
+        } regs;
+    } iwm;
+
     u32 described_inputs;
     struct cvec *IOs;
 
-    u16 ROM[32768];
+    u16 *ROM;
     u16 *RAM;
     u32 ram_contended; // by display
+    u32 ROM_size, ROM_mask;
     u32 RAM_size, RAM_mask;
 
     struct {
@@ -73,6 +97,9 @@ struct mac {
         u32 ram_base_address;
         u32 read_addr;
         u16 output_shifter;
+
+        u32 IRQ_signal;
+        u32 IRQ_out;
 
         void (*scanline_func)(struct mac*);
     } display;

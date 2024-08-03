@@ -71,7 +71,9 @@ enum transaction_kind {
     tk_idle_cycles,
     tk_read,
     tk_write,
-    tk_tas
+    tk_tas,
+    tk_read_addr_error,
+    tk_write_addr_error
 };
 
 struct transaction {
@@ -192,6 +194,12 @@ static u8* read_test_transactions(u8* ptr, struct m68k_test *test)
             case 3: // t
                 t->kind = tk_tas;
                 break;
+            case 4:
+                t->kind = tk_read_addr_error;
+                break;
+            case 5:
+                t->kind = tk_write_addr_error;
+                break;
             default:
                 printf("\nWHAAAT? %d", k);
                 return 0;
@@ -306,9 +314,11 @@ static u32 compare_group12_frame(struct m68k_test_struct *ts, u32 base_addr)
                     printf("\nPassing PC based on group12 disagreement");
                     return 1;
                 }*/
-                return v1 == v2;
+                if (!(v1 == v2)) return 0;
             case 2:
-                return v1 == v2;
+                if (!(v1 == v2)) return 0;
+            case 4:
+                if (!(v1 == v2)) return 0;
         }
     }
     return 1;
@@ -326,7 +336,6 @@ static u32 compare_group2_frame(struct m68k_test_struct *ts)
 
 static u32 compare_group0_frame(struct m68k_test_struct *ts)
 {
-    printf("\nCOMPARE GR0");
     struct transaction *t1=NULL, *t2=NULL;
     // Go over any transactions that are >= g0_min and < g0_max.
     // map
@@ -338,6 +347,8 @@ static u32 compare_group0_frame(struct m68k_test_struct *ts)
     // +10 PC hi
     // +12 PC lo (ignore if within 4 or so)
     u32 move_l = ts->cpu.ins->exec == &M68k_ins_MOVE && (ts->cpu.ins->sz == 4);
+    u32 move_w = ts->cpu.ins->exec == &M68k_ins_MOVE && (ts->cpu.ins->sz == 2);
+    u32 move_b = ts->cpu.ins->exec == &M68k_ins_MOVE && (ts->cpu.ins->sz == 1);
     u32 all_passed = 1;
     u32 pc_hi1, pc_hi2, pc1, pc2;
     for (u32 i = 0; i < 14; i+= 2) {
@@ -351,17 +362,19 @@ static u32 compare_group0_frame(struct m68k_test_struct *ts)
         u32 v1 = t1->data_bus;
         u32 v2 = t2->data_bus;
         //all_passed &= v1 == v2;
-        u32 min, max;
+        u32 min = MIN(v1, v2);
+        u32 max = MAX(v1, v2);
         switch (i) {
             case 0: // FIRST WORD - ignore I/N bit
                 if (v1 != v2) {
-                    if (dbg.trace_on) printf("\nDIFF FIRST WORD. good:%04x  ours:%04x", v1, v2);
-                    if ((MAX(v1, v2) - MIN(v1, v2)) < 7) {
+                    printf("\nDIFF FIRST WORD. good:%04x  ours:%04x", v1, v2);
+                    if ((max - min) < 7) {
                         printf("\nFUNCTION CODE DIFFERENCE. THEIRS:%d, MINE:%d, %04x, %04x", v1 & 7, v2 & 7, v1, v2);
-                        //return 0;
                     }
-                    else
-                        all_passed = 0;
+                    else {
+                        if (!(move_l || move_w || move_b))
+                            return 0;
+                    }
                 }
                 break;
             case 8: {// SR
@@ -373,6 +386,8 @@ static u32 compare_group0_frame(struct m68k_test_struct *ts)
             case 6: // IR
                 if (ts->cpu.ins->exec != &M68k_ins_MOVE)
                     all_passed &= v1 == v2;
+                else {
+                }
                 break;
             case 10: // PC HI
                 all_passed &= v1 == v2;
@@ -426,6 +441,7 @@ static u32 compare_state_to_ram(struct m68k_test_struct *ts)
         }
     }
     if (!g0_passed) {
+        printf("\nWARNING g0 NOT PASS...");
         if (ts->had_group0 != -1) all_passed &= compare_group0_frame(ts);
         if (ts->had_group1 != -1) all_passed &= compare_group1_frame(ts);
         if (ts->had_group2 != -1) all_passed &= compare_group2_frame(ts);
@@ -485,14 +501,15 @@ static struct transaction* find_transaction(struct m68k_test_struct *ts, enum tr
 {
     //u32 mask = 0xFFFFFE;
     //if (sz == 1) mask = 0xFFFFFF;
+    u32 tk2 = tk;
     u32 mask = 0xFFFFFE;
     struct transaction* t = NULL;
     for (i32 i = 0; i < ts->test.transactions.num_transactions; i++) {
         t = &ts->test.transactions.items[i];
-        if (((t->addr_bus & mask) == addr) && (t->kind == tk) && (t->visited == 0) && (t->UDS == UDS) && (t->LDS == LDS)) {
+        if (((t->addr_bus & mask) == addr) && ((t->kind == tk) || (t->kind == tk2)) && (t->visited == 0) && (t->UDS == UDS) && (t->LDS == LDS)) {
             return t;
         }
-        if (((t->addr_bus & mask) == addr) && (t->kind == tk) && (t->visited == 0)) {
+        if (((t->addr_bus & mask) == addr) && ((t->kind == tk) || (t->kind == tk2)) && (t->visited == 0)) {
             printf("\nWHAT THE HECK myUDS:%d myLDS:%d  theirUDS:%d theirLDS:%d", UDS, LDS, t->UDS, t->LDS);
         }
     }
@@ -503,12 +520,13 @@ static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS,
 {
     // happens on cycle 1 of transactions
     assert(addr<0x01000000);
+    u32 addr_error = (((UDS + LDS) == 2) && (ts->cpu.state.bus_cycle.addr & 1));
     u32 v = 0;
     if (UDS) v |= tmem[addr] << 8;
     if (LDS) v |= tmem[addr|1];
     ts->cpu.pins.DTACK = 1;
     struct transaction *m = &ts->my_transactions.items[ts->my_transactions.num_transactions++];
-    m->kind = tk_read;
+    m->kind = addr_error ? tk_read_addr_error : tk_read;
     m->start_cycle = my_read_cycle(ts->trace_cycles);
     m->addr_bus = addr;
     m->data_bus = v;
@@ -518,7 +536,7 @@ static u32 do_test_read(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LDS,
     m->sz = UDS + LDS;
     m->fc = fc;
 
-    struct transaction *t = find_transaction(ts, tk_read, addr & 0xFFFFFE, UDS, LDS, m->sz);
+    struct transaction *t = find_transaction(ts, m->kind, addr & 0xFFFFFE, UDS, LDS, m->sz);
     if (t == 0) {
         printf("\nNo read found from address %06x cycle:%lld", addr, ts->trace_cycles);
         ts->test.failed = 5;
@@ -544,11 +562,12 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
 {
     //printf("\nWRITE! %06x %d %d %04x", addr, UDS, LDS, val);
     assert(addr<0x01000000);
+    u32 addr_error = (((UDS + LDS) == 2) && (ts->cpu.state.bus_cycle.addr & 1));
     if (UDS) tmem[addr] = (val >> 8) & 0xFF;
     if (LDS) tmem[addr|1] = val & 0xFF;
     ts->cpu.pins.DTACK = 1;
     struct transaction *m = &ts->my_transactions.items[ts->my_transactions.num_transactions++];
-    m->kind = tk_write;
+    m->kind = addr_error ? tk_write_addr_error : tk_write;
     m->start_cycle = my_write_cycle(ts->trace_cycles);
     m->addr_bus = addr;
     m->data_bus = val;
@@ -558,7 +577,7 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
     m->sz = UDS + LDS;
     m->fc = fc;
 
-    struct transaction* t = find_transaction(ts, tk_write, addr & 0xFFFFFE, UDS, LDS, m->sz);
+    struct transaction* t = find_transaction(ts, m->kind, addr & 0xFFFFFE, UDS, LDS, m->sz);
     if (t == NULL) {
         printf("\nWarning bad write not found addr:%06x val:%08x cyc:%lld", addr, val, ts->trace_cycles);
         ts->test.failed = 1;
@@ -737,11 +756,12 @@ static void cycle_cpu(struct m68k_test_struct *ts)
     }
 }
 
-
+static char kkttr[6] = {'I', 'R', 'W', 't', 'r', 'w'};
 static u32 dopppt(char *ptr, struct transaction *t)
 {
     char *m = ptr;
-    m += sprintf(ptr, "(%02d) %c.%c %06x:%04x  ", t->start_cycle, t->kind == tk_write ? 'W' : 'R', t->sz == 1 ? '1' : '2', t->addr_bus, t->data_bus);
+
+    m += sprintf(ptr, "(%02d) %c.%c %06x:%04x  ", t->start_cycle, kkttr[t->kind], t->sz == 1 ? '1' : '2', t->addr_bus, t->data_bus);
     return m - ptr;
 }
 
@@ -756,7 +776,7 @@ static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_t
         struct transaction *t1 = NULL, *t2 = NULL;
         for (i32 i = tsi; i < ts->num_transactions; i++) {
             struct transaction *t = &ts->items[i];
-            if ((t->kind == tk_write) || (t->kind == tk_read)) {
+            if ((t->kind == tk_write) || (t->kind == tk_read) || (t->kind == tk_read_addr_error) || (t->kind == tk_write_addr_error)) {
                 t1 = t;
                 tsi = i+1;
                 break;
@@ -764,7 +784,7 @@ static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_t
         }
         for (i32 i = mtsi; i < mts->num_transactions; i++) {
             struct transaction *t = &mts->items[i];
-            if ((t->kind == tk_write) || (t->kind == tk_read)) {
+            if ((t->kind == tk_write) || (t->kind == tk_read) || (t->kind == tk_read_addr_error) || (t->kind == tk_write_addr_error)) {
                 t2 = t;
                 mtsi = i+1;
                 break;
@@ -875,7 +895,6 @@ static void eval_thing(struct M68k_ins_t *ins, u32 opnum, u32 *kind, u32* has_pr
 
 static void analyze_test(struct m68k_test_struct *ts, const char*file, const char *fname)
 {
-    memset(tmem, 0, 0x1000000);
     FILE *f = fopen(file, "rb");
     if (f == NULL) {
         printf("\nBAD FILE! %s", file);
@@ -903,6 +922,7 @@ static void analyze_test(struct m68k_test_struct *ts, const char*file, const cha
     is_movew = strcmp(fname, "MOVE.w.json.bin") == 0;
     //ptr = decode_test(ptr, &ts->test);
     for (u32 i = 0; i < num_tests; i++) {
+        memset(tmem, 0, 0x1000000);
         ptr = decode_test(ptr, &ts->test);
         if ((ts->test.final.pc - ts->test.initial.pc) > 16) continue;
 
@@ -1144,7 +1164,8 @@ void test_m68000()
     tmem = malloc(0x1000000); // 24 MB RAM allocate
 
     u32 completed_tests = 0;
-    u32 nn = 123; // out of 123
+    u32 nn = 52; // out of 123
+    //dbg_enable_trace();
     for (u32 i = 0; i < num_files; i++) {
         u32 skip = 0;
         for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {

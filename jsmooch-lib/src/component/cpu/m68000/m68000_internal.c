@@ -149,7 +149,6 @@ void M68k_bus_cycle_read(struct M68k* this)
     switch(this->state.bus_cycle.TCU & 3) {
         case 0:
             this->pins.FC = this->state.bus_cycle.FC;
-            this->pins.RW = 0;
             this->state.bus_cycle.done = 0;
             if ((this->state.bus_cycle.TCU == 0) && (this->state.current == M68kS_read32) && (this->state.bus_cycle.reversed)) {
                 this->state.bus_cycle.addr += 2;
@@ -160,21 +159,46 @@ void M68k_bus_cycle_read(struct M68k* this)
             else {
                 this->pins.LDS = this->pins.UDS = 1;
             }
+            this->pins.RW = 0;
             this->pins.Addr = this->state.bus_cycle.addr & 0xFFFFFE;
             break;
         case 1:
+#ifdef M68K_TESTING
             this->pins.AS = 1;
+#else
+            this->pins.AS = !this->state.bus_cycle.addr_error;
+#endif
             break;
         case 2:
-            this->pins.AS = 0;
-            if (!this->pins.DTACK) // insert wait state
+#ifndef M68K_TESTING
+            if (!this->state.bus_cycle.addr_error) {
+#endif
                 this->state.bus_cycle.TCU--;
+                if (this->pins.DTACK) // take out wait state
+                    this->state.bus_cycle.TCU++;
+                else if (this->pins.VPA) {// TODO: fix VPA E-cycle sync
+#ifndef M68K_E_CLOCK
+                    this->state.bus_cycle.TCU++;
+#else
+                    if ((this->state.e_clock_count == 3) && (!this->pins.VMA)) { // The only place VMA can latch
+                        this->pins.VMA = 1;
+                    }
+                    if ((this->state.e_clock_count == 9) && (this->pins.VMA)) { // Final cycle can happen next
+                        this->state.bus_cycle.TCU++;
+                    }
+#endif
+                }
+#ifndef M68K_TESTING
+            }
+#endif
             break;
         case 3: // latch data and de-assert pins
             this->pins.DTACK = 0;
+            this->pins.VPA = 0;
+            this->pins.VMA = 0;
             this->pins.AS = 0;
             if (this->state.current == M68kS_read32) {
-                if (this->state.bus_cycle.addr & 1) {
+                if (this->state.bus_cycle.addr_error) {
                     M68k_start_group0_exception(this, M68kIV_address_error, 7, am_in_group0_or_1(this), this->state.bus_cycle.addr);
                     return;
                 }
@@ -193,7 +217,7 @@ void M68k_bus_cycle_read(struct M68k* this)
             }
             else if (this->state.current == M68kS_read16) {
                 this->state.bus_cycle.data = this->pins.D;
-                if (this->state.bus_cycle.addr & 1) {
+                if (this->state.bus_cycle.addr_error) {
                     M68k_start_group0_exception(this, M68kIV_address_error, 7, am_in_group0_or_1(this), this->state.bus_cycle.addr);
                     return;
                 }
@@ -202,7 +226,6 @@ void M68k_bus_cycle_read(struct M68k* this)
                 if (this->pins.LDS) this->state.bus_cycle.data = this->pins.D & 0xFF;
                 else this->state.bus_cycle.data = this->pins.D >> 8;
             }
-            this->pins.Addr = 0;
             this->pins.LDS = this->pins.UDS = 0;
             if ((this->state.current != M68kS_read32) || (this->state.bus_cycle.TCU == 7)) {
                 this->state.bus_cycle.done = 1;
@@ -254,6 +277,7 @@ void M68k_bus_cycle_iaq(struct M68k* this)
             this->pins.FC = 7;
             this->pins.RW = 0;
             this->pins.AS = this->pins.DTACK = 0;
+            this->pins.VMA = this->pins.VPA = 0;
             break;
         case 1:
             this->pins.AS = 1;
@@ -262,23 +286,32 @@ void M68k_bus_cycle_iaq(struct M68k* this)
             this->pins.Addr = this->state.bus_cycle_iaq.ilevel << 1;
             break;
         case 2:
-            if (this->pins.DTACK) { // Vectored interrupt
-                this->state.bus_cycle_iaq.vector_number = this->pins.D;
-                break;
-            }
-            else if (this->pins.VPA) { // Autovectored interrupt
+            this->state.bus_cycle_iaq.TCU--;
+            if (this->pins.DTACK) // take out wait state
+                this->state.bus_cycle_iaq.TCU++;
+            else if (this->pins.VPA) {
+#ifndef M68K_E_CLOCK
+                this->state.bus_cycle_iaq.TCU++;
                 this->state.bus_cycle_iaq.vector_number = 0x18 + this->state.bus_cycle_iaq.ilevel;
                 this->state.bus_cycle_iaq.autovectored = 1;
-                break;
+#else
+                if ((this->state.e_clock_count == 3) && (!this->pins.VMA)) { // The only place VMA can latch
+                    this->pins.VMA = 1;
+                }
+                if ((this->state.e_clock_count == 9) && (this->pins.VMA)) { // Final cycle can happen next
+                    this->state.bus_cycle_iaq.vector_number = 0x18 + this->state.bus_cycle_iaq.ilevel;
+                    this->state.bus_cycle_iaq.autovectored = 1;
+                    this->state.bus_cycle_iaq.TCU++;
+                }
+#endif
             }
-            // Loop this over and over
-            this->state.bus_cycle_iaq.TCU--;
             break;
         case 3:
             this->pins.FC = 0;
             this->pins.AS = 0;
             this->pins.DTACK = 0;
             this->pins.VPA = 0;
+            this->pins.VMA = 0;
             this->state.current = M68kS_exc_interrupt;
             break;
     }
@@ -312,7 +345,11 @@ void M68k_bus_cycle_write(struct M68k* this)
             this->pins.Addr = this->state.bus_cycle.addr & 0xFFFFFE;
             break; }
         case 1: {
+#ifdef M68K_TESTING
             this->pins.AS = 1;
+#else
+            this->pins.AS = !this->state.bus_cycle.addr_error;
+#endif
             this->pins.RW = 1;
             // technically this happens at rising edge of next cycle, buuuut, we're doing it here
             if (this->state.current == M68kS_write32) {
@@ -342,16 +379,35 @@ void M68k_bus_cycle_write(struct M68k* this)
             break; }
         case 2: {
             // This is annoying
-            this->pins.AS = 0;
-            if (!this->pins.DTACK) // insert wait state
+#ifndef M68K_TESTING
+            if (!this->state.bus_cycle.addr_error) {
+#endif
                 this->state.bus_cycle.TCU--;
+                if (this->pins.DTACK) // take out wait state
+                    this->state.bus_cycle.TCU++;
+                else if (this->pins.VPA) {// TODO: fix VPA E-cycle sync
+#ifndef M68K_E_CLOCK
+                    this->state.bus_cycle.TCU++;
+#else
+                    if ((this->state.e_clock_count == 3) && (!this->pins.VMA)) { // The only place VMA can latch
+                        this->pins.VMA = 1;
+                    }
+                    if ((this->state.e_clock_count == 9) && (this->pins.VMA)) { // Final cycle can happen next
+                        this->state.bus_cycle.TCU++;
+                    }
+#endif
+                }
+#ifndef M68K_TESTING
+            }
+#endif
             break; }
         case 3: {// latch data and de-assert pins
             this->pins.DTACK = 0;
             this->pins.AS = 0;
             this->pins.LDS = this->pins.UDS = 0;
+            this->pins.VPA = this->pins.VMA = 0;
             if (this->state.current != M68kS_write8) {
-                if (this->state.bus_cycle.addr & 1) {
+                if (this->state.bus_cycle.addr_error) {
                     u32 addr = this->state.bus_cycle.original_addr;
                     if ((this->state.current == M68kS_write32) && (this->state.bus_cycle.reversed)) {
                         addr += 2;
@@ -398,7 +454,9 @@ void M68k_start_read(struct M68k* this, u32 addr, u32 sz, u32 FC, u32 reversed, 
     this->state.bus_cycle.TCU = 0;
     this->state.bus_cycle.addr = addr;
     this->state.bus_cycle.func = &M68k_bus_cycle_read;
+    this->state.bus_cycle.addr_error = (addr & 1) && (sz != 1);
     this->state.bus_cycle.next_state = next_state;
+    this->state.bus_cycle.e_phase = 0;
     this->state.bus_cycle.FC = FC;
 }
 
@@ -421,8 +479,10 @@ void M68k_start_write(struct M68k* this, u32 addr, u32 val, u32 sz, u32 FC, u32 
     this->state.bus_cycle.original_addr = addr;
     this->state.bus_cycle.addr = addr;
     this->state.bus_cycle.func = &M68k_bus_cycle_write;
+    this->state.bus_cycle.addr_error = (addr & 1) && (sz != 1);
     this->state.bus_cycle.data = val;
     this->state.bus_cycle.FC = FC;
+    this->state.bus_cycle.e_phase = 0;
     this->state.bus_cycle.reversed = reversed;
     this->state.bus_cycle.next_state = next_state;
 }
@@ -818,6 +878,11 @@ u32 M68k_get_SSP(struct M68k* this) {
     return this->regs.ASP;
 }
 
+void M68k_set_SSP(struct M68k* this, u32 to) {
+    if (this->regs.SR.S) this->regs.A[7] = to;
+    else this->regs.ASP = to;
+}
+
 u32 M68k_get_SR(struct M68k* this) {
     return this->regs.SR.u;
 }
@@ -982,6 +1047,7 @@ void M68k_exc_interrupt(struct M68k* this)
         case 2: // do interrupt acknowledge cycle
             this->state.current = M68kS_bus_cycle_iaq;
             this->state.bus_cycle_iaq.TCU = 0;
+            this->state.bus_cycle.e_phase = 0;
             break;
         case 3:
             this->state.internal_interrupt_level = this->state.bus_cycle_iaq.ilevel;

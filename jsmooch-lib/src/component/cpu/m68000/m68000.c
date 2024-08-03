@@ -12,8 +12,7 @@
 #include "m68000_internal.h"
 #include "m68000_disassembler.h"
 
-//#define M68K_TESTING
-
+//#define BREAKPOINT 0x40016e
 
 void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_init(struct M68k* this, u32 megadrive_bug)
@@ -25,6 +24,7 @@ void M68k_init(struct M68k* this, u32 megadrive_bug)
     this->SPEC_RESET.disasm = &M68k_disasm_RESET_POWER;
     this->SPEC_RESET.exec = &M68k_ins_RESET_POWER;
     this->megadrive_bug = megadrive_bug;
+    //this->regs.D[0] = this->regs.A[0] = 0xFFFFFFFF;
     jsm_string_init(&this->trace.str, 1000);
 }
 
@@ -46,11 +46,13 @@ static void M68k_decode(struct M68k* this)
 {
     u32 IRD = this->regs.IR;
     this->regs.IRD = IRD;
-    /*if ((((this->regs.PC-4) & 0xFFFFFF) == 0x4001d0) && (!dbg.did_breakpoint)) {
+#ifdef BREAKPOINT
+    if ((((this->regs.PC-4) & 0xFFFFFF) == BREAKPOINT) && (!dbg.did_breakpoint)) {
         dbg_break("M68K PC BREAKPOINT", *this->trace.cycles);
         dbg.did_breakpoint =1;
         //printf("\nBREAK FOR WAIT ON INTERRUPT!! cycle:%d", *this->trace.cycles);
-    }*/
+    }
+#endif
     struct M68k_ins_t *ins = &M68k_decoded[IRD & 0xFFFF];
     this->state.instruction.TCU = 0;
     this->ins = ins;
@@ -173,7 +175,7 @@ static void M68k_trace_format(struct M68k* this)
     M68k_disassemble(this->regs.PC-2, this->regs.IR, &this->trace.strct, &this->trace.str);
     u64 tc;
     if (this->trace.cycles == 0) tc = 0;
-    else tc = *this->trace.cycles;
+    else tc = *this->trace.cycles >> 1;
 #ifdef  M68K_TESTING
     printf(DBGC_M68K "\nM68k  (%04llu)   %06x  %s" DBGC_RST, tc, this->regs.PC-4, this->trace.str.ptr);
 #else
@@ -197,6 +199,7 @@ void M68k_set_interrupt_level(struct M68k* this, u32 val)
 static u32 M68k_process_interrupts(struct M68k* this)
 {
     if (this->state.exception.interrupt.on_next_instruction) {
+        printf("\nM68K IRQFIRE cyc:%lld", *this->trace.cycles);
         this->state.exception.interrupt.on_next_instruction = 0;
         this->state.exception.interrupt.PC = this->regs.PC - 4;
         this->state.exception.interrupt.TCU = 0;
@@ -212,6 +215,27 @@ static u32 M68k_process_interrupts(struct M68k* this)
         return 1;
     }
     return 0;
+}
+
+static void lycoder_pprint2(struct M68k* this)
+{
+    // d:FFFFFFFF FFFFFFFF B6DB6DB6 DB6DB6DB 6DB6DB6D 00000000 00000000 00000000
+    dbg_printf(" d:%08X %08X %08X %08X %08X %08X %08X %08X",
+               this->regs.D[0], this->regs.D[1], this->regs.D[2], this->regs.D[3],
+               this->regs.D[4], this->regs.D[5], this->regs.D[6], this->regs.D[7]);
+    // a:00600100 004001BE 004001C0 00000000 00000004 004006F8 004000F0 0000FC00
+    dbg_printf(" a:%08X %08X %08X %08X %08X %08X %08X %08X",
+               this->regs.A[0], this->regs.A[1], this->regs.A[2], this->regs.A[3],
+               this->regs.A[4], this->regs.A[5], this->regs.A[6], this->regs.A[7]);
+    // pc:4002D0 sr:2700 asp:000000
+    dbg_printf(" pc:%08X sr:%04X asp:%08X\n", this->opc, this->regs.SR.u, this->regs.ASP);
+}
+
+static void lycoder_pprint1(struct M68k* this)
+{
+    // cyc:14742674 a:004002D0 opc:21FC
+    dbg_printf("cyc:%lld a:%08X opc:%04X", *this->trace.cycles >> 1, this->regs.PC-4, this->regs.IRD);
+    this->opc = this->regs.PC - 4;
 }
 
 void M68k_cycle(struct M68k* this)
@@ -248,9 +272,15 @@ void M68k_cycle(struct M68k* this)
                 this->regs.SR.T = this->regs.next_SR_T;
                 this->ins_decoded = 1;
                 this->state.current = M68kS_exec;
+#ifdef LYCODER
+                //if (this->opc != 0xFFFFFFFF) lycoder_pprint2(this);
+                lycoder_pprint1(this);
+                lycoder_pprint2(this);
+#else
                 if (dbg.trace_on && this->trace.ok && dbg.traces.m68000.instruction) {
                     M68k_trace_format(this);
                 }
+#endif
                 break; }
             case M68kS_exec: {
                 this->ins->exec(this, this->ins);
@@ -293,6 +323,9 @@ void M68k_cycle(struct M68k* this)
                 assert(1==0);
         }
     }
+#ifdef M68K_E_CLOCK
+    this->state.e_clock_count = (this->state.e_clock_count + 1) % 10;
+#endif
 }
 
 void M68k_unstop(struct M68k* this)
@@ -305,9 +338,11 @@ void M68k_reset(struct M68k* this)
 {
     this->state.current = M68kS_exec;
     this->state.instruction.done = 0;
+    this->state.e_clock_count = 0;
     M68k_set_SR(this, (M68k_get_SR(this) & 0x1F) | 0x2700, 1);
+    printf("\nSUPERVISOR? %d", this->regs.SR.S);
     this->ins = &this->SPEC_RESET;
     this->state.instruction.TCU = 0;
     this->state.instruction.prefetch = 0;
-    this->regs.A[3] = 4;
+    this->opc = 0xFFFFFFFF;
 }

@@ -188,7 +188,7 @@ static void write_rtc_bits(struct mac* this, u8 val, u8 write_mask)
 
 void mac_set_sound_output(struct mac* this, u32 set_to)
 {
-    //TODO: this
+    this->sound.io.on = set_to;
 }
 
 void mac_step_CPU(struct mac* this)
@@ -226,17 +226,21 @@ void mac_reset_via(struct mac* this)
 
 void mac_set_cpu_irq(struct mac* this)
 {
-    M68k_set_interrupt_level(&this->cpu, this->io.irq.via | (this->io.irq.scc << 1) | (this->io.irq.iswitch << 2));
+    //M68k_set_interrupt_level(&this->cpu, this->io.irq.via | (this->io.irq.scc << 1) | (this->io.irq.iswitch << 2));
+    M68k_set_interrupt_level(&this->cpu, 0);
 }
 
 void mac_via_irq_sample(struct mac* this)
 {
+    u32 old_irq = this->io.irq.via;
     this->io.irq.via = (this->via.regs.IER & this->via.regs.IFR & 0x7F) ? 1 : 0;
-    mac_set_cpu_irq(this);
+    if (old_irq != this->io.irq.via) mac_set_cpu_irq(this);
 }
 
 void step_via(struct mac* this)
 {
+    mac_via_irq_sample(this);
+
     // TODO: add .5 cycles to the countdowns
     u32 IRQ_sample = 0;
     if (this->via.state.t1_active) {
@@ -275,13 +279,16 @@ void mac_step_eclock(struct mac* this)
     if (this->io.eclock == 0) {
         step_via(this);
     }
+
     this->io.eclock = (this->io.eclock + 1) % 10;
-    this->rtc.cycle_counter++;
-    if (this->rtc.cycle_counter >= 783380) {
-        this->rtc.cycle_counter = 0;
-        this->rtc.seconds++;
-        this->via.regs.IFR |= 1;
-        mac_via_irq_sample(this);
+    if (this->io.eclock == 0) { // my RTC works off the e clock for some reason
+        this->rtc.cycle_counter++;
+        if (this->rtc.cycle_counter >= 783360) {
+            this->rtc.cycle_counter = 0;
+            this->rtc.seconds++;
+            printf("\nTRIGGER RTC CYCLE %lld", this->clock.master_cycles);
+            this->via.regs.IFR |= 1;
+        }
     }
 }
 
@@ -293,6 +300,31 @@ void mac_step_bus(struct mac* this)
     mac_step_eclock(this);      // e-clock devices like VIA, 1 clocks, but only fires once every 10
     this->clock.master_cycles += 2;
 }
+
+#define iwm_dBase 0xDFE1FF
+#define iwm_ph0L (0*512)  // CA0 off (0)
+#define iwm_ph0H (1*512)  // CA0 on (1)
+#define iwm_ph1L (2*512)  // CA1 off (0)
+#define iwm_ph1H (3*512)  // CA1 on (1)
+#define iwm_ph2L (4*512)  // CA2 off (0)
+#define iwm_ph2H (5*512)  // CA2 on (1)
+#define iwm_ph3L (6*512)  // LSTRB off (low)
+#define iwm_ph3H (7*512)  // LSTRB on (high)
+#define iwm_mtrOff (8*512) // disk enable off
+#define iwm_mtrOn (9*512)  // disk enable on
+#define iwm_intDrive (10*512) // select internal drive
+#define iwm_extDrive (11*512) // select external drive
+#define iwm_q6L (12*512) // Q6 off
+#define iwm_q6H (13*512) // Q6 on
+#define iwm_q7L (14*512) // Q7 off
+#define iwm_q7H (15*512) // Q7 on
+
+#define sccRBase  0x9FFFF8
+#define sccWBase  0xBFFFF9
+#define scc_aData 6
+#define scc_aCtl 2
+#define scc_bData 4
+#define scc_bCtl 0
 
 #define vBase  0xEFE1FE
 #define aVBufB vBase    // via register B
@@ -329,18 +361,17 @@ u16 mac_mainbus_read_via(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_
     addr -= vBase;
     switch(addr) {
         case vIFR: // interrupt flag register
-            v = (this->via.regs.IFR & 0x7F);
+            //dbg_printf("\npIFR: %02x", this->via.regs.IFR);
+            v = (this->via.regs.IFR & 0x7F);// & this->via.regs.IER;
             v |= v ? 0x80 : 0;
+            //dbg_printf("\nIFR: %02x", v);
             return v << 8;
         case vIER: // interrupt enable register
-            printf("\nUnimplemented read VIA IER cyc:%lld", this->clock.master_cycles);
-            return old;
+            return ((this->via.regs.IER & 0x7F) | 0x80) << 8;
         case vDirA: // Direction reg A
-            printf("\nUnimplemented read VIA DirA cyc:%lld", this->clock.master_cycles);
-            return old;
+            return this->via.regs.dirA << 8;
         case vDirB: // Direction reg B
-            printf("\nUnimplemented read VIA DirB cyc:%lld", this->clock.master_cycles);
-            return old;
+            return this->via.regs.dirB << 8;
         case vT1C: // timer 1 count lo
             this->via.regs.IFR &= 0b10111111;
             mac_via_irq_sample(this);
@@ -354,40 +385,40 @@ u16 mac_mainbus_read_via(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_
         case vT2C: // read t2 lo
             this->via.regs.IFR &= 0b11011111;
             mac_via_irq_sample(this);
-            printf("\nUnimplemented read VIA T2C cyc:%lld", this->clock.master_cycles);
-            return old;
-        case vT2CH: // read t2 hi
 
-            printf("\nUnimplemented read VIA T2CH cyc:%lld", this->clock.master_cycles);
-            return old;
+            return (this->via.regs.T2C & 0xFF) << 8;
+        case vT2CH: // read t2 hi
+            return this->via.regs.T2C & 0xFF00;
         case vSR: // keyboard shfit reg
             this->via.regs.IFR &= 0b11111011;
             mac_via_irq_sample(this);
-
-            printf("\nUnimplemented read VIA SR cyc:%lld", this->clock.master_cycles);
-            return old;
+            printf("\nREAD KEYBOARD SR! cyc:%lld", this->clock.master_cycles);
+            return this->via.regs.SR << 8;
         case vACR: // aux control reg
-            printf("\nUnimplemented read VIA ACR cyc:%lld", this->clock.master_cycles);
-            return old;
+            return this->via.regs.ACR << 8;
         case vPCR: // peripheral control reg
-            printf("\nUnimplemented read VIA PCR cyc:%lld", this->clock.master_cycles);
-            return old;
+            return this->via.regs.PCR << 8;
         case vBufA: {// Data Reg A
+            // not emulated
+            // bit 7 - SCC wait/request
             this->via.regs.IFR &= 0b11111100;
             mac_via_irq_sample(this);
 
-            u8 read_mask = this->via.regs.dirA ^ 0xFF;
-            printf("\nUnimplemented read VIA BufA cyc:%lld", this->clock.master_cycles);
-            return ((v & read_mask) | (this->via.regs.regA & ~read_mask)) << 8; }
+            u8 read_mask = 0b00010000;
+            v = this->io.ROM_overlay << 4;
+
+            return ((v & read_mask) | (~read_mask & this->via.regs.regA )) << 8; }
+            //return this->via.regs.regA << 8; }
         case vBufB: {// read Data Reg B
             this->via.regs.IFR &= 0b11100111;
             mac_via_irq_sample(this);
             printf("\nPartially implemented read VIA BufB cyc:%lld", this->clock.master_cycles);
-            v |= mac_display_in_drawing(this) << 6;
-            v |= this->io.ROM_overlay << 4;
+            //u8 read_mask = 0b01000111;
+            u8 read_mask = 0b11010000;
+            v |= (this->sound.io.on << 7);
+            v |= mac_display_in_hblank(this) << 6;
             v |= read_rtc_bits(this); // bits 0-2
             // 1 bits = outputs
-            u8 read_mask = this->via.regs.dirB ^ 0xFF;
             // RTC enabled = bit 2
             // bits 1 & 0 are more of it
             return ((v & read_mask) | (this->via.regs.regB & ~read_mask)) << 8; }
@@ -420,17 +451,29 @@ void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val)
     }
     addr -= vBase;
     switch(addr) {
-        case vIFR: // interrupt flag register
-            printf("\nunimplemented write VIA IFR data:%02x cyc:%lld", val, this->clock.master_cycles);
-            return;
-        case vIER: // interrupt enable register
-            printf("\nunimplemented write VIA IER data:%02x cyc:%lld", val, this->clock.master_cycles);
-            return;
+        case vIFR: {// interrupt flag register
+            u8 old_val = this->via.regs.IFR;
+            //this->via.regs.IFR = ((val ^ 0xFF) & this->via.regs.IFR) & 0x7F;
+            this->via.regs.IFR &= (~val) & 0x7F;
+            //printf("\nWrite IFR %02x new:%02x old:%02x cyc:%lld", val, this->via.regs.IFR, old_val, this->clock.master_cycles);
+            return; }
+        case vIER: {// interrupt enable register
+            u32 flags_to_affect = val & 0x7F;
+            val &= 0x7F;
+            // 00 set, 0x80 clear
+            if (val & 0x80) { // Enable flags
+                this->via.regs.IER |= val;
+            }
+            else { // Disable flags
+                this->via.regs.IER &= ~val;
+            }
+            mac_via_irq_sample(this);
+            return; }
         case vDirA: // Direction reg A
-            printf("\nunimplemented write VIA DirA data:%02x cyc:%lld", val, this->clock.master_cycles);
+            this->via.regs.dirA = val;
             return;
         case vDirB: // Direction reg B
-            printf("\nunimplemented write VIA DirB data:%02x cyc:%lld", val, this->clock.master_cycles);
+            this->via.regs.dirB = val;
             return;
         case vT1C: // timer 1 count lo
             this->via.regs.T1L = (this->via.regs.T1L & 0xFF00) | val;
@@ -454,7 +497,6 @@ void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val)
             this->via.regs.T1L = (this->via.regs.T1L | 0xFF) | (val << 8);
             return;
         case vT2C: // write timer 2 lo
-            this->via.regs.IFR &= 0b11011111;
             mac_via_irq_sample(this);
 
             this->via.regs.T2L = (this->via.regs.T2L | 0xFF00) | val;
@@ -470,38 +512,62 @@ void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val)
         case vSR: // keyboard shfit reg
             this->via.regs.IFR &= 0b11111011;
             mac_via_irq_sample(this);
+            printf("\nWrite keyboard SR: %02x cyc:%lld", val, this->clock.master_cycles);
 
-            printf("\nunimplemented write VIA SR data:%02x cyc:%lld", val, this->clock.master_cycles);
+            this->via.regs.SR = val;
             return;
         case vACR: // aux control reg
-            printf("\nunimplemented write VIA ACR data:%02x cyc:%lld", val, this->clock.master_cycles);
+            // TODO: more
+            this->via.regs.ACR = val;
             return;
         case vPCR: // peripheral control reg
-            printf("\nunimplemented write VIA PCR data:%02x cyc:%lld", val, this->clock.master_cycles);
+            // TODO: more
+             // bit 0 - vblank IRQ control
+             // bit 1-3 - one-second interrupt control
+            this->via.regs.PCR = val;
             return;
         case vBufA: {// Data Reg A
+            // emulated: bits 4, 6
+            // not emulated:
+            // bit 0-2, sound volume
+            // bit 3, alternate sound buffer
+            // bit 7, vSCCWReq, SCC wait/request
+
             this->via.regs.IFR &= 0b11111100;
             mac_via_irq_sample(this);
 
             u8 write_mask = this->via.regs.dirA;
-            this->via.regs.regA = (this->via.regs.regA & ~write_mask) | (val & write_mask);
 
-            printf("\nunimplemented write VIA BufA data:%02x cyc:%lld", val, this->clock.master_cycles);
+            //if (write_mask & 0x20) {
+                this->iwm.lines.SELECT = (val >> 5) & 1;
+            //}
+            //if (write_mask & 0x10) {
+                this->io.ROM_overlay = (val >> 4) & 1;
+                printf("\nSET ROM OVERLAY! %d cyc:%lld", this->io.ROM_overlay, this->clock.master_cycles);
+            //}
+
+            //this->via.regs.regA = (this->via.regs.regA & ~write_mask) | (val & write_mask);
+            this->via.regs.regA = val;
+
+            printf("\nwrite VIA BufA data:%02x cyc:%lld", val, this->clock.master_cycles);
             return;}
         case vBufB: {// write Data Reg B
+            // emulated:  bit 7 (sound), bits 0-2 (RTC), bit 6 (horizontal blank bit)
+            // not emulated:
+            // bits 4, 5 (mouse X2, Y2)
+            // bit 3 (mouse switch)
             this->via.regs.IFR &= 0b11100111;
             mac_via_irq_sample(this);
 
-            u8 write_mask = this->via.regs.dirB;
-            printf("\nPartially implemented write VIA BufB cyc:%lld", this->clock.master_cycles);
-            if (write_mask & 0x10) {
-                this->io.ROM_overlay = (val >> 4) & 1;
-                printf("\nSET ROM OVERLAY! %d", this->io.ROM_overlay);
-            }
+            //u8 write_mask = this->via.regs.dirB;
+            //if (write_mask & 0x80) {
+                mac_set_sound_output(this, (val >> 7) & 1);
+            //}
 
-            write_rtc_bits(this, val & 7, write_mask & 7);
+            write_rtc_bits(this, val & 7, 7);
 
-            this->via.regs.regB = (this->via.regs.regB & ~write_mask) | (val & write_mask);
+            //this->via.regs.regB = (this->via.regs.regB & ~write_mask) | (val & write_mask);
+            this->via.regs.regB = val;
 
             // TODO: more
             // bits 1 & 0 are more of it
@@ -510,41 +576,158 @@ void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val)
     printf("\nUnhandled VIA write addr:%06x val:%04x cyc:%lld", addr, (val & mask) >> 8, this->clock.master_cycles);
 }
 
+static u8 ioIWM(struct mac* this, u32 addr)
+{
+    switch(addr) {
+        case iwm_dBase+iwm_ph0L:
+            this->iwm.lines.CA0 = 0;
+            return 1;
+        case iwm_dBase+iwm_ph0H:
+            this->iwm.lines.CA0 = 1;
+            return 1;
+        case iwm_dBase+iwm_ph1L:
+            this->iwm.lines.CA1 = 0;
+            return 1;
+        case iwm_dBase+iwm_ph1H:
+            this->iwm.lines.CA1 = 1;
+            return 1;
+        case iwm_dBase+iwm_ph2L:
+            this->iwm.lines.CA2 = 0;
+            return 1;
+        case iwm_dBase+iwm_ph2H:
+            this->iwm.lines.CA2 = 1;
+            return 1;
+        case iwm_dBase+iwm_ph3L:
+            this->iwm.lines.LSTRB = 0;
+            return 1;
+        case iwm_dBase+iwm_ph3H:
+            this->iwm.lines.LSTRB = 1;
+            return 1;
+        case iwm_dBase+iwm_mtrOff:
+            this->iwm.lines.ENABLE = 0;
+            return 1;
+        case iwm_dBase+iwm_mtrOn:
+            this->iwm.lines.ENABLE = 1;
+            return 1;
+        case iwm_dBase+iwm_extDrive:
+            this->iwm.lines.SELECT = 1;
+            return 1;
+        case iwm_dBase+iwm_intDrive:
+            this->iwm.lines.SELECT = 0;
+            return 1;
+        case iwm_dBase+iwm_q6L:
+            this->iwm.lines.Q6 = 0;
+            return 1;
+        case iwm_dBase+iwm_q6H:
+            this->iwm.lines.Q6 = 1;
+            return 1;
+        case iwm_dBase+iwm_q7H:
+            this->iwm.lines.Q7 = 1;
+            return 1;
+        default: return 0;
+    }
+}
+
 u16 mac_mainbus_read_iwm(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
 {
     printf("\nUnhandled IWM read addr:%06x cyc:%lld", addr, this->clock.master_cycles);
-    return 31 | (31 << 8); // @Virror on emudev
+    //return ((31 << 8) | 38) & mask; // @Virror on emudev
+    if (ioIWM(this, addr)) {
+        return 31;
+    }
+    switch(addr) {
+        case iwm_dBase+iwm_q7L:
+            this->iwm.lines.Q7 = 0;
+            return 31;
+    }
+    return 31;
 }
 
 void mac_mainbus_write_iwm(struct mac* this, u32 addr, u16 mask, u16 val)
 {
+    if (ioIWM(this, addr)) {
+        return;
+    }
+    switch(addr) {
+        case iwm_dBase+iwm_q7L:
+            this->iwm.lines.Q7 = 0;
+            return;
+    }
     printf("\nUnhandled IWM write addr:%06x val:%04x cyc:%lld", addr, val & mask, this->clock.master_cycles);
 }
 
 u16 mac_mainbus_read_scc(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_effect)
 {
-    addr &= 0xFF;
-    switch(addr) {
+    /*if ((addr >= sccWBase) && (addr < (sccWBase + 10))) {
+        printf("\nRead to SCC write addr:%06x cyc:%lld", addr, this->clock.master_cycles);
+        return old;
+    }*/
+    u32 oaddr = addr;
+    if (addr >= sccWBase) addr -= sccWBase;
+    else if (addr >= sccRBase) addr -= sccRBase;
 
+    switch(addr) {
+        case scc_aData:
+            printf("\nSCC aData read, unsupported, cyc:%lld", this->clock.master_cycles);
+            return this->scc.regs.aData << 8;
+        case scc_aCtl:
+            printf("\nSCC aCtl read, unsupported, cyc:%lld", this->clock.master_cycles);
+            return this->scc.regs.aCtl << 8;
+        case scc_bData:
+            printf("\nSCC bData read, unsupported, cyc:%lld", this->clock.master_cycles);
+            return this->scc.regs.bData << 8;
+        case scc_bCtl:
+            printf("\nSCC bCtl read, unsupported, cyc:%lld", this->clock.master_cycles);
+            return this->scc.regs.bCtl << 8;
     }
-    printf("\nUnhandled SCC read addr:%06x cyc:%lld", addr, this->clock.master_cycles);
-    return old;
+
+
+    printf("\nUnhandled SCC read addr:%06x cyc:%lld", oaddr, this->clock.master_cycles);
+    return 0xFFFF;
 }
 
 void mac_mainbus_write_scc(struct mac* this, u32 addr, u16 mask, u16 val)
 {
-    addr &= 0xFF;
-    printf("\nUnhandled SCC write addr:%06x val:%04x cyc:%lld", addr, val & mask, this->clock.master_cycles);
+    val >>= 8;
+    /*if ((addr >= sccRBase) && (addr < (sccRBase + 10))) {
+        printf("\nWrite to SCC read addr:%06x val:%02x cyc:%lld", addr, val, this->clock.master_cycles);
+       return;
+    }*/
+    u32 oaddr = addr;
+    if (addr >= sccWBase) addr -= sccWBase;
+    else if (addr >= sccRBase) addr -= sccRBase;
+
+    switch(addr) {
+        case scc_aData:
+            printf("\nSCC aData write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
+            this->scc.regs.aData = val;
+            return;
+        case scc_aCtl:
+            printf("\nSCC aCtl write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
+            this->scc.regs.aCtl = val;
+            return;
+        case scc_bData:
+            printf("\nSCC bData write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
+            this->scc.regs.bData = val;
+            return;
+        case scc_bCtl:
+            printf("\nSCC bCtl write, unsupported, val:%02x cyc:%lld", val, this->clock.master_cycles);
+            this->scc.regs.bCtl = val;
+            return;
+    }
+
+
+    printf("\nUnhandled SCC write addr:%06x val:%04x cyc:%lld", oaddr, val & mask, this->clock.master_cycles);
 }
 
 static inline void write_RAM(struct mac* this, u32 addr, u16 mask, u16 val)
 {
-    this->RAM[(addr >> 1) & this->RAM_mask] = (this->RAM[addr >> 1] & ~mask) | (val & ~mask);
+    this->RAM[(addr >> 1) & this->RAM_mask] = (this->RAM[addr >> 1] & ~mask) | (val & mask);
 }
 
 static inline u16 read_ROM(struct mac* this, u32 addr, u16 mask, u16 old)
 {
-    return this->ROM[(addr & 0xFFFF) >> 1] & mask;
+    return this->ROM[(addr >> 1) & this->ROM_mask] & mask;
 }
 
 static inline u16 read_RAM(struct mac* this, u32 addr, u16 mask, u16 old)
@@ -569,21 +752,28 @@ void mac_mainbus_write(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
         }
 
         if ((addr >= 0x600000) && (addr < 0x800000)) {
-            return write_RAM(this, addr - 0x680000, mask, val);
+            return write_RAM(this, addr - 0x600000, mask, val);
+        }
+    }
+    else {
+
+        if (addr < 0x400000) {
+            return write_RAM(this, addr, mask, val);
+        }
+        if (addr < 0x500000) { // ROM
+            return;
         }
     }
 
-    if (addr < 0x400000) {
-        return write_RAM(this, addr, mask, val);
-    }
 
-    if (addr < 0x500000) { // ROM
-        return;
-    }
-
-    if ((addr >= 0x900000) && (addr < 0xC00000)) {
+    if ((addr >= 0x900000) && (addr <= 0x9FFFFF)) {
         return mac_mainbus_write_scc(this, addr, mask, val);
     }
+
+    if ((addr >= 0xB00000) && (addr <= 0xBFFFFF)) {
+        return mac_mainbus_write_scc(this, addr, mask, val);
+    }
+
 
     if ((addr >= 0xD00000) && (addr < 0xE00000)) {
         return mac_mainbus_write_iwm(this, addr, mask, val);
@@ -593,9 +783,6 @@ void mac_mainbus_write(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
         return mac_mainbus_write_via(this, addr, mask, val);
     }
 
-    if ((addr >= 0xF00000) && (addr < 0xF80000)) {
-        return mac_mainbus_write_scc(this, addr, mask, val);
-    }
     if ((addr >= 0xF80000) && (addr < 0xF8FFFF))
         return;
 
@@ -605,6 +792,8 @@ void mac_mainbus_write(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 val)
 u16 mac_mainbus_read(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect)
 {
     u16 mask = ulmask[(UDS << 1) | LDS];
+    // 0-10k, 20-30k = ROM
+    // 40-50k = ROM
     if (this->io.ROM_overlay) {
         if (addr < 0x100000)
             return read_ROM(this, addr, mask, old);
@@ -613,17 +802,24 @@ u16 mac_mainbus_read(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 
         if ((addr >= 0x400000) && (addr < 0x500000))
             return read_ROM(this, addr, mask, old);
         if ((addr >= 0x600000) && (addr < 0x800000))
-            return read_RAM(this, addr - 0x680000, mask, old);
+            return read_RAM(this, addr - 0x600000, mask, old);
+    }
+    else {
+        if (addr < 0x400000)
+            return read_RAM(this, addr, mask, old);
+
+        if (addr < 0x500000)
+            return read_ROM(this, addr - 0x400000, mask, old);
     }
 
-    if (addr < 0x400000)
-        return read_RAM(this, addr, mask, old);
-
-    if (addr < 0x500000)
-        return read_ROM(this, addr - 0x400000, mask, old);
-
-    if ((addr >= 0x900000) && (addr < 0xC00000))
+    if ((addr >= 0x900000) && (addr <= 0x9FFFFF)) {
+        //if (mask == 0xFFFF) return 0xFFFF;
         return mac_mainbus_read_scc(this, addr, mask, old, has_effect);
+    }
+
+    if ((addr >= 0xBF0000) && (addr <= 0xBFFFFF)) {
+        return mac_mainbus_read_scc(this, addr, mask, old, has_effect);
+    }
 
     if ((addr >= 0xD00000) && (addr < 0xE00000))
         return mac_mainbus_read_iwm(this, addr, mask, old, has_effect);
@@ -631,12 +827,9 @@ u16 mac_mainbus_read(struct mac* this, u32 addr, u32 UDS, u32 LDS, u16 old, u32 
     if ((addr >= 0xE80000) && (addr < 0xF00000))
         return mac_mainbus_read_via(this, addr, mask, old, has_effect);
 
-    if ((addr >= 0xF00000) && (addr < 0xF80000))
-        return mac_mainbus_read_scc(this, addr, mask, old, has_effect);
-
-    if ((addr >= 0xF80000) && (addr < 0xF8FFFF))
-        return 0;
+    if ((addr >= 0xF80000) && (addr < 0xF8FFFF)) // phase read
+        return 0xFFFF;
 
     printf("\nUnhandled mainbus read addr:%06x cyc:%lld", addr, this->clock.master_cycles);
-    return old;
+    return 0xFFFF;
 }

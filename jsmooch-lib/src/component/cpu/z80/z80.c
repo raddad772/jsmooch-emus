@@ -407,8 +407,8 @@ void Z80_cycle(struct Z80* this)
     } else {
 #ifdef Z80_DBG_SUPPORT
 #ifdef LYCODER
-        if (dbg.trace_on && this->regs.TCU == 1 && this->trace_cycles > 5000000) {
-            this->last_trace_cycle = this->PCO;
+        if (dbg.trace_on && this->regs.TCU == 1 && *this->trace.cycles > 5000000) {
+            this->trace.last_cycle = this->PCO;
             Z80_lycoder_print(this);
         }
 #else

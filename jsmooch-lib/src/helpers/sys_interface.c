@@ -33,8 +33,14 @@ struct jsm_system* new_system(enum jsm_systems which)
         case SYS_GBC:
             GB_new(out, GBC);
             break;
+        case SYS_MAC128K:
+            mac_new(out, mac128k);
+            break;
         case SYS_MAC512K:
             mac_new(out, mac512k);
+            break;
+        case SYS_MACPLUS_1MB:
+            mac_new(out, macplus_1mb);
             break;
         case SYS_NES:
             NES_new(out);
@@ -73,7 +79,10 @@ void jsm_delete(struct jsm_system* jsm)
             GB_delete(jsm);
             break;
         case SYS_MAC512K:
+        case SYS_MAC128K:
+        case SYS_MACPLUS_1MB:
             mac_delete(jsm);
+            break;
         case SYS_NES:
             NES_delete(jsm);
             break;

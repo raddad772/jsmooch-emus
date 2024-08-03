@@ -361,7 +361,7 @@ void M68k_ins_RESET_POWER(struct M68k* this, struct M68k_ins_t *ins) {
             this->state.instruction.result = this->state.bus_cycle.data << 16;
             M68k_start_read(this, 2, 2, M68k_FC_supervisor_program, M68K_RW_ORDER_NORMAL, M68kS_exec);
         STEP(2)
-            this->regs.ASP = this->state.instruction.result | this->state.bus_cycle.data;
+            M68k_set_SSP(this, this->state.instruction.result | this->state.bus_cycle.data);
             this->state.instruction.result = 0;
             M68k_start_read(this, 4, 2, M68k_FC_supervisor_program, M68K_RW_ORDER_NORMAL, M68kS_exec);
         STEP(3)
@@ -370,6 +370,7 @@ void M68k_ins_RESET_POWER(struct M68k* this, struct M68k_ins_t *ins) {
         STEP(4)
             this->regs.PC = this->state.instruction.result | this->state.bus_cycle.data;
             this->regs.SR.I = 7;
+            printf("\nSTART ADDR %08x", this->regs.PC);
             // Start filling prefetch queue
             M68k_start_read(this, this->regs.PC, 2, M68k_FC_supervisor_program, M68K_RW_ORDER_NORMAL, M68kS_exec);
             this->regs.PC += 2;
@@ -695,8 +696,13 @@ INS_END
 M68KINS(ANDI_TO_SR)
         STEP0
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 2);
                 return;
+            }
+            switch(ins->ea[0].kind) {
+                case 0:
+                    this->regs.IPC -= 2;
+                    break;
             }
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
@@ -1066,7 +1072,10 @@ M68KINS(BTST_ea)
             M68k_sample_interrupts(this);
             this->state.instruction.result = this->state.op[0].val;
             this->state.op[0].val = this->state.op[1].val & (bitsize[ins->sz] - 1);
+            //if (dbg.trace_on) dbg_printf("\nTEST: %02x, BIT: %d", this->state.instruction.result, this->state.op[1].val);
             this->regs.SR.Z = (this->state.instruction.result & (1 << this->state.op[0].val)) == 0;
+            //dbg_printf("\nBIT: %d result: %d", this->state.op[0].val, (this->state.instruction.result & (1 << this->state.op[0].val)) == 0);
+            //if (dbg.trace_on) dbg_printf("\nZ set to %d", this->regs.SR.Z);
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(3)
             u32 nomc = 0;
@@ -1227,38 +1236,52 @@ INS_END
 
 M68KINS(DBCC)
         STEP0
+          // idle(2);
             M68k_sample_interrupts(this);
             M68k_start_wait(this, 2, M68kS_exec);
         STEP(1)
             this->regs.PC -= 2;
             this->state.instruction.temp = !condition(this, ins->ea[0].reg);
+
             if (this->state.instruction.temp) {
+                //   auto disp = sign<Word>(r.irc);
                 this->state.instruction.temp2 = sgn32(this->regs.IRC, 2);
+                //  r.pc += disp;
                 this->regs.PC += this->state.instruction.temp2;
+                //  prefetch();
                 M68k_start_prefetch(this, 1, 1, M68kS_exec);
             }
             else {
+                //  idle(2);
                 M68k_start_wait(this, 2, M68kS_exec);
             }
         STEP(2)
             if (this->state.instruction.temp) {
+                //  n16 result = read<Word>(with);
                 M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
             }
             else {
+                //  r.pc += 2;
                 this->regs.PC += 2;
             }
         STEP(3)
             if (this->state.instruction.temp) {
-                this->state.instruction.result = this->state.op[1].val - 1;
+                //  write<Word>(with, result - 1);
+                this->state.instruction.result = (this->state.op[1].val - 1) & 0xFFFF;
                 M68k_start_write_operand(this, 0, 1, M68kS_exec, ALLOW_REVERSE, NO_REVERSE);
+                //this->state.instruction.result = (this->state.op[1].val + 1) & 0xFFFF;
             }
             else {
             }
         STEP(4)
             if (this->state.instruction.temp) {
-                if (this->state.instruction.result) { // Take branch
+                if (this->state.instruction.result != 0xFFFF) { // Take branch
+                    //    // branch taken
+                    //    prefetch();
                     M68k_start_prefetch(this, 1, 1, M68kS_exec);
                 } else {
+                    //    // branch not taken
+                    //    r.pc -= disp;
                     this->regs.PC -= this->state.instruction.temp2;
                 }
             }
@@ -1266,11 +1289,14 @@ M68KINS(DBCC)
             }
         STEP(5)
             if (this->state.instruction.temp) {
-                if (this->state.instruction.result) { // Take branch
+                if (this->state.instruction.result != 0xFFFF) { // Take branch
+                    //    return;
                     this->state.instruction.done = 1;
                     return;
                 }
             }
+            //prefetch();
+            //prefetch();
             M68k_start_prefetch(this, 2, 1, M68kS_exec);
         STEP(6)
 INS_END
@@ -1452,8 +1478,13 @@ M68KINS(EORI_TO_SR)
         STEP0
             M68k_sample_interrupts(this);
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 2);
                 return;
+            }
+            switch(ins->ea[0].kind) {
+                case 0:
+                    this->regs.IPC -= 2;
+                    break;
             }
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
@@ -2408,9 +2439,15 @@ INS_END
 
 M68KINS(MOVE_FROM_USP)
         STEP0
+            M68k_sample_interrupts(this);
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 2);
                 return;
+            }
+            switch(ins->ea[0].kind) {
+                case 0:
+                    this->regs.IPC -= 2;
+                    break;
             }
             M68k_start_read_operands(this, 0, ins->sz, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
         STEP(1)
@@ -2442,7 +2479,7 @@ INS_END
 M68KINS(MOVE_TO_SR)
         STEP0
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-2);
                 return;
             }
             M68k_start_read_operands(this, 0, 2, M68kS_exec, 0, 0, ALLOW_REVERSE, MAKE_FC(0));
@@ -2462,7 +2499,7 @@ M68KINS(MOVE_TO_USP)
         STEP0
             M68k_sample_interrupts(this);
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 2);
                 return;
             }
             M68k_start_read_operands(this, 0, 4, M68kS_exec, 0, NO_HOLD, NO_REVERSE, MAKE_FC(0));
@@ -2689,8 +2726,13 @@ M68KINS(ORI_TO_SR)
         STEP0
             M68k_sample_interrupts(this);
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 2);
                 return;
+            }
+            switch(ins->ea[0].kind) {
+                case 0:
+                    this->regs.IPC -= 2;
+                    break;
             }
             M68k_start_prefetch(this, 1, 1, M68kS_exec);
         STEP(1)
@@ -2736,7 +2778,7 @@ M68KINS(RESET)
         STEP0
             M68k_sample_interrupts(this);
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC - 2);
                 return;
             }
             this->pins.RESET = 1;
@@ -2899,7 +2941,7 @@ M68KINS(RTE)
         STEP0
             M68k_sample_interrupts(this);
             if (!this->regs.SR.S) {
-                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-4);
+                M68k_start_group2_exception(this, M68kIV_privilege_violation, 4, this->regs.PC-2);
                 return;
             }
             this->state.internal_interrupt_level = 0; // We can get all? interrupts again!
@@ -3209,7 +3251,7 @@ INS_END
 
 M68KINS(TRAP)
         STEP0
-            M68k_start_group2_exception(this, ins->ea[0].reg + 32, 4, this->regs.PC-2);
+            M68k_start_group2_exception(this, ins->ea[0].reg + 32, 4, this->regs.PC);
         STEP(1)
             M68k_sample_interrupts(this);
 INS_END
@@ -3270,7 +3312,7 @@ M68KINS(NOINS)
     STEP0
         printf("\nERROR UNIMPLEMENTED M68K INSTRUCTION %04x at PC %06x cyc:%lld", ins->opcode, this->regs.PC, *this->trace.cycles);
         //assert(1==0);
-        dbg_break("UNIMPLEMENTED INSTRUCTION", *this->trace.cycles);
+        //dbg_break("UNIMPLEMENTED INSTRUCTION", *this->trace.cycles);
         M68k_start_wait(this, 2, M68kS_exec);
     STEP(1)
 INS_END

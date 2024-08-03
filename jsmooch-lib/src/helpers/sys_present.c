@@ -374,7 +374,9 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
         case SYS_NES:
             NES_present(display, out_buf, out_width, out_height);
             break;
+        case SYS_MAC128K:
         case SYS_MAC512K:
+        case SYS_MACPLUS_1MB:
             mac512k_present(display, out_buf, out_width, out_height);
             break;
         case SYS_SMS1:

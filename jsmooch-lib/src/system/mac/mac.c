@@ -50,18 +50,27 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
     this->kind = variant;
     switch(variant) {
         case mac128k:
-            this->RAM_size = 131072;
+            this->RAM_size = 128 * 1024;
+            this->ROM_size = 64 * 1024;
             break;
         case mac512k:
-            this->RAM_size = 524288;
+            this->RAM_size = 512 * 1024;
+            this->ROM_size = 64 * 1024;
+            break;
+        case macplus_1mb:
+            this->RAM_size = 1 * 1024 * 1024;
+            this->ROM_size = 128 * 1024;
             break;
         default:
             assert(1==2);
     }
     this->RAM = calloc(1, this->RAM_size);
     this->RAM_mask = (this->RAM_size >> 1) - 1; // in words
+    this->ROM = calloc(1, this->ROM_size);
+    this->ROM_mask = (this->ROM_size >> 1) - 1;
     this->kind = variant;
     M68k_init(&this->cpu, 1);
+    this->cpu.trace.hpos = &this->clock.crt.hpos;
     //via6522_init(&this->via, &this->clock.master_cycles);
 
     struct jsm_debug_read_trace dt;
@@ -98,17 +107,20 @@ void mac_delete(struct jsm_system* jsm)
 
     M68k_delete(&this->cpu);
     //via6522_delete(&this->via);
-
+    /*
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
         if (pio->kind == HID_DISC_DRIVE) {
             if (pio->device.disc_drive.remove_disc) pio->device.disc_drive.remove_disc(jsm);
         }
         physical_io_device_delete(pio);
-    }
+    }*/
 
     if (this->RAM) free(this->RAM);
     this->RAM = NULL;
+
+    if (this->ROM) free(this->ROM);
+    this->ROM = NULL;
 
     free(jsm->ptr);
     jsm->ptr = NULL;
@@ -271,7 +283,7 @@ u32 macJ_finish_frame(JSM)
         macJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    printf("\nScanlines: %d", scanlines);
+    //printf("\nScanlines: %d", scanlines);
     return this->display.display->device.display.last_written;
 }
 

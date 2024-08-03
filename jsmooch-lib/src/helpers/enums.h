@@ -15,7 +15,9 @@ enum jsm_systems {
 	SYS_GENESIS,
 	SYS_PSX,
     SYS_ATARI2600,
-    SYS_MAC512K
+    SYS_MAC128K,
+    SYS_MAC512K,
+    SYS_MACPLUS_1MB
 };
 
 enum jsm_regions {

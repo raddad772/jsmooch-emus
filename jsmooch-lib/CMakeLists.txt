@@ -196,6 +196,8 @@ add_library(jsmooch-lib
         src/system/mac/mac_display.h
         src/component/misc/via6522/via6522.c
         src/component/misc/via6522/via6522.h
+        src/helpers/debugger/debugger.h
+        src/ooc/ooc.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

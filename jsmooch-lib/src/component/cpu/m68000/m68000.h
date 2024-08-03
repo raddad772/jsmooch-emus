@@ -8,6 +8,10 @@
 #include "helpers/int.h"
 #include "m68000_instructions.h"
 
+#define M68K_E_CLOCK
+//#define M68K_TESTING
+
+
 enum M68kOS {
     M68kOS_pause1 = 0,
     M68kOS_prefetch1 = 1,
@@ -95,7 +99,8 @@ struct M68k_pins {
     u32 Addr;
     u32 D;
     u32 DTACK; // Data ack. set externally
-    u32 VPA; // VPA vectored interrupt select
+    u32 VPA; // VPA valid peripheral address, for autovectored interrupts and old peripherals for 6800 processors
+    u32 VMA; // VMA is a signalling thing for VPA meaning valid memory address
     u32 AS; // Address Strobe. set interally
     u32 RW; // Read-write
     u32 IPL; // Interrupt request level
@@ -133,6 +138,7 @@ struct M68k {
 
     u32 ins_decoded;
     u32 testing;
+    u32 opc;
 
     u32 megadrive_bug;
 
@@ -148,9 +154,12 @@ struct M68k {
             u32 original_addr;
             u32 data;
             u32 done;
+            i32 e_phase;
             void (*func)(struct M68k*);
             enum M68k_states next_state;
             u32 FC;
+
+            u32 addr_error;
         } bus_cycle;
 
         struct {
@@ -257,6 +266,9 @@ struct M68k {
             u32 autovectored;
             u32 vector_number;
         } bus_cycle_iaq;
+
+        //u64 e_phase;
+        u32 e_clock_count;
     } state;
 
     struct {
@@ -264,6 +276,7 @@ struct M68k {
         struct jsm_string str;
         u32 ok;
         u64 *cycles;
+        u32 *hpos;
     } trace;
 
     struct M68k_ins_t *ins;

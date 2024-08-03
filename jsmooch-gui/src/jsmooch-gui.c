@@ -11,9 +11,14 @@
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
 
+// mac overlay - 14742566
+// i get to    - 88219648
+
 //#define NEWSYS
+#define NEWSYS_STEP2
 //#define DO_DREAMCAST
 //#define SIDELOAD
+//#define STOPAFTERAWHILE
 
 struct system_io {
     struct CDKRKR {
@@ -161,10 +166,20 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             sprintf(BIOS_PATH, "%s/zx_spectrum", BASE_PATH);
             mfs_add("zx48.rom", BIOS_PATH, BIOSes);
             break;
+        case SYS_MAC128K:
+            has_bios = 1;
+            sprintf(BIOS_PATH, "%s/mac", BASE_PATH);
+            mfs_add("mac128k.rom", BIOS_PATH, BIOSes);
+            break;
         case SYS_MAC512K:
             has_bios = 1;
             sprintf(BIOS_PATH, "%s/mac", BASE_PATH);
             mfs_add("mac512k.rom", BIOS_PATH, BIOSes);
+            break;
+        case SYS_MACPLUS_1MB:
+            has_bios = 1;
+            sprintf(BIOS_PATH, "%s/mac", BASE_PATH);
+            mfs_add("macplus_1mb.rom", BIOS_PATH, BIOSes);
             break;
         case SYS_PSX:
         case SYS_GENESIS:
@@ -234,6 +249,8 @@ void GET_HOME_BASE_SYS(char *out, enum jsm_systems which, const char* sec_path, 
             *worked = 1;
             break;
         case SYS_MAC512K:
+        case SYS_MAC128K:
+        case SYS_MACPLUS_1MB:
             sprintf(out, "%s/mac", BASER_PATH);
             *worked = 1;
             break;
@@ -418,6 +435,8 @@ int main(int argc, char** argv)
             worked = grab_ROM(&ROMs, which, "crazytaxi.gdi", "crazy_taxi");
             break;
         case SYS_MAC512K:
+        case SYS_MAC128K:
+        case SYS_MACPLUS_1MB:
         case SYS_ZX_SPECTRUM:
             worked = 1;
             break;
@@ -538,15 +557,35 @@ int main(int argc, char** argv)
 #ifdef NEWSYS
     float start = SDL_GetTicks();
     u32 c;
-    c = 242600;
+    c = (5460350 * 2) - 100;
+    //c = (300000 * 2);
+    //c = 400;
+    //u32 c2 = 0;180207
+    // mine
+    // 511071
+    // read # at 511070 catches it
+    // THEIRS
+    // THEIR 511070 does not catch it...
+    // tst.b @ 511096, flag is set
+    // their cycle goes 1 btw 511112
+
+#ifdef LYCODER
+    c = 20000000;
+#endif
+    //c = 13047918 - 200;
     //c = 73377752 - 1000;
     //c = 47395691 - 2500;
     //c = 47391011 - 150;
     //c =   46528328 - 200;
     //c =     93377808;// - 400;
 //    c =  47392303 - 250;
-
-    //sys->step_master(sys, 47380050); //
+#ifdef LYCODER
+    dbg_enable_trace();
+#else
+    /*dbg_enable_trace();
+    dbg.traces.m68000.instruction = 1;
+    dbg.traces.m68000.mem = 1;*/
+#endif
     sys->step_master(sys, c);
     //                  47 395 691
     // Z80 enable - 47371674
@@ -562,6 +601,7 @@ int main(int argc, char** argv)
     struct framevars fvr;
     sys->get_framevars(sys, &fvr);
     printf("\nBREAK CYCLE: %lld", fvr.master_cycle);
+#ifdef NEWSYS_STEP2
     dbg_unbreak();
     dbg_enable_trace();
     dbg.traces.m68000.instruction = 1;
@@ -576,6 +616,7 @@ int main(int argc, char** argv)
     dbg.breaks.m68000.irq = 0;
     dbg.traces.z80.instruction = 0;
     sys->step_master(sys, 500);
+#endif
     dbg_flush();
     sys->get_framevars(sys, &fvr);
     printf("\nFINAL CYCLE: %lld", fvr.master_cycle);
@@ -596,19 +637,23 @@ int main(int argc, char** argv)
 
         map_inputs(input_buffer, &inputs, sys);
         sys->finish_frame(sys);
-        printf("\nFRAME FINISHED!");
+        //printf("\nFRAME FINISHED!");
         sys->get_framevars(sys, &fv);
-        printf("MCYCLE: %lld", fv.master_cycle);
-        printf("\nFRAME! %lld", fv.master_frame); fflush(stdout);
+        //printf("MCYCLE: %lld", fv.master_cycle);
+        //printf("\nFRAME! %lld", fv.master_frame); fflush(stdout);
         /*if (fv.master_cycle >= 120965401) {
             dbg_break();
             dbg.do_break = 1;
         }*/
         //if (fv.master_cycle >= 120965401) {
-        if (fv.master_frame >= 240) {
+#ifdef STOPAFTERAWHILE
+        // 14742566
+        if (fv.master_cycle >= ((14742566*2)+500)) {
+        //if (fv.master_cycle >= 12991854) {
             dbg_break(">240 FRAMES", fv.master_cycle);
             dbg.do_break = 1;
         }
+#endif
         if (dbg.do_break) {
             //break;
             if (did_break == 0) {

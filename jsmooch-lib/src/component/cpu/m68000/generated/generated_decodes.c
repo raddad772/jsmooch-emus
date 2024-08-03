@@ -358,7 +358,7 @@
         for (u32 d = 0; d < 8; d++) {
             op1 = mk_ea(M68k_AM_immediate, c);
             op2 = mk_ea(M68k_AM_data_register_direct, d);
-            bind_opcode("0101 .... 1100 1...", 4, &M68k_ins_DBCC, &M68k_disasm_DBCC, (c << 8) | d, &op1, &op2, 0, M68k_OM_qimm_r);
+            bind_opcode("0101 .... 1100 1...", 2, &M68k_ins_DBCC, &M68k_disasm_DBCC, (c << 8) | d, &op1, &op2, 0, M68k_OM_qimm_r);
         }
     }
 

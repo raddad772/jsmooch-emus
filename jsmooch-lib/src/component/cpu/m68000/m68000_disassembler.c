@@ -227,7 +227,7 @@ void M68k_disasm_ADDQ(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trac
 
 void M68k_disasm_ADDQ_ar(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
-    jss("addq.l    %d,a%d,", ins->ea[0].reg, ins->ea[1].reg);
+    jss("addq.l  %d,a%d", ins->ea[0].reg, ins->ea[1].reg);
 }
 
 
@@ -358,6 +358,7 @@ void M68k_disasm_BTST_ea(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_t
 {
     ins_suffix("btst", ins->sz, out, "  ");
     dea(&ins->ea[0], ins->sz);
+    jss(",#$%x", read_pc(&PC, rt));
 }
 
 void M68k_disasm_CHK(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
@@ -554,10 +555,12 @@ void M68k_disasm_MOVEM_TO_MEM(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_r
 void M68k_disasm_MOVEM_TO_REG(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)
 {
     ins_suffix("movem", ins->sz, out, " ");
+    PC -= 2;
     u32 lst = read_pc(&PC, rt);
+    printf("\nVALUE DISASM READ: %04x", lst);
     for (u32 i = 0; i < 16; i++) {
         if (lst & 1)
-            jss("%s,", movem_from_mem[i]);
+            jss("%s,", movem_from_mem[15 - i]);
         lst >>= 1;
     }
     dea(&ins->ea[0], ins->sz);
