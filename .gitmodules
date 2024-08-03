@@ -1,3 +1,6 @@
 [submodule "jsmooch-lib/src/vendor/elf-parser"]
 	path = jsmooch-lib/src/vendor/elf-parser
 	url = git@github.com:raddad772/elf-parser.git
+[submodule "jsmooch-gui/vendor/myimgui"]
+	path = jsmooch-gui/vendor/myimgui
+	url = git@github.com:raddad772/imgui.git
