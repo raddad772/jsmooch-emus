@@ -32,6 +32,10 @@ struct system_io {
         struct HID_digital_button* start;
         struct HID_digital_button* select;
     } p[2];
+    struct kb {
+        SDL_KeyCode
+        struct HID_digital_button* 1
+    };
     struct HID_digital_button* ch_power;
     struct HID_digital_button* ch_reset;
     struct HID_digital_button* ch_pause;

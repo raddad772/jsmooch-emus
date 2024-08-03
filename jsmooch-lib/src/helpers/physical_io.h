@@ -179,7 +179,9 @@ struct physical_io_device {
         } display;
 
         struct JSM_MOUSE{
-
+            struct HID_digital_button *left_button;
+            struct HID_digital_button *right_button;
+            i32 new_x, new_y;
         } mouse;
 
         struct JSM_CHASSIS{

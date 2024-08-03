@@ -286,7 +286,6 @@ void mac_step_eclock(struct mac* this)
         if (this->rtc.cycle_counter >= 783360) {
             this->rtc.cycle_counter = 0;
             this->rtc.seconds++;
-            printf("\nTRIGGER RTC CYCLE %lld", this->clock.master_cycles);
             this->via.regs.IFR |= 1;
         }
     }
@@ -722,7 +721,7 @@ void mac_mainbus_write_scc(struct mac* this, u32 addr, u16 mask, u16 val)
 
 static inline void write_RAM(struct mac* this, u32 addr, u16 mask, u16 val)
 {
-    this->RAM[(addr >> 1) & this->RAM_mask] = (this->RAM[addr >> 1] & ~mask) | (val & mask);
+    this->RAM[(addr >> 1) & this->RAM_mask] = (this->RAM[(addr >> 1) & this->RAM_mask] & ~mask) | (val & mask);
 }
 
 static inline u16 read_ROM(struct mac* this, u32 addr, u16 mask, u16 old)

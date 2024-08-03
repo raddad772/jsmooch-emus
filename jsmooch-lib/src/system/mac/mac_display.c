@@ -24,7 +24,7 @@ static void scanline_visible(struct mac* this)
     }
     else this->ram_contended = 0;
     for (u32 i = 0; i < 2; i++) {
-        //*this->display.cur_output = (this->display.output_shifter >> 15) & 1;
+        *this->display.cur_output = (this->display.output_shifter >> 15) & 1;
         this->display.cur_output++;
         this->display.output_shifter <<= 1;
     }
@@ -42,27 +42,6 @@ static void new_frame(struct mac* this)
     // Swap buffer we're drawing to...
     this->display.cur_output = this->display.display->device.display.output[this->display.display->device.display.last_written];
     this->display.display->device.display.last_written ^= 1;
-
-    u8 *out = this->display.display->device.display.output[this->display.display->device.display.last_written^1];
-    for (u32 idx = 0; idx < (SCREEN_WIDTH * SCREEN_HEIGHT); idx++) {
-        u32 byte = idx / 8;
-        u32 bit = idx % 8;
-        u32 addr = 0x7A700 + byte;
-        u32 ypos = (idx / SCREEN_WIDTH);
-        u32 xpos = idx % SCREEN_WIDTH;
-        u32 word = this->RAM[addr >> 1];
-        if (byte & 1) word = word & 0xFF;
-        else word = (word >> 8) & 0xFF;
-        if ((word & (1 << (7 - bit))) == 0) {
-            *out = 0;
-        } else {
-            *out = 1;
-        }
-        if ((xpos == 10) || (xpos == 500)) *out = 1;
-        if ((ypos == 2) || (ypos == 300)) *out = 1;
-        out++;
-    }
-
 
 }
 // & 0x40
@@ -82,12 +61,8 @@ static void new_frame(struct mac* this)
 
 static void calc_display_addr(struct mac* this)
 {
-    u32 base_addr = DISPLAY_BASE | (((this->via.regs.regA & 0x40) ^ 0x40) << 8);
+    u32 base_addr = DISPLAY_BASE | ((this->via.regs.regA & 0x40) << 8);
 
-    /*if (this->via.io.regA & 0x40) // 0 = alternate
-        base_addr = MAC128K_MAIN_BUF;
-    else
-        base_addr = MAC128K_ALTERNATE_BUF;*/
     if (this->kind == mac512k) base_addr += MAC512K_OFFSET;
 
     // we need xpos/16    so >> 4. because each word is 16 pixels
@@ -112,19 +87,11 @@ static void new_scanline(struct mac* this)
 
     switch(this->clock.crt.vpos) {
         case 342: // vblank start
-//#ifndef LYCODER
             this->display.IRQ_signal = 1;
             update_irqs(this);
-//#endif
             this->display.scanline_func = &scanline_vblank;
-            //printf("\nREACH L512 AT CPUCYC:%lld", this->clock.master_cycles >> 1);
-            //this->via.regs.IFR |= 2;
-            //if (dbg.trace_on) dbg_printf("\nIRQ UP %lld %02x", this->clock.master_cycles, this->via.regs.IFR);
             break;
         case 370: // vblank end, new frame
-            //printf("\nNEW FrAME AT CYC:%lld", this->clock.master_cycles);
-            // TODO: vblank off
-            //printf("\nIRQ DOWN %lld", this->clock.master_cycles);
             this->display.IRQ_signal = 0;
             update_irqs(this);
             new_frame(this);
@@ -140,21 +107,13 @@ void mac_step_display2(struct mac* this)
     // Draw two pixels
     /*
      * Frame timings are...
-     * 512 x 342 visible pixels.  192 hblank pixels = 704 total
+     * 512 x 342 visible pixels.  +192 hblank pixels = 704 total
      * 28 vblank lines  = 540 total
      */
 
     this->display.scanline_func(this);
 
     this->clock.crt.hpos += 2;
-/*#ifdef LYCODER
-    if ((this->clock.crt.vpos == 342) && (this->clock.crt.hpos == 35)) {
-        //dbg_printf("\nSKIP THIS ONE A FEW CYCLES");
-        this->display.IRQ_signal = 1;
-        update_irqs(this);
-    }
-#endif*/
-
     if (this->clock.crt.hpos >= 704) new_scanline(this);
 }
 
