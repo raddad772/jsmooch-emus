@@ -151,8 +151,6 @@ static u32 get_keypress(struct ZXSpectrum* bus, enum JKEYS key)
     for (u32 i = 0; i < kbd->num_keys; i++) {
         if (kbd->key_defs[i] == key) {
             v = (i32)kbd->key_states[i];
-            if (v != 0)
-                printf("\nKEY %d val:1", kbd->key_defs[i]);
         }
     }
     if (v == -1) {

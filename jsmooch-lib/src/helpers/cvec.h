@@ -5,6 +5,10 @@
 #ifndef JSMOOCH_EMUS_CVEC_H
 #define JSMOOCH_EMUS_CVEC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "helpers/int.h"
 
 struct cvec {
@@ -20,21 +24,26 @@ struct cvec {
 };
 
 struct cvec_iterator {
-    struct cvec* vec;
+    struct cvec *vec;
     u32 index;
 };
 
-void cvec_init(struct cvec*, u32 data_size, u32 prealloc);
-void cvec_delete(struct cvec*);
-u32 cvec_len(struct cvec*);
-void *cvec_push_back(struct cvec*);
-void *cvec_pop_back(struct cvec*);
-void cvec_clear(struct cvec*);
-void *cvec_get(struct cvec*, u32 index);
-void *cvec_get_unsafe(struct cvec*, u32 index);
-void cvec_lock_reallocs(struct cvec*); // For locking reallocs to preserve pointers
-void cvec_push_back_copy(struct cvec*, void *src);
+void cvec_init(struct cvec *, u32 data_size, u32 prealloc);
+void cvec_delete(struct cvec *);
+u32 cvec_len(struct cvec *);
+void *cvec_push_back(struct cvec *);
+void *cvec_pop_back(struct cvec *);
+void cvec_clear(struct cvec *);
+void *cvec_get(struct cvec *, u32 index);
+void *cvec_get_unsafe(struct cvec *, u32 index);
+void cvec_lock_reallocs(struct cvec *); // For locking reallocs to preserve pointers
+void cvec_push_back_copy(struct cvec *, void *src);
 
-void cvec_iterator_init(struct cvec_iterator*);
+void cvec_iterator_init(struct cvec_iterator *);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif //JSMOOCH_EMUS_CVEC_H

@@ -451,24 +451,24 @@ struct full_system setup_system(enum jsm_systems which)
         struct physical_io_device* pio = (struct physical_io_device*)cvec_get(IOs, i);
         switch(pio->kind) {
             case HID_CONTROLLER: {
-                if (fsys.controller1 == nullptr) {
-                    fsys.controller1 = pio;
+                if (fsys.io.controller1 == nullptr) {
+                    fsys.io.controller1 = pio;
                     setup_controller(&fsys.inputs, pio, 0);
                 }
                 else {
-                    fsys.controller2 = pio;
+                    fsys.io.controller2 = pio;
                     setup_controller(&fsys.inputs, pio, 1);
                 }
                 continue; }
             case HID_KEYBOARD: {
-                fsys.keyboard = pio;
+                fsys.io.keyboard = pio;
                 continue; }
             case HID_DISPLAY: {
-                fsys.display = pio;
+                fsys.io.display = pio;
                 continue; }
             case HID_CHASSIS: {
-                fsys.chassis = pio;
-                struct cvec* dbs = &fsys.chassis->device.chassis.digital_buttons;
+                fsys.io.chassis = pio;
+                struct cvec* dbs = &fsys.io.chassis->device.chassis.digital_buttons;
                 for (u32 j = 0; j < cvec_len(dbs); j++) {
                     struct HID_digital_button* db = (struct HID_digital_button*)cvec_get(dbs, j);
                     switch(db->common_id) {
@@ -487,23 +487,23 @@ struct full_system setup_system(enum jsm_systems which)
                 }
                 break; }
             case HID_MOUSE:
-                fsys.mouse = pio;
+                fsys.io.mouse = pio;
                 break;
             case HID_DISC_DRIVE:
-                fsys.disk_drive = pio;
+                fsys.io.disk_drive = pio;
                 break;
             case HID_CART_PORT:
-                fsys.cartridge_port = pio;
+                fsys.io.cartridge_port = pio;
                 break;
             case HID_AUDIO_CASSETTE:
-                fsys.audio_cassette = pio;
+                fsys.io.audio_cassette = pio;
                 break;
             default:
                 break;
         }
     }
-    assert(fsys.display);
-    assert(fsys.chassis);
+    assert(fsys.io.display);
+    assert(fsys.io.chassis);
     fsys.worked = 1;
     return fsys;
 }
@@ -519,7 +519,7 @@ void sys_present(struct full_system *fsys, void *outptr, u32 out_width, u32 out_
     struct jsm_system *sys = fsys->sys;
     struct framevars fv = {};
     sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, fsys->display, outptr, out_width, out_height);
+    jsm_present(sys->kind, fsys->io.display, outptr, out_width, out_height);
 }
 
 void sys_do_frame(struct full_system *fsys) {

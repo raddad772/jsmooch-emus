@@ -40,6 +40,7 @@
 // set texture UVs
 // encapsulate systems
 // lots of UI work
+// load directories from inifile
 
 // Global WebGPU required states
 static WGPUInstance      wgpu_instance = nullptr;
@@ -144,6 +145,7 @@ void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 
     source.rowsPerImage = source_height;
     wgpuQueueWriteTexture(wgpuDeviceGetQueue(wgpu_device), &destination, source_ptr, sz, &source, &tex.desc.size);
 }
+
 static void load_inifile(struct inifile* ini)
 {
     inifile_init(ini);
@@ -154,33 +156,57 @@ static void load_inifile(struct inifile* ini)
 
 }
 
-static void update_input(struct full_system* fsys, ImGuiIO& io)
-{
-    if ((io.WantCaptureKeyboard) && fsys->keyboard) {
-        struct physical_io_device *pio = fsys->keyboard;
-        if (pio->connected && pio->enabled) {
-            struct physical_io_device::physical_io_device_union::JSM_KEYBOARD* kbd = &fsys->keyboard->device.keyboard;
-            for (u32 i = 0; i < kbd->num_keys; i++) {
-                kbd->key_states[i] = ImGui::IsKeyPressed(jk_to_imgui(kbd->key_defs[i]));
+static void update_input(struct full_system* fsys, ImGuiIO& io) {
+    if (io.WantCaptureKeyboard) {
+        // Handle KB
+        if (fsys->io.keyboard) {
+            struct physical_io_device *pio = fsys->io.keyboard;
+            if (pio->connected && pio->enabled) {
+                struct physical_io_device::physical_io_device_union::JSM_KEYBOARD *kbd = &fsys->io.keyboard->device.keyboard;
+                for (u32 i = 0; i < kbd->num_keys; i++) {
+                    kbd->key_states[i] = ImGui::IsKeyPressed(jk_to_imgui(kbd->key_defs[i]));
+                }
             }
         }
-        // Handle KB
+        // Handle controller 1
+        if (fsys->io.controller1) {
+            struct physical_io_device *pio = fsys->io.controller1;
+            if (pio->connected && pio->enabled) {
+                struct physical_io_device::physical_io_device_union::JSM_CONTROLLER *ctr = &fsys->io.controller1->device.controller;
+                for (u32 i = 0; i < cvec_len(&ctr->digital_buttons); i++) {
+                    struct HID_digital_button *db = (struct HID_digital_button *)cvec_get(&ctr->digital_buttons, i);
+                    db->state = ImGui::IsKeyPressed(jk_to_imgui(db->common_id));
+                }
+
+            }
+        }
     }
 }
+
 
 // Main code
 int main(int, char**)
 {
     struct inifile ini;
     load_inifile(&ini);
+    char BIOS_BASE_PATH[500];
+    char ROM_BASE_PATH[500];
+
+    struct kv_pair *kvp = inifile_get_or_make_key(&ini, "general", "bios_base_path");
+    assert(kvp);
+    snprintf(BIOS_BASE_PATH, sizeof(BIOS_BASE_PATH), "%s", kvp->str_value);
+
+    kvp = inifile_get_or_make_key(&ini, "general", "rom_base_path");
+    assert(kvp);
+    snprintf(BIOS_BASE_PATH, sizeof(ROM_BASE_PATH), "%s", kvp->str_value);
 
 #ifdef DO_DREAMCAST
     enum jsm_systems which = SYS_DREAMCAST;
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    enum jsm_systems which = SYS_ZX_SPECTRUM;
-    //enum jsm_systems which = SYS_GBC;
+    //enum jsm_systems which = SYS_ZX_SPECTRUM;
+    enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
 

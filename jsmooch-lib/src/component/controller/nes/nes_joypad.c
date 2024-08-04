@@ -73,6 +73,7 @@ void NES_joypad_setup_pio(struct physical_io_device *d, u32 num, const char*name
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;
+    d->enabled = 1;
 
     struct JSM_CONTROLLER* cnt = &d->device.controller;
 

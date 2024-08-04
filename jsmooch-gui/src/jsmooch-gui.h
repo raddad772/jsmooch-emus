@@ -32,15 +32,17 @@ struct full_system {
 
     u32 worked;
 
-    struct physical_io_device* controller1;
-    struct physical_io_device* controller2;
-    struct physical_io_device* display;
-    struct physical_io_device* chassis;
-    struct physical_io_device* keyboard;
-    struct physical_io_device* mouse;
-    struct physical_io_device* cartridge_port;
-    struct physical_io_device* disk_drive;
-    struct physical_io_device* audio_cassette;
+    struct {
+        struct physical_io_device *controller1;
+        struct physical_io_device *controller2;
+        struct physical_io_device *display;
+        struct physical_io_device *chassis;
+        struct physical_io_device *keyboard;
+        struct physical_io_device *mouse;
+        struct physical_io_device *cartridge_port;
+        struct physical_io_device *disk_drive;
+        struct physical_io_device *audio_cassette;
+    } io;
 };
 
 

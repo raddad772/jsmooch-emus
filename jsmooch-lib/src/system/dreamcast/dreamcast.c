@@ -408,7 +408,7 @@ static void DCIO_insert_disc(JSM, struct multi_file_set *mfs)
     GDI_load(mfs->files[0].path, mfs->files[0].name, &this->gdrom.gdi);
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id)
+static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     sprintf(b->name, "%s", name);

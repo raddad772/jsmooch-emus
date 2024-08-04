@@ -10,5 +10,6 @@
 #include "helpers/physical_io.h"
 
 enum ImGuiKey jk_to_imgui(enum JKEYS key_id);
+enum JKEYS dbcid_to_default(enum JKEYS key_id);
 
 #endif //JSMOOCH_EMUS_KEYMAP_TRANSLATE_H

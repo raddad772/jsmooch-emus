@@ -113,7 +113,7 @@ void ZXSpectrum_delete(JSM)
     jsm->describe_io = NULL;
 }
 
-static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id)
+static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
     sprintf(b->name, "%s", name);

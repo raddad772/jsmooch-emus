@@ -1,10 +1,12 @@
 //
 // Created by . on 8/4/24.
 //
+#include <stdio.h>
 
 #include "keymap_translate.h"
- enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {
-    switch (key_id) {
+
+enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {
+    switch (dbcid_to_default(key_id)) {
         case JK_0:
             return ImGuiKey_0;
         case JK_1:
@@ -164,5 +166,30 @@
         case JK_NONE:
             return ImGuiKey_None;
     }
+    printf("\nUnknown key attempted usage: %d", key_id);
     return ImGuiKey_None;
+}
+
+enum JKEYS dbcid_to_default(enum JKEYS key_id)
+{
+    if ((key_id < DBCID_begin) || (key_id > DBCID_end)) return key_id;
+    switch(key_id) {
+        case DBCID_co_up: return JK_UP;
+        case DBCID_co_down: return JK_DOWN;
+        case DBCID_co_left: return JK_LEFT;
+        case DBCID_co_right: return JK_RIGHT;
+        case DBCID_co_fire1: return JK_A;
+        case DBCID_co_fire2: return JK_S;
+        case DBCID_co_fire3: return JK_D;
+        case DBCID_co_start: return JK_ENTER;
+        case DBCID_co_select: return JK_TAB;
+        case DBCID_ch_power: return JK_Q;
+        case DBCID_ch_pause: return JK_W;
+        case DBCID_ch_reset: return JK_E;
+        case DBCID_ch_diff_left: return JK_B;
+        case DBCID_ch_diff_right: return JK_N;
+        case DBCID_ch_game_select: return JK_M;
+
+    }
+    return key_id;
 }

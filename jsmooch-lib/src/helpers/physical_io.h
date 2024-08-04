@@ -10,6 +10,7 @@
 #include "helpers/buf.h"
 
 enum JKEYS {
+    JK_NONE,
     JK_0,
     JK_1,
     JK_2,
@@ -88,7 +89,25 @@ enum JKEYS {
     JK_NUM_STAR,
     JK_NUM_LOCK,
     JK_NUM_CLEAR,
-    JK_NONE
+
+    // Digital button common IDs, for defaults
+    DBCID_begin,
+    DBCID_co_up = DBCID_begin,
+    DBCID_co_down,
+    DBCID_co_left,
+    DBCID_co_right,
+    DBCID_co_fire1,
+    DBCID_co_fire2,
+    DBCID_co_fire3,
+    DBCID_co_start,
+    DBCID_co_select,
+    DBCID_ch_power,
+    DBCID_ch_pause,
+    DBCID_ch_reset,
+    DBCID_ch_diff_left,
+    DBCID_ch_diff_right,
+    DBCID_ch_game_select,
+    DBCID_end = DBCID_ch_game_select
 };
 
 
@@ -110,25 +129,6 @@ enum DIGITAL_BUTTON_KIND {
     DBK_SWITCH
 };
 
-enum HID_digital_button_common_id {
-    DBCID_unknown,
-    DBCID_co_up,
-    DBCID_co_down,
-    DBCID_co_left,
-    DBCID_co_right,
-    DBCID_co_fire1,
-    DBCID_co_fire2,
-    DBCID_co_fire3,
-    DBCID_co_start,
-    DBCID_co_select,
-    DBCID_ch_power,
-    DBCID_ch_pause,
-    DBCID_ch_reset,
-    DBCID_ch_diff_left,
-    DBCID_ch_diff_right,
-    DBCID_ch_game_select
-};
-
 struct HID_digital_button {
     char name[40];
     enum DIGITAL_BUTTON_KIND kind;
@@ -136,7 +136,7 @@ struct HID_digital_button {
 
     u32 id;
 
-    enum HID_digital_button_common_id common_id;
+    enum JKEYS common_id;
 };
 
 struct HID_analog_axis {
@@ -220,6 +220,6 @@ struct physical_io_device {
 
 void physical_io_device_init(struct physical_io_device*, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
 void physical_io_device_delete(struct physical_io_device*);
-void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum HID_digital_button_common_id common_id);
+void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
 
 #endif //JSMOOCH_EMUS_PHYSICAL_IO_H
