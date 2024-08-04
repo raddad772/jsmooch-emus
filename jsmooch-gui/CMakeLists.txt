@@ -12,9 +12,9 @@ add_executable(jsmooch-gui
 )
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-FIND_PACKAGE(SDL2 REQUIRED)
+#FIND_PACKAGE(SDL2 REQUIRED)
 
-include_directories( ${SDL2_INCLUDE_DIR} )
+#include_directories( ${SDL2_INCLUDE_DIR} )
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src) # include files from ProjectB
 
 add_subdirectory(vendor/myimgui)
@@ -23,7 +23,7 @@ add_subdirectory(vendor/glfw3webgpu)
 # [...]
 
 
-target_link_libraries(jsmooch-gui jsmooch-lib ${SDL2_LIBRARIES} glfw webgpu glfw3webgpu imgui webgpu_dawn webgpu_cpp webgpu_glfw)
+target_link_libraries(jsmooch-gui jsmooch-lib glfw webgpu glfw3webgpu imgui webgpu_dawn webgpu_cpp webgpu_glfw)
 #target_link_libraries(jsmooch-gui PRIVATE )
 
 install(TARGETS jsmooch-gui RUNTIME DESTINATION bin)
