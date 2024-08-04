@@ -68,14 +68,17 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
         case SYS_SMS1:
             this->cpu_in = &SMSGG_bus_cpu_in_sms1;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
+            snprintf(jsm->label, sizeof(jsm->label), "Sega Master System");
             break;
         case SYS_SMS2:
             this->cpu_in = &SMSGG_bus_cpu_in_sms1;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
+            snprintf(jsm->label, sizeof(jsm->label), "Sega Master System II");
             break;
         case SYS_GG:
             this->cpu_in = &SMSGG_bus_cpu_in_gg;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
+            snprintf(jsm->label, sizeof(jsm->label), "Sega Game Gear");
             break;
         default:
             assert(1!=0);

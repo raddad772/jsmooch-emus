@@ -9,7 +9,7 @@
 
 struct buf {
     void *ptr;
-    u32 size;
+    u64 size;
 };
 
 void buf_init(struct buf*);
@@ -21,6 +21,7 @@ struct read_file_buf {
     struct buf buf;
     char path[255];
     char name[255];
+    u64 pos;
 };
 
 void rfb_init(struct read_file_buf*);

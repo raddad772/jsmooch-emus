@@ -50,6 +50,17 @@ void GB_new(JSM, enum GB_variants variant)
     buf_init(&this->BIOS);
 
 	this->variant = variant;
+    switch(variant) {
+        case DMG:
+            snprintf(jsm->label, sizeof(jsm->label), "Nintendo GameBoy");
+            break;
+        case GBC:
+            snprintf(jsm->label, sizeof(jsm->label), "Nintendo GameBoy Color");
+            break;
+        case SGB:
+            snprintf(jsm->label, sizeof(jsm->label), "Nintendo Super GameBoy");
+            break;
+    }
 	this->cycles_left = 0;
 
 	this->bus.DMA_read = &GB_bus_DMA_read;

@@ -15,6 +15,7 @@ jsmooch-emus/js
 jsmooch-emus/ts
 jsmooch-gui/js
 jsmooch-gui/ts
+cmake-*
 .DS_Store
 *.DS_Store*
 *.gb

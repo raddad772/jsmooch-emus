@@ -3,8 +3,8 @@
 
 #ifdef __cplusplus
 extern "C" {
-
 #endif
+
 #include "int.h"
 #include "enums.h"
 #include "buf.h"
@@ -79,6 +79,7 @@ struct framevars {
 
 struct jsm_system {
     void* ptr; // Pointer that holds the system
+    char label[50];
 
     enum jsm_systems kind; // Which system is it?
 

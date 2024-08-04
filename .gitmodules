@@ -4,3 +4,6 @@
 [submodule "jsmooch-gui/vendor/myimgui"]
 	path = jsmooch-gui/vendor/myimgui
 	url = git@github.com:raddad772/imgui.git
+[submodule "jsmooch-gui/vendor/glfw3webgpu"]
+	path = jsmooch-gui/vendor/glfw3webgpu
+	url = git@github.com:eliemichel/glfw3webgpu.git

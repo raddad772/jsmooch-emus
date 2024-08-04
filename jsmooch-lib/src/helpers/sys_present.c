@@ -5,6 +5,16 @@
 #include "sys_present.h"
 #include "stdio.h"
 
+static u32 to_RGBA(u32 val)
+{
+    // At some point in the past, for SDL2 on Mac, we had BGRA palettes.
+    // This will convert to RGBA for WebGPU.
+    u8 *v = (u8 *)&val;
+    return (v[3] << 24) | (v[0] << 16) | (v[1] << 8) | (v[2]);
+}
+
+
+
 static const u32 TIA_palette[128] = {
         0xff000000, 0xff444400, 0xff702800, 0xff841800,
         0xff880000, 0xff78005c, 0xff480078, 0xff140084,
@@ -82,7 +92,7 @@ void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 o
             u32 pal = (color & 0x08) >> 3;
             color &= 7;
 
-            imgdata[di] = ZXS_palette[pal][color];
+            imgdata[di] = to_RGBA(ZXS_palette[pal][color]);
         }
     }
 
@@ -103,7 +113,7 @@ void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out
                 col = TIA_palette[*iptr];
 
             //col = ((col & 0xFF) << 24) | ((col & 0xFFFFFF00) >> 8);
-            col = (col & 0xFF00FF00) | ((col & 0xFF0000) >> 16) | ((col & 0xFF) << 16);
+            //col = (col & 0xFF00FF00) | ((col & 0xFF0000) >> 16) | ((col & 0xFF) << 16);
             *optr = col;
             iptr++;
         }
@@ -184,9 +194,9 @@ void GBC_present(struct physical_io_device *device, void *out_buf, u32 out_width
             g *= 255;
             b *= 255;*/
 
-            *(optr) = (u8)r;
+            *(optr) = (u8)b;
             *(optr+1) = (u8)g;
-            *(optr+2) = (u8)b;
+            *(optr+2) = (u8)r;
             *(optr+3) = 255;
         }
     }
@@ -246,7 +256,7 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width
             u32 b_nes = (nesyw + nes_x);
             u32 b_out = (outyw + out_x);
 
-            img32[b_out] = NES_palette[neso[b_nes]];
+            img32[b_out] = to_RGBA(NES_palette[neso[b_nes]]);
         }
     }
 
@@ -325,9 +335,9 @@ void SMS_present(struct physical_io_device *device, void *out_buf, u32 out_width
             b = ((color >> 4) & 3) * 0x55;
             g = ((color >> 2) & 3) * 0x55;
             r = (color & 3) * 0x55;
-            img8[b_out] = b;
+            img8[b_out] = r;
             img8[b_out+1] = g;
-            img8[b_out+2] = r;
+            img8[b_out+2] = b;
             img8[b_out+3] = 255;
         }
     }

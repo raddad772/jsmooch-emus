@@ -40,6 +40,7 @@ void NES_new(JSM)
     NES_PPU_init(&this->ppu, this);
     NES_cart_init(&this->cart, this);
     NES_mapper_init(&this->bus, this);
+    snprintf(jsm->label, sizeof(jsm->label), "Nintendo Entertainment System");
 
     this->described_inputs = 0;
 

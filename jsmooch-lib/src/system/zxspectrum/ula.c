@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 
@@ -14,13 +15,13 @@
 #define BTHIS struct ZXSpectrum_ULA* this = &bus->ula
 
 static u32 ZXSpectrum_keyboard_halfrows[8][5] = {
+        { JK_CAPS, JK_Z, JK_X, JK_C, JK_V },
+        { JK_A, JK_S, JK_D, JK_F, JK_G },
+        { JK_Q, JK_W, JK_E, JK_R, JK_T },
         { JK_1, JK_2, JK_3, JK_4, JK_5 },
         { JK_0, JK_9, JK_8, JK_7, JK_6 },
-        { JK_Q, JK_W, JK_E, JK_R, JK_T },
         { JK_P, JK_O, JK_I, JK_U, JK_Y },
-        { JK_A, JK_S, JK_D, JK_F, JK_G },
         { JK_ENTER, JK_L, JK_K, JK_J, JK_H },
-        { JK_CAPS, JK_Z, JK_X, JK_C, JK_V },
         { JK_SPACE, JK_SHIFT, JK_M, JK_N, JK_B }
 };
 
@@ -142,13 +143,30 @@ void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus)
     this->next_attr = 0;
 }
 
-static u32 kb_scan_row(struct ZXSpectrum_ULA* this, u32 *row) {
+static u32 get_keypress(struct ZXSpectrum* bus, enum JKEYS key)
+{
+    struct physical_io_device *d = cvec_get(bus->ula.keyboard_devices, bus->ula.keyboard_device_index);
+    struct JSM_KEYBOARD *kbd = &d->device.keyboard;
+    i32 v = -1;
+    for (u32 i = 0; i < kbd->num_keys; i++) {
+        if (kbd->key_defs[i] == key) {
+            v = (i32)kbd->key_states[i];
+            if (v != 0)
+                printf("\nKEY %d val:1", kbd->key_defs[i]);
+        }
+    }
+    if (v == -1) {
+        printf("\nUNKNOWN KEY %d", key);
+    }
+    return v == 0xFFFF ? 0 : v;
+}
+
+static u32 kb_scan_row(struct ZXSpectrum* bus, const u32 *row) {
     u32 out = 0xE0;
     for (u32 i = 0; i < 5; i++) {
         u32 key = row[i];
-        //u32 kp = this->kb_buffer[key];
-        u32 kp = 0;
-        kp ^= 1;
+        u32 kp = get_keypress(bus, key) ^ 1;
+        assert((kp >=0) && (kp <= 1));
         out |= kp << i;
     }
     return out;
@@ -164,10 +182,9 @@ u32 ZXSpectrum_ULA_reg_read(struct ZXSpectrum* bus, u32 addr) {
     u32 hi = (addr >> 8) ^ 0xFF;
     u32 out = 0xFF;
     for (u32 i = 0; i < 8; i++) {
-        if (hi & i) out &= kb_scan_row(this, ZXSpectrum_keyboard_halfrows[i]);
+        if (hi & (1 << i)) out &= kb_scan_row(bus, ZXSpectrum_keyboard_halfrows[i]);
     }
     
-    //return out;
     return out;
 }
 

@@ -52,14 +52,17 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
         case mac128k:
             this->RAM_size = 128 * 1024;
             this->ROM_size = 64 * 1024;
+            snprintf(jsm->label, sizeof(jsm->label), "Mac Classic 128K");
             break;
         case mac512k:
             this->RAM_size = 512 * 1024;
             this->ROM_size = 64 * 1024;
+            snprintf(jsm->label, sizeof(jsm->label), "Mac Classic 512K");
             break;
         case macplus_1mb:
             this->RAM_size = 1 * 1024 * 1024;
             this->ROM_size = 128 * 1024;
+            snprintf(jsm->label, sizeof(jsm->label), "Mac Plus 1MB");
             break;
         default:
             assert(1==2);

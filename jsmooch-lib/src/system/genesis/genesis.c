@@ -54,6 +54,7 @@ void genesis_new(JSM)
     genesis_VDP_init(this);
     ym2612_init(&this->ym2612);
     SN76489_init(&this->psg);
+    snprintf(jsm->label, sizeof(jsm->label), "Sega Genesis");
 
     struct jsm_debug_read_trace dt;
     dt.read_trace = &read_trace_z80;

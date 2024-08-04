@@ -198,6 +198,10 @@ add_library(jsmooch-lib
         src/component/misc/via6522/via6522.h
         src/helpers/debugger/debugger.h
         src/ooc/ooc.h
+        src/helpers/inifile.c
+        src/helpers/inifile.h
+        src/helpers/file_exists.c
+        src/helpers/file_exists.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

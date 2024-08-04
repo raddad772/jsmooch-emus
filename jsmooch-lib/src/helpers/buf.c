@@ -4,6 +4,7 @@
 
 #include "assert.h"
 #include <stdio.h>
+#include "file_exists.h"
 #include "string.h"
 #include "stdlib.h"
 
@@ -51,14 +52,27 @@ void rfb_init(struct read_file_buf* this){
     buf_init(&this->buf);
     this->path[0] = 0;
     this->name[0] = 0;
+    this->pos = 0;
 }
 
 int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
 {
     char OUTPATH[500];
-    sprintf(OUTPATH, "%s/%s", fpath, fname);
-    strncpy(rfb->name, fname, 255);
-    strncpy(rfb->path, fpath, 255);
+    if (fname == NULL) {
+        snprintf(OUTPATH, 500, "%s", fpath);
+        strncpy(rfb->path, fpath, 255);
+        snprintf(rfb->name, 255, "");
+    }
+    else {
+        snprintf(OUTPATH, 500, "%s/%s", fpath, fname);
+        strncpy(rfb->name, fname, 255);
+        strncpy(rfb->path, fpath, 255);
+    }
+    if (!file_exists(OUTPATH)) {
+        printf("\nFILE %s NOT FOUND", OUTPATH);
+        return 0;
+    }
+
 
     FILE *fil = fopen(OUTPATH, "rb");
     fseek(fil, 0L, SEEK_END);
@@ -68,7 +82,7 @@ int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
     fread(rfb->buf.ptr, sizeof(char), rfb->buf.size, fil);
 
     fclose(fil);
-    return 0;
+    return 1;
 }
 
 void rfb_delete(struct read_file_buf *rfb)
@@ -95,6 +109,8 @@ void mfs_delete(struct multi_file_set* this)
 void mfs_add(const char *fname, const char *fpath, struct multi_file_set *this)
 {
     assert(this->num_files < (MFS_MAX - 1));
-    rfb_read(fname, fpath, &this->files[this->num_files]);
+    if (!rfb_read(fname, fpath, &this->files[this->num_files])) {
+        printf("\nERROR GETTING FILE %s", fname);
+    };
     this->num_files++;
 }

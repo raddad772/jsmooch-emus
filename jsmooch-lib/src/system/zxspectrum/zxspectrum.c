@@ -47,6 +47,7 @@ void ZXSpectrum_new(JSM)
 
  */
 
+    snprintf(jsm->label, sizeof(jsm->label), "ZX Spectrum");
     ZXSpectrum_ULA_init(&this->ula);
     ZXSpectrum_tape_deck_init(this);
     Z80_init(&this->cpu, 0);
@@ -142,6 +143,7 @@ static void setup_keyboard(struct ZXSpectrum* this)
     d->id = 0;
     d->kind = HID_KEYBOARD;
     d->connected = 1;
+    d->enabled = 1;
 
     struct JSM_KEYBOARD* kbd = &d->device.keyboard;
     memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
@@ -149,6 +151,9 @@ static void setup_keyboard(struct ZXSpectrum* this)
 
     for (u32 i = 0; i < 40; i++) {
        kbd->key_defs[i] = ZXSpectrum_keyboard_keymap[i];
+       if (ZXSpectrum_keyboard_keymap[i] == JK_SPACE) {
+           printf("\nSPAE SETUP AT %d", i);
+       }
     }
 }
 
@@ -398,6 +403,8 @@ static void ZXSpectrumIO_remove_tape(JSM)
 
     // controllers
     setup_keyboard(this);
+    this->ula.keyboard_devices = IOs;
+    this->ula.keyboard_device_index = 0;
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -429,9 +436,6 @@ static void ZXSpectrumIO_remove_tape(JSM)
     this->ula.cur_output = (u8 *)d->device.display.output[0];
     d->device.display.last_written = 1;
     d->device.display.last_displayed = 1;
-
-    this->ula.keyboard_devices = IOs;
-    this->ula.keyboard_device_index = 3;
 }
 
 void ZXSpectrumJ_enable_tracing(JSM)
@@ -489,7 +493,6 @@ u32 ZXSpectrumJ_finish_frame(JSM)
         ZXSpectrumJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    printf("\nScanlines: %d", scanlines);
     return this->ula.display->device.display.last_written;
 }
 

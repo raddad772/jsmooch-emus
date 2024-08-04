@@ -87,7 +87,8 @@ enum JKEYS {
     JK_NUM_DIVIDE,
     JK_NUM_STAR,
     JK_NUM_LOCK,
-    JK_NUM_CLEAR
+    JK_NUM_CLEAR,
+    JK_NONE
 };
 
 
@@ -166,7 +167,7 @@ struct physical_io_device {
         } controller;
 
         struct JSM_KEYBOARD {
-            u32 key_defs[100];
+            enum JKEYS key_defs[100];
             u32 key_states[100];
             u32 num_keys;
         } keyboard;

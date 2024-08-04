@@ -53,6 +53,7 @@ void atari2600_new(JSM)
     M6532_init(&this->riot);
     TIA_init(&this->tia);
     atari2600_cart_init(&this->cart);
+    snprintf(jsm->label, sizeof(jsm->label), "Atari 2600");
 
     this->case_switches.reset = 0;
     this->case_switches.select = 0;

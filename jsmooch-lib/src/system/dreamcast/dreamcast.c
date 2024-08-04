@@ -56,6 +56,7 @@ void DC_new(JSM)
     struct DC* this = (struct DC*)malloc(sizeof(struct DC));
     scheduler_init(&this->scheduler);
     this->scheduler.jitter = JITTER;
+    snprintf(jsm->label, sizeof(jsm->label), "Sega Dreamcast");
 
     dbg.dcptr = this;
 

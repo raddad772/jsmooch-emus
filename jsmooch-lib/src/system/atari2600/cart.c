@@ -33,7 +33,7 @@ void atari2600_cart_load_ROM_from_RAM(struct atari2600_cart* this, char *fil, u6
     printf("\nAllocate cart %lld", file_sz);
     buf_allocate(&this->ROM, file_sz);
     memcpy(this->ROM.ptr, fil, file_sz);
-    printf("\nROM SIZE %d", this->ROM.size);
+    printf("\nROM SIZE %lld", this->ROM.size);
     if (file_sz == 2048) {
         this->addr_mask = 0x7FF;
     }

@@ -24,7 +24,6 @@ void dbg_init()
     init_already = 1;
     dbg.watch = 0;
     dbg.first_flush = 1;
-    printf("\nDBG INIT!");
     dbg.do_break = false;
     dbg.trace_on = 0;
     dbg.msg_last_newline = 0;
