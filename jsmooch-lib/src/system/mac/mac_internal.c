@@ -289,6 +289,8 @@ void mac_step_eclock(struct mac* this)
             this->via.regs.IFR |= 1;
         }
     }
+
+    mac_iwm_clock(this);
 }
 
 void mac_step_bus(struct mac* this)
@@ -576,7 +578,8 @@ void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val)
             mac_via_irq_sample(this);
 
             if ((this->via.regs.ORA & 0x20) != (val & 0x20)) {
-                printf("\nFLOPPY CHANGE SEL line via Via A to: %d", (val >> 5));
+                this->iwm.lines.SELECT = (val >> 5) & 1;
+                printf("\nFLOPPY CHANGE SEL line via Via A to: %d", (val >> 5) & 1);
             }
             this->via.regs.ORA = val;
 

@@ -77,13 +77,20 @@ struct mac {
 
     struct {
         struct JSMAC_DRIVE {
-            struct mac_floppy* disk;
+            struct mac_floppy* disc;
 
             u32 RPM;
+            u32 pwm_val;
 
             struct {
                 u32 current_data;
                 u32 track_num; // reset to 0 at power on
+
+                struct {
+                    u32 status;
+                    u64 start;
+                    u64 end;
+                } stepping;
             } head;
 
             u64 last_RPM_change_time;
@@ -91,11 +98,16 @@ struct mac {
 
             u32 io_index;
             u32 motor_on;
+            u32 disk_switched;
 
             u32 head_step_direction;
             struct JSM_DISC_DRIVE *device;
 
             u32 connected;
+
+            u64 input_clock_cnt;
+
+            u32 pwm_len, pwm_pos;
         } drive[2];
 
         struct cvec my_disks;

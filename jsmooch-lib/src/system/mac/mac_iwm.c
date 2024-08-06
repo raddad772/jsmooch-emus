@@ -7,7 +7,7 @@
 
 #include "mac_internal.h"
 void mac_iwm_init(struct mac* mac) {
-    cvec_init(&mac->iwm.my_disks, sizeof(struct mac_floppy), 2);
+    cvec_init(&mac->iwm.my_disks, sizeof(struct mac_floppy), 10);
     mac->iwm.active = IWMM_IDLE;
     mac->iwm.rw = IWMM_IDLE;
     mac->iwm.regs.data = 0;
@@ -17,6 +17,16 @@ void mac_iwm_init(struct mac* mac) {
     mac->iwm.regs.write_handshake = 0xBD;
     mac->iwm.selected_drive = -1;
     mac->iwm.cur_drive = NULL;
+
+    for (u32 i = 0; i < 2; i++) {
+        mac->iwm.drive[i].pwm_len = 65000;
+        mac->iwm.drive[i].pwm_pos = 0;
+    }
+
+    struct mac_floppy *f = cvec_push_back(&mac->iwm.my_disks);
+    mac_floppy_init(f);
+    f->write_protect = 0;
+    mac->iwm.drive[0].disc = f;
 }
 
 void mac_iwm_delete(struct mac* mac) {
@@ -43,7 +53,7 @@ static void drive_write_motor_on(struct mac* this, u8 onoff)
 {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
 
-    if (drv->disk == NULL) { // No disk inserted
+    if (drv->disc == NULL) { // No disk inserted
         return;
     }
 
@@ -69,14 +79,14 @@ static void drive_select(struct mac* this, u8 towhich)
 static u32 floppy_inserted(struct mac* this)
 {
     if (this->iwm.cur_drive == NULL) return 0;
-    if (this->iwm.cur_drive->disk == NULL) return 0;
+    if (this->iwm.cur_drive->disc == NULL) return 0;
     return 1;
 }
 
 static u32 floppy_write_protected(struct mac* this) {
     if (this->iwm.cur_drive == NULL) return 0;
-    if (this->iwm.cur_drive->disk == NULL) return 0;
-    return this->iwm.cur_drive->disk->write_protect;
+    if (this->iwm.cur_drive->disc == NULL) return 0;
+    return this->iwm.cur_drive->disc->write_protect;
 
 }
 
@@ -118,6 +128,144 @@ static void update_phases(struct mac* this)
         updates_drive_phases(this, m_phases_cb)*/
 }
 
+static void drive_do_step(struct mac* this, struct JSMAC_DRIVE *drv)
+{
+    if (drv->head_step_direction == 0) {
+        if (drv->head.track_num > 0) {
+            drv->head.track_num -= 1;
+            printf("\nTRACK CHANGE DOWN TO %d", drv->head.track_num);
+        }
+    }
+    else {
+        if (drv->disc) {
+            if ((drv->head.track_num + 1) < drv->disc->disc.tracks.len) {
+                drv->head.track_num += 1;
+                printf("\nTRACK CHANGE UP TO %d", drv->head.track_num);
+            }
+        }
+    }
+
+    drv->head.stepping.start = this->clock.master_cycles;
+    drv->head.stepping.status = 1;
+    drv->head.stepping.end = this->clock.master_cycles + ((704*370 * 60) / 100); //10ms
+}
+
+static u32 get_drive_reg(struct mac* this) {
+    struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
+
+    u8 reg = (this->iwm.lines.CA0 | (this->iwm.lines.CA1 << 1) | (this->iwm.lines.CA2 << 2) | (this->iwm.lines.SELECT << 3));
+    u32 v = 0;
+
+    switch (reg) {
+        case 0:
+            v = drv->head_step_direction;
+            printf("\nSTATUSREG.0: head step direction: %d", v);
+            return v;
+        case 1: // head is stepping = 0. head is NOT stepping = 1
+            v = drv->head.stepping.status == 0;
+            printf("\nSTATUSREG.1: head step status: %d", v);
+            return v;
+        case 2: // 0 = motor on, 1 = motor stopped
+            v = drv->motor_on == 0;
+            printf("\nSTATUSREG.2: motor power on: %d", v);
+            return v;
+        case 3:
+            v = drv->disk_switched;
+            printf("\nSTATUSREG.3: motor power on: %d", v);
+            return v;
+        case 4:
+            v = 1;
+            printf("\nSTATUSREG.4: head #: %d", v);
+            return v;
+        case 5:
+            v = 0;
+            printf("\nSTATUSREG.5: is_superdrive: %d", v);
+            return v;
+        case 6:
+            v = 0;
+            printf("\nSTATUSREG.6: # sides: %d", v);
+            return v;
+        case 7: //
+            v = 1;
+            printf("\nSTATUSREG.7: drive installed: %d", v);
+            return v;
+        case 8: // 0 = disk in drive, 1 = no disk
+            v = drv->disc ? 0 : 1;
+            printf("\nSTATUSREG.8: disk inserted: %d", v);
+            return v;
+        case 9:
+            if (drv->disc)
+                v = drv->disc->write_protect;
+            else v = 0;
+            printf("\nSTATUSREG.9: drive locked: %d", v);
+            return v;
+
+        case 10:
+            v = drv->head.track_num != 0;
+            printf("\nSTATUSREG.A: !head track0: %d", v);
+            return v;
+        case 11: {
+            u32 pwm = 65536 - drv->pwm_val;
+
+            v = ((((120 * pwm) / 32768) * drv->pwm_pos) / drv->pwm_len) & 1;
+            v = !v;
+            printf("\nSTATUSREG.B: tachometer: %d", v);
+            return (v == 0); }
+        case 12:
+            v = 1;
+            printf("\nSTATUSREG.C: head: %d", v);
+            return v;
+        case 13:
+            printf("\nSTATUSREG.D: none: 1");
+            return 1;
+        case 14:
+            v = 1;
+            printf("\nSTATUSREG.E: ready: %d", v);
+            return v;
+        case 15:
+            v = 1;
+            printf("\nSTATUSREG.F: new interface: %d", v);
+            return v;
+    }
+    assert(1==0);
+}
+
+void mac_iwm_clock(struct mac* this)
+{
+    u32 clk, bit;
+    struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
+    clk = drv->input_clock_cnt + 500000UL;
+    bit = clk / (7833600 * 2);
+    clk = clk % (7833600 * 2);
+    drv->input_clock_cnt = clk;
+
+    /*if (drv->cur_track_len > 0) {
+        drv->cur_track_pos += bit;
+
+        while (drv->cur_track_pos >= drv->cur_track_len) {
+            drv->cur_track_pos -= drv->cur_track_len;
+        }
+    }*/
+
+    if (drv->pwm_len > 0) {
+        drv->pwm_pos += bit;
+
+        if (drv->pwm_pos >= drv->pwm_len) {
+            drv->pwm_pos -= drv->pwm_len;
+        }
+    }
+
+    /*if (iwm->writing) {
+        mac_iwm_write (iwm, drv);
+    }
+    else if ((iwm->lines & (MAC_IWM_Q6 | MAC_IWM_Q7)) == 0) {
+        mac_iwm_read (iwm, drv);
+    }
+
+    drv->read_pos = drv->cur_track_pos;
+    drv->write_pos = drv->cur_track_pos;*/
+}
+
 static void set_drive_reg(struct mac* this)
 {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
@@ -125,39 +273,41 @@ static void set_drive_reg(struct mac* this)
 
     u8 val = this->iwm.lines.CA2;
 
-    switch(reg) {
-        case 0:
-    }
-}
-
     switch (reg) {
-        case 0:
-            iwm_drv_set_step_direction (drv, val == 0);
+        case 0: {
+            printf("\nDRV%d WRITE CMD.STEP DIR:%d  cyc:%lld", this->iwm.selected_drive, val, this->clock.master_cycles);
+            drv->head_step_direction = val;
             break;
-
+        }
         case 1:
             if (val == 0) {
-                iwm_drv_set_step (drv);
+                printf("\nDRV%d WRITE CMD.DO STEP   cyc:%lld", this->iwm.selected_drive, this->clock.master_cycles);
+                drive_do_step(this, drv);
             }
             break;
 
         case 2:
-            iwm_drv_set_motor_on (drv, val == 0);
-            mac_iwm_set_motor (iwm);
+            drv->motor_on = val == 0;
+            printf("\nDRV%d WRITE CMD.MOTOR ON:%d    cyc:%lld", this->iwm.selected_drive, val == 0,
+                   this->clock.master_cycles);
+            /*iwm_drv_set_motor_on (drv, val == 0);
+            mac_iwm_set_motor (iwm);*/
             break;
-
         case 3:
             if (val) {
-                iwm_drv_set_eject (drv);
+                printf("\nDRV%d EJECT    cyc:%lld", this->iwm.selected_drive, this->clock.master_cycles);
             }
             break;
-
         case 4:
             if (val) {
-                iwm_drv_set_disk_switched (drv);
+                printf("\nDRV%d CLEAR DISK SWITCHED   cyc:%lld", this->iwm.selected_drive, this->clock.master_cycles);
+                drv->disk_switched = 0;
             }
             break;
-
+        default:
+            printf("\nDRV%d unknown reg:%d val:%d   cyc:%lld", this->iwm.selected_drive, reg, val, this->clock.master_cycles);
+            break;
+    }
 }
 
 static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
@@ -287,7 +437,8 @@ static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
             if (!is_write) printf("\nREAD FLOPPY HANDSHAKE REGISTER: %02x cyc:%lld", v, this->clock.master_cycles);
             return v; }
         case 0b10: {// read status register. Q6=1, Q7=0
-            v = (this->iwm.regs.status.u & 0x7F) | (((!floppy_inserted(this)) || floppy_write_protected(this)) ? 0x80 : 0);
+            v = (this->iwm.regs.status.u & 0x7F);
+            v |= get_drive_reg(this) ? 0x80 : 0;
             if (!is_write) printf("\nREAD FLOPPY STATUS REGISTER: %02x phases:%02x sel:%d cyc:%lld", v, this->iwm.lines.phases, this->iwm.lines.SELECT, this->clock.master_cycles);
             return v; }
         case 0b11: {

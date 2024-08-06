@@ -19,6 +19,7 @@ void mac_iwm_reset(struct mac *);
 
 u16 mac_iwm_read(struct mac *, u8 addr);
 void mac_iwm_write(struct mac *, u8 addr, u8 val);
+void mac_iwm_clock(struct mac*);
 
 #ifdef __cplusplus
 }
