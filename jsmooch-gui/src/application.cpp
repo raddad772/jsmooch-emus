@@ -206,7 +206,8 @@ int main(int, char**)
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_ZX_SPECTRUM;
-    enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_NES;
+    enum jsm_systems which = SYS_MAC512K;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
 

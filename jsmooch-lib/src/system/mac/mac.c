@@ -48,6 +48,7 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
 {
     struct mac* this = (struct mac*)calloc(1, sizeof(struct mac));
     this->kind = variant;
+    mac_clock_init(this);
     switch(variant) {
         case mac128k:
             this->RAM_size = 128 * 1024;
@@ -81,6 +82,8 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
     dt.ptr = (void*)this;
     M68k_setup_tracing(&this->cpu, &dt, &this->clock.master_cycles);
 
+    mac_iwm_init(this);
+
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
     this->jsm.cycles_left = 0;
@@ -109,6 +112,7 @@ void mac_delete(struct jsm_system* jsm)
     JTHIS;
 
     M68k_delete(&this->cpu);
+    mac_iwm_delete(this);
     //via6522_delete(&this->via);
     /*
     while (cvec_len(this->jsm.IOs) > 0) {
@@ -193,7 +197,7 @@ void macJ_describe_io(JSM, struct cvec *IOs)
 
     this->IOs = IOs;
 
-    // chassis - power and reset buttons
+    // chassis - power and reset buttons - 0
     struct physical_io_device* chassis = cvec_push_back(IOs);
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
@@ -202,7 +206,7 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    // keyboard
+    // keyboard - 1
     setup_keyboard(this);
     this->keyboard.IOs = IOs;
     this->keyboard.keyboard_index = 1;
@@ -214,8 +218,13 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     d->device.disc_drive.remove_disc = NULL;
     d->device.disc_drive.close_drive = NULL;
     d->device.disc_drive.open_drive = NULL;
-    this->disc_drive.IOs = IOs;
-    this->disc_drive.disc_drive_index = 2;
+    this->iwm.drive[0].device = NULL;
+    this->iwm.drive[0].io_index = 2;
+    this->iwm.drive[1].device = NULL;
+    this->iwm.drive[0].connected = 1;
+    this->iwm.drive[1].connected = 0;
+
+    this->iwm.IOs = IOs;
 
     // screen - 3
     d = cvec_push_back(IOs);
@@ -270,6 +279,7 @@ void macJ_reset(JSM)
     M68k_reset(&this->cpu);
     mac_display_reset(this);
     mac_reset_via(this);
+    mac_iwm_reset(this);
     this->io.irq.iswitch = this->io.irq.scc = this->io.irq.via = 0;
     this->io.eclock = 0;
     this->io.ROM_overlay = 1;

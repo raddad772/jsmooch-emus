@@ -202,6 +202,14 @@ add_library(jsmooch-lib
         src/helpers/inifile.h
         src/helpers/file_exists.c
         src/helpers/file_exists.h
+        src/component/audio/ay_3_8910/ay_3_8910.c
+        src/component/audio/ay_3_8910/ay_3_8910.h
+        src/component/floppy/generic_floppy.c
+        src/component/floppy/generic_floppy.h
+        src/component/floppy/mac_floppy.c
+        src/component/floppy/mac_floppy.h
+        src/system/mac/mac_iwm.c
+        src/system/mac/mac_iwm.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

@@ -104,10 +104,15 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gameboy", BASE_PATH);
             mfs_add("gbc_bios.bin", BIOS_PATH, BIOSes);
             break;
-        case SYS_ZX_SPECTRUM:
+        case SYS_ZX_SPECTRUM_48K:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
             mfs_add("zx48.rom", BIOS_PATH, BIOSes);
+            break;
+        case SYS_ZX_SPECTRUM_128K:
+            has_bios = 1;
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
+            mfs_add("zx128.rom", BIOS_PATH, BIOSes);
             break;
         case SYS_MAC128K:
             has_bios = 1;
@@ -183,7 +188,8 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/nes", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_ZX_SPECTRUM:
+        case SYS_ZX_SPECTRUM_48K:
+        case SYS_ZX_SPECTRUM_128K:
             snprintf(out, out_sz, "%s/zx_spectrum", BASER_PATH);
             *worked = 1;
             break;
@@ -217,7 +223,7 @@ void mfs_add_IP_BIN(struct multi_file_set* mfs)
     char ROM_PATH[255];
     u32 worked = 0;
 
-    GET_HOME_BASE_SYS(BASE_PATH, 255, SYS_DREAMCAST, NULL, &worked);
+    GET_HOME_BASE_SYS(BASE_PATH, 255, SYS_DREAMCAST, nullptr, &worked);
     if (worked == 0) return;
 
     mfs_add("IP.BIN", BASE_PATH, mfs);
@@ -240,9 +246,10 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
 
 struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec* IOs, struct multi_file_set* mfs)
 {
-    struct physical_io_device *pio = NULL;
+    struct physical_io_device *pio = nullptr;
     switch(sys->kind) {
-        case SYS_ZX_SPECTRUM:
+        case SYS_ZX_SPECTRUM_48K:
+        case SYS_ZX_SPECTRUM_128K:
         case SYS_DREAMCAST:
             for (u32 i = 0; i < cvec_len(IOs); i++) {
                 pio = (struct physical_io_device*)cvec_get(IOs, i);
@@ -251,21 +258,21 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
                     break;
                 }
                 else if (pio->kind == HID_AUDIO_CASSETTE) {
-                    ///pio->device.audio_cassette.insert_tape(mfs);
+                    pio->device.audio_cassette.insert_tape(sys, mfs, NULL);
                     break;
                 }
-                pio = NULL;
+                pio = nullptr;
             }
             return pio;
     }
-    pio = NULL;
+    pio = nullptr;
     for (u32 i = 0; i < cvec_len(IOs); i++) {
         pio = (struct physical_io_device*)cvec_get(IOs, i);
         if (pio->kind == HID_CART_PORT) break;
-        pio = NULL;
+        pio = nullptr;
     }
     // TODO: add sram support
-    if (pio) pio->device.cartridge_port.load_cart(sys, mfs, NULL);
+    if (pio) pio->device.cartridge_port.load_cart(sys, mfs, nullptr);
     return pio;
 }
 
@@ -400,20 +407,20 @@ struct full_system setup_system(enum jsm_systems which)
     u32 worked = 0;
     switch(which) {
         case SYS_NES:
-            worked = grab_ROM(&ROMs, which, "mario3.nes", NULL);
+            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             break;
         case SYS_SMS1:
         case SYS_SMS2:
-            worked = grab_ROM(&ROMs, which, "sonic.sms", NULL);
+            worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             break;
         case SYS_DMG:
-            worked = grab_ROM(&ROMs, which, "marioland2.gb", NULL);
+            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "pokemonyellow.gbc", NULL);
+            worked = grab_ROM(&ROMs, which, "pokemonyellow.gbc", nullptr);
             break;
         case SYS_ATARI2600:
-            worked = grab_ROM(&ROMs, which, "space_invaders.a26", NULL);
+            worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
             break;
         case SYS_DREAMCAST:
             worked = grab_ROM(&ROMs, which, "crazytaxi.gdi", "crazy_taxi");
@@ -421,11 +428,12 @@ struct full_system setup_system(enum jsm_systems which)
         case SYS_MAC512K:
         case SYS_MAC128K:
         case SYS_MACPLUS_1MB:
-        case SYS_ZX_SPECTRUM:
+        case SYS_ZX_SPECTRUM_48K:
+        case SYS_ZX_SPECTRUM_128K:
             worked = 1;
             break;
         case SYS_GENESIS:
-            worked = grab_ROM(&ROMs, which, "sonic.md", NULL);
+            worked = grab_ROM(&ROMs, which, "sonic.md", nullptr);
             break;
         default:
             printf("\nSYS NOT IMPLEMENTED!");

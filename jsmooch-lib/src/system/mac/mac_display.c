@@ -61,7 +61,7 @@ static void new_frame(struct mac* this)
 
 static void calc_display_addr(struct mac* this)
 {
-    u32 base_addr = DISPLAY_BASE | ((this->via.regs.regA & 0x40) << 8);
+    u32 base_addr = DISPLAY_BASE | ((this->via.regs.ORB & 0x40) << 8);
 
     if (this->kind == mac512k) base_addr += MAC512K_OFFSET;
 
@@ -108,7 +108,7 @@ void mac_step_display2(struct mac* this)
     /*
      * Frame timings are...
      * 512 x 342 visible pixels.  +192 hblank pixels = 704 total
-     * 28 vblank lines  = 540 total
+     * 28 vblank lines  = 370 total
      */
 
     this->display.scanline_func(this);

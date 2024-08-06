@@ -53,8 +53,11 @@ struct jsm_system* new_system(enum jsm_systems which)
         case SYS_DREAMCAST:
             DC_new(out);
             break;
-        case SYS_ZX_SPECTRUM:
-            ZXSpectrum_new(out);
+        case SYS_ZX_SPECTRUM_48K:
+            ZXSpectrum_new(out, ZXS_spectrum48);
+            break;
+        case SYS_ZX_SPECTRUM_128K:
+            ZXSpectrum_new(out, ZXS_spectrum128);
             break;
         default:
             printf("CREATE UNKNOWN SYSTEM!");
@@ -94,7 +97,8 @@ void jsm_delete(struct jsm_system* jsm)
         case SYS_DREAMCAST:
             DC_delete(jsm);
             break;
-        case SYS_ZX_SPECTRUM:
+        case SYS_ZX_SPECTRUM_48K:
+        case SYS_ZX_SPECTRUM_128K:
             ZXSpectrum_delete(jsm);
             break;
         default:

@@ -12,7 +12,9 @@
 
 #include "component/misc/via6522/via6522.h"
 #include "component/cpu/m68000/m68000.h"
+#include "component/floppy/mac_floppy.h"
 
+#include "mac_iwm.h"
 #include "mac.h"
 
 struct mac_clock {
@@ -22,6 +24,18 @@ struct mac_clock {
     struct {
         u32 hpos, vpos;
     } crt;
+
+    struct {
+        u64 cycles_per_frame;
+    } timing;
+};
+
+enum iwm_modes {
+        IWMM_IDLE,
+        IWMM_MOTOR_STOP_DELAY,
+        IWMM_ACTIVE,
+        IWMM_READ,
+        IWMM_WRITE
 };
 
 struct mac {
@@ -30,8 +44,9 @@ struct mac {
     struct mac_clock clock;
     struct mac_via {
         struct {
-            u8 regA, regB;
-            u8 dirA, dirB;
+            u8 IRA, ORA; // Input and Output Register A
+            u8 IRB, ORB; // Input and Output Register B
+            u8 dirA, dirB; // Direction for A and B. 1 = output, 0 = input
             u16 T1C; // timer 1 count
             u16 T1L; // timer 1 latch
             u16 T2C; // timer 2 count
@@ -61,13 +76,80 @@ struct mac {
     } sound;
 
     struct {
+        struct JSMAC_DRIVE {
+            struct mac_floppy* disk;
+
+            u32 RPM;
+
+            struct {
+                u32 current_data;
+                u32 track_num; // reset to 0 at power on
+            } head;
+
+            u64 last_RPM_change_time;
+            float last_RPM_change_pos;
+
+            u32 io_index;
+            u32 motor_on;
+
+            u32 head_step_direction;
+            struct JSM_DISC_DRIVE *device;
+
+            u32 connected;
+        } drive[2];
+
+        struct cvec my_disks;
+        struct cvec* IOs;
+
+        enum iwm_modes active;
+        u64 motor_stop_timer;
+
+        enum iwm_modes rw;
+        enum iwm_modes rw_state;
+
+        u8 old_drive_select;
+        u32 ctrl;
+        i32 selected_drive;
+        struct JSMAC_DRIVE *cur_drive;
+
         struct {
             u8 CA0, CA1, CA2, LSTRB, ENABLE;
             u8 Q6, Q7;
             u8 SELECT;
+            u8 motor_on;
+
+            u8 phases;
         } lines;
         struct {
             u8 DIRTN, CSTIN, STEP;
+
+            u8 drive_select;
+            u8 data;
+            u8 read_shift;
+            u8 write_handshake;
+            u8 write_shift;
+            union {
+                struct {
+                    u8 lower5: 5; // these are identical to mode I think
+                    u8 active: 1;// "active" is bit 5
+                    u8 unused2: 2;
+                };
+                u8 u;
+            } status;
+
+            union {
+                struct {
+                    u8 latched : 1;
+                    u8 async: 1;
+                    u8 no_timer: 1;
+                    u8 fast: 1;
+                    u8 mhz8: 1;
+                    u8 test: 1;
+                    u8 mz_reset: 1;
+                    u8 reserved: 1;
+                };
+                u8 u;
+            } mode;
         } regs;
     } iwm;
 
@@ -141,6 +223,10 @@ struct mac {
 
 u16 mac_mainbus_read(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
 
+void mac_iwm_init(struct mac*);
+void mac_iwm_delete(struct mac*);
+void mac_iwm_reset(struct mac*);
+
 void mac_step_bus(struct mac*);
 
 void mac_mainbus_write(struct mac*, u32 addr, u32 UDS, u32 LDS, u16 val);
@@ -153,5 +239,7 @@ void mac_mainbus_write_iwm(struct mac*, u32 addr, u16 mask, u16 val);
 u16 mac_mainbus_read_scc(struct mac*, u32 addr, u16 mask, u16 old, u32 has_effect);
 void mac_mainbus_write_scc(struct mac*, u32 addr, u16 mask, u16 val);
 void mac_reset_via(struct mac*);
+void mac_clock_init(struct mac* this);
+
 
 #endif //JSMOOCH_EMUS_MAC_INTERNAL_H

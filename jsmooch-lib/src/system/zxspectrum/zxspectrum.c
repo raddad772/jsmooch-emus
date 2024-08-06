@@ -33,11 +33,31 @@ u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr);
 
 static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this);
 
-void ZXSpectrum_new(JSM)
+void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
 {
     struct ZXSpectrum* this = (struct ZXSpectrum*)malloc(sizeof(struct ZXSpectrum));
-
+    this->variant = variant;
     this->described_inputs = 0;
+
+    switch(variant) {
+        default:
+            printf("\nUnknown ZXSpectrum, defaulting to 48k!");
+            [[fallthrough]];
+        case ZXS_spectrum48:
+            this->ROM_size = 16 * 1024;
+            this->RAM_size = 48 * 1024;
+            break;
+        case ZXS_spectrum128:
+            this->ROM_size = 32 * 1024;
+            this->RAM_size = 128 * 1024;
+            break;
+    }
+
+    this->ROM = calloc(1, this->ROM_size);
+    this->RAM = calloc(1, this->RAM_size);
+    this->ROM_mask = this->ROM_size - 1;
+    this->RAM_mask = this->RAM_size - 1;
+
     memset(&this->clock, 0, sizeof(this->clock));
     this->clock.flash.count = 16;
     /*
@@ -48,7 +68,7 @@ void ZXSpectrum_new(JSM)
  */
 
     snprintf(jsm->label, sizeof(jsm->label), "ZX Spectrum");
-    ZXSpectrum_ULA_init(&this->ula);
+    ZXSpectrum_ULA_init(this, variant);
     ZXSpectrum_tape_deck_init(this);
     Z80_init(&this->cpu, 0);
 
@@ -95,6 +115,14 @@ void ZXSpectrum_delete(JSM)
 
     ZXSpectrum_ULA_delete(&this->ula);
     ZXSpectrum_tape_deck_delete(this);
+    if (this->RAM) {
+        free(this->RAM);
+        this->RAM = NULL;
+    }
+    if (this->ROM) {
+        free(this->ROM);
+        this->ROM = NULL;
+    }
     free(jsm->ptr);
     jsm->ptr = NULL;
 
@@ -171,14 +199,14 @@ static u32 ends_with(const char *str, const char *suffix)
 
 static u8 cpu_readmem(struct ZXSpectrum* this, u16 addr)
 {
-    if (addr < 0x4000) return this->ROM[addr];
-    return this->RAM[addr - 0x4000];
+    if (addr < 0x4000) return this->bank.ROM[addr];
+    return this->bank.RAM[(addr >> 14)][addr & 0x3FFF];
 }
 
 static void cpu_writemem(struct ZXSpectrum* this, u16 addr, u8 val)
 {
     if (addr < 0x4000) return;
-    this->RAM[addr - 0x4000] = (u8)val;
+    this->bank.RAM[(addr >> 14)][addr & 0x3FFF] = (u8)val;
 }
 
 u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr)
@@ -475,6 +503,21 @@ void ZXSpectrumJ_reset(JSM)
     JTHIS;
     Z80_reset(&this->cpu);
     ZXSpectrum_ULA_reset(this);
+    // RAM is weird.
+    // 48k has contiguous 48k
+    // 128k and 2+ have...
+    // 0x4000 = bank 5
+    // 0x8000 = bank 2
+    // 0xc000 = bank 0 at startup
+    // upper RAM address, shift right by 15, gets area # (0x4000, etc.)
+    // then it's 0x4000 * that number
+
+    // ROM is bank 0 or 1 of 16k
+    this->bank.RAM[1] = this->RAM + (5 * 0x4000);
+    this->bank.RAM[2] = this->RAM + (2 * 0x4000);
+    this->bank.RAM[3] = this->RAM;
+    this->bank.ROM = this->ROM;
+    this->bank.display = this->RAM + (5 * 0x4000);
 }
 
 

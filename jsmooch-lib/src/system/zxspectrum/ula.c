@@ -30,7 +30,7 @@ static u32 ZXSpectrum_keyboard_halfrows_consts[8] = {
 };
 
 static u32 ula_readmem(struct ZXSpectrum* this, u16 addr) {
-    return this->RAM[addr - 0x4000];
+    return this->bank.display[addr & 0x3FFF];
 }
 
 static void scanline_vblank(struct ZXSpectrum* bus)
@@ -113,9 +113,27 @@ static void scanline_visible(struct ZXSpectrum* bus)
     this->cur_output[bo] = this->attr.colors[out_bit];
 }
 
-void ZXSpectrum_ULA_init(struct ZXSpectrum_ULA* this)
+void ZXSpectrum_ULA_init(struct ZXSpectrum* bus, enum ZXSpectrum_variants variant)
 {
+    struct ZXSpectrum_ULA *this = &bus->ula;
     memset(this, 0, sizeof(struct ZXSpectrum_ULA));
+    this->variant = variant;
+
+    switch(bus->variant) {
+        case ZXS_spectrum128:
+            bus->clock.screen_bottom = 311;
+            bus->clock.screen_right = 228 * 2;
+            bus->clock.scanlines_before_frame = 63;
+            break;
+        case ZXS_spectrum48:
+            bus->clock.screen_bottom = 312;
+            bus->clock.screen_right = 224 * 2;
+            bus->clock.scanlines_before_frame = 64;
+            break;
+        default:
+            assert(1==2);
+    }
+
     this->scanline_func = &scanline_vblank;
     this->first_vblank = 1;
 
@@ -135,6 +153,7 @@ void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus)
     bus->clock.flash.bit = 0;
     bus->clock.flash.count = 16;
     bus->clock.frames_since_restart = 0;
+    bus->bank.disable = 0;
 
     this->bg_shift = 0;
     this->scanline_func = &scanline_vblank;
@@ -156,7 +175,7 @@ static u32 get_keypress(struct ZXSpectrum* bus, enum JKEYS key)
     if (v == -1) {
         printf("\nUNKNOWN KEY %d", key);
     }
-    return v == 0xFFFF ? 0 : v;
+    return v == 0xFFFFFFFF ? 0 : v;
 }
 
 static u32 kb_scan_row(struct ZXSpectrum* bus, const u32 *row) {
@@ -193,6 +212,26 @@ void ZXSpectrum_ULA_reg_write(struct ZXSpectrum* bus, u32 addr, u32 val)
         printf("\nUHOH OUT TO %04x", addr);
         return;
     }
+    if ((this->variant == ZXS_spectrum128) && ((addr & 0x7FFD) == addr)) {
+        // bits 0-2 16k RAM page for memory at 0xc000
+        // bit 3 normal (bank 5) or shadow (bank 7) ram for display
+        // bit 4 ROM select. lower 16 or upper 16k 0 or 1 I think
+        // bit 5 if set, disables paging
+        if ((val >> 5) & 1)
+            bus->bank.disable = 1;
+        if (bus->bank.disable) {
+            bus->bank.RAM[2] = bus->RAM;
+            bus->bank.display = bus->RAM + (0x4000 * 5);
+            bus->bank.ROM = bus->ROM;
+
+        }
+        else {
+            bus->bank.RAM[2] = bus->RAM + (0x4000 * (val & 7));
+            bus->bank.display = bus->RAM + (0x4000 * ((val & 8) ? 7 : 5));
+            bus->bank.ROM = bus->ROM + (0x4000 * (val >> 4));
+        }
+        return;
+    }
     
     this->io.border_color = val & 7;
 }
@@ -204,7 +243,7 @@ static void new_scanline(struct ZXSpectrum* bus)
     this->screen_x = -96;
     bus->clock.ula_y++;
     this->screen_y++;
-    if (bus->clock.ula_y == 312) {
+    if (bus->clock.ula_y == bus->clock.screen_bottom) {
         bus->clock.ula_y = 0;
         bus->clock.ula_frame_cycle = 0;
         this->screen_y = -8;
@@ -228,14 +267,24 @@ static void new_scanline(struct ZXSpectrum* bus)
         case 0: // lines 0-7 are vblank
             this->scanline_func = &scanline_vblank;
             break;
-        case 16: // lines 8-63 are upper border
+        case 16: // lines 8-63 are upper border. 8-62 on 128k
+            switch(this->variant)
             this->scanline_func = &scanline_border_top;
+            break;
+        case 63:
+            if (this->variant == ZXS_spectrum128)
+                this->scanline_func = &scanline_visible;
             break;
         case 64: // lines 64-255 are visible
             this->scanline_func = &scanline_visible;
             break;
-        case 256: // 256-311 are lower border
+        case 255:
+            if (this->variant == ZXS_spectrum128)
+                this->scanline_func = &scanline_border_bottom;
+            break;
+        case 256: // 256-311 or 310 are lower border
             this->scanline_func = &scanline_border_bottom;
+            break;
     }
     
 }
@@ -247,5 +296,5 @@ void ZXSpectrum_ULA_cycle(struct ZXSpectrum* bus)
     bus->clock.ula_x++;
     this->screen_x++;
     bus->clock.ula_frame_cycle++;
-    if (bus->clock.ula_x == 448) new_scanline(bus);
+    if (bus->clock.ula_x == bus->clock.screen_right) new_scanline(bus);
 }
