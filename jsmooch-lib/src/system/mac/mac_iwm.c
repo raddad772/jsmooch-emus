@@ -48,18 +48,32 @@ void mac_iwm_reset(struct mac* mac) {
     mac->iwm.active = IWMM_IDLE;
 }
 
-
+static void drive_setup_track(struct mac* this)
+{
+    struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
+    struct generic_floppy_track* track = cvec_get(&drv->disc->disc.tracks, drv->head.track_num);
+    drv->RPM = track->rpm;
+    drv->last_RPM_change_time = this->clock.master_cycles;
+}
 static void drive_write_motor_on(struct mac* this, u8 onoff)
 {
     struct JSMAC_DRIVE *drv = &this->iwm.drive[this->iwm.selected_drive];
-
     if (drv->disc == NULL) { // No disk inserted
         return;
     }
 
     if (drv->motor_on == onoff) { // No change
-
+        return;
     }
+
+    if (onoff != drv->motor_on) {
+       if (onoff) { // Turn motor on
+           drive_setup_track(this);
+       } else { // Turn motor off
+
+       }
+    }
+    drv->motor_on = onoff;
 }
 
 static void drive_select(struct mac* this, u8 towhich)
@@ -287,11 +301,9 @@ static void set_drive_reg(struct mac* this)
             break;
 
         case 2:
-            drv->motor_on = val == 0;
             printf("\nDRV%d WRITE CMD.MOTOR ON:%d    cyc:%lld", this->iwm.selected_drive, val == 0,
                    this->clock.master_cycles);
-            /*iwm_drv_set_motor_on (drv, val == 0);
-            mac_iwm_set_motor (iwm);*/
+            drive_write_motor_on(this, val == 0);
             break;
         case 3:
             if (val) {
@@ -331,7 +343,7 @@ static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
             break;
         case 8: // Control lines
             // motor on/off
-            this->iwm.lines.motor_on = onoff;
+            this->iwm.lines.enable = onoff;
             break;
         case 10:
             // external disk select
@@ -345,11 +357,11 @@ static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
             break;
     }
 
-    if (this->iwm.lines.motor_on) {
+    if (this->iwm.lines.enable) {
         if (this->iwm.active != IWMM_ACTIVE) { // If we're not active, turn active
             this->iwm.active = IWMM_ACTIVE;
             this->iwm.regs.status.active = 1;
-            drive_write_motor_on(this, 0);
+            //drive_write_motor_on(this, 0);
         }
 
         if (this->iwm.lines.Q7 == 0) {
@@ -379,7 +391,7 @@ static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
                 this->iwm.rw = IWMM_IDLE;
                 this->iwm.regs.status.active = 0;
                 this->iwm.regs.write_handshake &= ~0x40;
-                drive_write_motor_on(this, 1);
+                //drive_write_motor_on(this, 1);
             } else { // If there *IS* a timer...set a delay
                 this->iwm.active = IWMM_MOTOR_STOP_DELAY;
                 this->iwm.motor_stop_timer = this->clock.master_cycles + 16777200; // about 1 second
@@ -391,7 +403,7 @@ static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
 
     // Drive select previously was...
     // IF we're not idle and we're not off
-    u8 devsel = this->iwm.active != IWMM_IDLE ? (this->iwm.lines.motor_on ? 2 : 1) : 0;
+    u8 devsel = this->iwm.active != IWMM_IDLE ? (this->iwm.lines.enable ? 2 : 1) : 0;
     if(devsel != this->iwm.old_drive_select) {
         this->iwm.old_drive_select = devsel;
         drive_select(this, devsel);

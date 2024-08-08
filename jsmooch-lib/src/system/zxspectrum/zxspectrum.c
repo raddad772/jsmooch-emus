@@ -7,6 +7,7 @@
 #include <string.h>
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
+#include "helpers/debugger/debugger.h"
 
 #include "zxspectrum.h"
 
@@ -32,6 +33,7 @@ void ZXSpectrumJ_describe_io(JSM, struct cvec* IOs);
 u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr);
 
 static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this);
+static void ZXSpectrumJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
 {
@@ -98,6 +100,7 @@ void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
     jsm->stop = &ZXSpectrumJ_stop;
     jsm->describe_io = &ZXSpectrumJ_describe_io;
     jsm->sideload = NULL;
+    jsm->setup_debugger_interface = &ZXSpectrumJ_setup_debugger_interface;
 }
 
 void ZXSpectrum_notify_IRQ(struct ZXSpectrum* this, u32 level)
@@ -139,6 +142,13 @@ void ZXSpectrum_delete(JSM)
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
     jsm->describe_io = NULL;
+    jsm->setup_debugger_interface = NULL;
+}
+
+static void ZXSpectrumJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+{
+    intf->supported_by_core = 0;
+    printf("\nWARNING: debugger interface not supported on core: zxspectrum");
 }
 
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
@@ -173,7 +183,7 @@ static void setup_keyboard(struct ZXSpectrum* this)
     d->connected = 1;
     d->enabled = 1;
 
-    struct JSM_KEYBOARD* kbd = &d->device.keyboard;
+    struct JSM_KEYBOARD* kbd = &d->keyboard;
     memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
     kbd->num_keys = 40;
 
@@ -375,7 +385,7 @@ static void load_SNA_file(struct ZXSpectrum* this, struct multi_file_set* mfs)
     this->cpu.regs.poll_IRQ = true;
 }
 
-static void ZXSpectrumIO_insert_tape(JSM, struct multi_file_set *mfs, struct buf* sram)
+static void ZXSpectrumIO_insert_tape(JSM, struct physical_io_device *pio, struct multi_file_set *mfs, struct buf* sram)
 {
     JTHIS;
     char *s = mfs->files[0].name;
@@ -438,7 +448,7 @@ static void ZXSpectrumIO_remove_tape(JSM)
     struct physical_io_device* chassis = cvec_push_back(IOs);
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     sprintf(b->name, "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
@@ -446,24 +456,24 @@ static void ZXSpectrumIO_remove_tape(JSM)
     // tape deck
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_AUDIO_CASSETTE, 1, 1, 1, 0);
-    d->device.audio_cassette.insert_tape = &ZXSpectrumIO_insert_tape;
-    d->device.audio_cassette.remove_tape = &ZXSpectrumIO_remove_tape;
-    d->device.audio_cassette.rewind = &ZXSpectrumIO_rewind;
-    d->device.audio_cassette.play = &ZXSpectrumIO_play;
-    d->device.audio_cassette.stop = &ZXSpectrumIO_stop;
+    d->audio_cassette.insert_tape = &ZXSpectrumIO_insert_tape;
+    d->audio_cassette.remove_tape = &ZXSpectrumIO_remove_tape;
+    d->audio_cassette.rewind = &ZXSpectrumIO_rewind;
+    d->audio_cassette.play = &ZXSpectrumIO_play;
+    d->audio_cassette.stop = &ZXSpectrumIO_stop;
     this->tape_deck.IOs = IOs;
     this->tape_deck.tape_deck_index = 2;
 
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->device.display.fps = 50;
-    d->device.display.output[0] = malloc(352*304);
-    d->device.display.output[1] = malloc(352*304);
+    d->display.fps = 50;
+    d->display.output[0] = malloc(352*304);
+    d->display.output[1] = malloc(352*304);
     this->ula.display = d;
-    this->ula.cur_output = (u8 *)d->device.display.output[0];
-    d->device.display.last_written = 1;
-    d->device.display.last_displayed = 1;
+    this->ula.cur_output = (u8 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 }
 
 void ZXSpectrumJ_enable_tracing(JSM)
@@ -536,7 +546,7 @@ u32 ZXSpectrumJ_finish_frame(JSM)
         ZXSpectrumJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->ula.display->device.display.last_written;
+    return this->ula.display->display.last_written;
 }
 
 u32 ZXSpectrumJ_finish_scanline(JSM)

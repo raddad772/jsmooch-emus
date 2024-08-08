@@ -370,8 +370,10 @@ u16 mac_mainbus_read_via(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_
         case vIER: // interrupt enable register
             return ((this->via.regs.IER & 0x7F) | 0x80) << 8;
         case vDirA: // Direction reg A
+            // TODO: apply changes here
             return this->via.regs.dirA << 8;
         case vDirB: // Direction reg B
+            // TODO: apply changes here
             return this->via.regs.dirB << 8;
         case vT1C: // timer 1 count lo
             this->via.regs.IFR &= 0b10111111;

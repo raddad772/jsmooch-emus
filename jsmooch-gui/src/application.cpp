@@ -12,10 +12,13 @@
 #include "../vendor/myimgui/imgui.h"
 #include "../vendor/myimgui/backends/imgui_impl_glfw.h"
 #include "../vendor/myimgui/backends/imgui_impl_wgpu.h"
+#include "helpers/debug.h"
 #include "keymap_translate.h"
 
 #include "jsmooch-gui.h"
 #include "helpers/inifile.h"
+
+#define STOPAFTERAWHILE
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -159,20 +162,20 @@ static void load_inifile(struct inifile* ini)
 static void update_input(struct full_system* fsys, ImGuiIO& io) {
     if (io.WantCaptureKeyboard) {
         // Handle KB
-        if (fsys->io.keyboard) {
-            struct physical_io_device *pio = fsys->io.keyboard;
+        if (fsys->io.keyboard.vec) {
+            auto *pio = (struct physical_io_device *)cpg(fsys->io.keyboard);
             if (pio->connected && pio->enabled) {
-                struct physical_io_device::physical_io_device_union::JSM_KEYBOARD *kbd = &fsys->io.keyboard->device.keyboard;
+                struct JSM_KEYBOARD *kbd = &pio->keyboard;
                 for (u32 i = 0; i < kbd->num_keys; i++) {
                     kbd->key_states[i] = ImGui::IsKeyPressed(jk_to_imgui(kbd->key_defs[i]));
                 }
             }
         }
         // Handle controller 1
-        if (fsys->io.controller1) {
-            struct physical_io_device *pio = fsys->io.controller1;
+        if (fsys->io.controller1.vec) {
+            auto *pio = (struct physical_io_device *)cpg(fsys->io.controller1);
             if (pio->connected && pio->enabled) {
-                struct physical_io_device::physical_io_device_union::JSM_CONTROLLER *ctr = &fsys->io.controller1->device.controller;
+                struct JSM_CONTROLLER *ctr = &pio->controller;
                 for (u32 i = 0; i < cvec_len(&ctr->digital_buttons); i++) {
                     struct HID_digital_button *db = (struct HID_digital_button *)cvec_get(&ctr->digital_buttons, i);
                     db->state = ImGui::IsKeyPressed(jk_to_imgui(db->common_id));
@@ -191,6 +194,12 @@ int main(int, char**)
     load_inifile(&ini);
     char BIOS_BASE_PATH[500];
     char ROM_BASE_PATH[500];
+
+    char *debugger_cols[3];
+    constexpr size_t debugger_col_sizes[3] = { 10 * 1024, 100 * 1024, 500 * 1024 };
+    debugger_cols[0] = (char *)malloc(debugger_col_sizes[0]);
+    debugger_cols[1] = (char *)malloc(debugger_col_sizes[1]);
+    debugger_cols[2] = (char *)malloc(debugger_col_sizes[2]);
 
     struct kv_pair *kvp = inifile_get_or_make_key(&ini, "general", "bios_base_path");
     assert(kvp);
@@ -211,12 +220,13 @@ int main(int, char**)
     //enum jsm_systems which = SYS_MAC512K;
 #endif
 
-    struct full_system fsys = setup_system(which);
-    struct jsm_system *sys = fsys.sys;
+    full_system fsys;
+    fsys.setup_system(which);
     if (!fsys.worked) {
-        printf("\nCould not initialize system");
+        printf("\nCould not initialize system! %d", fsys.worked);
         return -1;
     }
+    fsys.state = FSS_play;
 
 #ifdef NEWSYS
     newsys(&fsys);
@@ -226,7 +236,6 @@ int main(int, char**)
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
-        destroy_system(&fsys);
         return 1;
     }
 
@@ -235,7 +244,6 @@ int main(int, char**)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWwindow* window = glfwCreateWindow(wgpu_swap_chain_width, wgpu_swap_chain_height, "JSmooCh", nullptr, nullptr);
     if (window == nullptr) {
-        destroy_system(&fsys);
         return 1;
     }
 
@@ -317,6 +325,7 @@ int main(int, char**)
     // Our state
     bool show_demo_window = false;
     bool show_another_window = true;
+    static int done_break = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop
@@ -326,6 +335,7 @@ int main(int, char**)
     io.IniFilename = nullptr;
     EMSCRIPTEN_MAINLOOP_BEGIN
 #else
+    static bool playing = true;
     while (!glfwWindowShouldClose(window))
 #endif
     {
@@ -334,6 +344,15 @@ int main(int, char**)
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+#ifdef STOPAFTERAWHILE
+        // 14742566
+        framevars fv = fsys.get_framevars();
+        if ((fv.master_frame > 240) && (!done_break) && (!dbg.do_break)) {
+            //if (fv.master_cycle >= 12991854) {
+            done_break = 1;
+            dbg_break("Because", fv.master_cycle);
+        }
+#endif
         glfwPollEvents();
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
         {
@@ -356,9 +375,16 @@ int main(int, char**)
         ImGui::NewFrame();
 
         // Update the system
-        update_input(&fsys, io);
-        sys_do_frame(&fsys);
-        sys_present(&fsys, (void *)backbuffer_backer, bb_width, bb_height);
+        if (dbg.do_break) {
+            if (fsys.state == FSS_play)
+                fsys.state = FSS_pause;
+        }
+
+        if (fsys.state == FSS_play) {
+            update_input(&fsys, io);
+            fsys.do_frame();
+            fsys.present((void *) backbuffer_backer, bb_width, bb_height);
+        }
         backbuffer.upload_data((void *)backbuffer_backer, bb_width * bb_height * 4, bb_width, bb_height);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
@@ -366,12 +392,22 @@ int main(int, char**)
             static float f = 0.0f;
             static int counter = 0;
 
-            ImGui::Begin(sys->label);
-            //ImGui::Image()// Create a window called "Hello, world!" and append into it.
+            ImGui::Begin(fsys.sys->label);
 
-            /*ImGui::Text("This is some useful text.");                     // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);            // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);*/
+            if (ImGui::Button("Play/pause")) {
+                switch(fsys.state) {
+                    case FSS_pause:
+                        fsys.state = FSS_play;
+                        dbg_unbreak();
+                        break;
+                    case FSS_play:
+                        fsys.state = FSS_pause;
+                        break;
+                }
+            }
+
+
+            //ImGui::Text("This is some useful text.");                     // Display some text (you can use a format strings too)
             ImGui::Image(backbuffer.for_image(), ImVec2(bb_width, bb_height));
 
             /*ImGui::SliderFloat("float", &f, 0.0f, 1.0f);                  // Edit 1 float using a slider from 0.0f to 1.0f
@@ -387,15 +423,92 @@ int main(int, char**)
         }
 
         // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);         // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
+        if (fsys.dasm && fsys.state == FSS_pause) {
+            ImGui::Begin("Disassembly View",
+                         &show_another_window);         // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            static ImGuiTableFlags flags =
+                    ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
+                    ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
 
+            //PushStyleCompact();
+            //ImGui::CheckboxFlags("ImGuiTableFlags_ScrollY", &flags, ImGuiTableFlags_ScrollY);
+            //PopStyleCompact();
+            static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+            static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+
+            struct disassembly_vars dv = fsys.dasm->get_disassembly_vars.func(fsys.dasm->get_disassembly_vars.ptr,
+                                                                              &fsys.dbgr, fsys.dasm);
+            // void (*func)(void *, struct debugger_interface *, struct disassembly_view *, u32 start_addr, u32 lines);
+            u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, fsys.dasm, dv.address_of_executing_instruction, 20,
+                                                         40, &fsys.dasm_rows);
+
+            u32 numcols = (fsys.dasm ? fsys.dasm->has_context ? 3 : 2 : 2);
+            // When using ScrollX or ScrollY we need to specify a size for our table container!
+            // Otherwise by default the table will fit all available space, like a BeginChild() call.
+            ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 80, TEXT_BASE_HEIGHT * 20);
+            if (ImGui::BeginTable("table_dasm", numcols, flags, outer_size)) {
+                ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                ImGui::TableSetupColumn("addr", ImGuiTableColumnFlags_None);
+                ImGui::TableSetupColumn("disassembly", ImGuiTableColumnFlags_None);
+                if (numcols == 3) ImGui::TableSetupColumn("context at last execution", ImGuiTableColumnFlags_None);
+                ImGui::TableHeadersRow();
+
+                ImGuiListClipper clipper;
+                clipper.Begin(100);
+                while (clipper.Step()) {
+                    for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                        ImGui::TableNextRow();
+                        auto *strs = (struct disassembly_entry_strings *) cvec_get(&fsys.dasm_rows, row);
+
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Selectable(strs->addr, row == cur_line_num,
+                                          ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+                        //ImGui::Text("%s", strs->addr);
+
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Text("%s", strs->dasm);
+                        //ImGui::Selectable(strs->dasm, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+
+                        if (numcols == 3) {
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text("%s", strs->context);
+                        }
+                    }
+                }
+                ImGui::EndTable();
+                fsys.dasm->fill_view.func(fsys.dasm->fill_view.ptr, &fsys.dbgr, fsys.dasm);
+
+                ImGui::SameLine();
+                outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
+                if (ImGui::BeginTable("table_registers", 2, flags, outer_size)) {
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                    ImGui::TableSetupColumn("register", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_None);
+                    ImGui::TableHeadersRow();
+
+                    ImGuiListClipper clipper;
+                    clipper.Begin((int)cvec_len(&fsys.dasm->cpu.regs));
+                    while (clipper.Step()) {
+                        for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                            ImGui::TableNextRow();
+                            auto *ctx = (struct cpu_reg_context *)cvec_get(&fsys.dasm->cpu.regs, row);
+
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("%s", ctx->name);
+
+                            ImGui::TableSetColumnIndex(1);
+                            char rndr[50];
+                            cpu_reg_context_render(ctx, rndr, sizeof(rndr));
+                            ImGui::Text("%s", rndr);
+                        }
+                    }
+                    ImGui::EndTable();
+
+                }
+
+                ImGui::End();
+            }
+        }
         // Rendering
         ImGui::Render();
 
@@ -455,7 +568,7 @@ int main(int, char**)
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    destroy_system(&fsys);
+    fsys.destroy_system();
 
     inifile_delete(&ini);
 

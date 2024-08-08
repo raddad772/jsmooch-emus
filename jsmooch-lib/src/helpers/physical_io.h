@@ -5,6 +5,11 @@
 #ifndef JSMOOCH_EMUS_PHYSICAL_IO_H
 #define JSMOOCH_EMUS_PHYSICAL_IO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "helpers/buf.h"
@@ -148,6 +153,64 @@ struct HID_analog_axis {
 
 struct jsm_system;
 
+struct JSM_CONTROLLER {
+    char name[50];
+    struct cvec analog_axes;
+    struct cvec digital_buttons;
+};
+
+struct JSM_KEYBOARD {
+    enum JKEYS key_defs[100];
+    u32 key_states[100];
+    u32 num_keys;
+};
+
+struct JSM_DISPLAY {
+    float fps;
+    void *output[2];
+    u32 last_written;
+    u32 last_displayed;
+};
+
+struct JSM_MOUSE {
+    struct HID_digital_button *left_button;
+    struct HID_digital_button *right_button;
+    i32 new_x, new_y;
+};
+
+struct JSM_CHASSIS {
+    struct cvec indicators;
+    struct cvec digital_buttons;
+};
+
+struct JSM_AUDIO_CHANNEL {
+    u32 sample_rate;
+    void *samples[2];
+    u32 last_written;
+};
+
+struct JSM_CARTRIDGE_PORT {
+    void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct buf* sram);
+    void (*unload_cart)(struct jsm_system *ptr);
+};
+
+struct physical_io_device;
+
+struct JSM_DISC_DRIVE {
+    void (*insert_disc)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs);
+    void (*remove_disc)(struct jsm_system *ptr);
+    void (*close_drive)(struct jsm_system *ptr);
+    void (*open_drive)(struct jsm_system *ptr);
+};
+
+struct JSM_AUDIO_CASSETTE {
+    void (*insert_tape)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs, struct buf* sram);
+    void (*remove_tape)(struct jsm_system *ptr);
+    void (*rewind)(struct jsm_system *ptr);
+    void (*play)(struct jsm_system *ptr);
+    void (*stop)(struct jsm_system *ptr);
+};
+
 struct physical_io_device {
     enum IO_CLASSES kind;
 
@@ -159,67 +222,26 @@ struct physical_io_device {
     u32 input;
     u32 output;
 
-    union physical_io_device_union {
-        struct JSM_CONTROLLER {
-            char name[50];
-            struct cvec analog_axes;
-            struct cvec digital_buttons;
-        } controller;
-
-        struct JSM_KEYBOARD {
-            enum JKEYS key_defs[100];
-            u32 key_states[100];
-            u32 num_keys;
-        } keyboard;
-
-        struct JSM_DISPLAY{
-            float fps;
-            void *output[2];
-            u32 last_written;
-            u32 last_displayed;
-        } display;
-
-        struct JSM_MOUSE{
-            struct HID_digital_button *left_button;
-            struct HID_digital_button *right_button;
-            i32 new_x, new_y;
-        } mouse;
-
-        struct JSM_CHASSIS{
-            struct cvec indicators;
-            struct cvec digital_buttons;
-        } chassis;
-
-        struct JSM_AUDIO_CHANNEL{
-            u32 sample_rate;
-            void *samples[2];
-            u32 last_written;
-        } audio_channel;
-
-        struct JSM_CARTRIDGE_PORT{
-            void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct buf* sram);
-            void (*unload_cart)(struct jsm_system *ptr);
-        } cartridge_port;
-
-        struct JSM_DISC_DRIVE{
-            void (*insert_disc)(struct jsm_system *ptr, struct multi_file_set* mfs);
-            void (*remove_disc)(struct jsm_system *ptr);
-            void (*close_drive)(struct jsm_system *ptr);
-            void (*open_drive)(struct jsm_system *ptr);
-        } disc_drive;
-
-        struct JSM_AUDIO_CASSETTE{
-            void (*insert_tape)(struct jsm_system *ptr, struct multi_file_set* mfs, struct buf* sram);
-            void (*remove_tape)(struct jsm_system *ptr);
-            void (*rewind)(struct jsm_system *ptr);
-            void (*play)(struct jsm_system *ptr);
-            void (*stop)(struct jsm_system *ptr);
-        } audio_cassette;
-    } device;
+    union {
+        struct JSM_CONTROLLER controller;
+        struct JSM_KEYBOARD keyboard;
+        struct JSM_DISPLAY display;
+        struct JSM_MOUSE mouse;
+        struct JSM_CHASSIS chassis;
+        struct JSM_AUDIO_CHANNEL audio_channel;
+        struct JSM_CARTRIDGE_PORT cartridge_port;
+        struct JSM_DISC_DRIVE disc_drive;
+        struct JSM_AUDIO_CASSETTE audio_cassette;
+    };
 };
 
 void physical_io_device_init(struct physical_io_device*, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
 void physical_io_device_delete(struct physical_io_device*);
 void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif //JSMOOCH_EMUS_PHYSICAL_IO_H

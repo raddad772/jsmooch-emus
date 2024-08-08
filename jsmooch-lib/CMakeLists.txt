@@ -210,6 +210,9 @@ add_library(jsmooch-lib
         src/component/floppy/mac_floppy.h
         src/system/mac/mac_iwm.c
         src/system/mac/mac_iwm.h
+        src/helpers/debugger/debugger.c
+        src/system/mac/mac_debugger.c
+        src/system/mac/mac_debugger.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

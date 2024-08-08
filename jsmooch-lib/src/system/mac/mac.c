@@ -7,13 +7,18 @@
 #include <assert.h>
 #include <string.h>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 #include "mac.h"
 #include "mac_internal.h"
 #include "mac_display.h"
+#include "mac_debugger.h"
 
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
+#include "helpers/debugger/debugger.h"
 
 #include "component/cpu/m68000/m68000.h"
 
@@ -37,7 +42,6 @@ static void macJ_enable_tracing(JSM);
 static void macJ_disable_tracing(JSM);
 static void macJ_describe_io(JSM, struct cvec* IOs);
 
-
 static u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
     struct mac* this = (struct mac*)ptr;
     return mac_mainbus_read(this, addr, UDS, LDS, this->io.cpu.last_read_data, 0);
@@ -47,6 +51,7 @@ static u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
 void mac_new(struct jsm_system* jsm, enum mac_variants variant)
 {
     struct mac* this = (struct mac*)calloc(1, sizeof(struct mac));
+    this->dbgr = NULL;
     this->kind = variant;
     mac_clock_init(this);
     switch(variant) {
@@ -104,6 +109,7 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
     jsm->stop = &macJ_stop;
     jsm->describe_io = &macJ_describe_io;
     jsm->sideload = NULL;
+    jsm->setup_debugger_interface = &macJ_setup_debugger_interface;
 
 }
 
@@ -118,7 +124,7 @@ void mac_delete(struct jsm_system* jsm)
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
         if (pio->kind == HID_DISC_DRIVE) {
-            if (pio->device.disc_drive.remove_disc) pio->device.disc_drive.remove_disc(jsm);
+            if (pio->disc_drive.remove_disc) pio->disc_drive.remove_disc(jsm);
         }
         physical_io_device_delete(pio);
     }*/
@@ -145,6 +151,7 @@ void mac_delete(struct jsm_system* jsm)
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
     jsm->describe_io = NULL;
+    jsm->setup_debugger_interface = NULL;
 }
 
 static u32 mac_keyboard_keymap[77] = {
@@ -169,7 +176,9 @@ static u32 mac_keyboard_keymap[77] = {
         JK_NUM_DIVIDE, JK_NUM_STAR, JK_NUM_LOCK, JK_NUM_CLEAR
 };
 
-
+static double track_RPM[5] = {
+       401.9241, 438.4626, 482.3089, 535.8988, 602.8861
+};
 
 static void setup_keyboard(struct mac* this)
 {
@@ -180,13 +189,47 @@ static void setup_keyboard(struct mac* this)
     d->kind = HID_KEYBOARD;
     d->connected = 1;
 
-    struct JSM_KEYBOARD* kbd = &d->device.keyboard;
+    struct JSM_KEYBOARD* kbd = &d->keyboard;
     memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
     kbd->num_keys = 77;
 
     for (u32 i = 0; i < kbd->num_keys; i++) {
         kbd->key_defs[i] = mac_keyboard_keymap[i];
     }
+}
+
+void macJ_IO_insert_disk(struct jsm_system *jsm, struct physical_io_device* pio, struct multi_file_set* mfs)
+{
+    JTHIS;
+    struct buf *b = &mfs->files[0].buf;
+    printf("\nDISC SIZE: %lldb %lldKb", b->size, b->size >> 10);
+    struct mac_floppy *mflpy = cvec_push_back(&this->iwm.my_disks);
+    mac_floppy_init(mflpy);
+    u32 num_sectors = 13;
+    u8 *buf_ptr = (u8 *)b->ptr;
+    u64 track_radius = 395000 + 1875;
+    i32 speed_group = 0 - 1;
+
+    for (u32 i = 0; i < 80; i++) {
+        if ((i & 15) == 0) {
+            speed_group++;
+            num_sectors--;
+        }
+        struct generic_floppy_track *track = cvec_push_back(&mflpy->disc.tracks);
+        generic_floppy_track_init(track);
+
+        buf_allocate(&track->data, 512 * num_sectors);
+        memcpy(track->data.ptr, buf_ptr, 512 * num_sectors);
+        buf_ptr += 512 * num_sectors;
+
+        track->num_sectors = num_sectors;
+
+        track_radius -= 1875;
+        track->radius_mm = ((double)track_radius) / 1000.0;
+        track->length_mm = track->radius_mm * track->radius_mm * M_PI;
+        track->rpm = track_RPM[speed_group];
+    }
+    this->iwm.drive[0].disc = mflpy;
 }
 
 void macJ_describe_io(JSM, struct cvec *IOs)
@@ -201,7 +244,7 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device* chassis = cvec_push_back(IOs);
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     sprintf(b->name, "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
@@ -214,10 +257,10 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     // disc drive - 2
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISC_DRIVE, 1, 1, 1, 0);
-    d->device.disc_drive.insert_disc = NULL;
-    d->device.disc_drive.remove_disc = NULL;
-    d->device.disc_drive.close_drive = NULL;
-    d->device.disc_drive.open_drive = NULL;
+    d->disc_drive.insert_disc = &macJ_IO_insert_disk;
+    d->disc_drive.remove_disc = NULL;
+    d->disc_drive.close_drive = NULL;
+    d->disc_drive.open_drive = NULL;
     this->iwm.drive[0].device = NULL;
     this->iwm.drive[0].io_index = 2;
     this->iwm.drive[1].device = NULL;
@@ -229,13 +272,13 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     // screen - 3
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->device.display.fps = 60;
-    d->device.display.output[0] = malloc(512*342);
-    d->device.display.output[1] = malloc(512*342);
+    d->display.fps = 60;
+    d->display.output[0] = malloc(512*342);
+    d->display.output[1] = malloc(512*342);
     this->display.display = d;
-    this->display.cur_output = (u8 *)d->device.display.output[0];
-    d->device.display.last_written = 1;
-    d->device.display.last_displayed = 1;
+    this->display.cur_output = (u8 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 }
 
 void macJ_play(JSM)
@@ -297,7 +340,7 @@ u32 macJ_finish_frame(JSM)
         if (dbg.do_break) break;
     }
     //printf("\nScanlines: %d", scanlines);
-    return this->display.display->device.display.last_written;
+    return this->display.display->display.last_written;
 }
 
 void macJ_killall(JSM)

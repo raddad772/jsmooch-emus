@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+#include <assert.h>
 #include "helpers/int.h"
 
 struct cvec {
@@ -28,6 +29,11 @@ struct cvec_iterator {
     u32 index;
 };
 
+struct cvec_ptr {
+    struct cvec *vec;
+    u32 index;
+};
+
 void cvec_init(struct cvec *, u32 data_size, u32 prealloc);
 void cvec_delete(struct cvec *);
 u32 cvec_len(struct cvec *);
@@ -40,6 +46,21 @@ void cvec_lock_reallocs(struct cvec *); // For locking reallocs to preserve poin
 void cvec_push_back_copy(struct cvec *, void *src);
 
 void cvec_iterator_init(struct cvec_iterator *);
+
+struct cvec_ptr make_cvec_ptr(struct cvec *, u32 idx);
+void cvec_ptr_init(struct cvec_ptr *vec);
+
+#ifdef __cplusplus
+void *cpp_cpg(struct cvec_ptr p);
+#define cpg cpp_cpg
+#else
+inline void *cpg(struct cvec_ptr p)
+{
+    assert(p.vec != NULL);
+    assert(p.index < p.vec->len);
+    return p.vec->data + (p.vec->data_sz * p.index);
+}
+#endif
 
 #ifdef __cplusplus
 }

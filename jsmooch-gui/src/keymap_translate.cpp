@@ -165,6 +165,8 @@ enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {
             return ImGuiKey_KeypadEqual;
         case JK_NONE:
             return ImGuiKey_None;
+        default:
+            break;
     }
     printf("\nUnknown key attempted usage: %d", key_id);
     return ImGuiKey_None;
@@ -189,7 +191,7 @@ enum JKEYS dbcid_to_default(enum JKEYS key_id)
         case DBCID_ch_diff_left: return JK_B;
         case DBCID_ch_diff_right: return JK_N;
         case DBCID_ch_game_select: return JK_M;
-
+        default:
+            return key_id;
     }
-    return key_id;
 }

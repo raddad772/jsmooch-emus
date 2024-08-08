@@ -220,8 +220,8 @@ static void new_frame(struct genesis* this)
     this->clock.vdp.field ^= 1;
     this->clock.vdp.vcount = 0;
     this->clock.vdp.vblank = 0;
-    this->vdp.cur_output = this->vdp.display->device.display.output[this->vdp.display->device.display.last_written];
-    this->vdp.display->device.display.last_written ^= 1;
+    this->vdp.cur_output = this->vdp.display->display.output[this->vdp.display->display.last_written];
+    this->vdp.display->display.last_written ^= 1;
 
     set_clock_divisor(this);
 }
@@ -892,7 +892,7 @@ static void render_8_more(struct genesis* this)
 
     u32 myx = (2 * 320 * ypos) + xpos;
 
-    u16 *optr = this->vdp.display->device.display.output[0] + (320 * ypos) + xpos;
+    u16 *optr = this->vdp.display->display.output[0] + (320 * ypos) + xpos;
 
     u8* tile_ptr[2] = { };
 

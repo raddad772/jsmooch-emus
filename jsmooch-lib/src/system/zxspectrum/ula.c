@@ -165,7 +165,7 @@ void ZXSpectrum_ULA_reset(struct ZXSpectrum* bus)
 static u32 get_keypress(struct ZXSpectrum* bus, enum JKEYS key)
 {
     struct physical_io_device *d = cvec_get(bus->ula.keyboard_devices, bus->ula.keyboard_device_index);
-    struct JSM_KEYBOARD *kbd = &d->device.keyboard;
+    struct JSM_KEYBOARD *kbd = &d->keyboard;
     i32 v = -1;
     for (u32 i = 0; i < kbd->num_keys; i++) {
         if (kbd->key_defs[i] == key) {
@@ -255,8 +255,8 @@ static void new_scanline(struct ZXSpectrum* bus)
         }
 
         // Swap buffer we're drawing to...
-        this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
-        this->display->device.display.last_written ^= 1;
+        this->cur_output = this->display->display.output[this->display->display.last_written];
+        this->display->display.last_written ^= 1;
     }
 
     /*lines 0-7 are vblank

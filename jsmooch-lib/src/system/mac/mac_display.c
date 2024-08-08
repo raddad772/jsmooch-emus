@@ -40,8 +40,8 @@ static void new_frame(struct mac* this)
     this->clock.crt.vpos = 0;
     this->display.scanline_func = &scanline_visible;
     // Swap buffer we're drawing to...
-    this->display.cur_output = this->display.display->device.display.output[this->display.display->device.display.last_written];
-    this->display.display->device.display.last_written ^= 1;
+    this->display.cur_output = this->display.display->display.output[this->display.display->display.last_written];
+    this->display.display->display.last_written ^= 1;
 
 }
 // & 0x40
@@ -129,8 +129,8 @@ Macintosh 128K, the main screen buffer starts at $1A700 and the alternate buffer
 $12700; for a 512K Macintosh, add $60000 to these numbers.
      */
     calc_display_addr(this);
-    this->display.cur_output = this->display.display->device.display.output[this->display.display->device.display.last_written];
-    this->display.display->device.display.last_written ^= 1;
+    this->display.cur_output = this->display.display->display.output[this->display.display->display.last_written];
+    this->display.display->display.last_written ^= 1;
     this->clock.crt.hpos = this->clock.crt.vpos = 0;
     this->display.scanline_func = &scanline_visible;
 }

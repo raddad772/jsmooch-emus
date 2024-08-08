@@ -19,7 +19,7 @@ void genesis_controller_3button_delete(struct genesis_controller_3button* this)
 
 void genesis_controller_3button_latch(struct genesis_controller_3button* this)
 {
-    struct cvec* bl = &this->pio->device.controller.digital_buttons;
+    struct cvec* bl = &this->pio->controller.digital_buttons;
     struct HID_digital_button *b;
 #define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
     B_GET(up, 0);
@@ -38,12 +38,12 @@ void genesis3_setup_pio(struct physical_io_device *d, u32 num, const char*name, 
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    sprintf(d->device.controller.name, "%s", name);
+    sprintf(d->controller.name, "%s", name);
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;
 
-    struct JSM_CONTROLLER* cnt = &d->device.controller;
+    struct JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);

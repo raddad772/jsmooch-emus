@@ -19,6 +19,7 @@
 #ifdef DC_SUPPORT_ELF
 #include "vendor/elf-parser/elf-parser.h"
 #endif
+#include "helpers/debugger/debugger.h"
 
 #define IP_BIN
 
@@ -47,6 +48,7 @@ static void DC_schedule_frame(struct DC* this);
 static void new_frame(struct DC* this, u32 copy_buf);
 void DCJ_describe_io(JSM, struct cvec* IOs);
 static void DCJ_sideload(JSM, struct multi_file_set* mfs);
+static void DCJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 #define JITTER 448
 
@@ -130,6 +132,7 @@ void DC_new(JSM)
     jsm->stop = &DCJ_stop;
     jsm->describe_io = &DCJ_describe_io;
     jsm->sideload = &DCJ_sideload;
+    jsm->setup_debugger_interface = &DCJ_setup_debugger_interface;
 }
 
 void DC_delete(struct jsm_system* jsm)
@@ -163,7 +166,15 @@ void DC_delete(struct jsm_system* jsm)
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
     jsm->describe_io = NULL;
+    jsm->setup_debugger_interface = NULL;
 }
+
+static void DCJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+{
+    intf->supported_by_core = 0;
+    printf("\nWARNING: debugger interface not supported on core: dreamcast");
+}
+
 
 void DC_copy_fb(struct DC* this, u32* where) {
     u32* ptr = (u32*)this->VRAM;
@@ -205,7 +216,7 @@ void DCJ_play(JSM)
 {
     JTHIS;
     // FOr now we use this to copy framebuffer
-    this->holly.cur_output = this->holly.display->device.display.output[0];
+    this->holly.cur_output = this->holly.display->display.output[0];
 }
 
 void DCJ_pause(JSM)
@@ -225,7 +236,7 @@ void DCJ_get_framevars(JSM, struct framevars* out)
     JTHIS;
     out->master_cycle = this->trace_cycles;
     out->master_frame = this->holly.master_frame;
-    out->last_used_buffer = this->holly.display->device.display.last_written;
+    out->last_used_buffer = this->holly.display->display.last_written;
 }
 
 void DCJ_reset(JSM)
@@ -402,7 +413,7 @@ static void DCIO_remove_disc(JSM)
 
 }
 
-static void DCIO_insert_disc(JSM, struct multi_file_set *mfs)
+static void DCIO_insert_disc(JSM, struct physical_io_device *pio, struct multi_file_set *mfs)
 {
     JTHIS;
     GDI_load(mfs->files[0].path, mfs->files[0].name, &this->gdrom.gdi);
@@ -423,12 +434,12 @@ static void setup_controller(struct DC* this, u32 num, const char*name, u32 conn
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    sprintf(d->device.controller.name, "%s", name);
+    sprintf(d->controller.name, "%s", name);
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;
 
-    struct JSM_CONTROLLER* cnt = &d->device.controller;
+    struct JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     new_button(cnt, "up", DBCID_co_up);
@@ -455,12 +466,12 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
     struct physical_io_device* chassis = cvec_push_back(IOs);
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     sprintf(b->name, "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     b->common_id = DBCID_ch_reset;
     sprintf(b->name, "Reset");
     b->state = 0;
@@ -468,21 +479,21 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
     // GDROM
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISC_DRIVE, 1, 1, 1, 0);
-    d->device.disc_drive.insert_disc = &DCIO_insert_disc;
-    d->device.disc_drive.remove_disc = &DCIO_remove_disc;
-    d->device.disc_drive.open_drive = &DCIO_open_drive;
-    d->device.disc_drive.close_drive = &DCIO_close_drive;
+    d->disc_drive.insert_disc = &DCIO_insert_disc;
+    d->disc_drive.remove_disc = &DCIO_remove_disc;
+    d->disc_drive.open_drive = &DCIO_open_drive;
+    d->disc_drive.close_drive = &DCIO_close_drive;
 
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->device.display.fps = 60;
-    d->device.display.output[0] = malloc(640*480*4);
-    d->device.display.output[1] = malloc(640*480*4);
+    d->display.fps = 60;
+    d->display.output[0] = malloc(640*480*4);
+    d->display.output[1] = malloc(640*480*4);
     this->holly.display = d;
-    this->holly.cur_output = (u32 *)d->device.display.output[0];
-    d->device.display.last_written = 1;
-    d->device.display.last_displayed = 1;
+    this->holly.cur_output = (u32 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
     this->c1.devices = IOs;
     this->c1.device_index = 0;

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "helpers/debugger/debugger.h"
+
 #include "component/controller/genesis3/genesis3.h"
 #include "genesis.h"
 #include "genesis_bus.h"
@@ -29,6 +31,7 @@ static void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void genesisJ_enable_tracing(JSM);
 static void genesisJ_disable_tracing(JSM);
 static void genesisJ_describe_io(JSM, struct cvec* IOs);
+static void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 /*
     u32 (*read_trace)(void *,u32);
@@ -83,6 +86,7 @@ void genesis_new(JSM)
     jsm->stop = &genesisJ_stop;
     jsm->describe_io = &genesisJ_describe_io;
     jsm->sideload = NULL;
+    jsm->setup_debugger_interface = &genesisJ_setup_debugger_interface;
 }
 
 void genesis_delete(JSM) {
@@ -94,7 +98,7 @@ void genesis_delete(JSM) {
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
         if (pio->kind == HID_CART_PORT) {
-            if (pio->device.cartridge_port.unload_cart) pio->device.cartridge_port.unload_cart(jsm);
+            if (pio->cartridge_port.unload_cart) pio->cartridge_port.unload_cart(jsm);
         }
         physical_io_device_delete(pio);
     }
@@ -115,7 +119,15 @@ void genesis_delete(JSM) {
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
     jsm->describe_io = NULL;
+    jsm->setup_debugger_interface = NULL;
 }
+
+static void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+{
+    intf->supported_by_core = 0;
+    printf("\nWARNING: debugger interface not supported on core: genesis");
+}
+
 
 static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
 {
@@ -150,12 +162,12 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
 
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     sprintf(b->name, "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     b->common_id = DBCID_ch_reset;
     sprintf(b->name, "Reset");
     b->state = 0;
@@ -163,19 +175,19 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     // cartridge port
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
-    d->device.cartridge_port.load_cart = &genesisIO_load_cart;
-    d->device.cartridge_port.unload_cart = &genesisIO_unload_cart;
+    d->cartridge_port.load_cart = &genesisIO_load_cart;
+    d->cartridge_port.unload_cart = &genesisIO_unload_cart;
 
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->device.display.fps = 60;
-    d->device.display.output[0] = malloc(320*224*2);
-    d->device.display.output[1] = malloc(320*224*2);
+    d->display.fps = 60;
+    d->display.output[0] = malloc(320*224*2);
+    d->display.output[1] = malloc(320*224*2);
     this->vdp.display = d;
-    this->vdp.cur_output = (u16 *)d->device.display.output[0];
-    d->device.display.last_written = 1;
-    d->device.display.last_displayed = 1;
+    this->vdp.cur_output = (u16 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
     //genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
@@ -245,7 +257,7 @@ u32 genesisJ_finish_frame(JSM)
         genesisJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->vdp.display->device.display.last_written;
+    return this->vdp.display->display.last_written;
 }
 
 u32 genesisJ_finish_scanline(JSM)

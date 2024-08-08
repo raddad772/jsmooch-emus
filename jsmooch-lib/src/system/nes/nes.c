@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
+#include "helpers/debugger/debugger.h"
 
 #include "nes.h"
 #include "nes_cart.h"
@@ -30,6 +31,7 @@ static void NESJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void NESJ_enable_tracing(JSM);
 static void NESJ_disable_tracing(JSM);
 static void NESJ_describe_io(JSM, struct cvec* IOs);
+static void NESJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 void NES_new(JSM)
 {
@@ -63,7 +65,16 @@ void NES_new(JSM)
     jsm->stop = &NESJ_stop;
     jsm->describe_io = &NESJ_describe_io;
     jsm->sideload = NULL;
+    jsm->setup_debugger_interface = &NESJ_setup_debugger_interface;
 }
+
+static void NESJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+{
+    intf->supported_by_core = 0;
+    printf("\nWARNING: debugger interface not supported on core: nes");
+}
+
+
 
 void NES_delete(JSM)
 {
@@ -80,7 +91,7 @@ void NES_delete(JSM)
     while (cvec_len(this->IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->IOs);
         if (pio->kind == HID_CART_PORT) {
-            if (pio->device.cartridge_port.unload_cart) pio->device.cartridge_port.unload_cart(jsm);
+            if (pio->cartridge_port.unload_cart) pio->cartridge_port.unload_cart(jsm);
         }
         physical_io_device_delete(pio);
     }
@@ -101,6 +112,7 @@ void NES_delete(JSM)
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
     jsm->describe_io = NULL;
+    jsm->setup_debugger_interface = NULL;
 }
 
 static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
@@ -135,12 +147,12 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device* chassis = cvec_push_back(IOs);
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     sprintf(b->name, "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     b->common_id = DBCID_ch_reset;
     sprintf(b->name, "Reset");
     b->state = 0;
@@ -148,19 +160,19 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     // cartridge port
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
-    d->device.cartridge_port.load_cart = &NESIO_load_cart;
-    d->device.cartridge_port.unload_cart = &NESIO_unload_cart;
+    d->cartridge_port.load_cart = &NESIO_load_cart;
+    d->cartridge_port.unload_cart = &NESIO_unload_cart;
 
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->device.display.fps = 60;
-    d->device.display.output[0] = malloc(256*224*2);
-    d->device.display.output[1] = malloc(256*224*2);
+    d->display.fps = 60;
+    d->display.output[0] = malloc(256*224*2);
+    d->display.output[1] = malloc(256*224*2);
     this->ppu.display = d;
-    this->ppu.cur_output = (u16 *)d->device.display.output[0];
-    d->device.display.last_written = 1;
-    d->device.display.last_displayed = 1;
+    this->ppu.cur_output = (u16 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
     this->cpu.joypad1.devices = IOs;
     this->cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
@@ -222,7 +234,7 @@ u32 NESJ_finish_frame(JSM)
         NESJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->ppu.display->device.display.last_written;
+    return this->ppu.display->display.last_written;
 }
 
 u32 NESJ_finish_scanline(JSM)

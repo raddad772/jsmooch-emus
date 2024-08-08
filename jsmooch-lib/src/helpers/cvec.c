@@ -98,3 +98,21 @@ void cvec_push_back_copy(struct cvec* this, void *src)
     void *dst = cvec_push_back(this);
     memcpy(dst, src, this->data_sz);
 }
+
+void cvec_ptr_init(struct cvec_ptr *vec)
+{
+    vec->vec = NULL;
+    vec->index = 0;
+}
+
+struct cvec_ptr make_cvec_ptr(struct cvec *vec, u32 idx)
+{
+    return (struct cvec_ptr) { .vec=vec, .index=idx};
+}
+
+void *cpp_cpg(struct cvec_ptr p)
+{
+    assert(p.vec != NULL);
+    assert(p.index < p.vec->len);
+    return p.vec->data + (p.vec->data_sz * p.index);
+}

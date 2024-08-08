@@ -26,7 +26,7 @@ void NES_joypad_latch(struct NES_joypad *this, u32 what)
     if (this->latched == 0) {
         struct physical_io_device* p = (struct physical_io_device*)cvec_get(this->devices, this->device_index);
         if (p->connected) {
-            struct cvec* bl = &p->device.controller.digital_buttons;
+            struct cvec* bl = &p->controller.digital_buttons;
             struct HID_digital_button* b;
             // up down left right a b start select
 #define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
@@ -69,13 +69,13 @@ void NES_joypad_setup_pio(struct physical_io_device *d, u32 num, const char*name
     // = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    sprintf(d->device.controller.name, "%s", name);
+    sprintf(d->controller.name, "%s", name);
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;
     d->enabled = 1;
 
-    struct JSM_CONTROLLER* cnt = &d->device.controller;
+    struct JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);

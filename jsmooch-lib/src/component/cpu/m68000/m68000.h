@@ -143,6 +143,10 @@ struct M68k {
     u32 megadrive_bug;
 
     struct {
+        u32 ins_PC;
+    } dbg;
+
+    struct {
         enum M68k_states current;
         u32 nmi;
         u32 internal_interrupt_level;
@@ -283,6 +287,8 @@ struct M68k {
     struct M68k_ins_t SPEC_RESET;
 };
 
+struct disassembly_entry;
+
 void M68k_cycle(struct M68k*);
 void M68k_init(struct M68k*, u32 megadrive_bug);
 void M68k_delete(struct M68k*);
@@ -290,7 +296,7 @@ void M68k_reset(struct M68k*);
 void M68k_setup_tracing(struct M68k*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
 void M68k_unstop(struct M68k*);
 void M68k_set_interrupt_level(struct M68k*, u32 val);
-
+void M68k_disassemble_entry(struct M68k*, struct disassembly_entry* entry);
 void M68k_set_SR(struct M68k*, u32 val, u32 immediate_t);
 u32 M68k_get_SR(struct M68k*);
 

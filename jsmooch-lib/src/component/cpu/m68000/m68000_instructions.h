@@ -13,7 +13,7 @@ struct M68k;
 struct M68k_ins_t;
 
 typedef void (*M68k_ins_func)(struct M68k*, struct M68k_ins_t *ins);
-typedef void (*M68k_disassemble_t)(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
+typedef void (*M68k_disassemble_t)(struct M68k_ins_t *ins, u32 *PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 
 struct M68k_ins_t {
     u16 opcode;

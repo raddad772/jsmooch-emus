@@ -7,6 +7,8 @@
 #include "string.h"
 #include "stdio.h"
 
+#include "helpers/debugger/debugger.h"
+
 #include "sms_gg.h"
 #include "sms_gg_clock.h"
 #include "sms_gg_io.h"
@@ -33,7 +35,7 @@ void SMSGGJ_disable_tracing(JSM);
 void SMSGGJ_describe_io(JSM, struct cvec *IOs);
 static void SMSGGIO_unload_cart(JSM);
 static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
-
+static void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 {
@@ -111,8 +113,15 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     jsm->disable_tracing = &SMSGGJ_disable_tracing;
     jsm->describe_io = &SMSGGJ_describe_io;
     jsm->sideload = NULL;
+    jsm->setup_debugger_interface = &SMSGGJ_setup_debugger_interface;
 
     SMSGGJ_reset(jsm);
+}
+
+static void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+{
+    intf->supported_by_core = 0;
+    printf("\nWARNING: debugger interface not supported on core: sms/gg");
 }
 
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
@@ -131,12 +140,12 @@ static void setup_controller(struct SMSGG* this, u32 num, const char*name, u32 c
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    sprintf(d->device.controller.name, "%s", name);
+    sprintf(d->controller.name, "%s", name);
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;
 
-    struct JSM_CONTROLLER* cnt = &d->device.controller;
+    struct JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     new_button(cnt, "up", DBCID_co_up);
@@ -167,13 +176,13 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device* chassis = cvec_push_back(IOs);
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     sprintf(b->name, "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
     if (this->variant != SYS_GG) {
-        b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+        b = cvec_push_back(&chassis->chassis.digital_buttons);
         b->common_id = DBCID_ch_reset;
         sprintf(b->name, "Reset");
         b->state = 0;
@@ -182,7 +191,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     this->io.pause_button = NULL;
 
     if (this->variant != SYS_GG) {
-        b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+        b = cvec_push_back(&chassis->chassis.digital_buttons);
         b->common_id = DBCID_ch_pause;
         sprintf(b->name, "Pause");
         b->state = 0;
@@ -193,19 +202,19 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     // cartridge port
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
-    d->device.cartridge_port.load_cart = &SMSGGIO_load_cart;
-    d->device.cartridge_port.unload_cart = &SMSGGIO_unload_cart;
+    d->cartridge_port.load_cart = &SMSGGIO_load_cart;
+    d->cartridge_port.unload_cart = &SMSGGIO_unload_cart;
 
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->device.display.fps = 60;
-    d->device.display.output[0] = malloc(256*224*2);
-    d->device.display.output[1] = malloc(256*224*2);
+    d->display.fps = 60;
+    d->display.output[0] = malloc(256*224*2);
+    d->display.output[1] = malloc(256*224*2);
     this->vdp.display = d;
-    this->vdp.cur_output = (u16 *)d->device.display.output[0];
-    d->device.display.last_written = 1;
-    d->device.display.last_displayed = 1;
+    this->vdp.cur_output = (u16 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
     this->io.controllerA.devices = IOs;
     this->io.controllerA.device_index = 0;
@@ -234,6 +243,7 @@ void SMSGG_delete(struct jsm_system* jsm)
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
     jsm->describe_io = NULL;
+    jsm->setup_debugger_interface = NULL;
 }
 
 void SMSGGJ_get_framevars(JSM, struct framevars* out)
@@ -273,9 +283,9 @@ u32 SMSGGJ_finish_frame(JSM)
     while(current_frame == this->clock.frames_since_restart) {
         scanlines_done++;
         SMSGGJ_finish_scanline(jsm);
-        if (dbg.do_break) return this->vdp.display->device.display.last_written;
+        if (dbg.do_break) return this->vdp.display->display.last_written;
     }
-    return this->vdp.display->device.display.last_written;
+    return this->vdp.display->display.last_written;
 }
 
 u32 SMSGGJ_finish_scanline(JSM)

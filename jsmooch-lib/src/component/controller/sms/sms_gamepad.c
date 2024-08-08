@@ -46,7 +46,7 @@ void SMSGG_gamepad_latch(struct SMSGG_gamepad* this)
 {
     struct physical_io_device* p = (struct physical_io_device*)cvec_get(this->devices, this->device_index);
     if (p->connected) {
-        struct cvec* bl = &p->device.controller.digital_buttons;
+        struct cvec* bl = &p->controller.digital_buttons;
         struct HID_digital_button* b;
 #define B_GET(button, num) { b = cvec_get(bl, num); this->pins. button = b->state ^ 1; }
         B_GET(up, 0);

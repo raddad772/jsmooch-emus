@@ -9,6 +9,7 @@
 #include "helpers/sys_interface.h"
 #include "helpers/debug.h"
 #include "helpers/physical_io.h"
+#include "helpers/debugger/debugger.h"
 
 #include "component/misc/via6522/via6522.h"
 #include "component/cpu/m68000/m68000.h"
@@ -39,9 +40,23 @@ enum iwm_modes {
 };
 
 struct mac {
+    struct debugger_interface *dbgr;
     enum mac_variants kind;
     struct M68k cpu;
     struct mac_clock clock;
+
+    struct {
+        struct cpu_reg_context *D[8];
+        struct cpu_reg_context *A[8];
+        struct cpu_reg_context *PC;
+        struct cpu_reg_context *USP, *SSP;
+        struct cpu_reg_context *SR;
+        struct cpu_reg_context *supervisor;
+        struct cpu_reg_context *trace;
+        struct cpu_reg_context *IMASK, *CSR;
+        struct cpu_reg_context *IR, *IRC;
+    } dbg;
+
     struct mac_via {
         struct {
             u8 IRA, ORA; // Input and Output Register A
@@ -79,7 +94,7 @@ struct mac {
         struct JSMAC_DRIVE {
             struct mac_floppy* disc;
 
-            u32 RPM;
+            double RPM;
             u32 pwm_val;
 
             struct {
@@ -128,7 +143,7 @@ struct mac {
             u8 CA0, CA1, CA2, LSTRB, ENABLE;
             u8 Q6, Q7;
             u8 SELECT;
-            u8 motor_on;
+            u8 enable;
 
             u8 phases;
         } lines;

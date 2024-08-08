@@ -588,7 +588,7 @@ def main():
              ]
 
     def fn(o) -> str:
-        return 'void M68k_disasm_' + o + '(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)'
+        return 'void M68k_disasm_' + o + '(struct M68k_ins_t *ins, u32 *PC, struct jsm_debug_read_trace *rt, struct jsm_string *out)'
 
     disasm_funcs.append('SUBQ_ar')
     disasm_funcs.append('ADDQ_ar')

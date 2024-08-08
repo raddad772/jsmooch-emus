@@ -10,9 +10,9 @@
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
 #include "jsmooch-gui.h"
-
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
+//#include "system/gb/gb_enums.h"
 
 // mac overlay - 14742566
 // i get to    - 88219648
@@ -146,7 +146,6 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
 }
 
 
-
 void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const char* sec_path, u32 *worked)
 {
     char BASE_PATH[500];
@@ -251,14 +250,18 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
         case SYS_DREAMCAST:
+        case SYS_MAC512K:
+        case SYS_MAC128K:
+        case SYS_MACPLUS_1MB:
             for (u32 i = 0; i < cvec_len(IOs); i++) {
                 pio = (struct physical_io_device*)cvec_get(IOs, i);
                 if (pio->kind == HID_DISC_DRIVE) {
-                    pio->device.disc_drive.insert_disc(sys, mfs);
+                    printf("\nINSERT DISC!");
+                    pio->disc_drive.insert_disc(sys, pio, mfs);
                     break;
                 }
                 else if (pio->kind == HID_AUDIO_CASSETTE) {
-                    pio->device.audio_cassette.insert_tape(sys, mfs, NULL);
+                    pio->audio_cassette.insert_tape(sys, pio, mfs, NULL);
                     break;
                 }
                 pio = nullptr;
@@ -272,7 +275,7 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
         pio = nullptr;
     }
     // TODO: add sram support
-    if (pio) pio->device.cartridge_port.load_cart(sys, mfs, nullptr);
+    if (pio) pio->cartridge_port.load_cart(sys, mfs, nullptr);
     return pio;
 }
 
@@ -350,7 +353,7 @@ void newsys(struct full_system *fsys)
 
 static void setup_controller(struct system_io* io, struct physical_io_device* pio, u32 pnum)
 {
-    struct cvec* dbs = &pio->device.controller.digital_buttons;
+    struct cvec* dbs = &pio->controller.digital_buttons;
     for (u32 i = 0; i < cvec_len(dbs); i++) {
         struct HID_digital_button* db = (struct HID_digital_button*)cvec_get(dbs, i);
         switch(db->common_id) {
@@ -385,26 +388,24 @@ static void setup_controller(struct system_io* io, struct physical_io_device* pi
     }
 }
 
-struct full_system setup_system(enum jsm_systems which)
+void full_system::setup_system(enum jsm_systems which)
 {
-    struct full_system fsys = {};
     struct multi_file_set BIOSes = {};
     mfs_init(&BIOSes);
 
     // Create our emulator
 
-    fsys.sys = new_system(which);
-    struct cvec *IOs = &fsys.sys->IOs;
+    sys = new_system(which);
+    struct cvec *IOs = &sys->IOs;
 
     u32 has_bios = grab_BIOSes(&BIOSes, which);
     if (has_bios) {
-        fsys.sys->load_BIOS(fsys.sys, &BIOSes);
+        sys->load_BIOS(sys, &BIOSes);
         mfs_delete(&BIOSes);
     }
 
     struct multi_file_set ROMs;
     mfs_init(&ROMs);
-    u32 worked = 0;
     switch(which) {
         case SYS_NES:
             worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
@@ -428,6 +429,8 @@ struct full_system setup_system(enum jsm_systems which)
         case SYS_MAC512K:
         case SYS_MAC128K:
         case SYS_MACPLUS_1MB:
+            worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
+            break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
             worked = 1;
@@ -440,10 +443,10 @@ struct full_system setup_system(enum jsm_systems which)
     }
     if (!worked) {
         printf("\nCouldn't open ROM!");
-        return fsys;
+        return;
     }
 
-    struct physical_io_device* fileioport = load_ROM_into_emu(fsys.sys, IOs, &ROMs);
+    struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
     mfs_delete(&ROMs);
 
 #ifdef SIDELOAD
@@ -454,40 +457,41 @@ struct full_system setup_system(enum jsm_systems which)
     fsys.sys->sideload(sys, &sideload_image);
     mfs_delete(&sideload_image);
 #endif
-    memset(&fsys.inputs, 0, sizeof(struct system_io));
+    memset(&inputs, 0, sizeof(struct system_io));
     for (u32 i = 0; i < cvec_len(IOs); i++) {
         struct physical_io_device* pio = (struct physical_io_device*)cvec_get(IOs, i);
         switch(pio->kind) {
             case HID_CONTROLLER: {
-                if (fsys.io.controller1 == nullptr) {
-                    fsys.io.controller1 = pio;
-                    setup_controller(&fsys.inputs, pio, 0);
+                if (io.controller1.vec == nullptr) {
+                    io.controller1 = make_cvec_ptr(IOs, i);
+                    setup_controller(&inputs, pio, 0);
                 }
                 else {
-                    fsys.io.controller2 = pio;
-                    setup_controller(&fsys.inputs, pio, 1);
+                    io.controller2 = make_cvec_ptr(IOs, i);
+                    setup_controller(&inputs, pio, 1);
                 }
                 continue; }
             case HID_KEYBOARD: {
-                fsys.io.keyboard = pio;
+                io.keyboard = make_cvec_ptr(IOs, i);
                 continue; }
             case HID_DISPLAY: {
-                fsys.io.display = pio;
+                io.display = make_cvec_ptr(IOs, i);
                 continue; }
             case HID_CHASSIS: {
-                fsys.io.chassis = pio;
-                struct cvec* dbs = &fsys.io.chassis->device.chassis.digital_buttons;
+                io.chassis = make_cvec_ptr(IOs, i);
+                //make_cvec_ptr(IOs, i);
+                struct cvec* dbs = &pio->chassis.digital_buttons;
                 for (u32 j = 0; j < cvec_len(dbs); j++) {
                     struct HID_digital_button* db = (struct HID_digital_button*)cvec_get(dbs, j);
                     switch(db->common_id) {
                         case DBCID_ch_pause:
-                            fsys.inputs.ch_pause = db;
+                            inputs.ch_pause = db;
                             continue;
                         case DBCID_ch_power:
-                            fsys.inputs.ch_power = db;
+                            inputs.ch_power = db;
                             continue;
                         case DBCID_ch_reset:
-                            fsys.inputs.ch_reset = db;
+                            inputs.ch_reset = db;
                             continue;
                         default:
                             continue;
@@ -495,47 +499,70 @@ struct full_system setup_system(enum jsm_systems which)
                 }
                 break; }
             case HID_MOUSE:
-                fsys.io.mouse = pio;
+                io.mouse = make_cvec_ptr(IOs, i);
                 break;
             case HID_DISC_DRIVE:
-                fsys.io.disk_drive = pio;
+                io.disk_drive = make_cvec_ptr(IOs, i);
                 break;
             case HID_CART_PORT:
-                fsys.io.cartridge_port = pio;
+                io.cartridge_port = make_cvec_ptr(IOs, i);
                 break;
             case HID_AUDIO_CASSETTE:
-                fsys.io.audio_cassette = pio;
+                io.audio_cassette = make_cvec_ptr(IOs, i);
                 break;
             default:
                 break;
         }
     }
-    assert(fsys.io.display);
-    assert(fsys.io.chassis);
-    fsys.worked = 1;
-    return fsys;
-}
-void destroy_system(struct full_system *fsys)
-{
-    if (fsys->sys == nullptr) return;
-    jsm_delete(fsys->sys);
-    fsys->sys = nullptr;
+    assert(io.display.vec);
+    assert(io.chassis.vec);
+
+    sys->setup_debugger_interface(sys, &dbgr);
+    dasm = nullptr;
+    for (u32 i = 0; i < cvec_len(&dbgr.views); i++) {
+        auto view = (struct debugger_view *)cvec_get(&dbgr.views, i);
+        switch(view->kind) {
+            case dview_disassembly:
+                dasm = &view->disassembly;
+                break;
+            default:
+                break;
+        }
+        if (dasm) break;
+    }
 }
 
-void sys_present(struct full_system *fsys, void *outptr, u32 out_width, u32 out_height)
+void full_system::destroy_system()
 {
-    struct jsm_system *sys = fsys->sys;
-    struct framevars fv = {};
-    sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, fsys->io.display, outptr, out_width, out_height);
+    if (sys == nullptr) return;
+    jsm_delete(sys);
+    sys = nullptr;
 }
 
-void sys_do_frame(struct full_system *fsys) {
-    struct jsm_system *sys = fsys->sys;
+struct framevars full_system::get_framevars() const
+{
     struct framevars fv = {};
-    if (!dbg.do_break)
-        sys->finish_frame(sys);
     sys->get_framevars(sys, &fv);
+    return fv;
+}
+
+void full_system::present(void *outptr, u32 out_width, u32 out_height) const
+{
+    struct framevars fv = {};
+    sys->get_framevars(sys, &fv);
+    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), outptr, out_width, out_height);
+}
+
+void full_system::do_frame() const {
+    if (sys) {
+        struct framevars fv = {};
+        if (!dbg.do_break)
+            sys->finish_frame(sys);
+        sys->get_framevars(sys, &fv);
+    }
+    else {
+        printf("\nCannot do frame with no system.");
+    }
 }
 
 int maine(int argc, char** argv)

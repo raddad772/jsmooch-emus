@@ -410,7 +410,7 @@ void GB_CPU_quick_boot(struct GB_CPU* this)
 }
 
 static void update_inputs(struct GB_CPU* this) {
-    struct cvec* bl = &this->io_device->device.controller.digital_buttons;
+    struct cvec* bl = &this->io_device->controller.digital_buttons;
     struct HID_digital_button* b;
 #define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
     B_GET(up, 0);

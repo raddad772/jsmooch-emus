@@ -233,7 +233,7 @@ u32 NES_bus_PPU_read_regs(struct NES* nes, u32 addr, u32 val, u32 has_effect)
             if (this->rendering_enabled && ((nes->clock.ppu_y < nes->clock.timing.vblank_start) || (nes->clock.ppu_y > nes->clock.timing.vblank_end))) {
                 return 0;
             }
-            if ((this->io.v & 0x3FF) >= 0x3F00) {
+            if ((this->io.v & 0x3FFF) >= 0x3F00) {
                 output = NES_PPU_read_cgram(this, addr);
             }
             else {
@@ -241,7 +241,7 @@ u32 NES_bus_PPU_read_regs(struct NES* nes, u32 addr, u32 val, u32 has_effect)
                 this->latch.VRAM_read = this->nes->bus.PPU_read_effect(this->nes, this->io.v & 0x3FFF);
             }
             this->io.v = (this->io.v + this->io.vram_increment) & 0x7FFF;
-            this->nes->bus.a12_watch(this->nes, this->io.v & 0x3FFF);
+            //this->nes->bus.a12_watch(this->nes, this->io.v & 0x3FFF);
             break;
         default:
             printf("READ UNIMPLEMENTED %04x", addr);
@@ -370,13 +370,13 @@ void oam_evaluate_slow(THIS) {
         // Sprite data fetches into shift registers
         u32 sub_cycle = (this->line_cycle - 257) & 0x07;
         switch (sub_cycle) {
-            case 0: // Read Y coordinate.  257
-                ;i32 syl = eval_y - this->secondary_OAM[this->secondary_OAM_index];
+            case 0: {// Read Y coordinate.  257
+                i32 syl = eval_y - this->secondary_OAM[this->secondary_OAM_index];
                 if (syl < 0) syl = 0;
                 if (syl > (this->status.sprite_height - 1)) syl = this->status.sprite_height - 1;
                 this->sprite_y_lines[this->secondary_OAM_sprite_index] = syl;
                 this->secondary_OAM_index++;
-                break;
+                break; }
             case 1: // Read tile number 258, and do garbage NT access
                 this->sprite_pattern_shifters[this->secondary_OAM_sprite_index] = this->secondary_OAM[this->secondary_OAM_index];
                 this->secondary_OAM_index++;
@@ -614,8 +614,8 @@ void new_frame(THIS) {
     this->nes->clock.frame_odd = (this->nes->clock.frame_odd + 1) & 1;
     this->nes->clock.master_frame++;
     this->nes->clock.cpu_frame_cycle = 0;
-    this->cur_output = this->display->device.display.output[this->display->device.display.last_written];
-    this->display->device.display.last_written ^= 1;
+    this->cur_output = this->display->display.output[this->display->display.last_written];
+    this->display->display.last_written ^= 1;
 }
 
 void set_scanline(THIS, u32 to) {

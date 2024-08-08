@@ -9,6 +9,7 @@
 #include "gb_bus.h"
 #include "gb_enums.h"
 #include "helpers/physical_io.h"
+#include "helpers/debugger/debugger.h"
 
 #define JTHIS struct GB* this = (struct GB*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -37,6 +38,7 @@ void GBJ_disable_tracing(JSM);
 void GBJ_describe_io(JSM, struct cvec* IOs);
 static void GBIO_unload_cart(JSM);
 static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
+static void GBJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 void GB_new(JSM, enum GB_variants variant)
 {
@@ -89,6 +91,7 @@ void GB_new(JSM, enum GB_variants variant)
 	jsm->stop = &GBJ_stop;
 
     jsm->sideload = NULL;
+    jsm->setup_debugger_interface = &GBJ_setup_debugger_interface;
 }
 
 u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val) {
@@ -134,6 +137,13 @@ void GB_delete(JSM)
     jsm->disable_tracing = NULL;
 }
 
+static void GBJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+{
+    intf->supported_by_core = 0;
+    printf("\nWARNING: debugger interface not supported on core: gb");
+}
+
+
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
@@ -158,12 +168,12 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    sprintf(d->device.controller.name, "%s", "GameBoy");
+    sprintf(d->controller.name, "%s", "GameBoy");
     d->id = 0;
     d->kind = HID_CONTROLLER;
     d->connected = 1;
 
-    struct JSM_CONTROLLER* cnt = &d->device.controller;
+    struct JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
     this->cpu.io_device = d;
@@ -180,12 +190,12 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device* chassis = cvec_push_back(IOs);
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons);
     sprintf(b->name, "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    /*b = cvec_push_back(&chassis->device.chassis.digital_buttons);
+    /*b = cvec_push_back(&chassis->chassis.digital_buttons);
     b->common_id = DBCID_ch_reset;
     sprintf(b->name, "Reset");
     b->state = 0;*/
@@ -193,19 +203,19 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     // cartridge port
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
-    d->device.cartridge_port.load_cart = &GBIO_load_cart;
-    d->device.cartridge_port.unload_cart = &GBIO_unload_cart;
+    d->cartridge_port.load_cart = &GBIO_load_cart;
+    d->cartridge_port.unload_cart = &GBIO_unload_cart;
 
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->device.display.fps = 60;
-    d->device.display.output[0] = malloc(256*224*2);
-    d->device.display.output[1] = malloc(256*224*2);
+    d->display.fps = 60;
+    d->display.output[0] = malloc(256*224*2);
+    d->display.output[1] = malloc(256*224*2);
     this->ppu.display = d;
-    this->ppu.cur_output = (u16 *)d->device.display.output[0];
-    d->device.display.last_written = 1;
-    d->device.display.last_displayed = 1;
+    this->ppu.cur_output = (u16 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
 }
 

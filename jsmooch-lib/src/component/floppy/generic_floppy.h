@@ -14,8 +14,9 @@ extern "C" {
 #include "helpers/buf.h"
 
 struct generic_floppy_track {
-    double length_mm;
+    double radius_mm, length_mm, rpm;
     struct buf data;
+    u32 num_sectors;
 };
 
 struct generic_floppy {
@@ -30,7 +31,7 @@ struct generic_floppy {
 
 void generic_floppy_init(struct generic_floppy *);
 void generic_floppy_delete(struct generic_floppy *);
-
+void generic_floppy_track_init(struct generic_floppy_track *this);
 
 #ifdef __cplusplus
 }

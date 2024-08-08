@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 #include "m68000.h"
 #include "m68000_instructions.h"
 #include "m68000_internal.h"
@@ -14,7 +15,7 @@
 
 //#define BREAKPOINT 0x40016e
 
-void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
+void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 *PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
 void M68k_init(struct M68k* this, u32 megadrive_bug)
 {
     memset(this, 0, sizeof(struct M68k));
@@ -77,9 +78,8 @@ void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t)
     if (immediate_t || (this->regs.next_SR_T == 0)) this->regs.SR.T = this->regs.next_SR_T;
 }
 
-static void pprint_ea(struct M68k* this, u32 opnum)
+static void pprint_ea(struct M68k* this, struct M68k_ins_t *ins, u32 opnum, struct jsm_string *outstr)
 {
-    struct M68k_ins_t *ins = this->ins;
     struct M68k_EA *ea = &ins->ea[opnum];
     u32 kind = 0; // 0 = NONE, 1 = addr reg, 2 = data reg, 3 = EA
     if (opnum == 0) {
@@ -161,12 +161,18 @@ static void pprint_ea(struct M68k* this, u32 opnum)
         case 0:
             break;
         case 1: // addr reg
-            dbg_printf("A%d:%08x", ea->reg, this->regs.A[ea->reg]);
+            if (outstr) jsm_string_sprintf(outstr, "A%d:%08x", ea->reg, this->regs.A[ea->reg]);
+            else dbg_printf("A%d:%08x", ea->reg, this->regs.A[ea->reg]);
             break;
         case 2: // data reg
-            dbg_printf("D%d:%08x", ea->reg, this->regs.D[ea->reg]);
+            if (outstr) jsm_string_sprintf(outstr, "D%d:%08x", ea->reg, this->regs.D[ea->reg]);
+            else dbg_printf("D%d:%08x", ea->reg, this->regs.D[ea->reg]);
+            break;
     }
-    if ((kind != 0) && (opnum == 0)) dbg_printf("  ");
+    if ((kind != 0) && (opnum == 0)) {
+        if (outstr) jsm_string_sprintf(outstr, "  ");
+        else dbg_printf("  ");
+    }
 }
 
 static void M68k_trace_format(struct M68k* this)
@@ -175,15 +181,15 @@ static void M68k_trace_format(struct M68k* this)
     M68k_disassemble(this->regs.PC-2, this->regs.IR, &this->trace.strct, &this->trace.str);
     u64 tc;
     if (this->trace.cycles == 0) tc = 0;
-    else tc = *this->trace.cycles >> 1;
+    else tc = *this->trace.cycles;
 #ifdef  M68K_TESTING
     printf(DBGC_M68K "\nM68k  (%04llu)   %06x  %s" DBGC_RST, tc, this->regs.PC-4, this->trace.str.ptr);
 #else
     dbg_printf(DBGC_M68K "\nM68k  (%04llu)   %06x  %s", tc, this->regs.PC-4, this->trace.str.ptr);
     dbg_seek_in_line(TRACE_BRK_POS);
     dbg_printf("SR:%04x  ", this->regs.SR.u);
-    pprint_ea(this, 0);
-    pprint_ea(this, 1);
+    pprint_ea(this, this->ins, 0, NULL);
+    pprint_ea(this, this->ins, 1, NULL);
     dbg_printf(DBGC_RST);
 #endif
 }
@@ -234,7 +240,7 @@ static void lycoder_pprint2(struct M68k* this)
 static void lycoder_pprint1(struct M68k* this)
 {
     // cyc:14742674 a:004002D0 opc:21FC
-    dbg_printf("cyc:%lld a:%08X opc:%04X", *this->trace.cycles >> 1, this->regs.PC-4, this->regs.IRD);
+    dbg_printf("cyc:%lld a:%08X opc:%04X", *this->trace.cycles, this->regs.PC-4, this->regs.IRD);
     this->opc = this->regs.PC - 4;
 }
 
@@ -268,6 +274,7 @@ void M68k_cycle(struct M68k* this)
 #endif
                 if (M68k_process_interrupts(this)) break;
                 M68k_decode(this);
+                this->dbg.ins_PC = this->regs.PC - 4;
                 // This must be done AFTER interrupt, trace, etc. processing
                 this->regs.SR.T = this->regs.next_SR_T;
                 this->ins_decoded = 1;
@@ -345,4 +352,19 @@ void M68k_reset(struct M68k* this)
     this->state.instruction.TCU = 0;
     this->state.instruction.prefetch = 0;
     this->opc = 0xFFFFFFFF;
+}
+
+void M68k_disassemble_entry(struct M68k *this, struct disassembly_entry* entry)
+{
+    u16 IR = this->trace.strct.read_trace_m68k(this->trace.strct.ptr, entry->addr, 1, 1);
+    u16 opcode = IR;
+    jsm_string_quickempty(&entry->dasm);
+    jsm_string_quickempty(&entry->context);
+    struct M68k_ins_t *ins = &M68k_decoded[opcode];
+    u32 mPC = entry->addr+2;
+    ins->disasm(ins, &mPC, &this->trace.strct, &entry->dasm);
+    entry->ins_size_bytes = mPC - entry->addr;
+    struct M68k_ins_t *t =  &M68k_decoded[IR & 0xFFFF];
+    pprint_ea(this, t, 0, &entry->context);
+    pprint_ea(this, t, 1, &entry->context);
 }

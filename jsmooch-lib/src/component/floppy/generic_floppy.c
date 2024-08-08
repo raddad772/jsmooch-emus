@@ -9,7 +9,7 @@ void generic_floppy_init(struct generic_floppy *this)
     cvec_init(&this->tracks, sizeof(struct generic_floppy_track), 80);
 }
 
-static void generic_floppy_track_init(struct generic_floppy_track *this)
+void generic_floppy_track_init(struct generic_floppy_track *this)
 {
     buf_init(&this->data);
     this->length_mm = 0.0;

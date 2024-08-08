@@ -77,9 +77,10 @@ struct framevars {
     //console: string = '';
 };
 
+struct debugger_interface;
 struct jsm_system {
     void* ptr; // Pointer that holds the system
-    char label[50];
+    char label[100];
 
     enum jsm_systems kind; // Which system is it?
 
@@ -100,6 +101,8 @@ struct jsm_system {
     void (*stop)(struct jsm_system* jsm);
 
     void (*sideload)(struct jsm_system* jsm, struct multi_file_set* mfs);
+
+    void (*setup_debugger_interface)(struct jsm_system* jsm, struct debugger_interface *intf);
 
     struct cvec IOs;
 };
