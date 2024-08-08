@@ -216,7 +216,7 @@ void DCJ_play(JSM)
 {
     JTHIS;
     // FOr now we use this to copy framebuffer
-    this->holly.cur_output = this->holly.display->display.output[0];
+    this->holly.cur_output = this->holly.display->crt.output[0];
 }
 
 void DCJ_pause(JSM)
@@ -236,7 +236,7 @@ void DCJ_get_framevars(JSM, struct framevars* out)
     JTHIS;
     out->master_cycle = this->trace_cycles;
     out->master_frame = this->holly.master_frame;
-    out->last_used_buffer = this->holly.display->display.last_written;
+    out->last_used_buffer = this->holly.display->crt.last_written;
 }
 
 void DCJ_reset(JSM)
@@ -486,14 +486,14 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.fps = 60;
-    d->display.output[0] = malloc(640*480*4);
-    d->display.output[1] = malloc(640*480*4);
+    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
+    d->crt.fps = 60;
+    d->crt.output[0] = malloc(640 * 480 * 4);
+    d->crt.output[1] = malloc(640 * 480 * 4);
     this->holly.display = d;
-    this->holly.cur_output = (u32 *)d->display.output[0];
-    d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    this->holly.cur_output = (u32 *)d->crt.output[0];
+    d->crt.last_written = 1;
+    d->crt.last_displayed = 1;
 
     this->c1.devices = IOs;
     this->c1.device_index = 0;

@@ -208,14 +208,14 @@ void atari2600J_describe_io(JSM, struct cvec *IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.fps = 60;
-    d->display.output[0] = malloc(256*224*2);
-    d->display.output[1] = malloc(256*224*2);
+    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
+    d->crt.fps = 60;
+    d->crt.output[0] = malloc(256 * 224 * 2);
+    d->crt.output[1] = malloc(256 * 224 * 2);
     this->tia.display = d;
-    this->tia.cur_output = (u8 *)d->display.output[0];
-    d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    this->tia.cur_output = (u8 *)d->crt.output[0];
+    d->crt.last_written = 1;
+    d->crt.last_displayed = 1;
 }
 
 void atari2600J_enable_tracing(JSM)

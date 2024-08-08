@@ -412,8 +412,8 @@ static void new_frame(struct SMSGG_VDP* this)
     this->bus->clock.vpos = 0;
     this->bus->clock.vdp_frame_cycle = 0;
     this->latch.vscroll = this->io.vscroll;
-    this->cur_output = this->display->display.output[this->display->display.last_written];
-    this->display->display.last_written ^= 1;
+    this->cur_output = this->display->crt.output[this->display->crt.last_written];
+    this->display->crt.last_written ^= 1;
 }
 
 static void set_scanline_kind(struct SMSGG_VDP* this, u32 vpos)

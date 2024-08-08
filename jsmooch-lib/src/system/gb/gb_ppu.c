@@ -812,8 +812,8 @@ static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
     this->clock->frames_since_restart++;
     this->clock->master_frame++;
     if (update_buffer) {
-        this->cur_output = this->display->display.output[this->display->display.last_written];
-        this->display->display.last_written ^= 1;
+        this->cur_output = this->display->crt.output[this->display->crt.last_written];
+        this->display->crt.last_written ^= 1;
     }
 }
 

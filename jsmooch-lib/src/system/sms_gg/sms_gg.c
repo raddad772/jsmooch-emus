@@ -207,14 +207,14 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.fps = 60;
-    d->display.output[0] = malloc(256*224*2);
-    d->display.output[1] = malloc(256*224*2);
+    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
+    d->crt.fps = 60;
+    d->crt.output[0] = malloc(256 * 224 * 2);
+    d->crt.output[1] = malloc(256 * 224 * 2);
     this->vdp.display = d;
-    this->vdp.cur_output = (u16 *)d->display.output[0];
-    d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    this->vdp.cur_output = (u16 *)d->crt.output[0];
+    d->crt.last_written = 1;
+    d->crt.last_displayed = 1;
 
     this->io.controllerA.devices = IOs;
     this->io.controllerA.device_index = 0;
@@ -283,9 +283,9 @@ u32 SMSGGJ_finish_frame(JSM)
     while(current_frame == this->clock.frames_since_restart) {
         scanlines_done++;
         SMSGGJ_finish_scanline(jsm);
-        if (dbg.do_break) return this->vdp.display->display.last_written;
+        if (dbg.do_break) return this->vdp.display->crt.last_written;
     }
-    return this->vdp.display->display.last_written;
+    return this->vdp.display->crt.last_written;
 }
 
 u32 SMSGGJ_finish_scanline(JSM)

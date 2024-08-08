@@ -129,6 +129,23 @@ static void NESIO_unload_cart(JSM)
 {
 }
 
+static void setup_crt(struct JSM_CRT *d)
+{
+    d->standard = JSS_NTSC;
+    d->pixelometry.cols.left_hblank = 1;
+    d->pixelometry.cols.right_hblank = 80;
+    d->pixelometry.cols.visible = 256;
+    d->pixelometry.offset.x = 1;
+
+    d->pixelometry.rows.top_vblank = 1;
+    d->pixelometry.rows.visible = 224;
+    d->pixelometry.rows.bottom_vblank = 37;
+    d->pixelometry.offset.y = 1;
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom;
+
+}
+
 void NESJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
@@ -138,13 +155,13 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     this->IOs = IOs;
 
     // controllers
-    struct physical_io_device *c1 = cvec_push_back(this->IOs);
-    struct physical_io_device *c2 = cvec_push_back(this->IOs);
+    struct physical_io_device *c1 = cvec_push_back(this->IOs); //0
+    struct physical_io_device *c2 = cvec_push_back(this->IOs); //1
     NES_joypad_setup_pio(c1, 0, "Player 1", 1);
     NES_joypad_setup_pio(c2, 1, "Player 2", 0);
 
     // power and reset buttons
-    struct physical_io_device* chassis = cvec_push_back(IOs);
+    struct physical_io_device* chassis = cvec_push_back(IOs); //2
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
     b = cvec_push_back(&chassis->chassis.digital_buttons);
@@ -152,27 +169,28 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    b = cvec_push_back(&chassis->chassis.digital_buttons);
+    b = cvec_push_back(&chassis->chassis.digital_buttons); //3
     b->common_id = DBCID_ch_reset;
     sprintf(b->name, "Reset");
     b->state = 0;
 
     // cartridge port
-    struct physical_io_device *d = cvec_push_back(IOs);
+    struct physical_io_device *d = cvec_push_back(IOs); //4
     physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
     d->cartridge_port.load_cart = &NESIO_load_cart;
     d->cartridge_port.unload_cart = &NESIO_unload_cart;
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.fps = 60;
-    d->display.output[0] = malloc(256*224*2);
-    d->display.output[1] = malloc(256*224*2);
-    this->ppu.display = d;
-    this->ppu.cur_output = (u16 *)d->display.output[0];
-    d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1); //5
+    d->crt.fps = 60;
+    d->crt.output[0] = malloc(256 * 224 * 2);
+    d->crt.output[1] = malloc(256 * 224 * 2);
+    this->ppu.crt_ptr = make_cvec_ptr(IOs, 5);
+    this->ppu.cur_output = (u16 *)d->crt.output[0];
+    setup_crt(&d->crt);
+    d->crt.last_written = 1;
+    d->crt.last_displayed = 1;
 
     this->cpu.joypad1.devices = IOs;
     this->cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
@@ -234,7 +252,7 @@ u32 NESJ_finish_frame(JSM)
         NESJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->ppu.display->display.last_written;
+    return this->ppu.crt->last_written;
 }
 
 u32 NESJ_finish_scanline(JSM)

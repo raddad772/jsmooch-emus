@@ -61,7 +61,7 @@ static const u32 ZXS_palette[2][8] = {
 
 void mac512k_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u8* output = (u8 *)device->display.output[device->display.last_written];
+    u8* output = (u8 *)device->crt.output[device->crt.last_written];
     u32* imgdata = (u32 *)out_buf;
     for (u32 ry = 0; ry < 342; ry++) {
         u32 y = ry;
@@ -79,7 +79,7 @@ void mac512k_present(struct physical_io_device *device, void *out_buf, u32 out_w
 
 void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u8* output = (u8 *)device->display.output[device->display.last_written];
+    u8* output = (u8 *)device->crt.output[device->crt.last_written];
     u32* imgdata = (u32 *)out_buf;
     for (u32 ry = 0; ry < 304; ry++) {
         u32 y = ry;
@@ -100,7 +100,7 @@ void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 o
 
 void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u8* ibuf = (u8 *)device->display.output[device->display.last_written];
+    u8* ibuf = (u8 *)device->crt.output[device->crt.last_written];
     for (u32 y = 0; y < 192; y++) {
         u8* iptr = (void *)ibuf + ((y * 160));
         for (u32 x = 0; x < 160; x++) {
@@ -123,7 +123,7 @@ void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out
 // Translate from DMG output to 32-bit RGBA
 void DMG_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16* ibuf = (u16 *)device->display.output[device->display.last_written];
+    u16* ibuf = (u16 *)device->crt.output[device->crt.last_written];
     //u16* ptr = ibuf;
 
     for (u32 y = 0; y < 144; y++) {
@@ -172,7 +172,7 @@ void DMG_present(struct physical_io_device *device, void *out_buf, u32 out_width
 */
 void GBC_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16* ibuf = (u16 *)device->display.output[device->display.last_written];
+    u16* ibuf = (u16 *)device->crt.output[device->crt.last_written];
     //u16* ptr = ibuf;
 
     for (u32 y = 0; y < 144; y++) {
@@ -239,7 +239,7 @@ static const u32 NES_palette[512] = {
 
 void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16* neso = (u16 *)device->display.output[device->display.last_written];
+    u16* neso = (u16 *)device->crt.output[device->crt.last_written];
     u32 overscan_left = 8; // overscan.left;
     u32 overscan_right = 8; // overscan.right;
     u32 overscan_top = 8; // overscan.top;
@@ -291,7 +291,7 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     //u16 *smso = (u16 *)device->display.output[device->display.last_written];
-    u16 *smso = (u16 *)device->display.output[0];
+    u16 *smso = (u16 *)device->crt.output[0];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u8 *img8 = (u8 *) out_buf;
     for (u32 ry = 0; ry < 224; /*data.bottom_rendered_line; */ ry++) {
@@ -319,7 +319,7 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
 
 void SMS_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u16 *smso = (u16 *)device->display.output[device->display.last_written];
+    u16 *smso = (u16 *)device->crt.output[device->crt.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u8 *img8 = (u8 *) out_buf;
     for (u32 ry = 0; ry < 192; /*data.bottom_rendered_line; */ ry++) {
@@ -352,7 +352,7 @@ void GG_present(struct physical_io_device *device, void *out_buf, u32 out_width,
 
 void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    u32 *dco = (u32 *)device->display.output[device->display.last_written];
+    u32 *dco = (u32 *)device->crt.output[device->crt.last_written];
     u32 w = out_width;
     u32 *img32 = (u32 *) out_buf;
     for (u32 ry = 0; ry < 480; /*data.bottom_rendered_line; */ ry++) {

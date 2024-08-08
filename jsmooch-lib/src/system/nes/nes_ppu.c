@@ -5,7 +5,6 @@
 #include "stdio.h"
 
 #include "nes.h"
-#include "nes_clock.h"
 #include "nes_cpu.h"
 #include "nes_ppu.h"
 
@@ -373,7 +372,7 @@ void oam_evaluate_slow(THIS) {
             case 0: {// Read Y coordinate.  257
                 i32 syl = eval_y - this->secondary_OAM[this->secondary_OAM_index];
                 if (syl < 0) syl = 0;
-                if (syl > (this->status.sprite_height - 1)) syl = this->status.sprite_height - 1;
+                if (syl > (this->status.sprite_height - 1)) syl = (i32)this->status.sprite_height - 1;
                 this->sprite_y_lines[this->secondary_OAM_sprite_index] = syl;
                 this->secondary_OAM_index++;
                 break; }
@@ -418,6 +417,8 @@ void oam_evaluate_slow(THIS) {
                 this->nes->bus.a12_watch(this->nes, this->last_sprite_addr);
                 this->secondary_OAM_sprite_index++;
                 break;
+            default:
+                assert(1==2);
         }
     }
 }
@@ -543,7 +544,7 @@ void PPU_scanline_visible(struct NES_PPU* this)
         bg_color = (this->bg_shifter >> bg_shift) & 3;
         bg_has_pixel = bg_color != 0;
     }
-    u32 sprite_has_pixel = false;
+    //u32 sprite_has_pixel = false;
     if (bg_has_pixel) {
         u32 agb = this->bg_palette_shifter;
         if (this->io.x + (sx & 0x07) < 8) agb >>= 2;
@@ -562,7 +563,7 @@ void PPU_scanline_visible(struct NES_PPU* this)
     for (i32 m = 7; m >= 0; m--) {
         if ((this->sprite_x_counters[m] >= -8) && (this->sprite_x_counters[m] <= -1) && this->line_cycle < 256) {
             u32 s_x_flip = (this->sprite_attribute_latches[m] & 0x40) >> 6;
-            u32 my_color = 0;
+            u32 my_color;
             if (s_x_flip) {
                 my_color = (this->sprite_pattern_shifters[m] & 0xC000) >> 14;
                 this->sprite_pattern_shifters[m] <<= 2;
@@ -571,7 +572,7 @@ void PPU_scanline_visible(struct NES_PPU* this)
                 this->sprite_pattern_shifters[m] >>= 2;
             }
             if (my_color != 0) {
-                sprite_has_pixel = true;
+                //sprite_has_pixel = true;
                 my_color |= (this->sprite_attribute_latches[m] & 3) << 2;
                 sprite_priority = (this->sprite_attribute_latches[m] & 0x20) >> 5;
                 sprite_color = this->CGRAM[0x10 + my_color];
@@ -614,8 +615,9 @@ void new_frame(THIS) {
     this->nes->clock.frame_odd = (this->nes->clock.frame_odd + 1) & 1;
     this->nes->clock.master_frame++;
     this->nes->clock.cpu_frame_cycle = 0;
-    this->cur_output = this->display->display.output[this->display->display.last_written];
-    this->display->display.last_written ^= 1;
+    this->nes->ppu.crt = cpg(this->crt_ptr);
+    this->cur_output = this->crt->output[this->crt->last_written];
+    this->crt->last_written ^= 1;
 }
 
 void set_scanline(THIS, u32 to) {

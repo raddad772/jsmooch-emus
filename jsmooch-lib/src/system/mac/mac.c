@@ -271,14 +271,14 @@ void macJ_describe_io(JSM, struct cvec *IOs)
 
     // screen - 3
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.fps = 60;
-    d->display.output[0] = malloc(512*342);
-    d->display.output[1] = malloc(512*342);
+    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
+    d->crt.fps = 60;
+    d->crt.output[0] = malloc(512 * 342);
+    d->crt.output[1] = malloc(512 * 342);
     this->display.display = d;
-    this->display.cur_output = (u8 *)d->display.output[0];
-    d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    this->display.cur_output = (u8 *)d->crt.output[0];
+    d->crt.last_written = 1;
+    d->crt.last_displayed = 1;
 }
 
 void macJ_play(JSM)
@@ -340,7 +340,7 @@ u32 macJ_finish_frame(JSM)
         if (dbg.do_break) break;
     }
     //printf("\nScanlines: %d", scanlines);
-    return this->display.display->display.last_written;
+    return this->display.display->crt.last_written;
 }
 
 void macJ_killall(JSM)

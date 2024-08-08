@@ -474,7 +474,7 @@ void full_system::setup_system(enum jsm_systems which)
             case HID_KEYBOARD: {
                 io.keyboard = make_cvec_ptr(IOs, i);
                 continue; }
-            case HID_DISPLAY: {
+            case HID_CRT: {
                 io.display = make_cvec_ptr(IOs, i);
                 continue; }
             case HID_CHASSIS: {

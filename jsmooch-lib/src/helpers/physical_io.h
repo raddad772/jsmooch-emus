@@ -118,7 +118,7 @@ enum JKEYS {
 
 enum IO_CLASSES {
     HID_NONE,
-    HID_DISPLAY,
+    HID_CRT,
     HID_CONTROLLER,
     HID_KEYBOARD,
     HID_MOUSE,
@@ -165,11 +165,42 @@ struct JSM_KEYBOARD {
     u32 num_keys;
 };
 
-struct JSM_DISPLAY {
+
+enum JSM_CRT_STANDARDS {
+    JSS_NTSC,
+    JSS_PAL,
+    JSS_SECAM
+};
+
+struct JSM_CRT {
+    enum JSM_CRT_STANDARDS standard;
     float fps;
     void *output[2];
     u32 last_written;
     u32 last_displayed;
+
+    // geometry, used mostly for event viewer really
+    struct JSM_GEOMETRY {
+        struct {
+            u32 left_hblank, right_hblank;
+            u32 visible;
+        } cols;
+
+        struct {
+            u32 top_vblank, bottom_vblank;
+            u32 visible;
+        } rows;
+
+        struct { // Visible area not seen
+            u32 left, right, top, bottom;
+        } overscan;
+
+        struct { // Defines how our output is from the top-left of the frame, as defined starting before left_hblank and above top_vblank
+            i32 x, y;
+        } offset;
+    } pixelometry;
+
+    u32 gun_x, gun_y; // Current electron gun X and Y, as defined inside the geometry above.
 };
 
 struct JSM_MOUSE {
@@ -225,7 +256,7 @@ struct physical_io_device {
     union {
         struct JSM_CONTROLLER controller;
         struct JSM_KEYBOARD keyboard;
-        struct JSM_DISPLAY display;
+        struct JSM_CRT crt;
         struct JSM_MOUSE mouse;
         struct JSM_CHASSIS chassis;
         struct JSM_AUDIO_CHANNEL audio_channel;

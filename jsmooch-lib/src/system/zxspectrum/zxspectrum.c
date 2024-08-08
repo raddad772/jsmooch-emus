@@ -466,14 +466,14 @@ static void ZXSpectrumIO_remove_tape(JSM)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.fps = 50;
-    d->display.output[0] = malloc(352*304);
-    d->display.output[1] = malloc(352*304);
+    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
+    d->crt.fps = 50;
+    d->crt.output[0] = malloc(352 * 304);
+    d->crt.output[1] = malloc(352 * 304);
     this->ula.display = d;
-    this->ula.cur_output = (u8 *)d->display.output[0];
-    d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    this->ula.cur_output = (u8 *)d->crt.output[0];
+    d->crt.last_written = 1;
+    d->crt.last_displayed = 1;
 }
 
 void ZXSpectrumJ_enable_tracing(JSM)
@@ -546,7 +546,7 @@ u32 ZXSpectrumJ_finish_frame(JSM)
         ZXSpectrumJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->ula.display->display.last_written;
+    return this->ula.display->crt.last_written;
 }
 
 u32 ZXSpectrumJ_finish_scanline(JSM)

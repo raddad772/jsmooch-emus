@@ -26,7 +26,8 @@ struct NES_PPU {
     struct NES* nes;
     PPU_linerender_func render_cycle;
 
-    struct physical_io_device* display;
+    struct cvec_ptr crt_ptr;
+    struct JSM_CRT *crt;
 
     i32 line_cycle;
     u8 OAM[256];

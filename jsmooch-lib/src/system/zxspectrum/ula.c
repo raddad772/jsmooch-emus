@@ -255,8 +255,8 @@ static void new_scanline(struct ZXSpectrum* bus)
         }
 
         // Swap buffer we're drawing to...
-        this->cur_output = this->display->display.output[this->display->display.last_written];
-        this->display->display.last_written ^= 1;
+        this->cur_output = this->display->crt.output[this->display->crt.last_written];
+        this->display->crt.last_written ^= 1;
     }
 
     /*lines 0-7 are vblank
