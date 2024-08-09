@@ -196,6 +196,7 @@ int main(int, char**)
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
+    bool has_played_once = false;
     //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
@@ -299,6 +300,8 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        static bool enable_debugger = true;
+
         // Update the system
         if (dbg.do_break) {
             if (fsys.state == FSS_play)
@@ -308,6 +311,7 @@ int main(int, char**)
         if (fsys.state == FSS_play) {
             update_input(&fsys, io);
             fsys.do_frame();
+            has_played_once = true;
         }
         fsys.present();
 
@@ -351,7 +355,7 @@ int main(int, char**)
         }
 
         // 3. Show another simple window.
-        if (fsys.dasm && fsys.state == FSS_pause) {
+        if (fsys.dasm && enable_debugger && has_played_once) {
             ImGui::Begin("Disassembly View",
                          &show_another_window);         // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
             static ImGuiTableFlags flags =

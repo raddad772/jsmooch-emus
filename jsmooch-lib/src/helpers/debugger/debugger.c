@@ -8,6 +8,19 @@
 
 #include "debugger.h"
 
+static void mark_disassembly_range_invalid(struct disassembly_range *range)
+{
+    range->valid = 0;
+    for (u32 j = 0; j < cvec_len(&range->entries); j++) {
+        disassembly_entry_delete(cvec_get(&range->entries, j));
+    }
+
+    cvec_clear(&range->entries);
+    range->addr_range_end = -1;
+    range->addr_range_start = -1;
+}
+
+
 static void disassembly_view_dirty_mem(struct debugger_interface *dbgr, struct disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end)
 {
     for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
@@ -15,14 +28,7 @@ static void disassembly_view_dirty_mem(struct debugger_interface *dbgr, struct d
         // If the addr range start or end are in ours...
         if ((range->valid && ((range->addr_range_start >= addr_start) && (range->addr_range_start <= addr_end)) ||
                 ((range->addr_range_end >= addr_start) && (range->addr_range_end <= addr_end)))) {
-            range->valid = 0;
-            for (u32 j = 0; j < cvec_len(&range->entries); j++) {
-                disassembly_entry_delete(cvec_get(&range->entries, j));
-            }
-
-            cvec_clear(&range->entries);
-            range->addr_range_end = -1;
-            range->addr_range_start = -1;
+            mark_disassembly_range_invalid(range);
         }
     }
 }
@@ -181,7 +187,9 @@ static struct disassembly_range* find_next_range(struct disassembly_view *dview,
     for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
         struct disassembly_range *range = cvec_get(&dview->ranges, i);
         // Check intersection
-        if (range->valid && (range->addr_range_start >= search_addr) && (range->addr_range_end <= search_addr)) {
+        if (!range->valid) continue;
+
+        if ((range->addr_range_start >= search_addr) && (range->addr_range_end <= search_addr)) {
             return range;
         }
 
@@ -262,23 +270,29 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
 
     struct disassembly_range *intersecting = NULL;
     while(asm_addr < end_addr) {
-        if (intersecting == NULL) intersecting = find_intersecting_range(dview, asm_addr);
+        if (intersecting == NULL)
+            intersecting = find_intersecting_range(dview, asm_addr);
         if (intersecting != NULL) {
             // We got some lines!
+            u32 found_any = 0;
             for (u32 i = 0; i < cvec_len(&intersecting->entries); i++) {
                 struct disassembly_entry *entry = cvec_get(&intersecting->entries, i);
                 if (entry->addr == instruction_addr)
                     line_of_current_instruction = (int)line;
                 if (entry->addr >= asm_addr) {
+                    found_any = 1;
                     struct disassembly_entry_strings *strs = cvec_get(out_lines, line++);
                     asm_addr = entry->addr + entry->ins_size_bytes;
                     w_entry_to_strs(strs, entry);
                 }
             }
+            if (!found_any) mark_disassembly_range_invalid(intersecting);
+            intersecting = NULL;
             continue;
         }
         if (asm_addr < instruction_addr) {
             asm_addr = instruction_addr;
+            intersecting = NULL;
             continue;
         }
         // If we're >= instruction_addr, we should be able to create a new range and disassemble.
