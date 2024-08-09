@@ -12,6 +12,7 @@
 #include "nes_cart.h"
 #include "nes_ppu.h"
 #include "nes_cpu.h"
+#include "nes_debugger.h"
 
 #define JTHIS struct NES* this = (struct NES*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -31,7 +32,6 @@ static void NESJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void NESJ_enable_tracing(JSM);
 static void NESJ_disable_tracing(JSM);
 static void NESJ_describe_io(JSM, struct cvec* IOs);
-static void NESJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 static u32 read_trace(void *ptr, u32 addr)
 {
@@ -79,13 +79,6 @@ void NES_new(JSM)
     jsm->sideload = NULL;
     jsm->setup_debugger_interface = &NESJ_setup_debugger_interface;
 }
-
-static void NESJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
-{
-    intf->supported_by_core = 0;
-    printf("\nWARNING: debugger interface not supported on core: nes");
-}
-
 
 
 void NES_delete(JSM)
@@ -155,7 +148,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.offset.x = 1;
 
     d->pixelometry.rows.top_vblank = 1;
-    d->pixelometry.rows.visible = 240;
+    d->pixelometry.rows.visible = 224;
     d->pixelometry.rows.bottom_vblank = 21;
     d->pixelometry.offset.y = 1;
 
@@ -204,7 +197,7 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1); //5
     d->display.output[0] = malloc(256 * 224 * 2);
     d->display.output[1] = malloc(256 * 224 * 2);
-    this->ppu.display_ptr = make_cvec_ptr(IOs, 5);
+    this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->ppu.cur_output = (u16 *)d->display.output[0];
     setup_crt(&d->display);
     d->display.last_written = 1;
@@ -215,7 +208,7 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     this->cpu.joypad2.devices = IOs;
     this->cpu.joypad2.device_index = NES_INPUTS_PLAYER2;
 
-    this->ppu.display = cpg(this->ppu.display_ptr);
+    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
 }
 
 void NESJ_enable_tracing(JSM)

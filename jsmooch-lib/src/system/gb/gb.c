@@ -242,7 +242,7 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     d->display.last_written = 1;
     d->display.last_displayed = 1;
 
-    this->ppu.display = cpg(this->ppu.display_ptr);
+    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
 }
 
 void GBJ_killall(JSM) {

@@ -306,7 +306,7 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     d->display.last_written = 1;
     d->display.last_displayed = 1;
 
-    this->display.crt = cpg(this->display.crt_ptr);
+    this->display.crt = &((struct physical_io_device *)cpg(this->display.crt_ptr))->display;
 }
 
 void macJ_play(JSM)

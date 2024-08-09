@@ -620,8 +620,8 @@ void new_frame(THIS) {
     this->nes->clock.frame_odd = (this->nes->clock.frame_odd + 1) & 1;
     this->nes->clock.master_frame++;
     this->nes->clock.cpu_frame_cycle = 0;
-    this->nes->ppu.display = cpg(this->display_ptr);
     this->cur_output = this->display->output[this->display->last_written];
+    assert((u64)this->cur_output > 1);
     this->display->last_written ^= 1;
 }
 

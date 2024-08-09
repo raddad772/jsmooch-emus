@@ -242,7 +242,7 @@ void atari2600J_describe_io(JSM, struct cvec *IOs)
     d->display.last_written = 1;
     d->display.last_displayed = 1;
 
-    this->tia.display = cpg(this->tia.display_ptr);
+    this->tia.display = &((struct physical_io_device *)cpg(this->tia.display_ptr))->display;
 }
 
 void atari2600J_enable_tracing(JSM)

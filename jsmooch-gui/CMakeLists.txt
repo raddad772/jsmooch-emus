@@ -2,13 +2,15 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(jsmooch-gui
-        src/jsmooch-gui.cpp
-        src/jsmooch-gui.h
+        src/full_sys.cpp
+        src/full_sys.h
         ../jsmooch-lib/src/component/cpu/z80/z80_opcodes.c
         src/application.h
         src/application.cpp
         src/keymap_translate.cpp
         src/keymap_translate.h
+        src/my_texture.cpp
+        src/my_texture.h
 )
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 

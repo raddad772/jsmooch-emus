@@ -5,11 +5,12 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <string.h>
+#include <cmath>
 #include "application.h"
 #include "helpers/sys_interface.h"
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
-#include "jsmooch-gui.h"
+#include "full_sys.h"
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
 //#include "system/gb/gb_enums.h"
@@ -23,6 +24,22 @@
 //#define SIDELOAD
 //#define STOPAFTERAWHILE
 
+
+
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
+u32 get_closest_pow2(u32 b)
+{
+    //u32 b = MAX(w, h);
+    u32 out = 128;
+    while(out < b) {
+        out <<= 1;
+        assert(out < 0x40000000);
+    }
+    return out;
+}
 
 void map_inputs(const u32 *input_buffer, struct system_io* inputs, struct jsm_system *jsm)
 {
@@ -388,75 +405,9 @@ static void setup_controller(struct system_io* io, struct physical_io_device* pi
     }
 }
 
-void full_system::setup_system(enum jsm_systems which)
+void full_system::setup_ios()
 {
-    struct multi_file_set BIOSes = {};
-    mfs_init(&BIOSes);
-
-    // Create our emulator
-
-    sys = new_system(which);
     struct cvec *IOs = &sys->IOs;
-
-    u32 has_bios = grab_BIOSes(&BIOSes, which);
-    if (has_bios) {
-        sys->load_BIOS(sys, &BIOSes);
-        mfs_delete(&BIOSes);
-    }
-
-    struct multi_file_set ROMs;
-    mfs_init(&ROMs);
-    switch(which) {
-        case SYS_NES:
-            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
-            break;
-        case SYS_SMS1:
-        case SYS_SMS2:
-            worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
-            break;
-        case SYS_DMG:
-            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
-            break;
-        case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "pokemonyellow.gbc", nullptr);
-            break;
-        case SYS_ATARI2600:
-            worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
-            break;
-        case SYS_DREAMCAST:
-            worked = grab_ROM(&ROMs, which, "crazytaxi.gdi", "crazy_taxi");
-            break;
-        case SYS_MAC512K:
-        case SYS_MAC128K:
-        case SYS_MACPLUS_1MB:
-            worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
-            break;
-        case SYS_ZX_SPECTRUM_48K:
-        case SYS_ZX_SPECTRUM_128K:
-            worked = 1;
-            break;
-        case SYS_GENESIS:
-            worked = grab_ROM(&ROMs, which, "sonic.md", nullptr);
-            break;
-        default:
-            printf("\nSYS NOT IMPLEMENTED!");
-    }
-    if (!worked) {
-        printf("\nCouldn't open ROM!");
-        return;
-    }
-
-    struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
-    mfs_delete(&ROMs);
-
-#ifdef SIDELOAD
-    struct multi_file_set sideload_image;
-    mfs_init(&sideload_image);
-    grab_ROM(&sideload_image, which, "gl_matrix.elf", "kos");
-    mfs_add_IP_BIN(&sideload_image);
-    fsys.sys->sideload(sys, &sideload_image);
-    mfs_delete(&sideload_image);
-#endif
     memset(&inputs, 0, sizeof(struct system_io));
     for (u32 i = 0; i < cvec_len(IOs); i++) {
         struct physical_io_device* pio = (struct physical_io_device*)cvec_get(IOs, i);
@@ -517,6 +468,83 @@ void full_system::setup_system(enum jsm_systems which)
     assert(io.display.vec);
     assert(io.chassis.vec);
 
+
+    output.display = &((struct physical_io_device *)cpg(io.display))->display;
+}
+
+void full_system::setup_wgpu()
+{
+    setup_display();
+}
+
+void full_system::setup_bios()
+{
+    enum jsm_systems which = sys->kind;
+
+    struct multi_file_set BIOSes = {};
+    mfs_init(&BIOSes);
+
+    u32 has_bios = grab_BIOSes(&BIOSes, which);
+    if (has_bios) {
+        sys->load_BIOS(sys, &BIOSes);
+    }
+    mfs_delete(&BIOSes);
+}
+
+void full_system::load_default_ROM()
+{
+    struct cvec *IOs = &sys->IOs;
+    enum jsm_systems which = sys->kind;
+
+    struct multi_file_set ROMs;
+    mfs_init(&ROMs);
+    assert(sys);
+    switch(which) {
+        case SYS_NES:
+            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            break;
+        case SYS_SMS1:
+        case SYS_SMS2:
+            worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
+            break;
+        case SYS_DMG:
+            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
+            break;
+        case SYS_GBC:
+            worked = grab_ROM(&ROMs, which, "pokemonyellow.gbc", nullptr);
+            break;
+        case SYS_ATARI2600:
+            worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
+            break;
+        case SYS_DREAMCAST:
+            worked = grab_ROM(&ROMs, which, "crazytaxi.gdi", "crazy_taxi");
+            break;
+        case SYS_MAC512K:
+        case SYS_MAC128K:
+        case SYS_MACPLUS_1MB:
+            worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
+            break;
+        case SYS_ZX_SPECTRUM_48K:
+        case SYS_ZX_SPECTRUM_128K:
+            worked = 1;
+            break;
+        case SYS_GENESIS:
+            worked = grab_ROM(&ROMs, which, "sonic.md", nullptr);
+            break;
+        default:
+            printf("\nSYS NOT IMPLEMENTED!");
+    }
+    if (!worked) {
+        printf("\nCouldn't open ROM!");
+        return;
+    }
+
+    struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
+    mfs_delete(&ROMs);
+}
+
+void full_system::setup_debugger_interface()
+{
     sys->setup_debugger_interface(sys, &dbgr);
     dasm = nullptr;
     for (u32 i = 0; i < cvec_len(&dbgr.views); i++) {
@@ -530,6 +558,36 @@ void full_system::setup_system(enum jsm_systems which)
         }
         if (dasm) break;
     }
+}
+
+
+void full_system::setup_system(enum jsm_systems which)
+{
+    // Create our emulator
+
+    sys = new_system(which);
+
+    assert(sys);
+
+
+    setup_ios();
+
+    setup_bios();
+
+    //    backbuffer.setup(wgpu_device, "backbuffer", bb_width, bb_height);
+
+    load_default_ROM();
+
+#ifdef SIDELOAD
+    struct multi_file_set sideload_image;
+    mfs_init(&sideload_image);
+    grab_ROM(&sideload_image, which, "gl_matrix.elf", "kos");
+    mfs_add_IP_BIN(&sideload_image);
+    fsys.sys->sideload(sys, &sideload_image);
+    mfs_delete(&sideload_image);
+#endif
+
+    setup_debugger_interface();
 }
 
 void full_system::destroy_system()
@@ -546,11 +604,72 @@ struct framevars full_system::get_framevars() const
     return fv;
 }
 
-void full_system::present(void *outptr, u32 out_width, u32 out_height) const
+void full_system::setup_display()
+{
+    struct JSM_DISPLAY_PIXELOMETRY *p = &output.display->pixelometry;
+    assert(wgpu_device);
+
+    // Determine final output resolution
+    u32 wh = get_closest_pow2(MAX(p->cols.visible, p->rows.visible));
+    output.backbuffer_texture.setup(wgpu_device, "emulator backbuffer", wh, wh);
+
+    // Determine aspect ratio correction
+    double visible_width = p->cols.visible;
+    double visible_height = p->rows.visible;
+
+    double real_width = output.display->geometry.physical_aspect_ratio.width;
+    double real_height = output.display->geometry.physical_aspect_ratio.height;
+
+    // we want a multiplier of 1 in one direction, and >1 in the other
+    double visible_how = visible_height / visible_width;  // .5
+    double real_how = real_height / real_width;           // .6. real is narrower
+
+    if ((visible_how - real_how) < .01) {
+        output.x_scale_mult = 1;
+        output.y_scale_mult = 1;
+        output.x_size = (float)p->cols.visible;
+        output.y_size = (float)p->rows.visible;
+    }
+    else if (real_how > visible_how) { // real is narrower, so we stretch vertically. visible= 4:2 .5  real=3:2  .6
+        output.x_scale_mult = 1;
+        output.y_scale_mult = (real_how / visible_how); // we must
+        output.x_size = (float)p->cols.visible;
+        output.y_size = (float)(visible_height * output.y_scale_mult);
+    }
+    else { // real is wider, so we stretch horizontally  //    visible=4:2 = .5    real=5:2 = .4
+        output.x_scale_mult = (visible_how / real_how);
+        output.y_scale_mult = 1;
+        output.x_size = (float)(visible_width * output.x_scale_mult);
+        output.y_size = (float)p->rows.visible;
+    }
+    printf("\nOutput size: %dx%d", (int)output.x_size, (int)output.y_size);
+
+    // Calculate UV coords
+    output.u = (float)((double)p->cols.visible / (double)output.backbuffer_texture.width);
+    output.v = (float)((double)p->rows.visible / (double)output.backbuffer_texture.height);
+
+    if (output.backbuffer_backer) free(output.backbuffer_backer);
+    output.backbuffer_backer = malloc(p->cols.visible * p->rows.visible * 4);
+    memset(output.backbuffer_backer, 0, p->cols.visible * p->rows.visible * 4);
+}
+
+void full_system::present()
 {
     struct framevars fv = {};
     sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), outptr, out_width, out_height);
+    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, output.backbuffer_texture.width, output.backbuffer_texture.height);
+    output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
+}
+
+ImVec2 full_system::output_size() const
+{
+    u32 z = output.zoom ? 2 : 1;
+    return {output.x_size * z, output.y_size * z};
+}
+
+ImVec2 full_system::output_uv() const
+{
+    return {output.u, output.v};
 }
 
 void full_system::do_frame() const {

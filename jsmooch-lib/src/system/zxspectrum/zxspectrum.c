@@ -540,7 +540,7 @@ static void setup_crt128(struct JSM_DISPLAY *d)
     d->display.last_written = 1;
     d->display.last_displayed = 1;
 
-    this->ula.display = cpg(this->ula.display_ptr);
+    this->ula.display = &((struct physical_io_device *)cpg(this->ula.display_ptr))->display;
 }
 
 void ZXSpectrumJ_enable_tracing(JSM)

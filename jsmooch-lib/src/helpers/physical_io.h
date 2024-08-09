@@ -196,8 +196,8 @@ struct JSM_DISPLAY_PIXELOMETRY {
     } offset;
 
     struct {
-        u32 display_width, display_height;
-    } aspect_ratio;
+        u32 width, height;
+    } outbuf_info;
 };
 
 struct JSM_DISPLAY_GEOMETRY {

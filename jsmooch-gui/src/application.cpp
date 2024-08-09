@@ -14,11 +14,11 @@
 #include "../vendor/myimgui/backends/imgui_impl_wgpu.h"
 #include "helpers/debug.h"
 #include "keymap_translate.h"
-
-#include "jsmooch-gui.h"
+#include "my_texture.h"
+#include "full_sys.h"
 #include "helpers/inifile.h"
 
-#define STOPAFTERAWHILE
+//#define STOPAFTERAWHILE
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -75,78 +75,6 @@ static void wgpu_error_callback(WGPUErrorType error_type, const char* message, v
         default:                        error_type_lbl = "Unknown";
     }
     printf("%s error: %s\n", error_type_lbl, message);
-}
-
-struct my_texture {
-    struct {
-        WGPUTextureDescriptor desc;
-        WGPUTexture item;
-    } tex;
-    struct {
-        WGPUTextureViewDescriptor desc;
-        WGPUTextureView item;
-    } view;
-    u32 height, width;
-    WGPUDevice wgpu_device;
-
-    my_texture() { tex.desc = {}; tex.item = nullptr;   view.desc = {}; view.item = nullptr; height = width = 0; wgpu_device = nullptr; }
-    ~my_texture() {
-        if (tex.item) {
-            wgpuTextureDestroy(tex.item);
-            wgpuTextureRelease(tex.item);
-            tex.item = nullptr;
-        }
-        if (view.item) {
-            wgpuTextureViewRelease(view.item);
-            view.item = nullptr;
-        }
-    }
-    void setup(WGPUDevice device, const char *label, u32 width, u32 height);
-    void upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height);
-
-    [[nodiscard]] WGPUTextureView for_image() const { return view.item; }
-};
-
-
-void my_texture::setup(WGPUDevice device, const char *label, u32 twidth, u32 theight) {
-    width = twidth;
-    height = theight;
-    wgpu_device = device;
-    tex.desc = {};
-    tex.desc.label = label;
-    tex.desc.nextInChain = nullptr;
-    tex.desc.dimension = WGPUTextureDimension_2D;
-    tex.desc.size = { twidth, theight, 1 };
-    tex.desc.mipLevelCount = 1;
-    tex.desc.sampleCount = 1;
-    tex.desc.format = WGPUTextureFormat_RGBA8Unorm;
-    tex.desc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_RenderAttachment;
-    tex.item = wgpuDeviceCreateTexture(wgpu_device, &tex.desc);
-
-    view.desc = {};
-    view.desc.format = WGPUTextureFormat_RGBA8Unorm;
-    view.desc.dimension = WGPUTextureViewDimension_2D;
-    view.desc.baseMipLevel = 0;
-    view.desc.mipLevelCount = 1;
-    view.desc.baseArrayLayer = 0;
-    view.desc.arrayLayerCount = 1;
-    view.desc.aspect = WGPUTextureAspect_All;
-    view.item = wgpuTextureCreateView(tex.item, &view.desc);
-}
-
-void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height)
-{
-    WGPUImageCopyTexture destination;
-    WGPUTextureDataLayout source;
-    destination.texture = tex.item;
-    destination.mipLevel = 0;
-    destination.origin = { 0, 0, 0 }; // equivalent of the offset argument of Queue::writeBuffer
-    destination.aspect = WGPUTextureAspect_All; // only relevant for depth/Stencil textures
-
-    source.offset = 0;
-    source.bytesPerRow = 4 * source_width;
-    source.rowsPerImage = source_height;
-    wgpuQueueWriteTexture(wgpuDeviceGetQueue(wgpu_device), &destination, source_ptr, sz, &source, &tex.desc.size);
 }
 
 static void load_inifile(struct inifile* ini)
@@ -215,8 +143,8 @@ int main(int, char**)
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_ZX_SPECTRUM;
-    //enum jsm_systems which = SYS_NES;
-    enum jsm_systems which = SYS_MAC512K;
+    enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_MAC512K;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
 
@@ -302,12 +230,6 @@ int main(int, char**)
     //IM_ASSERT(font != nullptr);
 #endif
 
-    my_texture backbuffer;
-    constexpr u32 bb_width = 512;
-    constexpr u32 bb_height = 342;
-    u32 backbuffer_backer[bb_width * bb_height];
-    memset((void *)backbuffer_backer, 0, sizeof(backbuffer_backer));
-    backbuffer.setup(wgpu_device, "backbuffer", bb_width, bb_height);
     /*
     std::vector<uint8_t> pixels(4 * 512 * 512);
     for (uint32_t i = 0; i < 512; ++i) {
@@ -319,7 +241,7 @@ int main(int, char**)
             p[3] = 255; // a
         }
     }
-    backbuffer.upload_data(pixels.data(), pixels.size(), 512, 512);*/
+    //backbuffer.upload_data(pixels.data(), pixels.size(), 512, 512);*/
 
 
     // Our state
@@ -327,6 +249,7 @@ int main(int, char**)
     bool show_another_window = true;
     static int done_break = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    fsys.wgpu_device = wgpu_device;
 
     // Main loop
 #ifdef __EMSCRIPTEN__
@@ -335,6 +258,8 @@ int main(int, char**)
     io.IniFilename = nullptr;
     EMSCRIPTEN_MAINLOOP_BEGIN
 #else
+    fsys.setup_wgpu();
+
     static bool playing = true;
     while (!glfwWindowShouldClose(window))
 #endif
@@ -383,9 +308,8 @@ int main(int, char**)
         if (fsys.state == FSS_play) {
             update_input(&fsys, io);
             fsys.do_frame();
-            fsys.present((void *) backbuffer_backer, bb_width, bb_height);
         }
-        backbuffer.upload_data((void *)backbuffer_backer, bb_width * bb_height * 4, bb_width, bb_height);
+        fsys.present();
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
@@ -405,10 +329,12 @@ int main(int, char**)
                         break;
                 }
             }
+            ImGui::Checkbox("2x Zoom", &fsys.output.zoom);
+
 
 
             //ImGui::Text("This is some useful text.");                     // Display some text (you can use a format strings too)
-            ImGui::Image(backbuffer.for_image(), ImVec2(bb_width, bb_height));
+            ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), ImVec2(0, 0), fsys.output_uv());
 
             /*ImGui::SliderFloat("float", &f, 0.0f, 1.0f);                  // Edit 1 float using a slider from 0.0f to 1.0f
             ImGui::ColorEdit3("clear color", (float*)&clear_color);       // Edit 3 floats representing a color

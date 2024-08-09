@@ -522,7 +522,7 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
     this->c1.devices = IOs;
     this->c1.device_index = 0;
 
-    this->holly.display = cpg(this->holly.display_ptr);
+    this->holly.display = &((struct physical_io_device *)cpg(this->holly.display_ptr))->display;
 }
 
 

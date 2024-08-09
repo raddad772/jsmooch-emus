@@ -29,6 +29,7 @@ static void disassembly_view_dirty_mem(struct debugger_interface *dbgr, struct d
 
 void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end)
 {
+    if (dbgr == NULL) return;
     for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
         struct debugger_view *dv = cvec_get(&dbgr->views, i);
         switch(dv->kind) {

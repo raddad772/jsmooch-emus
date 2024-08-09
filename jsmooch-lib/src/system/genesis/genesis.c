@@ -219,7 +219,7 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     d->display.last_displayed = 1;
     this->vdp.cur_output = (u16 *)d->display.output[d->display.last_written ^ 1];
 
-    this->vdp.display = cpg(this->vdp.display_ptr);
+    this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
     //genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }

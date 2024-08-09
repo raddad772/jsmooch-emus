@@ -3,6 +3,7 @@
 #include "helpers/physical_io.h"
 #include "helpers/debugger/debugger.h"
 
+#include "my_texture.h"
 
 struct system_io {
     system_io() {
@@ -45,10 +46,12 @@ public:
     struct system_io inputs;
     struct cvec dasm_rows{};
     u32 worked;
+    WGPUDevice        wgpu_device;
 
     struct disassembly_view *dasm{};
 
     full_system() {
+        wgpu_device = nullptr;
         sys = nullptr;
         debugger_interface_init(&dbgr);
         //cvec_ptr_init(&dasm);
@@ -83,11 +86,32 @@ public:
         fsio() = default;
     } io{};
 
+    struct {
+        float u, v;
+        float x_size, y_size;
+        struct JSM_DISPLAY *display;
+        struct my_texture backbuffer_texture;
+        void *backbuffer_backer{};
+
+        double x_scale_mult, y_scale_mult;
+
+        bool zoom;
+    } output{};
+
+    [[nodiscard]] ImVec2 output_size() const;
+    [[nodiscard]] ImVec2 output_uv() const;
     void setup_system(enum jsm_systems which);
     void destroy_system();
     void do_frame() const;
-    void present(void *outptr, u32 out_width, u32 out_height) const;
     struct framevars get_framevars() const;
+    void present();
+    void setup_wgpu();
+private:
+    void setup_ios();
+    void load_default_ROM();
+    void setup_bios();
+    void setup_display();
+    void setup_debugger_interface();
 };
 
 void newsys(struct full_system *fsys);

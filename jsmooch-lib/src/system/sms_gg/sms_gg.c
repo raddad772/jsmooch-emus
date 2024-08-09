@@ -279,7 +279,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     this->io.controllerB.devices = IOs;
     this->io.controllerB.device_index = 1;
 
-    this->vdp.display = cpg(this->vdp.display_ptr);
+    this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
 }
 
 void SMSGG_delete(struct jsm_system* jsm)
