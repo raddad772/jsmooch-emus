@@ -413,6 +413,7 @@ void GB_PPU_reset(struct GB_PPU* this)
     // Reset variables
     this->clock->lx = 0;
     this->clock->ly = 0;
+    this->display->scan_x = this->display->scan_y = 0;
     this->line_cycle = 0;
     this->display_update = false;
     this->cycles_til_vblank = 0;
@@ -427,7 +428,6 @@ void GB_PPU_reset(struct GB_PPU* this)
     // Set mode to OAM search
     GB_PPU_set_mode(this, OAM_search);
     this->first_reset = false;
-
 }
 
 u32 GB_PPU_bus_read_OAM(struct GB_bus* bus, u32 addr) {
@@ -489,6 +489,7 @@ static void GB_PPU_disable(struct GB_PPU* this) {
     if (!this->enabled) return;
     //printf("\nDISABLE PPU %d", this->clock->master_clock);
     this->enabled = FALSE;
+    this->display->enabled = 0;
     this->clock->CPU_can_VRAM = 1;
     GB_clock_setCPU_can_OAM(this->clock, 1);
     this->io.STAT_IF = 0;
@@ -499,6 +500,8 @@ static void GB_PPU_enable(struct GB_PPU *this) {
     if (this->enabled) return;
     //printf("\nENABLE PPU %d", this->clock->master_clock);
     this->enabled = TRUE;
+    this->display->enabled = 1;
+    this->display->scan_x = this->display->scan_y = 0;
     GB_PPU_advance_frame(this, false);
     this->clock->lx = 0;
     this->clock->ly = 0;
@@ -804,6 +807,7 @@ static void GB_PPU_eval_lyc(struct GB_PPU *this) {
 static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
     this->clock->ly = 0;
     this->clock->wly = 0;
+    this->display->scan_y = 0;
     this->is_window_line = this->clock->ly == this->io.wy;
     if (this->enabled) {
         GB_PPU_eval_lyc(this);
@@ -812,8 +816,8 @@ static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
     this->clock->frames_since_restart++;
     this->clock->master_frame++;
     if (update_buffer) {
-        this->cur_output = this->display->crt.output[this->display->crt.last_written];
-        this->display->crt.last_written ^= 1;
+        this->cur_output = this->display->output[this->display->last_written];
+        this->display->last_written ^= 1;
     }
 }
 
@@ -879,6 +883,8 @@ void GB_PPU_cycle(struct GB_PPU* this) {
 
 void GB_PPU_advance_line(struct GB_PPU* this) {
     if (this->window_triggered_on_line) this->clock->wly++;
+    this->display->scan_x = 0;
+    this->display->scan_y++;
     this->clock->lx = 0;
     this->clock->ly++;
     this->is_window_line |= this->clock->ly == this->io.wy;
@@ -907,6 +913,7 @@ void GB_PPU_run_cycles(struct GB_PPU *this, u32 howmany)
         if (this->enabled) {
             GB_PPU_cycle(this);
             this->line_cycle++;
+            this->display->scan_x++;
             if (this->line_cycle == 456) GB_PPU_advance_line(this);
         }
         //if (dbg.do_break) break;

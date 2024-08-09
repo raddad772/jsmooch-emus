@@ -27,7 +27,8 @@ struct SMSGG_VDP {
     u16 CRAM[32];
     enum SMSGG_VDP_modes mode;
 
-    struct physical_io_device* display;
+    struct cvec_ptr display_ptr;
+    struct JSM_DISPLAY *display;
     u16 *cur_output;
     struct SMSGG_object objects[8];
 

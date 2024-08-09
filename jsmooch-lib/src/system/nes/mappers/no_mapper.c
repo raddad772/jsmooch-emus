@@ -129,6 +129,7 @@ void NES_mapper_none_init(struct NES_mapper* mapper, struct NES* nes)
     a12_watcher_init(&this->a12_watcher, &nes->clock);
     buf_init(&this->PRG_ROM);
     buf_init(&this->CHR_ROM);
+    this->bus = nes;
 
     this->ppu_mirror = &NES_mirror_ppu_horizontal;
     this->ppu_mirror_mode = 0;

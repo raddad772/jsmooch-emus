@@ -159,6 +159,31 @@ static void setup_controller(struct atari2600* this, u32 num, const char*name, u
     new_button(cnt, "fire", DBCID_co_fire1);
 }
 
+static void setup_crt(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_NTSC;
+    d->enabled = 1;
+
+    d->fps = 60.1;
+    d->fps_override_hint = 60;
+
+    d->pixelometry.cols.left_hblank = 1;
+    d->pixelometry.cols.right_hblank = 85;
+    d->pixelometry.cols.visible = 256;
+    d->pixelometry.offset.x = 1;
+
+    d->pixelometry.rows.top_vblank = 1;
+    d->pixelometry.rows.visible = 240;
+    d->pixelometry.rows.bottom_vblank = 21;
+    d->pixelometry.offset.y = 1;
+
+    d->geometry.physical_aspect_ratio.width = 4;
+    d->geometry.physical_aspect_ratio.height = 3;
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 8;
+}
+
+
 void atari2600J_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
@@ -208,14 +233,16 @@ void atari2600J_describe_io(JSM, struct cvec *IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
-    d->crt.fps = 60;
-    d->crt.output[0] = malloc(256 * 224 * 2);
-    d->crt.output[1] = malloc(256 * 224 * 2);
-    this->tia.display = d;
-    this->tia.cur_output = (u8 *)d->crt.output[0];
-    d->crt.last_written = 1;
-    d->crt.last_displayed = 1;
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    setup_crt(&d->display);
+    d->display.output[0] = malloc(256 * 224 * 2);
+    d->display.output[1] = malloc(256 * 224 * 2);
+    this->tia.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    this->tia.cur_output = (u8 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
+
+    this->tia.display = cpg(this->tia.display_ptr);
 }
 
 void atari2600J_enable_tracing(JSM)

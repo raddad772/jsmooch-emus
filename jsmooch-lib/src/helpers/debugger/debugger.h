@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-
+#include <stddef.h>
 
 #include "helpers/int.h"
 #include "helpers/cvec.h"
@@ -23,6 +23,9 @@ enum debugger_view_kinds {
     dview_disassembly
 };
 
+
+#define NESMEM_CPUBUS 0
+#define NESMEM_PPUBUS 1
 
 /*
  * a dissassembly view...should default to the last-executedi nstruction.
@@ -55,6 +58,7 @@ struct disassembly_entry_strings {
 
 struct disassembly_range {
     u32 knowable;
+    u32 valid;
     u64 addr_range_start;
     u64 addr_range_end;
     struct cvec entries; // disassembly_entry
@@ -150,6 +154,8 @@ void disassembly_range_delete(struct disassembly_range *);
 void disassembly_range_init(struct disassembly_range *);
 void disassembly_entry_delete(struct disassembly_entry*);
 void disassembly_entry_init(struct disassembly_entry *);
+
+void debugger_interface_dirty_mem(struct debugger_interface *, u32 mem_bus, u32 addr_start, u32 addr_end);
 
 int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 bytes_after, struct cvec *out_lines);
 

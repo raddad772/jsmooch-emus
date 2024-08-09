@@ -10,6 +10,7 @@
 #include "../nes.h"
 #include "../nes_ppu.h"
 #include "../nes_cpu.h"
+#include "helpers/debugger/debugger.h"
 
 #define MTHIS struct NES_mapper_UXROM* this = (struct NES_mapper_UXROM*)mapper->ptr
 #define NTHIS struct NES_mapper_UXROM* this = (struct NES_mapper_UXROM*)nes->bus.ptr
@@ -47,7 +48,11 @@ void NM_UXROM_CPU_write(struct NES* nes, u32 addr, u32 val)
         val &= 7;
     if (this->is_uorom)
         val &= 15;
+    u32 old_offset = this->prg_bank_offset;
     this->prg_bank_offset = 16384 * (val % this->num_PRG_banks);
+    if (old_offset != this->prg_bank_offset) {
+        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, 0x8000, 0xBFFF);
+    }
 }
 
 u32 NM_UXROM_PPU_read_effect(struct NES* nes, u32 addr)
@@ -133,6 +138,7 @@ void NES_mapper_UXROM_init(struct NES_mapper* mapper, struct NES* nes)
     mapper->cycle = &NM_UXROM_cycle;
     MTHIS;
 
+    this->bus = nes;
     a12_watcher_init(&this->a12_watcher, &nes->clock);
     buf_init(&this->PRG_ROM);
 

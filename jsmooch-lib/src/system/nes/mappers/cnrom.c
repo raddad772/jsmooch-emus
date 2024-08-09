@@ -135,6 +135,7 @@ void NES_mapper_CNROM_init(struct NES_mapper* mapper, struct NES* nes)
     mapper->cycle = &NM_CNROM_cycle;
     MTHIS;
 
+    this->bus = nes;
     a12_watcher_init(&this->a12_watcher, &nes->clock);
     buf_init(&this->PRG_ROM);
     buf_init(&this->CHR_ROM);

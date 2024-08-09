@@ -79,7 +79,6 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
     this->ROM_mask = (this->ROM_size >> 1) - 1;
     this->kind = variant;
     M68k_init(&this->cpu, 1);
-    this->cpu.trace.hpos = &this->clock.crt.hpos;
     //via6522_init(&this->via, &this->clock.master_cycles);
 
     struct jsm_debug_read_trace dt;
@@ -232,6 +231,33 @@ void macJ_IO_insert_disk(struct jsm_system *jsm, struct physical_io_device* pio,
     this->iwm.drive[0].disc = mflpy;
 }
 
+static void setup_crt(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_NTSC;
+    d->enabled = 1;
+
+    d->fps = 60.185;
+    d->fps_override_hint = 60;
+
+    // 704x370 total pixels,
+    // 512x342 visible
+    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.visible = 512;
+    d->pixelometry.cols.right_hblank = 192;
+    d->pixelometry.offset.x = 0;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 342;
+    d->pixelometry.rows.bottom_vblank = 28;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 704; // sqquare
+    d->geometry.physical_aspect_ratio.height = 370; // pixels
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 8;
+}
+
+
 void macJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
@@ -271,14 +297,16 @@ void macJ_describe_io(JSM, struct cvec *IOs)
 
     // screen - 3
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
-    d->crt.fps = 60;
-    d->crt.output[0] = malloc(512 * 342);
-    d->crt.output[1] = malloc(512 * 342);
-    this->display.display = d;
-    this->display.cur_output = (u8 *)d->crt.output[0];
-    d->crt.last_written = 1;
-    d->crt.last_displayed = 1;
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    setup_crt(&d->display);
+    d->display.output[0] = malloc(512 * 342);
+    d->display.output[1] = malloc(512 * 342);
+    this->display.crt_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    this->display.cur_output = (u8 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
+
+    this->display.crt = cpg(this->display.crt_ptr);
 }
 
 void macJ_play(JSM)
@@ -340,7 +368,7 @@ u32 macJ_finish_frame(JSM)
         if (dbg.do_break) break;
     }
     //printf("\nScanlines: %d", scanlines);
-    return this->display.display->crt.last_written;
+    return this->display.crt->last_written;
 }
 
 void macJ_killall(JSM)

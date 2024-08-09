@@ -38,11 +38,11 @@ static void new_frame(struct mac* this)
 {
     this->clock.master_frame++;
     this->clock.crt.vpos = 0;
+    this->display.crt->scan_x = this->display.crt->scan_y = 0;
     this->display.scanline_func = &scanline_visible;
     // Swap buffer we're drawing to...
-    this->display.cur_output = this->display.display->crt.output[this->display.display->crt.last_written];
-    this->display.display->crt.last_written ^= 1;
-
+    this->display.cur_output = this->display.crt->output[this->display.crt->last_written];
+    this->display.crt->last_written ^= 1;
 }
 // & 0x40
 
@@ -83,6 +83,8 @@ static void update_irqs(struct mac* this)
 static void new_scanline(struct mac* this)
 {
     this->clock.crt.hpos = 0;
+    this->display.crt->scan_x = 0;
+    this->display.crt->scan_y++;
     this->clock.crt.vpos++;
 
     switch(this->clock.crt.vpos) {
@@ -108,11 +110,12 @@ void mac_step_display2(struct mac* this)
     /*
      * Frame timings are...
      * 512 x 342 visible pixels.  +192 hblank pixels = 704 total
-     * 28 vblank lines  = 370 total
+     * 28 vblank lines  = 370 total. = 260480 per frame
      */
 
     this->display.scanline_func(this);
 
+    this->display.crt->scan_x += 2;
     this->clock.crt.hpos += 2;
     if (this->clock.crt.hpos >= 704) new_scanline(this);
 }
@@ -129,8 +132,9 @@ Macintosh 128K, the main screen buffer starts at $1A700 and the alternate buffer
 $12700; for a 512K Macintosh, add $60000 to these numbers.
      */
     calc_display_addr(this);
-    this->display.cur_output = this->display.display->crt.output[this->display.display->crt.last_written];
-    this->display.display->crt.last_written ^= 1;
+    this->display.crt->scan_x = this->display.crt->scan_y = 0;
+    this->display.cur_output = this->display.crt->output[this->display.crt->last_written];
+    this->display.crt->last_written ^= 1;
     this->clock.crt.hpos = this->clock.crt.vpos = 0;
     this->display.scanline_func = &scanline_visible;
 }

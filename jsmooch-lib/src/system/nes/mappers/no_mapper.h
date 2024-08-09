@@ -16,6 +16,7 @@ struct NES_mapper_none {
     struct NES_a12_watcher a12_watcher;
     struct buf CHR_ROM;
     struct buf PRG_ROM;
+    struct NES* bus;
 
     /*
      *

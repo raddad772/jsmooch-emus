@@ -23,7 +23,7 @@ void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES ki
             cvec_init(&this->controller.analog_axes, sizeof(struct HID_analog_axis), 2);
             cvec_init(&this->controller.digital_buttons, sizeof(struct HID_digital_button), 12);
             break;
-        case HID_CRT:
+        case HID_DISPLAY:
             break;
         case HID_KEYBOARD:
             break;
@@ -52,9 +52,9 @@ void physical_io_device_delete(struct physical_io_device* this)
             cvec_delete(&this->controller.analog_axes);
             cvec_delete(&this->controller.digital_buttons);
             break;
-        case HID_CRT:
-            if (this->crt.output[0] != NULL) free(this->crt.output[0]);
-            if (this->crt.output[1] != NULL) free(this->crt.output[1]);
+        case HID_DISPLAY:
+            if (this->display.output[0] != NULL) free(this->display.output[0]);
+            if (this->display.output[1] != NULL) free(this->display.output[1]);
             break;
         case HID_KEYBOARD:
             break;

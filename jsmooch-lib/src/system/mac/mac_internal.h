@@ -200,7 +200,8 @@ struct mac {
     } keyboard;
 
     struct {
-        struct physical_io_device* display;
+        struct JSM_DISPLAY* crt;
+        struct cvec_ptr crt_ptr;
         u8 *cur_output;
 
         u32 ram_base_address;

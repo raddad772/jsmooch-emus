@@ -69,13 +69,16 @@ struct genesis {
 
     struct genesis_vdp {
         u16 *cur_output;
-        struct physical_io_device *display;
+        struct cvec_ptr display_ptr;
+        struct JSM_DISPLAY *display;
 
         struct {
             u32 interlace_field;
             u32 vblank;
             u32 h32, h40;
             u32 fast_h40;
+
+            u32 x_scan_stride;
 
             i32 z80_irq_clocks;
 

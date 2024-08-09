@@ -33,6 +33,7 @@ struct NES {
     //struct NES_bus bus;
     struct r2A03 cpu;
     struct NES_PPU ppu;
+    struct debugger_interface *dbgr;
 
     u32 described_inputs;
     u32 cycles_left;
@@ -41,6 +42,10 @@ struct NES {
 
     struct NES_mapper bus;
     struct NES_cart cart;
+
+    struct {
+        struct cpu_reg_context *A, *X, *Y, *P, *S, *PC;
+    } dbg;
 };
 
 #endif //JSMOOCH_EMUS_NES_H

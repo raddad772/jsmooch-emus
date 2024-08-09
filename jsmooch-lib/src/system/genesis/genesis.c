@@ -141,6 +141,36 @@ static void genesisIO_unload_cart(JSM)
 {
 }
 
+static void setup_crt(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_NTSC;
+    d->enabled = 1;
+
+    // 320x224 or 256x224, but, can be x448, and because 256 and 320 can change in the middle of a line, we will do a special output
+
+    // 1280 x 448 output resolution so that changes mid-line are fine, scaled down
+
+    d->fps = 60.0988;
+    d->fps_override_hint = 60;
+
+    d->pixelometry.cols.left_hblank = 0; // 0
+    d->pixelometry.cols.visible = 1280;  // 320x224
+    d->pixelometry.cols.right_hblank = 430; // 107.5, ick
+    d->pixelometry.offset.x = 0;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 224;
+    d->pixelometry.rows.bottom_vblank = 76;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 4;
+    d->geometry.physical_aspect_ratio.height = 3;
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = 40;
+    d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
+}
+
+
 void genesisJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
@@ -180,15 +210,16 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
-    d->crt.fps = 60;
-    d->crt.output[0] = malloc(320 * 224 * 2);
-    d->crt.output[1] = malloc(320 * 224 * 2);
-    this->vdp.display = d;
-    this->vdp.cur_output = (u16 *)d->crt.output[0];
-    d->crt.last_written = 1;
-    d->crt.last_displayed = 1;
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    d->display.output[0] = malloc(1280 * 448 * 2);
+    d->display.output[1] = malloc(1280 * 448 * 2);
+    setup_crt(&d->display);
+    this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
+    this->vdp.cur_output = (u16 *)d->display.output[d->display.last_written ^ 1];
 
+    this->vdp.display = cpg(this->vdp.display_ptr);
     //genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }
@@ -257,7 +288,7 @@ u32 genesisJ_finish_frame(JSM)
         genesisJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->vdp.display->crt.last_written;
+    return this->vdp.display->last_written;
 }
 
 u32 genesisJ_finish_scanline(JSM)

@@ -19,6 +19,8 @@ struct NES_mapper_MMC1 {
     struct buf CHR_RAM;
     struct buf PRG_RAM;
 
+    struct NES* bus;
+
     /*
      *
      */

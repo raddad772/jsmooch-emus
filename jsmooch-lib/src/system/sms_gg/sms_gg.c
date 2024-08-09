@@ -159,6 +159,57 @@ static void setup_controller(struct SMSGG* this, u32 num, const char*name, u32 c
 }
 
 
+static void setup_crt_sms(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_NTSC;
+    d->enabled = 1;
+
+    d->fps = 59.922743;
+    d->fps_override_hint = 60;
+
+    d->pixelometry.cols.left_hblank = 12;
+    d->pixelometry.cols.visible = 256;
+    d->pixelometry.cols.right_hblank = 74;
+    d->pixelometry.offset.x = 12;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 192;
+    d->pixelometry.rows.bottom_vblank = 70;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 4;
+    d->geometry.physical_aspect_ratio.height = 3;
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = 8;
+    d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
+}
+
+void setup_lcd_gg(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_LCD;
+    d->enabled = 1;
+
+    d->fps = 59.922751;
+    d->fps_override_hint = 60;
+
+    d->pixelometry.cols.left_hblank = 12;
+    d->pixelometry.cols.visible = 256;
+    d->pixelometry.cols.right_hblank = 74;
+    d->pixelometry.offset.x = 12;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 192;
+    d->pixelometry.rows.bottom_vblank = 70;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 4; // 69.4mm
+    d->geometry.physical_aspect_ratio.height = 3; // 53.24mm
+
+    // displays only the inner 160x144 of 256x192   -96x-48   so -48x-24
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = 48;
+    d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 24;
+}
+
 void SMSGGJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
@@ -168,9 +219,11 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     this->IOs = IOs;
 
     // controllers
+    u32 idx = 0;
     setup_controller(this, 0, "Player A", 1, true);
-    if (this->variant != SYS_GG)
+    if (this->variant != SYS_GG) {
         setup_controller(this, 1, "Player B", 0, false);
+    }
 
     // power, reset, and pause buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -207,19 +260,26 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
-    d->crt.fps = 60;
-    d->crt.output[0] = malloc(256 * 224 * 2);
-    d->crt.output[1] = malloc(256 * 224 * 2);
-    this->vdp.display = d;
-    this->vdp.cur_output = (u16 *)d->crt.output[0];
-    d->crt.last_written = 1;
-    d->crt.last_displayed = 1;
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    d->display.output[0] = malloc(256 * 224 * 2);
+    d->display.output[1] = malloc(256 * 224 * 2);
+    this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    if (this->variant == SYS_GG)
+        setup_lcd_gg(&d->display);
+    else
+        setup_crt_sms(&d->display);
+
+    this->vdp.display = NULL;
+    this->vdp.cur_output = (u16 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
     this->io.controllerA.devices = IOs;
     this->io.controllerA.device_index = 0;
     this->io.controllerB.devices = IOs;
     this->io.controllerB.device_index = 1;
+
+    this->vdp.display = cpg(this->vdp.display_ptr);
 }
 
 void SMSGG_delete(struct jsm_system* jsm)
@@ -283,9 +343,9 @@ u32 SMSGGJ_finish_frame(JSM)
     while(current_frame == this->clock.frames_since_restart) {
         scanlines_done++;
         SMSGGJ_finish_scanline(jsm);
-        if (dbg.do_break) return this->vdp.display->crt.last_written;
+        if (dbg.do_break) return this->vdp.display->last_written;
     }
-    return this->vdp.display->crt.last_written;
+    return this->vdp.display->last_written;
 }
 
 u32 SMSGGJ_finish_scanline(JSM)

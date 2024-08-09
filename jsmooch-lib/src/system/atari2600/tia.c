@@ -42,8 +42,8 @@ static void flip_buffer(struct atari_TIA* this)
     this->frames_since_restart++;
 
     // Flip framebuffer
-    this->cur_output = this->display->crt.output[this->display->crt.last_written];
-    this->display->crt.last_written ^= 1;
+    this->cur_output = this->display->output[this->display->last_written];
+    this->display->last_written ^= 1;
 
 }
 

@@ -5,6 +5,7 @@
 #include "stdio.h"
 
 #include "m6502.h"
+#include "m6502_disassembler.h"
 #include "nesm6502_opcodes.h"
 #include "helpers/debug.h"
 
@@ -72,8 +73,8 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
 
     this->IRQ_count = 0;
     this->first_reset = 1;
-    this->read_trace.ptr = NULL;
-    this->read_trace.read_trace = NULL;
+    this->trace.strct.ptr = NULL;
+    this->trace.strct.read_trace = NULL;
 }
 
 static void M6502_power_on(struct M6502* this)
@@ -105,12 +106,11 @@ void M6502_reset(struct M6502* this) {
     this->pins.D = M6502_OP_RESET;
 }
 
-void M6502_setup_tracing(struct M6502* this, struct jsm_debug_read_trace *dbg_read_trace, u64 *trace_cycles)
+void M6502_setup_tracing(struct M6502* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
 {
+    jsm_copy_read_trace(&this->trace.strct, strct);
     this->trace.ok = 1;
-    this->trace.cycles = trace_cycles;
-    jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
-
+    this->trace.cycles = trace_cycle_pointer;
 }
 
 void M6502_disable_tracing(struct M6502* this)

@@ -17,7 +17,8 @@ struct atari_TIA {
 
     u32 missed_vblank;
 
-    struct physical_io_device* display;
+    struct JSM_DISPLAY* display;
+    struct cvec_ptr display_ptr;
     u32 cpu_RDY;
 
     u32 hcounter;

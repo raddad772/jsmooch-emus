@@ -63,11 +63,10 @@ void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
     memset(&this->clock, 0, sizeof(this->clock));
     this->clock.flash.count = 16;
     /*
-         this.master_clocks_per_line = 448;
-                 this.irq_ula_cycle = 113144
+        this.master_clocks_per_line = 448;
+        this.irq_ula_cycle = 113144
         this.irq_cpu_cycle = 56572
-
- */
+    */
 
     snprintf(jsm->label, sizeof(jsm->label), "ZX Spectrum");
     ZXSpectrum_ULA_init(this, variant);
@@ -431,6 +430,63 @@ static void ZXSpectrumIO_remove_tape(JSM)
     ZXSpectrum_tape_deck_remove(this);
 }
 
+static void setup_crt48(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_NTSC;
+    d->enabled = 1;
+
+    d->fps=50.1;
+    d->fps_override_hint = 50;
+
+    // total PAL pixels is 448x312x50.1fps for ZX48, 456x311x50.8fps for ZX128
+    // so. 352x304 "display" area, = 8-row blank at end
+    // 256x192 are the standard draw area
+    // 312 lines
+
+    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.visible = 352;
+    d->pixelometry.cols.right_hblank = 96;
+    d->pixelometry.offset.x = 0;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 304;
+    d->pixelometry.rows.bottom_vblank = 8;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 5;
+    d->geometry.physical_aspect_ratio.height = 4;
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
+}
+
+static void setup_crt128(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_NTSC;
+
+    d->fps=50.8;
+    d->fps_override_hint = 50;
+
+    // total PAL pixels is 448x312x50.1fps for ZX48, 456x311x50.8fps for ZX128
+    // so. 352x304 "display" area, = 8-row blank at end
+    // 256x192 are the standard draw area
+    // 312 lines
+
+    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.visible = 352;
+    d->pixelometry.cols.right_hblank = 104;
+    d->pixelometry.offset.x = 0;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 304;
+    d->pixelometry.rows.bottom_vblank = 8;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 5;
+    d->geometry.physical_aspect_ratio.height = 4;
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
+}
+
  void ZXSpectrumJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
@@ -466,14 +522,25 @@ static void ZXSpectrumIO_remove_tape(JSM)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
-    d->crt.fps = 50;
-    d->crt.output[0] = malloc(352 * 304);
-    d->crt.output[1] = malloc(352 * 304);
-    this->ula.display = d;
-    this->ula.cur_output = (u8 *)d->crt.output[0];
-    d->crt.last_written = 1;
-    d->crt.last_displayed = 1;
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    this->ula.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    d->display.output[0] = malloc(352 * 304);
+    d->display.output[1] = malloc(352 * 304);
+    switch(this->variant) {
+        case ZXS_spectrum48:
+            setup_crt48(&d->display);
+            break;
+        case ZXS_spectrum128:
+            setup_crt128(&d->display);
+            break;
+        default:
+            assert(1==0);
+    }
+    this->ula.cur_output = (u8 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
+
+    this->ula.display = cpg(this->ula.display_ptr);
 }
 
 void ZXSpectrumJ_enable_tracing(JSM)
@@ -546,7 +613,7 @@ u32 ZXSpectrumJ_finish_frame(JSM)
         ZXSpectrumJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->ula.display->crt.last_written;
+    return this->ula.display->last_written;
 }
 
 u32 ZXSpectrumJ_finish_scanline(JSM)

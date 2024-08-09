@@ -27,6 +27,8 @@ struct NES_mapper_MMC3b {
     struct buf CHR_RAM;
     struct buf PRG_RAM;
 
+    struct NES* bus;
+
     struct MMC3b_map PRG_map[5];
     struct MMC3b_map CHR_map[8];
 

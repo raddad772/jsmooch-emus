@@ -118,7 +118,7 @@ enum JKEYS {
 
 enum IO_CLASSES {
     HID_NONE,
-    HID_CRT,
+    HID_DISPLAY,
     HID_CONTROLLER,
     HID_KEYBOARD,
     HID_MOUSE,
@@ -166,41 +166,63 @@ struct JSM_KEYBOARD {
 };
 
 
-enum JSM_CRT_STANDARDS {
+enum JSM_DISPLAY_STANDARDS {
+    JSS_CRT,
     JSS_NTSC,
     JSS_PAL,
-    JSS_SECAM
+    JSS_SECAM,
+    JSS_LCD
 };
 
-struct JSM_CRT {
-    enum JSM_CRT_STANDARDS standard;
-    float fps;
+
+struct JSM_DISPLAY_PIXELOMETRY {
+    struct {
+        u32 left_hblank, right_hblank;
+        u32 visible;
+    } cols;
+
+    struct {
+        u32 top_vblank, bottom_vblank;
+        u32 visible;
+    } rows;
+
+    struct { // Visible area not seen
+        u32 left, right, top, bottom;
+        u32 force; // for things like gamegear that draw a whole frame and crop it onto an LCD
+    } overscan;
+
+    struct { // Defines how our output is from the top-left of the frame, as defined starting before left_hblank and above top_vblank
+        i32 x, y;
+    } offset;
+
+    struct {
+        u32 display_width, display_height;
+    } aspect_ratio;
+};
+
+struct JSM_DISPLAY_GEOMETRY {
+    struct {
+        u32 width, height;
+    } physical_aspect_ratio;
+};
+
+
+struct JSM_DISPLAY {
+    enum JSM_DISPLAY_STANDARDS standard;
+    u32 enabled;
+    double fps;
+    u32 fps_override_hint; // Is it OK to go to a close value near this
+
     void *output[2];
     u32 last_written;
     u32 last_displayed;
+    u16 *cur_output;
 
     // geometry, used mostly for event viewer really
-    struct JSM_GEOMETRY {
-        struct {
-            u32 left_hblank, right_hblank;
-            u32 visible;
-        } cols;
+    struct JSM_DISPLAY_PIXELOMETRY pixelometry;
+    struct JSM_DISPLAY_GEOMETRY geometry;
 
-        struct {
-            u32 top_vblank, bottom_vblank;
-            u32 visible;
-        } rows;
-
-        struct { // Visible area not seen
-            u32 left, right, top, bottom;
-        } overscan;
-
-        struct { // Defines how our output is from the top-left of the frame, as defined starting before left_hblank and above top_vblank
-            i32 x, y;
-        } offset;
-    } pixelometry;
-
-    u32 gun_x, gun_y; // Current electron gun X and Y, as defined inside the geometry above.
+    u32 scan_x, scan_y; // Current electron gun X and Y, as defined inside the geometry above.
 };
 
 struct JSM_MOUSE {
@@ -256,7 +278,7 @@ struct physical_io_device {
     union {
         struct JSM_CONTROLLER controller;
         struct JSM_KEYBOARD keyboard;
-        struct JSM_CRT crt;
+        struct JSM_DISPLAY display;
         struct JSM_MOUSE mouse;
         struct JSM_CHASSIS chassis;
         struct JSM_AUDIO_CHANNEL audio_channel;

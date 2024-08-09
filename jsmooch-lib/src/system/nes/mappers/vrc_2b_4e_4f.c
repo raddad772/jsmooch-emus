@@ -7,13 +7,11 @@
 //
 
 #include "stdlib.h"
-#include "stdio.h"
 
 #include "vrc_2b_4e_4f.h"
+#include "helpers/debugger/debugger.h"
 
 #include "../nes.h"
-#include "../nes_ppu.h"
-#include "../nes_cpu.h"
 
 #define MTHIS struct NES_mapper_VRC2B_4E_4F* this = (struct NES_mapper_VRC2B_4E_4F*)mapper->ptr
 #define NTHIS struct NES_mapper_VRC2B_4E_4F* this = (struct NES_mapper_VRC2B_4E_4F*)nes->bus.ptr
@@ -74,9 +72,13 @@ void NM_VRC2B_4E_4F_set_CHR_ROM_1k(struct NES_mapper_VRC2B_4E_4F* this, u32 b, u
 }
 
 void NM_VRC2B_4E_4F_set_PRG_ROM(struct NES_mapper_VRC2B_4E_4F* this, u32 addr, u32 bank_num) {
-u32 b = addr >> 13;
-this->PRG_map[b].addr = addr;
-this->PRG_map[b].offset = (bank_num % this->num_PRG_banks) * 0x2000;
+    u32 b = addr >> 13;
+    this->PRG_map[b].addr = addr;
+    u32 old_offset = this->PRG_map[b].offset;
+    this->PRG_map[b].offset = (bank_num % this->num_PRG_banks) * 0x2000;
+    if (old_offset != this->PRG_map[b].offset) {
+        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, addr, addr + 0x1FFF);
+    }
 }
 
 
@@ -341,6 +343,8 @@ void NES_mapper_VRC2B_4E_4F_init(struct NES_mapper* mapper, struct NES* nes)
     MTHIS;
     this->is_vrc2a = false;
     this->is_vrc4 = true;
+
+    this->bus = nes;
 
     if (this->is_vrc4) mapper->cycle = &NM_VRC2B_4E_4F_cycle_vrc4;
     else mapper->cycle = &NM_VRC2B_4E_4F_cycle_vrc2;

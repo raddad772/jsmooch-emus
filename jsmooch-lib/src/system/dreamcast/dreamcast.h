@@ -146,7 +146,8 @@ struct DC {
             struct cvec cmd_buffer;
         } ta;
 
-        struct physical_io_device* display;
+        struct JSM_DISPLAY* display;
+        struct cvec_ptr display_ptr;
     } holly;
 
     struct {

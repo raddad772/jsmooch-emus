@@ -50,17 +50,7 @@ void cvec_iterator_init(struct cvec_iterator *);
 struct cvec_ptr make_cvec_ptr(struct cvec *, u32 idx);
 void cvec_ptr_init(struct cvec_ptr *vec);
 
-#ifdef __cplusplus
-void *cpp_cpg(struct cvec_ptr p);
-#define cpg cpp_cpg
-#else
-inline void *cpg(struct cvec_ptr p)
-{
-    assert(p.vec != NULL);
-    assert(p.index < p.vec->len);
-    return p.vec->data + (p.vec->data_sz * p.index);
-}
-#endif
+void *cpg(struct cvec_ptr p);
 
 #ifdef __cplusplus
 }

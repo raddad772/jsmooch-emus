@@ -19,7 +19,8 @@ struct ZXSpectrum;
 
 struct ZXSpectrum_ULA {
     void (*scanline_func)(struct ZXSpectrum*);
-    struct physical_io_device* display;
+    struct JSM_DISPLAY* display;
+    struct cvec_ptr display_ptr;
     struct cvec* keyboard_devices;
     u32 keyboard_device_index;
     enum ZXSpectrum_variants variant;

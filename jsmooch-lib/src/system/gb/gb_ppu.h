@@ -140,7 +140,8 @@ struct GB_PPU {
     u32 update_display;
     u32 last_used_buffer;
     u16* cur_output;
-    struct physical_io_device *display;
+    struct cvec_ptr display_ptr;
+    struct JSM_DISPLAY *display;
 };
 
 void GB_PPU_init(struct GB_PPU*, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);

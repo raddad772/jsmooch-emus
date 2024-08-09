@@ -240,11 +240,14 @@ static void new_scanline(struct ZXSpectrum* bus)
 {
     BTHIS;
     bus->clock.ula_x = 0;
+    this->display->scan_x = 0;
+    this->display->scan_y++;
     this->screen_x = -96;
     bus->clock.ula_y++;
     this->screen_y++;
     if (bus->clock.ula_y == bus->clock.screen_bottom) {
         bus->clock.ula_y = 0;
+        this->display->scan_y = 0;
         bus->clock.ula_frame_cycle = 0;
         this->screen_y = -8;
         bus->clock.frames_since_restart++;
@@ -255,8 +258,8 @@ static void new_scanline(struct ZXSpectrum* bus)
         }
 
         // Swap buffer we're drawing to...
-        this->cur_output = this->display->crt.output[this->display->crt.last_written];
-        this->display->crt.last_written ^= 1;
+        this->cur_output = this->display->output[this->display->last_written];
+        this->display->last_written ^= 1;
     }
 
     /*lines 0-7 are vblank
@@ -295,6 +298,7 @@ void ZXSpectrum_ULA_cycle(struct ZXSpectrum* bus)
     this->scanline_func(bus);
     bus->clock.ula_x++;
     this->screen_x++;
+    this->display->scan_x++;
     bus->clock.ula_frame_cycle++;
     if (bus->clock.ula_x == bus->clock.screen_right) new_scanline(bus);
 }

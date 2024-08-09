@@ -10,6 +10,7 @@
 #include "../nes.h"
 #include "../nes_ppu.h"
 #include "../nes_cpu.h"
+#include "helpers/debugger/debugger.h"
 
 #define MTHIS struct NES_mapper_DXROM* this = (struct NES_mapper_DXROM*)mapper->ptr
 #define NTHIS struct NES_mapper_DXROM* this = (struct NES_mapper_DXROM*)nes->bus.ptr
@@ -46,7 +47,12 @@ void NM_DXROM_set_CHR_ROM_1k(struct NES_mapper_DXROM* this, u32 addr, u32 bank_n
 
 void NM_DXROM_set_PRG_ROM_8k(struct NES_mapper_DXROM* this, u32 addr, u32 bank_num)
 {
-    this->regs.prg_banks[(addr == 0x8000) ? 0 : 1] = (bank_num % this->num_PRG_banks) * 8192;
+    u32 bnk = (addr == 0x8000) ? 0 : 1;
+    u32 old_val = this->regs.prg_banks[bnk];
+    this->regs.prg_banks[bnk] = (bank_num % this->num_PRG_banks) * 8192;
+    if (old_val != this->regs.prg_banks[bnk]) {
+        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, addr, addr + 0x1FFF);
+    }
 }
 
 void NM_DXROM_CPU_write(struct NES* nes, u32 addr, u32 val)
@@ -191,6 +197,7 @@ void NES_mapper_DXROM_init(struct NES_mapper* mapper, struct NES* nes)
     mapper->cycle = &NM_DXROM_cycle;
     MTHIS;
 
+    this->bus = nes;
     a12_watcher_init(&this->a12_watcher, &nes->clock);
     buf_init(&this->PRG_ROM);
     buf_init(&this->CHR_ROM);

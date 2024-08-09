@@ -17,6 +17,8 @@
 #include "../nes_ppu.h"
 #include "../nes_cpu.h"
 
+#include "helpers/debugger/debugger.h"
+
 #define MTHIS struct NES_mapper_MMC3b* this = (struct NES_mapper_MMC3b*)mapper->ptr
 #define NTHIS struct NES_mapper_MMC3b* this = (struct NES_mapper_MMC3b*)nes->bus.ptr
 
@@ -257,6 +259,7 @@ void NM_MMC3b_remap(struct NES_mapper_MMC3b* this, u32 boot) {
         MMC3b_set_CHR_ROM_1k(this, 6, this->regs.bank[1] & 0xFE);
         MMC3b_set_CHR_ROM_1k(this, 7, this->regs.bank[1] | 0x01);
     }
+    debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, 0x8000, 0xFFFF);
 }
 
 void NM_MMC3b_set_cart(struct NES* nes, struct NES_cart* cart)
@@ -318,6 +321,7 @@ void NES_mapper_MMC3b_init(struct NES_mapper* mapper, struct NES* nes)
     mapper->cycle = &NM_MMC3b_cycle;
     MTHIS;
 
+    this->bus = nes;
     a12_watcher_init(&this->a12_watcher, &nes->clock);
     buf_init(&this->PRG_ROM);
     buf_init(&this->CHR_ROM);

@@ -16,6 +16,8 @@ struct NES_mapper_AXROM {
     struct NES_a12_watcher a12_watcher;
     struct buf PRG_ROM;
 
+    struct NES* bus;
+
     u8 CIRAM[0x800]; // PPU RAM
     u8 CPU_RAM[0x800]; // CPU RAM
     u8 CHR_RAM[0x2000]; // CHR RAM

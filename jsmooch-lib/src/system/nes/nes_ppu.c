@@ -115,6 +115,10 @@ void NES_PPU_reset(THIS)
 {
     this->line_cycle = 0;
     this->io.w = 0;
+    if (this->display == NULL)
+        printf("\nCRT not reset, null");
+    else
+        this->display->scan_x = this->display->scan_y = 0;
 }
 
 void NES_PPU_write_cgram(THIS, u32 addr, u32 val)
@@ -610,14 +614,15 @@ void PPU_scanline_postrender(THIS) {
 
 void new_frame(THIS) {
     //this->nes->clock.lclock = this->nes->clock.cpu_master_clock;
+    this->display->scan_y = 0;
     this->nes->clock.ppu_y = 0;
     this->nes->clock.frames_since_restart++;
     this->nes->clock.frame_odd = (this->nes->clock.frame_odd + 1) & 1;
     this->nes->clock.master_frame++;
     this->nes->clock.cpu_frame_cycle = 0;
-    this->nes->ppu.crt = cpg(this->crt_ptr);
-    this->cur_output = this->crt->output[this->crt->last_written];
-    this->crt->last_written ^= 1;
+    this->nes->ppu.display = cpg(this->display_ptr);
+    this->cur_output = this->display->output[this->display->last_written];
+    this->display->last_written ^= 1;
 }
 
 void set_scanline(THIS, u32 to) {
@@ -633,10 +638,13 @@ void set_scanline(THIS, u32 to) {
 }
 
 void new_scanline(THIS) {
+    this->display->scan_x = 0;
+    this->display->scan_y++;
     if (this->nes->clock.ppu_y == this->nes->clock.timing.ppu_pre_render)
         new_frame(this);
     else
         this->nes->clock.ppu_y++;
+
 
     /*if (this->nes->clock.ppu_y == this->nes->clock.timing.vblank_start) {
         //this->nes->clock.vblank = 1;
@@ -660,6 +668,7 @@ u32 NES_PPU_cycle(THIS, u32 howmany) {
             this->render_cycle(this);
             this->rendering_enabled = this->new_rendering_enabled;
             this->line_cycle++;
+            this->display->scan_x++;
             this->nes->clock.ppu_frame_cycle++;
             if (this->line_cycle == 341) new_scanline(this);
             this->nes->clock.ppu_master_clock += this->nes->clock.timing.ppu_divisor;

@@ -280,7 +280,6 @@ struct M68k {
         struct jsm_string str;
         u32 ok;
         u64 *cycles;
-        u32 *hpos;
     } trace;
 
     struct M68k_ins_t *ins;

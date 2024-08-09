@@ -17,6 +17,7 @@ struct NES_mapper_CNROM {
     struct buf CHR_ROM;
     struct buf PRG_ROM;
 
+    struct NES* bus;
     /*
      *
      */

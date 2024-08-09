@@ -110,7 +110,7 @@ struct cvec_ptr make_cvec_ptr(struct cvec *vec, u32 idx)
     return (struct cvec_ptr) { .vec=vec, .index=idx};
 }
 
-void *cpp_cpg(struct cvec_ptr p)
+void *cpg(struct cvec_ptr p)
 {
     assert(p.vec != NULL);
     assert(p.index < p.vec->len);

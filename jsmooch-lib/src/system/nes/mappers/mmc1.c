@@ -8,8 +8,7 @@
 #include "mmc1.h"
 
 #include "../nes.h"
-#include "../nes_ppu.h"
-#include "../nes_cpu.h"
+#include "helpers/debugger/debugger.h"
 
 #define MTHIS struct NES_mapper_MMC1* this = (struct NES_mapper_MMC1*)mapper->ptr
 #define NTHIS struct NES_mapper_MMC1* this = (struct NES_mapper_MMC1*)nes->bus.ptr
@@ -56,8 +55,12 @@ void NM_MMC1_set_PRG_ROM(struct NES_mapper_MMC1* this, u32 addr, u32 bank_num)
 {
     bank_num %= this->num_PRG_banks;
     u32 b = (addr - 0x8000) >> 14;
+    u32 old_offset = this->PRG_map[b].offset;
     this->PRG_map[b].addr = addr;
     this->PRG_map[b].offset = (bank_num % this->num_PRG_banks) * 0x4000;
+    if (this->PRG_map[b].offset != old_offset) {
+        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, addr, addr + 0x3FFF);
+    }
 }
 
 void NM_MMC1_set_CHR_ROM(struct NES_mapper_MMC1* this, u32 addr, u32 bank_num)
@@ -68,7 +71,7 @@ void NM_MMC1_set_CHR_ROM(struct NES_mapper_MMC1* this, u32 addr, u32 bank_num)
     this->CHR_map[b].offset = (bank_num % this->num_CHR_banks) * 0x1000;
 }
 
-void NM_MMC1_remap(struct NES_mapper_MMC1* this, u32 boot)
+void NM_MMC1_remap(struct NES_mapper_MMC1* this, u32 boot, u32 may_contain_PRG)
 {
     if (boot) {
         for (u32 i = 0; i < 2; i++) {
@@ -169,21 +172,21 @@ void NM_MMC1_CPU_write(struct NES* nes, u32 addr, u32 val)
                 NM_MMC1_set_mirroring(this);
                 this->io.prg_bank_mode = (val >> 2) & 3;
                 this->io.chr_bank_mode = (val >> 4) & 1;
-                NM_MMC1_remap(this, 0);
+                NM_MMC1_remap(this, 0, 1);
                 break;
             case 0xA000: // CHR bank 0x0000
                 this->io.ppu_bank00 = this->io.shift_value;
-                NM_MMC1_remap(this, 0);
+                NM_MMC1_remap(this, 0, 0);
                 break;
             case 0xC000: // CHR bank 1
                 this->io.ppu_bank10 = this->io.shift_value;
-                NM_MMC1_remap(this, 0);
+                NM_MMC1_remap(this, 0, 0);
                 break;
             case 0xE000: // PRG bank
                 this->io.bank = this->io.shift_value & 0x0F;
                 if (this->io.shift_value & 0x10)
                     printf("WARNING50!");
-                NM_MMC1_remap(this, 0);
+                NM_MMC1_remap(this, 0, 1);
                 break;
         }
         this->io.shift_value = 0;
@@ -222,7 +225,7 @@ void NM_MMC1_reset(struct NES* nes)
 {
     NTHIS;
     this->io.prg_bank_mode = 3;
-    NM_MMC1_remap(this, 1);
+    NM_MMC1_remap(this, 1, 1);
 }
 
 void NM_MMC1_set_cart(struct NES* nes, struct NES_cart* cart)
@@ -269,6 +272,7 @@ void NES_mapper_MMC1_init(struct NES_mapper* mapper, struct NES* nes)
     mapper->cycle = &NM_MMC1_cycle;
     MTHIS;
 
+    this->bus = nes;
     a12_watcher_init(&this->a12_watcher, &nes->clock);
     buf_init(&this->PRG_ROM);
     buf_init(&this->CHR_ROM);

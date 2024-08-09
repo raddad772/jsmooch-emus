@@ -154,6 +154,31 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
     b->common_id = common_id;
 }
 
+static void setup_lcd(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_LCD;
+    d->enabled = 1;
+
+    d->fps=59.7;
+    d->fps_override_hint = 60;
+
+    // 456x154 total, 160x144 visible
+
+    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.visible = 160;
+    d->pixelometry.cols.right_hblank = 296; // This isn't EXACTLY true. Pixels take variable amounts of time...
+    d->pixelometry.offset.x = 0;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 144;
+    d->pixelometry.rows.bottom_vblank = 10;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 160;
+    d->geometry.physical_aspect_ratio.height = 144;
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
+}
 
 void GBJ_describe_io(JSM, struct cvec *IOs)
 {
@@ -208,15 +233,16 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1);
-    d->crt.fps = 60;
-    d->crt.output[0] = malloc(256 * 224 * 2);
-    d->crt.output[1] = malloc(256 * 224 * 2);
-    this->ppu.display = d;
-    this->ppu.cur_output = (u16 *)d->crt.output[0];
-    d->crt.last_written = 1;
-    d->crt.last_displayed = 1;
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
+    setup_lcd(&d->display);
+    d->display.output[0] = malloc(160 * 144 * 2);
+    d->display.output[1] = malloc(160 * 144 * 2);
+    this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    this->ppu.cur_output = (u16 *)d->display.output[0];
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
+    this->ppu.display = cpg(this->ppu.display_ptr);
 }
 
 void GBJ_killall(JSM) {

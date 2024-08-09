@@ -33,6 +33,12 @@ static void NESJ_disable_tracing(JSM);
 static void NESJ_describe_io(JSM, struct cvec* IOs);
 static void NESJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
+static u32 read_trace(void *ptr, u32 addr)
+{
+    struct NES* this = (struct NES*)ptr;
+    return this->bus.CPU_read(this, addr, 0, 0);
+}
+
 void NES_new(JSM)
 {
     struct NES* this = (struct NES*)malloc(sizeof(struct NES));
@@ -42,6 +48,12 @@ void NES_new(JSM)
     NES_PPU_init(&this->ppu, this);
     NES_cart_init(&this->cart, this);
     NES_mapper_init(&this->bus, this);
+
+    struct jsm_debug_read_trace dt;
+    dt.read_trace = &read_trace;
+    dt.ptr = (void*)this;
+
+    M6502_setup_tracing(&this->cpu.cpu, &dt, &this->clock.master_clock);
     snprintf(jsm->label, sizeof(jsm->label), "Nintendo Entertainment System");
 
     this->described_inputs = 0;
@@ -129,21 +141,28 @@ static void NESIO_unload_cart(JSM)
 {
 }
 
-static void setup_crt(struct JSM_CRT *d)
+static void setup_crt(struct JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
+    d->enabled = 1;
+
+    d->fps = 60.1;
+    d->fps_override_hint = 60;
+
     d->pixelometry.cols.left_hblank = 1;
-    d->pixelometry.cols.right_hblank = 80;
+    d->pixelometry.cols.right_hblank = 85;
     d->pixelometry.cols.visible = 256;
     d->pixelometry.offset.x = 1;
 
     d->pixelometry.rows.top_vblank = 1;
-    d->pixelometry.rows.visible = 224;
-    d->pixelometry.rows.bottom_vblank = 37;
+    d->pixelometry.rows.visible = 240;
+    d->pixelometry.rows.bottom_vblank = 21;
     d->pixelometry.offset.y = 1;
 
-    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom;
+    d->geometry.physical_aspect_ratio.width = 4;
+    d->geometry.physical_aspect_ratio.height = 3;
 
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 8;
 }
 
 void NESJ_describe_io(JSM, struct cvec *IOs)
@@ -182,20 +201,21 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
 
     // screen
     d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CRT, 1, 1, 0, 1); //5
-    d->crt.fps = 60;
-    d->crt.output[0] = malloc(256 * 224 * 2);
-    d->crt.output[1] = malloc(256 * 224 * 2);
-    this->ppu.crt_ptr = make_cvec_ptr(IOs, 5);
-    this->ppu.cur_output = (u16 *)d->crt.output[0];
-    setup_crt(&d->crt);
-    d->crt.last_written = 1;
-    d->crt.last_displayed = 1;
+    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1); //5
+    d->display.output[0] = malloc(256 * 224 * 2);
+    d->display.output[1] = malloc(256 * 224 * 2);
+    this->ppu.display_ptr = make_cvec_ptr(IOs, 5);
+    this->ppu.cur_output = (u16 *)d->display.output[0];
+    setup_crt(&d->display);
+    d->display.last_written = 1;
+    d->display.last_displayed = 1;
 
     this->cpu.joypad1.devices = IOs;
     this->cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
     this->cpu.joypad2.devices = IOs;
     this->cpu.joypad2.device_index = NES_INPUTS_PLAYER2;
+
+    this->ppu.display = cpg(this->ppu.display_ptr);
 }
 
 void NESJ_enable_tracing(JSM)
@@ -252,7 +272,7 @@ u32 NESJ_finish_frame(JSM)
         NESJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    return this->ppu.crt->last_written;
+    return this->ppu.display->last_written;
 }
 
 u32 NESJ_finish_scanline(JSM)

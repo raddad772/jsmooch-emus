@@ -66,11 +66,10 @@ struct M6502 {
         u32 ok;
         u64 *cycles;
         u64 my_cycles;
+        struct jsm_debug_read_trace strct;
     } trace;
 
     u32 first_reset;
-
-    struct jsm_debug_read_trace read_trace;
 
     M6502_ins_func current_instruction;
     M6502_ins_func *opcode_table;

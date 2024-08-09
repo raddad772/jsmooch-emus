@@ -16,6 +16,8 @@ struct NES_mapper_DXROM {
     struct buf CHR_ROM;
     struct buf PRG_ROM;
 
+    struct NES* bus;
+
     u8 CIRAM[0x2000]; // PPU RAM
     u8 CPU_RAM[0x800];
 

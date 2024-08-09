@@ -215,13 +215,14 @@ static void vblank(struct genesis* this, u32 new_value)
 
 static void new_frame(struct genesis* this)
 {
+    this->vdp.display->scan_x = this->vdp.display->scan_y = 0;
     this->clock.master_frame++;
     //printf("\nNEW GENESIS FRAME! %lld", this->clock.master_frame);
     this->clock.vdp.field ^= 1;
     this->clock.vdp.vcount = 0;
     this->clock.vdp.vblank = 0;
-    this->vdp.cur_output = this->vdp.display->crt.output[this->vdp.display->crt.last_written];
-    this->vdp.display->crt.last_written ^= 1;
+    this->vdp.cur_output = this->vdp.display->output[this->vdp.display->last_written];
+    this->vdp.display->last_written ^= 1;
 
     set_clock_divisor(this);
 }
@@ -241,6 +242,10 @@ static void set_sc_array(struct genesis* this)
 
 static void new_scanline(struct genesis* this)
 {
+    this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1] + (this->clock.vdp.vcount * 1280);
+
+    this->vdp.display->scan_x = 0;
+    this->vdp.display->scan_y++;
     this->clock.vdp.hcount = 0;
     this->clock.vdp.vcount++;
 
@@ -776,6 +781,7 @@ void genesis_VDP_reset(struct genesis* this)
     this->clock.vdp.line_size = 320;
     this->clock.vdp.hblank = this->clock.vdp.vblank = 0;
     this->clock.vdp.vcount = this->clock.vdp.vcount = 0;
+    this->vdp.cur_output = (u16 *)&this->vdp.display->output[this->vdp.display->last_written ^ 1];
     set_clock_divisor(this);
 }
 
@@ -892,11 +898,12 @@ static void render_8_more(struct genesis* this)
 
     u32 myx = (2 * 320 * ypos) + xpos;
 
-    u16 *optr = this->vdp.display->crt.output[0] + (320 * ypos) + xpos;
+    //u16 *optr = this->vdp.display->output[0] + (1280 * ypos) + xpos;
 
     u8* tile_ptr[2] = { };
 
     tile_ptr[0] = ((u8*)this->vdp.VRAM) + (tile_addr[0]) + ((ypos & 7) << 2);
+    u32 pw = this->vdp.io.h40 ? 4 : 5;
     for (u32 i = 0; i < 4; i++) {
         u8 px2 = *tile_ptr[0];
         tile_ptr[0]++;
@@ -906,10 +913,10 @@ static void render_8_more(struct genesis* this)
         optr++;
         *optr = px2 & 15;
         optr++;*/
-        u32 v = 0;
+        u32 v = px2 >> 4;
         u32 r = (this->clock.master_frame & 3);
         if (xpos == 20) v = 15;
-        if ( r == 0) {
+        if (r == 0) {
             if (ypos == 0) v = 15;
         }
         else if (r == 1) {
@@ -918,10 +925,18 @@ static void render_8_more(struct genesis* this)
         else {
             if (ypos == 200) v = 15;
         }
-        *optr = v;
-        optr++;
-        *optr = v;
-        optr++;
+        for (u32 j = 0; j < pw; j++) {
+            *this->vdp.cur_output = v;
+            this->vdp.cur_output++;
+            this->vdp.display->scan_x++;
+        }
+        v =  px2 & 15;
+
+        for (u32 j = 0; j < pw; j++) {
+            *this->vdp.cur_output = v;
+            this->vdp.display->scan_x++;
+            this->vdp.cur_output++;
+        }
     }
 
     // + 4 * (ypos & 7)
