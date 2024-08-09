@@ -315,13 +315,8 @@ int main(int, char**)
         }
         fsys.present();
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+        // 1. Show playback controls
         {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin(fsys.sys->label);
-
             if (ImGui::Button("Play/pause")) {
                 switch(fsys.state) {
                     case FSS_pause:
@@ -333,6 +328,15 @@ int main(int, char**)
                         break;
                 }
             }
+
+        }
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+        {
+            static float f = 0.0f;
+            static int counter = 0;
+
+            ImGui::Begin(fsys.sys->label);
+
             ImGui::Checkbox("2x Zoom", &fsys.output.zoom);
             ImGui::SameLine();
             ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
