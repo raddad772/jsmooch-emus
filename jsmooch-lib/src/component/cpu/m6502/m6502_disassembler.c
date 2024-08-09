@@ -83,10 +83,8 @@ static void zero_page_y(SARG)
 void M6502_disassemble(u32 *PC, struct jsm_debug_read_trace *trace, struct jsm_string *outstr)
 {
 #define SPCS "   "
-#define dasm(id, prefix, mode) \
-    case id:                 \
-        mode(prefix SPCS, trace, PC, outstr); \
-    break;
+#define dasm(id, prefix, mode) case id: mode(prefix SPCS, trace, PC, outstr); break;
+
     u32 opcode = dbg_read(trace, PC);
     // const char *ins, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr
     switch(opcode) {
