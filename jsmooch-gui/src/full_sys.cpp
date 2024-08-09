@@ -613,6 +613,11 @@ void full_system::setup_display()
     u32 wh = get_closest_pow2(MAX(p->cols.visible, p->rows.visible));
     output.backbuffer_texture.setup(wgpu_device, "emulator backbuffer", wh, wh);
 
+    u32 overscan_x_offset = p->overscan.left;
+    u32 overscan_width = p->cols.visible - (p->overscan.left + p->overscan.right);
+    u32 overscan_y_offset = p->overscan.top;
+    u32 overscan_height = p->rows.visible - (p->overscan.top + p->overscan.bottom);
+
     // Determine aspect ratio correction
     double visible_width = p->cols.visible;
     double visible_height = p->rows.visible;
@@ -627,26 +632,47 @@ void full_system::setup_display()
     if ((visible_how - real_how) < .01) {
         output.x_scale_mult = 1;
         output.y_scale_mult = 1;
-        output.x_size = (float)p->cols.visible;
-        output.y_size = (float)p->rows.visible;
+        output.with_overscan.x_size = (float)p->cols.visible;
+        output.with_overscan.y_size = (float)p->rows.visible;
+        output.without_overscan.x_size = (float)overscan_width;
+        output.without_overscan.y_size = (float)overscan_height;
     }
     else if (real_how > visible_how) { // real is narrower, so we stretch vertically. visible= 4:2 .5  real=3:2  .6
         output.x_scale_mult = 1;
         output.y_scale_mult = (real_how / visible_how); // we must
-        output.x_size = (float)p->cols.visible;
-        output.y_size = (float)(visible_height * output.y_scale_mult);
+        output.with_overscan.x_size = (float)p->cols.visible;
+        output.with_overscan.y_size = (float)(visible_height * output.y_scale_mult);
+        output.without_overscan.x_size = (float)overscan_width;
+        output.without_overscan.y_size = (float)(overscan_height * output.y_scale_mult);
     }
     else { // real is wider, so we stretch horizontally  //    visible=4:2 = .5    real=5:2 = .4
         output.x_scale_mult = (visible_how / real_how);
         output.y_scale_mult = 1;
-        output.x_size = (float)(visible_width * output.x_scale_mult);
-        output.y_size = (float)p->rows.visible;
+        output.with_overscan.x_size = (float)(visible_width * output.x_scale_mult);
+        output.with_overscan.y_size = (float)p->rows.visible;
+        output.without_overscan.x_size = (float)(overscan_width * output.x_scale_mult);
+        output.without_overscan.y_size = (float)overscan_height;
     }
-    printf("\nOutput size: %dx%d", (int)output.x_size, (int)output.y_size);
+    printf("\nOutput with overscan size: %dx%d", (int)output.with_overscan.x_size, (int)output.with_overscan.y_size);
+    printf("\nOutput without overscan size: %dx%d", (int)output.with_overscan.x_size, (int)output.with_overscan.y_size);
 
-    // Calculate UV coords
-    output.u = (float)((double)p->cols.visible / (double)output.backbuffer_texture.width);
-    output.v = (float)((double)p->rows.visible / (double)output.backbuffer_texture.height);
+    // Calculate UV coords for full buffer
+    output.with_overscan.uv0 = ImVec2(0, 0);
+    output.with_overscan.uv1 = ImVec2((float)((double)p->cols.visible / (double)output.backbuffer_texture.width),
+                                      (float)((double)p->rows.visible / (double)output.backbuffer_texture.height));
+
+    // Calculate UV coords for buffer minus overscan
+    // we need the left and top, which may be 0 or 10 or whatever... % of total width
+    float total_u = output.with_overscan.uv1.x;
+    float total_v = output.with_overscan.uv1.y;
+
+    float start_u = (float)overscan_x_offset / (float)visible_width;
+    float start_v = (float)overscan_y_offset / (float)visible_height;
+    output.without_overscan.uv0 = ImVec2(start_u * total_u, start_v * total_v);
+
+    float end_u = (float)(p->cols.visible - p->overscan.right) / (float)visible_width;
+    float end_v = (float)(p->rows.visible - p->overscan.bottom) / (float)visible_height;
+    output.without_overscan.uv1 = ImVec2(end_u * total_u, end_v * total_v);
 
     if (output.backbuffer_backer) free(output.backbuffer_backer);
     output.backbuffer_backer = malloc(p->cols.visible * p->rows.visible * 4);
@@ -663,13 +689,21 @@ void full_system::present()
 
 ImVec2 full_system::output_size() const
 {
-    u32 z = output.zoom ? 2 : 1;
-    return {output.x_size * z, output.y_size * z};
+    float z = output.zoom ? 2.0f : 1.0f;
+    auto &v = output.hide_overscan ? output.without_overscan : output.with_overscan;
+    return {v.x_size * z, v.y_size * z};
 }
 
-ImVec2 full_system::output_uv() const
+ImVec2 full_system::output_uv0() const
 {
-    return {output.u, output.v};
+    auto &v = output.hide_overscan ? output.without_overscan.uv0 : output.with_overscan.uv0;
+    return v;
+}
+
+ImVec2 full_system::output_uv1() const
+{
+    auto &v = output.hide_overscan ? output.without_overscan.uv1 : output.with_overscan.uv1;
+    return v;
 }
 
 void full_system::do_frame() const {

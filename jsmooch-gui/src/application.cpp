@@ -330,11 +330,13 @@ int main(int, char**)
                 }
             }
             ImGui::Checkbox("2x Zoom", &fsys.output.zoom);
+            ImGui::SameLine();
+            ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
 
 
 
             //ImGui::Text("This is some useful text.");                     // Display some text (you can use a format strings too)
-            ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), ImVec2(0, 0), fsys.output_uv());
+            ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
 
             /*ImGui::SliderFloat("float", &f, 0.0f, 1.0f);                  // Edit 1 float using a slider from 0.0f to 1.0f
             ImGui::ColorEdit3("clear color", (float*)&clear_color);       // Edit 3 floats representing a color

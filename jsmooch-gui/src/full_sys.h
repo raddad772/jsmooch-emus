@@ -39,6 +39,11 @@ enum full_system_states {
     FSS_play
 };
 
+struct fssothing {
+    ImVec2 uv0, uv1;
+    float x_size, y_size;
+};
+
 struct full_system {
 public:
     struct jsm_system *sys;
@@ -87,19 +92,21 @@ public:
     } io{};
 
     struct {
-        float u, v;
-        float x_size, y_size;
+        float u_overscan, v_overscan;
+        struct fssothing with_overscan;
+        struct fssothing without_overscan;
         struct JSM_DISPLAY *display;
         struct my_texture backbuffer_texture;
         void *backbuffer_backer{};
 
         double x_scale_mult, y_scale_mult;
 
-        bool zoom;
+        bool zoom, hide_overscan;
     } output{};
 
     [[nodiscard]] ImVec2 output_size() const;
-    [[nodiscard]] ImVec2 output_uv() const;
+    [[nodiscard]] ImVec2 output_uv0() const;
+    [[nodiscard]] ImVec2 output_uv1() const;
     void setup_system(enum jsm_systems which);
     void destroy_system();
     void do_frame() const;
