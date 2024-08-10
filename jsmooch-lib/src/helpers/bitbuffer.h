@@ -1,6 +1,7 @@
 //
 // Created by . on 8/9/24.
 //
+// Basic bit-by-bit read/write functions
 
 #ifndef JSMOOCH_EMUS_BITBUFFER_H
 #define JSMOOCH_EMUS_BITBUFFER_H
@@ -16,6 +17,7 @@ extern "C" {
 struct bitbuf {
     struct cvec buf;
     u32 lsb_first;
+    u32 num_bits;
 
     struct {
         u8 partial;
@@ -24,8 +26,9 @@ struct bitbuf {
 
 };
 
-void bitbuf_init(struct bitbuf *, u32 num_bits_preallocate);
+void bitbuf_init(struct bitbuf *, u32 num_bits_preallocate, u32 lsb_first);
 void bitbuf_delete(struct bitbuf *);
+void bitbuf_clear(struct bitbuf *);
 
 u32 bitbuf_read_bits(struct bitbuf*, u32 pos, u32 num);
 void bitbuf_write_bits(struct bitbuf*, u32 num, u32 val);

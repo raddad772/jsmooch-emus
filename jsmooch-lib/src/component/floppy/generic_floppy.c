@@ -12,7 +12,7 @@ void generic_floppy_init(struct generic_floppy *this)
 void generic_floppy_track_init(struct generic_floppy_track *this)
 {
     cvec_init(&this->sectors, sizeof(struct generic_floppy_sector), 12);
-    bitbuf_init(&this->encoded_data, 49152);
+    bitbuf_init(&this->encoded_data, 49152, 1);
     this->length_mm = 0.0;
 }
 
@@ -41,7 +41,6 @@ void generic_floppy_sector_init(struct generic_floppy_sector *this)
 
 void generic_floppy_sector_delete(struct generic_floppy_sector *this)
 {
-    buf_delete(&this->data);
-    buf_delete(&this->tag;)
+    this->data = this->tag = NULL;
 }
 

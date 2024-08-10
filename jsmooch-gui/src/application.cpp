@@ -88,7 +88,7 @@ static void load_inifile(struct inifile* ini)
 }
 
 static void update_input(struct full_system* fsys, ImGuiIO& io) {
-    if (io.WantCaptureKeyboard) {
+    //if (io.WantCaptureKeyboard) {
         // Handle KB
         if (fsys->io.keyboard.vec) {
             auto *pio = (struct physical_io_device *)cpg(fsys->io.keyboard);
@@ -111,7 +111,7 @@ static void update_input(struct full_system* fsys, ImGuiIO& io) {
 
             }
         }
-    }
+    //}
 }
 
 
@@ -191,7 +191,7 @@ int main(int, char**)
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
@@ -270,6 +270,7 @@ int main(int, char**)
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+        io.WantCaptureKeyboard = false;
 #ifdef STOPAFTERAWHILE
         // 14742566
         framevars fv = fsys.get_framevars();

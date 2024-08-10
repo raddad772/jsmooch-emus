@@ -185,5 +185,6 @@ void mac_floppy_encode_track(struct generic_floppy_track *track)
         bitbuf_write_bits(&track->encoded_data, 32, gcr6_encode(ca, cb, cc));
         bitbuf_write_bits(&track->encoded_data, 32, 0xdeaaffff);
     }
+    bitbuf_write_final(&track->encoded_data);
 }
 

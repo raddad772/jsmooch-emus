@@ -1,6 +1,7 @@
 //
 // Created by RadDad772 on 3/20/24.
 //
+// This is just a C implementation of the common vector type
 
 #ifndef JSMOOCH_EMUS_CVEC_H
 #define JSMOOCH_EMUS_CVEC_H
