@@ -107,7 +107,6 @@ static void update_input(struct full_system* fsys, ImGuiIO& io) {
                 for (u32 i = 0; i < cvec_len(&ctr->digital_buttons); i++) {
                     struct HID_digital_button *db = (struct HID_digital_button *)cvec_get(&ctr->digital_buttons, i);
                     db->state = ImGui::IsKeyDown(jk_to_imgui(db->common_id));
-                    if (db->common_id == DBCID_co_right) printf("\nRIGHT: %d", db->state);
                 }
             }
         }
@@ -142,10 +141,10 @@ int main(int, char**)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    enum jsm_systems which = SYS_SMS2;
+    //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_MAC512K;
-    //enum jsm_systems which = SYS_MAC512K;
+    enum jsm_systems which = SYS_DMG;
 #endif
 
     full_system fsys;

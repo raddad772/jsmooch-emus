@@ -197,19 +197,20 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     d->id = 0;
     d->kind = HID_CONTROLLER;
     d->connected = 1;
+    d->enabled = 1;
 
     struct JSM_CONTROLLER* cnt = &d->controller;
 
     // up down left right a b start select. in that order
-    this->cpu.io_device = d;
-    new_button(cnt, "up", DBCID_co_up);
-    new_button(cnt, "down", DBCID_co_down);
-    new_button(cnt, "left", DBCID_co_left);
-    new_button(cnt, "right", DBCID_co_right);
-    new_button(cnt, "a", DBCID_co_fire1);
-    new_button(cnt, "b", DBCID_co_fire2);
-    new_button(cnt, "start", DBCID_co_start);
-    new_button(cnt, "select", DBCID_co_select);
+    this->cpu.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
+    pio_new_button(cnt, "up", DBCID_co_up);
+    pio_new_button(cnt, "down", DBCID_co_down);
+    pio_new_button(cnt, "left", DBCID_co_left);
+    pio_new_button(cnt, "right", DBCID_co_right);
+    pio_new_button(cnt, "a", DBCID_co_fire1);
+    pio_new_button(cnt, "b", DBCID_co_fire2);
+    pio_new_button(cnt, "start", DBCID_co_start);
+    pio_new_button(cnt, "select", DBCID_co_select);
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);

@@ -511,7 +511,7 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "pokemonyellow.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);

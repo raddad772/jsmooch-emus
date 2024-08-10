@@ -410,7 +410,7 @@ void GB_CPU_quick_boot(struct GB_CPU* this)
 }
 
 static void update_inputs(struct GB_CPU* this) {
-    struct cvec* bl = &this->io_device->controller.digital_buttons;
+    struct cvec* bl = &((struct physical_io_device *)cpg(this->device_ptr))->controller.digital_buttons;
     struct HID_digital_button* b;
 #define B_GET(button, num) { b = cvec_get(bl, num); this->input_buffer. button = b->state; }
     B_GET(up, 0);
@@ -622,16 +622,4 @@ void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val)
     }
     //TODO: APU stuff
     //this->bus->apu.write_IO(addr, val);
-}
-
-void GB_CPU_update_inputs(struct GB_CPU* this, struct GB_inputs *inp1)
-{
-    this->input_buffer.a = inp1->a;
-    this->input_buffer.b = inp1->b;
-    this->input_buffer.up = inp1->up;
-    this->input_buffer.down = inp1->down;
-    this->input_buffer.left = inp1->left;
-    this->input_buffer.right = inp1->right;
-    this->input_buffer.start = inp1->start;
-    this->input_buffer.select = inp1->select;
 }

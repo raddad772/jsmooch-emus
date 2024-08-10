@@ -79,7 +79,7 @@ struct GB_CPU {
         u32 right;
     } input_buffer;
 
-    struct physical_io_device *io_device;
+    struct cvec_ptr device_ptr;
 };
 
 void GB_CPU_init(struct GB_CPU*, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
