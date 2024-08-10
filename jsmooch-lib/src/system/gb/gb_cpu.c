@@ -446,7 +446,6 @@ static u32 GB_CPU_get_input(struct GB_CPU* this) {
 u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
-    //if (addr == 0xFF44) printf("\nHEY VAL COMES IN %02x", val);
     switch(addr) {
         case 0xFF00: // JOYP
             // return not pressed=1 in bottom 4 bits

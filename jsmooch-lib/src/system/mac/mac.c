@@ -7,9 +7,6 @@
 #include <assert.h>
 #include <string.h>
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-
 #include "mac.h"
 #include "mac_internal.h"
 #include "mac_display.h"
@@ -175,10 +172,6 @@ static u32 mac_keyboard_keymap[77] = {
         JK_NUM_DIVIDE, JK_NUM_STAR, JK_NUM_LOCK, JK_NUM_CLEAR
 };
 
-static double track_RPM[5] = {
-       401.9241, 438.4626, 482.3089, 535.8988, 602.8861
-};
-
 static void setup_keyboard(struct mac* this)
 {
     struct physical_io_device *d = cvec_push_back(this->IOs);
@@ -200,34 +193,9 @@ static void setup_keyboard(struct mac* this)
 void macJ_IO_insert_disk(struct jsm_system *jsm, struct physical_io_device* pio, struct multi_file_set* mfs)
 {
     JTHIS;
-    struct buf *b = &mfs->files[0].buf;
-    printf("\nDISC SIZE: %lldb %lldKb", b->size, b->size >> 10);
     struct mac_floppy *mflpy = cvec_push_back(&this->iwm.my_disks);
     mac_floppy_init(mflpy);
-    u32 num_sectors = 13;
-    u8 *buf_ptr = (u8 *)b->ptr;
-    u64 track_radius = 395000 + 1875;
-    i32 speed_group = 0 - 1;
-
-    for (u32 i = 0; i < 80; i++) {
-        if ((i & 15) == 0) {
-            speed_group++;
-            num_sectors--;
-        }
-        struct generic_floppy_track *track = cvec_push_back(&mflpy->disc.tracks);
-        generic_floppy_track_init(track);
-
-        buf_allocate(&track->data, 512 * num_sectors);
-        memcpy(track->data.ptr, buf_ptr, 512 * num_sectors);
-        buf_ptr += 512 * num_sectors;
-
-        track->num_sectors = num_sectors;
-
-        track_radius -= 1875;
-        track->radius_mm = ((double)track_radius) / 1000.0;
-        track->length_mm = track->radius_mm * track->radius_mm * M_PI;
-        track->rpm = track_RPM[speed_group];
-    }
+    mac_floppy_load(mflpy, &mfs->files[0].buf);
     this->iwm.drive[0].disc = mflpy;
 }
 

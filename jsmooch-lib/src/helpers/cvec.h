@@ -44,6 +44,7 @@ void *cvec_get(struct cvec *, u32 index);
 void *cvec_get_unsafe(struct cvec *, u32 index);
 void cvec_lock_reallocs(struct cvec *); // For locking reallocs to preserve pointers
 void cvec_push_back_copy(struct cvec *, void *src);
+void cvec_grow(struct cvec *, u32 num);
 
 void cvec_iterator_init(struct cvec_iterator *);
 

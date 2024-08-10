@@ -215,6 +215,8 @@ add_library(jsmooch-lib
         src/system/mac/mac_debugger.h
         src/system/nes/nes_debugger.c
         src/system/nes/nes_debugger.h
+        src/helpers/bitbuffer.c
+        src/helpers/bitbuffer.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

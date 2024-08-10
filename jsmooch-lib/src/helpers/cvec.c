@@ -70,6 +70,14 @@ void *cvec_push_back(struct cvec* this)
     return ret;
 }
 
+void cvec_grow(struct cvec *this, u32 num)
+{
+    // TODO: make this one op
+    for (u32 i = 0; i < num; i++) {
+        cvec_push_back(this);
+    }
+}
+
 void *cvec_pop_back(struct cvec* this)
 {
     if (this->len == 0) return NULL;

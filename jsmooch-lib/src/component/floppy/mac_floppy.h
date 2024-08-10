@@ -1,4 +1,3 @@
-//
 // Created by . on 8/5/24.
 //
 
@@ -18,6 +17,8 @@ struct mac_floppy {
 
 void mac_floppy_init(struct mac_floppy *);
 void mac_floppy_delete(struct mac_floppy *);
+void mac_floppy_encode_track(struct generic_floppy_track *track);
+void mac_floppy_load(struct mac_floppy *flpy, struct buf *b);
 
 #ifdef __cplusplus
 }
