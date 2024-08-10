@@ -142,8 +142,8 @@ int main(int, char**)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    //enum jsm_systems which = SYS_ZX_SPECTRUM;
-    enum jsm_systems which = SYS_NES;
+    enum jsm_systems which = SYS_SMS2;
+    //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_MAC512K;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
@@ -184,6 +184,7 @@ int main(int, char**)
         return 1;
     }
     CreateSwapChain(wgpu_swap_chain_width, wgpu_swap_chain_height);
+    glfwSwapInterval(0);
     glfwShowWindow(window);
 
     // Setup Dear ImGui context

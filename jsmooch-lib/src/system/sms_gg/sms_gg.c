@@ -135,29 +135,6 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
 }
 
 
-static void setup_controller(struct SMSGG* this, u32 num, const char*name, u32 connected, u32 pause_button)
-{
-    struct physical_io_device *d = cvec_push_back(this->IOs);
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
-
-    sprintf(d->controller.name, "%s", name);
-    d->id = num;
-    d->kind = HID_CONTROLLER;
-    d->connected = connected;
-
-    struct JSM_CONTROLLER* cnt = &d->controller;
-
-    // up down left right a b start select. in that order
-    new_button(cnt, "up", DBCID_co_up);
-    new_button(cnt, "down", DBCID_co_down);
-    new_button(cnt, "left", DBCID_co_left);
-    new_button(cnt, "right", DBCID_co_right);
-    new_button(cnt, "1", DBCID_co_fire1);
-    new_button(cnt, "2", DBCID_co_fire2);
-    if (pause_button)
-        new_button(cnt, "pause", DBCID_co_start);
-}
-
 
 static void setup_crt_sms(struct JSM_DISPLAY *d)
 {
@@ -219,10 +196,13 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     this->IOs = IOs;
 
     // controllers
-    u32 idx = 0;
-    setup_controller(this, 0, "Player A", 1, true);
+    struct physical_io_device *d = cvec_push_back(this->IOs);
+    SMSGG_gamepad_setup_pio(d, 0, "Player A", 1, true);
+    this->io.controllerA.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     if (this->variant != SYS_GG) {
-        setup_controller(this, 1, "Player B", 0, false);
+        d = cvec_push_back(this->IOs);
+        SMSGG_gamepad_setup_pio(d, 1, "Player B", 0, false);
+        this->io.controllerB.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     }
 
     // power, reset, and pause buttons
@@ -253,7 +233,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     }
 
     // cartridge port
-    struct physical_io_device *d = cvec_push_back(IOs);
+    d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
     d->cartridge_port.load_cart = &SMSGGIO_load_cart;
     d->cartridge_port.unload_cart = &SMSGGIO_unload_cart;
@@ -273,11 +253,6 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     this->vdp.cur_output = (u16 *)d->display.output[0];
     d->display.last_written = 1;
     d->display.last_displayed = 1;
-
-    this->io.controllerA.devices = IOs;
-    this->io.controllerA.device_index = 0;
-    this->io.controllerB.devices = IOs;
-    this->io.controllerB.device_index = 1;
 
     this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
 }
@@ -322,12 +297,6 @@ void SMSGGJ_reset(JSM)
     SMSGG_mapper_sega_reset(&this->mapper);
     SN76489_reset(&this->sn76489);
     this->last_frame = 0;
-}
-
-static void update_inputs(struct SMSGG* this, struct smspad_inputs *inp1, struct smspad_inputs *inp2)
-{
-    SMSGG_gamepad_buffer_input(&this->io.controllerA, inp1);
-    //SMSGG_gamepad_buffer_input(&this->io.controllerB, inp2);
 }
 
 void SMSGGJ_killall(JSM)

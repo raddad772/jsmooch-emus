@@ -7,19 +7,6 @@
 #include "sms_gamepad.h"
 #include "string.h"
 
-void smspad_inputs_init(struct smspad_inputs* this)
-{
-    *this = (struct smspad_inputs) {
-            .b1 = 0,
-            .b2 = 0,
-            .up = 0,
-            .down = 0,
-            .left = 0,
-            .right = 0,
-            .start = 0
-    };
-}
-
 void SMSGG_gamepad_init(struct SMSGG_gamepad* this, enum jsm_systems variant, u32 num)
 {
     *this = (struct SMSGG_gamepad) {
@@ -27,13 +14,6 @@ void SMSGG_gamepad_init(struct SMSGG_gamepad* this, enum jsm_systems variant, u3
             .num = num,
             .pins = (struct SMSGG_gamepad_pins) { 1, 1, 1, 1, 1, 1, 1}
     };
-    smspad_inputs_init(&this->input_waiting);
-}
-
-void SMSGG_gamepad_buffer_input(struct SMSGG_gamepad* this, struct smspad_inputs* from)
-{
-    this->input_waiting = *from;
-    if ((this->variant == SYS_SMS1) || (this->variant == SYS_SMS2) || (this->num != 1)) this->input_waiting.start = 0;
 }
 
 u32 SMSGG_gamepad_read(struct SMSGG_gamepad* this)
@@ -42,9 +22,33 @@ u32 SMSGG_gamepad_read(struct SMSGG_gamepad* this)
     return (this->pins.up) | (this->pins.down << 1) | (this->pins.left << 2) | (this->pins.right << 3) | (this->pins.tl << 4) | (this->pins.tr << 5) | 0x40;
 }
 
+void SMSGG_gamepad_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected, u32 pause_button)
+{
+    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+
+    sprintf(d->controller.name, "%s", name);
+    d->id = num;
+    d->kind = HID_CONTROLLER;
+    d->connected = connected;
+    d->enabled = connected;
+
+    struct JSM_CONTROLLER* cnt = &d->controller;
+
+    // up down left right a b start select. in that order
+    pio_new_button(cnt, "up", DBCID_co_up);
+    pio_new_button(cnt, "down", DBCID_co_down);
+    pio_new_button(cnt, "left", DBCID_co_left);
+    pio_new_button(cnt, "right", DBCID_co_right);
+    pio_new_button(cnt, "1", DBCID_co_fire1);
+    pio_new_button(cnt, "2", DBCID_co_fire2);
+    if (pause_button)
+        pio_new_button(cnt, "pause", DBCID_co_start);
+}
+
+
 void SMSGG_gamepad_latch(struct SMSGG_gamepad* this)
 {
-    struct physical_io_device* p = (struct physical_io_device*)cvec_get(this->devices, this->device_index);
+    struct physical_io_device* p = cpg(this->device_ptr);
     if (p->connected) {
         struct cvec* bl = &p->controller.digital_buttons;
         struct HID_digital_button* b;
@@ -58,11 +62,11 @@ void SMSGG_gamepad_latch(struct SMSGG_gamepad* this)
 #undef B_GET
     }
     else {
-        this->pins.up = this->input_waiting.up = 1;
-        this->pins.down = this->input_waiting.down = 1;
-        this->pins.left = this->input_waiting.left = 1;
-        this->pins.right = this->input_waiting.right = 1;
-        this->pins.tr = this->input_waiting.b2 = 1;
-        this->pins.tl = this->input_waiting.b1 = 1;
+        this->pins.up = 1;
+        this->pins.down = 1;
+        this->pins.left = 1;
+        this->pins.right = 1;
+        this->pins.tr = 1;
+        this->pins.tl = 1;
     }
 }
