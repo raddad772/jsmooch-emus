@@ -170,7 +170,7 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     struct physical_io_device *c1 = cvec_push_back(this->IOs); //0
     struct physical_io_device *c2 = cvec_push_back(this->IOs); //1
     NES_joypad_setup_pio(c1, 0, "Player 1", 1);
-    NES_joypad_setup_pio(c2, 1, "Player 2", 0);
+    //NES_joypad_setup_pio(c2, 1, "Player 2", 0);
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs); //2

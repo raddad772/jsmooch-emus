@@ -95,7 +95,7 @@ static void update_input(struct full_system* fsys, ImGuiIO& io) {
             if (pio->connected && pio->enabled) {
                 struct JSM_KEYBOARD *kbd = &pio->keyboard;
                 for (u32 i = 0; i < kbd->num_keys; i++) {
-                    kbd->key_states[i] = ImGui::IsKeyPressed(jk_to_imgui(kbd->key_defs[i]));
+                    kbd->key_states[i] = ImGui::IsKeyDown(jk_to_imgui(kbd->key_defs[i]));
                 }
             }
         }
@@ -106,9 +106,9 @@ static void update_input(struct full_system* fsys, ImGuiIO& io) {
                 struct JSM_CONTROLLER *ctr = &pio->controller;
                 for (u32 i = 0; i < cvec_len(&ctr->digital_buttons); i++) {
                     struct HID_digital_button *db = (struct HID_digital_button *)cvec_get(&ctr->digital_buttons, i);
-                    db->state = ImGui::IsKeyPressed(jk_to_imgui(db->common_id));
+                    db->state = ImGui::IsKeyDown(jk_to_imgui(db->common_id));
+                    if (db->common_id == DBCID_co_right) printf("\nRIGHT: %d", db->state);
                 }
-
             }
         }
     //}
@@ -270,7 +270,7 @@ int main(int, char**)
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        io.WantCaptureKeyboard = false;
+        //io.WantCaptureKeyboard = false;
 #ifdef STOPAFTERAWHILE
         // 14742566
         framevars fv = fsys.get_framevars();
