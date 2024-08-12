@@ -128,6 +128,7 @@ struct disassembly_view {
 struct event_category {
     char name[50];
     u32 color;
+    u32 id;
 };
 
 enum debugger_event_kind {
@@ -147,6 +148,7 @@ struct debugger_event {
     struct cvec updates[2]; // debugger_event_update
     u32 updates_index;
     u32 color;
+    u32 category_id;
 
     struct {
         char context[50];
@@ -216,7 +218,7 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
 void cpu_reg_context_render(struct cpu_reg_context*, char* outbuf, size_t outbuf_sz);
 
 // Event view functions
-struct cvec_ptr events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color);
+struct cvec_ptr events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id);
 struct cvec_ptr events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, struct cvec_ptr category, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context);
 void event_view_begin_frame(struct cvec_ptr event_view);
 void debugger_report_event(struct cvec_ptr viewptr, struct cvec_ptr event);

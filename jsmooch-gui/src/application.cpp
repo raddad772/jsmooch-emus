@@ -362,7 +362,7 @@ int main(int, char**)
         }
 
         // disassembly view
-        if (fsys.dasm && enable_debugger && has_played_once && false) {
+        if (fsys.dasm && enable_debugger && has_played_once) {
             ImGui::Begin("Disassembly View");
             static ImGuiTableFlags flags =
                     ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
@@ -453,8 +453,46 @@ int main(int, char**)
 
             fsys.events_view_present();
             ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.sz_for_display, fsys.events.texture.uv0, fsys.events.texture.uv1);
+            ImGui::SameLine();
 
-            ImGui::End();
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+            ImGui::BeginChild("Event Viewer Events", ImVec2(150, 250), ImGuiChildFlags_Border, window_flags);
+            /*if (ImGui::BeginMenuBar())
+            {
+                if (ImGui::BeginMenu("Menu"))
+                {
+
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
+            }*/
+
+            static bool things_open[50];
+            static float color_edits[50*10][3];
+            u32 idx = 0;
+            for (u32 cati = 0; cati < cvec_len(&fsys.events.view->categories); cati++) {
+                auto *cat = (struct event_category *)cvec_get(&fsys.events.view->categories, cati);
+                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+                if (ImGui::TreeNodeEx(cat->name, flags)) {
+                    for (u32 evi = 0; evi < cvec_len(&fsys.events.view->events); evi++) {
+                        auto *event = (struct debugger_event *)cvec_get(&fsys.events.view->events, evi);
+                        if (event->category_id == cat->id) {
+                            color_edits[idx][0] = (float)(event->color & 0xFF) / 255.0;
+                            color_edits[idx][1] = (float)((event->color >> 8) & 0xFF) / 255.0;
+                            color_edits[idx][2] = (float)((event->color >> 16) & 0xFF) / 255.0;
+                            ImGui::ColorEdit3(event->name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
+                            idx++;
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+            }
+
+            ImGui::EndChild(); // end sub-window
+            ImGui::PopStyleVar();
+
+            ImGui::End(); // end window
         }
 
         // Rendering

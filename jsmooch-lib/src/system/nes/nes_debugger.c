@@ -138,13 +138,13 @@ void NESJ_setup_debugger_interface(struct jsm_system *jsm, struct debugger_inter
     }
     ev->associated_display = this->ppu.display_ptr;
 
-    this->dbg.events.category.CPU = events_view_add_category(dbgr, ev, "CPU events", 0xFF0000);
-    this->dbg.events.category.PPU = events_view_add_category(dbgr, ev, "PPU events", 0x0000FF);
+    this->dbg.events.category.CPU = events_view_add_category(dbgr, ev, "CPU events", 0xFF0000, 0);
+    this->dbg.events.category.PPU = events_view_add_category(dbgr, ev, "PPU events", 0x0000FF, 1);
 
     this->dbg.events.IRQ = events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, "IRQ", 0xFF0000, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.NMI = events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, "NMI", 0x0FF000, dek_pix_square, 1, 0, NULL);
+    this->dbg.events.NMI = events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, "NMI", 0x808000, dek_pix_square, 1, 0, NULL);
     this->dbg.events.w2006 = events_view_add_event(dbgr, ev, this->dbg.events.category.PPU, "Write $2006", 0x00FF00, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.w2007 = events_view_add_event(dbgr, ev, this->dbg.events.category.PPU, "Write $2007", 0x000FF0, dek_pix_square, 1, 0, NULL);
+    this->dbg.events.w2007 = events_view_add_event(dbgr, ev, this->dbg.events.category.PPU, "Write $2007", 0x008080, dek_pix_square, 1, 0, NULL);
 
     this->cpu.cpu.dbg.event.view = this->dbg.events.view;
     this->cpu.cpu.dbg.event.IRQ = this->dbg.events.IRQ;

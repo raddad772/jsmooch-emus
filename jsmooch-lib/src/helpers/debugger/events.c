@@ -36,12 +36,13 @@ void event_category_delete(struct event_category *this)
     this->name[0] = 0;
 }
 
-struct cvec_ptr events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color)
+struct cvec_ptr events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id)
 {
     struct event_category *ec = cvec_push_back(&ev->categories);
     event_category_init(ec);
     snprintf(ec->name, sizeof(ec->name), "%s", name);
     ec->color = color;
+    ec->id = id;
     return make_cvec_ptr(&ev->categories, cvec_len(&ev->categories)-1);
 }
 
@@ -53,6 +54,7 @@ struct cvec_ptr events_view_add_event(struct debugger_interface *dbgr, struct ev
     snprintf(event->name, sizeof(event->name), "%s", name);
     event->category = category;
     event->color = color;
+    event->category_id = ((struct event_category *)cpg(category))->id;
 
     return make_cvec_ptr(&ev->events, cvec_len(&ev->events)-1);
 }
