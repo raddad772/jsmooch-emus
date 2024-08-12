@@ -168,9 +168,8 @@ void macJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     dbgr->smallest_step = 2;
 
     // Setup diassembly
-    struct debugger_view *dview = cvec_push_back(&dbgr->views);
-    debugger_view_init(dview, dview_disassembly);
-
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
+    struct debugger_view *dview = cpg(p);
     struct disassembly_view *dv = &dview->disassembly;
     dv->addr_column_size = 6;
     dv->has_context = 1;

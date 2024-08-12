@@ -68,7 +68,7 @@ void NM_AXROM_CPU_write(struct NES* nes, u32 addr, u32 val) {
     u32 old_bank_offset = this->prg_bank_offset;
     this->prg_bank_offset = ((val & 15) % this->num_PRG_banks) * 32768;
     if (old_bank_offset != this->prg_bank_offset) {
-        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, 0x8000, 0xFFFF);
+        debugger_interface_dirty_mem(this->bus->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xFFFF);
     }
 
     this->ppu_mirror_mode = (val & 0x10) ? PPUM_ScreenBOnly : PPUM_ScreenAOnly;

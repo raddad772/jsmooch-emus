@@ -59,7 +59,7 @@ void NM_MMC1_set_PRG_ROM(struct NES_mapper_MMC1* this, u32 addr, u32 bank_num)
     this->PRG_map[b].addr = addr;
     this->PRG_map[b].offset = (bank_num % this->num_PRG_banks) * 0x4000;
     if (this->PRG_map[b].offset != old_offset) {
-        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, addr, addr + 0x3FFF);
+        debugger_interface_dirty_mem(this->bus->dbg.interface, NESMEM_CPUBUS, addr, addr + 0x3FFF);
     }
 }
 

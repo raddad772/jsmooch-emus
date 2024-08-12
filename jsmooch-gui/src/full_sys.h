@@ -55,6 +55,7 @@ public:
 
     struct disassembly_view *dasm{};
 
+
     full_system() {
         wgpu_device = nullptr;
         sys = nullptr;
@@ -103,6 +104,10 @@ public:
 
         bool zoom, hide_overscan;
     } output{};
+    struct {
+        struct my_texture texture;
+        struct events_view *view{};
+    } events;
 
     [[nodiscard]] ImVec2 output_size() const;
     [[nodiscard]] ImVec2 output_uv0() const;
@@ -112,6 +117,7 @@ public:
     void do_frame() const;
     struct framevars get_framevars() const;
     void present();
+    void events_view_present();
     void setup_wgpu();
 private:
     void setup_ios();

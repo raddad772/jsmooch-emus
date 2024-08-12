@@ -8,6 +8,7 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "m6502_misc.h"
+#include "helpers/debugger/debugger.h"
 
 struct M6502_P {
     u32 C;
@@ -62,6 +63,13 @@ struct M6502 {
     u32 NMI_ack, NMI_old, IRQ_count;
 
     u32 PCO;
+
+    struct {
+        struct {
+            struct cvec_ptr view;
+            struct cvec_ptr IRQ, NMI;
+        } event;
+    } dbg;
     struct {
         u32 ok;
         u64 *cycles;

@@ -51,7 +51,7 @@ void NM_UXROM_CPU_write(struct NES* nes, u32 addr, u32 val)
     u32 old_offset = this->prg_bank_offset;
     this->prg_bank_offset = 16384 * (val % this->num_PRG_banks);
     if (old_offset != this->prg_bank_offset) {
-        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, 0x8000, 0xBFFF);
+        debugger_interface_dirty_mem(this->bus->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xBFFF);
     }
 }
 

@@ -142,9 +142,9 @@ int main(int, char**)
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_SMS2;
-    //enum jsm_systems which = SYS_NES;
+    enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_MAC512K;
-    enum jsm_systems which = SYS_DMG;
+    //enum jsm_systems which = SYS_DMG;
 #endif
 
     full_system fsys;
@@ -312,6 +312,7 @@ int main(int, char**)
         if (fsys.state == FSS_play) {
             update_input(&fsys, io);
             fsys.do_frame();
+            fsys.events_view_present();
             has_played_once = true;
         }
         fsys.present();
@@ -331,7 +332,8 @@ int main(int, char**)
             }
 
         }
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+
+        // Main emu window
         {
             static float f = 0.0f;
             static int counter = 0;
@@ -359,10 +361,9 @@ int main(int, char**)
             ImGui::End();
         }
 
-        // 3. Show another simple window.
-        if (fsys.dasm && enable_debugger && has_played_once) {
-            ImGui::Begin("Disassembly View",
-                         &show_another_window);         // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+        // disassembly view
+        if (fsys.dasm && enable_debugger && has_played_once && false) {
+            ImGui::Begin("Disassembly View");
             static ImGuiTableFlags flags =
                     ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
                     ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
@@ -446,6 +447,16 @@ int main(int, char**)
                 ImGui::End();
             }
         }
+
+        if (fsys.events.view) {
+            ImGui::Begin("Event Viewer");
+
+            fsys.events_view_present();
+            ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.sz_for_display, fsys.events.texture.uv0, fsys.events.texture.uv1);
+
+            ImGui::End();
+        }
+
         // Rendering
         ImGui::Render();
 

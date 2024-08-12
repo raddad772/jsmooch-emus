@@ -51,6 +51,7 @@ void cvec_iterator_init(struct cvec_iterator *);
 
 struct cvec_ptr make_cvec_ptr(struct cvec *, u32 idx);
 void cvec_ptr_init(struct cvec_ptr *vec);
+void cvec_ptr_delete(struct cvec_ptr *vec);
 
 void *cpg(struct cvec_ptr p);
 

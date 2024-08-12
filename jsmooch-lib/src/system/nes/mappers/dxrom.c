@@ -51,7 +51,7 @@ void NM_DXROM_set_PRG_ROM_8k(struct NES_mapper_DXROM* this, u32 addr, u32 bank_n
     u32 old_val = this->regs.prg_banks[bnk];
     this->regs.prg_banks[bnk] = (bank_num % this->num_PRG_banks) * 8192;
     if (old_val != this->regs.prg_banks[bnk]) {
-        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, addr, addr + 0x1FFF);
+        debugger_interface_dirty_mem(this->bus->dbg.interface, NESMEM_CPUBUS, addr, addr + 0x1FFF);
     }
 }
 

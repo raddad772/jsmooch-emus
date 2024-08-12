@@ -113,6 +113,12 @@ void cvec_ptr_init(struct cvec_ptr *vec)
     vec->index = 0;
 }
 
+void cvec_ptr_delete(struct cvec_ptr *vec)
+{
+    vec->vec = NULL;
+    vec->index = 0;
+}
+
 struct cvec_ptr make_cvec_ptr(struct cvec *vec, u32 idx)
 {
     return (struct cvec_ptr) { .vec=vec, .index=idx};

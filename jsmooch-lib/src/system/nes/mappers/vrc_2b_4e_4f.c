@@ -77,7 +77,7 @@ void NM_VRC2B_4E_4F_set_PRG_ROM(struct NES_mapper_VRC2B_4E_4F* this, u32 addr, u
     u32 old_offset = this->PRG_map[b].offset;
     this->PRG_map[b].offset = (bank_num % this->num_PRG_banks) * 0x2000;
     if (old_offset != this->PRG_map[b].offset) {
-        debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, addr, addr + 0x1FFF);
+        debugger_interface_dirty_mem(this->bus->dbg.interface, NESMEM_CPUBUS, addr, addr + 0x1FFF);
     }
 }
 

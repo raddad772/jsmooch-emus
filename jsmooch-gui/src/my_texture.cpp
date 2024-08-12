@@ -28,6 +28,7 @@ void my_texture::setup(WGPUDevice device, const char *label, u32 twidth, u32 the
     view.desc.arrayLayerCount = 1;
     view.desc.aspect = WGPUTextureAspect_All;
     view.item = wgpuTextureCreateView(tex.item, &view.desc);
+    is_good = 1;
 }
 
 void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height)

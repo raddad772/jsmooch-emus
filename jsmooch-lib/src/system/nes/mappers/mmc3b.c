@@ -259,7 +259,7 @@ void NM_MMC3b_remap(struct NES_mapper_MMC3b* this, u32 boot) {
         MMC3b_set_CHR_ROM_1k(this, 6, this->regs.bank[1] & 0xFE);
         MMC3b_set_CHR_ROM_1k(this, 7, this->regs.bank[1] | 0x01);
     }
-    debugger_interface_dirty_mem(this->bus->dbgr, NESMEM_CPUBUS, 0x8000, 0xFFFF);
+    debugger_interface_dirty_mem(this->bus->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xFFFF);
 }
 
 void NM_MMC3b_set_cart(struct NES* nes, struct NES_cart* cart)

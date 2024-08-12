@@ -14,12 +14,15 @@ struct my_texture {
     struct {
         WGPUTextureDescriptor desc;
         WGPUTexture item;
-    } tex;
+    } tex{};
     struct {
         WGPUTextureViewDescriptor desc;
         WGPUTextureView item;
-    } view;
+    } view{};
     u32 height, width;
+    u32 is_good{};
+    ImVec2 uv0, uv1;
+    ImVec2 sz_for_display;
     WGPUDevice wgpu_device;
 
     my_texture() { tex.desc = {}; tex.item = nullptr;   view.desc = {}; view.item = nullptr; height = width = 0; wgpu_device = nullptr; }
@@ -36,7 +39,6 @@ struct my_texture {
     }
     void setup(WGPUDevice device, const char *label, u32 width, u32 height);
     void upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height);
-
     [[nodiscard]] WGPUTextureView for_image() const { return view.item; }
 };
 

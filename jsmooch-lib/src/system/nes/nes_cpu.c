@@ -2,12 +2,11 @@
 // Created by Dave on 2/5/2024.
 //
 
-#include "stdio.h"
-#include "helpers/debug.h"
+#include <stdio.h>
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/nesm6502_opcodes.h"
+#include "helpers/debugger/debugger.h"
 #include "nes.h"
-#include "nes_clock.h"
 #include "nes_cpu.h"
 
 #define RT struct r2A03* this

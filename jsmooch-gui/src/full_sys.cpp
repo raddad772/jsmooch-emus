@@ -13,6 +13,7 @@
 #include "full_sys.h"
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
+#include "helpers/debugger/debugger.h"
 //#include "system/gb/gb_enums.h"
 
 // mac overlay - 14742566
@@ -553,10 +554,12 @@ void full_system::setup_debugger_interface()
             case dview_disassembly:
                 dasm = &view->disassembly;
                 break;
+            case dview_events:
+                events.view = &view->events;
+                break;
             default:
                 break;
         }
-        if (dasm) break;
     }
 }
 
@@ -587,6 +590,7 @@ void full_system::setup_system(enum jsm_systems which)
     mfs_delete(&sideload_image);
 #endif
 
+    sys->reset(sys);
     setup_debugger_interface();
 }
 
@@ -675,16 +679,47 @@ void full_system::setup_display()
     output.without_overscan.uv1 = ImVec2(end_u * total_u, end_v * total_v);
 
     if (output.backbuffer_backer) free(output.backbuffer_backer);
-    output.backbuffer_backer = malloc(p->cols.visible * p->rows.visible * 4);
-    memset(output.backbuffer_backer, 0, p->cols.visible * p->rows.visible * 4);
+    output.backbuffer_backer = malloc(output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
+    memset(output.backbuffer_backer, 0, output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
 }
 
 void full_system::present()
 {
     struct framevars fv = {};
     sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, output.backbuffer_texture.width, output.backbuffer_texture.height);
+    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
+}
+
+void full_system::events_view_present()
+{
+    if (events.view) {
+        struct events_view::DVDP *evd = &events.view->display[events.view->index_in_use];
+        if (!events.texture.is_good) {
+            assert(wgpu_device);
+            u32 szpo2 = get_closest_pow2(MAX(events.view->display[0].width, events.view->display[0].height));
+            events.texture.setup(wgpu_device, "Events View texture", szpo2, szpo2);
+            events.texture.uv0 = ImVec2(0, 0);
+            events.texture.uv1 = ImVec2((float)((double)events.view->display[0].width / (double)events.texture.width),
+                                              (float)((double)events.view->display[0].height / (double)events.texture.height));
+
+            events.texture.sz_for_display = ImVec2((float)events.view->display[0].width, (float)events.view->display[0].height);
+            events.view->display[0].buf = (u32 *)malloc(szpo2*szpo2*4);
+            events.view->display[1].buf = (u32 *)malloc(szpo2*szpo2*4);
+            // Setup UVs based off it
+        }
+
+        struct framevars fv = {};
+        sys->get_framevars(sys, &fv);
+        struct JSM_DISPLAY *d = &((struct physical_io_device *) cpg(io.display))->display;
+        memset(evd->buf, 0, events.texture.width*events.texture.height*4);
+        jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height);
+        events_view_render(&dbgr, events.view, evd->buf, events.texture.width, events.texture.height);
+
+
+        events.texture.upload_data(evd->buf, events.texture.width*events.texture.height*4, events.texture.width, events.texture.height);
+    }
+
 }
 
 ImVec2 full_system::output_size() const
@@ -712,6 +747,8 @@ void full_system::do_frame() const {
         if (!dbg.do_break)
             sys->finish_frame(sys);
         sys->get_framevars(sys, &fv);
+        //TODO: here
+        //debugger_
     }
     else {
         printf("\nCannot do frame with no system.");

@@ -71,6 +71,10 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
     this->trace.cycles = &this->trace.my_cycles;
     this->trace.my_cycles = 0;
 
+    cvec_ptr_init(&this->dbg.event.view);
+    cvec_ptr_init(&this->dbg.event.IRQ);
+    cvec_ptr_init(&this->dbg.event.NMI);
+
     this->IRQ_count = 0;
     this->first_reset = 1;
     this->trace.strct.ptr = NULL;
@@ -119,7 +123,6 @@ void M6502_disable_tracing(struct M6502* this)
 
 void M6502_cycle(struct M6502* this)
 {
-    fflush(stdout);
     // Perform 1 processor cycle
     if (this->regs.HLT || this->regs.STP) return;
     if ((this->pins.IRQ) && (this->regs.P.I == 0)) {
@@ -148,18 +151,21 @@ void M6502_cycle(struct M6502* this)
             this->NMI_ack = true;
             this->regs.NMI_pending = false;
             this->regs.IR = M6502_OP_NMI;
+            if (this->dbg.event.NMI.vec) debugger_report_event(this->dbg.event.view, this->dbg.event.NMI);
             if (dbg.brk_on_NMIRQ) {
                 dbg_break("M6502 NMI", *this->trace.cycles);
             }
         } else if (this->regs.IRQ_pending) {
             this->regs.IRQ_pending = false;
             this->regs.IR = M6502_OP_IRQ;
+            if (this->dbg.event.IRQ.vec) debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ);
             if (dbg.brk_on_NMIRQ) {
                 dbg_break("M6502 IRQ", *this->trace.cycles);
             }
         }
         fflush(stdout);
         this->current_instruction = this->opcode_table[this->regs.IR];
+        //printf("\nOPCODE: %02x", this->regs.IR);
         if (this->current_instruction == this->opcode_table[2]) { // TODO: this doesn't work with illegal opcodes or m65c02
             printf("INVALID OPCODE %02x", this->regs.IR);
             fflush(stdout);

@@ -237,29 +237,36 @@ static const u32 NES_palette[512] = {
         0xFF989898, 0xFF6C7C97, 0xFF7675A0, 0xFF81709F, 0xFF8A6D94, 0xFF8F6E82, 0xFF8E726E, 0xFF88785E, 0xFF7E7F56, 0xFF738457, 0xFF6A8761, 0xFF658672, 0xFF668286, 0xFF5E5E5E, 0xFF000000, 0xFF000000
 };
 
-void NES_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+u32 calc_stride(u32 out_width, u32 in_width)
 {
+    return (out_width - in_width);
+}
+
+static u32 *calc_start_pos(void *buf, u32 x_off, u32 y_off, u32 width)
+{
+    u32 *a = (u32 *)buf;
+    return a + (y_off * width) + x_off;
+}
+
+void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
+{
+
     u16* neso = (u16 *)device->display.output[device->display.last_written];
-    u32 overscan_left = 8; // overscan.left;
-    u32 overscan_right = 8; // overscan.right;
-    u32 overscan_top = 8; // overscan.top;
-    u32 overscan_bottom = 8; // overscan.bottom;
-    //if (!correct_overscan) { overscan_left = overscan_bottom = overscan_top = overscan_right = 0; }
-    u32 w = out_width;//256 - (overscan_left + overscan_right);
-    u32* img32 = (u32*)out_buf;
-    for (u32 nes_y = overscan_top; nes_y < (240 - overscan_bottom); nes_y++) {
-        u32 out_y = nes_y - overscan_top;
+
+    u32* img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
+    u32 stride = calc_stride(out_width, 256);
+
+    for (u32 nes_y = 0; nes_y < 240; nes_y++) {
         u32 nesyw = nes_y * 256;
-        u32 outyw = out_y * w;
-        for (u32 nes_x = overscan_left; nes_x < (256 - overscan_right); nes_x++) {
-            u32 out_x = nes_x - overscan_left;
+        for (u32 nes_x = 0; nes_x < 256; nes_x++) {
             u32 b_nes = (nesyw + nes_x);
-            u32 b_out = (outyw + out_x);
 
-            img32[b_out] = to_RGBA(NES_palette[neso[b_nes]]);
+            u32 r = to_RGBA(NES_palette[neso[b_nes]]);
+            *img32 = r;
+            img32++;
         }
+        img32 += stride;
     }
-
 }
 
 /*
@@ -369,7 +376,7 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
     }
 }
 
-void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 out_width, u32 out_height)
+void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
 {
     switch(which) {
         case SYS_GENESIS:
@@ -382,7 +389,7 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
             GBC_present(display, out_buf, out_width, out_height);
             break;
         case SYS_NES:
-            NES_present(display, out_buf, out_width, out_height);
+            NES_present(display, out_buf, x_offset, y_offset, out_width, out_height);
             break;
         case SYS_MAC128K:
         case SYS_MAC512K:

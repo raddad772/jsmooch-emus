@@ -4,6 +4,8 @@
 
 #include "stdio.h"
 
+#include "helpers/debugger/debugger.h"
+
 #include "nes.h"
 #include "nes_cpu.h"
 #include "nes_ppu.h"
@@ -187,6 +189,7 @@ void NES_bus_PPU_write_regs(struct NES* nes, u32 addr, u32 val)
             }
             return;
         case 0x2006: // PPUADDR
+            debugger_report_event(this->nes->dbg.events.view, this->nes->dbg.events.w2006);
             if (this->io.w == 0) {
                 this->io.t = (this->io.t & 0xFF) | ((val & 0x3F) << 8);
                 this->io.w = 1;
@@ -200,6 +203,7 @@ void NES_bus_PPU_write_regs(struct NES* nes, u32 addr, u32 val)
             }
             return;
         case 0x2007: // PPUDATA
+            debugger_report_event(this->nes->dbg.events.view, this->nes->dbg.events.w2007);
             if (this->rendering_enabled && ((nes->clock.ppu_y < nes->clock.timing.vblank_start) || (nes->clock.ppu_y > nes->clock.timing.vblank_end))) {
                 printf("REJECT WRITE y:%d sp:%d bg:%d v:%04x data:%02x", nes->clock.ppu_y, this->io.sprite_enable, this->io.bg_enable, this->io.v, val);
                 return;
@@ -614,6 +618,8 @@ void PPU_scanline_postrender(THIS) {
 
 void new_frame(THIS) {
     //this->nes->clock.lclock = this->nes->clock.cpu_master_clock;
+    event_view_begin_frame(this->nes->dbg.events.view);
+
     this->display->scan_y = 0;
     this->nes->clock.ppu_y = 0;
     this->nes->clock.frames_since_restart++;

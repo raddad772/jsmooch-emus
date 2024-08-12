@@ -217,6 +217,11 @@ add_library(jsmooch-lib
         src/system/nes/nes_debugger.h
         src/helpers/bitbuffer.c
         src/helpers/bitbuffer.h
+        src/helpers/debugger/disassembly.c
+        src/helpers/debugger/disassembly.h
+        src/helpers/ooc.h
+        src/helpers/debugger/events.c
+        src/helpers/debugger/events.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

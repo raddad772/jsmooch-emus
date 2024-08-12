@@ -410,7 +410,7 @@ u16 mac_mainbus_read_via(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_
             v = this->io.ROM_overlay << 4;
             // For un-emulated bits, return the last thing we wrote
             v |= (this->via.regs.ORA & (~(1 << 4)));
-
+            v |= 0x80; // SCC wait/request 1 so it doesn't keep just looping there
             return ((v << 8) | v) & mask; }
             //return this->via.regs.regA << 8; }
         case vBufB: {// read Data Reg B
