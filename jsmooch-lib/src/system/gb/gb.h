@@ -41,6 +41,26 @@ struct GB {
     i32 cycles_left;
 
     struct buf BIOS;
+
+    struct {
+        struct debugger_interface *interface;
+
+        // Disassembly
+        struct {
+            struct cpu_reg_context *A, *X, *Y, *P, *S, *PC;
+        } dasm;
+
+        // Events
+        struct {
+            struct cvec_ptr view;
+
+            struct {
+                struct cvec_ptr PPU, CPU, CPU_timer;
+            } category;
+        } events;
+
+    } dbg;
+
 };
 
 #endif

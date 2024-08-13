@@ -1,15 +1,18 @@
 #include "assert.h"
 #include "stdlib.h"
 #include <stdio.h>
+
 #include "helpers/sys_interface.h"
+#include "helpers/physical_io.h"
+#include "helpers/debugger/debugger.h"
+
 #include "gb.h"
 #include "gb_cpu.h"
 #include "gb_ppu.h"
 #include "gb_clock.h"
 #include "gb_bus.h"
 #include "gb_enums.h"
-#include "helpers/physical_io.h"
-#include "helpers/debugger/debugger.h"
+#include "gb_debugger.h"
 
 #define JTHIS struct GB* this = (struct GB*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -38,7 +41,6 @@ void GBJ_disable_tracing(JSM);
 void GBJ_describe_io(JSM, struct cvec* IOs);
 static void GBIO_unload_cart(JSM);
 static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
-static void GBJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 void GB_new(JSM, enum GB_variants variant)
 {
@@ -136,13 +138,6 @@ void GB_delete(JSM)
     jsm->enable_tracing = NULL;
     jsm->disable_tracing = NULL;
 }
-
-static void GBJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
-{
-    intf->supported_by_core = 0;
-    printf("\nWARNING: debugger interface not supported on core: gb");
-}
-
 
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {

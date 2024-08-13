@@ -5,6 +5,8 @@
 #include "stdio.h"
 #include "string.h"
 
+#include "helpers/debugger/debugger.h"
+
 #include "sms_gg_vdp.h"
 #include "sms_gg.h"
 
@@ -408,6 +410,8 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems 
 
 static void new_frame(struct SMSGG_VDP* this)
 {
+    event_view_begin_frame(this->bus->dbg.events.view);
+    this->display->scan_x = this->display->scan_y = 0;
     this->bus->clock.frames_since_restart++;
     this->bus->clock.vpos = 0;
     this->bus->clock.vdp_frame_cycle = 0;
@@ -426,6 +430,8 @@ static void set_scanline_kind(struct SMSGG_VDP* this, u32 vpos)
 
 static void new_scanline(struct SMSGG_VDP* this)
 {
+    this->display->scan_x = 0;
+    this->display->scan_y++;
     this->bus->clock.hpos = 0;
     this->bus->clock.vpos++;
     if (this->bus->clock.vpos == this->bus->clock.timing.frame_lines) {
@@ -462,6 +468,7 @@ void SMSGG_VDP_cycle(struct SMSGG_VDP* this)
     this->scanline_cycle(this);
     this->bus->clock.vdp_frame_cycle += this->bus->clock.vdp_divisor;
     this->bus->clock.hpos++;
+    this->display->scan_x++;
     if (this->bus->clock.hpos == 342) new_scanline(this);
 }
 
@@ -500,6 +507,7 @@ u32 SMSGG_VDP_read_data(struct SMSGG_VDP* this)
 
 void SMSGG_VDP_write_data(struct SMSGG_VDP* this, u32 val)
 {
+    debugger_report_event(this->bus->dbg.events.view, this->bus->dbg.events.write_vram);
     this->latch.control = 0;
     this->latch.vram = val;
     if (this->io.code <= 2) {
@@ -607,9 +615,11 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
             this->io.bg_color = val & 0x0F;
             return;
         case 8:
+            debugger_report_event(this->bus->dbg.events.view, this->bus->dbg.events.write_hscroll);
             this->io.hscroll = val;
             return;
         case 9:
+            debugger_report_event(this->bus->dbg.events.view, this->bus->dbg.events.write_vscroll);
             this->io.vscroll = val;
             return;
         case 10:

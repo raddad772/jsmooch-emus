@@ -70,6 +70,7 @@ struct M6502 {
             struct cvec_ptr IRQ, NMI;
         } event;
     } dbg;
+
     struct {
         u32 ok;
         u64 *cycles;

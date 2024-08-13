@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "helpers/debugger/debugger.h"
+
 #include "helpers/int.h"
 #include "gb_ppu.h"
 #include "gb_enums.h"
@@ -447,6 +449,10 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
     this->bus->read_OAM = &GB_PPU_bus_read_OAM;
     this->bus->write_OAM = &GB_PPU_bus_write_OAM;
 
+    cvec_ptr_init(&this->dbg.event.view);
+    cvec_ptr_init(&this->dbg.event.SCY_write);
+    cvec_ptr_init(&this->dbg.event.SCX_write);
+
     GB_pixel_slice_fetcher_init(&this->slice_fetcher, variant, clock, bus);
 
     this->line_cycle = 0;
@@ -626,9 +632,11 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         GB_PPU_eval_STAT(this);
         return;
     case 0xFF42: // SCY
-        this->io.SCY = val;
+        cvec_ptr_init(&this->dbg.event.SCY_write);
+            this->io.SCY = val;
         return;
     case 0xFF43: // SCX
+        cvec_ptr_init(&this->dbg.event.SCX_write);
         this->io.SCX = val;
         return;
     case 0xFF45: // LYC
@@ -805,9 +813,11 @@ static void GB_PPU_eval_lyc(struct GB_PPU *this) {
 }
 
 static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
+    if (this->dbg.event.view.vec) event_view_begin_frame(this->dbg.event.view);
     this->clock->ly = 0;
     this->clock->wly = 0;
     this->display->scan_y = 0;
+    this->display->scan_x = 0;
     this->is_window_line = this->clock->ly == this->io.wy;
     if (this->enabled) {
         GB_PPU_eval_lyc(this);
@@ -913,7 +923,6 @@ void GB_PPU_run_cycles(struct GB_PPU *this, u32 howmany)
         if (this->enabled) {
             GB_PPU_cycle(this);
             this->line_cycle++;
-            this->display->scan_x++;
             if (this->line_cycle == 456) GB_PPU_advance_line(this);
         }
         //if (dbg.do_break) break;
@@ -1016,5 +1025,6 @@ static void GB_PPU_pixel_transfer(struct GB_PPU *this)
             this->cur_output[(this->clock->ly * 160) + (this->clock->lx - 8)] = cv;
         }
         this->clock->lx++;
+        this->display->scan_x++;
     }
 }

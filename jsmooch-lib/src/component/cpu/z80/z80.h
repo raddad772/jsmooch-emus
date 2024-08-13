@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_Z80_H
 #define JSMOOCH_EMUS_Z80_H
 
+#include "helpers/cvec.h"
 #include "helpers/int.h"
 #include "helpers/debug.h"
 
@@ -121,6 +122,13 @@ struct Z80 {
     Z80_ins_func current_instruction;
 
     struct jsm_debug_read_trace read_trace;
+
+    struct {
+        struct {
+            struct cvec_ptr view;
+            struct cvec_ptr IRQ, NMI;
+        } event;
+    } dbg;
 
     u32 PCO;
 };

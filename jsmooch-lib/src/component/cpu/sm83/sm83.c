@@ -3,6 +3,7 @@
 #include "sm83_opcodes.h"
 #include "stdio.h"
 #include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 
 u32 SM83_regs_F_getbyte(struct SM83_regs_F* this) {
 	return (this->C << 4) | (this->H << 5) | (this->N << 6) | (this->Z << 7);
@@ -43,6 +44,12 @@ void SM83_init(struct SM83* this) {
 	this->current_instruction = SM83_decoded_opcodes[SM83_S_RESET];
 	SM83_regs_init(&(this->regs));
 	SM83_pins_init(&(this->pins));
+    cvec_ptr_init(&this->dbg.event.IRQ_joypad);
+    cvec_ptr_init(&this->dbg.event.IRQ_vblank);
+    cvec_ptr_init(&this->dbg.event.IRQ_stat);
+    cvec_ptr_init(&this->dbg.event.IRQ_timer);
+    cvec_ptr_init(&this->dbg.event.IRQ_serial);
+    cvec_ptr_init(&this->dbg.event.HALT_end);
 
     this->trace_cycles = 0;
     this->trace_on = 0;
@@ -114,28 +121,34 @@ void SM83_cycle(struct SM83* this) {
 			this->regs.IV = -1;
 			imask = 0xFF;
 			if (mask & 1) { // VBLANK interrupt
+                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_vblank);
 				imask = 0xFE;
 				this->regs.IV = 0x40;
 			}
 			else if (mask & 2) { // STAT interrupt
+                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_stat);
 				imask = 0xFD;
 				this->regs.IV = 0x48;
 			}
 			else if (mask & 4) { // Timer interrupt
+                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_timer);
 				imask = 0xFB;
 				this->regs.IV = 0x50;
 			}
 			else if (mask & 8) { // Serial interrupt
+                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_serial);
 				imask = 0xF7;
 				this->regs.IV = 0x58;
 			}
 			else if (mask & 0x10) { // Joypad interrupt
-				imask = 0xEF;
+                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_joypad);
+                imask = 0xEF;
 				this->regs.IV = 0x60;
 			}
 			if (this->regs.IV > 0) {
 				if (is_halt && (this->regs.IME == 0)) {
-					this->regs.HLT = 0;
+                    debugger_report_event(this->dbg.event.view, this->dbg.event.HALT_end);
+                    this->regs.HLT = 0;
 					this->regs.TCU++;
                     printf("De-halt!");
 				}

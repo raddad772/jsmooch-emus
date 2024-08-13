@@ -14,6 +14,7 @@
 #include "sms_gg_io.h"
 #include "sms_gg_mapper_sega.h"
 #include "sms_gg_vdp.h"
+#include "smsgg_debugger.h"
 
 #define JTHIS struct SMSGG* this = (struct SMSGG*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -35,7 +36,6 @@ void SMSGGJ_disable_tracing(JSM);
 void SMSGGJ_describe_io(JSM, struct cvec *IOs);
 static void SMSGGIO_unload_cart(JSM);
 static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
-static void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 {
@@ -114,14 +114,7 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     jsm->describe_io = &SMSGGJ_describe_io;
     jsm->sideload = NULL;
     jsm->setup_debugger_interface = &SMSGGJ_setup_debugger_interface;
-
-    SMSGGJ_reset(jsm);
-}
-
-static void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
-{
-    intf->supported_by_core = 0;
-    printf("\nWARNING: debugger interface not supported on core: sms/gg");
+    //SMSGGJ_reset(jsm);
 }
 
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)

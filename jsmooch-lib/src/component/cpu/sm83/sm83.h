@@ -3,6 +3,7 @@
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
+#include "helpers/cvec.h"
 #include "sm83_misc.h"
 
 struct SM83_regs_F {
@@ -69,6 +70,12 @@ struct SM83 {
     SM83_ins_func current_instruction;
 
     struct jsm_debug_read_trace read_trace;
+    struct {
+        struct {
+            struct cvec_ptr view;
+            struct cvec_ptr IRQ_vblank, IRQ_stat, IRQ_joypad, IRQ_timer, IRQ_serial, HALT_end;
+        } event;
+    } dbg;
 };
 
 void SM83_regs_F_setbyte(struct SM83_regs_F*, u32 val);

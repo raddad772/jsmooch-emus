@@ -97,6 +97,12 @@ void events_view_delete(struct events_view *this)
 
 void debugger_report_event(struct cvec_ptr viewptr, struct cvec_ptr event)
 {
+    if (viewptr.vec == NULL) {
+        return;
+    }
+    if (event.vec == NULL) {
+        return;
+    }
     struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
     struct debugger_event *ev = cpg(event);
     struct JSM_DISPLAY *d = &((struct physical_io_device *)cpg(this->associated_display))->display;

@@ -42,6 +42,27 @@ struct SMSGG {
     void (*cpu_out)(struct SMSGG*, u32, u32);
 
     struct {
+        struct debugger_interface *interface;
+
+        // Disassembly
+        struct {
+            //struct cpu_reg_context *A, *X, *Y, *P, *S, *PC;
+        } dasm;
+
+        // Events
+        struct {
+            struct cvec_ptr view;
+
+            struct {
+                struct cvec_ptr VDP, CPU;
+            } category;
+
+            struct cvec_ptr IRQ, NMI, write_hscroll, write_vscroll, write_vram;
+        } events;
+
+    } dbg;
+
+    struct {
         struct SMSGG_gamepad controllerA;
         struct SMSGG_gamepad controllerB;
         struct SMSGG_controller_port portA;

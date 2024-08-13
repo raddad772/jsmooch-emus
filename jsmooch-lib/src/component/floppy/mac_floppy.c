@@ -5,6 +5,7 @@
 #include <stdio.h>
 //#define _USE_MATH_DEFINES
 #include <math.h>
+#include "helpers/multisize_memaccess.c"
 
 #include "mac_floppy.h"
 
@@ -35,6 +36,35 @@ const u8 gcr6fw_tb[0x40] =
 static double track_RPM[5] = {
         401.9241, 438.4626, 482.3089, 535.8988, 602.8861
 };
+
+static void mac_floppy_save(struct mac_floppy *mflpy)
+{
+    char PATH[500];
+    snprintf(PATH, 500, "/Users/dave/dev/system11.bin");
+    remove(PATH);
+
+    printf("\nWRITE FILE %s", PATH);
+    FILE *f = fopen(PATH, "wb");
+    assert(f);
+
+    u8 buf[1024*1024];
+    u8 *bufptr;
+    for (u32 trackn = 0; trackn < 80; trackn++) {
+        struct generic_floppy_track *track = cvec_get(&mflpy->disc.tracks, trackn);
+        u32 buflen = 0;
+        bufptr = buf;
+        u32 bitlen = track->encoded_data.num_bits;
+        u32 bytelen = (((bitlen & 7) != 0) ? 1 : 0) + (bitlen / 8);
+        cW32(bufptr, 0, bytelen);
+        cW32(bufptr, 4, bitlen);
+        bufptr += 8;
+        buflen += 8;
+        memcpy(bufptr, track->encoded_data.buf.data, bytelen);
+        buflen += bytelen;
+        fwrite(buf, 1, buflen, f);
+    }
+    fclose(f);
+}
 
 void mac_floppy_load(struct mac_floppy *mflpy, struct buf *b)
 {
@@ -84,7 +114,10 @@ void mac_floppy_load(struct mac_floppy *mflpy, struct buf *b)
 
         mac_floppy_encode_track(track);
     }
+    mac_floppy_save(mflpy);
 }
+
+
 
 // Thanks, MAME, again!
 u32 gcr6_encode(u8 va, u8 vb, u8 vc)

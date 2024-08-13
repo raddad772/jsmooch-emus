@@ -1,10 +1,11 @@
 #include <stdio.h>
-#include "stdlib.h"
+#include <stdlib.h>
 #include <string.h>
 #include "gb_bus.h"
 #include "gb_clock.h"
 #include "gb_cpu.h"
 #include "mappers/mapper.h"
+#include "helpers/debugger/debugger.h"
 
 void GB_bus_init(struct GB_bus* this, struct GB_clock* clock) {
 	this->cart = NULL;
@@ -13,6 +14,9 @@ void GB_bus_init(struct GB_bus* this, struct GB_clock* clock) {
 	this->cpu = NULL;
 	this->BIOS = NULL;
     this->clock = clock;
+
+    cvec_ptr_init(&this->dbg.event.view);
+    cvec_ptr_init(&this->dbg.event.VRAM_write);
 
     u32 i;
     for (i = 0; i < (8192 * 8); i++) {
@@ -67,6 +71,7 @@ inline void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val) {
     if ((addr >= 0xE000) && (addr < 0xFE00)) addr -= 0x2000;  // Mirror WRAM
 
     if ((addr >= 0x8000) && (addr < 0xA000)) { // VRAM
+        debugger_report_event(this->dbg.event.view, this->dbg.event.VRAM_write);
         this->generic_mapper.VRAM[(addr & 0x1FFF) + this->generic_mapper.VRAM_bank_offset] = (u8)val;
         return;
     }

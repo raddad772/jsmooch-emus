@@ -12,9 +12,16 @@ struct GB_timer {
     u32 TAC;// : u32 = 0
     u32 last_bit;// : u32 = 0
     u32 TIMA_reload_cycle;// : bool = false
-    u32 TMA_reload_cycle; // bool = false
     u32 SYSCLK;// : u32 = 0
     u32 cycles_til_TIMA_IRQ;// : u32 = 0
+
+    struct {
+        struct {
+            struct cvec_ptr view;
+
+            struct cvec_ptr timer_tick, timer_IRQ;
+        } event;
+    } dbg;
 
     struct GB_CPU *raise_IRQ_cpu;
     void (*raise_IRQ)(struct GB_CPU *);
@@ -79,6 +86,13 @@ struct GB_CPU {
         u32 right;
     } input_buffer;
 
+    struct {
+        struct {
+            struct cvec_ptr view;
+
+            struct cvec_ptr OAM_DMA_start;
+        } event;
+    } dbg;
     struct cvec_ptr device_ptr;
 };
 

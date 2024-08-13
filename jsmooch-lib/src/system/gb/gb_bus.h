@@ -2,6 +2,7 @@
 #define _GB_BUS_H
 
 #include "helpers/int.h"
+#include "helpers/cvec.h"
 
 #ifndef NULL
 #define NULL 0
@@ -45,8 +46,15 @@ struct GB_bus {
 	u32 (*DMA_read)(struct GB_bus*, u32);
 	void (*IRQ_vblank_up)(struct GB_bus*);
 	void (*IRQ_vblank_down)(struct GB_bus*);
-	
-	// Pointer to BIOS, owned by GB
+
+    struct {
+        struct {
+            struct cvec_ptr view;
+            struct cvec_ptr VRAM_write;
+        } event;
+    } dbg;
+
+    // Pointer to BIOS, owned by GB
 	u8* BIOS;
 };
 

@@ -142,9 +142,9 @@ int main(int, char**)
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_SMS2;
-    enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_MAC512K;
-    //enum jsm_systems which = SYS_DMG;
+    enum jsm_systems which = SYS_DMG;
 #endif
 
     full_system fsys;
@@ -334,12 +334,7 @@ int main(int, char**)
         }
 
         // Main emu window
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin(fsys.sys->label);
-
+        if (ImGui::Begin(fsys.sys->label)) {
             ImGui::Checkbox("2x Zoom", &fsys.output.zoom);
             ImGui::SameLine();
             ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
@@ -362,8 +357,7 @@ int main(int, char**)
         }
 
         // disassembly view
-        if (fsys.dasm && enable_debugger && has_played_once) {
-            ImGui::Begin("Disassembly View");
+        if (fsys.dasm && enable_debugger && has_played_once && ImGui::Begin("Disassembly View")) {
             static ImGuiTableFlags flags =
                     ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
                     ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
@@ -444,12 +438,11 @@ int main(int, char**)
 
                 }
 
-                ImGui::End();
             }
+            ImGui::End();
         }
 
-        if (fsys.events.view) {
-            ImGui::Begin("Event Viewer");
+        if (fsys.events.view && ImGui::Begin("Event Viewer")) {
 
             fsys.events_view_present();
             ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.sz_for_display, fsys.events.texture.uv0, fsys.events.texture.uv1);

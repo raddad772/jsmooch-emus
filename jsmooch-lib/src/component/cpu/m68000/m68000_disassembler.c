@@ -557,7 +557,6 @@ void M68k_disasm_MOVEM_TO_REG(struct M68k_ins_t *ins, u32 *PC, struct jsm_debug_
     ins_suffix("movem", ins->sz, out, " ");
     PC -= 2;
     u32 lst = read_pc(PC, rt);
-    printf("\nVALUE DISASM READ: %04x", lst);
     for (u32 i = 0; i < 16; i++) {
         if (lst & 1)
             jss("%s,", movem_from_mem[15 - i]);
