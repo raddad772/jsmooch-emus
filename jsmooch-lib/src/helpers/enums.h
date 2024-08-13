@@ -18,7 +18,8 @@ enum jsm_systems {
     SYS_ATARI2600,
     SYS_MAC128K,
     SYS_MAC512K,
-    SYS_MACPLUS_1MB
+    SYS_MACPLUS_1MB,
+    SYS_APPLEII
 };
 
 enum jsm_regions {

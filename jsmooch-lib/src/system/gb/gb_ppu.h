@@ -144,6 +144,7 @@ struct GB_PPU {
     u32 update_display;
     u32 last_used_buffer;
     u16* cur_output;
+    u16* cur_output_debug_metadata;
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 };

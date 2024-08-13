@@ -10,7 +10,7 @@ extern "C" {
 #include "helpers/sys_interface.h"
 #include "helpers/enums.h"
 
-void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height);
+void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, u32 is_event_view_present);
 //jsm_present(sys->kind, fv.last_used_buffer, &iom, window_surface->pixels, 640, 480);
 
 #ifdef __cplusplus

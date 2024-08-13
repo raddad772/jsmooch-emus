@@ -35,8 +35,8 @@ void GBJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     struct events_view *ev = &dview->events;
 
     for (u32 i = 0; i < 2; i++) {
-        ev->display[i].width = 342;
-        ev->display[i].height = 262;
+        ev->display[i].width = 456;
+        ev->display[i].height = 154;
         ev->display[i].buf = NULL;
         ev->display[i].frame_num = 0;
     }

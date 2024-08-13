@@ -44,7 +44,6 @@ void events_view_add_category(struct debugger_interface *dbgr, struct events_vie
     snprintf(ec->name, sizeof(ec->name), "%s", name);
     ec->color = color;
     ec->id = id;
-    printf("\nAdd category %s id:%d", ec->name, ec->id);
 }
 
 void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id)
@@ -60,7 +59,6 @@ void events_view_add_event(struct debugger_interface *dbgr, struct events_view *
     event->category = make_cvec_ptr(&ev->categories, category_id);
     event->color = color;
     event->category_id = category_id;
-    printf("\ninit %s in category %s id %d category id %d", event->name, ((struct event_category *)cpg(event->category))->name, id, category_id);
 }
 
 void event_view_begin_frame(struct cvec_ptr event_view)

@@ -526,6 +526,8 @@ static void setup_crt128(struct JSM_DISPLAY *d)
     this->ula.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.output[0] = malloc(352 * 304);
     d->display.output[1] = malloc(352 * 304);
+    d->display.output_debug_metadata[0] = NULL;
+    d->display.output_debug_metadata[1] = NULL;
     switch(this->variant) {
         case ZXS_spectrum48:
             setup_crt48(&d->display);

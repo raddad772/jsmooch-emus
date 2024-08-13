@@ -237,6 +237,8 @@ void atari2600J_describe_io(JSM, struct cvec *IOs)
     setup_crt(&d->display);
     d->display.output[0] = malloc(256 * 224 * 2);
     d->display.output[1] = malloc(256 * 224 * 2);
+    d->display.output_debug_metadata[0] = NULL;
+    d->display.output_debug_metadata[1] = NULL;
     this->tia.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->tia.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;

@@ -141,10 +141,10 @@ int main(int, char**)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_GG;
     //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_MAC512K;
-    //enum jsm_systems which = SYS_DMG;
+    enum jsm_systems which = SYS_DMG;
 #endif
 
     full_system fsys;
@@ -443,14 +443,15 @@ int main(int, char**)
         }
 
         if (fsys.events.view && ImGui::Begin("Event Viewer")) {
-
+            static bool ozoom = true;
+            ImGui::Checkbox("2x Zoom", &ozoom);
             fsys.events_view_present();
-            ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.sz_for_display, fsys.events.texture.uv0, fsys.events.texture.uv1);
-            ImGui::SameLine();
+            ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.zoom_sz_for_display(ozoom ? 2  : 1), fsys.events.texture.uv0, fsys.events.texture.uv1, {1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0});
+            //ImGui::SameLine();
 
-            ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
+                        /*ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-            ImGui::BeginChild("Event Viewer Events", ImVec2(150, 250), ImGuiChildFlags_Border, window_flags);
+            ImGui::BeginChild("Event Viewer Events", ImVec2(150, 250), ImGuiChildFlags_Border, window_flags);*/
             /*if (ImGui::BeginMenuBar())
             {
                 if (ImGui::BeginMenu("Menu"))
@@ -482,8 +483,8 @@ int main(int, char**)
                 }
             }
 
-            ImGui::EndChild(); // end sub-window
-            ImGui::PopStyleVar();
+            //ImGui::EndChild(); // end sub-window
+            //ImGui::PopStyleVar();
 
             ImGui::End(); // end window
         }

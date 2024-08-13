@@ -2,8 +2,22 @@
 // Created by Dave on 1/24/2024.
 //
 
+#include <string.h>
+#include <stdio.h>
+
 #include "sys_present.h"
-#include "stdio.h"
+
+
+u32 calc_stride(u32 out_width, u32 in_width)
+{
+    return (out_width - in_width);
+}
+
+static u32 *calc_start_pos(void *buf, u32 x_off, u32 y_off, u32 width)
+{
+    u32 *a = (u32 *)buf;
+    return a + (y_off * width) + x_off;
+}
 
 static u32 to_RGBA(u32 val)
 {
@@ -12,8 +26,6 @@ static u32 to_RGBA(u32 val)
     u8 *v = (u8 *)&val;
     return (v[3] << 24) | (v[0] << 16) | (v[1] << 8) | (v[2]);
 }
-
-
 
 static const u32 TIA_palette[128] = {
         0xff000000, 0xff444400, 0xff702800, 0xff841800,
@@ -121,16 +133,27 @@ void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out
 }
 
 // Translate from DMG output to 32-bit RGBA
-void DMG_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void DMG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present)
 {
     u16* ibuf = (u16 *)device->display.output[device->display.last_written];
+    u16* mdbuf = (u16 *)device->display.output_debug_metadata[device->display.last_written];
+
+    if (is_event_view_present) memset(out_buf, 0, out_width*out_height*4);
     //u16* ptr = ibuf;
 
+    u32* img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
+    u32 stride = calc_stride(out_width, 160);
+
     for (u32 y = 0; y < 144; y++) {
+        u8* out_pos_line = (out_buf + (y * out_width * 4));
         for (u32 x = 0; x < 160; x++) {
             u16* iptr = (void *)ibuf + (((y * 160) + x) * 2);
-            u8* optr = (u8 *)out_buf;
-            optr += (((y * out_width) + x) * 4);
+            u16* mptr = (void *)mdbuf + (((y * 160) + x) * 2);
+            u8* optr = (u8 *)img32;
+            if (is_event_view_present) {
+                optr = out_pos_line + (*mptr * 4);
+            }
+            img32++;
 
             u32 r, g, b;
             u16 o = *iptr;
@@ -143,6 +166,7 @@ void DMG_present(struct physical_io_device *device, void *out_buf, u32 out_width
             *(optr+2) = (u8)b;
             *(optr+3) = 255;
         }
+        img32 += stride;
     }
 }
 
@@ -237,20 +261,8 @@ static const u32 NES_palette[512] = {
         0xFF989898, 0xFF6C7C97, 0xFF7675A0, 0xFF81709F, 0xFF8A6D94, 0xFF8F6E82, 0xFF8E726E, 0xFF88785E, 0xFF7E7F56, 0xFF738457, 0xFF6A8761, 0xFF658672, 0xFF668286, 0xFF5E5E5E, 0xFF000000, 0xFF000000
 };
 
-u32 calc_stride(u32 out_width, u32 in_width)
-{
-    return (out_width - in_width);
-}
-
-static u32 *calc_start_pos(void *buf, u32 x_off, u32 y_off, u32 width)
-{
-    u32 *a = (u32 *)buf;
-    return a + (y_off * width) + x_off;
-}
-
 void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
 {
-
     u16* neso = (u16 *)device->display.output[device->display.last_written];
 
     u32* img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
@@ -324,36 +336,60 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
 }
 
 
-void SMS_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void SMS_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
 {
     u16 *smso = (u16 *)device->display.output[device->display.last_written];
-    u32 w = out_width;//256 - (overscan_left + overscan_right);
-    u8 *img8 = (u8 *) out_buf;
-    for (u32 ry = 0; ry < 192; /*data.bottom_rendered_line; */ ry++) {
-        u32 y = ry;
-        u32 outyw = y * w;
-        for (u32 rx = 0; rx < 256; rx++) {
-            u32 x = rx;
+
+    u32* img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
+    u32 stride = calc_stride(out_width, 256);
+
+    for (u32 y = 0; y < 192; /*data.bottom_rendered_line; */ y++) {
+        for (u32 x = 0; x < 256; x++) {
             u32 di = ((y * 256) + x);
-            u32 b_out = (outyw + x) * 4;
 
             u32 color = smso[di];
             u32 r, g, b;
             b = ((color >> 4) & 3) * 0x55;
             g = ((color >> 2) & 3) * 0x55;
             r = (color & 3) * 0x55;
-            img8[b_out] = r;
-            img8[b_out+1] = g;
-            img8[b_out+2] = b;
-            img8[b_out+3] = 255;
+
+            u8 *img8 = (u8 *)img32;
+            img8[0] = r;
+            img8[1] = g;
+            img8[2] = b;
+            img8[3] = 255;
+            img32++;
         }
+        img32 += stride;
     }
 }
 
 
-void GG_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
-{
-    // TODO: this
+void GG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height) {
+    u16 *smso = (u16 *) device->display.output[device->display.last_written];
+
+    u32 *img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
+    u32 stride = calc_stride(out_width, 256);
+
+    for (u32 y = 0; y < 192; /*data.bottom_rendered_line; */ y++) {
+        for (u32 x = 0; x < 256; x++) {
+            u32 di = ((y * 256) + x);
+
+            u32 color = smso[di];
+            u32 r, g, b;
+            b = (color & 0x0F) * 0x11;
+            g = ((color >> 4) & 0x0F) * 0x11;
+            r = ((color >> 8) & 0x0F) * 0x11;
+
+            u8 *img8 = (u8 *) img32;
+            img8[0] = r;
+            img8[1] = g;
+            img8[2] = b;
+            img8[3] = 255;
+            img32++;
+        }
+        img32 += stride;
+    }
 }
 
 
@@ -376,14 +412,14 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
     }
 }
 
-void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
+void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     switch(which) {
         case SYS_GENESIS:
             genesis_present(display, out_buf, out_width, out_height);
             break;
         case SYS_DMG:
-            DMG_present(display, out_buf, out_width, out_height);
+            DMG_present(display, out_buf, x_offset, y_offset, out_width, out_height, is_event_view_present);
             break;
         case SYS_GBC:
             GBC_present(display, out_buf, out_width, out_height);
@@ -398,10 +434,10 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
             break;
         case SYS_SMS1:
         case SYS_SMS2:
-            SMS_present(display, out_buf, out_width, out_height);
+            SMS_present(display, out_buf, x_offset, y_offset, out_width, out_height);
             break;
         case SYS_GG:
-            GG_present(display, out_buf, out_width, out_height);
+            GG_present(display, out_buf, x_offset, y_offset, out_width, out_height);
             break;
         case SYS_DREAMCAST:
             DC_present(display, out_buf, out_width, out_height);

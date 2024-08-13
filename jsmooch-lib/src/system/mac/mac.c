@@ -219,8 +219,8 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.rows.bottom_vblank = 28;
     d->pixelometry.offset.y = 0;
 
-    d->geometry.physical_aspect_ratio.width = 704; // sqquare
-    d->geometry.physical_aspect_ratio.height = 370; // pixels
+    d->geometry.physical_aspect_ratio.width = 512; // sqquare
+    d->geometry.physical_aspect_ratio.height = 342; // pixels
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 8;
 }
@@ -269,6 +269,8 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     setup_crt(&d->display);
     d->display.output[0] = malloc(512 * 342);
     d->display.output[1] = malloc(512 * 342);
+    d->display.output_debug_metadata[0] = NULL;
+    d->display.output_debug_metadata[1] = NULL;
     this->display.crt_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->display.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;

@@ -514,6 +514,8 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
     setup_crt(&d->display);
     d->display.output[0] = malloc(640 * 480 * 4);
     d->display.output[1] = malloc(640 * 480 * 4);
+    d->display.output_debug_metadata[0] = NULL;
+    d->display.output_debug_metadata[1] = NULL;
     this->holly.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->holly.cur_output = (u32 *)d->display.output[0];
     d->display.last_written = 1;

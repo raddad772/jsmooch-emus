@@ -826,6 +826,7 @@ static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
     this->clock->master_frame++;
     if (update_buffer) {
         this->cur_output = this->display->output[this->display->last_written];
+        this->cur_output_debug_metadata = this->display->output_debug_metadata[this->display->last_written];
         this->display->last_written ^= 1;
     }
 }
@@ -868,7 +869,14 @@ static void GB_PPU_set_mode(struct GB_PPU *this, enum GB_PPU_modes which) {
 
 void GB_PPU_cycle(struct GB_PPU* this) {
     // During HBlank and VBlank do nothing...
-    if (this->clock->ly > 143) return;
+    this->display->scan_x++;
+    if (this->clock->ly > 143) {
+        if (this->display->scan_x >= 456) {
+            this->display->scan_y++;
+            this->display->scan_x = 0;
+        }
+        return;
+    }
     if (this->clock->ppu_mode < 2) return;
 
     // Clear sprites
@@ -1022,8 +1030,8 @@ static void GB_PPU_pixel_transfer(struct GB_PPU *this)
                 }
             }
             this->cur_output[(this->clock->ly * 160) + (this->clock->lx - 8)] = cv;
+            this->cur_output_debug_metadata[(this->clock->ly * 160) + (this->clock->lx - 8)] = this->display->scan_x;
         }
         this->clock->lx++;
-        this->display->scan_x++;
     }
 }

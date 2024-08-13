@@ -214,6 +214,7 @@ struct JSM_DISPLAY {
     u32 fps_override_hint; // Is it OK to go to a close value near this
 
     void *output[2];
+    void *output_debug_metadata[2];
     u32 last_written;
     u32 last_displayed;
     u16 *cur_output;

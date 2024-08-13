@@ -23,6 +23,7 @@ struct my_texture {
     u32 is_good{};
     ImVec2 uv0, uv1;
     ImVec2 sz_for_display;
+    ImVec2 zoom_sz_for_display(float zoom) { return {sz_for_display.x * zoom, sz_for_display.y * zoom}; }
     WGPUDevice wgpu_device;
 
     my_texture() { tex.desc = {}; tex.item = nullptr;   view.desc = {}; view.item = nullptr; height = width = 0; wgpu_device = nullptr; }

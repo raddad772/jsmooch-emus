@@ -140,7 +140,7 @@ static void setup_crt_sms(struct JSM_DISPLAY *d)
     d->pixelometry.cols.left_hblank = 12;
     d->pixelometry.cols.visible = 256;
     d->pixelometry.cols.right_hblank = 74;
-    d->pixelometry.offset.x = 12;
+    d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 192;
@@ -165,7 +165,7 @@ void setup_lcd_gg(struct JSM_DISPLAY *d)
     d->pixelometry.cols.left_hblank = 12;
     d->pixelometry.cols.visible = 256;
     d->pixelometry.cols.right_hblank = 74;
-    d->pixelometry.offset.x = 12;
+    d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 192;
@@ -236,6 +236,8 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
     d->display.output[0] = malloc(256 * 224 * 2);
     d->display.output[1] = malloc(256 * 224 * 2);
+    d->display.output_debug_metadata[0] = NULL;
+    d->display.output_debug_metadata[1] = NULL;
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     if (this->variant == SYS_GG)
         setup_lcd_gg(&d->display);

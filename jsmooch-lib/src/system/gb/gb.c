@@ -159,10 +159,10 @@ static void setup_lcd(struct JSM_DISPLAY *d)
 
     // 456x154 total, 160x144 visible
 
-    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.left_hblank = 80; // for OAM search
     d->pixelometry.cols.visible = 160;
-    d->pixelometry.cols.right_hblank = 296; // This isn't EXACTLY true. Pixels take variable amounts of time...
-    d->pixelometry.offset.x = 0;
+    d->pixelometry.cols.right_hblank = 216;
+    d->pixelometry.offset.x = 80;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 144;
@@ -233,8 +233,11 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     setup_lcd(&d->display);
     d->display.output[0] = malloc(160 * 144 * 2);
     d->display.output[1] = malloc(160 * 144 * 2);
+    d->display.output_debug_metadata[0] = malloc(160 * 144 * 2);
+    d->display.output_debug_metadata[1] = malloc(160 * 144 * 2);
     this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->ppu.cur_output = (u16 *)d->display.output[0];
+    this->ppu.cur_output_debug_metadata = (u16 *)d->display.output_debug_metadata[0];
     d->display.last_written = 1;
     d->display.last_displayed = 1;
 

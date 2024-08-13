@@ -220,10 +220,13 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/mac", BASER_PATH);
             *worked = 1;
             break;
+        case SYS_GG:
+            snprintf(out, out_sz, "%s/gg", BASER_PATH);
+            *worked = 1;
+            break;
         case SYS_PSX:
         case SYS_SNES:
         case SYS_BBC_MICRO:
-        case SYS_GG:
             *worked = 0;
             break;
         default:
@@ -508,8 +511,12 @@ void full_system::load_default_ROM()
         case SYS_SMS2:
             worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             break;
+        case SYS_GG:
+            worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
+            break;
         case SYS_DMG:
-            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
             worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
@@ -687,7 +694,7 @@ void full_system::present()
 {
     struct framevars fv = {};
     sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height);
+    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, 0);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
 
@@ -713,7 +720,7 @@ void full_system::events_view_present()
         sys->get_framevars(sys, &fv);
         struct JSM_DISPLAY *d = &((struct physical_io_device *) cpg(io.display))->display;
         memset(evd->buf, 0, events.texture.width*events.texture.height*4);
-        jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height);
+        jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, 1);
         events_view_render(&dbgr, events.view, evd->buf, events.texture.width, events.texture.height);
 
 

@@ -197,7 +197,8 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1); //5
     d->display.output[0] = malloc(256 * 224 * 2);
     d->display.output[1] = malloc(256 * 224 * 2);
-    printf("\nPPU DISPLAY PTR HERE");
+    d->display.output_debug_metadata[0] = NULL;
+    d->display.output_debug_metadata[1] = NULL;
     this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->ppu.cur_output = (u16 *)d->display.output[0];
     setup_crt(&d->display);

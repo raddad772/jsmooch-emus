@@ -53,8 +53,10 @@ void physical_io_device_delete(struct physical_io_device* this)
             cvec_delete(&this->controller.digital_buttons);
             break;
         case HID_DISPLAY:
-            if (this->display.output[0] != NULL) free(this->display.output[0]);
-            if (this->display.output[1] != NULL) free(this->display.output[1]);
+            if (this->display.output[0] != NULL) { free(this->display.output[0]); this->display.output[0] = NULL; }
+            if (this->display.output[1] != NULL) { free(this->display.output[1]); this->display.output[1] = NULL; }
+            if (this->display.output_debug_metadata[0] != NULL) { free(this->display.output_debug_metadata[0]); this->display.output_debug_metadata[0] = NULL; }
+            if (this->display.output_debug_metadata[1] != NULL) { free(this->display.output_debug_metadata[1]); this->display.output_debug_metadata[1] = NULL; }
             break;
         case HID_KEYBOARD:
             break;
