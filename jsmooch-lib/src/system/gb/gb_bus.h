@@ -3,6 +3,7 @@
 
 #include "helpers/int.h"
 #include "helpers/cvec.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #ifndef NULL
 #define NULL 0
@@ -47,12 +48,7 @@ struct GB_bus {
 	void (*IRQ_vblank_up)(struct GB_bus*);
 	void (*IRQ_vblank_down)(struct GB_bus*);
 
-    struct {
-        struct {
-            struct cvec_ptr view;
-            struct cvec_ptr VRAM_write;
-        } event;
-    } dbg;
+    DBG_EVENT_VIEW_ONLY;
 
     // Pointer to BIOS, owned by GB
 	u8* BIOS;

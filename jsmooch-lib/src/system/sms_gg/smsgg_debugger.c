@@ -36,17 +36,21 @@ void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     }
     ev->associated_display = this->vdp.display_ptr;
 
-    this->dbg.events.category.CPU = events_view_add_category(dbgr, ev, "CPU events", 0xFF0000, 0);
-    this->dbg.events.category.VDP = events_view_add_category(dbgr, ev, "VDP events", 0x0000FF, 1);
+    DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_SMSGG_CATEGORY_CPU);
+    DEBUG_REGISTER_EVENT_CATEGORY("VDP events", DBG_SMSGG_CATEGORY_VDP);
 
-    this->dbg.events.IRQ = events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, "IRQ", 0xFF0000, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.NMI = events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, "NMI", 0x808000, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.write_hscroll = events_view_add_event(dbgr, ev, this->dbg.events.category.VDP, "Write H scroll", 0x00FF00, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.write_vscroll = events_view_add_event(dbgr, ev, this->dbg.events.category.VDP, "Write V scroll", 0x0000FF, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.write_vram = events_view_add_event(dbgr, ev, this->dbg.events.category.VDP, "Write VRAM", 0x0080FF, dek_pix_square, 1, 0, NULL);
+    cvec_grow(&ev->events, DBG_SMSGG_EVENT_MAX);
+    ///void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
+    DEBUG_REGISTER_EVENT("IRQ", 0xFF0000, DBG_SMSGG_CATEGORY_CPU, DBG_SMSGG_EVENT_IRQ);
+    DEBUG_REGISTER_EVENT("NMI", 0x808000, DBG_SMSGG_CATEGORY_CPU, DBG_SMSGG_EVENT_NMI);
+    DEBUG_REGISTER_EVENT("Write H scroll", 0x00FF00, DBG_SMSGG_CATEGORY_VDP, DBG_SMSGG_EVENT_WRITE_HSCROLL);
+    DEBUG_REGISTER_EVENT("Write V scroll", 0x0000FF, DBG_SMSGG_CATEGORY_VDP, DBG_SMSGG_EVENT_WRITE_VSCROLL);
+    DEBUG_REGISTER_EVENT("Write VRAM", 0x0080FF, DBG_SMSGG_CATEGORY_VDP, DBG_SMSGG_EVENT_WRITE_VRAM);
 
-    this->cpu.dbg.event.view = this->dbg.events.view;
-    this->cpu.dbg.event.IRQ = this->dbg.events.IRQ;
-    this->cpu.dbg.event.NMI = this->dbg.events.NMI;
+    SET_EVENT_VIEW(this->cpu);
+    SET_EVENT_VIEW(this->vdp);
+    SET_CPU_EVENT_ID(DBG_SMSGG_EVENT_IRQ, IRQ);
+    SET_CPU_EVENT_ID(DBG_SMSGG_EVENT_NMI, NMI);
+
     event_view_begin_frame(this->dbg.events.view);
 }

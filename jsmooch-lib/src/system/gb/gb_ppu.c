@@ -2,13 +2,14 @@
 #include <stdio.h>
 
 #include "helpers/debugger/debugger.h"
-
 #include "helpers/int.h"
+
 #include "gb_ppu.h"
 #include "gb_enums.h"
 #include "gb_bus.h"
 #include "gb_cpu.h"
 #include "gb_clock.h"
+#include "gb_debugger.h"
 
 struct GB_FIFO_item* GB_FIFO_pop(struct GB_FIFO* this);
 static struct GB_px* GB_pixel_slice_fetcher_get_px_if_available(struct GB_pixel_slice_fetcher* this);
@@ -449,9 +450,7 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
     this->bus->read_OAM = &GB_PPU_bus_read_OAM;
     this->bus->write_OAM = &GB_PPU_bus_write_OAM;
 
-    cvec_ptr_init(&this->dbg.event.view);
-    cvec_ptr_init(&this->dbg.event.SCY_write);
-    cvec_ptr_init(&this->dbg.event.SCX_write);
+    DBG_EVENT_VIEW_INIT;
 
     GB_pixel_slice_fetcher_init(&this->slice_fetcher, variant, clock, bus);
 
@@ -632,11 +631,11 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         GB_PPU_eval_STAT(this);
         return;
     case 0xFF42: // SCY
-        cvec_ptr_init(&this->dbg.event.SCY_write);
-            this->io.SCY = val;
+        DBG_EVENT(DBG_GB_EVENT_SCY_WRITE);
+        this->io.SCY = val;
         return;
     case 0xFF43: // SCX
-        cvec_ptr_init(&this->dbg.event.SCX_write);
+        DBG_EVENT(DBG_GB_EVENT_SCX_WRITE);
         this->io.SCX = val;
         return;
     case 0xFF45: // LYC
@@ -813,7 +812,7 @@ static void GB_PPU_eval_lyc(struct GB_PPU *this) {
 }
 
 static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
-    if (this->dbg.event.view.vec) event_view_begin_frame(this->dbg.event.view);
+    if (this->dbg.events.view.vec) event_view_begin_frame(this->dbg.events.view);
     this->clock->ly = 0;
     this->clock->wly = 0;
     this->display->scan_y = 0;

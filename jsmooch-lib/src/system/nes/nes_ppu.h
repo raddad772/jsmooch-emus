@@ -83,6 +83,8 @@ struct NES_PPU {
 
     struct {
         u32 v, t, x, w;
+
+        struct { struct cvec_ptr view; } events;
     } dbg;
 
     struct {

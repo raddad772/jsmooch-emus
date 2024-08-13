@@ -9,6 +9,8 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 
+#include "helpers/debugger/debuggerdefs.h"
+
 enum SMSGG_VDP_modes {
     VDP_SMS,
     VDP_GG
@@ -84,6 +86,8 @@ struct SMSGG_VDP {
     u32 doi;
 
     void (*scanline_cycle)(struct SMSGG_VDP*);
+
+    DBG_EVENT_VIEW_ONLY;
 };
 
 void SMSGG_VDP_init(struct SMSGG_VDP*, struct SMSGG* bus, enum jsm_systems variant);

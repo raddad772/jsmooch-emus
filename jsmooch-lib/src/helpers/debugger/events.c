@@ -36,27 +36,31 @@ void event_category_delete(struct event_category *this)
     this->name[0] = 0;
 }
 
-struct cvec_ptr events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id)
+void events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id)
 {
+    assert(id==cvec_len(&ev->categories));
     struct event_category *ec = cvec_push_back(&ev->categories);
     event_category_init(ec);
     snprintf(ec->name, sizeof(ec->name), "%s", name);
     ec->color = color;
     ec->id = id;
-    return make_cvec_ptr(&ev->categories, cvec_len(&ev->categories)-1);
+    printf("\nAdd category %s id:%d", ec->name, ec->id);
 }
 
-struct cvec_ptr events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, struct cvec_ptr category, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context)
+void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id)
 {
-    struct debugger_event *event = cvec_push_back(&ev->events);
+    if (cvec_len(&ev->events) <= id) {
+        assert(1==0);
+    }
+
+    struct debugger_event *event = cvec_get(&ev->events, id);
     debugger_event_init(event);
 
     snprintf(event->name, sizeof(event->name), "%s", name);
-    event->category = category;
+    event->category = make_cvec_ptr(&ev->categories, category_id);
     event->color = color;
-    event->category_id = ((struct event_category *)cpg(category))->id;
-
-    return make_cvec_ptr(&ev->events, cvec_len(&ev->events)-1);
+    event->category_id = category_id;
+    printf("\ninit %s in category %s id %d category id %d", event->name, ((struct event_category *)cpg(event->category))->name, id, category_id);
 }
 
 void event_view_begin_frame(struct cvec_ptr event_view)
@@ -95,16 +99,16 @@ void events_view_delete(struct events_view *this)
     DTOR_child(associated_display, cvec_ptr);
 }
 
-void debugger_report_event(struct cvec_ptr viewptr, struct cvec_ptr event)
+void debugger_report_event(struct cvec_ptr viewptr, u32 event_id)
 {
     if (viewptr.vec == NULL) {
         return;
     }
-    if (event.vec == NULL) {
+    if (event_id == -1) {
         return;
     }
     struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
-    struct debugger_event *ev = cpg(event);
+    struct debugger_event *ev = cvec_get(&this->events, event_id);
     struct JSM_DISPLAY *d = &((struct physical_io_device *)cpg(this->associated_display))->display;
     struct debugger_event_update *upd = cvec_push_back(&ev->updates[ev->updates_index]);
     upd->frame_num = this->current_frame;

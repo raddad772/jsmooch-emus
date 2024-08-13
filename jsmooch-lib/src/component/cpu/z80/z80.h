@@ -8,6 +8,7 @@
 #include "helpers/cvec.h"
 #include "helpers/int.h"
 #include "helpers/debug.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #define Z80_S_IRQ 0x100
 #define Z80_S_RESET 0x101
@@ -123,12 +124,9 @@ struct Z80 {
 
     struct jsm_debug_read_trace read_trace;
 
-    struct {
-        struct {
-            struct cvec_ptr view;
-            struct cvec_ptr IRQ, NMI;
-        } event;
-    } dbg;
+    DBG_EVENT_VIEW_ONLY_START
+    IRQ, NMI
+    DBG_EVENT_VIEW_ONLY_END
 
     u32 PCO;
 };

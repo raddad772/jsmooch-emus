@@ -1,10 +1,14 @@
-#ifndef _GB_CPU_H
-#define _GB_CPU_H
+#ifndef JSMOOCH_GB_CPU_H
+#define JSMOOCH_GB_CPU_H
 
 #include "helpers/int.h"
-#include "gb_enums.h"
-#include "component/cpu/sm83/sm83.h"
 #include "helpers/physical_io.h"
+#include "helpers/debugger/debuggerdefs.h"
+
+#include "component/cpu/sm83/sm83.h"
+
+#include "gb_enums.h"
+
 
 struct GB_timer {
     u32 TIMA;//: u32 = 0
@@ -15,13 +19,7 @@ struct GB_timer {
     u32 SYSCLK;// : u32 = 0
     u32 cycles_til_TIMA_IRQ;// : u32 = 0
 
-    struct {
-        struct {
-            struct cvec_ptr view;
-
-            struct cvec_ptr timer_tick, timer_IRQ;
-        } event;
-    } dbg;
+    DBG_EVENT_VIEW_ONLY;
 
     struct GB_CPU *raise_IRQ_cpu;
     void (*raise_IRQ)(struct GB_CPU *);
@@ -86,13 +84,7 @@ struct GB_CPU {
         u32 right;
     } input_buffer;
 
-    struct {
-        struct {
-            struct cvec_ptr view;
-
-            struct cvec_ptr OAM_DMA_start;
-        } event;
-    } dbg;
+    DBG_EVENT_VIEW_ONLY;
     struct cvec_ptr device_ptr;
 };
 

@@ -138,17 +138,23 @@ void NESJ_setup_debugger_interface(struct jsm_system *jsm, struct debugger_inter
     }
     ev->associated_display = this->ppu.display_ptr;
 
-    this->dbg.events.category.CPU = events_view_add_category(dbgr, ev, "CPU events", 0xFF0000, 0);
-    this->dbg.events.category.PPU = events_view_add_category(dbgr, ev, "PPU events", 0x0000FF, 1);
+    cvec_grow(&ev->events, DBG_NES_EVENT_MAX);
+    DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_NES_CATEGORY_CPU);
+    DEBUG_REGISTER_EVENT_CATEGORY("PPU events", DBG_NES_CATEGORY_PPU);
 
-    this->dbg.events.IRQ = events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, "IRQ", 0xFF0000, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.NMI = events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, "NMI", 0x808000, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.w2006 = events_view_add_event(dbgr, ev, this->dbg.events.category.PPU, "Write $2006", 0x00FF00, dek_pix_square, 1, 0, NULL);
-    this->dbg.events.w2007 = events_view_add_event(dbgr, ev, this->dbg.events.category.PPU, "Write $2007", 0x008080, dek_pix_square, 1, 0, NULL);
+    DEBUG_REGISTER_EVENT("IRQ", 0xFF0000, DBG_NES_CATEGORY_CPU, DBG_NES_EVENT_IRQ);
+    DEBUG_REGISTER_EVENT("NMI", 0x00FF00, DBG_NES_CATEGORY_CPU, DBG_NES_EVENT_NMI);
+    DEBUG_REGISTER_EVENT("OAM DMA", 0x609020, DBG_NES_CATEGORY_CPU, DBG_NES_EVENT_OAM_DMA);
 
-    this->cpu.cpu.dbg.event.view = this->dbg.events.view;
-    this->cpu.cpu.dbg.event.IRQ = this->dbg.events.IRQ;
-    this->cpu.cpu.dbg.event.NMI = this->dbg.events.NMI;
+    DEBUG_REGISTER_EVENT("Write $2006", 0xFF0080, DBG_NES_CATEGORY_PPU, DBG_NES_EVENT_W2006);
+    DEBUG_REGISTER_EVENT("Write $2007", 0x0080FF, DBG_NES_CATEGORY_PPU, DBG_NES_EVENT_W2007);
+
+    SET_EVENT_VIEW(this->cpu.cpu);
+    SET_EVENT_VIEW(this->ppu);
+
+    SET_CPU_CPU_EVENT_ID(DBG_NES_EVENT_IRQ, IRQ);
+    SET_CPU_CPU_EVENT_ID(DBG_NES_EVENT_NMI, NMI);
+
     event_view_begin_frame(this->dbg.events.view);
 }
 

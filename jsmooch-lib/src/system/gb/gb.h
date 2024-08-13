@@ -3,6 +3,8 @@
 
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
+#include "helpers/debugger/debuggerdefs.h"
+
 #include "gb_enums.h"
 #include "gb_clock.h"
 #include "gb_bus.h"
@@ -42,25 +44,10 @@ struct GB {
 
     struct buf BIOS;
 
-    struct {
-        struct debugger_interface *interface;
-
-        // Disassembly
-        struct {
-            struct cpu_reg_context *A, *X, *Y, *P, *S, *PC;
-        } dasm;
-
-        // Events
-        struct {
-            struct cvec_ptr view;
-
-            struct {
-                struct cvec_ptr PPU, CPU, CPU_timer;
-            } category;
-        } events;
-
-    } dbg;
-
+    DBG_START
+    DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
+    DBG_EVENT_VIEW
+    DBG_END
 };
 
 #endif

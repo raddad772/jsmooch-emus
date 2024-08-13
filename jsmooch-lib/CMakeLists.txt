@@ -226,6 +226,7 @@ add_library(jsmooch-lib
         src/system/sms_gg/smsgg_debugger.h
         src/system/gb/gb_debugger.c
         src/system/gb/gb_debugger.h
+        src/helpers/debugger/debuggerdefs.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

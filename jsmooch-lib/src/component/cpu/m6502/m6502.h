@@ -7,8 +7,9 @@
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
+#include "helpers/debugger/debuggerdefs.h"
+
 #include "m6502_misc.h"
-#include "helpers/debugger/debugger.h"
 
 struct M6502_P {
     u32 C;
@@ -64,12 +65,9 @@ struct M6502 {
 
     u32 PCO;
 
-    struct {
-        struct {
-            struct cvec_ptr view;
-            struct cvec_ptr IRQ, NMI;
-        } event;
-    } dbg;
+    DBG_EVENT_VIEW_ONLY_START
+    IRQ, NMI
+    DBG_EVENT_VIEW_ONLY_END
 
     struct {
         u32 ok;

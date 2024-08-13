@@ -44,12 +44,13 @@ void SM83_init(struct SM83* this) {
 	this->current_instruction = SM83_decoded_opcodes[SM83_S_RESET];
 	SM83_regs_init(&(this->regs));
 	SM83_pins_init(&(this->pins));
-    cvec_ptr_init(&this->dbg.event.IRQ_joypad);
-    cvec_ptr_init(&this->dbg.event.IRQ_vblank);
-    cvec_ptr_init(&this->dbg.event.IRQ_stat);
-    cvec_ptr_init(&this->dbg.event.IRQ_timer);
-    cvec_ptr_init(&this->dbg.event.IRQ_serial);
-    cvec_ptr_init(&this->dbg.event.HALT_end);
+    DBG_EVENT_VIEW_INIT;
+    this->dbg.events.IRQ_joypad = -1;
+    this->dbg.events.IRQ_stat = -1;
+    this->dbg.events.IRQ_vblank = -1;
+    this->dbg.events.IRQ_serial = -1;
+    this->dbg.events.IRQ_timer = -1;
+    this->dbg.events.HALT_end = -1;
 
     this->trace_cycles = 0;
     this->trace_on = 0;
@@ -121,33 +122,33 @@ void SM83_cycle(struct SM83* this) {
 			this->regs.IV = -1;
 			imask = 0xFF;
 			if (mask & 1) { // VBLANK interrupt
-                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_vblank);
+                DBG_EVENT(this->dbg.events.IRQ_vblank);
 				imask = 0xFE;
 				this->regs.IV = 0x40;
 			}
 			else if (mask & 2) { // STAT interrupt
-                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_stat);
+                DBG_EVENT(this->dbg.events.IRQ_stat);
 				imask = 0xFD;
 				this->regs.IV = 0x48;
 			}
 			else if (mask & 4) { // Timer interrupt
-                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_timer);
+                DBG_EVENT(this->dbg.events.IRQ_timer);
 				imask = 0xFB;
 				this->regs.IV = 0x50;
 			}
 			else if (mask & 8) { // Serial interrupt
-                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_serial);
+                DBG_EVENT(this->dbg.events.IRQ_serial);
 				imask = 0xF7;
 				this->regs.IV = 0x58;
 			}
 			else if (mask & 0x10) { // Joypad interrupt
-                debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ_joypad);
+                DBG_EVENT(this->dbg.events.IRQ_joypad);
                 imask = 0xEF;
 				this->regs.IV = 0x60;
 			}
 			if (this->regs.IV > 0) {
 				if (is_halt && (this->regs.IME == 0)) {
-                    debugger_report_event(this->dbg.event.view, this->dbg.event.HALT_end);
+                    DBG_EVENT(this->dbg.events.HALT_end);
                     this->regs.HLT = 0;
 					this->regs.TCU++;
                     printf("De-halt!");

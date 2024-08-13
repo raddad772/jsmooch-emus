@@ -42,26 +42,10 @@ struct NES {
     struct NES_mapper bus;
     struct NES_cart cart;
 
-    struct {
-        struct debugger_interface *interface;
-
-        // Disassembly
-        struct {
-            struct cpu_reg_context *A, *X, *Y, *P, *S, *PC;
-        } dasm;
-
-        // Events
-        struct {
-            struct cvec_ptr view;
-
-            struct {
-                struct cvec_ptr PPU, CPU;
-            } category;
-
-            struct cvec_ptr IRQ, NMI, w2006, w2007;
-        } events;
-
-    } dbg;
+    DBG_START
+        DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
+        DBG_EVENT_VIEW
+    DBG_END
 };
 
 #endif //JSMOOCH_EMUS_NES_H

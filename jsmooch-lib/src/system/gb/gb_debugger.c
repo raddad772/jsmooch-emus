@@ -42,39 +42,38 @@ void GBJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     }
     ev->associated_display = this->ppu.display_ptr;
 
-    this->dbg.events.category.CPU_timer = events_view_add_category(dbgr, ev, "Timer events", 0xFF0000, 0);
-    this->dbg.events.category.CPU = events_view_add_category(dbgr, ev, "SM83 events", 0xFF0000, 0);
-    this->dbg.events.category.PPU = events_view_add_category(dbgr, ev, "PPU events", 0x0000FF, 1);
+    DEBUG_REGISTER_EVENT_CATEGORY("Timer events", DBG_GB_CATEGORY_TIMER);
+    DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_GB_CATEGORY_CPU);
+    DEBUG_REGISTER_EVENT_CATEGORY("PPU events", DBG_GB_CATEGORY_PPU);
 
-#define MK_CPU_CPU(x, str, color) this->cpu.cpu.dbg.event. x =  events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, str, color, dek_pix_square, 1, 0, NULL)
-    MK_CPU_CPU(IRQ_joypad, "IRQ: joypad", 0xFF0000);
-    MK_CPU_CPU(IRQ_vblank, "IRQ: vblank", 0x00FF00);
-    MK_CPU_CPU(IRQ_stat, "IRQ: stat", 0x802060);
-    MK_CPU_CPU(IRQ_timer, "IRQ: timer", 0xFF0000);
-    MK_CPU_CPU(IRQ_serial, "IRQ: serial", 0xFF0000);
-    MK_CPU_CPU(HALT_end, "HALT end", 0xFF00FF);
+    cvec_grow(&ev->events, DBG_GB_EVENT_MAX);
+    DEBUG_REGISTER_EVENT("IRQ: joypad", 0xFF0000, DBG_GB_CATEGORY_CPU, DBG_GB_EVENT_IRQ_JOYPAD);
+    DEBUG_REGISTER_EVENT("IRQ: vblank", 0x00FF00, DBG_GB_CATEGORY_CPU, DBG_GB_EVENT_IRQ_VBLANK);
+    DEBUG_REGISTER_EVENT("IRQ: stat", 0x802060, DBG_GB_CATEGORY_CPU, DBG_GB_EVENT_IRQ_STAT);
+    DEBUG_REGISTER_EVENT("IRQ: timer", 0xFF0000, DBG_GB_CATEGORY_CPU, DBG_GB_EVENT_IRQ_TIMER);
+    DEBUG_REGISTER_EVENT("IRQ: serial", 0xFF0000, DBG_GB_CATEGORY_CPU, DBG_GB_EVENT_IRQ_SERIAL);
+    DEBUG_REGISTER_EVENT("HALT end", 0xFF00FF, DBG_GB_CATEGORY_CPU, DBG_GB_EVENT_HALT_END);
+    DEBUG_REGISTER_EVENT("OAM DMA start", 0x004090, DBG_GB_CATEGORY_CPU, DBG_GB_EVENT_OAM_DMA_START);
 
-#define MK_CPU(x, str, color) this->cpu.dbg.event. x =  events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, str, color, dek_pix_square, 1, 0, NULL)
-    MK_CPU(OAM_DMA_start, "OAM DMA start", 0x004090);
+    DEBUG_REGISTER_EVENT("tick", 0xFF4090, DBG_GB_CATEGORY_TIMER, DBG_GB_EVENT_TIMER_TICK);
+    DEBUG_REGISTER_EVENT("IRQ", 0xFF4090, DBG_GB_CATEGORY_TIMER, DBG_GB_EVENT_TIMER_IRQ);
 
-#define MK_CPU_TIMER(x, str, color) this->cpu.timer.dbg.event. x =  events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, str, color, dek_pix_square, 1, 0, NULL)
-    MK_CPU_TIMER(timer_tick, "tick", 0xFF4090);
-    MK_CPU_TIMER(timer_IRQ, "IRQ triggered", 0x409040);
+    DEBUG_REGISTER_EVENT("VRAM write", 0x0000FF, DBG_GB_CATEGORY_PPU, DBG_GB_EVENT_VRAM_WRITE);
+    DEBUG_REGISTER_EVENT("SCX write", 0x00FFFF, DBG_GB_CATEGORY_PPU, DBG_GB_EVENT_SCX_WRITE);
+    DEBUG_REGISTER_EVENT("SCY write", 0xFFFF00, DBG_GB_CATEGORY_PPU, DBG_GB_EVENT_SCY_WRITE);
 
-#define MK_BUS(x, str, color) this->bus.dbg.event. x =  events_view_add_event(dbgr, ev, this->dbg.events.category.CPU, str, color, dek_pix_square, 1, 0, NULL)
-    MK_BUS(VRAM_write, "VRAM write", 0x0000FF);
-
-#define MK_PPU(x, str, color) this->ppu.dbg.event. x =  events_view_add_event(dbgr, ev, this->dbg.events.category.PPU, str, color, dek_pix_square, 1, 0, NULL)
-    MK_PPU(SCY_write, "SCY", 0x00FFFF);
-    MK_PPU(SCX_write, "SCX", 0xFFFF00);
-
-
-#define SET_EVENT_VIEW(x) x .dbg.event.view = this->dbg.events.view
     SET_EVENT_VIEW(this->cpu.cpu);
     SET_EVENT_VIEW(this->cpu);
     SET_EVENT_VIEW(this->ppu);
     SET_EVENT_VIEW(this->cpu.timer);
     SET_EVENT_VIEW(this->bus);
+
+    SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_IRQ_JOYPAD, IRQ_joypad);
+    SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_IRQ_VBLANK, IRQ_vblank);
+    SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_IRQ_STAT, IRQ_stat);
+    SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_IRQ_TIMER, IRQ_timer);
+    SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_IRQ_SERIAL, IRQ_serial);
+    SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_HALT_END, HALT_end);
 
     event_view_begin_frame(this->dbg.events.view);
 }

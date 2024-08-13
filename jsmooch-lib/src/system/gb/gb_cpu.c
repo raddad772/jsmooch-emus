@@ -9,6 +9,7 @@
 #include "gb_clock.h"
 #include "gb_ppu.h"
 #include "gb.h"
+#include "gb_debugger.h"
 
 #define GB_INSTANT_OAM false
 
@@ -24,9 +25,7 @@ void GB_timer_init(struct GB_timer* this, void (*raise_IRQ)(struct GB_CPU *), st
     this->raise_IRQ = raise_IRQ;
     this->raise_IRQ_cpu = cpu;
 
-    cvec_ptr_init(&this->dbg.event.view);
-    cvec_ptr_init(&this->dbg.event.timer_IRQ);
-    cvec_ptr_init(&this->dbg.event.timer_tick);
+    DBG_EVENT_VIEW_INIT;
 
     this->TIMA = this->TMA = this->TAC = this->last_bit = this->SYSCLK = this->cycles_til_TIMA_IRQ = 0;
     this->TIMA_reload_cycle = FALSE;
@@ -38,7 +37,7 @@ void GB_timer_inc(struct GB_timer* this) {
     if (this->cycles_til_TIMA_IRQ > 0) {
         this->cycles_til_TIMA_IRQ--;
         if (this->cycles_til_TIMA_IRQ == 0) {
-            debugger_report_event(this->dbg.event.view, this->dbg.event.timer_IRQ);
+            DBG_EVENT(DBG_GB_EVENT_TIMER_IRQ);
             this->raise_IRQ(this->raise_IRQ_cpu);
             this->TIMA = this->TMA;
             this->TIMA_reload_cycle = TRUE;
@@ -51,7 +50,7 @@ void GB_timer_detect_edge(struct GB_timer *this, u32 before, u32 after)
 {
     if ((before == 1) && (after == 0)) {
         this->TIMA = (this->TIMA + 1) & 0xFF; // Increment TIMA
-        cvec_ptr_init(&this->dbg.event.timer_tick);
+        DBG_EVENT(DBG_GB_EVENT_TIMER_TICK);
         if (this->TIMA == 0) { // If we overflow, schedule IRQ
             this->cycles_til_TIMA_IRQ = 1;
         }
@@ -138,8 +137,7 @@ void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, struct GB_clock*
     this->input_buffer.start = this->input_buffer.select = 0;
     this->input_buffer.up = this->input_buffer.down = 0;
     this->input_buffer.left = this->input_buffer.right = 0;
-    cvec_ptr_init(&this->dbg.event.view);
-    cvec_ptr_init(&this->dbg.event.OAM_DMA_start);
+    DBG_EVENT_VIEW_INIT;
 
     this->tracing = 0;
 
@@ -190,7 +188,7 @@ void GB_CPU_dma_eval(struct GB_CPU* this) {
     if (this->dma.cycles_til) {
         this->dma.cycles_til--;
         if (this->dma.cycles_til == 0) {
-            cvec_ptr_init(&this->dbg.event.OAM_DMA_start);
+            DBG_EVENT(DBG_GB_EVENT_OAM_DMA_START);
             this->dma.running = 1;
             this->dma.index = 0;
             this->dma.high = this->dma.new_high;

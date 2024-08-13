@@ -126,9 +126,10 @@ void Z80_init(struct Z80* this, u32 CMOS)
 
     this->CMOS = CMOS;
     this->trace.ok = 0;
-    cvec_ptr_init(&this->dbg.event.IRQ);
-    cvec_ptr_init(&this->dbg.event.NMI);
-    cvec_ptr_init(&this->dbg.event.view);
+
+    DBG_EVENT_VIEW_INIT;
+    this->dbg.events.IRQ = -1;
+    this->dbg.events.NMI = -1;
 
     this->IRQ_pending = this->NMI_pending = this->NMI_ack = 0;
 
@@ -247,7 +248,7 @@ void Z80_ins_cycles(struct Z80* this)
                 // Make sure we only do this at start of an instruction
                 this->regs.poll_IRQ = false;
                 if (this->NMI_pending && !this->NMI_ack) {
-                    if (this->dbg.event.NMI.vec) debugger_report_event(this->dbg.event.view, this->dbg.event.NMI);
+                    DBG_EVENT(this->dbg.events.NMI);
                     this->NMI_pending = false;
                     this->NMI_ack = true;
                     this->regs.IRQ_vec = 0x66;
@@ -257,7 +258,7 @@ void Z80_ins_cycles(struct Z80* this)
                         dbg_break("Z80 NMI", *this->trace.cycles);
                     }
                 } else if (this->IRQ_pending && this->regs.IFF1 && (!(this->regs.EI))) {
-                    if (this->dbg.event.IRQ.vec) debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ);
+                    DBG_EVENT(this->dbg.events.IRQ);
                     this->regs.PC = (this->regs.PC - 1) & 0xFFFF;
                     this->pins.IRQ_maskable = true;
                     this->regs.IRQ_vec = 0x38;

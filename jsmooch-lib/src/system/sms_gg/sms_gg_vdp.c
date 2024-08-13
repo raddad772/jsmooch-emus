@@ -9,6 +9,7 @@
 
 #include "sms_gg_vdp.h"
 #include "sms_gg.h"
+#include "smsgg_debugger.h"
 
 u8 SMSGG_PALETTE[16] = {
         0x00, 0x00, 0x08, 0x0C, 0x10, 0x30, 0x01, 0x3C,
@@ -507,7 +508,7 @@ u32 SMSGG_VDP_read_data(struct SMSGG_VDP* this)
 
 void SMSGG_VDP_write_data(struct SMSGG_VDP* this, u32 val)
 {
-    debugger_report_event(this->bus->dbg.events.view, this->bus->dbg.events.write_vram);
+    DBG_EVENT(DBG_SMSGG_EVENT_WRITE_VRAM);
     this->latch.control = 0;
     this->latch.vram = val;
     if (this->io.code <= 2) {
@@ -615,11 +616,11 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
             this->io.bg_color = val & 0x0F;
             return;
         case 8:
-            debugger_report_event(this->bus->dbg.events.view, this->bus->dbg.events.write_hscroll);
+            DBG_EVENT(DBG_SMSGG_EVENT_WRITE_HSCROLL);
             this->io.hscroll = val;
             return;
         case 9:
-            debugger_report_event(this->bus->dbg.events.view, this->bus->dbg.events.write_vscroll);
+            DBG_EVENT(DBG_SMSGG_EVENT_WRITE_VSCROLL);
             this->io.vscroll = val;
             return;
         case 10:

@@ -3,6 +3,7 @@
 
 #include "gb_enums.h"
 #include "helpers/physical_io.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #ifndef NULL
 #define NULL 0
@@ -130,12 +131,8 @@ struct GB_PPU {
 
     } io;
 
-    struct {
-        struct {
-            struct cvec_ptr view;
-            struct cvec_ptr SCY_write, SCX_write;
-        } event;
-    } dbg;
+    DBG_EVENT_VIEW_ONLY;
+
 
     struct GB_PPU_sprites sprites;
     u16 *out_buffer[2];

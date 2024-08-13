@@ -218,11 +218,19 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
 void cpu_reg_context_render(struct cpu_reg_context*, char* outbuf, size_t outbuf_sz);
 
 // Event view functions
-struct cvec_ptr events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id);
-struct cvec_ptr events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, struct cvec_ptr category, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context);
+void events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id);
+void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
 void event_view_begin_frame(struct cvec_ptr event_view);
-void debugger_report_event(struct cvec_ptr viewptr, struct cvec_ptr event);
+void debugger_report_event(struct cvec_ptr viewptr, u32 event_id);
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
+
+#define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
+#define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)
+#define SET_EVENT_VIEW(x) x .dbg.events.view = this->dbg.events.view
+#define SET_CPU_CPU_EVENT_ID(id, k) this->cpu.cpu.dbg.events. k = id
+#define SET_CPU_EVENT_ID(id, k) this->cpu.dbg.events. k = id
+
+#define DBG_EVENT(x) debugger_report_event(this->dbg.events.view, x)
 
 #ifdef __cplusplus
 }

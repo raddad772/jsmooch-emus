@@ -71,9 +71,9 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
     this->trace.cycles = &this->trace.my_cycles;
     this->trace.my_cycles = 0;
 
-    cvec_ptr_init(&this->dbg.event.view);
-    cvec_ptr_init(&this->dbg.event.IRQ);
-    cvec_ptr_init(&this->dbg.event.NMI);
+    DBG_EVENT_VIEW_INIT;
+    this->dbg.events.IRQ = -1;
+    this->dbg.events.NMI = -1;
 
     this->IRQ_count = 0;
     this->first_reset = 1;
@@ -151,14 +151,14 @@ void M6502_cycle(struct M6502* this)
             this->NMI_ack = true;
             this->regs.NMI_pending = false;
             this->regs.IR = M6502_OP_NMI;
-            if (this->dbg.event.NMI.vec) debugger_report_event(this->dbg.event.view, this->dbg.event.NMI);
+            DBG_EVENT(this->dbg.events.NMI);
             if (dbg.brk_on_NMIRQ) {
                 dbg_break("M6502 NMI", *this->trace.cycles);
             }
         } else if (this->regs.IRQ_pending) {
             this->regs.IRQ_pending = false;
             this->regs.IR = M6502_OP_IRQ;
-            if (this->dbg.event.IRQ.vec) debugger_report_event(this->dbg.event.view, this->dbg.event.IRQ);
+            DBG_EVENT(this->dbg.events.IRQ);
             if (dbg.brk_on_NMIRQ) {
                 dbg_break("M6502 IRQ", *this->trace.cycles);
             }
