@@ -129,7 +129,7 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
     iv->viewport.p[0].x = row->io.x_scroll % 512;
     iv->viewport.p[0].y = row->io.y_scroll % 480;
     iv->viewport.p[1].x = (iv->viewport.p[0].x + 256);
-    iv->viewport.p[1].y = (iv->viewport.p[0].x + 240);
+    iv->viewport.p[1].y = (iv->viewport.p[0].y + 240);
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
 

@@ -81,6 +81,7 @@ struct SMSGG_VDP {
     u32 sprite_color;
 
     u32 bg_gfx_vlines;
+    u32 bg_gfx_mode;
     void (*bg_gfx)(struct SMSGG_VDP*);
     void (*sprite_gfx)(struct SMSGG_VDP*);
     u32 doi;

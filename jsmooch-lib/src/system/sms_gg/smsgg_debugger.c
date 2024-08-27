@@ -203,16 +203,139 @@ static void create_and_bind_registers(struct SMSGG* this, struct disassembly_vie
 #undef BIND
 }
 
-
-void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
+static u32 get_gfx1(struct SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
 {
-    JTHIS;
-    this->dbg.interface = dbgr;
+    u32 nta = ((hpos >> 3) & 0x1F) | ((vpos  << 2) & 0x3E0) | (nt_base << 10);
+    u32 pattern = this->vdp.VRAM[nta];
 
-    dbgr->supported_by_core = 1;
-    dbgr->smallest_step = 1;
+    u32 paddr = (vpos & 7) | (pattern << 3) | (pt_base << 11);
 
-    // Setup diassembly
+    u32 index = hpos ^ 7;
+    if ((this->vdp.VRAM[paddr] & (1 << index)) == 0)
+        return 0;
+    else
+        return 7;
+}
+
+static u32 get_gfx2(struct SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
+{
+    u32 nta = ((hpos >> 3) & 0x1F) | ((vpos  << 2) & 0x3E0) | (nt_base << 10);
+    u32 pattern = this->vdp.VRAM[nta];
+
+    u32 paddr = (vpos & 7) | (pattern << 3);
+    if (vpos >= 64 && vpos <= 127) paddr |= (pt_base & 1) << 11;
+    if (vpos >= 128 && vpos <= 191) paddr |= (pt_base & 2) << 11;
+
+    u32 caddr = paddr;
+    paddr |= (pt_base & 4) << 11;
+    //caddr |= (this->io.bg_color_table_address & 0x80) << 4;
+
+    //u32 cmask = ((this->io.bg_color_table_address & 0x7F) << 1) | 1;
+    //u32 color = this->VRAM[caddr];
+    u32 index = hpos ^ 7;
+    if (!(this->vdp.VRAM[paddr] & (1 << index)))
+        return 7;
+    else
+        return 0;
+}
+
+static u32 get_gfx3(struct SMSGG* this, u32 hpos, u32 vpos, u32 nt_base, u32 pt_base, u32 ct_base, u32 num_lines)
+{
+    hpos &= 0xFF;
+    vpos &= 0x1FF;
+
+    u32 nta;
+    if (num_lines == 192) {
+        vpos %= 224;
+        nta = (nt_base & 0x0E) << 10;
+        nta += (vpos & 0xF8) << 3;
+        nta += ((hpos & 0xF8) >> 3) << 1;
+        if (this->variant == SYS_SMS1) {
+            // NTA bit 10 (0x400) & with io nta bit 0
+            nta &= (0x3BFF | ((nt_base & 1) << 10));
+        }
+    } else {
+        vpos &= 0xFF;
+        nta = ((nt_base & 0x0C) << 10) | 0x700;
+        nta += (vpos & 0xF8) << 3;
+        nta += ((hpos & 0xF8) >> 3) << 1;
+    }
+
+    u32 pattern = this->vdp.VRAM[nta] | (this->vdp.VRAM[nta | 1] << 8);
+    if (pattern & 0x200) hpos ^= 7;
+    if (pattern & 0x400) vpos ^= 7;
+    u32 palette = (pattern & 0x800) >> 11;
+    u32 priority = (pattern & 0x1000) >> 12;
+
+    u32 pta = (vpos & 7) << 2;
+    pta |= (pattern & 0x1FF) << 5;
+
+    u32 index = (hpos & 7) ^ 7;
+    u32 bmask = (1 << index);
+    u32 color = (this->vdp.VRAM[pta] & bmask) ? 1 : 0;
+    color += (this->vdp.VRAM[pta | 1] & bmask) ? 2 : 0;
+    color += (this->vdp.VRAM[pta | 2] & bmask) ? 4 : 0;
+    color += (this->vdp.VRAM[pta | 3] & bmask) ? 8 : 0;
+
+    if (color == 0) priority = 0;
+    return color;
+}
+
+static void render_image_view_nametables(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    struct SMSGG* this = (struct SMSGG*)ptr;
+    u32 (*get_pcolor)(struct SMSGG*, u32, u32, u32, u32, u32, u32);
+    switch(this->vdp.bg_gfx_mode) {
+        case 1:
+            get_pcolor = &get_gfx1;
+            break;
+        case 2:
+            get_pcolor = &get_gfx2;
+            break;
+        case 3:
+            get_pcolor = &get_gfx3;
+            break;
+        default:
+            assert(1==2);
+    }
+    struct image_view *iv = &dview->image;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+
+
+    for (u32 rownum = 0; rownum < 240; rownum++) {
+        struct DBGSMSGGROW *row = &this->dbg_data.rows[rownum];
+        u32 pcolor;
+        u32 *rowptr = &outbuf[rownum * out_width];
+        for (u32 x = 0; x < 256; x++) {
+            u32 c = get_pcolor(this, x, rownum, row->io.bg_name_table_address, row->io.bg_pattern_table_address, row->io.bg_color_table_address, row->io.num_lines);
+            *rowptr = 0xFF000000 | (c * 0x242424);
+            rowptr++;
+        }
+    }
+}
+
+static void setup_debugger_view_nametables(struct SMSGG* this, struct debugger_interface *dbgr)
+{
+    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    struct image_view *iv = &dview->image;
+    // 512x480, though not all used
+
+    iv->width = 256;
+    iv->height = 240;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 255, 239 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_nametables;
+
+    sprintf(iv->label, "Tilemap Viewer");
+}
+
+static void setup_disassembly_view(struct SMSGG* this, struct debugger_interface *dbgr)
+{
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
     struct disassembly_view *dv = &dview->disassembly;
@@ -229,12 +352,14 @@ void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 
     dv->get_disassembly_vars.ptr = (void *)this;
     dv->get_disassembly_vars.func = &get_disassembly_vars;
+}
 
 
+static void setup_events_view(struct SMSGG* this, struct debugger_interface *dbgr)
+{
     // Setup event view
-
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
-    dview = cpg(this->dbg.events.view);
+    struct debugger_view *dview = cpg(this->dbg.events.view);
     struct events_view *ev = &dview->events;
 
     for (u32 i = 0; i < 2; i++) {
@@ -262,4 +387,17 @@ void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     SET_CPU_EVENT_ID(DBG_SMSGG_EVENT_NMI, NMI);
 
     event_view_begin_frame(this->dbg.events.view);
+}
+
+void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
+{
+    JTHIS;
+    this->dbg.interface = dbgr;
+
+    dbgr->supported_by_core = 1;
+    dbgr->smallest_step = 1;
+
+    setup_disassembly_view(this, dbgr);
+    setup_events_view(this, dbgr);
+    setup_debugger_view_nametables(this, dbgr);
 }

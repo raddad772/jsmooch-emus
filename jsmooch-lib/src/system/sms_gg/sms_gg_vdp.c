@@ -173,36 +173,43 @@ static void update_videomode(struct SMSGG_VDP* this) {
 
     switch (this->io.video_mode) {
         case 0:
+            this->bg_gfx_mode = 1;
             this->bg_gfx = &bg_gfx1;
             this->sprite_gfx = &sprite_gfx2;
             break;
         case 2:
+            this->bg_gfx_mode = 2;
             this->bg_gfx = &bg_gfx2;
             this->sprite_gfx = &sprite_gfx2;
             break;
         case 8:
         case 10:
             this->bg_gfx_vlines = 192;
+            this->bg_gfx_mode = 3;
             this->bg_gfx = &bg_gfx3;
             this->sprite_gfx = &sprite_gfx3;
             break;
         case 11:
             this->bg_gfx_vlines = 224;
+            this->bg_gfx_mode = 3;
             this->bg_gfx = &bg_gfx3;
             this->sprite_gfx = &sprite_gfx3;
             break;
         case 12:
             this->bg_gfx_vlines = 192;
+            this->bg_gfx_mode = 3;
             this->bg_gfx = &bg_gfx3;
             this->sprite_gfx = &sprite_gfx3;
             break;
         case 14:
             this->bg_gfx_vlines = 240;
+            this->bg_gfx_mode = 3;
             this->bg_gfx = &bg_gfx3;
             this->sprite_gfx = &sprite_gfx3;
             break;
         case 15:
             this->bg_gfx_vlines = 192;
+            this->bg_gfx_mode = 3;
             this->bg_gfx = &bg_gfx3;
             this->sprite_gfx = &sprite_gfx3;
             break;
@@ -439,7 +446,19 @@ static void new_scanline(struct SMSGG_VDP* this)
         new_frame(this);
     }
 
+    debugger_report_line(this->bus->dbg.interface, (i32)this->bus->clock.vpos);
     if (this->bus->clock.vpos <= this->bus->clock.timing.rendered_lines) {
+        struct DBGSMSGGROW *rw = (&this->bus->dbg_data.rows[this->bus->clock.vpos]);
+        rw->io.hscroll = this->io.hscroll;
+        rw->io.vscroll = this->io.vscroll;
+        rw->io.bg_name_table_address = this->io.bg_name_table_address;
+        rw->io.bg_color_table_address = this->io.bg_color_table_address;
+        rw->io.bg_pattern_table_address = this->io.bg_pattern_table_address;
+        rw->io.bg_color = this->io.bg_color;
+        rw->io.bg_hscroll_lock = this->io.bg_hscroll_lock;
+        rw->io.bg_vscroll_lock = this->io.bg_vscroll_lock;
+        rw->io.num_lines = this->bg_gfx_vlines;
+
         this->bus->clock.line_counter = (this->bus->clock.line_counter - 1);
         if (this->bus->clock.line_counter < 0) {
             this->bus->clock.line_counter = (i32)this->io.line_irq_reload;

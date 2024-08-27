@@ -55,7 +55,25 @@ struct SMSGG {
     DBG_START
         DBG_CPU_REG_START *A, *B, *C, *D, *E, *HL, *F, *AF_, *BC_, *DE_, *HL_, *PC, *SP, *IX, *IY, *EI, *HALT, *CE DBG_CPU_REG_END
         DBG_EVENT_VIEW
+        DBG_IMAGE_VIEW(nametables)
     DBG_END
+
+    struct {
+        struct DBGSMSGGROW {
+            struct {
+                u32 hscroll, vscroll;
+                u32 bg_name_table_address;
+                u32 bg_color_table_address;
+                u32 bg_pattern_table_address;
+                u32 bg_color;
+                u32 bg_hscroll_lock;
+                u32 bg_vscroll_lock;
+                u32 num_lines;
+            } io;
+        } rows[240];
+
+    } dbg_data;
+
 };
 
 void SMSGG_bus_notify_IRQ(struct SMSGG*, u32 level);
