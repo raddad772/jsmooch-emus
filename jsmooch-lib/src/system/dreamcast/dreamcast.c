@@ -683,17 +683,6 @@ static void DC_RAM_state_after_boot_rom(struct DC* this, struct read_file_buf *I
     this->g2.SB_DDST = 0;
 }
 
-static u32 ends_with(const char *str, const char *suffix)
-{
-    if (!str || !suffix)
-        return 0;
-    size_t lenstr = strlen(str);
-    size_t lensuffix = strlen(suffix);
-    if (lensuffix >  lenstr)
-        return 0;
-    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
-}
-
 
 // Thanks to Deecey for values to write
 static void DCJ_sideload(JSM, struct multi_file_set* mfs) {

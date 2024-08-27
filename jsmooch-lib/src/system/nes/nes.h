@@ -45,7 +45,18 @@ struct NES {
     DBG_START
         DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
         DBG_EVENT_VIEW
+        DBG_IMAGE_VIEW(nametables)
     DBG_END
+
+    struct {
+        struct DBGNESROW {
+            struct {
+                u32 bg_hide_left_8, bg_enable, emph_bits, bg_pattern_table;
+                u32 x_scroll, y_scroll;
+            } io;
+        } rows[240];
+
+    } dbg_data;
 };
 
 #endif //JSMOOCH_EMUS_NES_H

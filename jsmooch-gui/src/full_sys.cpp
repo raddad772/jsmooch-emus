@@ -530,7 +530,8 @@ void full_system::load_default_ROM()
         case SYS_MAC512K:
         case SYS_MAC128K:
         case SYS_MACPLUS_1MB:
-            worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
+            //worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
+            worked = grab_ROM(&ROMs, which, "fd1.image", nullptr);
             break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
@@ -551,6 +552,15 @@ void full_system::load_default_ROM()
     mfs_delete(&ROMs);
 }
 
+void full_system::add_image_view(u32 idx)
+{
+    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    IVIEW myv;
+    myv.enabled = true;
+    myv.view = dview;
+    images.push_back(myv);
+}
+
 void full_system::setup_debugger_interface()
 {
     sys->setup_debugger_interface(sys, &dbgr);
@@ -563,6 +573,9 @@ void full_system::setup_debugger_interface()
                 break;
             case dview_events:
                 events.view = &view->events;
+                break;
+            case dview_image:
+                add_image_view(i);
                 break;
             default:
                 break;
@@ -723,10 +736,62 @@ void full_system::events_view_present()
         jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, 1);
         events_view_render(&dbgr, events.view, evd->buf, events.texture.width, events.texture.height);
 
-
         events.texture.upload_data(evd->buf, events.texture.width*events.texture.height*4, events.texture.width, events.texture.height);
     }
 
+}
+
+void full_system::image_view_present(struct debugger_view *dview, struct my_texture &tex)
+{
+    struct image_view *iview = &dview->image;
+    if (!tex.is_good) {
+        u32 szpo2 = get_closest_pow2(MAX(iview->height, iview->width));
+        assert(wgpu_device);
+        tex.setup(wgpu_device, iview->label, szpo2, szpo2);
+        assert(tex.is_good);
+        tex.uv0 = ImVec2(0, 0);
+        tex.uv1 = ImVec2((float)((double)iview->width / (double)szpo2),
+                                    (float)((double)iview->height / (double)szpo2));
+
+        tex.sz_for_display = ImVec2((float)iview->width, (float)iview->height);
+        buf_allocate(&iview->img_buf[0], szpo2*szpo2*4);
+        buf_allocate(&iview->img_buf[1], szpo2*szpo2*4);
+        memset(iview->img_buf[0].ptr, 0, szpo2*szpo2*4);
+        memset(iview->img_buf[1].ptr, 0, szpo2*szpo2*4);
+    }
+
+    iview->update_func.func(&dbgr, dview, iview->update_func.ptr, tex.width);
+    void *buf = iview->img_buf[iview->draw_which_buf].ptr;
+    assert(buf);
+
+    tex.upload_data(buf, tex.width*tex.height*4, tex.width, tex.height);
+}
+
+void full_system::step_seconds(int num)
+{
+    printf("\nNOT SUPPORT YET");
+}
+
+void full_system::step_scanlines(int num)
+{
+    for (u32 i = 0; i < num; i++) {
+        if (dbg.do_break) break;
+        sys->finish_scanline(sys);
+    }
+}
+
+void full_system::step_cycles(int num)
+{
+    framevars fv{};
+    if (dbg.do_break) return;
+    sys->get_framevars(sys, &fv);
+    u64 cur_frame = fv.master_frame;
+    sys->step_master(sys, num);
+    sys->get_framevars(sys, &fv);
+    u64 new_frame = fv.master_frame;
+    if (cur_frame != new_frame) {//
+        // frame_advanced();
+    }
 }
 
 ImVec2 full_system::output_size() const
@@ -760,50 +825,4 @@ void full_system::do_frame() const {
     else {
         printf("\nCannot do frame with no system.");
     }
-}
-
-int maine(int argc, char** argv)
-{
-#ifdef STOPAFTERAWHILE
-        // 14742566
-        if (fv.master_cycle >= ((14742566*2)+500)) {
-        //if (fv.master_cycle >= 12991854) {
-            dbg_break(">240 FRAMES", fv.master_cycle);
-            dbg.do_break = 1;
-        }
-#endif
-/*        if (dbg.do_break) {
-            //break;
-            if (did_break == 0) {
-                //sys->step_master(sys, 1200);
-                dbg_enable_trace();
-                dbg_enable_cpu_trace(DS_z80);
-                //dbg_enable_cpu_trace(DS_m68000);
-                dbg.traces.m68000.mem = 1;
-                dbg.traces.m68000.instruction = 1;
-                dbg.traces.z80.instruction = 1;
-                dbg.traces.z80.mem = 1;
-                dbg.traces.z80.io = 0;
-                dbg.brk_on_NMIRQ = 1;
-                dbg.do_break = 0;
-                dbg_unbreak();
-                printf("\nTHEN BREAK...");
-                sys->step_master(sys, 120000);
-                dbg_flush();
-                dbg_disable_trace();
-                break;
-            }
-            if (did_break == 1) break;
-            did_break++;
-        }
-        //jsm_present(sys->kind, display, window_surface->pixels, 640, 480);
-        float end = 1;
-        float ticks_taken = end - start;
-        float tick_target = 16.7f;
-        //if (ticks_taken < tick_target)
-            //SDL_Delay(tick_target - ticks_taken);
-    }
-    // Clean up and be tidy!
-    jsm_delete(sys);*/
-    return 0;
 }

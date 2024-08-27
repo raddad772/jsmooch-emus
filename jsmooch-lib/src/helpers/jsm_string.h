@@ -21,4 +21,9 @@ void jsm_string_sprintf(struct jsm_string *str, const char* format, ...);
 void jsm_string_empty(struct jsm_string *str);
 void jsm_string_quickempty(struct jsm_string *);
 
+
+// thanks https://stackoverflow.com/questions/744766/how-to-compare-ends-of-strings-in-c
+u32 ends_with(const char *str, const char *suffix);
+
+
 #endif //JSMOOCH_EMUS_JSM_STRING_H

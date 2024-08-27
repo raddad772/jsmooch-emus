@@ -28,6 +28,8 @@ struct generic_floppy_track {
 
     struct buf unencoded_data;
     struct bitbuf encoded_data;
+
+    struct buf tags_data;
 };
 
 struct generic_floppy {

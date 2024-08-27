@@ -1,9 +1,13 @@
+#include <vector>
+
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 #include "helpers/physical_io.h"
 #include "helpers/debugger/debugger.h"
 
 #include "my_texture.h"
+
+#define MAX_IMAGE_VIEWS 5
 
 struct system_io {
     system_io() {
@@ -43,6 +47,14 @@ struct fssothing {
     ImVec2 uv0, uv1;
     float x_size, y_size;
 };
+
+class IVIEW {
+public:
+    bool enabled{};
+    struct debugger_view *view{};
+    struct my_texture texture;
+};
+
 
 struct full_system {
 public:
@@ -104,10 +116,13 @@ public:
 
         bool zoom, hide_overscan;
     } output{};
+
     struct {
         struct my_texture texture;
         struct events_view *view{};
     } events;
+
+    std::vector<IVIEW> images;
 
     [[nodiscard]] ImVec2 output_size() const;
     [[nodiscard]] ImVec2 output_uv0() const;
@@ -118,13 +133,18 @@ public:
     struct framevars get_framevars() const;
     void present();
     void events_view_present();
+    void image_view_present(struct debugger_view *dview, struct my_texture &tex);
     void setup_wgpu();
+    void step_seconds(int num);
+    void step_scanlines(int num);
+    void step_cycles(int num);
 private:
     void setup_ios();
     void load_default_ROM();
     void setup_bios();
     void setup_display();
     void setup_debugger_interface();
+    void add_image_view(u32);
 };
 
 void newsys(struct full_system *fsys);

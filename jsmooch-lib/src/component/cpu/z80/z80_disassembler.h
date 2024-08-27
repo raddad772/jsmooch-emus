@@ -7,7 +7,11 @@
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 
-u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w);
+struct Z80;
+
+u32 Z80_disassemble(u32 *PC, u32 IR, struct jsm_debug_read_trace *rt, char *w);
+void Z80_disassemble_entry(struct Z80*, struct disassembly_entry* entry);
 
 #endif //JSMOOCH_EMUS_Z80_DISASSEMBLER_H

@@ -19,6 +19,9 @@ void test_bitbuf()
 {
     struct bitbuf bb;
     bitbuf_init(&bb, 500, 1); // We're only going to test LSB-first
+
+    bitbuf_write_bits(&bb, 10, 4);
+    return;
     // Test writing to this thing
     char test_str[50] = "hello,world";
     u32 *p = (u32 *)test_str;

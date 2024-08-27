@@ -432,6 +432,7 @@ u16 mac_mainbus_read_via(struct mac* this, u32 addr, u16 mask, u16 old, u32 has_
 
             // Now fill the rest with ORB, since these will be returned for output bits
             u8 ORB_mask = this->via.regs.dirB;
+            v |= 8; // mouse button not pressed
             v |= this->via.regs.ORB & ORB_mask;
             return ((v << 8) | v) & mask; }
             /* The VIA event timers use the Enable signal (E clock) as a reference; therefore, the timer
@@ -579,13 +580,14 @@ void mac_mainbus_write_via(struct mac* this, u32 addr, u16 mask, u16 val)
             this->via.regs.IFR &= 0b11111100;
             mac_via_irq_sample(this);
 
+            this->via.regs.ORA = val;
+            update_via_RA(this);
             if ((this->via.regs.ORA & 0x20) != (val & 0x20)) {
                 this->iwm.lines.SELECT = (val >> 5) & 1;
-                printf("\nFLOPPY CHANGE SEL line via Via A to: %d", (val >> 5) & 1);
+                printf("\nFLOPPY HEADSEL line via Via A to: %d", (val >> 5) & 1);
+                mac_iwm_control(this, addr, 0, 0);;
             }
-            this->via.regs.ORA = val;
 
-            update_via_RA(this);
 
             printf("\nwrite VIA BufA data:%02x cyc:%lld", val, this->clock.master_cycles);
             return;}

@@ -65,11 +65,25 @@ static u32 read16(u32* PC, struct jsm_debug_read_trace *rt) {
     return r;
 }
 
-u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
+
+void Z80_disassemble_entry(struct Z80*this, struct disassembly_entry* entry)
+{
+    jsm_string_quickempty(&entry->dasm);
+    jsm_string_quickempty(&entry->context);
+    u32 PC = entry->addr;
+    u32 IR = this->read_trace.read_trace(this->read_trace.ptr, PC);
+    char buf[100];
+    buf[0] = 0;
+    Z80_disassemble(&PC, IR, &this->read_trace, buf);
+    jsm_string_sprintf(&entry->dasm, "%s", buf);
+    entry->ins_size_bytes = PC - entry->addr;
+}
+
+u32 Z80_disassemble(u32 *PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
 {
     u32 l = 0;
     u32 opcode = IR;
-    PC = (PC + 1) & 0xFFFF;
+    *PC = ((*PC) + 1) & 0xFFFF;
     if (IR == Z80_S_DECODE) {
         return sprintf(w, "DECODE");
     }
@@ -96,34 +110,34 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
         if (current_byte == 0xDD) {
             current_prefix = 0xDD;
             decoded_bytes++;
-            current_byte = fetch(&PC, rt);
+            current_byte = fetch(PC, rt);
             continue;
         }
 
         if (current_byte == 0xFD) {
             current_prefix = 0xFD;
             decoded_bytes++;
-            current_byte = fetch(&PC, rt);
+            current_byte = fetch(PC, rt);
             continue;
         }
 
         if ((current_byte == 0xCB) && (current_prefix == 0)) {
             // prefix = CB for reglar
             current_prefix = 0xCB;
-            current_byte = fetch(&PC, rt);
+            current_byte = fetch(PC, rt);
             decoded_bytes++;
             continue;
         }
         else if ((current_byte == 0xCB) && ((current_prefix == 0xDD) || (current_prefix == 0xFD))) {
             current_prefix = (current_prefix << 8) | 0xCB;
-            current_byte = fetch(&PC, rt);
+            current_byte = fetch(PC, rt);
             decoded_bytes++;
             continue;
         }
         else if (current_byte == 0xED) {
             current_prefix = 0xED; // lose IX/IY
             decoded_bytes++;
-            current_byte = fetch(&PC, rt);
+            current_byte = fetch(PC, rt);
             continue;
         }
 
@@ -163,16 +177,16 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                         l += sprintf(w, "EX AF, AF'");
                                         break;
                                     case 2:
-                                        l += sprintf(w, "DJNZa %04x", sread8(&PC, rt));
+                                        l += sprintf(w, "DJNZa %04x", sread8(PC, rt));
                                         break;
                                     case 3:
-                                        l += sprintf(w, "JR %04x", sread8(&PC, rt));
+                                        l += sprintf(w, "JR %04x", sread8(PC, rt));
                                         break;
                                     case 4:
                                     case 5:
                                     case 6:
                                     case 7:
-                                        l += sprintf(w, "JR %s, %04x", Z80D_tabl_cc[y - 4], sread8(&PC, rt));
+                                        l += sprintf(w, "JR %s, %04x", Z80D_tabl_cc[y - 4], sread8(PC, rt));
                                         break;
                                 }
                                 break;
@@ -180,15 +194,15 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                 if (q == 0) {
                                     l += sprintf(w, "LD ");
                                     w += 3;
-                                    u32 a = repl0(&PC, HL, H, L, rt, Z80D_tabl_rp[p], w);
+                                    u32 a = repl0(PC, HL, H, L, rt, Z80D_tabl_rp[p], w);
                                     l += a;
                                     w += a;
-                                    l += sprintf(w, ", %04x", read16(&PC, rt));
+                                    l += sprintf(w, ", %04x", read16(PC, rt));
                                 }
                                 else {
                                     l += sprintf(w, "ADD ");
                                     w += 4;
-                                    u32 a = repl0(&PC, HL, H, L, rt, "HL", w);
+                                    u32 a = repl0(PC, HL, H, L, rt, "HL", w);
                                     l += a;
                                     w += a;
                                     l += sprintf(w, ", %s", Z80D_tabl_rp[p]);
@@ -206,45 +220,45 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                         break;
                                     case 2:
                                         if (q == 0) {
-                                            l += sprintf(w, "LD (%04x), ", read16(&PC, rt));
+                                            l += sprintf(w, "LD (%04x), ", read16(PC, rt));
                                             w += l;
-                                            l += repl0(&PC, HL, H, L, rt, "HL", w);
+                                            l += repl0(PC, HL, H, L, rt, "HL", w);
                                         }
                                         else {
                                             l += sprintf(w, "LD ");
                                             w += 3;
-                                            u32 a = repl0(&PC, HL, H, L, rt, "HL", w);
+                                            u32 a = repl0(PC, HL, H, L, rt, "HL", w);
                                             w += a;
                                             l += a;
-                                            sprintf(w, ",(%04x)", read16(&PC, rt));
+                                            sprintf(w, ",(%04x)", read16(PC, rt));
                                         }
                                         break;
                                     case 3:
-                                        if (q == 0) l += sprintf(w, "LD (%04x), A", read16(&PC, rt));
-                                        else l += sprintf(w, "LD A, (%04x)", read16(&PC, rt));
+                                        if (q == 0) l += sprintf(w, "LD (%04x), A", read16(PC, rt));
+                                        else l += sprintf(w, "LD A, (%04x)", read16(PC, rt));
                                         break;
                                 }
                                 break;
                             case 3: // counter = 0, z = 3
                                 if (q == 0) l += sprintf(w, "INC ");
                                 else l += sprintf(w, "DEC ");
-                                l += repl0(&PC, HL, H, L, rt, Z80D_tabl_rp[p], w+4);
+                                l += repl0(PC, HL, H, L, rt, Z80D_tabl_rp[p], w+4);
                                 break;
                             case 4: // counter = 0 z = 3
                                 l += sprintf(w, "INC ");
-                                l += repl0(&PC, HL, H, L, rt, Z80D_tabl_r[y], w+4);
+                                l += repl0(PC, HL, H, L, rt, Z80D_tabl_r[y], w+4);
                                 break;
                             case 5:
                                 l += sprintf(w, "DEC ");
-                                l += repl0(&PC, HL, H, L, rt, Z80D_tabl_r[y], w+4);
+                                l += repl0(PC, HL, H, L, rt, Z80D_tabl_r[y], w+4);
                                 break;
                             case 6:
                                 l += sprintf(w, "LD ");
                                 w += 3;
-                                u32 a = repl0(&PC, HL, H, L, rt, Z80D_tabl_r[y], w);
+                                u32 a = repl0(PC, HL, H, L, rt, Z80D_tabl_r[y], w);
                                 l += a;
                                 w += a;
-                                l += sprintf(w, ", %02x", read8(&PC, rt));
+                                l += sprintf(w, ", %02x", read8(PC, rt));
                                 break;
                             case 7: {
                                 const char *att[] = {"RLCA", "RRCA", "RLA", "RRA", "DAA", "CPL", "SCF", "CCF"};
@@ -258,19 +272,19 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                         else {
                             l += sprintf(w, "LD ");
                             w += 3;
-                            u32 a = repl0(&PC, HL, H, L, rt, Z80D_tabl_r[y], w);
+                            u32 a = repl0(PC, HL, H, L, rt, Z80D_tabl_r[y], w);
                             l += a;
                             w += a;
                             l += sprintf(w, ", ");
                             w += 2;
-                            l += repl0(&PC, HL, H, L, rt, Z80D_tabl_r[z], w);
+                            l += repl0(PC, HL, H, L, rt, Z80D_tabl_r[z], w);
                         }
                         break;
                     case 2: {// counter = 2
                         u32 a = sprintf(w, "%s ", Z80D_tabl_alu[y]);
                         l += a;
                         w += a;
-                        l += repl0(&PC, HL, H, L, rt, Z80D_tabl_r[z], w);
+                        l += repl0(PC, HL, H, L, rt, Z80D_tabl_r[z], w);
                         break;
                     }
                     case 3: // counter = 3
@@ -282,7 +296,7 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                 if (q == 0) {
                                     l += sprintf(w, "POP ");
                                     w += 4;
-                                    l += repl0(&PC, HL, H, L, rt, Z80D_tabl_rp2[p], w);
+                                    l += repl0(PC, HL, H, L, rt, Z80D_tabl_rp2[p], w);
                                 }
                                 else {
                                     switch(p) {
@@ -298,36 +312,36 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                         default:
                                             l += sprintf(w, "LD SP, ");
                                             w += 7;
-                                            l += repl0(&PC, HL, H, L, rt, "HL", w);
+                                            l += repl0(PC, HL, H, L, rt, "HL", w);
                                     }
                                 }
                                 break;
                             case 2:
-                                l += sprintf(w, "JP %s, %04x", Z80D_tabl_cc[y], read16(&PC, rt));
+                                l += sprintf(w, "JP %s, %04x", Z80D_tabl_cc[y], read16(PC, rt));
                                 break;
                             case 3: // counter=3 z=3
                                 switch (y) {
                                     case 0:
-                                        l += sprintf(w, "JP %04x", read16(&PC, rt));
+                                        l += sprintf(w, "JP %04x", read16(PC, rt));
                                         break;
                                     case 1:
                                         l += sprintf(w, "INVALID1");
                                         break;
                                     case 2:
-                                        l += sprintf(w, "OUT (%02x), A", read8(&PC, rt));
+                                        l += sprintf(w, "OUT (%02x), A", read8(PC, rt));
                                         break;
                                     case 3:
-                                        l += sprintf(w, "IN (%02X), A", read8(&PC, rt));
+                                        l += sprintf(w, "IN (%02X), A", read8(PC, rt));
                                         break;
                                     case 4:
                                         l += sprintf(w, "EX (SP), ");
                                         w += 9;
-                                        l += repl0(&PC, HL, H, L, rt, "HL", w);
+                                        l += repl0(PC, HL, H, L, rt, "HL", w);
                                         break;
                                     case 5:
                                         l += sprintf(w, "EX DE, ");
                                         w += 7;
-                                        l += repl0(&PC, HL, H, L, rt, "HL", w);
+                                        l += repl0(PC, HL, H, L, rt, "HL", w);
                                         break;
                                     case 6:
                                         l += sprintf(w, "DI");
@@ -338,19 +352,19 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                 }
                                 break;
                             case 4: // counter=3 z=4
-                                l += sprintf(w, "CALL %s, %04x", Z80D_tabl_cc[y], read16(&PC, rt));
+                                l += sprintf(w, "CALL %s, %04x", Z80D_tabl_cc[y], read16(PC, rt));
                                 break;
                             case 5: // counter=3 z=5
                                 if (q == 0) {
                                     l += sprintf(w, "PUSH ");
                                     w += 5;
-                                    l += repl0(&PC, HL, H, L, rt, Z80D_tabl_rp2[p], w);
+                                    l += repl0(PC, HL, H, L, rt, Z80D_tabl_rp2[p], w);
                                 }
                                 else
-                                    l += sprintf(w, "CALL %04x", read16(&PC, rt));
+                                    l += sprintf(w, "CALL %04x", read16(PC, rt));
                                 break;
                             case 6: // counter=3 z=6
-                                l += sprintf(w, "%s %02x", Z80D_tabl_alu[y], read8(&PC, rt));
+                                l += sprintf(w, "%s %02x", Z80D_tabl_alu[y], read8(PC, rt));
                                 break;
                             case 7: // counter=3 z=7
                                 l += sprintf(w, "RST %02x", y * 8);
@@ -395,8 +409,8 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                                 else l += sprintf(w, "ADC HL, %s", Z80D_tabl_rp[p]);
                                 break;
                             case 3: // 0xED counter=1 z=3
-                                if (q == 0) l += sprintf(w, "LD (%04x), %s", read16(&PC, rt), Z80D_tabl_rp[p]);
-                                else l += sprintf(w, "LD %s, (%04x)", Z80D_tabl_rp[p], read16(&PC, rt));
+                                if (q == 0) l += sprintf(w, "LD (%04x), %s", read16(PC, rt), Z80D_tabl_rp[p]);
+                                else l += sprintf(w, "LD %s, (%04x)", Z80D_tabl_rp[p], read16(PC, rt));
                                 break;
                             case 4:
                                 l += sprintf(w, "NEG");
@@ -428,7 +442,7 @@ u32 Z80_disassemble(u32 PC, u32 IR, struct jsm_debug_read_trace *rt, char *w)
                 else strcpy(IXY, "IY");
                 char d[20];
                 sprintf(d, "$%02x", current_byte);
-                current_byte = fetch(&PC, rt);
+                current_byte = fetch(PC, rt);
                 decoded_bytes++;
                 x = (current_byte & 0xC0) >> 6;
                 y = (current_byte & 0x38) >> 3;

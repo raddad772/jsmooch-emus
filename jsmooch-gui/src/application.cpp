@@ -141,10 +141,10 @@ int main(int, char**)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    //enum jsm_systems which = SYS_GG;
-    //enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_DMG;
+    enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_MAC512K;
-    enum jsm_systems which = SYS_DMG;
 #endif
 
     full_system fsys;
@@ -185,6 +185,7 @@ int main(int, char**)
     CreateSwapChain(wgpu_swap_chain_width, wgpu_swap_chain_height);
     glfwSwapInterval(0);
     glfwShowWindow(window);
+    static int last_frame_was_whole = true;
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -301,6 +302,8 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        framevars start_fv = fsys.get_framevars();
+
         static bool enable_debugger = true;
 
         // Update the system
@@ -312,6 +315,7 @@ int main(int, char**)
         if (fsys.state == FSS_play) {
             update_input(&fsys, io);
             fsys.do_frame();
+            last_frame_was_whole = true;
             fsys.events_view_present();
             has_played_once = true;
         }
@@ -319,7 +323,31 @@ int main(int, char**)
 
         // 1. Show playback controls
         {
-            if (ImGui::Button("Play/pause")) {
+            static int steps[3] = { 10, 1, 1 };
+            bool play_pause = false;
+            bool step_clocks = false, step_scanlines = false, step_seconds = false;
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+            if (ImGui::BeginChild("Event Viewer Events", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
+                play_pause = ImGui::Button("Play/pause");
+
+                step_clocks = ImGui::Button("Step");
+                ImGui::SameLine();
+                ImGui::InputInt("cycles", &steps[0]);
+
+                step_scanlines = ImGui::Button("Step");
+                ImGui::SameLine();
+                ImGui::InputInt("lines", &steps[1]);
+
+                step_seconds = ImGui::Button("Step");
+                ImGui::SameLine();
+                ImGui::InputInt("frames", &steps[2]);
+
+
+                ImGui::EndChild(); // end sub-window
+            }
+            ImGui::PopStyleVar();
+            if (play_pause) {
                 switch(fsys.state) {
                     case FSS_pause:
                         fsys.state = FSS_play;
@@ -330,7 +358,23 @@ int main(int, char**)
                         break;
                 }
             }
+            if (step_scanlines) {
+                fsys.step_scanlines(steps[1]);
+                last_frame_was_whole = false;
+            }
+            if (step_clocks) {
+                fsys.step_cycles(steps[0]);
+                last_frame_was_whole = false;
+            }
+            if (step_seconds) {
+                fsys.step_seconds(steps[2]);
+                last_frame_was_whole = false;
+            }
 
+            framevars fv = fsys.get_framevars();
+            ImGui::SameLine();
+            ImGui::Text("Frame: %lld", fv.master_frame);
+            ImGui::Text("X,Y:%d,%d", fv.x, fv.scanline);
         }
 
         // Main emu window
@@ -356,6 +400,13 @@ int main(int, char**)
             ImGui::End();
         }
 
+        framevars end_fv = fsys.get_framevars();
+        bool update_dasm_scroll = false;
+        if (start_fv.master_cycle != end_fv.master_cycle) {
+            // Update stuff like scroll
+            update_dasm_scroll = true;
+        }
+
         // disassembly view
         if (fsys.dasm && enable_debugger && has_played_once && ImGui::Begin("Disassembly View")) {
             static ImGuiTableFlags flags =
@@ -373,8 +424,8 @@ int main(int, char**)
             // void (*func)(void *, struct debugger_interface *, struct disassembly_view *, u32 start_addr, u32 lines);
             u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, fsys.dasm, dv.address_of_executing_instruction, 20,
                                                          40, &fsys.dasm_rows);
-
             u32 numcols = (fsys.dasm ? fsys.dasm->has_context ? 3 : 2 : 2);
+
             // When using ScrollX or ScrollY we need to specify a size for our table container!
             // Otherwise by default the table will fit all available space, like a BeginChild() call.
             ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 80, TEXT_BASE_HEIGHT * 20);
@@ -384,8 +435,13 @@ int main(int, char**)
                 ImGui::TableSetupColumn("disassembly", ImGuiTableColumnFlags_None);
                 if (numcols == 3) ImGui::TableSetupColumn("context at last execution", ImGuiTableColumnFlags_None);
                 ImGui::TableHeadersRow();
-
                 ImGuiListClipper clipper;
+                if (update_dasm_scroll) {
+                    float scrl = clipper.ItemsHeight * (cur_line_num - 2);
+                    float cur_scroll = ImGui::GetScrollY();
+                    if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
+                        ImGui::SetScrollY(scrl);
+                }
                 clipper.Begin(100);
                 while (clipper.Step()) {
                     for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
@@ -442,26 +498,19 @@ int main(int, char**)
             ImGui::End();
         }
 
+        for (auto &myv: fsys.images) {
+            if (ImGui::Begin(myv.view->image.label)) {
+                fsys.image_view_present(myv.view, myv.texture);
+                ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
+                ImGui::End();
+            }
+        }
+
         if (fsys.events.view && ImGui::Begin("Event Viewer")) {
             static bool ozoom = true;
             ImGui::Checkbox("2x Zoom", &ozoom);
             fsys.events_view_present();
             ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.zoom_sz_for_display(ozoom ? 2  : 1), fsys.events.texture.uv0, fsys.events.texture.uv1, {1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0});
-            //ImGui::SameLine();
-
-                        /*ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
-            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-            ImGui::BeginChild("Event Viewer Events", ImVec2(150, 250), ImGuiChildFlags_Border, window_flags);*/
-            /*if (ImGui::BeginMenuBar())
-            {
-                if (ImGui::BeginMenu("Menu"))
-                {
-
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMenuBar();
-            }*/
-
             static bool things_open[50];
             static float color_edits[50*10][3];
             u32 idx = 0;

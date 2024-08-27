@@ -16,6 +16,8 @@ extern "C" {
 #define DBG_CPU_REG_END ; } dasm;
 
 #define DBG_EVENT_VIEW struct { struct cvec_ptr view; } events;
+#define DBG_IMAGE_VIEW(name) struct { struct cvec_ptr name; } image_views;
+
 #define DBG_EVENT_VIEW_ONLY_START struct { struct { struct cvec_ptr view; u32
 #define DBG_EVENT_VIEW_ONLY_END ;} events; } dbg;
 

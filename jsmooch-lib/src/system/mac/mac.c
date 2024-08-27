@@ -195,7 +195,7 @@ void macJ_IO_insert_disk(struct jsm_system *jsm, struct physical_io_device* pio,
     JTHIS;
     struct mac_floppy *mflpy = cvec_push_back(&this->iwm.my_disks);
     mac_floppy_init(mflpy);
-    mac_floppy_load(mflpy, &mfs->files[0].buf);
+    mac_floppy_load(mflpy, mfs->files[0].name, &mfs->files[0].buf);
     this->iwm.drive[0].disc = mflpy;
 }
 

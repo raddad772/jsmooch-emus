@@ -651,6 +651,20 @@ void new_scanline(THIS) {
         new_frame(this);
     else
         this->nes->clock.ppu_y++;
+        // debugger_copy_scanline_info
+
+    if ((this->nes->clock.ppu_y >= 0) && (this->nes->clock.ppu_y < 240)) {
+        struct DBGNESROW *rw = (&this->nes->dbg_data.rows[this->nes->clock.ppu_y]);
+        /*rw->io.bg_enable = this->io.bg_enable;
+        rw->io.bg_hide_left_8 = this->io.bg_hide_left_8;*/
+        rw->io.bg_pattern_table = this->io.bg_pattern_table;
+        rw->io.emph_bits = this->io.emph_bits;
+        rw->io.x_scroll = (this->io.x | ((this->io.t & 0x1F) << 3));
+        rw->io.y_scroll = ((((this->io.t >> 5) & 0x1F) << 3) | ((this->io.t >> 12) & 7));
+        rw->io.x_scroll += ((this->io.t >> 10) & 1) * 256;
+        rw->io.y_scroll += ((this->io.t >> 11) & 1) * 240;
+    }
+    debugger_report_line(this->nes->dbg.interface, this->nes->clock.ppu_y);
 
 
     /*if (this->nes->clock.ppu_y == this->nes->clock.timing.vblank_start) {

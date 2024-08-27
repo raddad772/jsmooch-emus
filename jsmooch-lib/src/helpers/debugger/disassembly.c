@@ -90,9 +90,19 @@ static struct disassembly_range* find_intersecting_range(struct disassembly_view
     return NULL;
 }
 
-static void w_entry_to_strs(struct disassembly_entry_strings *strs, struct disassembly_entry *entry)
+static void w_entry_to_strs(struct disassembly_entry_strings *strs, struct disassembly_entry *entry, int col_size)
 {
-    snprintf(strs->addr, 100, "%06x", entry->addr);
+    switch(col_size) {
+        case 4:
+            snprintf(strs->addr, 100, "%04x", entry->addr);
+            break;
+        case 6:
+            snprintf(strs->addr, 100, "%06x", entry->addr);
+            break;
+        default:
+            assert(1==2);
+    }
+
     snprintf(strs->dasm, 200, "%s", entry->dasm.ptr);
     snprintf(strs->context, 400, "%s", entry->context.ptr);
 }
@@ -163,6 +173,7 @@ static struct disassembly_range *create_disassembly_range(struct debugger_interf
 
 int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 bytes_after, struct cvec *out_lines)
 {
+    //printf("\n\nSTART DASM GET ROWS");
     // ex. situation.
     // we have current instr = 0x100
     // we have a range, 70...90
@@ -191,6 +202,7 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
         if (intersecting == NULL)
             intersecting = find_intersecting_range(dview, asm_addr);
         if (intersecting != NULL) {
+            //printf("\nFOUND INTERSECTING RANGE. asm_addr:%04x start:%04llx end:%04llx", asm_addr, intersecting->addr_range_start, intersecting->addr_range_end);
             // We got some lines!
             u32 found_any = 0;
             for (u32 i = 0; i < cvec_len(&intersecting->entries); i++) {
@@ -201,7 +213,8 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
                     found_any = 1;
                     struct disassembly_entry_strings *strs = cvec_get(out_lines, line++);
                     asm_addr = entry->addr + entry->ins_size_bytes;
-                    w_entry_to_strs(strs, entry);
+                    assert(entry->ins_size_bytes < 10);
+                    w_entry_to_strs(strs, entry, dview->addr_column_size);
                 }
             }
             if (!found_any) mark_disassembly_range_invalid(intersecting);
@@ -217,7 +230,7 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
         // First, find our next range
         struct disassembly_range *next_range = find_next_range(dview, asm_addr);
         u32 assemble_til = end_addr;
-        if (next_range != NULL)
+        if ((next_range != NULL) && (next_range->addr_range_start < end_addr))
             assemble_til = next_range->addr_range_start - 1;
 
         intersecting = create_disassembly_range(di, dview, asm_addr, assemble_til);

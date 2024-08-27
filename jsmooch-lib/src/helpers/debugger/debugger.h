@@ -13,6 +13,7 @@ extern "C" {
 
 #include "helpers/int.h"
 #include "helpers/cvec.h"
+#include "helpers/buf.h"
 #include "helpers/jsm_string.h"
 
 
@@ -21,6 +22,7 @@ enum debugger_view_kinds {
     dview_events,
     dview_memory,
     dview_disassembly,
+    dview_image,
     dview_trace,
     dview_log
 };
@@ -185,20 +187,50 @@ struct events_view {
     } display[2];
 };
 
+struct ivec2 {
+    i32 x, y;
+};
+
+struct debugger_view;
+struct debugger_update_func {
+    void *ptr;
+    void (*func)(struct debugger_interface*, struct debugger_view *, void *, u32);
+};
+
+struct image_view {
+    char label[50];
+    u32 ready_for_display;
+    u32 width, height;
+    u32 draw_which_buf;
+
+    struct {
+        u32 exists;
+        u32 enabled;
+        struct ivec2 p[2];
+    } viewport;
+
+    struct debugger_update_func update_func;
+
+    struct buf img_buf[2];
+};
+
 struct debugger_view {
     enum debugger_view_kinds kind;
+    struct {
+        u32 on_break, on_pause, on_step;
+        struct { u32 enabled; u32 line_num; } on_line;
+    } update;
 
     union {
         struct disassembly_view disassembly;
         struct events_view events;
+        struct image_view image;
     };
 };
 
 /* This need to be used on two sides. The application side, and the core side. */
 struct debugger_interface {
     struct cvec views; // debugger_view
-    u32 update_on_break;
-    u32 update_on_pause;
 
     u32 smallest_step; // smallest possible step
     u32 supported_by_core;
@@ -222,6 +254,7 @@ void events_view_add_category(struct debugger_interface *dbgr, struct events_vie
 void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
 void event_view_begin_frame(struct cvec_ptr event_view);
 void debugger_report_event(struct cvec_ptr viewptr, u32 event_id);
+void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)

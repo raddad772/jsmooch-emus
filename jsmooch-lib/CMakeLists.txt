@@ -227,6 +227,8 @@ add_library(jsmooch-lib
         src/system/gb/gb_debugger.c
         src/system/gb/gb_debugger.h
         src/helpers/debugger/debuggerdefs.h
+        src/helpers/debugger/image.c
+        src/helpers/debugger/image.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

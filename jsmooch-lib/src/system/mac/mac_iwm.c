@@ -322,7 +322,7 @@ static void set_drive_reg(struct mac* this)
     }
 }
 
-static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
+u16 mac_iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
     u32 onoff = (addr & 1); // 0 = turn off, 1 = turn on
     switch (addr & 0xFE) { // Phase lines
         case 0: // CA0
@@ -471,10 +471,10 @@ static u16 iwm_control(struct mac* this, u8 addr, u8 val, u32 is_write) {
 
 u16 mac_iwm_read(struct mac *this, u8 addr)
 {
-    return iwm_control(this, addr, 0, 0);
+    return mac_iwm_control(this, addr, 0, 0);
 }
 
 void mac_iwm_write(struct mac *this, u8 addr, u8 val)
 {
-    iwm_control(this, addr, val, 1);
+    mac_iwm_control(this, addr, val, 1);
 }

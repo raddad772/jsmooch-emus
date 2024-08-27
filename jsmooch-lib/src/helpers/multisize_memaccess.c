@@ -12,12 +12,27 @@ static u64 cR16(void *ptr, u32 addr) {
     return *(u16*)(((u8*)ptr)+addr);
 }
 
+static u64 cR16_be(void *ptr, u32 addr) {
+    u16 a = *(u16*)(((u8*)ptr)+addr);
+    return bswap_16(a);
+}
+
 static u64 cR32(void *ptr, u32 addr) {
     return *(u32*)(((u8*)ptr)+addr);
 }
 
+static u64 cR32_be(void *ptr, u32 addr) {
+    u32 a = *(u32*)(((u8*)ptr)+addr);
+    return bswap_32(a);
+}
+
 static u64 cR64(void *ptr, u32 addr) {
     return *(u64*)(((u8*)ptr)+addr);
+}
+
+static u64 cR64_be(void *ptr, u32 addr) {
+    u64 a = *(u64*)(((u8*)ptr)+addr);
+    return bswap_64(a);
 }
 
 static void cW8(void *ptr, u32 addr, u64 val) {

@@ -73,7 +73,6 @@ int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
         return 0;
     }
 
-
     FILE *fil = fopen(OUTPATH, "rb");
     fseek(fil, 0L, SEEK_END);
     buf_allocate(&rfb->buf, ftell(fil));
