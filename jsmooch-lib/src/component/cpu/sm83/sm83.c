@@ -151,7 +151,6 @@ void SM83_cycle(struct SM83* this) {
                     DBG_EVENT(this->dbg.events.HALT_end);
                     this->regs.HLT = 0;
 					this->regs.TCU++;
-                    printf("De-halt!");
 				}
 				else {
 					// Right here, the STAT is not supposed to be cleared if LCD disabled

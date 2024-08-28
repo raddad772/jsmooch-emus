@@ -515,11 +515,11 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
             break;
         case SYS_DMG:
-            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "wario3.gbc", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);

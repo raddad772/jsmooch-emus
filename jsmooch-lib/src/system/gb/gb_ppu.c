@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "helpers/debugger/debugger.h"
 #include "helpers/int.h"
@@ -235,7 +236,7 @@ static struct GB_px *GB_pixel_slice_fetcher_get_px_if_available(struct GB_pixel_
     this->out_px.bg_or_sp = -1;
     if ((this->sp_request == 0) && (!GB_FIFO_empty(&this->bg_FIFO))) { // if we're not in a sprite request, and the BG FIFO isn't empty
         this->out_px.had_pixel = true;
-        u32 has_bg = this->clock->cgb_enable? true : this->ppu->io.bg_window_enable;
+        u32 has_bg = this->clock->cgb_enable ? true : this->ppu->io.bg_window_enable;
         u32 bg_pal = 0;
 
         struct GB_FIFO_item* bg = GB_FIFO_pop(&this->bg_FIFO);
@@ -254,6 +255,9 @@ static struct GB_px *GB_pixel_slice_fetcher_get_px_if_available(struct GB_pixel_
             sp_palette = obj->palette;
         }
         if (this->ppu->io.obj_enable && (sp_color != -1)) has_sp = true;
+        if ((has_sp || (sp_color != -1)) && this->clock->lx >= 8) {
+            this->bus->gb->dbg_data.row->sprite_pixels[this->clock->lx-8] = 1;
+        }
 
         // DMG resolve
         if ((has_bg) && (!has_sp)) {
@@ -610,6 +614,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
     case 0xFF40: // LCDC LCD Control
         if (val & 0x80) GB_PPU_enable(this);
         else GB_PPU_disable(this);
+        DBG_EVENT(DBG_GB_EVENT_LCDC_WRITE);
 
         this->io.window_tile_map_base = (val & 0x40) >> 6;
         this->io.window_enable = (val & 0x20) >> 5;
@@ -630,6 +635,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         u32 lylyc_enable = (val & 0x40) >> 6;
         this->io.STAT_IE = mode0_enable | (mode1_enable << 1) | (mode2_enable << 2) | (lylyc_enable << 3);
         GB_PPU_eval_STAT(this);
+        printf("\nWRITE STAT_IE frame:%d line:%d val:%d", this->clock->master_frame, this->clock->ly, this->io.STAT_IE);
         return;
     case 0xFF42: // SCY
         DBG_EVENT(DBG_GB_EVENT_SCY_WRITE);
@@ -769,11 +775,13 @@ static void GB_PPU_IRQ_lylyc_down(struct GB_PPU *this) {
 }
 
 static void GB_PPU_IRQ_mode0_up(struct GB_PPU *this) {
+    if (this->io.STAT_IE & 1) printf("\nMODE0 IRQ UP! frame:%d line:%d", this->clock->master_frame, this->clock->ly);
     this->io.STAT_IF |= 1;
     GB_PPU_eval_STAT(this);
 }
 
 static void GB_PPU_IRQ_mode0_down(struct GB_PPU *this) {
+    if (this->io.STAT_IE & 1) printf("\nMODE0 IRQ DOWN! frame:%d line:%d", this->clock->master_frame, this->clock->ly);
     this->io.STAT_IF &= 0xFE;
     GB_PPU_eval_STAT(this);
 }
@@ -837,11 +845,12 @@ static void GB_PPU_set_mode(struct GB_PPU *this, enum GB_PPU_modes which) {
     this->clock->ppu_mode = which;
 
     switch (which) {
-    case OAM_search: // 2. after vblank, so after 1
+    case OAM_search: // 2. after vblank and HBLANK
         GB_clock_setCPU_can_OAM(this->clock, 0);
         this->clock->CPU_can_VRAM = 1;
         if (this->enabled) {
             this->bus->IRQ_vblank_down(this->bus);
+            GB_PPU_IRQ_mode0_down(this);
             GB_PPU_IRQ_mode1_down(this);
             GB_PPU_IRQ_mode2_up(this);
         }
@@ -858,7 +867,7 @@ static void GB_PPU_set_mode(struct GB_PPU *this, enum GB_PPU_modes which) {
         this->clock->CPU_can_VRAM = 1;
         GB_clock_setCPU_can_OAM(this->clock, 1);
         break;
-    case VBLANK: // 1, comes after 0
+    case VBLANK: // 1, comes after 0 (hblank)
         GB_PPU_IRQ_mode0_down(this);
         GB_PPU_IRQ_mode1_up(this);
         GB_PPU_IRQ_vblank_up(this);
@@ -912,7 +921,8 @@ void GB_PPU_advance_line(struct GB_PPU* this) {
         GB_PPU_advance_frame(this, true);
 
     if (this->clock->ly < 144) {
-        struct DBGGBROW *rw = (&this->bus->gb->dbg_data.rows[this->clock->ly]);
+        this->bus->gb->dbg_data.row = (&this->bus->gb->dbg_data.rows[this->clock->ly]);
+        struct DBGGBROW *rw = this->bus->gb->dbg_data.row;
         rw->io.SCX = this->io.SCX;
         rw->io.SCY = this->io.SCY;
         rw->io.bg_tile_map_base = this->io.bg_tile_map_base;
@@ -921,6 +931,7 @@ void GB_PPU_advance_line(struct GB_PPU* this) {
         rw->io.wx = this->io.wx;
         rw->io.wy = this->io.wy;
         rw->io.bg_window_tile_data_base = this->io.bg_window_tile_data_base;
+        memset(&rw->sprite_pixels, 0xFF, 160*2);
     }
     if (this->enabled) {
         GB_PPU_eval_lyc(this);

@@ -10,7 +10,6 @@
 void image_view_init(struct image_view *this)
 {
     memset(this, 0, sizeof(*this));
-    printf("\nBUF INIT!");
     buf_init(&this->img_buf[0]);
     buf_init(&this->img_buf[1]);
 }

@@ -20,9 +20,7 @@
 
 #define JTHIS struct GB* this = (struct GB*)jsm->ptr
 #define JSM struct jsm_system* jsm
-
-
-static void render_image_view_nametables_DMG(struct GB* this, struct debugger_interface *dbgr, struct debugger_view *dview, u32 out_width)
+static void render_image_view_nametables_DMG(struct GB* this, struct debugger_interface *dbgr, struct debugger_view *dview, u32 out_width, u32 cgb_enable)
 {
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -51,13 +49,21 @@ static void render_image_view_nametables_DMG(struct GB* this, struct debugger_in
                 u32 nt_base_addr = (0x1800 | (nt_num << 10));
 
                 u32 left = row->io.SCX;
-                u32 right = (row->io.SCX + 160) & 0xFF;
+                u32 right = (row->io.SCX + 159) & 0xFF;
                 for (u32 get_tile_x = 0; get_tile_x < 32; get_tile_x++) {
                     u32 nt_addr = nt_base_addr | (((scr_y & 0xFF) >> 3) << 5) | ((scr_x & 0xFF) >> 3);
                     u32 tn = this->bus.generic_mapper.VRAM[nt_addr];
+                    u32 attr = 0;
+                    if (cgb_enable)
+                        attr = this->bus.generic_mapper.VRAM[nt_addr+0x2000];
                     u32 b12 = row->io.bg_window_tile_data_base ? 0 : ((tn & 0x80) ^ 0x80) << 5;
                     u32 hbits = 0;
                     u32 ybits = scr_y & 7;
+                    if (cgb_enable) {
+                        hbits = (attr & 8) << 10; // bank select for tile
+                        if (attr & 0x40) ybits = (7 - ybits); // flip y
+                    }
+
                     u32 pt_addr = (b12 |
                             (tn << 4) |
                             (ybits << 1)
@@ -65,10 +71,35 @@ static void render_image_view_nametables_DMG(struct GB* this, struct debugger_in
                     u32 bp0 = this->bus.generic_mapper.VRAM[pt_addr];
                     u32 bp1 = this->bus.generic_mapper.VRAM[pt_addr+1];
                     for (u32 i = 0; i < 8; i++) {
-                        u32 b = 3 - (((bp0 >> 7) & 1) | ((bp1 >> 6) & 2));
-                        bp0 <<= 1;
-                        bp1 <<= 1;
-                        u32 c = 0xFF000000 | (0x555555 * b);
+                        u32 b, c, pal;
+                        if (cgb_enable && (attr & 0x20)) { // flip x
+                            b = ((bp0 & 1) | ((bp1 & 1) << 1));
+                            bp0 >>= 1;
+                            bp1 >>= 1;
+                        }
+                        else {
+                            b = (((bp0 >> 7) & 1) | ((bp1 >> 6) & 2));
+                            bp0 <<= 1;
+                            bp1 <<= 1;
+                        }
+                        u32 cv;
+                        if (!cgb_enable) {
+                            cv = 0x555555 * (3 - this->ppu.bg_palette[b]);
+                        }
+                        else {
+                            pal = attr & 7;
+                            u32 n = ((pal * 4) + b) * 2;
+                            u16 o = (((u16)this->ppu.bg_CRAM[n+1]) << 8) | this->ppu.bg_CRAM[n];
+                            u32 cr = (o >> 10) & 0x1F;
+                            u32 cg = (o >> 5) & 0x1F;
+                            u32 cb = (o & 0x1F);
+                            cr = (cr << 3) | (cr >> 2);
+                            cg = (cg << 3) | (cg >> 2);
+                            cb = (cb << 3) | (cb >> 2);
+                            cv = (cr << 16) | (cg << 8) | cb;
+                        }
+                        c = 0xFF000000 | cv;
+
                         if ((snum != -1) && (scr_x == left)) c = 0xFF00FF00; // green left-hand side
                         if ((snum != -1) && (scr_x == right)) c = 0xFFFF0000; // blue right-hand side
                         if ((snum == 0) || (snum == 143)) {
@@ -94,12 +125,38 @@ static void render_image_view_nametables_DMG(struct GB* this, struct debugger_in
     }
 }
 
+static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    struct GB *this = (struct GB *) ptr;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    for (u32 rownum = 0; rownum < 144; rownum++) {
+        struct DBGGBROW *row = &this->dbg_data.rows[rownum];
+        u32 *row_start = outbuf + (rownum * out_width);
+        for (u32 x = 0; x < 160; x++) {
+            u32 c;
+            u32 cv = (row->sprite_pixels[x] == 0xFFFF ? 0 : 1) * 0xFFFFFF;
+            c = 0xFF000000 | cv;
+
+            *row_start = c;
+            row_start++;
+        }
+    }
+}
+
 static void render_image_view_nametables(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     struct GB *this = (struct GB *) ptr;
     switch(this->variant) {
         case DMG:
-            render_image_view_nametables_DMG(this, dbgr, dview, out_width);
+            render_image_view_nametables_DMG(this, dbgr, dview, out_width, 0);
+            break;
+        case GBC:
+            if (this->clock.cgb_enable)
+                render_image_view_nametables_DMG(this, dbgr, dview, out_width, 1);
+            else
+                render_image_view_nametables_DMG(this, dbgr, dview, out_width, 0);
             break;
         default:
             assert(1==2);
@@ -140,6 +197,7 @@ static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
     DEBUG_REGISTER_EVENT("VRAM write", 0x0000FF, DBG_GB_CATEGORY_PPU, DBG_GB_EVENT_VRAM_WRITE);
     DEBUG_REGISTER_EVENT("SCX write", 0x00FFFF, DBG_GB_CATEGORY_PPU, DBG_GB_EVENT_SCX_WRITE);
     DEBUG_REGISTER_EVENT("SCY write", 0xFFFF00, DBG_GB_CATEGORY_PPU, DBG_GB_EVENT_SCY_WRITE);
+    DEBUG_REGISTER_EVENT("LCDC write", 0x2080FF, DBG_GB_CATEGORY_PPU, DBG_GB_EVENT_LCDC_WRITE);
 
     SET_EVENT_VIEW(this->cpu.cpu);
     SET_EVENT_VIEW(this->cpu);
@@ -155,6 +213,22 @@ static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
     SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_HALT_END, HALT_end);
 
     event_view_begin_frame(this->dbg.events.view);
+}
+
+static void setup_debugger_view_sprites(struct GB* this, struct debugger_interface *dbgr)
+{
+    this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
+    struct image_view *iv = &dview->image;
+    iv->width = 160;
+    iv->height = 144;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_sprites;
+
+    sprintf(iv->label, "Sprite Position Viewer");
 }
 
 static void setup_debugger_view_nametables(struct GB* this, struct debugger_interface *dbgr)
@@ -186,4 +260,5 @@ void GBJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 
     setup_events_view(this, dbgr);
     setup_debugger_view_nametables(this, dbgr);
+    setup_debugger_view_sprites(this, dbgr);
 }

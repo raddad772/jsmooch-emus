@@ -18,6 +18,10 @@ extern "C" {
 #define DBG_EVENT_VIEW struct { struct cvec_ptr view; } events;
 #define DBG_IMAGE_VIEW(name) struct { struct cvec_ptr name; } image_views;
 
+#define DBG_IMAGE_VIEWS_START struct {
+#define MDBG_IMAGE_VIEW(name) struct cvec_ptr name;
+#define DBG_IMAGE_VIEWS_END } image_views;
+
 #define DBG_EVENT_VIEW_ONLY_START struct { struct { struct cvec_ptr view; u32
 #define DBG_EVENT_VIEW_ONLY_END ;} events; } dbg;
 

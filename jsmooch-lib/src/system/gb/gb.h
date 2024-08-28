@@ -26,6 +26,12 @@ struct GB_inputs {
     u32 right;
 };
 
+struct DBGGBROW {
+    struct {
+        u32 SCX, SCY, wx, wy, bg_tile_map_base, window_tile_map_base, window_enable, bg_window_tile_data_base;
+    } io;
+    u16 sprite_pixels[160];
+};
 
 struct GB {
     struct GB_bus bus;
@@ -47,15 +53,17 @@ struct GB {
     DBG_START
     DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
     DBG_EVENT_VIEW
-    DBG_IMAGE_VIEW(nametables)
+
+    DBG_IMAGE_VIEWS_START
+    MDBG_IMAGE_VIEW(nametables)
+    MDBG_IMAGE_VIEW(sprites)
+    DBG_IMAGE_VIEWS_END
+
     DBG_END
 
     struct {
-        struct DBGGBROW {
-            struct {
-                u32 SCX, SCY, wx, wy, bg_tile_map_base, window_tile_map_base, window_enable, bg_window_tile_data_base;
-            } io;
-        } rows[144];
+        struct DBGGBROW rows[144];
+        struct DBGGBROW *row;
     } dbg_data;
 
 };

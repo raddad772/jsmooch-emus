@@ -141,8 +141,9 @@ int main(int, char**)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    //enum jsm_systems which = SYS_DMG;
-    enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_GBC;
+    enum jsm_systems which = SYS_DMG;
+    //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
@@ -153,7 +154,7 @@ int main(int, char**)
         printf("\nCould not initialize system! %d", fsys.worked);
         return -1;
     }
-    fsys.state = FSS_play;
+    fsys.state = FSS_pause;
 
 #ifdef NEWSYS
     newsys(&fsys);
