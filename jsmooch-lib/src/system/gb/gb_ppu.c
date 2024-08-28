@@ -4,6 +4,7 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/int.h"
 
+#include "gb.h"
 #include "gb_ppu.h"
 #include "gb_enums.h"
 #include "gb_bus.h"
@@ -909,6 +910,18 @@ void GB_PPU_advance_line(struct GB_PPU* this) {
     this->line_cycle = 0;
     if (this->clock->ly >= 154)
         GB_PPU_advance_frame(this, true);
+
+    if (this->clock->ly < 144) {
+        struct DBGGBROW *rw = (&this->bus->gb->dbg_data.rows[this->clock->ly]);
+        rw->io.SCX = this->io.SCX;
+        rw->io.SCY = this->io.SCY;
+        rw->io.bg_tile_map_base = this->io.bg_tile_map_base;
+        rw->io.window_tile_map_base = this->io.window_tile_map_base;
+        rw->io.window_enable = this->io.window_enable;
+        rw->io.wx = this->io.wx;
+        rw->io.wy = this->io.wy;
+        rw->io.bg_window_tile_data_base = this->io.bg_window_tile_data_base;
+    }
     if (this->enabled) {
         GB_PPU_eval_lyc(this);
         if (this->clock->ly < 144)

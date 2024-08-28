@@ -95,11 +95,9 @@ void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, u64 size)
 
     this->clock->cgb_enable = (inp[0x143] == 0x80) || (inp[0x143] == 0xC0);
     if (this->variant != GBC) this->clock->cgb_enable = 0;
-    printf("\nCGB ENABLE? %d", this->clock->cgb_enable);
     fflush(stdout);
 
     this->header.ROM_banks = NUM_ROMBANKS(inp[0x0148]);
-    printf("\nNUM ROMBANKS: %d", this->header.ROM_banks);
     this->header.ROM_size = (this->header.ROM_banks ? (this->header.ROM_banks * 16384) : 32768);
     if (this->ROM != NULL) {
         free(this->ROM);

@@ -9,13 +9,14 @@
 #define NULL 0
 #endif
 
-
+struct GB;
 struct GB_bus {
 	struct GB_cart* cart;
 	struct GB_mapper* mapper;
 	struct GB_PPU* ppu;
 	struct GB_CPU* cpu;
     struct GB_clock* clock;
+    struct GB* gb;
 
     struct {
         u8 WRAM[8192 * 8];

@@ -69,6 +69,7 @@ struct SMSGG {
                 u32 bg_hscroll_lock;
                 u32 bg_vscroll_lock;
                 u32 num_lines;
+                u32 left_clip;
             } io;
         } rows[240];
 

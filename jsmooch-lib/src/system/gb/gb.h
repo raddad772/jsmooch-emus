@@ -47,7 +47,17 @@ struct GB {
     DBG_START
     DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
     DBG_EVENT_VIEW
+    DBG_IMAGE_VIEW(nametables)
     DBG_END
+
+    struct {
+        struct DBGGBROW {
+            struct {
+                u32 SCX, SCY, wx, wy, bg_tile_map_base, window_tile_map_base, window_enable, bg_window_tile_data_base;
+            } io;
+        } rows[144];
+    } dbg_data;
+
 };
 
 #endif

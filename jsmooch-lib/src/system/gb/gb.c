@@ -70,6 +70,7 @@ void GB_new(JSM, enum GB_variants variant)
 	this->bus.DMA_read = &GB_bus_DMA_read;
 	this->bus.IRQ_vblank_down = &GB_bus_IRQ_vblank_down;
 	this->bus.IRQ_vblank_up = &GB_bus_IRQ_vblank_up;
+    this->bus.gb = this;
 
     this->bus.read_IO = &GB_read_IO;
     this->bus.write_IO = &GB_write_IO;

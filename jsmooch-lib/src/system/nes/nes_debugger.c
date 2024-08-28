@@ -123,15 +123,18 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
 {
     struct NES* this = (struct NES*)ptr;
     if (this->clock.master_frame == 0) return;
-    struct DBGNESROW *row = &this->dbg_data.rows[0];
     struct image_view *iv = &dview->image;
-    iv->viewport.exists = 1;
-    iv->viewport.p[0].x = row->io.x_scroll % 512;
-    iv->viewport.p[0].y = row->io.y_scroll % 480;
-    iv->viewport.p[1].x = (iv->viewport.p[0].x + 256);
-    iv->viewport.p[1].y = (iv->viewport.p[0].y + 240);
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+
+    int nt_rows_to_crtrow[480];
+    for (u32 i = 0; i < 480; i++) {
+        nt_rows_to_crtrow[i] = -1;
+    }
+    for (u32 i = 0; i < 240; i++) {
+        struct DBGNESROW *row = &this->dbg_data.rows[i];
+        nt_rows_to_crtrow[(i + row->io.y_scroll) % 480] = (i32)i;
+    }
 
     // Draw 4 nametables 2x2
     for (u32 nt_x = 0; nt_x < 2; nt_x++) {
@@ -144,9 +147,11 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
             for (u32 get_tile_y = 0; get_tile_y < 30; get_tile_y++) {
                 for (u32 inner_tile_y = 0; inner_tile_y < 8; inner_tile_y++) {
                     u32 img_x = nt_x * 256;
-                    if ((img_y >= iv->viewport.p[0].y) && (img_y < iv->viewport.p[1].y)) {
-                        row = &this->dbg_data.rows[img_y - iv->viewport.p[0].y];
-                    }
+                    assert(img_y < 480);
+                    int snum = nt_rows_to_crtrow[img_y];
+                    struct DBGNESROW *row = &this->dbg_data.rows[snum == -1 ? 0 : snum];
+                    u32 left = row->io.x_scroll;
+                    u32 right = (row->io.x_scroll + 256) & 0x1FF;
                     u32 bg_pattern_table = row->io.bg_pattern_table;
                     for (u32 get_tile_x = 0; get_tile_x < 32; get_tile_x++) {
                         u32 addr = nt_base_addr + (32 * get_tile_y) + get_tile_x;
@@ -164,12 +169,15 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
                             p0 <<= 1;
                             p1 <<= 1;
                             u32 c = 0xFF000000 | (0x555555 * bclr);
-                            if ((img_y >= iv->viewport.p[0].y) && (img_y <= iv->viewport.p[1].y)) {
-                                if (img_x == iv->viewport.p[0].x) c = 0xFFFF0000;
-                                if (img_x == iv->viewport.p[1].x) c = 0xFF808000;
+                            if ((snum != -1) && (img_x == left)) c = 0xFF00FF00; // green left-hand side
+                            if ((snum != -1) && (img_x == right)) c = 0xFFFF0000; // blue right-hand side
+                            if ((snum == 0) || (snum == 239)) {
+                                if (((right < left) && ((img_x <= right) || (img_x >= left))) || ((img_x <= right) && (img_x >= left))) {
+                                    if (snum == 0) c = 0xFF00FF00;
+                                    if (snum == 239) c = 0xFFFF0000;
+                                }
                             }
-                            if (img_y == iv->viewport.p[0].y) c = 0xFF00FFFF;
-
+                            
                             outbuf[(img_y * out_width) + img_x] = c;
                             img_x++;
                             assert(img_x <= 512);

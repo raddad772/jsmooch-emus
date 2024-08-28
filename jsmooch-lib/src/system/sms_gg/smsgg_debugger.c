@@ -301,14 +301,52 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
     struct image_view *iv = &dview->image;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
 
+    u32 numlines = 240;
+    u32 i;
+    int nt_rows_to_crtrow[240];
+    for (i = 0; i < 240; i++)
+        nt_rows_to_crtrow[i] = -1;
+    i = 0;
+    while(i < numlines) {
+        struct DBGSMSGGROW *row = &this->dbg_data.rows[i];
+        nt_rows_to_crtrow[(i + row->io.vscroll) % 240] = (i32)i;
+        numlines = row->io.num_lines;
+        i++;
+    }
 
+    //u32 top = this->dbg_data.rows[0].io.vscroll;
+    //u32 bottom = this->dbg_data.rows[this->dbg_data.rows[0].io.num_lines - 1].io.vscroll + this->dbg_data.rows[0].io.num_lines - 1
+    // TODO: add vscroll lock
     for (u32 rownum = 0; rownum < 240; rownum++) {
-        struct DBGSMSGGROW *row = &this->dbg_data.rows[rownum];
-        u32 pcolor;
-        u32 *rowptr = &outbuf[rownum * out_width];
+        int snum = nt_rows_to_crtrow[rownum];
+        struct DBGSMSGGROW *row = &this->dbg_data.rows[snum == -1 ? 0 : snum];
+        u32 *rowptr = outbuf + (rownum * out_width);
+        u32 nl = row->io.num_lines - 1;
+        u32 hscroll = (0 - row->io.hscroll) & 0xFF;
+        u32 left = row->io.left_clip ? hscroll + 8 : hscroll;
+        u32 right = hscroll + 255;
+        if (row->io.bg_hscroll_lock) {
+            if (rownum < 16) {
+                left = row->io.left_clip ? 8 : 0;
+                right = 255;
+            }
+        }
+        right &= 0xFF;
+        //u32 r255t = right & 0xFF;
+
         for (u32 x = 0; x < 256; x++) {
             u32 c = get_pcolor(this, x, rownum, row->io.bg_name_table_address, row->io.bg_pattern_table_address, row->io.bg_color_table_address, row->io.num_lines);
-            *rowptr = 0xFF000000 | (c * 0x242424);
+            c = 0xFF000000 | (c * 0x242424);
+
+            if ((snum != -1) && (x == left)) c = 0xFF00FF00; // green left-hand side
+            if ((snum != -1) && (x == right)) c = 0xFFFF0000; // blue right-hand side
+            if ((snum == 0) || (snum == nl)) {
+                if (((right < left) && ((x <= right) || (x >= left))) || ((x <= right) && (x >= left))) {
+                    if (snum == 0) c = 0xFF00FF00;
+                    if (snum == nl) c = 0xFFFF0000;
+                }
+            }
+            *rowptr = c;
             rowptr++;
         }
     }

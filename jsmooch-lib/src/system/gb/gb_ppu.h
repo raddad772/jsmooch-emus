@@ -128,7 +128,6 @@ struct GB_PPU {
         u32 cram_bg_addr;
         u32 cram_obj_increment;
         u32 cram_obj_addr;
-
     } io;
 
     DBG_EVENT_VIEW_ONLY;

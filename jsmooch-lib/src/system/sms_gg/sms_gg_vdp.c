@@ -449,8 +449,8 @@ static void new_scanline(struct SMSGG_VDP* this)
     debugger_report_line(this->bus->dbg.interface, (i32)this->bus->clock.vpos);
     if (this->bus->clock.vpos <= this->bus->clock.timing.rendered_lines) {
         struct DBGSMSGGROW *rw = (&this->bus->dbg_data.rows[this->bus->clock.vpos]);
-        rw->io.hscroll = this->io.hscroll;
-        rw->io.vscroll = this->io.vscroll;
+        rw->io.hscroll = this->latch.hscroll;
+        rw->io.vscroll = this->latch.vscroll;
         rw->io.bg_name_table_address = this->io.bg_name_table_address;
         rw->io.bg_color_table_address = this->io.bg_color_table_address;
         rw->io.bg_pattern_table_address = this->io.bg_pattern_table_address;
@@ -458,6 +458,7 @@ static void new_scanline(struct SMSGG_VDP* this)
         rw->io.bg_hscroll_lock = this->io.bg_hscroll_lock;
         rw->io.bg_vscroll_lock = this->io.bg_vscroll_lock;
         rw->io.num_lines = this->bg_gfx_vlines;
+        rw->io.left_clip = this->io.left_clip;
 
         this->bus->clock.line_counter = (this->bus->clock.line_counter - 1);
         if (this->bus->clock.line_counter < 0) {
