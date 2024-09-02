@@ -775,13 +775,11 @@ static void GB_PPU_IRQ_lylyc_down(struct GB_PPU *this) {
 }
 
 static void GB_PPU_IRQ_mode0_up(struct GB_PPU *this) {
-    if (this->io.STAT_IE & 1) printf("\nMODE0 IRQ UP! frame:%d line:%d", this->clock->master_frame, this->clock->ly);
     this->io.STAT_IF |= 1;
     GB_PPU_eval_STAT(this);
 }
 
 static void GB_PPU_IRQ_mode0_down(struct GB_PPU *this) {
-    if (this->io.STAT_IE & 1) printf("\nMODE0 IRQ DOWN! frame:%d line:%d", this->clock->master_frame, this->clock->ly);
     this->io.STAT_IF &= 0xFE;
     GB_PPU_eval_STAT(this);
 }
@@ -1008,11 +1006,11 @@ static void GB_PPU_OAM_search(struct GB_PPU* this)
 
     for (i = 0; i < 40; i++) {
         if (this->sprites.num == 10) break;
-        u32 sy = this->OAM[this->sprites.search_index] - 16;
-        u32 sy_bottom = sy + (this->io.sprites_big ? 16 : 8);
-        if ((this->clock->ly >= sy) && (this->clock->ly < sy_bottom)) {
+        i32 sy = (i32)this->OAM[this->sprites.search_index] - 16;
+        i32 sy_bottom = sy + (this->io.sprites_big ? 16 : 8);
+        if (((i32)this->clock->ly >= sy) && ((i32)this->clock->ly < sy_bottom)) {
             this->OBJ[this->sprites.num].y = sy;
-            this->OBJ[this->sprites.num].x = this->OAM[this->sprites.search_index + 1] - 1;
+            this->OBJ[this->sprites.num].x = this->OAM[this->sprites.search_index + 1];
             this->OBJ[this->sprites.num].tile = this->OAM[this->sprites.search_index + 2];
             this->OBJ[this->sprites.num].attr = this->OAM[this->sprites.search_index + 3];
             this->OBJ[this->sprites.num].in_q = 0;

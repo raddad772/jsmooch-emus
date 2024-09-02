@@ -129,18 +129,12 @@ void r2A03_run_cycle(RT) {
         return;
     }
     // TODO: put both of these either before or after the cycle, and re-do emu sync issues if any occur
+    M6502_cycle(&this->cpu);
     if (!this->cpu.pins.RW) {
         this->cpu.pins.D = this->nes->bus.CPU_read(this->nes, this->cpu.pins.Addr, this->cpu.pins.D, 1);
-        if (this->tracing) {
-            //dbg.traces.add(TRACERS.M6502, this->clock->trace_cycles, trace_format_read('MOS', MOS_COLOR, this->clock->trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
-        }
     }
-    M6502_cycle(&this->cpu);
     if (this->cpu.pins.RW) {
         this->nes->bus.CPU_write(this->nes, this->cpu.pins.Addr, this->cpu.pins.D);
-        if (this->tracing) {
-            //dbg.traces.add(TRACERS.M6502, this->clock->trace_cycles, trace_format_write('MOS', MOS_COLOR, this->clock->trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
-        }
     }
 }
 

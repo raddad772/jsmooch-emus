@@ -460,12 +460,14 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->fps_override_hint = 60;
 
     d->pixelometry.cols.left_hblank = 0;
-    d->pixelometry.cols.right_hblank = 640;
-    d->pixelometry.cols.visible = 168;
+    d->pixelometry.cols.right_hblank = 168;
+    d->pixelometry.cols.visible = 640;
+    d->pixelometry.cols.max_visible = 640;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 480;
+    d->pixelometry.rows.max_visible = 480;
     d->pixelometry.rows.bottom_vblank = 48;
     d->pixelometry.offset.y = 0;
 

@@ -454,6 +454,9 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
         case SYS_ATARI2600:
             atari2600_present(display, out_buf, out_width, out_height);
             break;
+        case SYS_APPLEIIe:
+            apple2_present(display, out_buf, x_offset, y_offset, out_width, out_height);
+            break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
             zx_spectrum_present(display, out_buf, out_width, out_height);

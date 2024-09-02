@@ -122,6 +122,11 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gameboy", BASE_PATH);
             mfs_add("gbc_bios.bin", BIOS_PATH, BIOSes);
             break;
+        case SYS_APPLEIIe:
+            has_bios = 1;
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/apple2", BASE_PATH);
+            mfs_add("apple2e.rom", BIOS_PATH, BIOSes);
+            break;
         case SYS_ZX_SPECTRUM_48K:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/zx_spectrum", BASE_PATH);
@@ -205,6 +210,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/nes", BASER_PATH);
             *worked = 1;
             break;
+        case SYS_APPLEIIe:
+            snprintf(out, out_sz, "%s/appleii", BASER_PATH);
+            *worked = 1;
+            break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
             snprintf(out, out_sz, "%s/zx_spectrum", BASER_PATH);
@@ -274,6 +283,7 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
         case SYS_MAC512K:
         case SYS_MAC128K:
         case SYS_MACPLUS_1MB:
+        case SYS_APPLEIIe:
             for (u32 i = 0; i < cvec_len(IOs); i++) {
                 pio = (struct physical_io_device*)cvec_get(IOs, i);
                 if (pio->kind == HID_DISC_DRIVE) {
@@ -505,7 +515,7 @@ void full_system::load_default_ROM()
     assert(sys);
     switch(which) {
         case SYS_NES:
-            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
             break;
         case SYS_SMS1:
         case SYS_SMS2:
@@ -519,7 +529,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "wario3.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "cgb-acid-hell.gbc", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
@@ -535,6 +545,9 @@ void full_system::load_default_ROM()
             break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
+            worked = 1;
+            break;
+        case SYS_APPLEIIe:
             worked = 1;
             break;
         case SYS_GENESIS:
@@ -634,7 +647,7 @@ void full_system::setup_display()
     assert(wgpu_device);
 
     // Determine final output resolution
-    u32 wh = get_closest_pow2(MAX(p->cols.visible, p->rows.visible));
+    u32 wh = get_closest_pow2(MAX(p->cols.max_visible, p->rows.max_visible));
     output.backbuffer_texture.setup(wgpu_device, "emulator backbuffer", wh, wh);
 
     u32 overscan_x_offset = p->overscan.left;

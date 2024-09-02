@@ -16,7 +16,6 @@ void image_view_init(struct image_view *this)
 
 void image_view_delete(struct image_view *this)
 {
-    printf("\nBUF DELETE!");
     buf_delete(&this->img_buf[0]);
     buf_delete(&this->img_buf[1]);
 }

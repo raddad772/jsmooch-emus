@@ -11,6 +11,7 @@
 #include "cpu-test-generators/sh4_test_generator.h"
 #include "cpu-tests/sh4-tests.h"
 #include "cpu-tests/m68000-tests.h"
+#include "helper-tests/dasm-range-tests.h"
 #include "helper-tests/scheduler-tests.h"
 #include "helpers/debug.h"
 #include "helpers/bitbuffer.h"
@@ -88,5 +89,6 @@ int main()
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();
     //test_m68000();
-    test_bitbuf();
+    //test_bitbuf();
+    test_dasm_ranges();
 }

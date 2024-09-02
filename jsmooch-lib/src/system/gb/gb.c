@@ -162,11 +162,13 @@ static void setup_lcd(struct JSM_DISPLAY *d)
 
     d->pixelometry.cols.left_hblank = 80; // for OAM search
     d->pixelometry.cols.visible = 160;
+    d->pixelometry.cols.max_visible = 160;
     d->pixelometry.cols.right_hblank = 216;
     d->pixelometry.offset.x = 80;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 144;
+    d->pixelometry.rows.max_visible = 144;
     d->pixelometry.rows.bottom_vblank = 10;
     d->pixelometry.offset.y = 0;
 

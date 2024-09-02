@@ -211,11 +211,13 @@ static void setup_crt(struct JSM_DISPLAY *d)
     // 512x342 visible
     d->pixelometry.cols.left_hblank = 0;
     d->pixelometry.cols.visible = 512;
+    d->pixelometry.cols.max_visible = 512;
     d->pixelometry.cols.right_hblank = 192;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 342;
+    d->pixelometry.rows.max_visible = 342;
     d->pixelometry.rows.bottom_vblank = 28;
     d->pixelometry.offset.y = 0;
 

@@ -62,6 +62,8 @@ public:
     struct debugger_interface dbgr{};
     struct system_io inputs;
     struct cvec dasm_rows{};
+    bool has_played_once{};
+    bool enable_debugger{};
     u32 worked;
     WGPUDevice        wgpu_device;
 

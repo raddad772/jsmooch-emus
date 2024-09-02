@@ -16,21 +16,21 @@
 
 #define THIS struct ZXSpectrum* this
 
-void ZXSpectrumJ_play(JSM);
-void ZXSpectrumJ_pause(JSM);
-void ZXSpectrumJ_stop(JSM);
-void ZXSpectrumJ_get_framevars(JSM, struct framevars* out);
-void ZXSpectrumJ_reset(JSM);
-void ZXSpectrumJ_killall(JSM);
-u32 ZXSpectrumJ_finish_frame(JSM);
-u32 ZXSpectrumJ_finish_scanline(JSM);
-u32 ZXSpectrumJ_step_master(JSM, u32 howmany);
-void ZXSpectrumJ_load_BIOS(JSM, struct multi_file_set* mfs);
-void ZXSpectrumJ_enable_tracing(JSM);
-void ZXSpectrumJ_disable_tracing(JSM);
-void ZXSpectrumJ_describe_io(JSM, struct cvec* IOs);
+static void ZXSpectrumJ_play(JSM);
+static void ZXSpectrumJ_pause(JSM);
+static void ZXSpectrumJ_stop(JSM);
+static void ZXSpectrumJ_get_framevars(JSM, struct framevars* out);
+static void ZXSpectrumJ_reset(JSM);
+static void ZXSpectrumJ_killall(JSM);
+static u32 ZXSpectrumJ_finish_frame(JSM);
+static u32 ZXSpectrumJ_finish_scanline(JSM);
+static u32 ZXSpectrumJ_step_master(JSM, u32 howmany);
+static void ZXSpectrumJ_load_BIOS(JSM, struct multi_file_set* mfs);
+static void ZXSpectrumJ_enable_tracing(JSM);
+static void ZXSpectrumJ_disable_tracing(JSM);
+static void ZXSpectrumJ_describe_io(JSM, struct cvec* IOs);
 
-u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr);
+static u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr);
 
 static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this);
 static void ZXSpectrumJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
@@ -206,7 +206,7 @@ static void cpu_writemem(struct ZXSpectrum* this, u16 addr, u8 val)
     this->bank.RAM[(addr >> 14)][addr & 0x3FFF] = (u8)val;
 }
 
-u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr)
+static u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr)
 {
     struct ZXSpectrum* this = (struct ZXSpectrum*)ptr;
     return cpu_readmem(this, addr);
@@ -433,11 +433,13 @@ static void setup_crt48(struct JSM_DISPLAY *d)
 
     d->pixelometry.cols.left_hblank = 0;
     d->pixelometry.cols.visible = 352;
+    d->pixelometry.cols.max_visible = 352;
     d->pixelometry.cols.right_hblank = 96;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 304;
+    d->pixelometry.rows.max_visible = 304;
     d->pixelometry.rows.bottom_vblank = 8;
     d->pixelometry.offset.y = 0;
 
@@ -533,31 +535,31 @@ static void setup_crt128(struct JSM_DISPLAY *d)
     this->ula.display = &((struct physical_io_device *)cpg(this->ula.display_ptr))->display;
 }
 
-void ZXSpectrumJ_enable_tracing(JSM)
+static void ZXSpectrumJ_enable_tracing(JSM)
 {
     // TODO
     assert(1==0);
 }
 
-void ZXSpectrumJ_disable_tracing(JSM)
+static void ZXSpectrumJ_disable_tracing(JSM)
 {
     // TODO
     assert(1==0);
 }
 
-void ZXSpectrumJ_play(JSM)
+static void ZXSpectrumJ_play(JSM)
 {
 }
 
-void ZXSpectrumJ_pause(JSM)
+static void ZXSpectrumJ_pause(JSM)
 {
 }
 
-void ZXSpectrumJ_stop(JSM)
+static void ZXSpectrumJ_stop(JSM)
 {
 }
 
-void ZXSpectrumJ_get_framevars(JSM, struct framevars* out)
+static void ZXSpectrumJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.frames_since_restart;
@@ -565,7 +567,7 @@ void ZXSpectrumJ_get_framevars(JSM, struct framevars* out)
     out->scanline = this->ula.screen_y;
 }
 
-void ZXSpectrumJ_reset(JSM)
+static void ZXSpectrumJ_reset(JSM)
 {
     JTHIS;
     Z80_reset(&this->cpu);
@@ -588,12 +590,12 @@ void ZXSpectrumJ_reset(JSM)
 }
 
 
-void ZXSpectrumJ_killall(JSM)
+static void ZXSpectrumJ_killall(JSM)
 {
 
 }
 
-u32 ZXSpectrumJ_finish_frame(JSM)
+static u32 ZXSpectrumJ_finish_frame(JSM)
 {
     JTHIS;
     u32 current_frame = this->clock.frames_since_restart;
@@ -606,7 +608,7 @@ u32 ZXSpectrumJ_finish_frame(JSM)
     return this->ula.display->last_written;
 }
 
-u32 ZXSpectrumJ_finish_scanline(JSM)
+static u32 ZXSpectrumJ_finish_scanline(JSM)
 {
     JTHIS;
     u32 current_y = this->clock.ula_y;
@@ -661,7 +663,7 @@ static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this)
     }
 }
 
-u32 ZXSpectrumJ_step_master(JSM, u32 howmany)
+static u32 ZXSpectrumJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
     i32 todo = (howmany >> 1);
@@ -676,7 +678,7 @@ u32 ZXSpectrumJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void ZXSpectrumJ_load_BIOS(JSM, struct multi_file_set* mfs)
+static void ZXSpectrumJ_load_BIOS(JSM, struct multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;

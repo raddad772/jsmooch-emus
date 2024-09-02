@@ -53,6 +53,9 @@ struct jsm_system* new_system(enum jsm_systems which)
         case SYS_DREAMCAST:
             DC_new(out);
             break;
+        case SYS_APPLEIIe:
+            apple2_new(out);
+            break;
         case SYS_ZX_SPECTRUM_48K:
             ZXSpectrum_new(out, ZXS_spectrum48);
             break;
@@ -96,6 +99,9 @@ void jsm_delete(struct jsm_system* jsm)
             break;
         case SYS_DREAMCAST:
             DC_delete(jsm);
+            break;
+        case SYS_APPLEIIe:
+            apple2_delete(jsm);
             break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:

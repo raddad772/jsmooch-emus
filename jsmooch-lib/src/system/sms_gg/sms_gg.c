@@ -139,11 +139,13 @@ static void setup_crt_sms(struct JSM_DISPLAY *d)
 
     d->pixelometry.cols.left_hblank = 12;
     d->pixelometry.cols.visible = 256;
+    d->pixelometry.cols.max_visible = 256;
     d->pixelometry.cols.right_hblank = 74;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 192;
+    d->pixelometry.rows.max_visible = 192;
     d->pixelometry.rows.bottom_vblank = 70;
     d->pixelometry.offset.y = 0;
 
@@ -164,11 +166,13 @@ void setup_lcd_gg(struct JSM_DISPLAY *d)
 
     d->pixelometry.cols.left_hblank = 12;
     d->pixelometry.cols.visible = 256;
+    d->pixelometry.cols.max_visible = 256;
     d->pixelometry.cols.right_hblank = 74;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 192;
+    d->pixelometry.rows.max_visible = 192;
     d->pixelometry.rows.bottom_vblank = 70;
     d->pixelometry.offset.y = 0;
 

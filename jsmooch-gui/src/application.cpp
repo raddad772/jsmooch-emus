@@ -113,6 +113,158 @@ static void update_input(struct full_system* fsys, ImGuiIO& io) {
     //}
 }
 
+static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
+{
+    if (ImGui::Begin(fsys.sys->label)) {
+        ImGui::Checkbox("2x Zoom", &fsys.output.zoom);
+        ImGui::SameLine();
+        ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
+        ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
+        ImGui::Text("FPS: %.1f", io.Framerate);
+        ImGui::End();
+    }
+}
+
+static void render_event_view(struct full_system &fsys)
+{
+    if (fsys.events.view && ImGui::Begin("Event Viewer")) {
+        static bool ozoom = true;
+        ImGui::Checkbox("2x Zoom", &ozoom);
+        fsys.events_view_present();
+        ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.zoom_sz_for_display(ozoom ? 2  : 1), fsys.events.texture.uv0, fsys.events.texture.uv1, {1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0});
+        static bool things_open[50];
+        static float color_edits[50*10][3];
+        u32 idx = 0;
+        for (u32 cati = 0; cati < cvec_len(&fsys.events.view->categories); cati++) {
+            auto *cat = (struct event_category *)cvec_get(&fsys.events.view->categories, cati);
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+            if (ImGui::TreeNodeEx(cat->name, flags)) {
+                for (u32 evi = 0; evi < cvec_len(&fsys.events.view->events); evi++) {
+                    auto *event = (struct debugger_event *)cvec_get(&fsys.events.view->events, evi);
+                    if (event->category_id == cat->id) {
+                        color_edits[idx][0] = (float)(event->color & 0xFF) / 255.0;
+                        color_edits[idx][1] = (float)((event->color >> 8) & 0xFF) / 255.0;
+                        color_edits[idx][2] = (float)((event->color >> 16) & 0xFF) / 255.0;
+                        ImGui::ColorEdit3(event->name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
+                        idx++;
+                    }
+                }
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::End(); // end window
+    }
+}
+
+static void render_disassembly_views(struct full_system &fsys, bool update_dasm_scroll) {
+    if (fsys.dasm && fsys.enable_debugger && fsys.has_played_once && ImGui::Begin("Disassembly View")) {
+        static ImGuiTableFlags flags =
+                ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
+                ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
+
+
+        static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+        static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+
+        struct disassembly_vars dv = fsys.dasm->get_disassembly_vars.func(fsys.dasm->get_disassembly_vars.ptr,
+                                                                          &fsys.dbgr, fsys.dasm);
+        // void (*func)(void *, struct debugger_interface *, struct disassembly_view *, u32 start_addr, u32 lines);
+        u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, fsys.dasm, dv.address_of_executing_instruction, 20,
+                                                     40, &fsys.dasm_rows);
+        u32 numcols = (fsys.dasm ? fsys.dasm->has_context ? 3 : 2 : 2);
+
+        // When using ScrollX or ScrollY we need to specify a size for our table container!
+        // Otherwise by default the table will fit all available space, like a BeginChild() call.
+        ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 80, TEXT_BASE_HEIGHT * 20);
+        if (ImGui::BeginTable("table_dasm", numcols, flags, outer_size)) {
+            ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+            ImGui::TableSetupColumn("addr", ImGuiTableColumnFlags_None);
+            ImGui::TableSetupColumn("disassembly", ImGuiTableColumnFlags_None);
+            if (numcols == 3) ImGui::TableSetupColumn("context at last execution", ImGuiTableColumnFlags_None);
+            ImGui::TableHeadersRow();
+            ImGuiListClipper clipper;
+            if (update_dasm_scroll) {
+                float scrl = clipper.ItemsHeight * (cur_line_num - 2);
+                float cur_scroll = ImGui::GetScrollY();
+                if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
+                    ImGui::SetScrollY(scrl);
+            }
+            clipper.Begin(100);
+            while (clipper.Step()) {
+                for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                    ImGui::TableNextRow();
+                    auto *strs = (struct disassembly_entry_strings *) cvec_get(&fsys.dasm_rows, row);
+
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Selectable(strs->addr, row == cur_line_num,
+                                      ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+                    //ImGui::Text("%s", strs->addr);
+
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("%s", strs->dasm);
+                    //ImGui::Selectable(strs->dasm, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+
+                    if (numcols == 3) {
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::Text("%s", strs->context);
+                    }
+                }
+            }
+            ImGui::EndTable();
+            fsys.dasm->fill_view.func(fsys.dasm->fill_view.ptr, &fsys.dbgr, fsys.dasm);
+
+            ImGui::SameLine();
+            outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
+            if (ImGui::BeginTable("table_registers", 2, flags, outer_size)) {
+                ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                ImGui::TableSetupColumn("register", ImGuiTableColumnFlags_None);
+                ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_None);
+                ImGui::TableHeadersRow();
+
+                ImGuiListClipper clipper;
+                clipper.Begin((int) cvec_len(&fsys.dasm->cpu.regs));
+                while (clipper.Step()) {
+                    for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                        ImGui::TableNextRow();
+                        auto *ctx = (struct cpu_reg_context *) cvec_get(&fsys.dasm->cpu.regs, row);
+
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Text("%s", ctx->name);
+
+                        ImGui::TableSetColumnIndex(1);
+                        char rndr[50];
+                        cpu_reg_context_render(ctx, rndr, sizeof(rndr));
+                        ImGui::Text("%s", rndr);
+                    }
+                }
+                ImGui::EndTable();
+
+            }
+
+        }
+        ImGui::End();
+    }
+}
+
+static void render_image_views(struct full_system &fsys)
+{
+    for (auto &myv: fsys.images) {
+        if (ImGui::Begin(myv.view->image.label)) {
+            fsys.image_view_present(myv.view, myv.texture);
+            ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
+            ImGui::End();
+        }
+    }
+}
+
+
+static void render_debug_views(struct full_system &fsys, ImGuiIO& io, bool update_dasm_scroll)
+{
+    render_event_view(fsys);
+    render_disassembly_views(fsys, update_dasm_scroll);
+    render_image_views(fsys);
+}
 
 // Main code
 int main(int, char**)
@@ -141,8 +293,8 @@ int main(int, char**)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    //enum jsm_systems which = SYS_GBC;
-    enum jsm_systems which = SYS_DMG;
+    enum jsm_systems which = SYS_GBC;
+    //enum jsm_systems which = SYS_DMG;
     //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_MAC512K;
@@ -198,7 +350,7 @@ int main(int, char**)
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    bool has_played_once = false;
+    fsys.has_played_once = false;
     //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
@@ -233,23 +385,7 @@ int main(int, char**)
     //IM_ASSERT(font != nullptr);
 #endif
 
-    /*
-    std::vector<uint8_t> pixels(4 * 512 * 512);
-    for (uint32_t i = 0; i < 512; ++i) {
-        for (uint32_t j = 0; j < 512; ++j) {
-            uint8_t *p = &pixels[4 * (j * 512 + i)];
-            p[0] = (uint8_t)(i >> 1); // r
-            p[1] = (uint8_t)(j >> 1); // g
-            p[2] = 128; // b
-            p[3] = 255; // a
-        }
-    }
-    //backbuffer.upload_data(pixels.data(), pixels.size(), 512, 512);*/
-
-
     // Our state
-    bool show_demo_window = false;
-    bool show_another_window = true;
     static int done_break = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     fsys.wgpu_device = wgpu_device;
@@ -305,7 +441,7 @@ int main(int, char**)
 
         framevars start_fv = fsys.get_framevars();
 
-        static bool enable_debugger = true;
+        fsys.enable_debugger = true;
 
         // Update the system
         if (dbg.do_break) {
@@ -318,18 +454,19 @@ int main(int, char**)
             fsys.do_frame();
             last_frame_was_whole = true;
             fsys.events_view_present();
-            has_played_once = true;
+            fsys.has_played_once = true;
         }
         fsys.present();
 
-        // 1. Show playback controls
+        render_emu_window(fsys, io);
+
         {
             static int steps[3] = { 10, 1, 1 };
             bool play_pause = false;
             bool step_clocks = false, step_scanlines = false, step_seconds = false;
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-            if (ImGui::BeginChild("Event Viewer Events", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
+            if (ImGui::BeginChild("Playback Controls", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
                 play_pause = ImGui::Button("Play/pause");
 
                 step_clocks = ImGui::Button("Step");
@@ -378,29 +515,6 @@ int main(int, char**)
             ImGui::Text("X,Y:%d,%d", fv.x, fv.scanline);
         }
 
-        // Main emu window
-        if (ImGui::Begin(fsys.sys->label)) {
-            ImGui::Checkbox("2x Zoom", &fsys.output.zoom);
-            ImGui::SameLine();
-            ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
-
-
-
-            //ImGui::Text("This is some useful text.");                     // Display some text (you can use a format strings too)
-            ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
-
-            /*ImGui::SliderFloat("float", &f, 0.0f, 1.0f);                  // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color);       // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                                  // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-            */
-            ImGui::Text("FPS: %.1f", io.Framerate);
-            ImGui::End();
-        }
-
         framevars end_fv = fsys.get_framevars();
         bool update_dasm_scroll = false;
         if (start_fv.master_cycle != end_fv.master_cycle) {
@@ -408,136 +522,9 @@ int main(int, char**)
             update_dasm_scroll = true;
         }
 
-        // disassembly view
-        if (fsys.dasm && enable_debugger && has_played_once && ImGui::Begin("Disassembly View")) {
-            static ImGuiTableFlags flags =
-                    ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
-                    ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
+        // disassembly+ view
+        render_debug_views(fsys, io, update_dasm_scroll);
 
-            //PushStyleCompact();
-            //ImGui::CheckboxFlags("ImGuiTableFlags_ScrollY", &flags, ImGuiTableFlags_ScrollY);
-            //PopStyleCompact();
-            static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
-            static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
-
-            struct disassembly_vars dv = fsys.dasm->get_disassembly_vars.func(fsys.dasm->get_disassembly_vars.ptr,
-                                                                              &fsys.dbgr, fsys.dasm);
-            // void (*func)(void *, struct debugger_interface *, struct disassembly_view *, u32 start_addr, u32 lines);
-            u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, fsys.dasm, dv.address_of_executing_instruction, 20,
-                                                         40, &fsys.dasm_rows);
-            u32 numcols = (fsys.dasm ? fsys.dasm->has_context ? 3 : 2 : 2);
-
-            // When using ScrollX or ScrollY we need to specify a size for our table container!
-            // Otherwise by default the table will fit all available space, like a BeginChild() call.
-            ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 80, TEXT_BASE_HEIGHT * 20);
-            if (ImGui::BeginTable("table_dasm", numcols, flags, outer_size)) {
-                ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                ImGui::TableSetupColumn("addr", ImGuiTableColumnFlags_None);
-                ImGui::TableSetupColumn("disassembly", ImGuiTableColumnFlags_None);
-                if (numcols == 3) ImGui::TableSetupColumn("context at last execution", ImGuiTableColumnFlags_None);
-                ImGui::TableHeadersRow();
-                ImGuiListClipper clipper;
-                if (update_dasm_scroll) {
-                    float scrl = clipper.ItemsHeight * (cur_line_num - 2);
-                    float cur_scroll = ImGui::GetScrollY();
-                    if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
-                        ImGui::SetScrollY(scrl);
-                }
-                clipper.Begin(100);
-                while (clipper.Step()) {
-                    for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
-                        ImGui::TableNextRow();
-                        auto *strs = (struct disassembly_entry_strings *) cvec_get(&fsys.dasm_rows, row);
-
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Selectable(strs->addr, row == cur_line_num,
-                                          ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
-                        //ImGui::Text("%s", strs->addr);
-
-                        ImGui::TableSetColumnIndex(1);
-                        ImGui::Text("%s", strs->dasm);
-                        //ImGui::Selectable(strs->dasm, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
-
-                        if (numcols == 3) {
-                            ImGui::TableSetColumnIndex(2);
-                            ImGui::Text("%s", strs->context);
-                        }
-                    }
-                }
-                ImGui::EndTable();
-                fsys.dasm->fill_view.func(fsys.dasm->fill_view.ptr, &fsys.dbgr, fsys.dasm);
-
-                ImGui::SameLine();
-                outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
-                if (ImGui::BeginTable("table_registers", 2, flags, outer_size)) {
-                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("register", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_None);
-                    ImGui::TableHeadersRow();
-
-                    ImGuiListClipper clipper;
-                    clipper.Begin((int)cvec_len(&fsys.dasm->cpu.regs));
-                    while (clipper.Step()) {
-                        for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
-                            ImGui::TableNextRow();
-                            auto *ctx = (struct cpu_reg_context *)cvec_get(&fsys.dasm->cpu.regs, row);
-
-                            ImGui::TableSetColumnIndex(0);
-                            ImGui::Text("%s", ctx->name);
-
-                            ImGui::TableSetColumnIndex(1);
-                            char rndr[50];
-                            cpu_reg_context_render(ctx, rndr, sizeof(rndr));
-                            ImGui::Text("%s", rndr);
-                        }
-                    }
-                    ImGui::EndTable();
-
-                }
-
-            }
-            ImGui::End();
-        }
-
-        for (auto &myv: fsys.images) {
-            if (ImGui::Begin(myv.view->image.label)) {
-                fsys.image_view_present(myv.view, myv.texture);
-                ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
-                ImGui::End();
-            }
-        }
-
-        if (fsys.events.view && ImGui::Begin("Event Viewer")) {
-            static bool ozoom = true;
-            ImGui::Checkbox("2x Zoom", &ozoom);
-            fsys.events_view_present();
-            ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.zoom_sz_for_display(ozoom ? 2  : 1), fsys.events.texture.uv0, fsys.events.texture.uv1, {1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0});
-            static bool things_open[50];
-            static float color_edits[50*10][3];
-            u32 idx = 0;
-            for (u32 cati = 0; cati < cvec_len(&fsys.events.view->categories); cati++) {
-                auto *cat = (struct event_category *)cvec_get(&fsys.events.view->categories, cati);
-                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-                if (ImGui::TreeNodeEx(cat->name, flags)) {
-                    for (u32 evi = 0; evi < cvec_len(&fsys.events.view->events); evi++) {
-                        auto *event = (struct debugger_event *)cvec_get(&fsys.events.view->events, evi);
-                        if (event->category_id == cat->id) {
-                            color_edits[idx][0] = (float)(event->color & 0xFF) / 255.0;
-                            color_edits[idx][1] = (float)((event->color >> 8) & 0xFF) / 255.0;
-                            color_edits[idx][2] = (float)((event->color >> 16) & 0xFF) / 255.0;
-                            ImGui::ColorEdit3(event->name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
-                            idx++;
-                        }
-                    }
-                    ImGui::TreePop();
-                }
-            }
-
-            //ImGui::EndChild(); // end sub-window
-            //ImGui::PopStyleVar();
-
-            ImGui::End(); // end window
-        }
 
         // Rendering
         ImGui::Render();

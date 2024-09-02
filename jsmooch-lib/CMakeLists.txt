@@ -229,6 +229,16 @@ add_library(jsmooch-lib
         src/helpers/debugger/debuggerdefs.h
         src/helpers/debugger/image.c
         src/helpers/debugger/image.h
+        src/system/apple2/apple2.c
+        src/system/apple2/apple2.h
+        src/system/apple2/apple2_internal.h
+        src/helpers/simplebuf.c
+        src/helpers/simplebuf.h
+        src/system/apple2/apple2_internal.c
+        src/system/apple2/iou.c
+        src/system/apple2/iou.h
+        src/system/apple2/mmu.c
+        src/system/apple2/mmu.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

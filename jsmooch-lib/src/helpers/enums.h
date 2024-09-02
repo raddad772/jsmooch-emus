@@ -19,7 +19,7 @@ enum jsm_systems {
     SYS_MAC128K,
     SYS_MAC512K,
     SYS_MACPLUS_1MB,
-    SYS_APPLEII
+    SYS_APPLEIIe
 };
 
 enum jsm_regions {

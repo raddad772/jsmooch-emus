@@ -94,6 +94,8 @@ enum JKEYS {
     JK_NUM_STAR,
     JK_NUM_LOCK,
     JK_NUM_CLEAR,
+    JK_ESC,
+    JK_CTRL,
 
     // Digital button common IDs, for defaults
     DBCID_begin,
@@ -179,11 +181,15 @@ struct JSM_DISPLAY_PIXELOMETRY {
     struct {
         u32 left_hblank, right_hblank;
         u32 visible;
+
+        u32 max_visible;
     } cols;
 
     struct {
         u32 top_vblank, bottom_vblank;
         u32 visible;
+
+        u32 max_visible;
     } rows;
 
     struct { // Visible area not seen
