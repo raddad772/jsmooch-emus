@@ -9,6 +9,7 @@
 #include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
+#include "system/apple2/apple2.h"
 #include "system/mac/mac.h"
 #include "helpers/debug.h"
 #include "stdio.h"

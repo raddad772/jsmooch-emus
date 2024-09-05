@@ -165,6 +165,10 @@ enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {
             return ImGuiKey_KeypadEqual;
         case JK_NONE:
             return ImGuiKey_None;
+        case JK_ESC:
+            return ImGuiKey_Escape;
+        case JK_CTRL:
+            return ImGuiKey_LeftCtrl;
         default:
             break;
     }

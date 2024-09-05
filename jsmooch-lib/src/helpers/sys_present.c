@@ -89,6 +89,23 @@ void mac512k_present(struct physical_io_device *device, void *out_buf, u32 out_w
     }
 }
 
+void apple2_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height)
+{
+    u16* ibuf = (u16 *)device->display.output[device->display.last_written];
+    u32* img32 = calc_start_pos(out_buf, x_offset, y_offset, out_width);
+    u32 stride = calc_stride(out_width, 280);
+    for (u32 y = 0; y < 192; y++) {
+        for (u32 x = 0; x < 280; x++) {
+            u8* iptr = (void *)ibuf + ((y * 280) + x);
+            u32 c = 0;
+            if (*iptr) c = 0xFFFFFF;
+            *img32 = 0xFF000000 | c;
+            img32++;
+        }
+        img32 += stride;
+    }
+}
+
 void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->display.output[device->display.last_written];

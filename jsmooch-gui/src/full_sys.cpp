@@ -88,6 +88,7 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
 {
     char BIOS_PATH[255];
     char BASE_PATH[255];
+    char ALT_PATH[255];
     const char *homeDir = getenv("HOME");
 
     if (!homeDir) {
@@ -126,6 +127,7 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/apple2", BASE_PATH);
             mfs_add("apple2e.rom", BIOS_PATH, BIOSes);
+            mfs_add("apple2e_video.rom", BIOS_PATH, BIOSes);
             break;
         case SYS_ZX_SPECTRUM_48K:
             has_bios = 1;
@@ -649,6 +651,7 @@ void full_system::setup_display()
     // Determine final output resolution
     u32 wh = get_closest_pow2(MAX(p->cols.max_visible, p->rows.max_visible));
     output.backbuffer_texture.setup(wgpu_device, "emulator backbuffer", wh, wh);
+    printf("\nMAX COLS:%d ROWS:%d POW2:%d", p->cols.max_visible, p->rows.max_visible, wh);
 
     u32 overscan_x_offset = p->overscan.left;
     u32 overscan_width = p->cols.visible - (p->overscan.left + p->overscan.right);

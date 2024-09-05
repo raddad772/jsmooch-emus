@@ -55,12 +55,41 @@ static void advance_line(struct apple2* this)
     }
 }
 
+enum {
+    gm_text,
+    gm_lores,
+    gm_hires,
+    gm_mixed
+};
+
+static void pixels_lores(struct apple2* this)
+{
+
+}
+
 static void IOU_pixels(struct apple2* this)
 {
     // output 1-14 pixels depending on video mode
     // 1 pixel in LORES, 7 in HIRES or 40COL, and 14 in DOUBLE HIRES or 80COL
-    if (this->iou.io.HIRES) {
+    // HIRES = 280x192, 1 bit per pixel, 7 1-pixel renders
+    // LORES = 40x192, 4 bits per pixel, each is pixel and pixel below it, 7 1-pixel repeats
+    // TEXT = 280x192, 1 bit per pixel, text rendering (7 pix each from rom)
+    //
 
+    if (this->iou.io.MIXED) { // Moxed mode
+        printf("\nWARNING MIXED MODE");
+    }
+    else if (this->iou.io.HIRES) {
+        printf("\nWARNING HIRES MODE");
+    }
+    else if (this->iou.io.TEXT) {
+        printf("\nWARNING TEXT MODE");
+    }
+    else if (!this->iou.io.HIRES) {
+        pixels_lores(this);
+    }
+    else {
+        printf("\nWARNING UNKNOWN MODE");
     }
 }
 
@@ -184,7 +213,7 @@ void apple2_IOU_access_c0xx(struct apple2* this, u32 addr, u32 has_effect, u32 i
         this->iou.io.SPKR ^= 1;
     if (addr < 0xC020)
         *r = apple2_read_keyboard(this);
-    
+
     if (addr3 == 0xC060) {
         // Multiplexed bit...
         u32 addr4 = addr & 7;

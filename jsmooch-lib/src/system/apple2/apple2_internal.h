@@ -63,6 +63,8 @@ struct apple2 {
         u8* cur_output;
         u32 flash, flash_counter;
 
+        struct simplebuf8 ROM;
+
         struct APPLE2IOUIO {
             u32 VBL;
             u32 PAGE2;     // Motherboard RAM read/write

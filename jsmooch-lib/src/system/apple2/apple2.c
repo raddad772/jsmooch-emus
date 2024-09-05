@@ -51,6 +51,8 @@ void apple2_new(JSM)
 
     simplebuf8_init(&this->mmu.RAM);
     simplebuf8_init(&this->mmu.ROM);
+    simplebuf8_init(&this->iou.ROM);
+
     simplebuf8_allocate(&this->mmu.RAM, 64 * 1024);
 
     cvec_ptr_init(&this->iou.display_ptr);
@@ -146,7 +148,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
 
     d->pixelometry.cols.left_hblank = 0;
     d->pixelometry.cols.visible = MAX_WIDTH;
-    d->pixelometry.cols.visible = MAX_WIDTH;
+    d->pixelometry.cols.max_visible = MAX_WIDTH;
     d->pixelometry.cols.right_hblank = 96;
     d->pixelometry.offset.x = 0;
 
@@ -196,6 +198,7 @@ void apple2J_describe_io(JSM, struct cvec *IOs)
     this->iou.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;
     d->display.last_displayed = 1;
+    setup_crt(&d->display);
 
     this->iou.display = &((struct physical_io_device *)cpg(this->iou.display_ptr))->display;
 }
@@ -287,5 +290,9 @@ void apple2J_load_BIOS(JSM, struct multi_file_set* mfs)
     struct buf* b = &mfs->files[0].buf;
     simplebuf8_allocate(&this->mmu.ROM, b->size);
     memcpy(this->mmu.ROM.ptr, b->ptr, b->size);
+
+    b = &mfs->files[1].buf;
+    simplebuf8_allocate(&this->iou.ROM, b->size);
+    memcpy(this->iou.ROM.ptr, b->ptr, b->size);
 }
 
