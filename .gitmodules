@@ -7,3 +7,6 @@
 [submodule "jsmooch-gui/vendor/glfw3webgpu"]
 	path = jsmooch-gui/vendor/glfw3webgpu
 	url = git@github.com:eliemichel/glfw3webgpu.git
+[submodule "jsmooch-gui/vendor/miniaudio"]
+	path = jsmooch-gui/vendor/miniaudio
+	url = https://github.com/raddad772/miniaudio

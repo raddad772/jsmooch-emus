@@ -1,8 +1,9 @@
-#include "stdlib.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "sys_interface.h"
 #include "system/gb/gb.h"
-//#include "system/gb/gb_enums.h"
 #include "system/nes/nes.h"
 #include "system/sms_gg/sms_gg.h"
 #include "system/dreamcast/dreamcast.h"
@@ -12,12 +13,12 @@
 #include "system/apple2/apple2.h"
 #include "system/mac/mac.h"
 #include "helpers/debug.h"
-#include "stdio.h"
 
 struct jsm_system* new_system(enum jsm_systems which)
 {
     dbg_init();
     struct jsm_system* out = malloc(sizeof(struct jsm_system));
+    memset(out, 0, sizeof(struct jsm_system));
     cvec_init(&out->IOs, sizeof(struct physical_io_device), 20);
     cvec_lock_reallocs(&out->IOs);
     out->kind = which;
@@ -69,6 +70,22 @@ struct jsm_system* new_system(enum jsm_systems which)
 	}
     out->describe_io(out, &out->IOs);
     return out;
+}
+
+void jsm_clearfuncs(struct jsm_system *jsm)
+{
+    jsm->finish_frame = NULL;
+    jsm->finish_scanline = NULL;
+    jsm->step_master = NULL;
+    jsm->reset = NULL;
+    jsm->load_BIOS = NULL;
+    jsm->get_framevars = NULL;
+    jsm->play = NULL;
+    jsm->pause = NULL;
+    jsm->stop = NULL;
+    jsm->describe_io = NULL;
+    jsm->setup_debugger_interface = NULL;
+    jsm->set_audiobuf = NULL;
 }
 
 void jsm_delete(struct jsm_system* jsm)

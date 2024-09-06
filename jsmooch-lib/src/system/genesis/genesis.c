@@ -77,10 +77,7 @@ void genesis_new(JSM)
     jsm->step_master = &genesisJ_step_master;
     jsm->reset = &genesisJ_reset;
     jsm->load_BIOS = &genesisJ_load_BIOS;
-    jsm->killall = &genesisJ_killall;
     jsm->get_framevars = &genesisJ_get_framevars;
-    jsm->enable_tracing = &genesisJ_enable_tracing;
-    jsm->disable_tracing = &genesisJ_disable_tracing;
     jsm->play = &genesisJ_play;
     jsm->pause = &genesisJ_pause;
     jsm->stop = &genesisJ_stop;
@@ -106,20 +103,7 @@ void genesis_delete(JSM) {
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *intf)

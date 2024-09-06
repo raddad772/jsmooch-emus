@@ -76,10 +76,7 @@ void apple2_new(JSM)
     jsm->step_master = &apple2J_step_master;
     jsm->reset = &apple2J_reset;
     jsm->load_BIOS = &apple2J_load_BIOS;
-    jsm->killall = &apple2J_killall;
     jsm->get_framevars = &apple2J_get_framevars;
-    jsm->enable_tracing = &apple2J_enable_tracing;
-    jsm->disable_tracing = &apple2J_disable_tracing;
     jsm->play = &apple2J_play;
     jsm->pause = &apple2J_pause;
     jsm->stop = &apple2J_stop;
@@ -102,20 +99,7 @@ void apple2_delete(JSM)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static void apple2J_setup_debugger_interface(JSM, struct debugger_interface *intf)

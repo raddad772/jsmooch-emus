@@ -30,6 +30,12 @@ struct SMSGG {
     struct SMSGG_mapper_sega mapper;
     struct SN76489 sn76489;
 
+    struct {
+        double master_cycles_per_audio_sample;
+        double next_sample_cycle;
+        struct audiobuf *buf;
+    } audio;
+
     u32 display_enabled;
     u32 tracing;
 
@@ -56,6 +62,10 @@ struct SMSGG {
         DBG_CPU_REG_START *A, *B, *C, *D, *E, *HL, *F, *AF_, *BC_, *DE_, *HL_, *PC, *SP, *IX, *IY, *EI, *HALT, *CE DBG_CPU_REG_END
         DBG_EVENT_VIEW
         DBG_IMAGE_VIEW(nametables)
+        DBG_WAVEFORM_START
+        DBG_WAVEFORM_MAIN
+        DBG_WAVEFORM_CHANS(4)
+        DBG_WAVEFORM_END
     DBG_END
 
     struct {

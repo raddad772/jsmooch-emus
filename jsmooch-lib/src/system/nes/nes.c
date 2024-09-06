@@ -68,10 +68,7 @@ void NES_new(JSM)
     jsm->step_master = &NESJ_step_master;
     jsm->reset = &NESJ_reset;
     jsm->load_BIOS = &NESJ_load_BIOS;
-    jsm->killall = &NESJ_killall;
     jsm->get_framevars = &NESJ_get_framevars;
-    jsm->enable_tracing = &NESJ_enable_tracing;
-    jsm->disable_tracing = &NESJ_disable_tracing;
     jsm->play = &NESJ_play;
     jsm->pause = &NESJ_pause;
     jsm->stop = &NESJ_stop;
@@ -104,20 +101,7 @@ void NES_delete(JSM)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)

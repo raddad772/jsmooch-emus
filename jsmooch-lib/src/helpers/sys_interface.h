@@ -9,6 +9,7 @@ extern "C" {
 #include "enums.h"
 #include "buf.h"
 #include "cvec.h"
+#include "helpers/audiobuf.h"
 
 enum JSM_filekind {
     ROM,
@@ -89,18 +90,15 @@ struct jsm_system {
     u32 (*step_master)(struct jsm_system* jsm, u32);
     void (*reset)(struct jsm_system* jsm);
     void (*load_BIOS)(struct jsm_system* jsm, struct multi_file_set* mfs);
-    void (*killall)(struct jsm_system* jsm);
     void (*describe_io)(struct jsm_system *jsm, struct cvec* IOs);
     void (*get_framevars)(struct jsm_system* jsm, struct framevars* out);
 
-    void (*enable_tracing)(struct jsm_system* jsm);
-    void (*disable_tracing)(struct jsm_system* jsm);
+    void (*sideload)(struct jsm_system* jsm, struct multi_file_set* mfs);
 
+    void (*set_audiobuf)(struct jsm_system* jsm, struct audiobuf *ab);
     void (*play)(struct jsm_system* jsm);
     void (*pause)(struct jsm_system* jsm);
     void (*stop)(struct jsm_system* jsm);
-
-    void (*sideload)(struct jsm_system* jsm, struct multi_file_set* mfs);
 
     void (*setup_debugger_interface)(struct jsm_system* jsm, struct debugger_interface *intf);
 
@@ -108,7 +106,8 @@ struct jsm_system {
 };
 
 struct jsm_system* new_system(enum jsm_systems which);
-void jsm_delete(struct jsm_system* which);
+void jsm_delete(struct jsm_system*);
+void jsm_clearfuncs(struct jsm_system*);
 
 #ifdef __cplusplus
 }

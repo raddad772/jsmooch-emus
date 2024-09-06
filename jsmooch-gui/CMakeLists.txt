@@ -11,6 +11,8 @@ add_executable(jsmooch-gui
         src/keymap_translate.h
         src/my_texture.cpp
         src/my_texture.h
+        src/audiowrap.cpp
+        src/audiowrap.h
 )
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 

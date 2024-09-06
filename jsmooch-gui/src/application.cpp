@@ -18,6 +18,8 @@
 #include "full_sys.h"
 #include "helpers/inifile.h"
 
+
+
 //#define STOPAFTERAWHILE
 
 #ifdef __EMSCRIPTEN__
@@ -247,6 +249,45 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
     }
 }
 
+static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
+{
+    fsys.waveform_view_present(wview);
+    if (ImGui::Begin(wview.view->name)) {
+        u32 on_line = 0;
+        for (auto& wf : wview.waveforms) {
+            u32 old_on_line = on_line;
+            switch(wf.wf->kind) {
+                case dwk_main:
+                    on_line += 2;
+                    break;
+                case dwk_channel:
+                    on_line++;
+                    break;
+                default:
+                    assert(1==2);
+            }
+            bool make_new_line = false;
+            switch(on_line) {
+                case 1:
+                    break;
+                case 3:
+                case 2:
+                    if (old_on_line == 0) break;
+                    make_new_line = true;
+                    break;
+                default:
+                    assert(1==2);
+            }
+            if (!make_new_line) ImGui::SameLine();
+            if (on_line >= 2) on_line = 0;
+            ImGui::BeginChild(wf.wf->name, ImVec2(wf.wf->samples_requested, wf.height));
+            ImGui::Image(wf.tex.for_image(), wf.tex.sz_for_display, wf.tex.uv0, wf.tex.uv1);
+            ImGui::EndChild();
+        }
+    }
+    ImGui::End();
+}
+
 static void render_image_views(struct full_system &fsys)
 {
     for (auto &myv: fsys.images) {
@@ -264,6 +305,9 @@ static void render_debug_views(struct full_system &fsys, ImGuiIO& io, bool updat
     render_event_view(fsys);
     render_disassembly_views(fsys, update_dasm_scroll);
     render_image_views(fsys);
+    for (auto &wv : fsys.waveform_views) {
+        render_waveform_view(fsys, wv);
+    }
 }
 
 // Main code
@@ -294,10 +338,10 @@ int main(int, char**)
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_GBC;
-    enum jsm_systems which = SYS_APPLEIIe;
+    //enum jsm_systems which = SYS_APPLEIIe;
     //enum jsm_systems which = SYS_DMG;
     //enum jsm_systems which = SYS_NES;
-    //enum jsm_systems which = SYS_SMS2;
+    enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
 
@@ -461,6 +505,7 @@ int main(int, char**)
 
         render_emu_window(fsys, io);
 
+        // debug controls window
         {
             static int steps[3] = { 10, 1, 1 };
             bool play_pause = false;

@@ -493,6 +493,28 @@ void full_system::setup_wgpu()
     setup_display();
 }
 
+void full_system::setup_audio()
+{
+    u32 srate = 0;
+    for (u32 i = 0; i < cvec_len(&sys->IOs); i++) {
+        struct physical_io_device *pio = (struct physical_io_device *)cvec_get(&sys->IOs, i);
+
+        switch(pio->kind) {
+            case HID_AUDIO_CHANNEL:
+                audiochans.push_back(&pio->audio_channel);
+                srate = pio->audio_channel.sample_rate;
+                break;
+        }
+    }
+    if (audiochans.empty()) {
+        printf("\nNo audio channel found in full_sys!");
+        return;
+    }
+    printf("\nUsing sample rate %d", srate);
+    audio.init_wrapper(audiochans.size(), srate);
+    audio.configure_for_fps(60);
+}
+
 void full_system::setup_bios()
 {
     enum jsm_systems which = sys->kind;
@@ -567,6 +589,23 @@ void full_system::load_default_ROM()
     mfs_delete(&ROMs);
 }
 
+void full_system::add_waveform_view(u32 idx)
+{
+    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    struct WVIEW myv;
+    myv.view = &dview->waveform;
+    auto *wv = (struct waveform_view *)&dview->waveform;
+    for (u32 i = 0; i < cvec_len(&wv->waveforms); i++) {
+        WFORM wf;
+        wf.enabled = true;
+        wf.height = 50;
+        wf.wf = (struct debug_waveform *)cvec_get(&wv->waveforms, i);
+        myv.waveforms.push_back(wf);
+    }
+
+    waveform_views.push_back(myv);
+}
+
 void full_system::add_image_view(u32 idx)
 {
     auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
@@ -592,8 +631,11 @@ void full_system::setup_debugger_interface()
             case dview_image:
                 add_image_view(i);
                 break;
-            default:
+            case dview_waveforms:
+                add_waveform_view(i);
                 break;
+            default:
+                assert(1==2);
         }
     }
 }
@@ -602,7 +644,6 @@ void full_system::setup_debugger_interface()
 void full_system::setup_system(enum jsm_systems which)
 {
     // Create our emulator
-
     sys = new_system(which);
 
     assert(sys);
@@ -624,6 +665,8 @@ void full_system::setup_system(enum jsm_systems which)
     fsys.sys->sideload(sys, &sideload_image);
     mfs_delete(&sideload_image);
 #endif
+
+    setup_audio();
 
     sys->reset(sys);
     setup_debugger_interface();
@@ -757,6 +800,38 @@ void full_system::events_view_present()
 
 }
 
+void full_system::waveform_view_present(struct WVIEW &wv)
+{
+    for (auto& wf : wv.waveforms) {
+        printf("\nINIT TEXTURE FOR %s %d", wf.wf->name, wf.tex.is_good);
+        if (!wf.tex.is_good) {
+            u32 szpo2 = 1024;
+            assert(wgpu_device);
+            wf.tex.setup(wgpu_device, wf.wf->name, szpo2, szpo2);
+            assert(wf.tex.is_good);
+            wf.tex.uv0 = ImVec2(0, 0);
+            wf.drawbuf.resize(1024*1024*4);
+        }
+
+        memset(wf.drawbuf.data(), 0xFF, 1024*1024*4);
+        float hrange = wf.height / 2.0f;
+        printf("\nRENDERING %s: %dx%d", wf.wf->name, wf.wf->samples_rendered, wf.height);
+        u32 *ptr = (u32 *)(wf.drawbuf.data());
+        if (wf.wf->samples_rendered > 0) {
+            float *b = (float *)wf.wf->buf.ptr;
+            for (u32 x = 0; x < wf.wf->samples_rendered; x++) {
+                float fy = hrange * *b;
+                i32 iy = ((i32)floor(fy)) + (i32)hrange;
+                ptr[(iy * 1024) + x] = 0xFFFFFFFF;
+                b++;
+            }
+        }
+        wf.tex.upload_data(wf.drawbuf.data(), 1024*1024*4, 1024, 1024);
+        wf.tex.uv1 = ImVec2((float)wf.wf->samples_rendered / 1024.0f, (float)wf.height / 1024.0f);
+        wf.tex.sz_for_display = ImVec2(wf.wf->samples_rendered, wf.height);
+    }
+}
+
 void full_system::image_view_present(struct debugger_view *dview, struct my_texture &tex)
 {
     struct image_view *iview = &dview->image;
@@ -829,14 +904,43 @@ ImVec2 full_system::output_uv1() const
     return v;
 }
 
-void full_system::do_frame() const {
+void full_system::debugger_pre_frame_waveforms(struct waveform_view *wv)
+{
+
+}
+
+void full_system::debugger_pre_frame() {
+    for (auto &wview : waveform_views) {
+        for (auto &dwe: wview.waveforms) {
+            struct debug_waveform *dw = dwe.wf;
+            switch (dw->kind) {
+                case dwk_none:
+                    assert(1 == 2);
+                    break;
+                case dwk_main:
+                    dw->samples_requested = 400;
+                    break;
+                case dwk_channel:
+                    dw->samples_requested = 200;
+                    break;
+            }
+        }
+    }
+}
+
+void full_system::do_frame() {
     if (sys) {
+        struct audiobuf *b = audio.get_buf_for_emu();
+
         struct framevars fv = {};
-        if (!dbg.do_break)
+        if (!dbg.do_break) {
+            if (b && sys->set_audiobuf) sys->set_audiobuf(sys, b);
+            debugger_pre_frame();
             sys->finish_frame(sys);
+            if (b && sys->set_audiobuf) audio.commit_emu_buffer();
+        }
         sys->get_framevars(sys, &fv);
         //TODO: here
-        //debugger_
     }
     else {
         printf("\nCannot do frame with no system.");

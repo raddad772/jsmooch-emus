@@ -12,6 +12,7 @@
 #include "disassembly.h"
 #include "events.h"
 #include "image.h"
+#include "waveform.h"
 
 enum dvur {
     dvur_frame,
@@ -48,6 +49,7 @@ void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, 
             case dview_null:
             case dview_events:
             case dview_image:
+            case dview_waveforms:
                 break;
             case dview_disassembly: {
                 struct disassembly_view *dview = &dv->disassembly;
@@ -91,6 +93,9 @@ void debugger_view_init(struct debugger_view *this, enum debugger_view_kinds kin
         case dview_memory:
             assert(1==2);
             break;
+        case dview_waveforms:
+            waveform_view_init(&this->waveform);
+            break;
         default:
             assert(1==2);
     }
@@ -113,6 +118,9 @@ void debugger_view_delete(struct debugger_view *this)
             break;
         case dview_memory:
             assert(1==2);
+            break;
+        case dview_waveforms:
+            waveform_view_delete(&this->waveform);
             break;
         default:
             assert(1==2);

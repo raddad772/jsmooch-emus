@@ -21,6 +21,11 @@
 
 #define THIS struct SMSGG* this
 
+static float i16_to_float(i16 val)
+{
+    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
+}
+
 void SMSGGJ_play(JSM) {}
 void SMSGGJ_pause(JSM) {}
 void SMSGGJ_stop(JSM) {}
@@ -41,6 +46,18 @@ u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 {
     struct SMSGG* this = (struct SMSGG*)ptr;
     return SMSGG_bus_read(this, addr, 0, 0);
+}
+
+#define MASTER_CYCLES_PER_FRAME 179208
+void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+{
+    JTHIS;
+    this->audio.buf = ab;
+    if (this->audio.master_cycles_per_audio_sample == 0) {
+        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
+        //printf("\nCYCLES PER AUDIO SAMPLE: %f", this->audio.master_cycles_per_audio_sample);
+        this->audio.next_sample_cycle = 0;
+    }
 }
 
 void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region) {
@@ -91,6 +108,7 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     this->display_enabled = 1;
     this->last_frame = 0;
 
+    this->audio.buf = NULL;
 
     SMSGG_VDP_reset(&this->vdp);
     SN76489_reset(&this->sn76489);
@@ -104,15 +122,13 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     jsm->step_master = &SMSGGJ_step_master;
     jsm->reset = &SMSGGJ_reset;
     jsm->load_BIOS = &SMSGGJ_load_BIOS;
-    jsm->killall = &SMSGGJ_killall;
     jsm->get_framevars = &SMSGGJ_get_framevars;
     jsm->play = &SMSGGJ_play;
     jsm->pause = &SMSGGJ_pause;
     jsm->stop = &SMSGGJ_stop;
-    jsm->enable_tracing = &SMSGGJ_enable_tracing;
-    jsm->disable_tracing = &SMSGGJ_disable_tracing;
     jsm->describe_io = &SMSGGJ_describe_io;
     jsm->sideload = NULL;
+    jsm->set_audiobuf = &SMSGGJ_set_audiobuf;
     jsm->setup_debugger_interface = &SMSGGJ_setup_debugger_interface;
     //SMSGGJ_reset(jsm);
 }
@@ -184,6 +200,14 @@ void setup_lcd_gg(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 24;
 }
 
+static void setup_audio(struct cvec* IOs)
+{
+    struct physical_io_device *pio = cvec_push_back(IOs);
+    pio->kind = HID_AUDIO_CHANNEL;
+    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->sample_rate = 48000;
+}
+
 void SMSGGJ_describe_io(JSM, struct cvec *IOs)
 {
     JTHIS;
@@ -253,6 +277,9 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     d->display.last_written = 1;
     d->display.last_displayed = 1;
 
+    // Audio
+    setup_audio(IOs);
+
     this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
 }
 
@@ -264,20 +291,7 @@ void SMSGG_delete(struct jsm_system* jsm)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 void SMSGGJ_get_framevars(JSM, struct framevars* out)
@@ -415,8 +429,23 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
 #ifdef LYCODER
         if (*this->cpu.trace.cycles > 8000000) break;
 #endif
-        if (dbg.do_break) break;
         this->clock.master_cycles++;
+
+        if (this->audio.buf && (this->clock.master_cycles >= (u64)this->audio.next_sample_cycle)) {
+            this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+            float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
+            //assert(this->audio.buf->upos < this->audio.buf->samples_len);
+            if (this->audio.buf->upos >= this->audio.buf->samples_len) {
+                printf("\nOVERFLOW TO %d", this->audio.buf->upos);
+                this->audio.buf->upos++;
+            }
+            else {
+                *sptr = i16_to_float(SN76489_mix_sample(&this->sn76489));
+                this->audio.buf->upos++;
+            }
+        }
+
+        if (dbg.do_break) break;
 #ifdef LYCODER
     } while (true);
 #else

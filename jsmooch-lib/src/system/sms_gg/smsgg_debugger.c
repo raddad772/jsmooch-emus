@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "helpers/debugger/waveform.h"
+
 #include "component/cpu/z80/z80.h"
 #include "component/cpu/z80/z80_disassembler.h"
 #include "sms_gg.h"
@@ -20,7 +22,6 @@ static void get_dissasembly(void *smsggptr, struct debugger_interface *dbgr, str
     struct SMSGG* this = (struct SMSGG*)smsggptr;
     Z80_disassemble_entry(&this->cpu, entry);
 }
-
 
 static struct disassembly_vars get_disassembly_vars(void *smsggptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
 {
@@ -427,6 +428,49 @@ static void setup_events_view(struct SMSGG* this, struct debugger_interface *dbg
     event_view_begin_frame(this->dbg.events.view);
 }
 
+static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)
+{
+    this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(this->dbg.waveforms.view);
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    sprintf(wv->name, "SN76489");
+
+    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Square 0");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Square 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Square 2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Noise");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+}
+
 void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
@@ -438,4 +482,5 @@ void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_disassembly_view(this, dbgr);
     setup_events_view(this, dbgr);
     setup_debugger_view_nametables(this, dbgr);
+    setup_waveforms(this, dbgr);
 }

@@ -6,6 +6,8 @@
 #include "helpers/debugger/debugger.h"
 
 #include "my_texture.h"
+#include "audiowrap.h"
+
 
 #define MAX_IMAGE_VIEWS 5
 
@@ -48,6 +50,21 @@ struct fssothing {
     float x_size, y_size;
 };
 
+class WFORM {
+public:
+    struct my_texture tex{};
+    bool enabled{};
+    struct debug_waveform *wf{};
+    u32 height{};
+    std::vector<u8> drawbuf{};
+};
+
+class WVIEW {
+public:
+    struct waveform_view *view{};
+    std::vector<struct WFORM> waveforms{};
+};
+
 class IVIEW {
 public:
     bool enabled{};
@@ -60,15 +77,18 @@ struct full_system {
 public:
     struct jsm_system *sys;
     struct debugger_interface dbgr{};
+    std::vector<WVIEW> waveform_views;
+
     struct system_io inputs;
     struct cvec dasm_rows{};
+    std::vector<struct JSM_AUDIO_CHANNEL *> audiochans;
     bool has_played_once{};
     bool enable_debugger{};
     u32 worked;
     WGPUDevice        wgpu_device;
 
     struct disassembly_view *dasm{};
-
+    struct audiowrap audio{};
 
     full_system() {
         wgpu_device = nullptr;
@@ -131,22 +151,28 @@ public:
     [[nodiscard]] ImVec2 output_uv1() const;
     void setup_system(enum jsm_systems which);
     void destroy_system();
-    void do_frame() const;
+    void do_frame();
     struct framevars get_framevars() const;
     void present();
     void events_view_present();
+    void waveform_view_present(struct WVIEW &wv);
     void image_view_present(struct debugger_view *dview, struct my_texture &tex);
     void setup_wgpu();
+    void setup_audio();
     void step_seconds(int num);
     void step_scanlines(int num);
     void step_cycles(int num);
 private:
+    void debugger_pre_frame();
+    void debugger_pre_frame_waveforms(struct waveform_view *wv);
     void setup_ios();
     void load_default_ROM();
     void setup_bios();
     void setup_display();
     void setup_debugger_interface();
     void add_image_view(u32);
+    void add_waveform_view(u32 idx);
+    void waveform_view_present(struct debugger_view *dview, struct WFORM &wf);
 };
 
 void newsys(struct full_system *fsys);

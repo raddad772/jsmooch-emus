@@ -90,10 +90,7 @@ void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
     jsm->step_master = &ZXSpectrumJ_step_master;
     jsm->reset = &ZXSpectrumJ_reset;
     jsm->load_BIOS = &ZXSpectrumJ_load_BIOS;
-    jsm->killall = &ZXSpectrumJ_killall;
     jsm->get_framevars = &ZXSpectrumJ_get_framevars;
-    jsm->enable_tracing = &ZXSpectrumJ_enable_tracing;
-    jsm->disable_tracing = &ZXSpectrumJ_disable_tracing;
     jsm->play = &ZXSpectrumJ_play;
     jsm->pause = &ZXSpectrumJ_pause;
     jsm->stop = &ZXSpectrumJ_stop;
@@ -128,20 +125,7 @@ void ZXSpectrum_delete(JSM)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static void ZXSpectrumJ_setup_debugger_interface(JSM, struct debugger_interface *intf)

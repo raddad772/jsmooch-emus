@@ -84,10 +84,7 @@ void atari2600_new(JSM)
     jsm->step_master = &atari2600J_step_master;
     jsm->reset = &atari2600J_reset;
     jsm->load_BIOS = &atari2600J_load_BIOS;
-    jsm->killall = &atari2600J_killall;
     jsm->get_framevars = &atari2600J_get_framevars;
-    jsm->enable_tracing = &atari2600J_enable_tracing;
-    jsm->disable_tracing = &atari2600J_disable_tracing;
     jsm->play = &atari2600J_play;
     jsm->pause = &atari2600J_pause;
     jsm->stop = &atari2600J_stop;
@@ -106,20 +103,7 @@ void atari2600_delete(JSM)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static void atari2600J_setup_debugger_interface(JSM, struct debugger_interface *intf)

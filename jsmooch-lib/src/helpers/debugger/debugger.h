@@ -23,6 +23,7 @@ enum debugger_view_kinds {
     dview_memory,
     dview_disassembly,
     dview_image,
+    dview_waveforms,
     dview_trace,
     dview_log
 };
@@ -166,7 +167,6 @@ struct debugger_event {
     } display;
 };
 
-
 struct events_view {
     struct cvec events;
 
@@ -197,6 +197,32 @@ struct debugger_update_func {
     void (*func)(struct debugger_interface*, struct debugger_view *, void *, u32);
 };
 
+enum debug_waveform_kinds {
+    dwk_none,
+    dwk_main,
+    dwk_channel
+};
+
+struct debug_waveform {
+    char name[50];
+    u32 samples_requested;
+    u32 samples_rendered;
+    struct buf buf; // height*width. value -1...1
+    enum debug_waveform_kinds kind;
+
+    struct {
+        double next_sample_cycle;
+        double cycle_stride;
+    } user;
+};
+
+struct waveform_view {
+    char name[50];
+    struct cvec waveforms;
+};
+
+
+
 struct image_view {
     char label[50];
     u32 ready_for_display;
@@ -225,6 +251,7 @@ struct debugger_view {
         struct disassembly_view disassembly;
         struct events_view events;
         struct image_view image;
+        struct waveform_view waveform;
     };
 };
 

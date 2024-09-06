@@ -96,10 +96,7 @@ void mac_new(struct jsm_system* jsm, enum mac_variants variant)
     jsm->step_master = &macJ_step_master;
     jsm->reset = &macJ_reset;
     jsm->load_BIOS = &macJ_load_BIOS;
-    jsm->killall = &macJ_killall;
     jsm->get_framevars = &macJ_get_framevars;
-    jsm->enable_tracing = &macJ_enable_tracing;
-    jsm->disable_tracing = &macJ_disable_tracing;
     jsm->play = &macJ_play;
     jsm->pause = &macJ_pause;
     jsm->stop = &macJ_stop;
@@ -134,20 +131,7 @@ void mac_delete(struct jsm_system* jsm)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static u32 mac_keyboard_keymap[77] = {

@@ -239,6 +239,10 @@ add_library(jsmooch-lib
         src/system/apple2/iou.h
         src/system/apple2/mmu.c
         src/system/apple2/mmu.h
+        src/helpers/audiobuf.h
+        src/helpers/audiobuf.c
+        src/helpers/debugger/waveform.c
+        src/helpers/debugger/waveform.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

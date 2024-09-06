@@ -5,6 +5,8 @@
 #ifndef JSMOOCH_EMUS_MY_TEXTURE_H
 #define JSMOOCH_EMUS_MY_TEXTURE_H
 
+#include <stdio.h>
+
 #include "helpers/int.h"
 #include "../vendor/myimgui/imgui.h"
 #include "../vendor/myimgui/backends/imgui_impl_glfw.h"
@@ -12,21 +14,20 @@
 
 struct my_texture {
     struct {
-        WGPUTextureDescriptor desc;
-        WGPUTexture item;
+        WGPUTextureDescriptor desc{};
+        WGPUTexture item{};
     } tex{};
     struct {
-        WGPUTextureViewDescriptor desc;
-        WGPUTextureView item;
+        WGPUTextureViewDescriptor desc{};
+        WGPUTextureView item{};
     } view{};
-    u32 height, width;
+    u32 height{}, width{};
     u32 is_good{};
-    ImVec2 uv0, uv1;
-    ImVec2 sz_for_display;
+    ImVec2 uv0{}, uv1{};
+    ImVec2 sz_for_display{};
     ImVec2 zoom_sz_for_display(float zoom) { return {sz_for_display.x * zoom, sz_for_display.y * zoom}; }
-    WGPUDevice wgpu_device;
+    WGPUDevice wgpu_device{};
 
-    my_texture() { tex.desc = {}; tex.item = nullptr;   view.desc = {}; view.item = nullptr; height = width = 0; wgpu_device = nullptr; }
     ~my_texture() {
         if (tex.item) {
             wgpuTextureDestroy(tex.item);

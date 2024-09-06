@@ -82,12 +82,8 @@ void GB_new(JSM, enum GB_variants variant)
 	jsm->step_master = &GBJ_step_master;
 	jsm->reset = &GBJ_reset;
 	jsm->load_BIOS = &GBJ_load_BIOS;
-	jsm->killall = &GBJ_killall;
 	jsm->get_framevars = &GBJ_get_framevars;
     jsm->describe_io = &GBJ_describe_io;
-
-    jsm->enable_tracing = &GBJ_enable_tracing;
-    jsm->disable_tracing = &GBJ_disable_tracing;
 
 	jsm->play = &GBJ_play;
 	jsm->pause = &GBJ_pause;
@@ -124,20 +120,7 @@ void GB_delete(JSM)
 	//GB_clock_delete(&this->clock);
 
 	free(jsm->ptr);
-	jsm->ptr = NULL;
-
-	jsm->finish_frame = NULL;
-	jsm->finish_scanline = NULL;
-	jsm->step_master = NULL;
-	jsm->reset = NULL;
-	jsm->load_BIOS = NULL;
-	jsm->killall = NULL;
-	jsm->get_framevars = NULL;
-	jsm->play = NULL;
-	jsm->pause = NULL;
-	jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)

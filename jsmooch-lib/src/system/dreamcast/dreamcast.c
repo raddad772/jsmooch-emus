@@ -123,10 +123,7 @@ void DC_new(JSM)
     jsm->step_master = &DCJ_step_master;
     jsm->reset = &DCJ_reset;
     jsm->load_BIOS = &DCJ_load_BIOS;
-    jsm->killall = &DCJ_killall;
     jsm->get_framevars = &DCJ_get_framevars;
-    jsm->enable_tracing = &DCJ_enable_tracing;
-    jsm->disable_tracing = &DCJ_disable_tracing;
     jsm->play = &DCJ_play;
     jsm->pause = &DCJ_pause;
     jsm->stop = &DCJ_stop;
@@ -153,20 +150,7 @@ void DC_delete(struct jsm_system* jsm)
     free(jsm->ptr);
     jsm->ptr = NULL;
 
-    jsm->finish_frame = NULL;
-    jsm->finish_scanline = NULL;
-    jsm->step_master = NULL;
-    jsm->reset = NULL;
-    jsm->load_BIOS = NULL;
-    jsm->killall = NULL;
-    jsm->get_framevars = NULL;
-    jsm->play = NULL;
-    jsm->pause = NULL;
-    jsm->stop = NULL;
-    jsm->enable_tracing = NULL;
-    jsm->disable_tracing = NULL;
-    jsm->describe_io = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm_clearfuncs(jsm);
 }
 
 static void DCJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
