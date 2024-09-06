@@ -49,6 +49,15 @@ u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 }
 
 #define MASTER_CYCLES_PER_FRAME 179208
+static void setup_debug_waveform(struct debug_waveform *dw)
+{
+    if (dw->samples_requested == 0) return;
+    dw->samples_rendered = dw->samples_requested;
+    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.next_sample_cycle = 0;
+    dw->user.buf_pos = 0;
+}
+
 void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
@@ -57,6 +66,11 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
         this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
         //printf("\nCYCLES PER AUDIO SAMPLE: %f", this->audio.master_cycles_per_audio_sample);
         this->audio.next_sample_cycle = 0;
+    }
+
+    setup_debug_waveform(cpg(this->dbg.waveforms.main));
+    for (u32 i = 0; i < 4; i++) {
+        setup_debug_waveform(cpg(this->dbg.waveforms.chan[i]));
     }
 }
 
@@ -444,6 +458,24 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
                 this->audio.buf->upos++;
             }
         }
+
+        struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
+        if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
+            dw->user.next_sample_cycle += dw->user.cycle_stride;
+            ((float *)dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->sn76489));
+        }
+
+        dw = cpg(this->dbg.waveforms.chan[0]);
+        if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
+            for (int j = 0; j < 4; j++) {
+                dw = cpg(this->dbg.waveforms.chan[j]);
+                dw->user.next_sample_cycle += dw->user.cycle_stride;
+                i16 sv = SN76489_sample_channel(&this->sn76489, j);
+                ((float *)dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+            }
+        }
+
+        // Go through some stuff and do some stuff
 
         if (dbg.do_break) break;
 #ifdef LYCODER

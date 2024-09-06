@@ -213,6 +213,7 @@ struct debug_waveform {
     struct {
         double next_sample_cycle;
         double cycle_stride;
+        u32 buf_pos;
     } user;
 };
 

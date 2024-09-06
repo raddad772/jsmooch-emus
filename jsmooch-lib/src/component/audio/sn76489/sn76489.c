@@ -88,6 +88,19 @@ void SN76489_cycle(struct SN76489* this) {
     SN76489_cycle_squares(this);
 }
 
+i16 SN76489_sample_channel(struct SN76489* this, int i)
+{
+    i16 sample = 0;
+    i16 intensity = SMSGG_voltable[this->vol[i]];
+    if (i < 3) { // square wave
+        if (this->sw[i].freq > 7) { // 5 and lower are basically off, and 8-6 should be muted anyway cuz reasons
+            sample = ((this->polarity[i] * 2) - 1) * intensity;
+        }
+    }
+    else sample = ((this->polarity[3] * 2) - 1) * intensity;
+    return sample;
+}
+
 i16 SN76489_mix_sample(struct SN76489* this)
 {
     i16 sample = 0;

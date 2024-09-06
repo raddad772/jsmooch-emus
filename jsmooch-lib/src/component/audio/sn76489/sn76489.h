@@ -36,6 +36,7 @@ struct SN76489 {
 void SN76489_init(struct SN76489*);
 void SN76489_cycle(struct SN76489*);
 i16 SN76489_mix_sample(struct SN76489*);
+i16 SN76489_sample_channel(struct SN76489*, int num);
 void SN76489_reset(struct SN76489*);
 void SN76489_write_data(struct SN76489*, u32 val);
 
