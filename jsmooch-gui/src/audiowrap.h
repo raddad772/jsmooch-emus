@@ -19,6 +19,9 @@ struct audiowrap {
     void commit_emu_buffer();
     struct audiobuf *get_buf_for_emu();
     struct audiobuf *get_buf_for_playback();
+    void pause();
+    void play();
+    bool playing{};
 
     wkrr *w{};
     u32 sample_rate{};

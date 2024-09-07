@@ -24,6 +24,7 @@ void debug_waveform_init(struct debug_waveform *this)
     memset(this, 0, sizeof(struct debug_waveform));
     buf_init(&this->buf);
     buf_allocate(&this->buf, 8192);
+    this->ch_output_enabled = 1;
 }
 
 void debug_waveform_delete(struct debug_waveform *this)

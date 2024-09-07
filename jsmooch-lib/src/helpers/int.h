@@ -60,6 +60,7 @@ typedef double f64;
 #define SIGNe4to32(x) ((((x) >> 3) * 0xFFFFFFF0) | ((x) & 0x0F))
 #define SIGNe8to32(x) (((((x) >> 7) & 1) * 0xFFFFFF00) | ((x) & 0xFF))
 #define SIGNe8to64(x) (((((x) >> 7) & 1) * 0xFFFFFFFFFFFFFF00) | ((x) & 0xFF))
+#define SIGNe11to32(x) (((((x) >> 10) & 1) * 0xFFFFF800) | ((x) & 0xFFF))
 #define SIGNe12to32(x) (((((x) >> 11) & 1) * 0xFFFFF000) | ((x) & 0xFFF))
 #define SIGNe16to32(x) (((((x) >> 15) & 1) * 0xFFFF0000) | ((x) & 0xFFFF))
 

@@ -11,6 +11,7 @@
 #include "gb_ppu.h"
 #include "gb_cpu.h"
 #include "cart.h"
+#include "gb_apu.h"
 
 void GB_new(struct jsm_system* system, enum GB_variants variant);
 void GB_delete(struct jsm_system* system);
@@ -38,6 +39,7 @@ struct GB {
     struct GB_clock clock;
     struct GB_CPU cpu;
     struct GB_PPU ppu;
+    struct GB_APU apu;
     enum GB_variants variant;
 
     struct cvec* IOs;
@@ -50,6 +52,12 @@ struct GB {
 
     struct buf BIOS;
 
+    struct {
+        double master_cycles_per_audio_sample;
+        double next_sample_cycle;
+        struct audiobuf *buf;
+    } audio;
+
     DBG_START
     DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
     DBG_EVENT_VIEW
@@ -57,7 +65,14 @@ struct GB {
     DBG_IMAGE_VIEWS_START
     MDBG_IMAGE_VIEW(nametables)
     MDBG_IMAGE_VIEW(sprites)
+    MDBG_IMAGE_VIEW(tiles)
     DBG_IMAGE_VIEWS_END
+
+    DBG_WAVEFORM_START
+        DBG_WAVEFORM_MAIN
+        DBG_WAVEFORM_CHANS(4)
+    DBG_WAVEFORM_END
+
 
     DBG_END
 

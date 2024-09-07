@@ -15,6 +15,7 @@ struct GB_bus {
 	struct GB_mapper* mapper;
 	struct GB_PPU* ppu;
 	struct GB_CPU* cpu;
+    struct GB_APU* apu;
     struct GB_clock* clock;
     struct GB* gb;
 

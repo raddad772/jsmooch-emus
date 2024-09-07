@@ -65,9 +65,6 @@ inline u32 GB_bus_PPU_read(struct GB_bus* this, u32 addr)
 }
 
 inline void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val) {
-    if ((addr >= 0x4000) && (addr < 0x4020)) {
-        printf("W! %d %d", addr, val);
-    }
     if ((addr >= 0xE000) && (addr < 0xFE00)) addr -= 0x2000;  // Mirror WRAM
 
     if ((addr >= 0x8000) && (addr < 0xA000)) { // VRAM

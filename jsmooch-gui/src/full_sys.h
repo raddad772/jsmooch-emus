@@ -55,6 +55,7 @@ public:
     struct my_texture tex{};
     bool enabled{};
     struct debug_waveform *wf{};
+    bool output_enabled{true};
     u32 height{};
     std::vector<u8> drawbuf{};
 };

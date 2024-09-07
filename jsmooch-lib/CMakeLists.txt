@@ -243,6 +243,8 @@ add_library(jsmooch-lib
         src/helpers/audiobuf.c
         src/helpers/debugger/waveform.c
         src/helpers/debugger/waveform.h
+        src/system/gb/gb_apu.c
+        src/system/gb/gb_apu.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

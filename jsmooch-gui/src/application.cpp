@@ -254,8 +254,10 @@ static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
     fsys.waveform_view_present(wview);
     if (ImGui::Begin(wview.view->name)) {
         u32 on_line = 0;
+        u32 last_kind = 0;
         for (auto& wf : wview.waveforms) {
             u32 old_on_line = on_line;
+            bool make_new_line = false;
             switch(wf.wf->kind) {
                 case dwk_main:
                     on_line += 2;
@@ -266,22 +268,31 @@ static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
                 default:
                     assert(1==2);
             }
-            bool make_new_line = false;
             switch(on_line) {
                 case 1:
                     break;
                 case 3:
+                    make_new_line = true;
+                    break;
                 case 2:
-                    if (old_on_line == 0) break;
+                    //if (old_on_line == 0) break;
                     make_new_line = true;
                     break;
                 default:
                     assert(1==2);
             }
-            if (!make_new_line) ImGui::SameLine();
+            if (last_kind == dwk_main) {
+                on_line = 0;
+            }
+            else if (!make_new_line) ImGui::SameLine();
             if (on_line >= 2) on_line = 0;
-            ImGui::BeginChild(wf.wf->name, ImVec2(wf.wf->samples_requested, wf.height));
-            ImGui::Image(wf.tex.for_image(), wf.tex.sz_for_display, wf.tex.uv0, wf.tex.uv1);
+            last_kind = wf.wf->kind;
+            ImGui::SetNextWindowSizeConstraints(ImVec2(wf.wf->samples_requested, wf.height), ImVec2(wf.wf->samples_requested+20, wf.height+30));
+            if (ImGui::BeginChild(wf.wf->name, ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_None)) {
+                ImGui::Checkbox(wf.wf->name, &wf.output_enabled);
+                wf.wf->ch_output_enabled = wf.output_enabled;
+                ImGui::Image(wf.tex.for_image(), wf.tex.sz_for_display, wf.tex.uv0, wf.tex.uv1);
+            }
             ImGui::EndChild();
         }
     }
@@ -339,9 +350,9 @@ int main(int, char**)
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
-    //enum jsm_systems which = SYS_DMG;
+    enum jsm_systems which = SYS_DMG;
     //enum jsm_systems which = SYS_NES;
-    enum jsm_systems which = SYS_SMS2;
+    //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
 
@@ -528,16 +539,18 @@ int main(int, char**)
                 ImGui::InputInt("frames", &steps[2]);
 
 
-                ImGui::EndChild(); // end sub-window
             }
+            ImGui::EndChild(); // end sub-window
             ImGui::PopStyleVar();
             if (play_pause) {
                 switch(fsys.state) {
                     case FSS_pause:
                         fsys.state = FSS_play;
                         dbg_unbreak();
+                        fsys.audio.pause();
                         break;
                     case FSS_play:
+                        fsys.audio.play();
                         fsys.state = FSS_pause;
                         break;
                 }
@@ -602,10 +615,6 @@ int main(int, char**)
         WGPUCommandBufferDescriptor cmd_buffer_desc = {};
         WGPUCommandBuffer cmd_buffer = wgpuCommandEncoderFinish(encoder, &cmd_buffer_desc);
         WGPUQueue queue = wgpuDeviceGetQueue(wgpu_device);
-
-        // MYXX
-
-        // NOTMYXX
 
         wgpuQueueSubmit(queue, 1, &cmd_buffer);
 

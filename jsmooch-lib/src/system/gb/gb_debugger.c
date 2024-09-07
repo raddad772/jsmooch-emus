@@ -215,6 +215,60 @@ static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
     event_view_begin_frame(this->dbg.events.view);
 }
 
+static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    struct GB *this = (struct GB *) ptr;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 banks = 1;
+    if (this->variant == GBC) banks = 2;
+    for (u32 bank = 0; bank < banks; bank++) {
+        for (u32 tile_set = 0; tile_set < 3; tile_set++) {
+            u32 tilenum = 0;
+            u32 tile_base_addr = (bank * 8192) + (0x800 * tile_set);
+            for (u32 tile_macro_y = 0; tile_macro_y < 16; tile_macro_y++) {
+                for (u32 tile_macro_x = 0; tile_macro_x < 16; tile_macro_x++) {
+                    for (u32 tile_y = 0; tile_y < 8; tile_y++) {
+                        u32 *outptr = outbuf + (((tile_macro_y * 8) + (tile_set * 128) + tile_y) * out_width) + (tile_macro_x * 8) + (bank * 128);
+                        u32 addr = tile_base_addr + ((tilenum << 4) + (tile_y << 1));
+                        u32 bp0 = this->bus.generic_mapper.VRAM[addr];
+                        u32 bp1 = this->bus.generic_mapper.VRAM[addr+1];
+                        for (u32 tile_x = 0; tile_x < 8; tile_x++) {
+                            u32 cv = ((bp0 >> 7) & 1) | ((bp1 >> 6) & 2);
+                            bp0 <<= 1;
+                            bp1 <<= 1;
+                            cv *= 0x555555;
+                            *outptr = 0xFF000000 | cv;
+                            outptr++;
+                        }
+                    }
+                    tilenum++;
+                }
+            }
+        }
+    }
+}
+
+static void setup_debugger_view_tiles(struct GB* this, struct debugger_interface *dbgr) {
+    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.tiles);
+    struct image_view *iv = &dview->image;
+
+    // 384 tiles. 128 (16 tiles) wide, 16 tiles tall,
+    // Color gameboy has a second bank
+    iv->width = 8 * 16;
+    iv->height = 8 * 16 * 3;
+    if (this->variant == GBC) iv->width = (iv->width * 2) + 4;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_tiles;
+
+    sprintf(iv->label, "Tile View");
+}
+
 static void setup_debugger_view_sprites(struct GB* this, struct debugger_interface *dbgr)
 {
     this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
@@ -249,6 +303,50 @@ static void setup_debugger_view_nametables(struct GB* this, struct debugger_inte
     sprintf(iv->label, "Nametable Viewer");
 }
 
+static void setup_waveforms(struct GB* this, struct debugger_interface *dbgr)
+{
+    this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(this->dbg.waveforms.view);
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    sprintf(wv->name, "Audio");
+
+    // 384 8x8 tiles, or 2x for CGB
+    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Channel 0");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Channel 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Channel 2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Channel 3");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+}
+
 
 void GBJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
@@ -261,4 +359,6 @@ void GBJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_events_view(this, dbgr);
     setup_debugger_view_nametables(this, dbgr);
     setup_debugger_view_sprites(this, dbgr);
+    setup_debugger_view_tiles(this, dbgr);
+    setup_waveforms(this, dbgr);
 }

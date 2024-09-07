@@ -120,6 +120,17 @@ void audiowrap::commit_emu_buffer()
     bufs.emu.current = -1;
 }
 
+void audiowrap::pause()
+{
+    playing = false;
+}
+
+void audiowrap::play()
+{
+    playing = true;
+}
+
+
 struct audiobuf *audiowrap::get_buf_for_playback()
 {
     if (!ok) {
@@ -137,7 +148,8 @@ struct audiobuf *audiowrap::get_buf_for_playback()
     }
     if (bufs.emu.len < 1)
     {
-        printf("\nOUT OF AUDIO BUFFERS FOR PLAYBACK!");
+        //if (playing)
+            //printf("\nOUT OF AUDIO BUFFERS FOR PLAYBACK!");
         return nullptr;
     }
     int pos = (int)bufs.emu.head;

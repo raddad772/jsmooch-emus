@@ -539,7 +539,7 @@ void full_system::load_default_ROM()
     assert(sys);
     switch(which) {
         case SYS_NES:
-            worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             break;
         case SYS_SMS1:
         case SYS_SMS2:
@@ -549,11 +549,11 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
             break;
         case SYS_DMG:
-            worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "cgb-acid-hell.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
@@ -598,7 +598,7 @@ void full_system::add_waveform_view(u32 idx)
     for (u32 i = 0; i < cvec_len(&wv->waveforms); i++) {
         WFORM wf;
         wf.enabled = true;
-        wf.height = 50;
+        wf.height = 80;
         wf.wf = (struct debug_waveform *)cvec_get(&wv->waveforms, i);
         myv.waveforms.push_back(wf);
     }
@@ -613,6 +613,7 @@ void full_system::add_image_view(u32 idx)
     myv.enabled = true;
     myv.view = dview;
     images.push_back(myv);
+    printf("\nAdding image view %s: width %d", myv.view->image.label, myv.view->image.width);
 }
 
 void full_system::setup_debugger_interface()
@@ -800,10 +801,31 @@ void full_system::events_view_present()
 
 }
 
+static void draw_box(u32 *ptr, u32 x0, u32 y0, u32 x1, u32 y1, u32 out_width, u32 out_height, u32 color)
+{
+    u32 stride = out_width;
+    u32 *left_ptr = ptr + (y0 * out_width) + x0;
+    u32 *right_ptr = ptr + (y0 * out_width) + x1;
+    for (u32 y = y0; y < y1; y++) {
+        *left_ptr = color;
+        *right_ptr = color;
+        left_ptr += stride;
+        right_ptr += stride;
+    }
+
+    u32 *top_ptr = ptr + (y0 * out_width) + x0;
+    u32 *bottom_ptr = ptr + (y1 * out_width) + x0;
+    for (u32 x = x0; x < x1; x++) {
+        *top_ptr = color;
+        *bottom_ptr = color;
+        top_ptr++;
+        bottom_ptr++;
+    }
+}
+
 void full_system::waveform_view_present(struct WVIEW &wv)
 {
     for (auto& wf : wv.waveforms) {
-        printf("\nINIT TEXTURE FOR %s %d", wf.wf->name, wf.tex.is_good);
         if (!wf.tex.is_good) {
             u32 szpo2 = 1024;
             assert(wgpu_device);
@@ -813,16 +835,27 @@ void full_system::waveform_view_present(struct WVIEW &wv)
             wf.drawbuf.resize(1024*1024*4);
         }
 
-        memset(wf.drawbuf.data(), 0xFF, 1024*1024*4);
+        memset(wf.drawbuf.data(), 0, 1024*1024*4);
+        // Draw box around
+
         float hrange = wf.height / 2.0f;
-        printf("\nRENDERING %s: %dx%d", wf.wf->name, wf.wf->samples_rendered, wf.height);
         u32 *ptr = (u32 *)(wf.drawbuf.data());
+        draw_box(ptr, 0, 0, wf.wf->samples_requested-1, wf.height-1, 1024, 1024, 0xFF808080);
+        i32 last_y = 0;
         if (wf.wf->samples_rendered > 0) {
             float *b = (float *)wf.wf->buf.ptr;
             for (u32 x = 0; x < wf.wf->samples_rendered; x++) {
                 float fy = hrange * *b;
                 i32 iy = ((i32)floor(fy)) + (i32)hrange;
+                if (x != 0) {
+                    u32 starty = iy < last_y ? iy : last_y;
+                    u32 endy = iy > last_y ? iy : last_y;
+                    for (u32 sy = starty; sy <= endy; sy++) {
+                        ptr[(sy * 1024) + x] = 0xFFFFFFFF;
+                    }
+                }
                 ptr[(iy * 1024) + x] = 0xFFFFFFFF;
+                last_y = iy;
                 b++;
             }
         }

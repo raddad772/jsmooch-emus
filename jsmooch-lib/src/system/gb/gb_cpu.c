@@ -455,6 +455,9 @@ static u32 GB_CPU_get_input(struct GB_CPU* this) {
 u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
+    if ((addr >= 0xFF10) && (addr < 0xFF40)) {
+        return GB_APU_read_IO(bus->apu, addr, val, 1);
+    }
     switch(addr) {
         case 0xFF00: // JOYP
             // return not pressed=1 in bottom 4 bits
@@ -513,7 +516,12 @@ u32 GB_CPU_bus_read_IO(struct GB_bus *bus, u32 addr, u32 val)
 void GB_CPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val)
 {
     struct GB_CPU* this = bus->cpu;
+    if ((addr >= 0xFF10) && (addr < 0xFF40)) {
+        GB_APU_write_IO(bus->apu, addr, val);
+        return;
+    }
     switch(addr) {
+
         case 0xFF00: // JOYP
             this->io.JOYP.action_select = (val & 0x20) >> 5;
             this->io.JOYP.direction_select = (val & 0x10) >> 4;

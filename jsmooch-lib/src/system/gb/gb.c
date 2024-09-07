@@ -42,6 +42,34 @@ void GBJ_describe_io(JSM, struct cvec* IOs);
 static void GBIO_unload_cart(JSM);
 static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
 
+#define MASTER_CYCLES_PER_FRAME GB_CYCLES_PER_FRAME
+static void setup_debug_waveform(struct debug_waveform *dw)
+{
+    if (dw->samples_requested == 0) return;
+    dw->samples_rendered = dw->samples_requested;
+    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.buf_pos = 0;
+}
+
+
+void GBJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+{
+    JTHIS;
+    this->audio.buf = ab;
+    if (this->audio.master_cycles_per_audio_sample == 0) {
+        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
+        this->audio.next_sample_cycle = 0;
+        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
+        this->apu.ext_enable = wf->ch_output_enabled;
+    }
+    setup_debug_waveform(cpg(this->dbg.waveforms.main));
+    for (u32 i = 0; i < 4; i++) {
+        setup_debug_waveform(cpg(this->dbg.waveforms.chan[i]));
+        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        this->apu.channels[i].ext_enable = wf->ch_output_enabled;
+    }
+}
+
 void GB_new(JSM, enum GB_variants variant)
 {
 	struct GB* this = (struct GB*)malloc(sizeof(struct GB));
@@ -51,6 +79,7 @@ void GB_new(JSM, enum GB_variants variant)
 	GB_CPU_init(&this->cpu, variant, &this->clock, &this->bus);
 	GB_PPU_init(&this->ppu, variant, &this->clock, &this->bus);
 	GB_cart_init(&this->cart, variant, &this->clock, &this->bus);
+    GB_APU_init(&this->apu, variant, &this->clock, &this->bus);
     buf_init(&this->BIOS);
 
 	this->variant = variant;
@@ -88,6 +117,8 @@ void GB_new(JSM, enum GB_variants variant)
 	jsm->play = &GBJ_play;
 	jsm->pause = &GBJ_pause;
 	jsm->stop = &GBJ_stop;
+
+    jsm->set_audiobuf = &GBJ_set_audiobuf;
 
     jsm->sideload = NULL;
     jsm->setup_debugger_interface = &GBJ_setup_debugger_interface;
@@ -161,6 +192,15 @@ static void setup_lcd(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
+
+static void setup_audio(struct cvec* IOs)
+{
+    struct physical_io_device *pio = cvec_push_back(IOs);
+    pio->kind = HID_AUDIO_CHANNEL;
+    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->sample_rate = 48000;
+}
+
 void GBJ_describe_io(JSM, struct cvec *IOs)
 {
     // TODO guard against more than one init
@@ -227,6 +267,8 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     d->display.last_written = 1;
     d->display.last_displayed = 1;
 
+    setup_audio(IOs);
+
     this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
 }
 
@@ -247,6 +289,47 @@ u32 GBJ_finish_scanline(JSM) {
 	return this->ppu.last_used_buffer ^ 1;
 }
 
+static void sample_audio(struct GB* this)
+{
+    if (this->audio.buf && (this->clock.master_clock >= (u64)this->audio.next_sample_cycle)) {
+        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+        float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
+        //assert(this->audio.buf->upos < this->audio.buf->samples_len);
+        if (this->audio.buf->upos >= this->audio.buf->samples_len) {
+            printf("\nOVERFLOW TO %d", this->audio.buf->upos);
+            this->audio.buf->upos++;
+        }
+        else {
+            *sptr = GB_APU_mix_sample(&this->apu, 0);
+            this->audio.buf->upos++;
+        }
+    }
+
+    struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
+    if (this->clock.master_clock >= dw->user.next_sample_cycle) {
+        if (dw->user.buf_pos < dw->samples_requested) {
+            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_clock, dw->user.next_sample_cycle, dw->user.cycle_stride);
+            dw->user.next_sample_cycle += dw->user.cycle_stride;
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = GB_APU_mix_sample(&this->apu, 1);
+            dw->user.buf_pos++;
+        }
+    }
+
+    dw = cpg(this->dbg.waveforms.chan[0]);
+    if (this->clock.master_clock >= dw->user.next_sample_cycle) {
+        for (int j = 0; j < 4; j++) {
+            dw = cpg(this->dbg.waveforms.chan[j]);
+            if (dw->user.buf_pos < dw->samples_requested) {
+                dw->user.next_sample_cycle += dw->user.cycle_stride;
+                float sv = GB_APU_sample_channel(&this->apu, j);
+                ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
+                dw->user.buf_pos++;
+                assert(dw->user.buf_pos < 410);
+            }
+        }
+    }
+}
+
 u32 GBJ_step_master(JSM, u32 howmany) {
 	JTHIS;
 	this->cycles_left += (i32)howmany;
@@ -257,11 +340,13 @@ u32 GBJ_step_master(JSM, u32 howmany) {
 			this->clock.cycles_left_this_frame += GB_CYCLES_PER_FRAME;
 		if ((this->clock.master_clock & 3) == 0) {
 			GB_CPU_cycle(&this->cpu);
+            GB_APU_cycle(&this->apu);
 			this->clock.cpu_frame_cycle++;
 			this->clock.cpu_master_clock += cpu_step;
-		}
+        }
 		this->clock.master_clock++;
 		GB_PPU_run_cycles(&this->ppu, 1);
+        sample_audio(this);
 		this->clock.ppu_master_clock += 1;
 		this->cycles_left--;
 	}

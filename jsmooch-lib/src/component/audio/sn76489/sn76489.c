@@ -26,6 +26,10 @@ void SN76489_init(struct SN76489* this)
     this->sw[0] = this->sw[1] = this->sw[2] = (struct SN76489_SW) { .counter=0, .freq=0 };
     this->io_kind = 0;
     SN76489_reset(this);
+
+    this->noise.ext_enable = 1;
+    this->sw[0].ext_enable = this->sw[1].ext_enable = this->sw[2].ext_enable = 1;
+    this->ext_enable = 1;
 }
 
 static void SN76489_cycle_squares(struct SN76489* this)
@@ -101,18 +105,19 @@ i16 SN76489_sample_channel(struct SN76489* this, int i)
     return sample;
 }
 
-i16 SN76489_mix_sample(struct SN76489* this)
+i16 SN76489_mix_sample(struct SN76489* this, u32 for_debug)
 {
     i16 sample = 0;
+    if ((!this->ext_enable) && (!for_debug)) return 0;
     for (u32 i = 0; i < 3; i++) {
         i16 intensity = SMSGG_voltable[this->vol[i]];
-        if (this->sw[i].freq > 7) { // 5 and lower are basically off, and 8-6 should be muted anyway cuz reasons
+        if (this->sw[i].ext_enable && (this->sw[i].freq > 7)) { // 5 and lower are basically off, and 8-6 should be muted anyway cuz reasons
             sample += ((this->polarity[i] * 2) - 1) * intensity;
         }
     }
 
     i16 intensity = SMSGG_voltable[this->vol[3]];
-    sample += ((this->polarity[3] * 2) - 1) * intensity;
+    if (this->noise.ext_enable) sample += ((this->polarity[3] * 2) - 1) * intensity;
 
     return sample;
 }

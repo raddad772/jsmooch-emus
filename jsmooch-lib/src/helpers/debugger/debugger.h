@@ -205,6 +205,7 @@ enum debug_waveform_kinds {
 
 struct debug_waveform {
     char name[50];
+    u32 ch_output_enabled;
     u32 samples_requested;
     u32 samples_rendered;
     struct buf buf; // height*width. value -1...1
@@ -284,6 +285,7 @@ void event_view_begin_frame(struct cvec_ptr event_view);
 void debugger_report_event(struct cvec_ptr viewptr, u32 event_id);
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
+void debug_waveform_init(struct debug_waveform *);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)
