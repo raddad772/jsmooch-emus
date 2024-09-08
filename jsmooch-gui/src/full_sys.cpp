@@ -549,6 +549,7 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
             break;
         case SYS_DMG:
+            //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
             worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
@@ -845,7 +846,8 @@ void full_system::waveform_view_present(struct WVIEW &wv)
         if (wf.wf->samples_rendered > 0) {
             float *b = (float *)wf.wf->buf.ptr;
             for (u32 x = 0; x < wf.wf->samples_rendered; x++) {
-                float fy = hrange * *b;
+                float smp = *b;
+                float fy = hrange * smp;
                 i32 iy = ((i32)floor(fy)) + (i32)hrange;
                 if (x != 0) {
                     u32 starty = iy < last_y ? iy : last_y;

@@ -9,6 +9,8 @@
 #include "gb_clock.h"
 #include "gb_bus.h"
 
+static i32 PWR_WAVES[16] = { 0x84, 0x40, 0x43, 0xAA, 0x2D, 0x78, 0x92, 0x3C, 0x60, 0x59, 0x59, 0xB0, 0x34, 0xB8, 0x2E, 0xDA };
+
 void GB_APU_init(struct GB_APU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus)
 {
     memset(this, 0, sizeof(struct GB_APU));
@@ -20,6 +22,8 @@ void GB_APU_init(struct GB_APU* this, enum GB_variants variant, struct GB_clock*
         this->channels[i].ext_enable = 1;
         this->channels[i].number = i;
     }
+    for (u32 i = 0; i < 15; i++)
+        this->channels[3].samples[i] = PWR_WAVES[i];
     this->ext_enable = 1;
 }
 
@@ -39,10 +43,10 @@ static inline u8 read_NRx1(struct GBSNDCHAN *chan)
         case 0:
         case 1:
             r |= chan->wave_duty << 6;
-            r |= (chan->initial_length_timer ^ 0x3F);
+            r |= (chan->length_counter ^ 0x3F);
             return r;
         case 2:
-            return chan->initial_length_timer ^ 0xFF;
+            return chan->length_counter ^ 0xFF;
     }
     assert(1==2);
 }
@@ -55,7 +59,7 @@ static inline u8 read_NRx2(struct GBSNDCHAN *chan)
         case 1:
             r |= chan->env.initial_vol << 4;
             r |= chan->env.direction << 3;
-            r |= chan->env.pace;
+            r |= chan->env.period;
             return r;
         case 2:
             r |= chan->env.initial_vol << 5;
@@ -66,6 +70,14 @@ static inline u8 read_NRx2(struct GBSNDCHAN *chan)
 
 static inline u8 read_NRx3(struct GBSNDCHAN* chan)
 {
+    if (chan->number == 3) {
+        u8 r = 0;
+        r |= chan->divisor;
+        r |= (chan->short_mode << 3);
+        r |= (chan->clock_shift << 4);
+        return r;
+
+    }
     return chan->period & 0xFF;
 }
 
@@ -97,6 +109,14 @@ u8 GB_APU_read_IO(struct GB_APU* this, u32 addr, u8 old_val, u32 has_effect)
             return read_NRx1(C2);
         case 0xFF1C:
             return read_NRx2(C2);
+        case 0xFF1D:
+            return read_NRx3(C2);
+        case 0xFF20:
+            return read_NRx1(C3);
+        case 0xFF21:
+            return read_NRx2(C3);
+        case 0xFF22:
+            return read_NRx3(C3);
         case 0xFF25: // panning
             r |= this->channels[3].left << 7;
             r |= this->channels[2].left << 6;
@@ -118,25 +138,40 @@ u8 GB_APU_read_IO(struct GB_APU* this, u32 addr, u8 old_val, u32 has_effect)
     if ((addr >= 0xFF30) && (addr < 0xFF40)) {
         return 0xFF;
     }
-    return old_val;
+    return 0xFF;
 }
 #undef C0
 #undef C1
 #undef C2
 #undef C3
 
-static inline void trigger_channel(struct GBSNDCHAN* chan)
-{
-    if (!chan->dac_on) return;
-    chan->on = 1;
+static u32 noise_periods[8] = { 8, 16, 32, 48, 64, 80, 96, 112};
+
+static inline void trigger_channel(struct GBSNDCHAN* chan) {
+    chan->on = chan->dac_on;
     chan->env.on = 1;
     chan->period_counter = 0;
-    if (chan->number < 2) {
-        chan->vol = chan->env.initial_vol;
-        chan->env.pace_counter = 0;
-    }
-    if (chan->number == 2) {
-        chan->duty_counter = 0;
+    switch (chan->number) {
+        case 2:
+            chan->length_counter = 256;
+            chan->duty_counter = 0;
+            chan->vol = chan->env.initial_vol;
+            chan->env.period_counter = 0;
+            break;
+        case 0:
+        case 1:
+            chan->length_counter = 64;
+            chan->vol = chan->env.initial_vol;
+            chan->env.period_counter = 0;
+            if (chan->vol == 0) chan->on = 0;
+            break;
+        case 3:
+            chan->period = noise_periods[chan->clock_shift];
+            chan->period_counter = (i32) chan->period;
+            chan->vol = chan->env.initial_vol;
+            chan->duty_counter = 0x7FFF;
+            if (chan->vol == 0) chan->on = 0;
+            break;
     }
 }
 
@@ -153,10 +188,13 @@ static inline void write_NRx1(struct GBSNDCHAN* chan, u8 val)
         case 0:
         case 1:
             chan->wave_duty = (val >> 6) & 3;
-            chan->initial_length_timer = (val & 0x3F) ^ 0x3F;
-            return;
+            [[fallthrough]];
         case 2:
-            chan->initial_length_timer = val ^ 0xFF;
+        case 3: {
+            u32 reload_value = chan->number == 3 ? 256 : 64;
+            u32 mask = reload_value - 1;
+            chan->length_counter = reload_value - (val & mask);
+            return; }
             return;
     }
     assert(1==2);
@@ -167,9 +205,10 @@ static inline void write_NRx2(struct GBSNDCHAN* chan, u8 val)
     switch(chan->number) {
         case 0:
         case 1:
+        case 3:
             chan->env.initial_vol = (val >> 4) & 15;
             chan->env.direction = (val >> 3) & 1;
-            chan->env.pace = val & 7;
+            chan->env.period = val & 7;
             if ((val & 0xF8) == 0) {
                 chan->dac_on = 0;
                 chan->on = 0;
@@ -182,7 +221,7 @@ static inline void write_NRx2(struct GBSNDCHAN* chan, u8 val)
             chan->env.initial_vol = (val >> 5) & 3;
             switch(chan->env.initial_vol) {
                 case 0:
-                    chan->env.rshift = 32;
+                    chan->env.rshift = 4;
                     break;
                 case 1:
                     chan->env.rshift = 0;
@@ -194,6 +233,7 @@ static inline void write_NRx2(struct GBSNDCHAN* chan, u8 val)
                     chan->env.rshift = 2;
                     break;
             }
+            printf("\nCH2 VOL %d", chan->env.rshift);
             return;
     }
 }
@@ -208,6 +248,11 @@ static inline void write_NRx3(struct GBSNDCHAN* chan, u8 val)
         case 2:
             chan->next_period = (chan->next_period & 0x700) | val;
             chan->period = chan->next_period;
+            return;
+        case 3:
+            chan->divisor = val & 7;
+            chan->short_mode = (val >> 3) & 1;
+            chan->clock_shift = (val >> 4) & 15;
             return;
     }
     assert(1==2);
@@ -225,9 +270,12 @@ static inline void write_NRx4(struct GBSNDCHAN *chan, u8 val)
             chan->period = chan->next_period;
             break;
         case 3:
-            assert(1==2);
+            break;
     }
     chan->length_enable = (val >> 6) & 1;
+    if (chan->length_enable) {
+        printf("\nLEN ENABLE FOR CHAN %d", chan->number);
+    }
     if (val & 0x80) {
         trigger_channel(chan);
     }
@@ -270,6 +318,14 @@ void GB_APU_write_IO(struct GB_APU* this, u32 addr, u8 val)
             return write_NRx3(C2);
         case 0xFF1E:
             return write_NRx4(C2);
+        case 0xFF20:
+            return write_NRx1(C3);
+        case 0xFF21:
+            return write_NRx2(C3);
+        case 0xFF22:
+            return write_NRx3(C3);
+        case 0xFF23:
+            return write_NRx4(C3);
         case 0xFF25: // panning
             this->channels[3].left = (val >> 7) & 1;
             this->channels[2].left = (val >> 6) & 1;
@@ -291,7 +347,7 @@ void GB_APU_write_IO(struct GB_APU* this, u32 addr, u8 val)
 }
 
 
-static void tick_sweep_channel(struct GB_APU* this, u32 cnum)
+static void tick_sweep(struct GB_APU* this, u32 cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     if (chan->sweep.pace != 0) {
@@ -315,29 +371,30 @@ static void tick_length_timer(struct GB_APU *this, u32 cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     if (chan->length_enable) {
-        chan->length_counter--;
+        if (chan->number == 3) printf("\nLENGTH! %d", chan->length_counter);
+        chan->length_counter = chan->length_counter - 1;
         if (chan->length_counter <= 0) {
             chan->on = 0;
-            chan->length_counter = chan->initial_length_timer;
+            if (chan->number < 2) chan->duty_counter = 0;
         }
     }
 }
 
 static i32 sq_duty[4][8] = {
-        { 1, 1, 1, 1, 1, 1, 1, 0 }, // 00 - 12.5%
-        { 1, 1, 1, 1, 1, 1, 0, 0 }, // 01 - 25%
-        { 1, 1, 1, 1, 1, 1, 0, 0 }, // 10 - 50%
-        { 1, 1, 0, 0, 0, 0, 0, 0 }, // 11 - 75%
+        { 0, 0, 0, 0, 0, 0, 0, 1 }, // 00 - 12.5%
+        { 1, 0, 0, 0, 0, 0, 0, 1 }, // 01 - 25%
+        { 1, 0, 0, 0, 0, 1, 1, 1 }, // 10 - 50%
+        { 0, 1, 1, 1, 1, 1, 1, 0 }, // 11 - 75%
 };
 
 static void tick_env(struct GB_APU *this, u32 cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
-    if (chan->env.pace != 0 && chan->env.on) {
-        chan->env.pace_counter = (chan->env.pace_counter - 1) & 7;
-        if (chan->env.pace_counter <= 0) {
-            chan->env.pace_counter = chan->env.pace;
-            if (chan->env.direction == 1) {
+    if (chan->env.period != 0 && chan->env.on) {
+        chan->env.period_counter = (chan->env.period_counter - 1) & 7;
+        if (chan->env.period_counter <= 0) {
+            chan->env.period_counter = chan->env.period;
+            if (chan->env.direction == 0) {
                 if (chan->vol > 0) chan->vol--;
                 else chan->env.on = 0;
             }
@@ -372,6 +429,24 @@ static void tick_wave_period_twice(struct GB_APU *this) {
 static void tick_noise_period(struct GB_APU *this)
 {
     struct GBSNDCHAN *chan = &this->channels[3];
+    // clock shift of 14,15 = no clocks really
+    if (chan->on && (chan->clock_shift < 14)) {
+        chan->period_counter--;
+        if (chan->period_counter <= 0) {
+            chan->period_counter = (i32)chan->period;
+            // XOR low two bits
+            u32 flipbits = ~(chan->short_mode ? 0x4040 : 0x4000);
+            u32 lfsr = chan->duty_counter;
+            u32 l2b = lfsr;
+            lfsr >>= 1;
+            l2b = (l2b ^ lfsr) & 1;
+            lfsr &= flipbits;
+            lfsr |= (l2b << 14);
+            if (chan->short_mode) lfsr |= (l2b << 5);
+            chan->duty_counter = lfsr;
+            chan->polarity = (chan->duty_counter & 1) ^ 1;
+        }
+    }
 }
 
 static void tick_pulse_period(struct GB_APU *this, int cnum)
@@ -395,12 +470,12 @@ void GB_APU_cycle(struct GB_APU* this)
     tick_noise_period(this);
     this->clocks.divider_2048--;
     if (this->clocks.divider_2048 <= 0) {
-        this->clocks.divider_2048 = 0;
+        this->clocks.divider_2048 = 2048;
         this->clocks.frame_sequencer = (this->clocks.frame_sequencer + 1) & 7;
         switch(this->clocks.frame_sequencer) {
             case 6:
             case 2:
-                tick_sweep_channel(this, 0);
+                tick_sweep(this, 0);
                 [[fallthrough]];
             case 0:
             case 4:
@@ -429,11 +504,14 @@ float GB_APU_mix_sample(struct GB_APU* this, u32 is_debug)
     for (u32 i = 0; i < 4; i++) {
         chan = &this->channels[i];
         switch(i) {
+            case 3:
             case 0:
             case 1: {
                 if (chan->on && chan->ext_enable) {
-                    float intensity = (1.0f/7.0f) * (float)chan->vol;
+                    float intensity = (1.0f/15.0f) * (float)chan->vol;
                     float sample = ((float) (((i32) chan->polarity * -2) + 1) * intensity);
+                    assert(sample >= -1.0f);
+                    assert(sample <= 1.0f);
                     output += sample * .25f;
                 }
                 break;
@@ -454,6 +532,7 @@ float GB_APU_sample_channel(struct GB_APU* this, int cnum) {
     float output = 0;
 
     switch(cnum) {
+        case 3:
         case 0:
         case 1: {
             if (chan->on) {

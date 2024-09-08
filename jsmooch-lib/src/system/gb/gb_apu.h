@@ -33,7 +33,9 @@ struct GB_APU {
         u32 wave_duty;
         i32 polarity;
         u32 duty_counter;
-        u32 initial_length_timer;
+        u32 short_mode;
+        u32 divisor;
+        u32 clock_shift;
         i32 length_counter;
 
         i32 samples[16];
@@ -47,8 +49,8 @@ struct GB_APU {
         } sweep;
 
         struct GBSNDENVSWEEP {
-            i32 pace;
-            i32 pace_counter;
+            i32 period;
+            i32 period_counter;
             i32 direction;
             u32 initial_vol;
             u32 rshift;

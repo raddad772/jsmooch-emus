@@ -296,7 +296,6 @@ static void sample_audio(struct GB* this)
         float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
         //assert(this->audio.buf->upos < this->audio.buf->samples_len);
         if (this->audio.buf->upos >= this->audio.buf->samples_len) {
-            printf("\nOVERFLOW TO %d", this->audio.buf->upos);
             this->audio.buf->upos++;
         }
         else {
@@ -308,7 +307,6 @@ static void sample_audio(struct GB* this)
     struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
     if (this->clock.master_clock >= dw->user.next_sample_cycle) {
         if (dw->user.buf_pos < dw->samples_requested) {
-            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_clock, dw->user.next_sample_cycle, dw->user.cycle_stride);
             dw->user.next_sample_cycle += dw->user.cycle_stride;
             ((float *) dw->buf.ptr)[dw->user.buf_pos] = GB_APU_mix_sample(&this->apu, 1);
             dw->user.buf_pos++;
