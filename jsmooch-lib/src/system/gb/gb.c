@@ -336,12 +336,13 @@ u32 GBJ_step_master(JSM, u32 howmany) {
 		this->clock.cycles_left_this_frame--;
 		if (this->clock.cycles_left_this_frame <= 0)
 			this->clock.cycles_left_this_frame += GB_CYCLES_PER_FRAME;
-		if ((this->clock.master_clock & 3) == 0) {
-			GB_CPU_cycle(&this->cpu);
-            GB_APU_cycle(&this->apu);
-			this->clock.cpu_frame_cycle++;
-			this->clock.cpu_master_clock += cpu_step;
+        if ((this->clock.turbo && ((this->clock.master_clock & 1) == 0)) || ((this->clock.master_clock & 3) == 0)) {
+            GB_CPU_cycle(&this->cpu);
+            this->clock.cpu_frame_cycle++;
+            this->clock.cpu_master_clock += cpu_step;
         }
+        if ((this->clock.master_clock & 3) == 0)
+            GB_APU_cycle(&this->apu);
 		this->clock.master_clock++;
 		GB_PPU_run_cycles(&this->ppu, 1);
         sample_audio(this);

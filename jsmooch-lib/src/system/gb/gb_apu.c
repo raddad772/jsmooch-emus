@@ -166,7 +166,6 @@ static inline void trigger_channel(struct GBSNDCHAN* chan) {
             if (chan->vol == 0) chan->on = 0;
             break;
         case 3:
-            chan->period = noise_periods[chan->clock_shift];
             chan->period_counter = (i32) chan->period;
             chan->vol = chan->env.initial_vol;
             chan->duty_counter = 0x7FFF;
@@ -253,6 +252,7 @@ static inline void write_NRx3(struct GBSNDCHAN* chan, u8 val)
             chan->divisor = val & 7;
             chan->short_mode = (val >> 3) & 1;
             chan->clock_shift = (val >> 4) & 15;
+            chan->period = (noise_periods[chan->divisor] << chan->clock_shift) >> 2;
             return;
     }
     assert(1==2);
@@ -429,20 +429,17 @@ static void tick_wave_period_twice(struct GB_APU *this) {
 static void tick_noise_period(struct GB_APU *this)
 {
     struct GBSNDCHAN *chan = &this->channels[3];
-    // clock shift of 14,15 = no clocks really
-    if (chan->on && (chan->clock_shift < 14)) {
+    if (chan->on && (chan->clock_shift < 14) && (chan->period != 0)) {
         chan->period_counter--;
         if (chan->period_counter <= 0) {
             chan->period_counter = (i32)chan->period;
-            // XOR low two bits
             u32 flipbits = ~(chan->short_mode ? 0x4040 : 0x4000);
             u32 lfsr = chan->duty_counter;
             u32 l2b = lfsr;
             lfsr >>= 1;
             l2b = (l2b ^ lfsr) & 1;
             lfsr &= flipbits;
-            lfsr |= (l2b << 14);
-            if (chan->short_mode) lfsr |= (l2b << 5);
+            lfsr |= l2b * ~flipbits;
             chan->duty_counter = lfsr;
             chan->polarity = (chan->duty_counter & 1) ^ 1;
         }
