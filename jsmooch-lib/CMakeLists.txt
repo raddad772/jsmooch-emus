@@ -204,6 +204,8 @@ add_library(jsmooch-lib
         src/helpers/file_exists.h
         src/component/audio/ay_3_8910/ay_3_8910.c
         src/component/audio/ay_3_8910/ay_3_8910.h
+        src/component/audio/gb_apu/gb_apu.c
+        src/component/audio/gb_apu/gb_apu.h
         src/component/floppy/generic_floppy.c
         src/component/floppy/generic_floppy.h
         src/component/floppy/mac_floppy.c
@@ -243,8 +245,8 @@ add_library(jsmooch-lib
         src/helpers/audiobuf.c
         src/helpers/debugger/waveform.c
         src/helpers/debugger/waveform.h
-        src/system/gb/gb_apu.c
-        src/system/gb/gb_apu.h
+        src/component/audio/nes_apu/nes_apu.c
+        src/component/audio/nes_apu/nes_apu.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

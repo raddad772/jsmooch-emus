@@ -6,6 +6,8 @@
 #include "helpers/physical_io.h"
 #include "helpers/debugger/debugger.h"
 
+#include "component/audio/gb_apu/gb_apu.h"
+
 #include "gb.h"
 #include "gb_cpu.h"
 #include "gb_ppu.h"
@@ -51,8 +53,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-
-void GBJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+static void GBJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -79,7 +80,8 @@ void GB_new(JSM, enum GB_variants variant)
 	GB_CPU_init(&this->cpu, variant, &this->clock, &this->bus);
 	GB_PPU_init(&this->ppu, variant, &this->clock, &this->bus);
 	GB_cart_init(&this->cart, variant, &this->clock, &this->bus);
-    GB_APU_init(&this->apu, variant, &this->clock, &this->bus);
+    GB_APU_init(&this->apu);
+    this->bus.apu = &this->apu;
     buf_init(&this->BIOS);
 
 	this->variant = variant;

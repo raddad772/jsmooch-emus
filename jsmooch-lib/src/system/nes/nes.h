@@ -5,6 +5,8 @@
 #ifndef JSMOOCH_EMUS_NES_H
 #define JSMOOCH_EMUS_NES_H
 
+#include "component/audio/nes_apu/nes_apu.h"
+
 #include "nes_clock.h"
 #include "nes_bus.h"
 #include "mappers/mapper.h"
@@ -30,9 +32,9 @@ enum NES_TIMINGS {
 
 struct NES {
     struct NES_clock clock;
-    //struct NES_bus bus;
     struct r2A03 cpu;
     struct NES_PPU ppu;
+    struct NES_APU apu;
 
     u32 described_inputs;
     u32 cycles_left;
@@ -42,10 +44,25 @@ struct NES {
     struct NES_mapper bus;
     struct NES_cart cart;
 
+    struct {
+        double master_cycles_per_audio_sample;
+        double next_sample_cycle;
+        struct audiobuf *buf;
+    } audio;
+
     DBG_START
         DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
         DBG_EVENT_VIEW
-        DBG_IMAGE_VIEW(nametables)
+
+        DBG_IMAGE_VIEWS_START
+        MDBG_IMAGE_VIEW(nametables)
+        DBG_IMAGE_VIEWS_END
+
+        DBG_WAVEFORM_START
+            DBG_WAVEFORM_MAIN
+            DBG_WAVEFORM_CHANS(5)
+        DBG_WAVEFORM_END
+
     DBG_END
 
     struct {

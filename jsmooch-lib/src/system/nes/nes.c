@@ -4,9 +4,11 @@
 #include "assert.h"
 #include "stdlib.h"
 #include <stdio.h>
+
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
 #include "helpers/debugger/debugger.h"
+#include "component/audio/nes_apu/nes_apu.h"
 
 #include "nes.h"
 #include "nes_cart.h"
@@ -39,6 +41,35 @@ static u32 read_trace(void *ptr, u32 addr)
     return this->bus.CPU_read(this, addr, 0, 0);
 }
 
+#define APU_CYCLES_PER_FRAME  29780
+
+static void setup_debug_waveform(struct debug_waveform *dw)
+{
+    if (dw->samples_requested == 0) return;
+    dw->samples_rendered = dw->samples_requested;
+    dw->user.cycle_stride = ((float)APU_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.buf_pos = 0;
+}
+
+static void NESJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+{
+    JTHIS;
+    this->audio.buf = ab;
+    if (this->audio.master_cycles_per_audio_sample == 0) {
+        this->audio.master_cycles_per_audio_sample = ((float)APU_CYCLES_PER_FRAME / (float)ab->samples_len);
+        this->audio.next_sample_cycle = 0;
+        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
+        this->apu.ext_enable = wf->ch_output_enabled;
+    }
+    setup_debug_waveform(cpg(this->dbg.waveforms.main));
+    for (u32 i = 0; i < 5; i++) {
+        setup_debug_waveform(cpg(this->dbg.waveforms.chan[i]));
+        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        this->apu.channels[i].ext_enable = wf->ch_output_enabled;
+    }
+}
+
+
 void NES_new(JSM)
 {
     struct NES* this = (struct NES*)malloc(sizeof(struct NES));
@@ -48,6 +79,7 @@ void NES_new(JSM)
     NES_PPU_init(&this->ppu, this);
     NES_cart_init(&this->cart, this);
     NES_mapper_init(&this->bus, this);
+    NES_APU_init(&this->apu);
 
     struct jsm_debug_read_trace dt;
     dt.read_trace = &read_trace;
@@ -72,6 +104,7 @@ void NES_new(JSM)
     jsm->play = &NESJ_play;
     jsm->pause = &NESJ_pause;
     jsm->stop = &NESJ_stop;
+    jsm->set_audiobuf = &NESJ_set_audiobuf;
     jsm->describe_io = &NESJ_describe_io;
     jsm->sideload = NULL;
     jsm->setup_debugger_interface = &NESJ_setup_debugger_interface;
@@ -237,6 +270,7 @@ void NESJ_reset(JSM)
     NES_clock_reset(&this->clock);
     r2A03_reset(&this->cpu);
     NES_PPU_reset(&this->ppu);
+    NES_APU_reset(&this->apu);
 }
 
 
@@ -244,6 +278,46 @@ void NESJ_killall(JSM)
 {
 
 }
+
+static void sample_audio(struct NES* this)
+{
+    if (this->audio.buf && (this->clock.master_clock >= (u64)this->audio.next_sample_cycle)) {
+        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+        float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
+        //assert(this->audio.buf->upos < this->audio.buf->samples_len);
+        if (this->audio.buf->upos >= this->audio.buf->samples_len) {
+            this->audio.buf->upos++;
+        }
+        else {
+            *sptr = NES_APU_mix_sample(&this->apu, 0);
+            this->audio.buf->upos++;
+        }
+    }
+
+    struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
+    if (this->clock.master_clock >= dw->user.next_sample_cycle) {
+        if (dw->user.buf_pos < dw->samples_requested) {
+            dw->user.next_sample_cycle += dw->user.cycle_stride;
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = NES_APU_mix_sample(&this->apu, 1);
+            dw->user.buf_pos++;
+        }
+    }
+
+    dw = cpg(this->dbg.waveforms.chan[0]);
+    if (this->clock.master_clock >= dw->user.next_sample_cycle) {
+        for (int j = 0; j < 5; j++) {
+            dw = cpg(this->dbg.waveforms.chan[j]);
+            if (dw->user.buf_pos < dw->samples_requested) {
+                dw->user.next_sample_cycle += dw->user.cycle_stride;
+                float sv = NES_APU_sample_channel(&this->apu, j);
+                ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
+                dw->user.buf_pos++;
+                assert(dw->user.buf_pos < 410);
+            }
+        }
+    }
+}
+
 
 u32 NESJ_finish_frame(JSM)
 {
@@ -267,6 +341,8 @@ u32 NESJ_finish_scanline(JSM)
         this->clock.master_clock += cpu_step;
         //this->apu.cycle(this->clock.master_clock);
         r2A03_run_cycle(&this->cpu);
+        NES_APU_cycle(&this->apu);
+        sample_audio(this);
         this->bus.cycle(this);
         this->clock.cpu_frame_cycle++;
         this->clock.cpu_master_clock += cpu_step;
@@ -283,6 +359,7 @@ u32 NESJ_finish_scanline(JSM)
     return 0;
 }
 
+
 u32 NESJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
@@ -294,6 +371,8 @@ u32 NESJ_step_master(JSM, u32 howmany)
         //this->apu.cycle(this->clock.master_clock);
         this->clock.master_clock += cpu_step;
         r2A03_run_cycle(&this->cpu);
+        NES_APU_cycle(&this->apu);
+        sample_audio(this);
         this->bus.cycle(this);
         this->clock.cpu_frame_cycle++;
         this->clock.cpu_master_clock += cpu_step;

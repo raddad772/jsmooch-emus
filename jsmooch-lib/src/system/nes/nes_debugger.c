@@ -212,6 +212,59 @@ static void setup_image_view_nametables(struct NES* this, struct debugger_interf
     sprintf(iv->label, "Nametable Viewer");
 }
 
+static void setup_waveforms(struct NES* this, struct debugger_interface *dbgr)
+{
+    this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(this->dbg.waveforms.view);
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    sprintf(wv->name, "Audio");
+
+    // 384 8x8 tiles, or 2x for CGB
+    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Pulse 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Pulse 2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Triangle");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Noise");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "DMC");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+}
+
+
 static void setup_events_view(struct NES* this, struct debugger_interface *dbgr)
 {
     // Setup events view
@@ -258,5 +311,6 @@ void NESJ_setup_debugger_interface(struct jsm_system *jsm, struct debugger_inter
     setup_disassembly_view(this, dbgr);
     setup_events_view(this, dbgr);
     setup_image_view_nametables(this, dbgr);
+    setup_waveforms(this, dbgr);
 }
 

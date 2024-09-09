@@ -2,22 +2,17 @@
 // Created by . on 9/6/24.
 //
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "gb_apu.h"
-#include "gb_clock.h"
-#include "gb_bus.h"
 
 static i32 PWR_WAVES[16] = { 0x84, 0x40, 0x43, 0xAA, 0x2D, 0x78, 0x92, 0x3C, 0x60, 0x59, 0x59, 0xB0, 0x34, 0xB8, 0x2E, 0xDA };
 
-void GB_APU_init(struct GB_APU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus)
+void GB_APU_init(struct GB_APU* this)
 {
     memset(this, 0, sizeof(struct GB_APU));
-    this->bus = bus;
-    this->variant = variant;
-    this->clock = clock;
-    bus->apu = this;
     for (u32 i = 0; i < 4; i++) {
         this->channels[i].ext_enable = 1;
         this->channels[i].number = i;

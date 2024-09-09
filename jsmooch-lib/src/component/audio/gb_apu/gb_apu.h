@@ -6,15 +6,8 @@
 #define JSMOOCH_EMUS_GB_APU_H
 
 #include "helpers/int.h"
-#include "gb_enums.h"
-
-struct GB_clock;
-struct GB_bus;
 
 struct GB_APU {
-    struct GB_clock *clock;
-    struct GB_bus *bus;
-    enum GB_variants variant;
     u32 ext_enable;
 
     struct GBSNDCHAN {
@@ -68,7 +61,7 @@ struct GB_APU {
     } clocks;
 };
 
-void GB_APU_init(struct GB_APU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
+void GB_APU_init(struct GB_APU* this);
 void GB_APU_write_IO(struct GB_APU* this, u32 addr, u8 val);
 u8 GB_APU_read_IO(struct GB_APU* this, u32 addr, u8 old_val, u32 has_effect);
 void GB_APU_cycle(struct GB_APU* this);

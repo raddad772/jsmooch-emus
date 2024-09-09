@@ -18,7 +18,7 @@ void SMSGG_clock_init(struct SMSGG_clock* this, enum jsm_systems variant, enum j
 
         .cpu_divisor = 3,
         .vdp_divisor = 2,
-        .apu_divisor = 40,
+        .apu_divisor = 48, // 50 too low, 46 a little too high,
         .trace_cycles = 0,
         .cpu_frame_cycle = 0,
         .ccounter = 0,

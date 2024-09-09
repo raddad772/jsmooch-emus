@@ -142,6 +142,7 @@ u32 NES_bus_CPU_read_reg(struct NES* nes, u32 addr, u32 val, u32 has_effect)
 {
     struct r2A03* this = &nes->cpu;
     u32 r;
+
     switch(addr) {
         case 0x4016: // JOYSER0
             r = NES_controllerport_data(&this->controller_port1);
@@ -150,6 +151,7 @@ u32 NES_bus_CPU_read_reg(struct NES* nes, u32 addr, u32 val, u32 has_effect)
             r = NES_controllerport_data(&this->controller_port2);
             return r;
     }
+    return NES_APU_read_IO(&nes->apu, addr, val, has_effect);
     //return this->bus.apu.read_IO(addr, val, has_effect);  TODO
     return val;
 }
@@ -168,5 +170,6 @@ void NES_bus_CPU_write_reg(struct NES* nes, u32 addr, u32 val)
             NES_controllerport_latch(&this->controller_port1, val&1);
             return;
     }
+    NES_APU_write_IO(&nes->apu, addr, val);
     //this->bus.apu.write_IO(addr, val);
 }

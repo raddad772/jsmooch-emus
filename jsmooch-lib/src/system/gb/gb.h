@@ -5,13 +5,14 @@
 #include "helpers/sys_interface.h"
 #include "helpers/debugger/debuggerdefs.h"
 
+#include "component/audio/gb_apu/gb_apu.h"
+
 #include "gb_enums.h"
 #include "gb_clock.h"
 #include "gb_bus.h"
 #include "gb_ppu.h"
 #include "gb_cpu.h"
 #include "cart.h"
-#include "gb_apu.h"
 
 void GB_new(struct jsm_system* system, enum GB_variants variant);
 void GB_delete(struct jsm_system* system);
