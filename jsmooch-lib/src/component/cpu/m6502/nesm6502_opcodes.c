@@ -4249,7 +4249,6 @@ static void nesM6502_ins_100_S_RESET(struct M6502_regs *regs, struct M6502_pins 
                 break; }
             case 7: { //cleanup_custom
                 regs->PC |= (pins->D << 8);
-                printf("\nRESET VEC: %04x", regs->PC);
                 // Following is auto-generated code for instruction finish
                 pins->Addr = regs->PC;
                 regs->PC = (regs->PC + 1) & 0xFFFF;

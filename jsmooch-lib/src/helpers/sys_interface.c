@@ -47,6 +47,7 @@ struct jsm_system* new_system(enum jsm_systems which)
         case SYS_NES:
             NES_new(out);
             break;
+        case SYS_SG1000:
         case SYS_SMS1:
         case SYS_SMS2:
         case SYS_GG:
@@ -110,6 +111,7 @@ void jsm_delete(struct jsm_system* jsm)
         case SYS_NES:
             NES_delete(jsm);
             break;
+        case SYS_SG1000:
         case SYS_SMS1:
         case SYS_SMS2:
         case SYS_GG:

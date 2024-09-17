@@ -6,6 +6,7 @@ enum jsm_systems {
 	SYS_GBC,
 	SYS_NES,
 	SYS_SNES,
+    SYS_SG1000,
 	SYS_SMS1,
     SYS_SMS2,
 	SYS_GG,

@@ -131,7 +131,7 @@ void r2A03_run_cycle(RT) {
     // TODO: put both of these either before or after the cycle, and re-do emu sync issues if any occur
     M6502_cycle(&this->cpu);
     if (!this->cpu.pins.RW) {
-        this->cpu.pins.D = this->nes->bus.CPU_read(this->nes, this->cpu.pins.Addr, this->cpu.pins.D, 1);
+        this->cpu.pins.D = this->open_bus = this->nes->bus.CPU_read(this->nes, this->cpu.pins.Addr, this->open_bus, 1);
     }
     if (this->cpu.pins.RW) {
         this->nes->bus.CPU_write(this->nes, this->cpu.pins.Addr, this->cpu.pins.D);

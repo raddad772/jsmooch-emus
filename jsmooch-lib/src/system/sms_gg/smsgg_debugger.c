@@ -441,6 +441,7 @@ static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)
     sprintf(dw->name, "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
+    dw->default_clock_divider = 48;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);

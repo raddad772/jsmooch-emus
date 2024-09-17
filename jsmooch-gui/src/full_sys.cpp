@@ -101,12 +101,6 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
 
     u32 has_bios = 0;
     switch(which) {
-        case SYS_SMS1:
-        case SYS_SMS2:
-            has_bios = 1;
-            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/master_system", BASE_PATH);
-            mfs_add("bios13fx.sms", BIOS_PATH, BIOSes);
-            break;
         case SYS_DREAMCAST:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/dreamcast", BASE_PATH);
@@ -154,6 +148,7 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
             mfs_add("macplus_1mb.rom", BIOS_PATH, BIOSes);
             break;
+        case SYS_SG1000:
         case SYS_PSX:
         case SYS_GENESIS:
         case SYS_SNES:
@@ -161,6 +156,8 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
         case SYS_BBC_MICRO:
         case SYS_GG:
         case SYS_ATARI2600:
+        case SYS_SMS1:
+        case SYS_SMS2:
             has_bios = 0;
             break;
         default:
@@ -187,6 +184,7 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
 
     u32 has_bios = 0;
     switch(which) {
+        case SYS_SG1000:
         case SYS_SMS1:
         case SYS_SMS2:
             snprintf(out, out_sz, "%s/master_system", BASER_PATH);
@@ -539,7 +537,13 @@ void full_system::load_default_ROM()
     assert(sys);
     switch(which) {
         case SYS_NES:
+            //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "240pee.nes", nullptr);
+            break;
+        case SYS_SG1000:
+            worked = grab_ROM(&ROMs, which, "choplifter.sg", nullptr);
             break;
         case SYS_SMS1:
         case SYS_SMS2:
@@ -550,11 +554,13 @@ void full_system::load_default_ROM()
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
@@ -847,7 +853,7 @@ void full_system::waveform_view_present(struct WVIEW &wv)
             float *b = (float *)wf.wf->buf.ptr;
             for (u32 x = 0; x < wf.wf->samples_rendered; x++) {
                 float smp = *b;
-                float fy = hrange * smp;
+                float fy = (hrange * smp) * -1.0f;
                 i32 iy = ((i32)floor(fy)) + (i32)hrange;
                 if (x != 0) {
                     u32 starty = iy < last_y ? iy : last_y;
@@ -886,7 +892,7 @@ void full_system::image_view_present(struct debugger_view *dview, struct my_text
         memset(iview->img_buf[1].ptr, 0, szpo2*szpo2*4);
     }
 
-    iview->update_func.func(&dbgr, dview, iview->update_func.ptr, tex.width);
+    //iview->update_func.func(&dbgr, dview, iview->update_func.ptr, tex.width);
     void *buf = iview->img_buf[iview->draw_which_buf].ptr;
     assert(buf);
 

@@ -26,8 +26,8 @@ struct SMSGG {
     enum jsm_systems variant;
     enum jsm_regions region;
     struct Z80 cpu;
-    struct SMSGG_VDP vdp;
     struct SMSGG_mapper_sega mapper;
+    struct SMSGG_VDP vdp;
     struct SN76489 sn76489;
 
     struct {

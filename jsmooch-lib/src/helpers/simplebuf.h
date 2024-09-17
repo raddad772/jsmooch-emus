@@ -12,13 +12,14 @@ extern "C" {
 
 struct simplebuf8 {
     u8 *ptr;
-    u32 sz;
+    u64 sz;
     u32 mask;
 };
 
 void simplebuf8_init(struct simplebuf8*);
 void simplebuf8_delete(struct simplebuf8*);
 void simplebuf8_allocate(struct simplebuf8*, u64 sz);
+void simplebuf8_clear(struct simplebuf8 *);
 
 
 #ifdef __cplusplus

@@ -283,12 +283,10 @@ void GB_CPU_switch_speed(struct GB_CPU* this)
 {
     if (!this->clock->cgb_enable) return;
     if (this->clock->timing.cpu_divisor == 4) {
-        printf("TURBO ON");
         this->clock->timing.cpu_divisor = 2;
         this->clock->turbo = true;
     }
     else {
-        printf("TURBO OFF");
         this->clock->timing.cpu_divisor = 4;
         this->clock->turbo = false;
     }
@@ -309,7 +307,6 @@ void GB_CPU_cycle(struct GB_CPU* this)
         }
         this->io.speed_switch_cnt--;
         if (this->io.speed_switch_cnt == 0) {
-            printf("SWITCHING SPEED!");
             GB_CPU_switch_speed(this);
             this->io.speed_switch_prepare = 0;
             this->cpu.regs.TCU++;

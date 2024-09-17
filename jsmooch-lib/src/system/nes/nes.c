@@ -57,16 +57,19 @@ static void NESJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = ((float)APU_CYCLES_PER_FRAME / (float)ab->samples_len);
+        printf("\nCYCLES PER FRAME:%d PER SAMPLE:%f", APU_CYCLES_PER_FRAME, this->audio.master_cycles_per_audio_sample);
         this->audio.next_sample_cycle = 0;
         struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
         this->apu.ext_enable = wf->ch_output_enabled;
     }
     setup_debug_waveform(cpg(this->dbg.waveforms.main));
-    for (u32 i = 0; i < 5; i++) {
-        setup_debug_waveform(cpg(this->dbg.waveforms.chan[i]));
+    for (u32 i = 0; i < 4; i++) {
         struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        setup_debug_waveform(wf);
         this->apu.channels[i].ext_enable = wf->ch_output_enabled;
     }
+    struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[4]);
+    this->apu.dmc.ext_enable = wf->ch_output_enabled;
 }
 
 
@@ -80,6 +83,7 @@ void NES_new(JSM)
     NES_cart_init(&this->cart, this);
     NES_mapper_init(&this->bus, this);
     NES_APU_init(&this->apu);
+    this->apu.master_cycles = &this->clock.master_clock;
 
     struct jsm_debug_read_trace dt;
     dt.read_trace = &read_trace;
@@ -166,8 +170,8 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.offset.x = 1;
 
     d->pixelometry.rows.top_vblank = 1;
-    d->pixelometry.rows.visible = 224;
-    d->pixelometry.rows.max_visible = 224;
+    d->pixelometry.rows.visible = 240;
+    d->pixelometry.rows.max_visible = 240;
     d->pixelometry.rows.bottom_vblank = 21;
     d->pixelometry.offset.y = 1;
 
@@ -175,6 +179,14 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->geometry.physical_aspect_ratio.height = 3;
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 8;
+}
+
+static void setup_audio(struct cvec* IOs)
+{
+    struct physical_io_device *pio = cvec_push_back(IOs);
+    pio->kind = HID_AUDIO_CHANNEL;
+    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->sample_rate = 48000;
 }
 
 void NESJ_describe_io(JSM, struct cvec *IOs)
@@ -223,6 +235,8 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     setup_crt(&d->display);
     d->display.last_written = 1;
     d->display.last_displayed = 1;
+
+    setup_audio(IOs);
 
     this->cpu.joypad1.devices = IOs;
     this->cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
@@ -281,17 +295,14 @@ void NESJ_killall(JSM)
 
 static void sample_audio(struct NES* this)
 {
-    if (this->audio.buf && (this->clock.master_clock >= (u64)this->audio.next_sample_cycle)) {
+    this->clock.apu_master_clock++;
+    if (this->audio.buf && (this->clock.apu_master_clock >= (u64)this->audio.next_sample_cycle)) {
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
-        //assert(this->audio.buf->upos < this->audio.buf->samples_len);
-        if (this->audio.buf->upos >= this->audio.buf->samples_len) {
-            this->audio.buf->upos++;
-        }
-        else {
+        if (this->audio.buf->upos <= this->audio.buf->samples_len) {
             *sptr = NES_APU_mix_sample(&this->apu, 0);
-            this->audio.buf->upos++;
         }
+        this->audio.buf->upos++;
     }
 
     struct debug_waveform *dw = cpg(this->dbg.waveforms.main);

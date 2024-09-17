@@ -458,6 +458,7 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
         case SYS_MACPLUS_1MB:
             mac512k_present(display, out_buf, out_width, out_height);
             break;
+        case SYS_SG1000:
         case SYS_SMS1:
         case SYS_SMS2:
             SMS_present(display, out_buf, x_offset, y_offset, out_width, out_height);

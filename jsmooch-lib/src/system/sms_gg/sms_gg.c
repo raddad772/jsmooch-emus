@@ -45,7 +45,7 @@ static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 {
     struct SMSGG* this = (struct SMSGG*)ptr;
-    return SMSGG_bus_read(this, addr, 0, 0);
+    return SMSGG_bus_read(this, addr, 0);
 }
 
 #define MASTER_CYCLES_PER_FRAME 179208
@@ -67,10 +67,12 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
         struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
         this->sn76489.ext_enable = wf->ch_output_enabled;
     }
-    setup_debug_waveform(cpg(this->dbg.waveforms.main));
+    struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
+    setup_debug_waveform(wf);
+    this->clock.apu_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
-        setup_debug_waveform(cpg(this->dbg.waveforms.chan[i]));
-        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        setup_debug_waveform(wf);
         if (i < 3) {
             this->sn76489.sw[i].ext_enable = wf->ch_output_enabled;
         }
@@ -82,6 +84,7 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region) {
     struct SMSGG* this = (struct SMSGG*)malloc(sizeof(struct SMSGG));
     this->tracing = 0;
+    memset(this, 0, sizeof(struct SMSGG));
     SMSGG_clock_init(&this->clock, variant, region);
     SMSGG_VDP_init(&this->vdp, this, variant);
     SMSGG_mapper_sega_init(&this->mapper, variant);
@@ -103,6 +106,11 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     this->io.gg_start = 0;
 
     switch(variant) {
+        case SYS_SG1000:
+            this->cpu_in = &SMSGG_bus_cpu_in_sms1;
+            this->cpu_out = &SMSGG_bus_cpu_out_sms1;
+            snprintf(jsm->label, sizeof(jsm->label), "Sega Game 1000");
+            break;
         case SYS_SMS1:
             this->cpu_in = &SMSGG_bus_cpu_in_sms1;
             this->cpu_out = &SMSGG_bus_cpu_out_sms1;
@@ -361,7 +369,7 @@ static void cpu_cycle(struct SMSGG* this)
 {
     if (this->cpu.pins.RD) {
         if (this->cpu.pins.MRQ) {// read ROM/RAM
-            this->cpu.pins.D = SMSGG_bus_read(this, this->cpu.pins.Addr, this->cpu.pins.D, 1);
+            this->cpu.pins.D = SMSGG_bus_read(this, this->cpu.pins.Addr, 1);
 #ifndef LYCODER
             if (dbg.trace_on) {
                 // Z80(    25)r   0006   $18     TCU:1
@@ -415,6 +423,50 @@ static void poll_pause(struct SMSGG* this)
         SMSGG_notify_NMI(this, this->io.pause_button->state);
 }
 
+static void sample_audio(struct SMSGG* this)
+{
+    if (this->audio.buf && (this->clock.master_cycles >= (u64)this->audio.next_sample_cycle)) {
+        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+        float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
+        //assert(this->audio.buf->upos < this->audio.buf->samples_len);
+        if (this->audio.buf->upos >= this->audio.buf->samples_len) {
+            printf("\nOVERFLOW TO %d", this->audio.buf->upos);
+            this->audio.buf->upos++;
+        }
+        else {
+            *sptr = i16_to_float(SN76489_mix_sample(&this->sn76489, 0));
+            this->audio.buf->upos++;
+        }
+    }
+}
+
+static void debug_audio(struct SMSGG* this)
+{
+    struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
+    if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
+        if (dw->user.buf_pos < dw->samples_requested) {
+            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
+            dw->user.next_sample_cycle += dw->user.cycle_stride;
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->sn76489, 1));
+            dw->user.buf_pos++;
+        }
+    }
+
+    dw = cpg(this->dbg.waveforms.chan[0]);
+    if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
+        for (int j = 0; j < 4; j++) {
+            dw = cpg(this->dbg.waveforms.chan[j]);
+            if (dw->user.buf_pos < dw->samples_requested) {
+                dw->user.next_sample_cycle += dw->user.cycle_stride;
+                i16 sv = SN76489_sample_channel(&this->sn76489, j);
+                ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+                dw->user.buf_pos++;
+                assert(dw->user.buf_pos < 410);
+            }
+        }
+    }
+}
+
 u32 SMSGGJ_step_master(JSM, u32 howmany) {
     JTHIS;
 #ifdef LYCODER
@@ -450,46 +502,8 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
 #endif
         this->clock.master_cycles++;
 
-        if (this->audio.buf && (this->clock.master_cycles >= (u64)this->audio.next_sample_cycle)) {
-            this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-            float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
-            //assert(this->audio.buf->upos < this->audio.buf->samples_len);
-            if (this->audio.buf->upos >= this->audio.buf->samples_len) {
-                printf("\nOVERFLOW TO %d", this->audio.buf->upos);
-                this->audio.buf->upos++;
-            }
-            else {
-                *sptr = i16_to_float(SN76489_mix_sample(&this->sn76489, 0));
-                this->audio.buf->upos++;
-            }
-        }
-
-        struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
-        if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
-            if (dw->user.buf_pos < dw->samples_requested) {
-                //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
-                dw->user.next_sample_cycle += dw->user.cycle_stride;
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->sn76489, 1));
-                dw->user.buf_pos++;
-            }
-        }
-
-        dw = cpg(this->dbg.waveforms.chan[0]);
-        if (this->clock.master_cycles >= dw->user.next_sample_cycle) {
-            for (int j = 0; j < 4; j++) {
-                dw = cpg(this->dbg.waveforms.chan[j]);
-                if (dw->user.buf_pos < dw->samples_requested) {
-                    dw->user.next_sample_cycle += dw->user.cycle_stride;
-                    i16 sv = SN76489_sample_channel(&this->sn76489, j);
-                    ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
-                    dw->user.buf_pos++;
-                    assert(dw->user.buf_pos < 410);
-                }
-            }
-        }
-
-        // Go through some stuff and do some stuff
-
+        //sample_audio(this);
+        //debug_audio(this);
         if (dbg.do_break) break;
 #ifdef LYCODER
     } while (true);
@@ -497,17 +511,6 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
     }
 #endif
     return 0;
-}
-
-void SMSGGJ_enable_tracing(JSM)
-{
-// TODO
-assert(1==0);
-}
-
-void SMSGGJ_disable_tracing(JSM) {
-// TODO
-    assert(1 == 0);
 }
 
 void SMSGGJ_load_BIOS(JSM, struct multi_file_set* mfs) {

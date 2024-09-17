@@ -36,6 +36,7 @@ struct r2A03 {
     //struct NES_APU apu;
 
     u32 tracing;
+    u8 open_bus;
 
     struct IRQ_multiplexer irq;
 

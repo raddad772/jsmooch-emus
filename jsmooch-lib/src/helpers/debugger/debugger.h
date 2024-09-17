@@ -206,6 +206,8 @@ enum debug_waveform_kinds {
 struct debug_waveform {
     char name[50];
     u32 ch_output_enabled;
+    u32 default_clock_divider;
+    u32 clock_divider;
     u32 samples_requested;
     u32 samples_rendered;
     struct buf buf; // height*width. value -1...1

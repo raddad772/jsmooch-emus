@@ -546,6 +546,26 @@ static u32 GB_PPU_bg_tilemap_addr_window(struct GB_PPU* this, u32 wlx) {
     );
 }
 
+/*
+fn get_tile_number(&mut self) -> u8 {
+        let lcdc = self.read_mem_u8(LCDRegister::LCDC as u16);
+        let ly = self.read_mem_u8(LCDRegister::LY as u16) as u16;
+        let scx = self.read_mem_u8(LCDRegister::SCX as u16) as u16;
+        let scy = self.read_mem_u8(LCDRegister::SCY as u16) as u16;
+
+        let mut tile_num_addr: u16 = if lcdc.get_bit(3) == 0 { 0x9800 } else { 0x9C00 };
+        base_addr |
+        tile_num_addr += self.fetcher_x as u16;
+        tile_num_addr += (scx >> 3) & 0x1f;
+        tile_num_addr += 32 * (((ly + scy) & 0xFF) >> 3);
+
+        self.read_mem_u8(tile_num_addr)
+
+    mine = base;
+    mine += ((((this->clock->ly + this->io.SCY) & 0xFF) >> 3) << 5);
+    mine += (((lx) & 0xFF) >> 3));
+
+    } */
 static u32 GB_PPU_bg_tilemap_addr_nowindow(struct GB_PPU* this, u32 lx) {
     return (0x9800 | (this->io.bg_tile_map_base << 10) |
             ((((this->clock->ly + this->io.SCY) & 0xFF) >> 3) << 5) |
@@ -658,6 +678,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         return;
     case 0xFF47: // BGP pallete
         //if (!this->clock->CPU_can_VRAM) return;
+        DBG_EVENT(DBG_GB_EVENT_BGP_WRITE);
         this->bg_palette[0] = (u8)(val & 3);
         this->bg_palette[1] = (u8)((val >> 2) & 3);
         this->bg_palette[2] = (u8)((val >> 4) & 3);
@@ -1057,3 +1078,4 @@ static void GB_PPU_pixel_transfer(struct GB_PPU *this)
         this->clock->lx++;
     }
 }
+

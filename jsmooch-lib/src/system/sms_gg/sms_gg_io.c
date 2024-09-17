@@ -88,9 +88,9 @@ static u32 read_reg_ioport2(struct SMSGG *this, u32 val)
 
 void write_reg_memory_ctrl(struct SMSGG* this, u32 val) {
     if (this->variant != SYS_GG) {
-        SMSGG_mapper_sega_set_BIOS(&this->mapper, ((val & 8) >> 3) ^ 1); // 1 = disabled, 0 = enabled
+        //SMSGG_mapper_sega_set_BIOS(&this->mapper, ((val & 8) >> 3) ^ 1); // 1 = disabled, 0 = enabled
 
-        this->mapper.enable_cart = ((val & 0x40) >> 6) ^ 1;
+        //this->mapper.enable_cart = ((val & 0x40) >> 6) ^ 1;
         //assert(1==0);
         fflush(stdout);
 

@@ -253,6 +253,26 @@ static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
 {
     fsys.waveform_view_present(wview);
     if (ImGui::Begin(wview.view->name)) {
+        if (wview.waveforms[0].wf->default_clock_divider != 0) {
+            if (wview.waveforms[0].wf->clock_divider == 0) wview.waveforms[0].wf->clock_divider = wview.waveforms[0].wf->default_clock_divider;
+            static int a;
+            static bool rv = false;
+            a = wview.waveforms[0].wf->clock_divider;
+            ImGui::DragInt("Clock divider", &a, 0.5f, 10, 500, "%d");
+            /*
+            ImGui::Checkbox("Randomly vary divider", &rv);
+            static int b = 10;
+            ImGui::DragInt("Vary by +/-", &b, 0.5f, 1, 100, "%d");
+            if (rv) {
+                int rn = ((int)(arc4random() % (b * 2))) - b;
+                float perc = (float)rn / 100.0f;
+                float vary = perc * (float)wview.waveforms[0].wf->default_clock_divider;
+                wview.waveforms[0].wf->clock_divider = wview.waveforms[0].wf->default_clock_divider + vary;
+            }
+            else {*/
+                wview.waveforms[0].wf->clock_divider = a;
+            //}
+        }
         u32 on_line = 0;
         u32 last_kind = 0;
         for (auto& wf : wview.waveforms) {
@@ -582,7 +602,7 @@ int main(int, char**)
         }
 
         // disassembly+ view
-        render_debug_views(fsys, io, update_dasm_scroll);
+        //render_debug_views(fsys, io, update_dasm_scroll);
 
 
         // Rendering

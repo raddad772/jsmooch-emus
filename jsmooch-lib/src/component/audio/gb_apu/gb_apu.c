@@ -227,7 +227,6 @@ static inline void write_NRx2(struct GBSNDCHAN* chan, u8 val)
                     chan->env.rshift = 2;
                     break;
             }
-            printf("\nCH2 VOL %d", chan->env.rshift);
             return;
     }
 }
