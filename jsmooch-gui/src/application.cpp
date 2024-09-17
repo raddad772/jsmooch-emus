@@ -602,7 +602,7 @@ int main(int, char**)
         }
 
         // disassembly+ view
-        //render_debug_views(fsys, io, update_dasm_scroll);
+        render_debug_views(fsys, io, update_dasm_scroll);
 
 
         // Rendering

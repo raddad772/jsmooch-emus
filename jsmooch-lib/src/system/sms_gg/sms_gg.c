@@ -83,10 +83,10 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 
 void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region) {
     struct SMSGG* this = (struct SMSGG*)malloc(sizeof(struct SMSGG));
-    this->tracing = 0;
     memset(this, 0, sizeof(struct SMSGG));
     SMSGG_clock_init(&this->clock, variant, region);
     SMSGG_VDP_init(&this->vdp, this, variant);
+    printf("\nPOINTERS. THIS:%9llx VDP:%9llx MAPPER:%9llx and finally size_vdp:%lld size_mapper:%lld", (u64)this, (u64)&this->vdp, (u64)&this->mapper, (u64)sizeof(struct SMSGG_VDP), (u64)sizeof(struct SMSGG_mapper_sega));
     SMSGG_mapper_sega_init(&this->mapper, variant);
     Z80_init(&this->cpu, 0);
 
@@ -245,11 +245,11 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
 
     // controllers
     struct physical_io_device *d = cvec_push_back(this->IOs);
-    SMSGG_gamepad_setup_pio(d, 0, "Player A", 1, true);
+    SMSGG_gamepad_setup_pio(d, 0, "Player A", 1, 1);
     this->io.controllerA.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     if (this->variant != SYS_GG) {
         d = cvec_push_back(this->IOs);
-        SMSGG_gamepad_setup_pio(d, 1, "Player B", 0, false);
+        SMSGG_gamepad_setup_pio(d, 1, "Player B", 0, 0);
         this->io.controllerB.device_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     }
 
@@ -502,8 +502,8 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
 #endif
         this->clock.master_cycles++;
 
-        //sample_audio(this);
-        //debug_audio(this);
+        sample_audio(this);
+        debug_audio(this);
         if (dbg.do_break) break;
 #ifdef LYCODER
     } while (true);

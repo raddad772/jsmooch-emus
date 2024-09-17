@@ -18,7 +18,7 @@ enum SMSGG_mem_kinds {
 };
 
 struct SMSGG_mem_region {
-    bool read_only, empty;
+    u32 read_only, empty;
     enum SMSGG_mem_kinds kind;
     u32 offset;
 
@@ -34,9 +34,9 @@ struct SMSGG_mapper_sega {
     enum jsm_systems variant;
 
     struct SMSGG_mem_region regions[256]; // upper 8 bits of an address
-    bool sega_mapper_enabled;
-    bool has_bios;
-    bool is_sms;
+    u32 sega_mapper_enabled;
+    u32 has_bios;
+    u32 is_sms;
 
     struct {
         u32 frame_control_register[3];

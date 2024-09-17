@@ -15,40 +15,39 @@ static void map(struct SMSGG_mapper_sega *this, u16 sms_start_addr, u16 sms_end_
     u32 end_page = sms_end_addr >> 8;
     for (u32 page = start_page; page <= end_page; page++) {
         assert(page < 256);
-        printf("\nMAP PAGE %02x to TYPE %d", page, kind);
         struct SMSGG_mem_region *region = &this->regions[page];
         region->kind = kind;
-        region->empty = false;
+        region->empty = 0;
 
         switch(kind) {
             case SMSGGMK_empty:
-                region->empty = true;
+                region->empty = 1;
                 region->buf = NULL;
-                region->read_only = true;
+                region->read_only = 1;
                 region->offset = 0;
                 break;
             case SMSGGMK_cart_rom:
-                region->empty = false;
+                region->empty = 0;
                 region->buf = &this->ROM;
-                region->read_only = true;
+                region->read_only = 1;
                 region->offset = offset;
                 break;
             case SMSGGMK_bios:
-                region->empty = false;
+                region->empty = 0;
                 region->buf = &this->BIOS;
-                region->read_only = true;
+                region->read_only = 1;
                 region->offset = offset;
                 break;
             case SMSGGMK_cart_ram:
-                region->empty = false;
+                region->empty = 0;
                 region->buf = &this->cart_RAM;
-                region->read_only = false;
+                region->read_only = 0;
                 region->offset = offset;
                 break;
             case SMSGGMK_sys_ram:
-                region->empty = false;
+                region->empty = 0;
                 region->buf = &this->RAM;
-                region->read_only = false;
+                region->read_only = 0;
                 region->offset = offset;
                 break;
             default:
@@ -71,20 +70,16 @@ static void refresh_sega_mapper(struct SMSGG_mapper_sega *this)
     map(this, 0x0000, 0x03FF,  SMSGGMK_cart_rom, 0);
 
     // slot0 400-3FFF is bankable
-    printf("\nMAP CART ROM 0x0");
     map(this, 0x0400, 0x3FFF, SMSGGMK_cart_rom, 0x400 + (this->io.frame_control_register[0] << 14));
 
     // slot1
-    printf("\nMAP CART ROM 0x40");
     map(this, 0x4000, 0x7FFF, SMSGGMK_cart_rom, this->io.frame_control_register[1] << 14);
 
     // slot2, ROM or RAM
     if (this->io.cart_ram.mapped) {
-        printf("\nMAP CART RAM");
         map(this, 0x8000, 0xBFFF, SMSGGMK_cart_ram, this->io.cart_ram.bank << 14);
     }
     else {
-        printf("\nMAP CART ROM 0x80");
         map(this, 0x8000, 0xBFFF, SMSGGMK_cart_rom, (this->io.frame_control_register[2] + this->io.bank_shift) << 14);
     }
 
@@ -108,8 +103,8 @@ void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm_systems var
     simplebuf8_init(&this->BIOS);
     simplebuf8_init(&this->cart_RAM);
 
-    bool is_sms = (variant == SYS_SMS1) || (variant == SYS_SMS2);
-    bool is_gg = (variant == SYS_SG1000);
+    u32 is_sms = (variant == SYS_SMS1) || (variant == SYS_SMS2);
+    u32 is_gg = (variant == SYS_SG1000);
     switch(variant) {
         case SYS_SMS1:
         case SYS_SMS2:
@@ -118,17 +113,16 @@ void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm_systems var
             simplebuf8_allocate(&this->cart_RAM, 32 * 1024);
             simplebuf8_clear(&this->RAM);
             simplebuf8_clear(&this->cart_RAM);
-            this->sega_mapper_enabled = true;
+            this->sega_mapper_enabled = 1;
             break;
         case SYS_SG1000:
             simplebuf8_allocate(&this->RAM, 2 * 1024);
             simplebuf8_clear(&this->RAM);
-            this->sega_mapper_enabled = false;
+            this->sega_mapper_enabled = 0;
             break;
         default:
             assert(1==2);
     }
-    printf("\nMAP SYS RAM");
     map(this, 0xC000, 0xFFFF, SMSGGMK_sys_ram, 0);
 
     this->io.cart_enabled = !this->io.bios_enabled;
@@ -139,7 +133,6 @@ void SMSGG_mapper_sega_init(struct SMSGG_mapper_sega* this, enum jsm_systems var
 
 void SMSGG_mapper_sega_delete(struct SMSGG_mapper_sega* this)
 {
-    printf("\nFREEING MEMORY...");
     simplebuf8_delete(&this->ROM);
     simplebuf8_delete(&this->BIOS);
     simplebuf8_delete(&this->RAM);
@@ -165,7 +158,7 @@ void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega* this, u32 to)
 static void write_registers(struct SMSGG_mapper_sega* this, u16 addr, u8 val)
 {
     if (this->sega_mapper_enabled) {
-        bool mapping_changed = false;
+        u32 mapping_changed = 0;
         switch (addr) {
             case 0xFFFC:
                 switch(val & 3) {
@@ -200,7 +193,7 @@ static void write_registers(struct SMSGG_mapper_sega* this, u16 addr, u8 val)
         }
     }
 
-    //return true;
+    //return 1;
 }
 
 
@@ -226,26 +219,21 @@ void SMSGG_bus_write(struct SMSGG* bus, u16 addr, u8 val)
     if (!region->buf->ptr) {
         assert(1==2);
     }
-    return;
     u32 baddr = ((addr & 0xFF) + region->offset) & region->buf->mask;
     assert(baddr < region->buf->sz);
-    assert(region->buf->sz < 262145);
     region->buf->ptr[baddr] = val;
 }
 
 void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega* this, struct buf *BIOS)
 {
     simplebuf8_allocate(&this->BIOS, BIOS->size);
-    memcpy(&this->BIOS.ptr, BIOS->ptr, BIOS->size);
-    this->has_bios = true;
+    memcpy(this->BIOS.ptr, BIOS->ptr, BIOS->size);
+    this->has_bios = 1;
 }
 
 void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* inbuf)
 {
     assert((inbuf->size % 16384) == 0);
-    printf("\nALLOCATE ROM...");
     simplebuf8_allocate(&this->ROM, inbuf->size);
-    printf("\nROM size in:%lld my:%llx mask:%x", inbuf->size, this->ROM.sz, this->ROM.mask);
-    this->sega_mapper_enabled = true;
-    memcpy(&this->ROM.ptr, inbuf->ptr, inbuf->size);
+    memcpy(this->ROM.ptr, inbuf->ptr, inbuf->size);
 }

@@ -11,8 +11,8 @@
 
 void simplebuf8_clear(struct simplebuf8 *this)
 {
-    if (!this->ptr) return;
-    memset(this, 0, this->sz);
+    if (this->ptr == NULL) return;
+    memset(this->ptr, 0, this->sz);
 }
 
 void simplebuf8_init(struct simplebuf8 *this)
@@ -38,11 +38,10 @@ int popcount(u64 n)
 void simplebuf8_allocate(struct simplebuf8 *this, u64 sz)
 {
     //assert(popcount(sz) == 1); // Assert size is a power of 2
-    if (this->ptr != NULL) free(this->ptr);
-    printf("\nALLOCATING SIZE %lld  %llx", sz, (u64)this->ptr);
+    if (this->ptr != NULL) {
+        free(this->ptr);
+    }
     this->ptr = malloc(sz);
-    printf("\nNEW PTR %llx", (u64)this->ptr);
     this->sz = sz;
     this->mask = sz - 1; // only use if we're a power of 2
 }
-

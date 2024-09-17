@@ -892,7 +892,7 @@ void full_system::image_view_present(struct debugger_view *dview, struct my_text
         memset(iview->img_buf[1].ptr, 0, szpo2*szpo2*4);
     }
 
-    //iview->update_func.func(&dbgr, dview, iview->update_func.ptr, tex.width);
+    iview->update_func.func(&dbgr, dview, iview->update_func.ptr, tex.width);
     void *buf = iview->img_buf[iview->draw_which_buf].ptr;
     assert(buf);
 
