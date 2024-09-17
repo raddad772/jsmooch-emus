@@ -233,7 +233,15 @@ void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega* this, struct buf 
 
 void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* inbuf)
 {
-    assert((inbuf->size % 16384) == 0);
-    simplebuf8_allocate(&this->ROM, inbuf->size);
-    memcpy(this->ROM.ptr, inbuf->ptr, inbuf->size);
+    u64 sz = inbuf->size;
+    u64 offset = 0;
+    if ((inbuf->size % 16384) != 0) {
+        printf("\nWARNING HEADER DETECTED SIZE: %lld", inbuf->size % 16384);
+        offset = 512;
+        sz -= 512;
+    }
+    assert(sz % 16384 == 0);
+
+    simplebuf8_allocate(&this->ROM, sz);
+    memcpy(this->ROM.ptr, inbuf->ptr+offset, sz);
 }

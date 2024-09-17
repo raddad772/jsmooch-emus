@@ -32,7 +32,10 @@ struct SMSGG_VDP {
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
     u16 *cur_output;
-    struct SMSGG_object objects[8];
+    struct SMSGG_object objects[64];
+
+    u32 sprite_limit;
+    u32 sprite_limit_override;
 
     struct SMSGG_VDP_io {
         u32 code;

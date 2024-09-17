@@ -408,9 +408,9 @@ void GG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, 
             r = ((color >> 8) & 0x0F) * 0x11;
 
             u8 *img8 = (u8 *) img32;
-            img8[0] = r;
+            img8[0] = b;
             img8[1] = g;
-            img8[2] = b;
+            img8[2] = r;
             img8[3] = 255;
             img32++;
         }

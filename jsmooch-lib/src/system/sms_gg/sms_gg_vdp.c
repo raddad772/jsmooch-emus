@@ -109,7 +109,8 @@ static void bg_gfx3(struct SMSGG_VDP* this) {
 static void sprite_gfx2(struct SMSGG_VDP* this) {
     u32 hlimit = (8 << (this->io.sprite_zoom + this->io.sprite_size)) - 1;
     u32 vlimit = hlimit;
-    for (u32 i = 0; i < 8; i++) {
+    u32 sl = this->sprite_limit_override ? 64 : 8;
+    for (u32 i = 0; i < sl; i++) {
         struct SMSGG_object* o = &this->objects[i];
         if (o->y == 0xD0) continue;
         if (this->bus->clock.hpos < o->x) continue;
@@ -133,7 +134,8 @@ static void sprite_gfx2(struct SMSGG_VDP* this) {
 static void sprite_gfx3(struct SMSGG_VDP* this) {
     u32 hlimit = (8 << this->io.sprite_zoom) - 1;
     u32 vlimit = (8 << (this->io.sprite_zoom + this->io.sprite_size)) - 1;
-    for (u32 i = 0; i < 8; i++) {
+    u32 sl = this->sprite_limit_override ? 64 : 8;
+    for (u32 i = 0; i < sl; i++) {
         struct SMSGG_object *o = &this->objects[i];
         if (o->y == 0xD0) continue;
         if ((this->bus->clock.hpos < o->x) || (this->bus->clock.hpos > (o->x + hlimit))) continue;
@@ -232,12 +234,9 @@ static void update_irqs(struct SMSGG_VDP* this)
 
 static void sprite_setup(struct SMSGG_VDP* this)
 {
-    for (u32 i = 0; i < 8; i++) {
-        this->objects[i].y = 0xFF;
-    }
     u32 valid = 0;
     u32 vlimit = (8 << (this->io.sprite_zoom + this->io.sprite_size)) - 1;
-    for (u32 i = 0; i < 8; i++) this->objects[i].y = 0xD0;
+    for (u32 i = 0; i < 64; i++) this->objects[i].y = 0xD0;
 
     i32 vpos = (i32)this->bus->clock.vpos;
 
@@ -262,9 +261,12 @@ static void sprite_setup(struct SMSGG_VDP* this)
             if (vlimit == (this->io.sprite_zoom ? 31 : 15)) pattern &= 0xFC;
 
             if (valid == 4) {
-                this->io.sprite_overflow = 1;
-                this->io.sprite_overflow_index = index;
-                break;
+                if (!this->io.sprite_overflow) {
+                    this->io.sprite_overflow = 1;
+                    this->io.sprite_overflow_index = index;
+                }
+                if (!this->sprite_limit_override)
+                    break;
             }
 
             this->objects[valid].x = x;
@@ -288,9 +290,12 @@ static void sprite_setup(struct SMSGG_VDP* this)
             if (vlimit == (this->io.sprite_zoom ? 31 : 15)) pattern &= 0xFE;
 
             if (valid == 8) {
-                this->io.sprite_overflow = 1;
-                this->io.sprite_overflow_index = index;
-                break;
+                if (!this->io.sprite_overflow) {
+                    this->io.sprite_overflow = 1;
+                    this->io.sprite_overflow_index = index;
+                }
+                if (!this->sprite_limit_override)
+                    break;
             }
             this->objects[valid].x = x;
             this->objects[valid].y = y;
@@ -372,9 +377,11 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems 
     this->variant = variant;
     this->bus = bus;
 
+    if (variant == SYS_SG1000) this->sprite_limit = 4;
+    else this->sprite_limit = 8;
     this->mode = variant == SYS_GG ? VDP_GG : VDP_SMS;
     
-    for (u32 i = 0; i < 8; i++) {
+    for (u32 i = 0; i < 64; i++) {
         this->objects[i] = (struct SMSGG_object) {0, 0, 0, 0 };
     }
     
@@ -502,7 +509,7 @@ void SMSGG_VDP_reset(struct SMSGG_VDP* this)
     this->io.sprite_overflow_index = 0x1F;
     this->bus->clock.frames_since_restart = 0;
     this->scanline_cycle = &scanline_visible;
-    for (u32 i = 0; i < 8; i++) {
+    for (u32 i = 0; i < 64; i++) {
         this->objects[i].y = 0xD0;
     }
     memset(this->VRAM, 0, 16384);
@@ -541,13 +548,13 @@ void SMSGG_VDP_write_data(struct SMSGG_VDP* this, u32 val)
             if ((this->io.address & 1) == 0)
                 this->latch.cram = val;
             else {
-                this->CRAM[this->io.address >> 1] = ((val & 0x0F) << 8) | this->latch.cram;
+                this->CRAM[(this->io.address >> 1) & 31] = ((val & 0x0F) << 8) | this->latch.cram;
             }
 
         }
         else {
             // 6 bits for SMS
-            this->CRAM[this->io.address] = val & 0x3F;
+            this->CRAM[this->io.address & 31] = val & 0x3F;
         }
     }
     this->io.address = (this->io.address + 1) & 0x3FFF;

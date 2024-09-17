@@ -234,6 +234,7 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
             assemble_til = next_range->addr_range_start - 1;
 
         intersecting = create_disassembly_range(di, dview, asm_addr, assemble_til);
+        if (line >= 199) break;
         // Now loop around and we'll find the intersecting range already and fill up them strs!!
     }
 

@@ -547,7 +547,7 @@ void full_system::load_default_ROM()
             break;
         case SYS_SMS1:
         case SYS_SMS2:
-            worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
+            worked = grab_ROM(&ROMs, which, "road_rash.sms", nullptr);
             break;
         case SYS_GG:
             worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);

@@ -86,7 +86,6 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     memset(this, 0, sizeof(struct SMSGG));
     SMSGG_clock_init(&this->clock, variant, region);
     SMSGG_VDP_init(&this->vdp, this, variant);
-    printf("\nPOINTERS. THIS:%9llx VDP:%9llx MAPPER:%9llx and finally size_vdp:%lld size_mapper:%lld", (u64)this, (u64)&this->vdp, (u64)&this->mapper, (u64)sizeof(struct SMSGG_VDP), (u64)sizeof(struct SMSGG_mapper_sega));
     SMSGG_mapper_sega_init(&this->mapper, variant);
     Z80_init(&this->cpu, 0);
 
@@ -289,8 +288,8 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(256 * 224 * 2);
-    d->display.output[1] = malloc(256 * 224 * 2);
+    d->display.output[0] = malloc(256 * 240 * 2);
+    d->display.output[1] = malloc(256 * 240 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
@@ -307,7 +306,8 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     // Audio
     setup_audio(IOs);
 
-    this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
+    struct physical_io_device *pio = cpg(this->vdp.display_ptr);
+    this->vdp.display = &pio->display;
 }
 
 void SMSGG_delete(struct jsm_system* jsm)
