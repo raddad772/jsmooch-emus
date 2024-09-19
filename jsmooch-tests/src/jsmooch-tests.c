@@ -10,6 +10,7 @@
 #include "cpu-tests/z80-tests.h"
 #include "cpu-test-generators/sh4_test_generator.h"
 #include "cpu-tests/sh4-tests.h"
+#include "cpu-tests/m6502_tests.h"
 #include "cpu-tests/m68000-tests.h"
 #include "helper-tests/dasm-range-tests.h"
 #include "helper-tests/scheduler-tests.h"
@@ -90,5 +91,6 @@ int main()
     //test_sh4();
     //test_m68000();
     //test_bitbuf();
-    test_dasm_ranges();
+    //test_dasm_ranges();
+    test_nesm6502();
 }

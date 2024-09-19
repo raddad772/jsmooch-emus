@@ -100,8 +100,6 @@ void r2A03_notify_NMI(RT, u32 level) {
 }
 
 void r2A03_notify_IRQ(RT, u32 level, u32 from) {
-    //if (level) printf("\nf: %llu IRQ NOTIFY %d AT ly:%d", this->nes->clock.master_frame, level, this->nes->clock.ppu_y);
-    fflush(stdout);
     this->cpu.pins.IRQ = IRQ_multiplexer_set_level(&this->irq, level, from);
 }
 

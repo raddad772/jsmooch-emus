@@ -247,6 +247,8 @@ add_library(jsmooch-lib
         src/helpers/debugger/waveform.h
         src/component/audio/nes_apu/nes_apu.c
         src/component/audio/nes_apu/nes_apu.h
+        src/system/nes/mappers/sunsoft_57.h
+        src/system/nes/mappers/sunsoft_57.c
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

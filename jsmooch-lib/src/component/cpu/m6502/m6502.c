@@ -44,7 +44,6 @@ void M6502_regs_init(struct M6502_regs* this)
     this->TA = this->TR = 0;
     this->HLT = this->IRQ_pending = this->NMI_pending = 0;
     this->WAI = this->STP = 0;
-    this->new_I = 0;
 }
 
 void M6502_pins_init(struct M6502_pins* this)
@@ -141,9 +140,7 @@ void M6502_cycle(struct M6502* this)
         this->NMI_old = this->pins.NMI;
     }
 
-    this->regs.P.I = this->regs.new_I;
     this->regs.TCU++;
-    fflush(stdout);
     if (this->regs.TCU == 1) { // T0
         this->PCO = this->pins.Addr; // Capture PC before it runs away
         this->regs.IR = this->pins.D;
@@ -163,16 +160,9 @@ void M6502_cycle(struct M6502* this)
                 dbg_break("M6502 IRQ", *this->trace.cycles);
             }
         }
-        fflush(stdout);
         this->current_instruction = this->opcode_table[this->regs.IR];
-        //printf("\nOPCODE: %02x", this->regs.IR);
         if (this->current_instruction == this->opcode_table[2]) { // TODO: this doesn't work with illegal opcodes or m65c02
-            printf("INVALID OPCODE %02x", this->regs.IR);
-            fflush(stdout);
-            dbg_break("INVALID 6502 OPCODE", *this->trace.cycles);
-        }
-        if (dbg.trace_on) {
-            //dbg.traces.add(TRACERS.M6502, this->clock.trace_cycles-1, this->trace_format(this->disassemble(), this->PCO));
+            printf("\nINVALID OPCODE %02x", this->regs.IR);
         }
     }
     this->NMI_ack = false;

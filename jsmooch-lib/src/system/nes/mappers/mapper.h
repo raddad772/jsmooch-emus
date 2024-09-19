@@ -17,7 +17,8 @@ enum NES_mappers {
         NESM_MMC3b,
         NESM_AXROM,
         NESM_VRC4E_4F,
-        NESM_DXROM
+        NESM_DXROM,
+        NESM_SUNSOFT_57
 };
 
 #ifndef NES_PPU_mirror_modes_def

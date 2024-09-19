@@ -16,6 +16,7 @@
 #include "mmc1.h"
 #include "uxrom.h"
 #include "vrc_2b_4e_4f.h"
+#include "sunsoft_57.h"
 
 void NES_mapper_init(struct NES_mapper* this, struct NES* nes)
 {
@@ -51,11 +52,14 @@ void NES_mapper_set_which(struct NES_mapper* this, u32 wh) {
         case 23: // VRC4
             which = NESM_VRC4E_4F;
             break;
+        case 69: // JXROM/Sunsoft 7M and 5M
+            which = NESM_SUNSOFT_57;
+            break;
         case 206: // DXROM
             which = NESM_DXROM;
             break;
         default:
-            printf("Unknown mapper number dawg! %d", which);
+            printf("Unknown mapper number dawg! %d", wh);
             return;
     }
 
@@ -92,6 +96,10 @@ void NES_mapper_set_which(struct NES_mapper* this, u32 wh) {
             NES_mapper_VRC2B_4E_4F_init(this, this->nes);
             printf("\nVRC4");
             break;
+        case NESM_SUNSOFT_57:
+            NES_mapper_sunsoft_57_init(this, this->nes, NES_mapper_sunsoft_5b);
+            printf("\nSunsoft mapper");
+            break;
         default:
             printf("\nNO SUPPORTED MAPPER! %d", which);
             break;
@@ -126,6 +134,9 @@ void NES_mapper_delete(struct NES_mapper* this)
             break;
         case NESM_VRC4E_4F: // No-mapper!
             NES_mapper_VRC2B_4E_4F_delete(this);
+            break;
+        case NESM_SUNSOFT_57:
+            NES_mapper_sunsoft_57_delete(this);
             break;
         default:
             assert(1==0);

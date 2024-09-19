@@ -539,7 +539,8 @@ void full_system::load_default_ROM()
         case SYS_NES:
             //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "240pee.nes", nullptr);
             break;
         case SYS_SG1000:
@@ -547,7 +548,7 @@ void full_system::load_default_ROM()
             break;
         case SYS_SMS1:
         case SYS_SMS2:
-            worked = grab_ROM(&ROMs, which, "road_rash.sms", nullptr);
+            worked = grab_ROM(&ROMs, which, "outrun.sms", nullptr);
             break;
         case SYS_GG:
             worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);

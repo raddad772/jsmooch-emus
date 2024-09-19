@@ -170,7 +170,7 @@ static void update_videomode(struct SMSGG_VDP* this) {
     }
 
     this->bus->clock.timing.bottom_rendered_line = bottom_row - 1;
-    this->bus->clock.timing.vblank_start = bottom_row + 1;
+    this->bus->clock.timing.vblank_start = bottom_row;
     this->bus->clock.timing.rendered_lines = bottom_row;
 
     switch (this->io.video_mode) {

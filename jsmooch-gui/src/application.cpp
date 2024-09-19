@@ -236,7 +236,7 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
 
                         ImGui::TableSetColumnIndex(1);
                         char rndr[50];
-                        cpu_reg_context_render(ctx, rndr, sizeof(rndr));
+                        //cpu_reg_context_render(ctx, rndr, sizeof(rndr));
                         ImGui::Text("%s", rndr);
                     }
                 }
@@ -371,9 +371,9 @@ int main(int, char**)
     //enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
     //enum jsm_systems which = SYS_DMG;
-    //enum jsm_systems which = SYS_NES;
+    enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
-    enum jsm_systems which = SYS_GG;
+    //enum jsm_systems which = SYS_GG;
     //enum jsm_systems which = SYS_SG1000;
     //enum jsm_systems which = SYS_MAC512K;
 #endif

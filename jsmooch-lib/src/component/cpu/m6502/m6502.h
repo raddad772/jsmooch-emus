@@ -37,7 +37,6 @@ struct M6502_regs {
     u32 HLT;
     u32 IRQ_pending;
     u32 NMI_pending;
-    u32 new_I;
     u32 WAI;
     u32 STP;
 };

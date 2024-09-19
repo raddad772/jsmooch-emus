@@ -48,6 +48,7 @@ void NM_VRC2B_4E_4F_set_mirroring(struct NES_mapper_VRC2B_4E_4F* this)
             return;
     }
 }
+
 u32 NM_VRC2B_4E_4F_CPU_read(struct NES* nes, u32 addr, u32 val, u32 has_effect)
 {
     NTHIS;
@@ -80,7 +81,6 @@ void NM_VRC2B_4E_4F_set_PRG_ROM(struct NES_mapper_VRC2B_4E_4F* this, u32 addr, u
         debugger_interface_dirty_mem(this->bus->dbg.interface, NESMEM_CPUBUS, addr, addr + 0x1FFF);
     }
 }
-
 
 void NM_VRC2B_4E_4F_remap(struct NES_mapper_VRC2B_4E_4F* this, u32 boot)
 {

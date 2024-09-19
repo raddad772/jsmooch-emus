@@ -2,7 +2,8 @@
 // Created by RadDad772 on 2/28/24.
 //
 
-#include "assert.h"
+#include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <pwd.h>
 #include <unistd.h>
@@ -12,7 +13,6 @@
 #include "component/cpu/z80/z80.h"
 //#include "component/cpu/z80/z80_opcodes.h"
 
-#include "stdio.h"
 #include "../json.h"
 
 struct test_cpu_regs {
@@ -73,7 +73,6 @@ struct jsontest {
 struct z80_test_result
 {
     u32 passed;
-    u32 mycycles;
     struct test_cycle cycles[100];
     char msg[5000];
     u32 addr_io_mismatches;
@@ -541,7 +540,7 @@ static void pprint_regs(struct Z80_regs *cpu_regs, struct test_cpu_regs *test_re
         printf("\nIM  %02x        %02x", cpu_regs->IM, test_regs->im);
 }
 
-void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
+static void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
     printf("\nCycles");
     for (u32 i = 0; i < test->num_cycles; i++) {
         printf("\n\nTEST cycle:%d  addr:%04x  data:%02x  rwmi:%d%d%d%d", i, test->cycles[i].addr, test->cycles[i].data, test->cycles[i].r, test->cycles[i].w, test->cycles[i].m, test->cycles[i].i);
@@ -595,7 +594,6 @@ static u32 testregs(struct Z80* cpu, struct test_state* final, u32 last_pc, u32 
 static void test_z80_automated(struct z80_test_result *out, struct Z80* cpu, struct jsontest tests[1000], u32 is_call)
 {
     out->passed = 0;
-    out->mycycles = 0;
     sprintf(out->msg, "");
     char *msgptr = out->msg;
     out->addr_io_mismatches = 0;
@@ -801,7 +799,7 @@ u32 test_z80_ins(struct Z80* cpu, u32 iclass, u32 ins, u32 is_call)
     return result.passed;
 }
 
-u32 read_trace_z80(void *ptr, u32 addr)
+static u32 read_trace_z80(void *ptr, u32 addr)
 {
     return test_RAM[addr];
 }
