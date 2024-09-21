@@ -29,7 +29,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src) # include files from ProjectB
 
 add_subdirectory(vendor/myimgui)
-add_subdirectory(vendor/webgpu)
+add_subdirectory(vendor/WebGPU-distribution)
 add_subdirectory(vendor/glfw3webgpu)
 # [...]
 

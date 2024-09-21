@@ -10,3 +10,6 @@
 [submodule "jsmooch-gui/vendor/miniaudio"]
 	path = jsmooch-gui/vendor/miniaudio
 	url = https://github.com/raddad772/miniaudio
+[submodule "jsmooch-gui/vendor/WebGPU-distribution"]
+	path = jsmooch-gui/vendor/WebGPU-distribution
+	url = git@github.com:eliemichel/WebGPU-distribution.git
