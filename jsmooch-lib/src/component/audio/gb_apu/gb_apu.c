@@ -182,7 +182,7 @@ static inline void write_NRx1(struct GBSNDCHAN* chan, u8 val)
         case 0:
         case 1:
             chan->wave_duty = (val >> 6) & 3;
-            [[fallthrough]];
+            __attribute__ ((fallthrough));;
         case 2:
         case 3: {
             u32 reload_value = chan->number == 3 ? 256 : 64;
@@ -467,7 +467,7 @@ void GB_APU_cycle(struct GB_APU* this)
             case 6:
             case 2:
                 tick_sweep(this, 0);
-                [[fallthrough]];
+                __attribute__ ((fallthrough));;
             case 0:
             case 4:
                 tick_length_timer(this, 0);

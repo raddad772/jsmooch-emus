@@ -3,10 +3,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_definitions(-DIMGUI_IMPL_WEBGPU_BACKEND_DAWN)
 
-option(DAWN_BUILD_SAMPLES "Enables building Dawn's samples" OFF)
-option(TINT_BUILD_CMD_TOOLS "Build the Tint command line tools" OFF)
-option(TINT_BUILD_DOCS "Build documentation" OFF)
-option(TINT_BUILD_TESTS "Build tests" OFF)
+#option(DAWN_BUILD_SAMPLES "Enables building Dawn's samples" OFF)
+#option(TINT_BUILD_CMD_TOOLS "Build the Tint command line tools" OFF)
+#option(TINT_BUILD_DOCS "Build documentation" OFF)
+#option(TINT_BUILD_TESTS "Build tests" OFF)
 
 add_executable(jsmooch-gui
         src/full_sys.cpp
