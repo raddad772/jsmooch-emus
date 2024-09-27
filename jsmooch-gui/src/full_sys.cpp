@@ -556,8 +556,8 @@ void full_system::load_default_ROM()
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
-            //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);

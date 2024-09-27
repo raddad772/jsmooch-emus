@@ -567,7 +567,13 @@ class m6502_switchgen {
     }
 
     SHS(what = 'regs.TR') {
-
+        this.addl('regs.S = regs.A & regs.X;');
+        this.addl('if (!regs.TR) {');
+        this.addl('    pins.D = regs.S & (pins.Addr >> 8);');
+        this.addl('    pins.Addr = (pins.Addr & 0xFF) | (pins.D << 8);');
+        this.addl('} else {');
+        this.addl('    pins.D = regs.S & (((pins.Addr >> 8) + 1) & 0xFF);');
+        this.addl('}');
     }
 
     ALR(what = 'regs.TR') {
@@ -1461,7 +1467,8 @@ function m6502_generate_instruction_function(indent, opcode_info, BCD_support=tr
             ag.addl('pins.D = ' + M6502_XAW(opcode_info.ins) + ';');
             break;
         case M6502_AM.ABS_Yxas:
-            r = (opcode_info.addr_mode === M6502_AM.ABS_Xw) ? 'regs.X' : 'regs.Y';
+            //r = (opcode_info.addr_mode === M6502_AM.ABS_Xw) ? 'regs.X' : 'regs.Y';
+            r = 'regs.Y';
             ag.addcycle('get ABSL');
             ag.operand();
 
@@ -1474,7 +1481,9 @@ function m6502_generate_instruction_function(indent, opcode_info, BCD_support=tr
             ag.addl('pins.Addr = (regs.TA & 0xFF00) | ((regs.TA + ' + r + ') & 0xFF);');
 
             ag.addcycle();
+            ag.addl('regs.TR = pins.Addr;');
             ag.addl('pins.Addr = (regs.TA + ' + r + ') & 0xFFFF;');
+            ag.addl('regs.TR = regs.TR == pins.Addr;');
             ag.add_ins(opcode_info);
             ag.RW(1);
             break;

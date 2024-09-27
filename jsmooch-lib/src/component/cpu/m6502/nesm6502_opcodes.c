@@ -4530,7 +4530,7 @@ static void nesM6502_ins_9A_TXS(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_9B_XAA(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_9B_AHX(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ABSL
@@ -4547,11 +4547,16 @@ static void nesM6502_ins_9B_XAA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = (regs->TA & 0xFF00) | ((regs->TA + regs->Y) & 0xFF);
             break; }
         case 4: {
+            regs->TR = pins->Addr;
             pins->Addr = (regs->TA + regs->Y) & 0xFFFF;
-            regs->A = (regs->A | 0xEE) & regs->X & pins->D;
-            pins->D = regs->A;
-            regs->P.N = ((regs->A) & 0x80) >> 7;
-            regs->P.Z = +((regs->A) == 0);
+            regs->TR = regs->TR == pins->Addr;
+            regs->S = regs->A & regs->X;
+            if (!regs->TR) {
+                pins->D = regs->S & (pins->Addr >> 8);
+                pins->Addr = (pins->Addr & 0xFF) | (pins->D << 8);
+            } else {
+                pins->D = regs->S & (((pins->Addr >> 8) + 1) & 0xFF);
+            }
             pins->RW = 1;
             // Following is auto-generated code for instruction finish
             break; }
@@ -7618,7 +7623,7 @@ M6502_ins_func nesM6502_decoded_opcodes[0x103] = {
       &nesM6502_ins_80_NOP22,  &nesM6502_ins_81_STA,  &nesM6502_ins_82_NOP22,  &nesM6502_ins_83_SAX,  &nesM6502_ins_84_STY,  &nesM6502_ins_85_STA,  &nesM6502_ins_86_STX,  &nesM6502_ins_87_SAX,
       &nesM6502_ins_88_DEY,  &nesM6502_ins_89_NOP22,  &nesM6502_ins_8A_TXA,  &nesM6502_ins_8B_XAA,  &nesM6502_ins_8C_STY,  &nesM6502_ins_8D_STA,  &nesM6502_ins_8E_STX,  &nesM6502_ins_8F_SAX,
       &nesM6502_ins_90_BCC,  &nesM6502_ins_91_STA,  &nesM6502_ins_92_STP,  &nesM6502_ins_93_AHX,  &nesM6502_ins_94_STY,  &nesM6502_ins_95_STA,  &nesM6502_ins_96_STX,  &nesM6502_ins_97_SAX,
-      &nesM6502_ins_98_TYA,  &nesM6502_ins_99_STA,  &nesM6502_ins_9A_TXS,  &nesM6502_ins_9B_XAA,  &nesM6502_ins_9C_SHY,  &nesM6502_ins_9D_STA,  &nesM6502_ins_9E_SHX,  &nesM6502_ins_9F_AHX,
+      &nesM6502_ins_98_TYA,  &nesM6502_ins_99_STA,  &nesM6502_ins_9A_TXS,  &nesM6502_ins_9B_AHX,  &nesM6502_ins_9C_SHY,  &nesM6502_ins_9D_STA,  &nesM6502_ins_9E_SHX,  &nesM6502_ins_9F_AHX,
       &nesM6502_ins_A0_LDY,  &nesM6502_ins_A1_LDA,  &nesM6502_ins_A2_LDX,  &nesM6502_ins_A3_LAX,  &nesM6502_ins_A4_LDY,  &nesM6502_ins_A5_LDA,  &nesM6502_ins_A6_LDX,  &nesM6502_ins_A7_LAX,
       &nesM6502_ins_A8_TAY,  &nesM6502_ins_A9_LDA,  &nesM6502_ins_AA_TAX,  &nesM6502_ins_AB_LAX,  &nesM6502_ins_AC_LDY,  &nesM6502_ins_AD_LDA,  &nesM6502_ins_AE_LDX,  &nesM6502_ins_AF_LAX,
       &nesM6502_ins_B0_BCS,  &nesM6502_ins_B1_LDA,  &nesM6502_ins_B2_STP,  &nesM6502_ins_B3_LAX,  &nesM6502_ins_B4_LDY,  &nesM6502_ins_B5_LDA,  &nesM6502_ins_B6_LDX,  &nesM6502_ins_B7_LAX,
