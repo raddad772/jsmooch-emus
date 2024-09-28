@@ -126,7 +126,7 @@ void NES_PPU_reset(THIS)
 
 void NES_PPU_write_cgram(THIS, u32 addr, u32 val)
 {
-    this->nes->bus.a12_watch(this->nes, addr | 0x3F00);
+    NES_bus_a12_watch(this->nes, addr | 0x3F00);
     if((addr & 0x13) == 0x10) addr &= 0xEF;
     this->CGRAM[addr] = val & 0x3F;
 }
@@ -141,7 +141,7 @@ u32 NES_PPU_read_cgram(THIS, u32 addr)
 
 void NES_PPU_mem_write(THIS, u32 addr, u32 val)
 {
-    if ((addr & 0x3FFF) < 0x3F00) this->nes->bus.PPU_write(this->nes, addr, val);
+    if ((addr & 0x3FFF) < 0x3F00) NES_PPU_write(this->nes, addr, val);
     else NES_PPU_write_cgram(this, addr & 0x1F, val);
 }
 
@@ -246,7 +246,7 @@ u32 NES_bus_PPU_read_regs(struct NES* nes, u32 addr, u32 val, u32 has_effect)
             }
             else {
                 output = this->latch.VRAM_read;
-                this->latch.VRAM_read = this->nes->bus.PPU_read_effect(this->nes, this->io.v & 0x3FFF);
+                this->latch.VRAM_read = NES_PPU_read_effect(this->nes, this->io.v & 0x3FFF);
             }
             this->io.v = (this->io.v + this->io.vram_increment) & 0x7FFF;
             //this->nes->bus.a12_watch(this->nes, this->io.v & 0x3FFF);
@@ -261,8 +261,8 @@ u32 NES_bus_PPU_read_regs(struct NES* nes, u32 addr, u32 val, u32 has_effect)
 u32 fetch_chr_line(THIS, u32 table, u32 tile, u32 line, u32 has_effect) {
     u32 r = (0x1000 * table) + (tile * 16) + line;
     this->last_sprite_addr = r + 8;
-    u32 lo = this->nes->bus.PPU_read_effect(this->nes, r);
-    u32 hi = this->nes->bus.PPU_read_effect(this->nes, r + 8);
+    u32 lo = NES_PPU_read_effect(this->nes, r);
+    u32 hi = NES_PPU_read_effect(this->nes, r + 8);
     u32 output = 0;
     for (u32 i = 0; i < 8; i++) {
         output <<= 2;
@@ -278,7 +278,7 @@ u32 fetch_chr_addr(u32 table, u32 tile, u32 line) {
 }
 
 u32 fetch_chr_line_low(THIS, u32 addr) {
-        u32 low = this->nes->bus.PPU_read_effect(this->nes, addr);
+        u32 low = NES_PPU_read_effect(this->nes, addr);
         u32 output = 0;
         for (u32 i = 0; i < 8; i++) {
             output <<= 2;
@@ -289,7 +289,7 @@ u32 fetch_chr_line_low(THIS, u32 addr) {
 }
 
 u32 fetch_chr_line_high(THIS, u32 addr, u32 o) {
-    u32 high = this->nes->bus.PPU_read_effect(this->nes, addr + 8);
+    u32 high = NES_PPU_read_effect(this->nes, addr + 8);
     u32 output = 0;
     for (u32 i = 0; i < 8; i++) {
         output <<= 2;
@@ -388,7 +388,7 @@ void oam_evaluate_slow(THIS) {
             case 1: // Read tile number 258, and do garbage NT access
                 this->sprite_pattern_shifters[this->secondary_OAM_sprite_index] = this->secondary_OAM[this->secondary_OAM_index];
                 this->secondary_OAM_index++;
-                this->nes->bus.a12_watch(this->nes, this->io.v);
+                NES_bus_a12_watch(this->nes, this->io.v);
                 break;
             case 2: // Read attributes 259
                 this->sprite_attribute_latches[this->secondary_OAM_sprite_index] = this->secondary_OAM[this->secondary_OAM_index];
@@ -397,7 +397,7 @@ void oam_evaluate_slow(THIS) {
             case 3: // Read X-coordinate 260 and do garbage NT access
                 this->sprite_x_counters[this->secondary_OAM_sprite_index] = this->secondary_OAM[this->secondary_OAM_index];
                 this->secondary_OAM_index++;
-                this->nes->bus.a12_watch(this->nes, this->io.v);
+                NES_bus_a12_watch(this->nes, this->io.v);
                 break;
             case 4: // Fetch tiles for the shifters 261
                 break;
@@ -423,7 +423,7 @@ void oam_evaluate_slow(THIS) {
             case 6: // 263
                 break;
             case 7:
-                this->nes->bus.a12_watch(this->nes, this->last_sprite_addr);
+                NES_bus_a12_watch(this->nes, this->last_sprite_addr);
                 this->secondary_OAM_sprite_index++;
                 break;
             default:
@@ -491,7 +491,7 @@ void perform_bg_fetches(THIS) { // Only called from prerender and visible scanli
         // Do memory accesses and shifters
         switch (this->line_cycle & 7) {
             case 1: // nametable, tile #
-                this->bg_fetches[0] = this->nes->bus.PPU_read_effect(this->nes, 0x2000 | (this->io.v & 0xFFF));
+                this->bg_fetches[0] = NES_PPU_read_effect(this->nes, 0x2000 | (this->io.v & 0xFFF));
                 this->bg_tile_fetch_addr = fetch_chr_addr(this->io.bg_pattern_table, this->bg_fetches[0], in_tile_y);
                 this->bg_tile_fetch_buffer = 0;
                 // Reload shifters if needed
@@ -503,7 +503,7 @@ void perform_bg_fetches(THIS) { // Only called from prerender and visible scanli
             case 3: // attribute table
                 ;u32 attrib_addr = 0x23C0 | (this->io.v & 0x0C00) | ((this->io.v >> 4) & 0x38) | ((this->io.v >> 2) & 7);
                 u32 shift = ((this->io.v >> 4) & 0x04) | (this->io.v & 0x02);
-                this->bg_fetches[1] = (this->nes->bus.PPU_read_effect(this->nes, attrib_addr) >> shift) & 3;
+                this->bg_fetches[1] = (NES_PPU_read_effect(this->nes, attrib_addr) >> shift) & 3;
                 break;
             case 5: // low buffer
                 this->bg_tile_fetch_buffer = fetch_chr_line_low(this, this->bg_tile_fetch_addr);
@@ -684,7 +684,7 @@ u32 NES_PPU_cycle(THIS, u32 howmany) {
             i32 r = effect_buffer_get(&this->w2006_buffer, this->nes->clock.ppu_master_clock / this->nes->clock.timing.ppu_divisor);
             if (r != -1) {
                 this->io.v = r;
-                this->nes->bus.a12_watch(this->nes, r);
+                NES_bus_a12_watch(this->nes, r);
             }
             this->render_cycle(this);
             this->rendering_enabled = this->new_rendering_enabled;

@@ -8,7 +8,6 @@
 #include "component/audio/nes_apu/nes_apu.h"
 
 #include "nes_clock.h"
-#include "nes_bus.h"
 #include "mappers/mapper.h"
 #include "nes_cart.h"
 #include "nes_cpu.h"
@@ -41,7 +40,7 @@ struct NES {
     u32 display_enabled;
     struct cvec* IOs;
 
-    struct NES_mapper bus;
+    struct NES_bus bus;
     struct NES_cart cart;
 
     struct {

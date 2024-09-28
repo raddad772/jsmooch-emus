@@ -123,8 +123,8 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
         ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
         ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
         ImGui::Text("FPS: %.1f", io.Framerate);
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 static void render_event_view(struct full_system &fsys)
@@ -155,12 +155,12 @@ static void render_event_view(struct full_system &fsys)
             }
         }
 
-        ImGui::End(); // end window
     }
+    ImGui::End(); // end window
 }
 
 static void render_disassembly_views(struct full_system &fsys, bool update_dasm_scroll) {
-    if (fsys.dasm && fsys.enable_debugger && fsys.has_played_once && ImGui::Begin("Disassembly View")) {
+    if (ImGui::Begin("Disassembly View") && fsys.dasm && fsys.enable_debugger && fsys.has_played_once) {
         static ImGuiTableFlags flags =
                 ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
                 ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
@@ -245,8 +245,8 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
             }
 
         }
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
@@ -325,8 +325,8 @@ static void render_image_views(struct full_system &fsys)
         if (ImGui::Begin(myv.view->image.label)) {
             fsys.image_view_present(myv.view, myv.texture);
             ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
-            ImGui::End();
         }
+        ImGui::End();
     }
 }
 
@@ -370,8 +370,8 @@ int main(int, char**)
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
-    enum jsm_systems which = SYS_DMG;
-    //enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_DMG;
+    enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_GG;
     //enum jsm_systems which = SYS_SG1000;
@@ -539,7 +539,7 @@ int main(int, char**)
         render_emu_window(fsys, io);
 
         // debug controls window
-        {
+        if (ImGui::Begin("Play")){
             static int steps[3] = { 10, 1, 1 };
             bool play_pause = false;
             bool step_clocks = false, step_scanlines = false, step_seconds = false;
@@ -595,6 +595,7 @@ int main(int, char**)
             ImGui::Text("Frame: %lld", fv.master_frame);
             ImGui::Text("X,Y:%d,%d", fv.x, fv.scanline);
         }
+        ImGui::End();
 
         framevars end_fv = fsys.get_framevars();
         bool update_dasm_scroll = false;

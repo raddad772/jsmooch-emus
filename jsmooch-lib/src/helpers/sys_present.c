@@ -8,7 +8,7 @@
 #include "sys_present.h"
 
 
-u32 calc_stride(u32 out_width, u32 in_width)
+static u32 calc_stride(u32 out_width, u32 in_width)
 {
     return (out_width - in_width);
 }

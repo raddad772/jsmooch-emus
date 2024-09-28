@@ -38,7 +38,7 @@ static void NESJ_describe_io(JSM, struct cvec* IOs);
 static u32 read_trace(void *ptr, u32 addr)
 {
     struct NES* this = (struct NES*)ptr;
-    return this->bus.CPU_read(this, addr, 0, 0);
+    return NES_bus_CPU_read(this, addr, 0, 0);
 }
 
 #define APU_CYCLES_PER_FRAME  29780
@@ -80,8 +80,8 @@ void NES_new(JSM)
     //NES_bus_init(&this, &this->clock);
     r2A03_init(&this->cpu, this);
     NES_PPU_init(&this->ppu, this);
+    NES_bus_init(&this->bus, this);
     NES_cart_init(&this->cart, this);
-    NES_mapper_init(&this->bus, this);
     NES_APU_init(&this->apu);
     this->apu.master_cycles = &this->clock.master_clock;
 
@@ -124,7 +124,7 @@ void NES_delete(JSM)
     GB_bus_delete(&this->bus);*/
     //GB_clock_delete(&this->clock);
 
-    NES_mapper_delete(&this->bus);
+    NES_bus_delete(&this->bus);
     NES_cart_delete(&this->cart);
 
     while (cvec_len(this->IOs) > 0) {
@@ -146,9 +146,9 @@ static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
     NES_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
-    NES_mapper_set_which(&this->bus, this->cart.header.mapper_number);
-    this->bus.set_cart(this, &this->cart);
-    NESJ_reset(jsm);
+    NES_bus_set_which_mapper(&this->bus, this->cart.header.mapper_number);
+    NES_bus_set_cart(this, &this->cart);
+    //NESJ_reset(jsm);
 }
 
 static void NESIO_unload_cart(JSM)
@@ -285,6 +285,7 @@ void NESJ_reset(JSM)
     r2A03_reset(&this->cpu);
     NES_PPU_reset(&this->ppu);
     NES_APU_reset(&this->apu);
+    NES_bus_reset(this);
 }
 
 
@@ -354,7 +355,7 @@ u32 NESJ_finish_scanline(JSM)
         r2A03_run_cycle(&this->cpu);
         NES_APU_cycle(&this->apu);
         sample_audio(this);
-        this->bus.cycle(this);
+        NES_bus_CPU_cycle(this);
         this->clock.cpu_frame_cycle++;
         this->clock.cpu_master_clock += cpu_step;
         i64 ppu_left = (i64)this->clock.master_clock - (i64)this->clock.ppu_master_clock;
@@ -384,7 +385,7 @@ u32 NESJ_step_master(JSM, u32 howmany)
         r2A03_run_cycle(&this->cpu);
         NES_APU_cycle(&this->apu);
         sample_audio(this);
-        this->bus.cycle(this);
+        NES_bus_CPU_cycle(this);
         this->clock.cpu_frame_cycle++;
         this->clock.cpu_master_clock += cpu_step;
         i64 ppu_left = (i64)this->clock.master_clock - (i64)this->clock.ppu_master_clock;

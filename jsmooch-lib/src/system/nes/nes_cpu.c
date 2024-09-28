@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/nesm6502_opcodes.h"
+#include "mappers/mapper.h"
 #include "helpers/debugger/debugger.h"
 #include "nes.h"
 #include "nes_cpu.h"
@@ -92,7 +93,7 @@ void r2A03_init(struct r2A03* this, struct NES* nes)
 
 u32 NES_CPU_read_trace(void *tr, u32 addr) {
     struct NES* nes = (struct NES*)tr;
-    return nes->bus.CPU_read(nes, addr, 0, 0);
+    return NES_bus_CPU_read(nes, addr, 0, 0);
 }
 
 void r2A03_notify_NMI(RT, u32 level) {
@@ -118,7 +119,7 @@ void r2A03_run_cycle(RT) {
             return;
         }
         this->io.dma.step = 0;
-        NES_bus_PPU_write_regs(this->nes, 0x2004, this->nes->bus.CPU_read(this->nes, this->io.dma.addr, 0, 1));
+        NES_bus_PPU_write_regs(this->nes, 0x2004, NES_bus_CPU_read(this->nes, this->io.dma.addr, 0, 1));
         this->io.dma.bytes_left--;
         this->io.dma.addr = (this->io.dma.addr + 1) & 0xFFFF;
         if (this->io.dma.bytes_left == 0) {
@@ -129,10 +130,10 @@ void r2A03_run_cycle(RT) {
     // TODO: put both of these either before or after the cycle, and re-do emu sync issues if any occur
     M6502_cycle(&this->cpu);
     if (!this->cpu.pins.RW) {
-        this->cpu.pins.D = this->open_bus = this->nes->bus.CPU_read(this->nes, this->cpu.pins.Addr, this->open_bus, 1);
+        this->cpu.pins.D = this->open_bus = NES_bus_CPU_read(this->nes, this->cpu.pins.Addr, this->open_bus, 1);
     }
     if (this->cpu.pins.RW) {
-        this->nes->bus.CPU_write(this->nes, this->cpu.pins.Addr, this->cpu.pins.D);
+        NES_bus_CPU_write(this->nes, this->cpu.pins.Addr, this->cpu.pins.D);
     }
 }
 

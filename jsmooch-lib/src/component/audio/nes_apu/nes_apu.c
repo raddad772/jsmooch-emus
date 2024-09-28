@@ -338,13 +338,13 @@ static inline void clock_sweep(struct NES_APU* this, u32 pc)
         v = 0x800;
         c->sweep.overflow = 1;
     }
-    if ((c->number == 0) && (c->sweep.enabled))
-            printf("\nCLOCK SWEEP C0. SHIFT: %d, PERIOD COUNT: %d, PERIOD RELOAD: %d", c->sweep.shift, c->sweep.period.counter, c->sweep.period.reload);
+    //if ((c->number == 0) && (c->sweep.enabled))
+    //printf("\nCLOCK SWEEP C0. SHIFT: %d, PERIOD COUNT: %d, PERIOD RELOAD: %d", c->sweep.shift, c->sweep.period.counter, c->sweep.period.reload);
     if (c->sweep.enabled && (c->sweep.shift != 0) && (c->sweep.period.counter <= 0)) { // If the divider's counter is zero, the sweep is enabled, the shift count is nonzero,
         if (!c->sweep.overflow) { // and the sweep unit is not muting the channel: The pulse's period is set to the target period.
             //  the sweep unit is disabled including because the shift count is zero, the pulse channel's period is never updated
             if ((c->sweep.enabled) && (c->sweep.shift != 0)) {
-                if (c->number == 0) printf("\nSET NEW FREQ:%d chan:%d", v, c->number);
+                //if (c->number == 0) printf("\nSET NEW FREQ:%d chan:%d", v, c->number);
                 c->period.reload = v;
             }
         }
@@ -356,7 +356,7 @@ static inline void clock_sweep(struct NES_APU* this, u32 pc)
     }
     else {
         c->sweep.period.counter--;
-        if ((c->number == 0) && c->sweep.enabled) printf("\nSWEEP PERIOD COUNTER %d", c->sweep.period.counter);
+        //if ((c->number == 0) && c->sweep.enabled) printf("\nSWEEP PERIOD COUNTER %d", c->sweep.period.counter);
     }
 }
 

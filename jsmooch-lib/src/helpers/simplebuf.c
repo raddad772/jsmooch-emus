@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "simplebuf.h"
+#include "buf.h"
 
 
 void simplebuf8_clear(struct simplebuf8 *this)
@@ -25,6 +26,8 @@ void simplebuf8_delete(struct simplebuf8 *this)
 {
     if (this->ptr) free(this->ptr);
     this->ptr = NULL;
+    this->sz = 0;
+    this->mask = 0;
 }
 
 int popcount(u64 n)
@@ -44,4 +47,18 @@ void simplebuf8_allocate(struct simplebuf8 *this, u64 sz)
     this->ptr = malloc(sz);
     this->sz = sz;
     this->mask = sz - 1; // only use if we're a power of 2
+}
+
+void simplebuf8_copy_from_buf(struct simplebuf8 *dest, struct buf *src)
+{
+    if (src->ptr == NULL) {
+        simplebuf8_delete(dest);
+        return;
+    }
+
+    simplebuf8_allocate(dest, src->size);
+    if (src->size > 0)
+        memcpy(dest->ptr, src->ptr, src->size);
+    dest->sz = src->size;
+    dest->mask = dest->sz - 1; // only use if we're definitely a power of 2
 }

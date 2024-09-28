@@ -9,6 +9,7 @@
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/m6502_disassembler.h"
 #include "nes_debugger.h"
+#include "mappers/mapper.h"
 #include "nes.h"
 
 #define JTHIS struct NES* this = (struct NES*)jsm->ptr
@@ -119,6 +120,61 @@ static void setup_disassembly_view(struct NES* this, struct debugger_interface *
     dv->get_disassembly_vars.func = &get_disassembly_vars;
 }
 
+static u32 calc_stride(u32 out_width, u32 in_width)
+{
+    return (out_width - in_width);
+}
+
+
+static void render_image_view_tilemap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    struct NES* this = (struct NES*)ptr;
+    if (this->clock.master_frame == 0) return;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+
+    u32 line_stride = calc_stride(out_width, 128);
+    u32 tile_stride = line_stride + 120;
+
+    for (u32 tilemap_num = 0; tilemap_num < 2; tilemap_num++) {
+        u32 addr_tilemap = 0x1000 * tilemap_num;
+        u32 y_base = 129 * tilemap_num;
+        // 16 rows
+        for (u32 tiles_num = 0; tiles_num < 256; tiles_num++) {
+            u32 tile_y = (tiles_num & 0xF0) >> 1;
+            u32 tile_x = (tiles_num & 15) << 3;
+            u32 *optr = outbuf + ((tile_y + y_base) * out_width) + tile_x;
+            u32 tile_addr = addr_tilemap + (16 * tiles_num);
+            //printf("\nTBL:%d TILE:%d ADDR:%04x X:%d Y:%d", tilemap_num, tiles_num, tile_addr, tile_x, tile_y);
+            for (u32 inner_y = 0; inner_y < 8; inner_y++) {
+                u32 bp0 = NES_PPU_read_noeffect(this, tile_addr);
+                u32 bp1 = NES_PPU_read_noeffect(this, tile_addr+8);
+                for (u32 inner_x = 0; inner_x < 8; inner_x++) {
+                    u32 c = ((bp0 >> 7) | (bp1 >> 6)) & 3;
+                    bp0 <<= 1;
+                    bp1 <<= 1;
+                    /*if (tilemap_num == 0)
+                        c *= 0x555555;
+                    else
+                        c *= 0x550055;*/
+                    c *= 0x555555;
+                    *optr = 0xFF000000 | c;
+                    optr++;
+                }
+                tile_addr++;
+                optr += tile_stride;
+            }
+        }
+    }
+    u32 *optr = outbuf + (128 * out_width);
+    for (u32 x = 0; x < 128; x++) {
+        *optr = 0xFF00FF00;
+        optr++;
+    }
+}
+
+
 static void render_image_view_nametables(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
     struct NES* this = (struct NES*)ptr;
@@ -155,12 +211,12 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
                     u32 bg_pattern_table = row->io.bg_pattern_table;
                     for (u32 get_tile_x = 0; get_tile_x < 32; get_tile_x++) {
                         u32 addr = nt_base_addr + (32 * get_tile_y) + get_tile_x;
-                        u32 tilenum = this->bus.PPU_read_noeffect(this, addr);
+                        u32 tilenum = NES_PPU_read_noeffect(this, addr);
                         u32 tile_addr = 0x1000 * bg_pattern_table;
                         u32 rownum = inner_tile_y;
                         u32 taddr = tile_addr + (tilenum << 4) + rownum;
-                        u32 p0 = this->bus.PPU_read_noeffect(this, taddr);
-                        u32 p1 = this->bus.PPU_read_noeffect(this, taddr + 8);
+                        u32 p0 = NES_PPU_read_noeffect(this, taddr);
+                        u32 p1 = NES_PPU_read_noeffect(this, taddr + 8);
 
                         // p0 is the lower bit of each pixel
                         // LSB = rightmost pixel, so leftmost is MSB
@@ -211,6 +267,26 @@ static void setup_image_view_nametables(struct NES* this, struct debugger_interf
 
     sprintf(iv->label, "Nametable Viewer");
 }
+
+static void setup_image_view_tilemap(struct NES* this, struct debugger_interface *dbgr)
+{
+    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 128;
+    iv->height = 257;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 128, 257 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_tilemap;
+
+    sprintf(iv->label, "Pattern Table Viewer");
+}
+
 
 static void setup_waveforms(struct NES* this, struct debugger_interface *dbgr)
 {
@@ -311,6 +387,7 @@ void NESJ_setup_debugger_interface(struct jsm_system *jsm, struct debugger_inter
     setup_disassembly_view(this, dbgr);
     setup_events_view(this, dbgr);
     setup_image_view_nametables(this, dbgr);
+    setup_image_view_tilemap(this, dbgr);
     setup_waveforms(this, dbgr);
 }
 

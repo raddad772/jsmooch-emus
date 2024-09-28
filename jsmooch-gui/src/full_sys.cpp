@@ -540,7 +540,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "240pee.nes", nullptr);
             break;
         case SYS_SG1000:
@@ -556,8 +557,8 @@ void full_system::load_default_ROM()
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
-            //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
@@ -703,7 +704,7 @@ void full_system::setup_display()
     // Determine final output resolution
     u32 wh = get_closest_pow2(MAX(p->cols.max_visible, p->rows.max_visible));
     output.backbuffer_texture.setup(wgpu_device, "emulator backbuffer", wh, wh);
-    printf("\nMAX COLS:%d ROWS:%d POW2:%d", p->cols.max_visible, p->rows.max_visible, wh);
+    //printf("\nMAX COLS:%d ROWS:%d POW2:%d", p->cols.max_visible, p->rows.max_visible, wh);
 
     u32 overscan_x_offset = p->overscan.left;
     u32 overscan_width = p->cols.visible - (p->overscan.left + p->overscan.right);

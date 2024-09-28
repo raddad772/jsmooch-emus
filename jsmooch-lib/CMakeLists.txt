@@ -1,4 +1,5 @@
 set(CMAKE_C_STANDARD 11)
+#set(CMAKE_C_FLAGS "$CMAKE_C_FLAGS -Wincompatible-pointer-types")
 
 add_library(jsmooch-lib
         src/component/cpu/sm83/sm83.c
@@ -47,8 +48,6 @@ add_library(jsmooch-lib
         src/component/cpu/m6502/nesm6502_opcodes.c
         src/system/nes/nes_clock.c
         src/system/nes/nes_clock.h
-        src/system/nes/nes_bus.c
-        src/system/nes/nes_bus.h
         src/system/nes/nes_ppu.c
         src/system/nes/nes_ppu.h
         src/system/nes/nes_cart.c
@@ -60,26 +59,8 @@ add_library(jsmooch-lib
         src/system/nes/mappers/mapper.c
         src/system/nes/mappers/mapper.h
         src/system/nes/mappers/mapper.h
-        src/system/nes/mappers/no_mapper.c
-        src/system/nes/mappers/no_mapper.h
         src/helpers/buf.c
         src/helpers/buf.h
-        src/system/nes/mappers/a12_watcher.c
-        src/system/nes/mappers/a12_watcher.h
-        src/system/nes/mappers/mmc3b.c
-        src/system/nes/mappers/mmc3b.h
-        src/system/nes/mappers/axrom.c
-        src/system/nes/mappers/axrom.h
-        src/system/nes/mappers/cnrom.c
-        src/system/nes/mappers/cnrom.h
-        src/system/nes/mappers/dxrom.c
-        src/system/nes/mappers/dxrom.h
-        src/system/nes/mappers/mmc1.c
-        src/system/nes/mappers/mmc1.h
-        src/system/nes/mappers/uxrom.c
-        src/system/nes/mappers/uxrom.h
-        src/system/nes/mappers/vrc_2b_4e_4f.c
-        src/system/nes/mappers/vrc_2b_4e_4f.h
         src/component/cpu/z80/z80.c
         src/component/cpu/z80/z80.h
         src/component/cpu/z80/z80_opcodes.c
@@ -247,8 +228,10 @@ add_library(jsmooch-lib
         src/helpers/debugger/waveform.h
         src/component/audio/nes_apu/nes_apu.c
         src/component/audio/nes_apu/nes_apu.h
-        src/system/nes/mappers/sunsoft_57.h
-        src/system/nes/mappers/sunsoft_57.c
+        src/system/nes/mappers/mapper.c
+        src/system/nes/mappers/mapper.h
+        src/system/nes/mappers/nrom.c
+        src/system/nes/mappers/nrom.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
