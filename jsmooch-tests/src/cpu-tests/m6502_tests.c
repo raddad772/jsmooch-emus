@@ -297,8 +297,10 @@ static void pprint_regs(struct M6502_regs *cpu_regs, struct test_cpu_regs *test_
 static void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
     printf("\nCycles");
     for (u32 i = 0; i < test->num_cycles; i++) {
-        printf("\n\nTEST cycle:%d  addr:%04x  data:%02x  rw:%d", i, test->cycles[i].addr, test->cycles[i].data, test->cycles[i].rw);
-        printf("\nMINE cycle:%d  addr:%04x  data:%02x  rw:%d", i, cpucycles[i].addr, cpucycles[i].data, cpucycles[i].rw);
+#define DC(x) (test->cycles[i]. x == cpucycles[i]. x)
+        u32 same = DC(addr) && DC(data) && DC(rw);
+        printf("\n\n%cTEST cycle:%d  addr:%04x  data:%02x  rw:%d", same ? ' ' : '*', i, test->cycles[i].addr, test->cycles[i].data, test->cycles[i].rw);
+        printf("\n MINE cycle:%d  addr:%04x  data:%02x  rw:%d", i, cpucycles[i].addr, cpucycles[i].data, cpucycles[i].rw);
         //pprint_P(cpucycles[i].data, test->cycles[i].data, 0);
     }
 }
@@ -340,7 +342,6 @@ static void test_m6502_automated(struct m6502_test_result *out, struct M6502* cp
     u32 ins;
     *cpu->trace.cycles = 1;
     for (u32 i = 0; i < NTESTS; i++) {
-        printf("\nROUND %d", i);
         out->failed_test_struct = &tests[i];
         struct jsontest *test = &tests[i];
         struct test_state *initial = &tests[i].initial;
@@ -413,6 +414,10 @@ static void test_m6502_automated(struct m6502_test_result *out, struct M6502* cp
         }
 
         M6502_cycle(cpu);
+        if (cpu->regs.TCU != 0) {
+            printf("\nLEN MISMATCH!? %d", cpu->regs.TCU);
+            passed = 0;
+        }
         last_pc = (cpu->regs.PC - 1) & 0xFFFF;
         passed &= testregs(cpu, final, initial, last_pc, is_call, i);
         for (u32 x = 0; x < final->num_ram_entry; x++) {
@@ -475,7 +480,7 @@ void test_6502(M6502_ins_func *funcs)
     rd.read_trace = &read_trace_m6502;
     M6502_init(&cpu, funcs);
     M6502_setup_tracing(&cpu, &rd, &trace_cycles);
-    u32 start_test = 0xa3;
+    u32 start_test = 0;
     //TODO POLL IRQ AT PROPER TIME
 
     for (u32 i = start_test; i < 256; i++) {

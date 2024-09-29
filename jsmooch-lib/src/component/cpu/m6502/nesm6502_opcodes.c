@@ -4116,7 +4116,7 @@ static void nesM6502_ins_8A_TXA(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_8B_XAS(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_8B_XAA(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: {
@@ -4324,7 +4324,7 @@ static void nesM6502_ins_92_STP(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_93_XAA(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_93_SHA(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ZP
@@ -4531,7 +4531,7 @@ static void nesM6502_ins_9A_TXS(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_9B_SHA(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_9B_SHS(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ABSL
@@ -4570,7 +4570,7 @@ static void nesM6502_ins_9B_SHA(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_9C_LAS(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_9C_SHY(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ABSL
@@ -4639,7 +4639,7 @@ static void nesM6502_ins_9D_STA(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_9E_SHY(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_9E_SHX(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ABSL
@@ -4677,7 +4677,7 @@ static void nesM6502_ins_9E_SHY(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_9F_XAA(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_9F_SHA(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ABSL
@@ -4813,10 +4813,7 @@ static void nesM6502_ins_A3_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 7: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -4907,10 +4904,7 @@ static void nesM6502_ins_A7_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 4: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -4976,7 +4970,7 @@ static void nesM6502_ins_AA_TAX(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_AB_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_AB_LXA(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: {
@@ -4984,15 +4978,9 @@ static void nesM6502_ins_AB_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            regs->A = pins->D;
-            regs->P.Z = +((regs->A) == 0);
+            regs->A = regs->X = (regs->A | 0xEE) & pins->D;
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 3: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
-            regs->P.Z = +((regs->X) == 0);
-            regs->P.N = ((regs->X) & 0x80) >> 7;
+            regs->P.Z = +((regs->A) == 0);
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -5101,10 +5089,7 @@ static void nesM6502_ins_AF_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 5: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5224,10 +5209,7 @@ static void nesM6502_ins_B3_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 7: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5334,10 +5316,7 @@ static void nesM6502_ins_B7_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 5: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5415,7 +5394,7 @@ static void nesM6502_ins_BA_TSX(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_BB_undefined(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_BB_LAS(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: {
@@ -5573,10 +5552,7 @@ static void nesM6502_ins_BF_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 6: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5685,7 +5661,7 @@ static void nesM6502_ins_C3_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -5791,7 +5767,7 @@ static void nesM6502_ins_C7_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -5862,7 +5838,7 @@ static void nesM6502_ins_CA_DEX(struct M6502_regs *regs, struct M6502_pins *pins
     }}
 }
 
-static void nesM6502_ins_CB_AXS(struct M6502_regs *regs, struct M6502_pins *pins)
+static void nesM6502_ins_CB_SBX(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: {
@@ -5870,11 +5846,12 @@ static void nesM6502_ins_CB_AXS(struct M6502_regs *regs, struct M6502_pins *pins
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            u32 i = ((regs->A & regs->X) + (pins->D ^ 0xFF));
-            regs->P.N = ((i) & 0x80) >> 7;
-            regs->P.N = ((i) & 0x80) >> 7;
-            regs->P.C = (i > 0xFF);
-            regs->X = i;
+            regs->X &= regs->A;
+            u16 d = regs->X - pins->D;
+            regs->X = d & 0xFF;
+            regs->P.N = ((d) & 0x80) >> 7;
+            regs->P.Z = +((d) == 0);
+            regs->P.C = ((d >> 8) ^ 1) & 1;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -5994,7 +5971,7 @@ static void nesM6502_ins_CF_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6122,7 +6099,7 @@ static void nesM6502_ins_D3_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6241,7 +6218,7 @@ static void nesM6502_ins_D7_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             regs->TR = (regs->TR - 1) & 0xFF;
             regs->P.Z = +((regs->TR) == 0);
             regs->P.N = ((regs->TR) & 0x80) >> 7;
-            i32 o = regs->TR - regs->TR;
+            i32 o = regs->A - regs->TR;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6351,7 +6328,7 @@ static void nesM6502_ins_DB_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             regs->TR = (regs->TR - 1) & 0xFF;
             regs->P.Z = +((regs->TR) == 0);
             regs->P.N = ((regs->TR) & 0x80) >> 7;
-            i32 o = regs->TR - regs->TR;
+            i32 o = regs->A - regs->TR;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6497,7 +6474,7 @@ static void nesM6502_ins_DF_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             regs->TR = (regs->TR - 1) & 0xFF;
             regs->P.Z = +((regs->TR) == 0);
             regs->P.N = ((regs->TR) & 0x80) >> 7;
-            i32 o = regs->TR - regs->TR;
+            i32 o = regs->A - regs->TR;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -7645,15 +7622,15 @@ M6502_ins_func nesM6502_decoded_opcodes[0x103] = {
       &nesM6502_ins_70_BVS,  &nesM6502_ins_71_ADC,  &nesM6502_ins_72_STP,  &nesM6502_ins_73_RRA,  &nesM6502_ins_74_NOP24,  &nesM6502_ins_75_ADC,  &nesM6502_ins_76_ROR,  &nesM6502_ins_77_RRA,
       &nesM6502_ins_78_SEI,  &nesM6502_ins_79_ADC,  &nesM6502_ins_7A_NOP,  &nesM6502_ins_7B_RRA,  &nesM6502_ins_7C_NOP24,  &nesM6502_ins_7D_ADC,  &nesM6502_ins_7E_ROR,  &nesM6502_ins_7F_RRA,
       &nesM6502_ins_80_NOP22,  &nesM6502_ins_81_STA,  &nesM6502_ins_82_NOP22,  &nesM6502_ins_83_SAX,  &nesM6502_ins_84_STY,  &nesM6502_ins_85_STA,  &nesM6502_ins_86_STX,  &nesM6502_ins_87_SAX,
-      &nesM6502_ins_88_DEY,  &nesM6502_ins_89_NOP22,  &nesM6502_ins_8A_TXA,  &nesM6502_ins_8B_XAS,  &nesM6502_ins_8C_STY,  &nesM6502_ins_8D_STA,  &nesM6502_ins_8E_STX,  &nesM6502_ins_8F_SAX,
-      &nesM6502_ins_90_BCC,  &nesM6502_ins_91_STA,  &nesM6502_ins_92_STP,  &nesM6502_ins_93_XAA,  &nesM6502_ins_94_STY,  &nesM6502_ins_95_STA,  &nesM6502_ins_96_STX,  &nesM6502_ins_97_SAX,
-      &nesM6502_ins_98_TYA,  &nesM6502_ins_99_STA,  &nesM6502_ins_9A_TXS,  &nesM6502_ins_9B_SHA,  &nesM6502_ins_9C_LAS,  &nesM6502_ins_9D_STA,  &nesM6502_ins_9E_SHY,  &nesM6502_ins_9F_XAA,
+      &nesM6502_ins_88_DEY,  &nesM6502_ins_89_NOP22,  &nesM6502_ins_8A_TXA,  &nesM6502_ins_8B_XAA,  &nesM6502_ins_8C_STY,  &nesM6502_ins_8D_STA,  &nesM6502_ins_8E_STX,  &nesM6502_ins_8F_SAX,
+      &nesM6502_ins_90_BCC,  &nesM6502_ins_91_STA,  &nesM6502_ins_92_STP,  &nesM6502_ins_93_SHA,  &nesM6502_ins_94_STY,  &nesM6502_ins_95_STA,  &nesM6502_ins_96_STX,  &nesM6502_ins_97_SAX,
+      &nesM6502_ins_98_TYA,  &nesM6502_ins_99_STA,  &nesM6502_ins_9A_TXS,  &nesM6502_ins_9B_SHS,  &nesM6502_ins_9C_SHY,  &nesM6502_ins_9D_STA,  &nesM6502_ins_9E_SHX,  &nesM6502_ins_9F_SHA,
       &nesM6502_ins_A0_LDY,  &nesM6502_ins_A1_LDA,  &nesM6502_ins_A2_LDX,  &nesM6502_ins_A3_LAX,  &nesM6502_ins_A4_LDY,  &nesM6502_ins_A5_LDA,  &nesM6502_ins_A6_LDX,  &nesM6502_ins_A7_LAX,
-      &nesM6502_ins_A8_TAY,  &nesM6502_ins_A9_LDA,  &nesM6502_ins_AA_TAX,  &nesM6502_ins_AB_LAX,  &nesM6502_ins_AC_LDY,  &nesM6502_ins_AD_LDA,  &nesM6502_ins_AE_LDX,  &nesM6502_ins_AF_LAX,
+      &nesM6502_ins_A8_TAY,  &nesM6502_ins_A9_LDA,  &nesM6502_ins_AA_TAX,  &nesM6502_ins_AB_LXA,  &nesM6502_ins_AC_LDY,  &nesM6502_ins_AD_LDA,  &nesM6502_ins_AE_LDX,  &nesM6502_ins_AF_LAX,
       &nesM6502_ins_B0_BCS,  &nesM6502_ins_B1_LDA,  &nesM6502_ins_B2_STP,  &nesM6502_ins_B3_LAX,  &nesM6502_ins_B4_LDY,  &nesM6502_ins_B5_LDA,  &nesM6502_ins_B6_LDX,  &nesM6502_ins_B7_LAX,
-      &nesM6502_ins_B8_CLV,  &nesM6502_ins_B9_LDA,  &nesM6502_ins_BA_TSX,  &nesM6502_ins_BB_undefined,  &nesM6502_ins_BC_LDY,  &nesM6502_ins_BD_LDA,  &nesM6502_ins_BE_LDX,  &nesM6502_ins_BF_LAX,
+      &nesM6502_ins_B8_CLV,  &nesM6502_ins_B9_LDA,  &nesM6502_ins_BA_TSX,  &nesM6502_ins_BB_LAS,  &nesM6502_ins_BC_LDY,  &nesM6502_ins_BD_LDA,  &nesM6502_ins_BE_LDX,  &nesM6502_ins_BF_LAX,
       &nesM6502_ins_C0_CPY,  &nesM6502_ins_C1_CMP,  &nesM6502_ins_C2_NOP22,  &nesM6502_ins_C3_DCP,  &nesM6502_ins_C4_CPY,  &nesM6502_ins_C5_CMP,  &nesM6502_ins_C6_DEC,  &nesM6502_ins_C7_DCP,
-      &nesM6502_ins_C8_INY,  &nesM6502_ins_C9_CMP,  &nesM6502_ins_CA_DEX,  &nesM6502_ins_CB_AXS,  &nesM6502_ins_CC_CPY,  &nesM6502_ins_CD_CMP,  &nesM6502_ins_CE_DEC,  &nesM6502_ins_CF_DCP,
+      &nesM6502_ins_C8_INY,  &nesM6502_ins_C9_CMP,  &nesM6502_ins_CA_DEX,  &nesM6502_ins_CB_SBX,  &nesM6502_ins_CC_CPY,  &nesM6502_ins_CD_CMP,  &nesM6502_ins_CE_DEC,  &nesM6502_ins_CF_DCP,
       &nesM6502_ins_D0_BNE,  &nesM6502_ins_D1_CMP,  &nesM6502_ins_D2_STP,  &nesM6502_ins_D3_DCP,  &nesM6502_ins_D4_NOP24,  &nesM6502_ins_D5_CMP,  &nesM6502_ins_D6_DEC,  &nesM6502_ins_D7_DCP,
       &nesM6502_ins_D8_CLD,  &nesM6502_ins_D9_CMP,  &nesM6502_ins_DA_NOP,  &nesM6502_ins_DB_DCP,  &nesM6502_ins_DC_NOP24,  &nesM6502_ins_DD_CMP,  &nesM6502_ins_DE_DEC,  &nesM6502_ins_DF_DCP,
       &nesM6502_ins_E0_CPX,  &nesM6502_ins_E1_SBC,  &nesM6502_ins_E2_NOP22,  &nesM6502_ins_E3_ISC,  &nesM6502_ins_E4_CPX,  &nesM6502_ins_E5_SBC,  &nesM6502_ins_E6_INC,  &nesM6502_ins_E7_ISC,

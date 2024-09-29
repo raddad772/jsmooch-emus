@@ -90,7 +90,7 @@ const M6502_MN = Object.freeze({
     ALR: 62,
     ANC: 63,
     ARR: 64,
-    AXS: 65,
+    SBX: 65,
     LAX: 66,
     SAX: 67,
     DCP: 68,
@@ -107,6 +107,7 @@ const M6502_MN = Object.freeze({
     SHX: 77,
     SHY: 78,
     LAS: 79,
+    LXA: 80,
 
 
     //CMOS instructions
@@ -244,7 +245,7 @@ const M6502_MN_R = {
     62: "ALR",
     63: "ANC",
     64: "ARR",
-    65: "AXS",
+    65: "SBX",
     66: "LAX",
     67: "SAX",
     68: "DCP",
@@ -252,12 +253,14 @@ const M6502_MN_R = {
     70: "RLA",
     71: "RRA",
     72: "SRE",
-    73: "SHA",
-    74: "XAA",
-    75: "XAS",
-    76: "SHX",
-    77: "SHY",
-    78: "LAS",
+    73: "SHS",
+    74: "SHA",
+    75: "XAA",
+    76: "XAS",
+    77: "SHX",
+    78: "SHY",
+    79: "LAS",
+    80: "LXA",
     82: "NOP11",
     83: "NOP22",
     84: "NOP24",
@@ -306,6 +309,7 @@ const M6502_MN_R = {
     128: "NOPL",
 
 };
+
 //console.log(m6502_am_gen());
 const M6502_AM = Object.freeze({
     ACCUM: 0, // X
@@ -385,6 +389,7 @@ const M6502_AM_R = {
     302: "ABS_Yw",
     303: "ABS_Yxas",
     304: "ABS_Ysxa",
+    305: "ABS_AYr",
     4: "IMM",
     5: "IMPLIED",
     6: "IND",
@@ -411,7 +416,6 @@ const M6502_AM_R = {
     15: "ZP_INDr",
     1501: "ZP_INDw",
 };
-
 
 class M6502_opcode_info {
     constructor(opcode, ins, addr_mode, mnemonic, variant=M6502_VARIANTS.STOCK) {
@@ -700,7 +704,7 @@ const M6502_undocumented_matrix = Object.freeze({
     0x9F: new M6502_opcode_info(0x9F, M6502_MN.SHA, M6502_AM.ABS_Yxas, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xA3: new M6502_opcode_info(0xA3, M6502_MN.LAX, M6502_AM.X_INDr, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xA7: new M6502_opcode_info(0xA7, M6502_MN.LAX, M6502_AM.ZPr, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
-    0xAB: new M6502_opcode_info(0xAB, M6502_MN.LAX, M6502_AM.IMM, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
+    0xAB: new M6502_opcode_info(0xAB, M6502_MN.LXA, M6502_AM.IMM, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xAF: new M6502_opcode_info(0xAF, M6502_MN.LAX, M6502_AM.ABSr, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xB2: new M6502_opcode_info(0xB2, M6502_MN.STP, M6502_AM.IMPLIED, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xB3: new M6502_opcode_info(0xB3, M6502_MN.LAX, M6502_AM.IND_Yr, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
@@ -710,7 +714,7 @@ const M6502_undocumented_matrix = Object.freeze({
     0xC2: new M6502_opcode_info(0xC2, M6502_MN.NOP22, M6502_AM.IMM, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xC3: new M6502_opcode_info(0xC3, M6502_MN.DCP, M6502_AM.X_INDm, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xC7: new M6502_opcode_info(0xC7, M6502_MN.DCP, M6502_AM.ZPm, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
-    0xCB: new M6502_opcode_info(0xCB, M6502_MN.AXS, M6502_AM.IMM, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
+    0xCB: new M6502_opcode_info(0xCB, M6502_MN.SBX, M6502_AM.IMM, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xCF: new M6502_opcode_info(0xCF, M6502_MN.DCP, M6502_AM.ABSm, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xD2: new M6502_opcode_info(0xD2, M6502_MN.STP, M6502_AM.IMPLIED, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),
     0xD3: new M6502_opcode_info(0xD3, M6502_MN.DCP, M6502_AM.IND_Ym, '', M6502_VARIANTS.STOCK_UNDOCUMENTED),

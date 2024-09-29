@@ -562,6 +562,13 @@ class m6502_switchgen {
         this.addl('}');
     }
 
+    LXA(what = 'regs.TR') {
+        // 						a_ = x_ = (a_ | 0xee) & operand_;
+        this.addl('regs.A = regs.X = (regs.A | 0xEE) & ' + what + ';');
+        this.setn('regs.A');
+        this.setz('regs.A');
+    }
+
     LAS(what = 'regs.TR') {
         this.addl('regs.A = ' + what + ' & regs.S;');
         this.addl('regs.X = regs.S = regs.A;')
@@ -622,25 +629,26 @@ class m6502_switchgen {
         this.addl('regs.P.V = ((regs.A >>> 6) ^ (regs.A >>> 5) & 1);');
     }
 
-    AXS(what = 'regs.TR') {
-        // Sets X to (A AND X) - #value without borrow, update NZC
-        this.addl('u32 i = ((regs.A & regs.X) + (' + what + ' ^ 0xFF));');
-        this.setn('i');
-        this.setn('i');
-        this.addl('regs.P.C = (i > 0xFF);');
-        this.addl('regs.X = i;');
+    SBX(what = 'regs.TR') {
+        this.addl('regs.X &= regs.A;');
+        this.addl('u16 d = regs.X - ' + what + ';');
+        this.addl('regs.X = d & 0xFF;');
+        this.setn('d');
+        this.setz('d');
+        this.addl('regs.P.C = ((d >> 8) ^ 1) & 1;')
     }
 
     LAX(what = 'regs.TR') {
         // LDA then TAX
         this.LD('regs.A', what);
-        this.Transfer('regs.A', 'regs.X', 1);
+        this.LD('regs.X', what);
+        //this.Transfer('regs.A', 'regs.X', 1);
     }
 
     DCP(what = 'regs.TR') {
         // Equivalent to DEC value then CMP value
         this.DEC(what);
-        this.CMP(what);
+        this.CMP('regs.A', what);
     }
 
     ISC(what = 'regs.TR') {
@@ -932,8 +940,8 @@ class m6502_switchgen {
             case M6502_MN.ARR:
                 this.ARR(out_reg);
                 break;
-            case M6502_MN.AXS:
-                this.AXS(out_reg);
+            case M6502_MN.SBX:
+                this.SBX(out_reg);
                 break;
             case M6502_MN.LAX:
                 this.LAX(out_reg);
@@ -955,6 +963,9 @@ class m6502_switchgen {
                 break;
             case M6502_MN.LAS:
                 this.LAS(out_reg);
+                break;
+            case M6502_MN.LXA:
+                this.LXA(out_reg);
                 break;
             case M6502_MN.SRE:
                 this.SRE(out_reg);

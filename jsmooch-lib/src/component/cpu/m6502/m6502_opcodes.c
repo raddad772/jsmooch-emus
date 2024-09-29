@@ -4244,10 +4244,10 @@ static void M6502_ins_8B_XAA(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            regs->A = regs->X;
-            regs->A &= pins->D;
-            regs->P.Z = +((regs->A) == 0);
+            regs->A = (regs->A | 0xEE) & regs->X & pins->D;
+            pins->D = regs->A;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            regs->P.Z = +((regs->A) == 0);
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -4409,6 +4409,7 @@ static void M6502_ins_91_STA(struct M6502_regs *regs, struct M6502_pins *pins)
         case 4: { //always idle
             regs->TA = (regs->TA + (pins->D << 8)) & 0xFFFF;
             pins->Addr = (pins->D << 8) | regs->TR;
+            regs->TR = regs->TA == pins->Addr;
             break; }
         case 5: { //write data
             pins->Addr = regs->TA;
@@ -4443,7 +4444,7 @@ static void M6502_ins_92_STP(struct M6502_regs *regs, struct M6502_pins *pins)
     }}
 }
 
-static void M6502_ins_93_AHX(struct M6502_regs *regs, struct M6502_pins *pins)
+static void M6502_ins_93_SHA(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ZP
@@ -4461,11 +4462,19 @@ static void M6502_ins_93_AHX(struct M6502_regs *regs, struct M6502_pins *pins)
         case 4: { //always idle
             regs->TA = (regs->TA + (pins->D << 8)) & 0xFFFF;
             pins->Addr = (pins->D << 8) | regs->TR;
+            regs->TR = regs->TA == pins->Addr;
             break; }
         case 5: { //write data
             pins->Addr = regs->TA;
             pins->RW = 1;
-            pins->D = (regs->A & regs->X);
+            //SHA!
+            if (!regs->TR) {
+                pins->D = regs->A & regs->X & (pins->Addr >> 8);
+                pins->Addr = (pins->Addr & 0xFF) | (pins->D << 8);
+            }
+            else {
+                pins->D = regs->A & regs->X & (((pins->Addr >> 8) + 1) & 0xFF);
+            }
             // Following is auto-generated code for instruction finish
             break; }
         case 6: { //cleanup
@@ -4563,7 +4572,7 @@ static void M6502_ins_97_SAX(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->Addr = pins->D;
             break; }
         case 3: { //write data
-            pins->Addr = (pins->Addr + regs->X) & 0xFF;
+            pins->Addr = (pins->Addr + regs->Y) & 0xFF;
             pins->RW = 1;
             pins->D = (regs->A & regs->X);
             // Following is auto-generated code for instruction finish
@@ -4642,21 +4651,40 @@ static void M6502_ins_9A_TXS(struct M6502_regs *regs, struct M6502_pins *pins)
     }}
 }
 
-static void M6502_ins_9B_XAA(struct M6502_regs *regs, struct M6502_pins *pins)
+static void M6502_ins_9B_SHS(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
-        case 1: {
+        case 1: { //get ABSL
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 2: { //cleanup_custom
-            regs->A = regs->X;
-            regs->A &= pins->D;
-            regs->P.Z = +((regs->A) == 0);
-            regs->P.N = ((regs->A) & 0x80) >> 7;
-            // Following is auto-generated code for instruction finish
+        case 2: { //get ABSH
+            regs->TA = pins->D;
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            break; }
+        case 3: { //idle incorrect
+            regs->TA |= pins->D << 8;
+            pins->Addr = (regs->TA & 0xFF00) | ((regs->TA + regs->Y) & 0xFF);
+            break; }
+        case 4: {
+            regs->TR = pins->Addr;
+            pins->Addr = (regs->TA + regs->Y) & 0xFFFF;
+            regs->TR = regs->TR == pins->Addr;
+            regs->S = regs->A & regs->X;
+            if (!regs->TR) {
+                pins->D = regs->S & (pins->Addr >> 8);
+                pins->Addr = (pins->Addr & 0xFF) | (pins->D << 8);
+            } else {
+                pins->D = regs->S & (((pins->Addr >> 8) + 1) & 0xFF);
+            }
+            pins->RW = 1;
+            // Following is auto-generated code for instruction finish
+            break; }
+        case 5: { //cleanup
+            pins->Addr = regs->PC;
+            regs->PC = (regs->PC + 1) & 0xFFFF;
+            pins->RW = 0;
             regs->TCU = 0;
             break;
     }}
@@ -4679,9 +4707,16 @@ static void M6502_ins_9C_SHY(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->Addr = (regs->TA & 0xFF00) | ((regs->TA + regs->X) & 0xFF);
             break; }
         case 4: {
+            regs->TR = pins->Addr;
             pins->Addr = (regs->TA + regs->X) & 0xFFFF;
+            regs->TR = regs->TR == pins->Addr;
+            if (!regs->TR) {
+                pins->D = regs->Y & (pins->Addr >> 8);
+                pins->Addr = (pins->Addr & 0xFF) | (pins->D << 8);
+            } else {
+                pins->D = (regs->Y & ((pins->Addr >> 8) + 1)) & 0xFF;
+            }
             pins->RW = 1;
-            pins->D = (regs->Y & (pins->Addr >> 8));
             // Following is auto-generated code for instruction finish
             break; }
         case 5: { //cleanup
@@ -4741,9 +4776,16 @@ static void M6502_ins_9E_SHX(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->Addr = (regs->TA & 0xFF00) | ((regs->TA + regs->Y) & 0xFF);
             break; }
         case 4: {
+            regs->TR = pins->Addr;
             pins->Addr = (regs->TA + regs->Y) & 0xFFFF;
+            regs->TR = regs->TR == pins->Addr;
+            if (!regs->TR) {
+                pins->D = regs->X & (pins->Addr >> 8);
+                pins->Addr = (pins->Addr & 0xFF) | (pins->D << 8);
+            } else {
+                pins->D = (regs->X & ((pins->Addr >> 8) + 1)) & 0xFF;
+            }
             pins->RW = 1;
-            pins->D = (regs->X & (pins->Addr >> 8));
             // Following is auto-generated code for instruction finish
             break; }
         case 5: { //cleanup
@@ -4755,7 +4797,7 @@ static void M6502_ins_9E_SHX(struct M6502_regs *regs, struct M6502_pins *pins)
     }}
 }
 
-static void M6502_ins_9F_AHX(struct M6502_regs *regs, struct M6502_pins *pins)
+static void M6502_ins_9F_SHA(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: { //get ABSL
@@ -4772,9 +4814,18 @@ static void M6502_ins_9F_AHX(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->Addr = (regs->TA & 0xFF00) | ((regs->TA + regs->Y) & 0xFF);
             break; }
         case 4: {
+            regs->TR = pins->Addr;
             pins->Addr = (regs->TA + regs->Y) & 0xFFFF;
+            regs->TR = regs->TR == pins->Addr;
+            //SHA!
+            if (!regs->TR) {
+                pins->D = regs->A & regs->X & (pins->Addr >> 8);
+                pins->Addr = (pins->Addr & 0xFF) | (pins->D << 8);
+            }
+            else {
+                pins->D = regs->A & regs->X & (((pins->Addr >> 8) + 1) & 0xFF);
+            }
             pins->RW = 1;
-            pins->D = (regs->A & regs->X);
             // Following is auto-generated code for instruction finish
             break; }
         case 5: { //cleanup
@@ -4882,10 +4933,7 @@ static void M6502_ins_A3_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 7: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -4976,10 +5024,7 @@ static void M6502_ins_A7_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 4: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5045,7 +5090,7 @@ static void M6502_ins_AA_TAX(struct M6502_regs *regs, struct M6502_pins *pins)
     }}
 }
 
-static void M6502_ins_AB_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
+static void M6502_ins_AB_LXA(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: {
@@ -5053,15 +5098,9 @@ static void M6502_ins_AB_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            regs->A = pins->D;
-            regs->P.Z = +((regs->A) == 0);
+            regs->A = regs->X = (regs->A | 0xEE) & pins->D;
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 3: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
-            regs->P.Z = +((regs->X) == 0);
-            regs->P.N = ((regs->X) & 0x80) >> 7;
+            regs->P.Z = +((regs->A) == 0);
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -5170,10 +5209,7 @@ static void M6502_ins_AF_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 5: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5293,10 +5329,7 @@ static void M6502_ins_B3_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 7: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5403,10 +5436,7 @@ static void M6502_ins_B7_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 5: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5642,10 +5672,7 @@ static void M6502_ins_BF_LAX(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->A = pins->D;
             regs->P.Z = +((regs->A) == 0);
             regs->P.N = ((regs->A) & 0x80) >> 7;
-            break; }
-        case 6: {
-            pins->Addr = regs->PC;
-            regs->X = regs->A;
+            regs->X = pins->D;
             regs->P.Z = +((regs->X) == 0);
             regs->P.N = ((regs->X) & 0x80) >> 7;
             // Following is auto-generated code for instruction finish
@@ -5754,7 +5781,7 @@ static void M6502_ins_C3_DCP(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -5860,7 +5887,7 @@ static void M6502_ins_C7_DCP(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -5931,7 +5958,7 @@ static void M6502_ins_CA_DEX(struct M6502_regs *regs, struct M6502_pins *pins)
     }}
 }
 
-static void M6502_ins_CB_AXS(struct M6502_regs *regs, struct M6502_pins *pins)
+static void M6502_ins_CB_SBX(struct M6502_regs *regs, struct M6502_pins *pins)
 {
     switch(regs->TCU) {
         case 1: {
@@ -5939,11 +5966,12 @@ static void M6502_ins_CB_AXS(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
         case 2: { //cleanup_custom
-            u32 i = ((regs->A & regs->X) + (pins->D ^ 0xFF));
-            regs->P.N = ((i) & 0x80) >> 7;
-            regs->P.N = ((i) & 0x80) >> 7;
-            regs->P.C = (i > 0xFF);
-            regs->X = i;
+            regs->X &= regs->A;
+            u16 d = regs->X - pins->D;
+            regs->X = d & 0xFF;
+            regs->P.N = ((d) & 0x80) >> 7;
+            regs->P.Z = +((d) == 0);
+            regs->P.C = ((d >> 8) ^ 1) & 1;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -6063,7 +6091,7 @@ static void M6502_ins_CF_DCP(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6191,7 +6219,7 @@ static void M6502_ins_D3_DCP(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->D = (pins->D - 1) & 0xFF;
             regs->P.Z = +((pins->D) == 0);
             regs->P.N = ((pins->D) & 0x80) >> 7;
-            i32 o = pins->D - regs->TR;
+            i32 o = regs->A - pins->D;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6310,7 +6338,7 @@ static void M6502_ins_D7_DCP(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->TR = (regs->TR - 1) & 0xFF;
             regs->P.Z = +((regs->TR) == 0);
             regs->P.N = ((regs->TR) & 0x80) >> 7;
-            i32 o = regs->TR - regs->TR;
+            i32 o = regs->A - regs->TR;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6420,7 +6448,7 @@ static void M6502_ins_DB_DCP(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->TR = (regs->TR - 1) & 0xFF;
             regs->P.Z = +((regs->TR) == 0);
             regs->P.N = ((regs->TR) & 0x80) >> 7;
-            i32 o = regs->TR - regs->TR;
+            i32 o = regs->A - regs->TR;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -6566,7 +6594,7 @@ static void M6502_ins_DF_DCP(struct M6502_regs *regs, struct M6502_pins *pins)
             regs->TR = (regs->TR - 1) & 0xFF;
             regs->P.Z = +((regs->TR) == 0);
             regs->P.N = ((regs->TR) & 0x80) >> 7;
-            i32 o = regs->TR - regs->TR;
+            i32 o = regs->A - regs->TR;
             regs->P.C = +(!((o & 0x100) >> 8));
             regs->P.Z = +((o & 0xFF) == 0);
             regs->P.N = ((o) & 0x80) >> 7;
@@ -7843,14 +7871,14 @@ M6502_ins_func M6502_decoded_opcodes[0x103] = {
       &M6502_ins_78_SEI,  &M6502_ins_79_ADC,  &M6502_ins_7A_NOP,  &M6502_ins_7B_RRA,  &M6502_ins_7C_NOP24,  &M6502_ins_7D_ADC,  &M6502_ins_7E_ROR,  &M6502_ins_7F_RRA,
       &M6502_ins_80_NOP22,  &M6502_ins_81_STA,  &M6502_ins_82_NOP22,  &M6502_ins_83_SAX,  &M6502_ins_84_STY,  &M6502_ins_85_STA,  &M6502_ins_86_STX,  &M6502_ins_87_SAX,
       &M6502_ins_88_DEY,  &M6502_ins_89_NOP22,  &M6502_ins_8A_TXA,  &M6502_ins_8B_XAA,  &M6502_ins_8C_STY,  &M6502_ins_8D_STA,  &M6502_ins_8E_STX,  &M6502_ins_8F_SAX,
-      &M6502_ins_90_BCC,  &M6502_ins_91_STA,  &M6502_ins_92_STP,  &M6502_ins_93_AHX,  &M6502_ins_94_STY,  &M6502_ins_95_STA,  &M6502_ins_96_STX,  &M6502_ins_97_SAX,
-      &M6502_ins_98_TYA,  &M6502_ins_99_STA,  &M6502_ins_9A_TXS,  &M6502_ins_9B_XAA,  &M6502_ins_9C_SHY,  &M6502_ins_9D_STA,  &M6502_ins_9E_SHX,  &M6502_ins_9F_AHX,
+      &M6502_ins_90_BCC,  &M6502_ins_91_STA,  &M6502_ins_92_STP,  &M6502_ins_93_SHA,  &M6502_ins_94_STY,  &M6502_ins_95_STA,  &M6502_ins_96_STX,  &M6502_ins_97_SAX,
+      &M6502_ins_98_TYA,  &M6502_ins_99_STA,  &M6502_ins_9A_TXS,  &M6502_ins_9B_SHS,  &M6502_ins_9C_SHY,  &M6502_ins_9D_STA,  &M6502_ins_9E_SHX,  &M6502_ins_9F_SHA,
       &M6502_ins_A0_LDY,  &M6502_ins_A1_LDA,  &M6502_ins_A2_LDX,  &M6502_ins_A3_LAX,  &M6502_ins_A4_LDY,  &M6502_ins_A5_LDA,  &M6502_ins_A6_LDX,  &M6502_ins_A7_LAX,
-      &M6502_ins_A8_TAY,  &M6502_ins_A9_LDA,  &M6502_ins_AA_TAX,  &M6502_ins_AB_LAX,  &M6502_ins_AC_LDY,  &M6502_ins_AD_LDA,  &M6502_ins_AE_LDX,  &M6502_ins_AF_LAX,
+      &M6502_ins_A8_TAY,  &M6502_ins_A9_LDA,  &M6502_ins_AA_TAX,  &M6502_ins_AB_LXA,  &M6502_ins_AC_LDY,  &M6502_ins_AD_LDA,  &M6502_ins_AE_LDX,  &M6502_ins_AF_LAX,
       &M6502_ins_B0_BCS,  &M6502_ins_B1_LDA,  &M6502_ins_B2_STP,  &M6502_ins_B3_LAX,  &M6502_ins_B4_LDY,  &M6502_ins_B5_LDA,  &M6502_ins_B6_LDX,  &M6502_ins_B7_LAX,
       &M6502_ins_B8_CLV,  &M6502_ins_B9_LDA,  &M6502_ins_BA_TSX,  &M6502_ins_BB_LAS,  &M6502_ins_BC_LDY,  &M6502_ins_BD_LDA,  &M6502_ins_BE_LDX,  &M6502_ins_BF_LAX,
       &M6502_ins_C0_CPY,  &M6502_ins_C1_CMP,  &M6502_ins_C2_NOP22,  &M6502_ins_C3_DCP,  &M6502_ins_C4_CPY,  &M6502_ins_C5_CMP,  &M6502_ins_C6_DEC,  &M6502_ins_C7_DCP,
-      &M6502_ins_C8_INY,  &M6502_ins_C9_CMP,  &M6502_ins_CA_DEX,  &M6502_ins_CB_AXS,  &M6502_ins_CC_CPY,  &M6502_ins_CD_CMP,  &M6502_ins_CE_DEC,  &M6502_ins_CF_DCP,
+      &M6502_ins_C8_INY,  &M6502_ins_C9_CMP,  &M6502_ins_CA_DEX,  &M6502_ins_CB_SBX,  &M6502_ins_CC_CPY,  &M6502_ins_CD_CMP,  &M6502_ins_CE_DEC,  &M6502_ins_CF_DCP,
       &M6502_ins_D0_BNE,  &M6502_ins_D1_CMP,  &M6502_ins_D2_STP,  &M6502_ins_D3_DCP,  &M6502_ins_D4_NOP24,  &M6502_ins_D5_CMP,  &M6502_ins_D6_DEC,  &M6502_ins_D7_DCP,
       &M6502_ins_D8_CLD,  &M6502_ins_D9_CMP,  &M6502_ins_DA_NOP,  &M6502_ins_DB_DCP,  &M6502_ins_DC_NOP24,  &M6502_ins_DD_CMP,  &M6502_ins_DE_DEC,  &M6502_ins_DF_DCP,
       &M6502_ins_E0_CPX,  &M6502_ins_E1_SBC,  &M6502_ins_E2_NOP22,  &M6502_ins_E3_ISC,  &M6502_ins_E4_CPX,  &M6502_ins_E5_SBC,  &M6502_ins_E6_INC,  &M6502_ins_E7_ISC,
