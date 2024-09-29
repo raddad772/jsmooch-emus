@@ -3,7 +3,7 @@
 //
 
 #include "a12_watcher.h"
-#include "../nes_clock.h"
+#include "../../nes_clock.h"
 
 void a12_watcher_init(struct NES_a12_watcher* this, struct NES_clock* clock)
 {

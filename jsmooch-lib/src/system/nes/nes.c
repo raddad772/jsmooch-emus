@@ -175,8 +175,10 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.rows.bottom_vblank = 21;
     d->pixelometry.offset.y = 1;
 
-    d->geometry.physical_aspect_ratio.width = 4;
-    d->geometry.physical_aspect_ratio.height = 3;
+    //d->geometry.physical_aspect_ratio.width = 4;
+    //d->geometry.physical_aspect_ratio.height = 3;
+    d->geometry.physical_aspect_ratio.width = 1;
+    d->geometry.physical_aspect_ratio.height = 1;
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 8;
 }

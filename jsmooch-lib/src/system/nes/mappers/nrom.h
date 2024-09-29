@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_NROM_H
 #define JSMOOCH_EMUS_NROM_H
 
-#include "mapper.h"
-
+struct NES_bus;
+struct NES;
 void NROM_init(struct NES_bus *bus, struct NES *nes);
 
 #endif //JSMOOCH_EMUS_NROM_H

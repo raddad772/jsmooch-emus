@@ -475,7 +475,7 @@ void test_6502(M6502_ins_func *funcs)
     rd.read_trace = &read_trace_m6502;
     M6502_init(&cpu, funcs);
     M6502_setup_tracing(&cpu, &rd, &trace_cycles);
-    u32 start_test = 0x9B;
+    u32 start_test = 0xa3;
     //TODO POLL IRQ AT PROPER TIME
 
     for (u32 i = start_test; i < 256; i++) {

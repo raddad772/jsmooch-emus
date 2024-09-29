@@ -36,14 +36,14 @@ static void SN76489_cycle_squares(struct SN76489* this)
 {
     for (u32 i = 0; i < 3; i++) {
         struct SN76489_SW* tone = &this->sw[i];
-        if ((tone->counter > 0) || (tone->freq > 7)) {
+        if ((tone->counter > 0) && ((tone->freq > 7) || (tone->freq < 2))) {
             if (tone->counter > 0)
                 tone->counter--;
 
             if (tone->counter <= 0) {
                 tone->counter = tone->freq;
 
-                if (tone->freq != 1) // according to MaskOfDestiny, 0 and 1 should toggle every cycle, and be basically the same, due to up-count and >=
+                if (tone->freq >= 7) // according to MaskOfDestiny, 0 and 1 should toggle every cycle, and be basically the same, due to up-count and >=
                     this->polarity[i] ^= 1;
             }
         }

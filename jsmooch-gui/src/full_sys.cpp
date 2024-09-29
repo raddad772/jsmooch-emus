@@ -537,11 +537,10 @@ void full_system::load_default_ROM()
     assert(sys);
     switch(which) {
         case SYS_NES:
-            //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "240pee.nes", nullptr);
             break;
         case SYS_SG1000:

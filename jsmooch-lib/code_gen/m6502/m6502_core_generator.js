@@ -122,7 +122,7 @@ function M6502_XAW(ins) {
             return 'regs.Y';
         case M6502_MN.SAX:
             return '(regs.A & regs.X)';
-        case M6502_MN.AHX:
+        case M6502_MN.SHA:
             return '(regs.A & regs.X)';
         case M6502_MN.SHX:
             return '(regs.X & (pins.Addr >> 8))';
@@ -544,13 +544,21 @@ class m6502_switchgen {
         this.ORA(what);
     }
 
-    AHX() {
+    SHA() {
+        /*
+						if(address_.full != next_address_.full) {
+							address_.halves.high = operand_ = a_ & x_ & address_.halves.high;
+						} else {
+							operand_ = a_ & x_ & (address_.halves.high + 1);
+						}
+         */
+        this.addl('//SHA!')
         this.addl('if (!regs.TR) {');
-        this.addl('    pins.D = regs->A & regs->X & (pins.Addr >> 8);')
+        this.addl('    pins.D = regs.A & regs.X & (pins.Addr >> 8);')
         this.addl('    pins.Addr = (pins.Addr & 0xFF) | (pins.D << 8);');
         this.addl('}');
         this.addl('else {')
-        this.addl('    pins.D = regs->A & regs->X & (((pins.Addr >> 8) + 1) & 0xFF);');
+        this.addl('    pins.D = regs.A & regs.X & (((pins.Addr >> 8) + 1) & 0xFF);');
         this.addl('}');
     }
 
@@ -574,6 +582,24 @@ class m6502_switchgen {
         this.addl('} else {');
         this.addl('    pins.D = regs.S & (((pins.Addr >> 8) + 1) & 0xFF);');
         this.addl('}');
+    }
+
+    SHX(what = 'regs.TR') {
+        this.addl('if (!regs.TR) {')
+        this.addl('    pins.D = regs.X & (pins.Addr >> 8);');
+        this.addl('    pins.Addr = (pins.Addr & 0xFF) | (pins.D << 8);');
+        this.addl('} else {');
+        this.addl('    pins.D = (regs.X & ((pins.Addr >> 8) + 1)) & 0xFF;');
+        this.addl('}')
+    }
+
+    SHY(what = 'regs.TR') {
+        this.addl('if (!regs.TR) {')
+        this.addl('    pins.D = regs.Y & (pins.Addr >> 8);');
+        this.addl('    pins.Addr = (pins.Addr & 0xFF) | (pins.D << 8);');
+        this.addl('} else {');
+        this.addl('    pins.D = (regs.Y & ((pins.Addr >> 8) + 1)) & 0xFF;');
+        this.addl('}')
     }
 
     ALR(what = 'regs.TR') {
@@ -938,7 +964,18 @@ class m6502_switchgen {
             case M6502_MN.NOP24:
                 break;
             case M6502_MN.SHS:
+                console.log('SHS on ' + hex2(opcode_info.opcode));
                 this.SHS(out_reg);
+                break;
+            case M6502_MN.SHX:
+                this.SHX(out_reg);
+                break;
+            case M6502_MN.SHY:
+                this.SHY(out_reg);
+                break;
+            case M6502_MN.SHA:
+                console.log('SHA on ' + hex2(opcode_info.opcode));
+                this.SHA(out_reg);
                 break;
             case M6502_MN.XAA:
                 this.addl('regs.A = (regs.A | 0xEE) & regs.X & pins.D;');
@@ -1466,9 +1503,9 @@ function m6502_generate_instruction_function(indent, opcode_info, BCD_support=tr
             ag.RW(1);
             ag.addl('pins.D = ' + M6502_XAW(opcode_info.ins) + ';');
             break;
+        case M6502_AM.ABS_Xsya:
         case M6502_AM.ABS_Yxas:
-            //r = (opcode_info.addr_mode === M6502_AM.ABS_Xw) ? 'regs.X' : 'regs.Y';
-            r = 'regs.Y';
+            r = (opcode_info.addr_mode === M6502_AM.ABS_Xsya) ? 'regs.X' : 'regs.Y';
             ag.addcycle('get ABSL');
             ag.operand();
 
@@ -1833,7 +1870,7 @@ function m6502_generate_instruction_function(indent, opcode_info, BCD_support=tr
             ag.addl('pins.Addr = regs.TA;')
             ag.RW(1);
             if (opcode_info.opcode === 0x93) {
-                ag.AHX();
+                ag.SHA();
             }
             else ag.addl('pins.D = ' + M6502_XAW(opcode_info.ins) + ';');
             break;

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "mapper.h"
 #include "nrom.h"
 
 #define THISM struct NROM *this = (struct NROM *)bus->ptr
@@ -34,7 +35,7 @@ static void NROM_destruct(struct NES_bus *bus)
 
 static void NROM_reset(struct NES_bus *bus)
 {
-    printf("\nResetting, so remapping bus...");
+    printf("\nNROM Resetting, so remapping bus...");
     remap(bus);
 }
 

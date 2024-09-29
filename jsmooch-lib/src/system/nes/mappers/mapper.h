@@ -32,6 +32,7 @@ struct NES_memmap {
     u32 offset;                     // Offset from u8* data
     u32 read_only, empty;
     u32 mask;
+    u32 bank;
     struct simplebuf8 *buf;         // Pointer to data
 };
 
@@ -81,6 +82,11 @@ struct NES_bus {
     struct simplebuf8 PRG_ROM;
     struct simplebuf8 CHR_ROM;
     struct simplebuf8 CHR_RAM;
+
+    u32 num_PRG_ROM_banks;
+    u32 num_CHR_ROM_banks;
+    u32 num_CHR_RAM_banks;
+    u32 num_PRG_RAM_banks;
 };
 
 void NES_bus_init(struct NES_bus*, struct NES* nes);
@@ -97,8 +103,8 @@ void NES_bus_set_cart(struct NES*, struct NES_cart* cart);
 void NES_bus_a12_watch(struct NES*, u32 addr);
 
 
-void NES_bus_map_PRG8K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 offset, u32 is_readonly);
-void NES_bus_map_CHR1K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 offset, u32 is_readonly);
+void NES_bus_map_PRG8K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
+void NES_bus_map_CHR1K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
 void NES_bus_PPU_mirror_set(struct NES_bus*);
 
 
