@@ -145,6 +145,7 @@ class m6502_switchgen {
         this.has_footer = false;
         this.no_addr_at_end = false;
         this.no_RW_at_end = false;
+        this.override_IRQ = false;
         this.BCD_support = BCD_support;
         this.has_custom_end = false;
         this.outstr = '';
@@ -167,6 +168,7 @@ class m6502_switchgen {
         this.no_addr_at_end = false;
         this.no_RW_at_end = false;
         this.has_custom_end = false;
+        this.override_IRQ = false;
         if (!this.is_C)
             this.outstr = this.indent1 + 'switch(regs.TCU) {\n';
         else
@@ -219,6 +221,9 @@ class m6502_switchgen {
         this.addcycle('cleanup_custom');
     }
 
+    poll_IRQs() {
+        this.addl('M6502_poll_IRQs(regs, pins);')
+    }
 
     regular_end() {
         this.addl('// Following is auto-generated code for instruction finish')
@@ -229,6 +234,8 @@ class m6502_switchgen {
             this.addr_to_PC_then_inc();
         if (!this.no_RW_at_end)
             this.RW(0);
+        if (!this.override_IRQ)
+            this.poll_IRQs()
         this.addl('regs.TCU = 0;')
         this.addl('break;')
     }

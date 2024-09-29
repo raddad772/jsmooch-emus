@@ -28,7 +28,6 @@ u32 M6502_regs_P_getbyte(struct M6502_P*);
 struct M6502_regs {
     u32 A, X, Y;
     u32 PC, S;
-    u32 old_I;
     struct M6502_P P;
 
     u32 TCU, IR;
@@ -39,6 +38,8 @@ struct M6502_regs {
     u32 NMI_pending;
     u32 WAI;
     u32 STP;
+
+    u32 NMI_ack, NMI_old, IRQ_count;
 };
 
 struct M6502_pins {
@@ -60,7 +61,6 @@ struct M6502 {
     struct M6502_regs regs;
     struct M6502_pins pins;
 
-    u32 NMI_ack, NMI_old, IRQ_count;
 
     u32 PCO;
 
@@ -85,5 +85,6 @@ void M6502_init(struct M6502 *, M6502_ins_func *opcode_set);
 void M6502_cycle(struct M6502*);
 void M6502_reset(struct M6502*);
 void M6502_setup_tracing(struct M6502*, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
+void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins);
 
 #endif //JSMOOCH_EMUS_M6502_H

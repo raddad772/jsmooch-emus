@@ -49,6 +49,7 @@ static void nesM6502_ins_00_BRK(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -82,6 +83,7 @@ static void nesM6502_ins_01_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -100,6 +102,7 @@ static void nesM6502_ins_02_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -143,6 +146,7 @@ static void nesM6502_ins_03_SLO(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -162,6 +166,7 @@ static void nesM6502_ins_04_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -184,6 +189,7 @@ static void nesM6502_ins_05_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -213,6 +219,7 @@ static void nesM6502_ins_06_ASL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -245,6 +252,7 @@ static void nesM6502_ins_07_SLO(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -267,6 +275,7 @@ static void nesM6502_ins_08_PHP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -286,6 +295,7 @@ static void nesM6502_ins_09_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -305,6 +315,7 @@ static void nesM6502_ins_0A_ASL(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -325,6 +336,7 @@ static void nesM6502_ins_0B_ANC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -349,6 +361,7 @@ static void nesM6502_ins_0C_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -376,6 +389,7 @@ static void nesM6502_ins_0D_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -410,6 +424,7 @@ static void nesM6502_ins_0E_ASL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -447,6 +462,7 @@ static void nesM6502_ins_0F_SLO(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -474,6 +490,7 @@ static void nesM6502_ins_10_BPL(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -510,6 +527,7 @@ static void nesM6502_ins_11_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -528,6 +546,7 @@ static void nesM6502_ins_12_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -574,6 +593,7 @@ static void nesM6502_ins_13_SLO(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -597,6 +617,7 @@ static void nesM6502_ins_14_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -623,6 +644,7 @@ static void nesM6502_ins_15_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -658,6 +680,7 @@ static void nesM6502_ins_16_ASL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -696,6 +719,7 @@ static void nesM6502_ins_17_SLO(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -712,6 +736,7 @@ static void nesM6502_ins_18_CLC(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -745,6 +770,7 @@ static void nesM6502_ins_19_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -760,6 +786,7 @@ static void nesM6502_ins_1A_NOP(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -803,6 +830,7 @@ static void nesM6502_ins_1B_SLO(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -833,6 +861,7 @@ static void nesM6502_ins_1C_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -866,6 +895,7 @@ static void nesM6502_ins_1D_ORA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -906,6 +936,7 @@ static void nesM6502_ins_1E_ASL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -949,6 +980,7 @@ static void nesM6502_ins_1F_SLO(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -985,6 +1017,7 @@ static void nesM6502_ins_20_JSR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1018,6 +1051,7 @@ static void nesM6502_ins_21_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1036,6 +1070,7 @@ static void nesM6502_ins_22_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1080,6 +1115,7 @@ static void nesM6502_ins_23_RLA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1102,6 +1138,7 @@ static void nesM6502_ins_24_BIT(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1124,6 +1161,7 @@ static void nesM6502_ins_25_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1154,6 +1192,7 @@ static void nesM6502_ins_26_ROL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1187,6 +1226,7 @@ static void nesM6502_ins_27_RLA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1210,6 +1250,7 @@ static void nesM6502_ins_28_PLP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1229,6 +1270,7 @@ static void nesM6502_ins_29_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1249,6 +1291,7 @@ static void nesM6502_ins_2A_ROL(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1269,6 +1312,7 @@ static void nesM6502_ins_2B_ANC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1296,6 +1340,7 @@ static void nesM6502_ins_2C_BIT(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1323,6 +1368,7 @@ static void nesM6502_ins_2D_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1358,6 +1404,7 @@ static void nesM6502_ins_2E_ROL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1396,6 +1443,7 @@ static void nesM6502_ins_2F_RLA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1423,6 +1471,7 @@ static void nesM6502_ins_30_BMI(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1459,6 +1508,7 @@ static void nesM6502_ins_31_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1477,6 +1527,7 @@ static void nesM6502_ins_32_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1524,6 +1575,7 @@ static void nesM6502_ins_33_RLA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1547,6 +1599,7 @@ static void nesM6502_ins_34_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1573,6 +1626,7 @@ static void nesM6502_ins_35_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1609,6 +1663,7 @@ static void nesM6502_ins_36_ROL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1648,6 +1703,7 @@ static void nesM6502_ins_37_RLA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1664,6 +1720,7 @@ static void nesM6502_ins_38_SEC(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1697,6 +1754,7 @@ static void nesM6502_ins_39_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1712,6 +1770,7 @@ static void nesM6502_ins_3A_NOP(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1756,6 +1815,7 @@ static void nesM6502_ins_3B_RLA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1786,6 +1846,7 @@ static void nesM6502_ins_3C_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1819,6 +1880,7 @@ static void nesM6502_ins_3D_AND(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1860,6 +1922,7 @@ static void nesM6502_ins_3E_ROL(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1904,6 +1967,7 @@ static void nesM6502_ins_3F_RLA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1938,6 +2002,7 @@ static void nesM6502_ins_40_RTI(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1971,6 +2036,7 @@ static void nesM6502_ins_41_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -1989,6 +2055,7 @@ static void nesM6502_ins_42_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2032,6 +2099,7 @@ static void nesM6502_ins_43_SRE(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2051,6 +2119,7 @@ static void nesM6502_ins_44_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2073,6 +2142,7 @@ static void nesM6502_ins_45_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2102,6 +2172,7 @@ static void nesM6502_ins_46_LSR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2134,6 +2205,7 @@ static void nesM6502_ins_47_SRE(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2156,6 +2228,7 @@ static void nesM6502_ins_48_PHA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2175,6 +2248,7 @@ static void nesM6502_ins_49_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2194,6 +2268,7 @@ static void nesM6502_ins_4A_LSR(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2217,6 +2292,7 @@ static void nesM6502_ins_4B_ALR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2239,6 +2315,7 @@ static void nesM6502_ins_4C_JMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2266,6 +2343,7 @@ static void nesM6502_ins_4D_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2300,6 +2378,7 @@ static void nesM6502_ins_4E_LSR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2337,6 +2416,7 @@ static void nesM6502_ins_4F_SRE(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2364,6 +2444,7 @@ static void nesM6502_ins_50_BVC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2400,6 +2481,7 @@ static void nesM6502_ins_51_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2418,6 +2500,7 @@ static void nesM6502_ins_52_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2464,6 +2547,7 @@ static void nesM6502_ins_53_SRE(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2487,6 +2571,7 @@ static void nesM6502_ins_54_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2513,6 +2598,7 @@ static void nesM6502_ins_55_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2548,6 +2634,7 @@ static void nesM6502_ins_56_LSR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2586,6 +2673,7 @@ static void nesM6502_ins_57_SRE(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2602,6 +2690,7 @@ static void nesM6502_ins_58_CLI(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2635,6 +2724,7 @@ static void nesM6502_ins_59_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2650,6 +2740,7 @@ static void nesM6502_ins_5A_NOP(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2693,6 +2784,7 @@ static void nesM6502_ins_5B_SRE(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2723,6 +2815,7 @@ static void nesM6502_ins_5C_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2756,6 +2849,7 @@ static void nesM6502_ins_5D_EOR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2796,6 +2890,7 @@ static void nesM6502_ins_5E_LSR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2839,6 +2934,7 @@ static void nesM6502_ins_5F_SRE(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2872,6 +2968,7 @@ static void nesM6502_ins_60_RTS(struct M6502_regs *regs, struct M6502_pins *pins
         case 6: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2910,6 +3007,7 @@ static void nesM6502_ins_61_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2928,6 +3026,7 @@ static void nesM6502_ins_62_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2977,6 +3076,7 @@ static void nesM6502_ins_63_RRA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -2996,6 +3096,7 @@ static void nesM6502_ins_64_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3023,6 +3124,7 @@ static void nesM6502_ins_65_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3053,6 +3155,7 @@ static void nesM6502_ins_66_ROR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3091,6 +3194,7 @@ static void nesM6502_ins_67_RRA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3116,6 +3220,7 @@ static void nesM6502_ins_68_PLA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3140,6 +3245,7 @@ static void nesM6502_ins_69_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3160,6 +3266,7 @@ static void nesM6502_ins_6A_ROR(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3186,6 +3293,7 @@ static void nesM6502_ins_6B_ARR(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3215,6 +3323,7 @@ static void nesM6502_ins_6C_JMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3247,6 +3356,7 @@ static void nesM6502_ins_6D_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3282,6 +3392,7 @@ static void nesM6502_ins_6E_ROR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3325,6 +3436,7 @@ static void nesM6502_ins_6F_RRA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3352,6 +3464,7 @@ static void nesM6502_ins_70_BVS(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3393,6 +3506,7 @@ static void nesM6502_ins_71_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3411,6 +3525,7 @@ static void nesM6502_ins_72_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3463,6 +3578,7 @@ static void nesM6502_ins_73_RRA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3486,6 +3602,7 @@ static void nesM6502_ins_74_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3517,6 +3634,7 @@ static void nesM6502_ins_75_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3553,6 +3671,7 @@ static void nesM6502_ins_76_ROR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3597,6 +3716,7 @@ static void nesM6502_ins_77_RRA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3613,6 +3733,7 @@ static void nesM6502_ins_78_SEI(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3651,6 +3772,7 @@ static void nesM6502_ins_79_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3666,6 +3788,7 @@ static void nesM6502_ins_7A_NOP(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3715,6 +3838,7 @@ static void nesM6502_ins_7B_RRA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3745,6 +3869,7 @@ static void nesM6502_ins_7C_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3783,6 +3908,7 @@ static void nesM6502_ins_7D_ADC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3824,6 +3950,7 @@ static void nesM6502_ins_7E_ROR(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3873,6 +4000,7 @@ static void nesM6502_ins_7F_RRA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3889,6 +4017,7 @@ static void nesM6502_ins_80_NOP22(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3922,6 +4051,7 @@ static void nesM6502_ins_81_STA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3938,6 +4068,7 @@ static void nesM6502_ins_82_NOP22(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3971,6 +4102,7 @@ static void nesM6502_ins_83_SAX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -3993,6 +4125,7 @@ static void nesM6502_ins_84_STY(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4015,6 +4148,7 @@ static void nesM6502_ins_85_STA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4037,6 +4171,7 @@ static void nesM6502_ins_86_STX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4059,6 +4194,7 @@ static void nesM6502_ins_87_SAX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4077,6 +4213,7 @@ static void nesM6502_ins_88_DEY(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4093,6 +4230,7 @@ static void nesM6502_ins_89_NOP22(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4111,6 +4249,7 @@ static void nesM6502_ins_8A_TXA(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4131,6 +4270,7 @@ static void nesM6502_ins_8B_XAA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4158,6 +4298,7 @@ static void nesM6502_ins_8C_STY(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4185,6 +4326,7 @@ static void nesM6502_ins_8D_STA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4212,6 +4354,7 @@ static void nesM6502_ins_8E_STX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4239,6 +4382,7 @@ static void nesM6502_ins_8F_SAX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4266,6 +4410,7 @@ static void nesM6502_ins_90_BCC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4301,6 +4446,7 @@ static void nesM6502_ins_91_STA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4319,6 +4465,7 @@ static void nesM6502_ins_92_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4361,6 +4508,7 @@ static void nesM6502_ins_93_SHA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4386,6 +4534,7 @@ static void nesM6502_ins_94_STY(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4411,6 +4560,7 @@ static void nesM6502_ins_95_STA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4436,6 +4586,7 @@ static void nesM6502_ins_96_STX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4461,6 +4612,7 @@ static void nesM6502_ins_97_SAX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4479,6 +4631,7 @@ static void nesM6502_ins_98_TYA(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4510,6 +4663,7 @@ static void nesM6502_ins_99_STA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4526,6 +4680,7 @@ static void nesM6502_ins_9A_TXS(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4565,6 +4720,7 @@ static void nesM6502_ins_9B_SHS(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4603,6 +4759,7 @@ static void nesM6502_ins_9C_SHY(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4634,6 +4791,7 @@ static void nesM6502_ins_9D_STA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4672,6 +4830,7 @@ static void nesM6502_ins_9E_SHX(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4712,6 +4871,7 @@ static void nesM6502_ins_9F_SHA(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4731,6 +4891,7 @@ static void nesM6502_ins_A0_LDY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4764,6 +4925,7 @@ static void nesM6502_ins_A1_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4783,6 +4945,7 @@ static void nesM6502_ins_A2_LDX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4819,6 +4982,7 @@ static void nesM6502_ins_A3_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4841,6 +5005,7 @@ static void nesM6502_ins_A4_LDY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4863,6 +5028,7 @@ static void nesM6502_ins_A5_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4885,6 +5051,7 @@ static void nesM6502_ins_A6_LDX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4910,6 +5077,7 @@ static void nesM6502_ins_A7_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4928,6 +5096,7 @@ static void nesM6502_ins_A8_TAY(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4947,6 +5116,7 @@ static void nesM6502_ins_A9_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4965,6 +5135,7 @@ static void nesM6502_ins_AA_TAX(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -4984,6 +5155,7 @@ static void nesM6502_ins_AB_LXA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5011,6 +5183,7 @@ static void nesM6502_ins_AC_LDY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5038,6 +5211,7 @@ static void nesM6502_ins_AD_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5065,6 +5239,7 @@ static void nesM6502_ins_AE_LDX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5095,6 +5270,7 @@ static void nesM6502_ins_AF_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5122,6 +5298,7 @@ static void nesM6502_ins_B0_BCS(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5158,6 +5335,7 @@ static void nesM6502_ins_B1_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5176,6 +5354,7 @@ static void nesM6502_ins_B2_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5215,6 +5394,7 @@ static void nesM6502_ins_B3_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5241,6 +5421,7 @@ static void nesM6502_ins_B4_LDY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5267,6 +5448,7 @@ static void nesM6502_ins_B5_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5293,6 +5475,7 @@ static void nesM6502_ins_B6_LDX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5322,6 +5505,7 @@ static void nesM6502_ins_B7_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5338,6 +5522,7 @@ static void nesM6502_ins_B8_CLV(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5371,6 +5556,7 @@ static void nesM6502_ins_B9_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5389,6 +5575,7 @@ static void nesM6502_ins_BA_TSX(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5423,6 +5610,7 @@ static void nesM6502_ins_BB_LAS(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5456,6 +5644,7 @@ static void nesM6502_ins_BC_LDY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5489,6 +5678,7 @@ static void nesM6502_ins_BD_LDA(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5522,6 +5712,7 @@ static void nesM6502_ins_BE_LDX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5558,6 +5749,7 @@ static void nesM6502_ins_BF_LAX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5578,6 +5770,7 @@ static void nesM6502_ins_C0_CPY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5612,6 +5805,7 @@ static void nesM6502_ins_C1_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5628,6 +5822,7 @@ static void nesM6502_ins_C2_NOP22(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5671,6 +5866,7 @@ static void nesM6502_ins_C3_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5694,6 +5890,7 @@ static void nesM6502_ins_C4_CPY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5717,6 +5914,7 @@ static void nesM6502_ins_C5_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5745,6 +5943,7 @@ static void nesM6502_ins_C6_DEC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5777,6 +5976,7 @@ static void nesM6502_ins_C7_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5795,6 +5995,7 @@ static void nesM6502_ins_C8_INY(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5815,6 +6016,7 @@ static void nesM6502_ins_C9_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5833,6 +6035,7 @@ static void nesM6502_ins_CA_DEX(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5855,6 +6058,7 @@ static void nesM6502_ins_CB_SBX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5883,6 +6087,7 @@ static void nesM6502_ins_CC_CPY(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5911,6 +6116,7 @@ static void nesM6502_ins_CD_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5944,6 +6150,7 @@ static void nesM6502_ins_CE_DEC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -5981,6 +6188,7 @@ static void nesM6502_ins_CF_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6008,6 +6216,7 @@ static void nesM6502_ins_D0_BNE(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6045,6 +6254,7 @@ static void nesM6502_ins_D1_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6063,6 +6273,7 @@ static void nesM6502_ins_D2_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6109,6 +6320,7 @@ static void nesM6502_ins_D3_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6132,6 +6344,7 @@ static void nesM6502_ins_D4_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6159,6 +6372,7 @@ static void nesM6502_ins_D5_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6193,6 +6407,7 @@ static void nesM6502_ins_D6_DEC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6231,6 +6446,7 @@ static void nesM6502_ins_D7_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6247,6 +6463,7 @@ static void nesM6502_ins_D8_CLD(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6281,6 +6498,7 @@ static void nesM6502_ins_D9_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6296,6 +6514,7 @@ static void nesM6502_ins_DA_NOP(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6339,6 +6558,7 @@ static void nesM6502_ins_DB_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6369,6 +6589,7 @@ static void nesM6502_ins_DC_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6403,6 +6624,7 @@ static void nesM6502_ins_DD_CMP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6442,6 +6664,7 @@ static void nesM6502_ins_DE_DEC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6485,6 +6708,7 @@ static void nesM6502_ins_DF_DCP(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6505,6 +6729,7 @@ static void nesM6502_ins_E0_CPX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6543,6 +6768,7 @@ static void nesM6502_ins_E1_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6559,6 +6785,7 @@ static void nesM6502_ins_E2_NOP22(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6606,6 +6833,7 @@ static void nesM6502_ins_E3_ISC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6629,6 +6857,7 @@ static void nesM6502_ins_E4_CPX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6656,6 +6885,7 @@ static void nesM6502_ins_E5_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6684,6 +6914,7 @@ static void nesM6502_ins_E6_INC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6720,6 +6951,7 @@ static void nesM6502_ins_E7_ISC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6738,6 +6970,7 @@ static void nesM6502_ins_E8_INX(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6762,6 +6995,7 @@ static void nesM6502_ins_E9_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6777,6 +7011,7 @@ static void nesM6502_ins_EA_NOP(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6801,6 +7036,7 @@ static void nesM6502_ins_EB_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6829,6 +7065,7 @@ static void nesM6502_ins_EC_CPX(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6861,6 +7098,7 @@ static void nesM6502_ins_ED_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6894,6 +7132,7 @@ static void nesM6502_ins_EE_INC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6935,6 +7174,7 @@ static void nesM6502_ins_EF_ISC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -6962,6 +7202,7 @@ static void nesM6502_ins_F0_BEQ(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7003,6 +7244,7 @@ static void nesM6502_ins_F1_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7021,6 +7263,7 @@ static void nesM6502_ins_F2_STP(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7071,6 +7314,7 @@ static void nesM6502_ins_F3_ISC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7094,6 +7338,7 @@ static void nesM6502_ins_F4_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7125,6 +7370,7 @@ static void nesM6502_ins_F5_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7159,6 +7405,7 @@ static void nesM6502_ins_F6_INC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7201,6 +7448,7 @@ static void nesM6502_ins_F7_ISC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7217,6 +7465,7 @@ static void nesM6502_ins_F8_SED(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7255,6 +7504,7 @@ static void nesM6502_ins_F9_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7270,6 +7520,7 @@ static void nesM6502_ins_FA_NOP(struct M6502_regs *regs, struct M6502_pins *pins
         case 2: { //cleanup
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7317,6 +7568,7 @@ static void nesM6502_ins_FB_ISC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7347,6 +7599,7 @@ static void nesM6502_ins_FC_NOP24(struct M6502_regs *regs, struct M6502_pins *pi
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7385,6 +7638,7 @@ static void nesM6502_ins_FD_SBC(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7424,6 +7678,7 @@ static void nesM6502_ins_FE_INC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7471,6 +7726,7 @@ static void nesM6502_ins_FF_ISC(struct M6502_regs *regs, struct M6502_pins *pins
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RW = 0;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7508,6 +7764,7 @@ static void nesM6502_ins_100_S_RESET(struct M6502_regs *regs, struct M6502_pins 
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7553,6 +7810,7 @@ static void nesM6502_ins_101_S_NMI(struct M6502_regs *regs, struct M6502_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}
@@ -7598,6 +7856,7 @@ static void nesM6502_ins_102_S_IRQ(struct M6502_regs *regs, struct M6502_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_IRQs(regs, pins);
             regs->TCU = 0;
             break;
     }}

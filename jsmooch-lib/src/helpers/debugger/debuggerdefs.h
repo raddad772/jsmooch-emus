@@ -35,7 +35,7 @@ extern "C" {
 
 #define DBG_EVENT_VIEW_ONLY struct { struct { struct cvec_ptr view; } events; } dbg
 
-#define DBG_EVENT_VIEW_INIT cvec_ptr_init(&this->dbg.events.view);
+#define DBG_EVENT_VIEW_INIT cvec_ptr_init(&this->dbg.events.view)
 
 #ifdef __cplusplus
 }

@@ -6,10 +6,7 @@
 
 #include "m6502.h"
 #include "m6502_disassembler.h"
-#include "nesm6502_opcodes.h"
 #include "helpers/debug.h"
-
-
 
 #define M6502_OP_RESET 0x100
 #define M6502_OP_NMI 0x101
@@ -38,7 +35,7 @@ u32 M6502_regs_P_getbyte(struct M6502_P* this)
 void M6502_regs_init(struct M6502_regs* this)
 {
     this->A = this->X = this->Y = 0;
-    this->PC = this->S = this->old_I = 0;
+    this->PC = this->S = 0;
     M6502_P_init(&this->P);
     this->TCU = this->IR = 0;
     this->TA = this->TR = 0;
@@ -63,7 +60,7 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
     this->opcode_table = opcode_table;
     this->current_instruction = opcode_table[0];
 
-    this->NMI_ack = this->NMI_old = 0;
+    this->regs.NMI_ack = this->regs.NMI_old = 0;
 
     this->trace.ok = 0;
     this->PCO = 0;
@@ -74,7 +71,7 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
     this->dbg.events.IRQ = -1;
     this->dbg.events.NMI = -1;
 
-    this->IRQ_count = 0;
+    this->regs.IRQ_count = 0;
     this->first_reset = 1;
     this->trace.strct.ptr = NULL;
     this->trace.strct.read_trace = NULL;
@@ -116,36 +113,17 @@ void M6502_setup_tracing(struct M6502* this, struct jsm_debug_read_trace *strct,
     this->trace.cycles = trace_cycle_pointer;
 }
 
-void M6502_disable_tracing(struct M6502* this)
-{
-}
-
 void M6502_cycle(struct M6502* this)
 {
     // Perform 1 processor cycle
     if (this->regs.HLT || this->regs.STP) return;
-    if ((this->pins.IRQ) && (this->regs.P.I == 0)) {
-        this->IRQ_count++;
-        this->regs.IRQ_pending = this->IRQ_count >= 1 || this->regs.IRQ_pending;
-    }
-    else {
-        this->IRQ_count = 0;
-        this->regs.IRQ_pending = false;
-    }
-
-    // Edge-sensitive 0->1
-    if (this->pins.NMI != this->NMI_old) {
-        if (this->pins.NMI == 1) this->regs.NMI_pending = true;
-        this->NMI_ack = false;
-        this->NMI_old = this->pins.NMI;
-    }
 
     this->regs.TCU++;
     if (this->regs.TCU == 1) { // T0
         this->PCO = this->pins.Addr; // Capture PC before it runs away
         this->regs.IR = this->pins.D;
-        if (this->regs.NMI_pending && !this->NMI_ack) {
-            this->NMI_ack = true;
+        if (this->regs.NMI_pending && !this->regs.NMI_ack) {
+            this->regs.NMI_ack = true;
             this->regs.NMI_pending = false;
             this->regs.IR = M6502_OP_NMI;
             DBG_EVENT(this->dbg.events.NMI);
@@ -165,8 +143,29 @@ void M6502_cycle(struct M6502* this)
             printf("\nINVALID OPCODE %02x", this->regs.IR);
         }
     }
-    this->NMI_ack = false;
+    this->regs.NMI_ack = false;
 
     this->current_instruction(&this->regs, &this->pins);
     this->trace.my_cycles++;
+}
+
+void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins)
+{
+    if ((pins->IRQ) && (regs->P.I == 0)) {
+        regs->IRQ_count++;
+        regs->IRQ_pending = regs->IRQ_count >= 1 || regs->IRQ_pending;
+    }
+    else {
+        regs->IRQ_count = 0;
+        regs->IRQ_pending = false;
+    }
+
+    // Edge-sensitive 0->1
+    if (pins->NMI != regs->NMI_old) {
+        if (pins->NMI == 1) regs->NMI_pending = true;
+        regs->NMI_ack = false;
+        regs->NMI_old = pins->NMI;
+    }
+
+
 }
