@@ -35,7 +35,7 @@ struct M6502_regs {
 
     u32 HLT;
     u32 IRQ_pending;
-    u32 NMI_pending;
+    u32 NMI_pending, do_NMI;
     u32 WAI;
     u32 STP;
 
@@ -86,5 +86,6 @@ void M6502_cycle(struct M6502*);
 void M6502_reset(struct M6502*);
 void M6502_setup_tracing(struct M6502*, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
 void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins);
+void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins);
 
 #endif //JSMOOCH_EMUS_M6502_H

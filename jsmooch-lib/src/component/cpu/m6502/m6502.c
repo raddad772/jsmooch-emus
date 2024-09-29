@@ -39,7 +39,7 @@ void M6502_regs_init(struct M6502_regs* this)
     M6502_P_init(&this->P);
     this->TCU = this->IR = 0;
     this->TA = this->TR = 0;
-    this->HLT = this->IRQ_pending = this->NMI_pending = 0;
+    this->HLT = this->IRQ_pending = this->NMI_pending = this->do_NMI = 0;
     this->WAI = this->STP = 0;
 }
 
@@ -118,13 +118,31 @@ void M6502_cycle(struct M6502* this)
     // Perform 1 processor cycle
     if (this->regs.HLT || this->regs.STP) return;
 
+    if ((this->pins.IRQ) && (this->regs.P.I == 0)) {
+        this->regs.IRQ_count++;
+    }
+    else {
+        this->regs.IRQ_count = 0;
+        this->regs.IRQ_pending = false;
+    }
+
+    // Edge-sensitive 0->1
+    if (this->pins.NMI != this->regs.NMI_old) {
+        if (this->pins.NMI == 1) this->regs.NMI_pending = true;
+        this->regs.NMI_ack = false;
+        this->regs.NMI_old = this->pins.NMI;
+    }
+
+
+
     this->regs.TCU++;
     if (this->regs.TCU == 1) { // T0
         this->PCO = this->pins.Addr; // Capture PC before it runs away
         this->regs.IR = this->pins.D;
-        if (this->regs.NMI_pending && !this->regs.NMI_ack) {
+        if (this->regs.do_NMI && !this->regs.NMI_ack) {
             this->regs.NMI_ack = true;
             this->regs.NMI_pending = false;
+            this->regs.do_NMI = false;
             this->regs.IR = M6502_OP_NMI;
             DBG_EVENT(this->dbg.events.NMI);
             if (dbg.brk_on_NMIRQ) {
@@ -149,23 +167,13 @@ void M6502_cycle(struct M6502* this)
     this->trace.my_cycles++;
 }
 
+void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins)
+{
+    regs->do_NMI |= regs->NMI_pending;
+}
+
 void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins)
 {
-    if ((pins->IRQ) && (regs->P.I == 0)) {
-        regs->IRQ_count++;
-        regs->IRQ_pending = regs->IRQ_count >= 1 || regs->IRQ_pending;
-    }
-    else {
-        regs->IRQ_count = 0;
-        regs->IRQ_pending = false;
-    }
-
-    // Edge-sensitive 0->1
-    if (pins->NMI != regs->NMI_old) {
-        if (pins->NMI == 1) regs->NMI_pending = true;
-        regs->NMI_ack = false;
-        regs->NMI_old = pins->NMI;
-    }
-
-
+    regs->IRQ_pending = regs->IRQ_count >= 1 || regs->IRQ_pending;
+    regs->do_NMI |= regs->NMI_pending;
 }

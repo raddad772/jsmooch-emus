@@ -225,6 +225,10 @@ class m6502_switchgen {
         this.addl('M6502_poll_IRQs(regs, pins);')
     }
 
+    override_IRQ_do() {
+        this.addl('M6502_poll_NMI_only(regs, pins);');
+    }
+
     regular_end() {
         this.addl('// Following is auto-generated code for instruction finish')
         if (!this.has_footer) {
@@ -236,6 +240,8 @@ class m6502_switchgen {
             this.RW(0);
         if (!this.override_IRQ)
             this.poll_IRQs()
+        else
+            this.override_IRQ_do()
         this.addl('regs.TCU = 0;')
         this.addl('break;')
     }

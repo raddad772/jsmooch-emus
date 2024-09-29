@@ -3733,6 +3733,7 @@ static void nesM6502_ins_78_SEI(struct M6502_regs *regs, struct M6502_pins *pins
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            M6502_poll_NMI_only(regs, pins);
             regs->TCU = 0;
             break;
     }}
