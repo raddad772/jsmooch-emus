@@ -1189,6 +1189,7 @@ function m6502_generate_instruction_function(indent, opcode_info, BCD_support=tr
                 case M6502_MN.SEI:
                     ag.addcycle();
                     ag.addr_to_PC();
+                    ag.override_IRQ = true;
                     ag.cleanup();
                     ag.addl('regs.P.I = 1;');
                     break;
