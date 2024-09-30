@@ -51,7 +51,6 @@ static void AXROM_reset(struct NES_bus *bus)
     THISM;
     printf("\nAXROM Resetting, so remapping bus...");
     this->io.PRG_bank = bus->num_PRG_ROM_banks32K - 1; // so like we're 7/8. = 14/16, 28/32.
-    bus->ppu_mirror_mode = this->io.nametable ? PPUM_ScreenBOnly : PPUM_ScreenAOnly;
     remap(bus);
 
     NES_bus_map_CHR8K(bus, 0x0000, 0x1FFF, &bus->CHR_RAM, 0, READWRITE);
@@ -66,6 +65,7 @@ static void AXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
         }
         this->io.PRG_bank = val & 7;
         this->io.nametable = (val >> 4) & 1;
+        bus->ppu_mirror_mode = this->io.nametable ? PPUM_ScreenBOnly : PPUM_ScreenAOnly;
         remap(bus);
     }
     *do_write = 1;

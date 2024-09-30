@@ -550,11 +550,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
 
             // ANROM
-            //worked = grab_ROM(&ROMs, which, "battletoads.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "battletoads.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "marblemadness.nes", nullptr);
 
             // UxROM
-            worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "contra.nes", nullptr);
             break;
         case SYS_SG1000:

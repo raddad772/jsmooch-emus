@@ -150,6 +150,7 @@ void NES_bus_PPU_write_regs(struct NES* nes, u32 addr, u32 val)
     struct NES_PPU* this = (struct NES_PPU*)&nes->ppu;
     switch((addr & 7) | 0x2000) {
         case 0x2000: // PPUCTRL
+            DBG_EVENT(DBG_NES_EVENT_W2000);
             this->io.sprite_pattern_table = (val & 8) >> 3;
             this->io.bg_pattern_table = (val & 0x10) >> 4;
             this->status.sprite_height = (val & 0x20) >> 5 ? 16 : 8;
