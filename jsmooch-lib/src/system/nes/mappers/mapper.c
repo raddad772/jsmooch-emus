@@ -7,6 +7,8 @@
 
 #include "nrom.h"
 #include "mmc3b/mmc3b.h"
+#include "axrom.h"
+#include "uxrom.h"
 
 static void init_memmap_empty(struct NES_bus *this)
 {
@@ -142,31 +144,36 @@ void NES_bus_set_which_mapper(struct NES_bus *this, u32 wh)
             printf("\nMMC3B");
             break;
         case NESM_AXROM:
-            //NES_mapper_AXROM_init(this, this->nes);
+            AXROM_init(this, this->nes);
             printf("\nAXROM");
             break;
         case NESM_CNROM:
             //NES_mapper_CNROM_init(this, this->nes);
+            assert(1==2);
             printf("\nCNROM");
             break;
         case NESM_DXROM:
             //NES_mapper_DXROM_init(this, this->nes);
+            assert(1==2);
             printf("\nDXROM");
             break;
         case NESM_MMC1:
             //NES_mapper_MMC1_init(this, this->nes);
+            assert(1==2);
             printf("\nMMC1");
             break;
         case NESM_UXROM:
-            //NES_mapper_UXROM_init(this, this->nes);
+            UXROM_init(this, this->nes);
             printf("\nUXROM");
             break;
         case NESM_VRC4E_4F:
             //NES_mapper_VRC2B_4E_4F_init(this, this->nes);
+            assert(1==2);
             printf("\nVRC4");
             break;
         case NESM_SUNSOFT_57:
             //NES_mapper_sunsoft_57_init(this, this->nes, NES_mapper_sunsoft_5b);
+            assert(1==2);
             printf("\nSunsoft mapper");
             break;
         default:
@@ -275,8 +282,14 @@ void NES_bus_set_cart(struct NES *nes, struct NES_cart* cart)
     struct NES_bus *this = &nes->bus;
     //printf("\nPRG ROM: %d bytes/%lld", cart->header.prg_rom_size, cart->PRG_ROM.size);
     simplebuf8_copy_from_buf(&this->PRG_ROM, &cart->PRG_ROM);
-    this->num_PRG_ROM_banks = this->PRG_ROM.sz >> 13;
-    printf("\nPRG ROM sz:%lld  banks:%d", this->PRG_ROM.sz, this->num_PRG_ROM_banks);
+    this->num_PRG_ROM_banks8K = this->PRG_ROM.sz >> 13;
+    this->num_PRG_ROM_banks16K = this->num_PRG_ROM_banks8K >> 1;
+    this->num_PRG_ROM_banks32K = this->num_PRG_ROM_banks16K >> 1;
+    if (this->num_PRG_ROM_banks8K == 0) this->num_PRG_ROM_banks8K = 1;
+    if (this->num_PRG_ROM_banks16K == 0) this->num_PRG_ROM_banks16K = 1;
+    if (this->num_PRG_ROM_banks32K == 0) this->num_PRG_ROM_banks32K = 1;
+
+    printf("\nPRG ROM sz:%lld  banks:%d", this->PRG_ROM.sz, this->num_PRG_ROM_banks8K);
 
     if (cart->header.chr_rom_size > 0) {
         //printf("\nCHR ROM: %d bytes/%lld", cart->header.chr_rom_size, cart->CHR_ROM.size);
@@ -285,7 +298,7 @@ void NES_bus_set_cart(struct NES *nes, struct NES_cart* cart)
     }
     if (cart->header.chr_ram_present) {
         simplebuf8_allocate(&this->CHR_RAM, cart->header.chr_ram_size);
-        //printf("\nCHR RAM: %lld bytes", this->CHR_RAM.sz);
+        printf("\nCHR RAM: %lld bytes", this->CHR_RAM.sz);
         this->num_CHR_RAM_banks = this->CHR_RAM.sz >> 10;
     }
     if (cart->header.prg_ram_size > 0) {
@@ -320,15 +333,41 @@ static void set_bm(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 rang
     }
 }
 
+void NES_bus_map_PRG32K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
+{
+    set_bm(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly);
+}
+
+void NES_bus_map_PRG16K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
+{
+    set_bm(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly);
+}
+
 void NES_bus_map_PRG8K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->CPU_map, 13, range_start, range_end, buf, bank * (1<< 13), is_readonly);
+    set_bm(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly);
 }
 
 void NES_bus_map_CHR1K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
     set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 10, is_readonly);
 }
+
+void NES_bus_map_CHR2K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
+{
+    set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 11, is_readonly);
+}
+
+void NES_bus_map_CHR4K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
+{
+    set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 12, is_readonly);
+}
+
+void NES_bus_map_CHR8K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
+{
+    set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 13, is_readonly);
+}
+
 
 static u32 NES_mirror_ppu_four(u32 addr) {
     return addr & 0xFFF;
@@ -373,9 +412,9 @@ void NES_bus_PPU_mirror_set(struct NES_bus *bus)
             assert(1==0);
     }
     for (u32 addr = 0x2000; addr < 0x3FFF; addr += 0x400) {
-        //printf("\nPPUmap %d", addr >> 10);
         struct NES_memmap *m = &bus->PPU_map[addr >> 10];
         m->offset = bus->ppu_mirror(addr);
         m->mask = 0x3FF;
+        //printf("\nPPUmap %04x to offset %04x", addr, m->offset);
     }
 }

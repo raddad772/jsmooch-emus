@@ -22,7 +22,7 @@ struct NROM {
 static void remap(struct NES_bus *bus)
 {
     THISM;
-    NES_bus_map_PRG8K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
+    NES_bus_map_PRG32K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
     NES_bus_map_CHR1K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, 0, READONLY);
     NES_bus_PPU_mirror_set(bus);
 }

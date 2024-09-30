@@ -236,6 +236,10 @@ add_library(jsmooch-lib
         src/system/nes/mappers/mmc3b/mmc3b.h
         src/system/nes/mappers/mmc3b/a12_watcher.c
         src/system/nes/mappers/mmc3b/a12_watcher.h
+        src/system/nes/mappers/axrom.c
+        src/system/nes/mappers/axrom.h
+        src/system/nes/mappers/uxrom.c
+        src/system/nes/mappers/uxrom.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

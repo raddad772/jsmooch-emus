@@ -47,7 +47,7 @@ static void remap(struct NES_bus *bus, u32 is_boot)
         // PRG RAM
         NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_RAM, 0, READWRITE);
 
-        NES_bus_map_PRG8K(bus, 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks - 1, READONLY);
+        NES_bus_map_PRG8K(bus, 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
 
         // Map CHR ROM to basics
         NES_bus_map_CHR1K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, 0, READONLY);
@@ -59,10 +59,10 @@ static void remap(struct NES_bus *bus, u32 is_boot)
         // 1 = 8000-9FFF fixed to second-last bank
         //     C000-DFFF swappable
         NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, this->regs.bank[6], READONLY);
-        NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks - 2, READONLY);
+        NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
     }
     else {
-        NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks - 2, READONLY);
+        NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
         NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, this->regs.bank[6], READONLY);
     }
 

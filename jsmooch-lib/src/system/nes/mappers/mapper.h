@@ -83,7 +83,9 @@ struct NES_bus {
     struct simplebuf8 CHR_ROM;
     struct simplebuf8 CHR_RAM;
 
-    u32 num_PRG_ROM_banks;
+    u32 num_PRG_ROM_banks8K;
+    u32 num_PRG_ROM_banks16K;
+    u32 num_PRG_ROM_banks32K;
     u32 num_CHR_ROM_banks;
     u32 num_CHR_RAM_banks;
     u32 num_PRG_RAM_banks;
@@ -104,7 +106,12 @@ void NES_bus_a12_watch(struct NES*, u32 addr);
 
 
 void NES_bus_map_PRG8K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
+void NES_bus_map_PRG16K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
+void NES_bus_map_PRG32K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
 void NES_bus_map_CHR1K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
+void NES_bus_map_CHR2K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
+void NES_bus_map_CHR4K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
+void NES_bus_map_CHR8K(struct NES_bus*, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly);
 void NES_bus_PPU_mirror_set(struct NES_bus*);
 
 

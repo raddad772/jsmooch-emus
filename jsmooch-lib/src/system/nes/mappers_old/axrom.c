@@ -64,7 +64,6 @@ void NM_AXROM_CPU_write(struct NES* nes, u32 addr, u32 val) {
 
     if (addr < 0x8000) return;
 
-
     u32 old_bank_offset = this->prg_bank_offset;
     this->prg_bank_offset = ((val & 15) % this->num_PRG_banks) * 32768;
     if (old_bank_offset != this->prg_bank_offset) {

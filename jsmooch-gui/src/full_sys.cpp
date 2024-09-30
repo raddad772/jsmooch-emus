@@ -538,10 +538,24 @@ void full_system::load_default_ROM()
     switch(which) {
         case SYS_NES:
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
+            //NROM
+            //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "240pee.nes", nullptr);
+
+            // MMC3
+            //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+
+            // Sunsoft 5b
+            //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
+
+            // ANROM
+            //worked = grab_ROM(&ROMs, which, "battletoads.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "marblemadness.nes", nullptr);
+
+            // UxROM
+            worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "contra.nes", nullptr);
             break;
         case SYS_SG1000:
             worked = grab_ROM(&ROMs, which, "choplifter.sg", nullptr);
