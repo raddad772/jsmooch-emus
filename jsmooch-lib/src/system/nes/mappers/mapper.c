@@ -6,9 +6,11 @@
 #include "mapper.h"
 
 #include "nrom.h"
-#include "mmc3b/mmc3b.h"
+#include "system/nes/mappers/mmc3b_dxrom/mmc3b_dxrom.h"
 #include "axrom.h"
 #include "uxrom.h"
+#include "cnrom_gnrom_jf11_jf14_color_dreams.h"
+#include "mmc1_sxrom.h"
 
 static void init_memmap_empty(struct NES_bus *this)
 {
@@ -44,7 +46,7 @@ void NES_bus_init(struct NES_bus *this, struct NES* nes)
     simplebuf8_init(&this->CIRAM);
 
     simplebuf8_allocate(&this->CPU_RAM, 0x800); // 2KB of CPU RAM
-    simplebuf8_allocate(&this->CIRAM, 0x800); // 2KB of PPU RAM
+    simplebuf8_allocate(&this->CIRAM, 0x1000); // 4KB of PPU RAM (normally only 2KB is accessible)
 
     init_memmap_empty(this);
     NROM_init(this, nes);
@@ -104,11 +106,20 @@ static enum NES_mappers iNES_mapper_to_my_mappers(u32 wh)
         case 7: // AXROM
             which = NESM_AXROM;
             break;
+        case 11: // Color Dreams
+            which = NESM_COLOR_DREAMS;
+            break;
         case 23: // VRC4
             which = NESM_VRC4E_4F;
             break;
+        case 66:
+            which = NESM_GNROM;
+            break;
         case 69: // JXROM/Sunsoft 7M and 5M
             which = NESM_SUNSOFT_57;
+            break;
+        case 140:
+            which = NESM_JF11_JF14;
             break;
         case 206: // DXROM
             which = NESM_DXROM;
@@ -140,26 +151,23 @@ void NES_bus_set_which_mapper(struct NES_bus *this, u32 wh)
             printf("\nNO MAPPER!");
             break;
         case NESM_MMC3b:
-            MMC3b_init(this, this->nes);
-            printf("\nMMC3B");
+        case NESM_DXROM:
+            MMC3b_init(this, this->nes, which);
+            printf("\nMMC3B or DXROM");
             break;
         case NESM_AXROM:
             AXROM_init(this, this->nes);
             printf("\nAXROM");
             break;
         case NESM_CNROM:
-            //NES_mapper_CNROM_init(this, this->nes);
-            assert(1==2);
-            printf("\nCNROM");
-            break;
-        case NESM_DXROM:
-            //NES_mapper_DXROM_init(this, this->nes);
-            assert(1==2);
-            printf("\nDXROM");
+        case NESM_GNROM:
+        case NESM_COLOR_DREAMS:
+        case NESM_JF11_JF14:
+            printf("\nGNROM-like init!");
+            GNROM_JF11_JF14_color_dreams_init(this, this->nes, which);
             break;
         case NESM_MMC1:
-            //NES_mapper_MMC1_init(this, this->nes);
-            assert(1==2);
+            SXROM_init(this, this->nes);
             printf("\nMMC1");
             break;
         case NESM_UXROM:
@@ -177,6 +185,7 @@ void NES_bus_set_which_mapper(struct NES_bus *this, u32 wh)
             printf("\nSunsoft mapper");
             break;
         default:
+            assert(1==2);
             printf("\nNO SUPPORTED MAPPER! %d", which);
             break;
     }
@@ -294,7 +303,14 @@ void NES_bus_set_cart(struct NES *nes, struct NES_cart* cart)
     if (cart->header.chr_rom_size > 0) {
         //printf("\nCHR ROM: %d bytes/%lld", cart->header.chr_rom_size, cart->CHR_ROM.size);
         simplebuf8_copy_from_buf(&this->CHR_ROM, &cart->CHR_ROM);
-        this->num_CHR_ROM_banks = this->CHR_ROM.sz >> 10;
+        this->num_CHR_ROM_banks1K = this->CHR_ROM.sz >> 10;
+        this->num_CHR_ROM_banks2K = this->CHR_ROM.sz >> 11;
+        this->num_CHR_ROM_banks4K = this->CHR_ROM.sz >> 12;
+        this->num_CHR_ROM_banks8K = this->CHR_ROM.sz >> 13;
+        if (this->num_CHR_ROM_banks1K == 0) this->num_CHR_ROM_banks1K = 1;
+        if (this->num_CHR_ROM_banks2K == 0) this->num_CHR_ROM_banks2K = 1;
+        if (this->num_CHR_ROM_banks4K == 0) this->num_CHR_ROM_banks4K = 1;
+        if (this->num_CHR_ROM_banks8K == 0) this->num_CHR_ROM_banks8K = 1;
     }
     if (cart->header.chr_ram_present) {
         simplebuf8_allocate(&this->CHR_RAM, cart->header.chr_ram_size);

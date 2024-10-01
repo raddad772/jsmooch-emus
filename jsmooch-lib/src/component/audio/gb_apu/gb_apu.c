@@ -267,9 +267,9 @@ static inline void write_NRx4(struct GBSNDCHAN *chan, u8 val)
             break;
     }
     chan->length_enable = (val >> 6) & 1;
-    if (chan->length_enable) {
+    /*if (chan->length_enable) {
         printf("\nLEN ENABLE FOR CHAN %d", chan->number);
-    }
+    }*/
     if (val & 0x80) {
         trigger_channel(chan);
     }

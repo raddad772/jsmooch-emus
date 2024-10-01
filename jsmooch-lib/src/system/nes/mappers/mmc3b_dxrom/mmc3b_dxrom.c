@@ -8,7 +8,7 @@
 
 #include "../../nes.h"
 #include "a12_watcher.h"
-#include "mmc3b.h"
+#include "mmc3b_dxrom.h"
 
 #include "helpers/debugger/debugger.h"
 
@@ -18,6 +18,12 @@ struct MMC3b {
     struct NES *nes;
 
     struct NES_a12_watcher a12_watcher;
+
+    enum NES_mappers kind;
+
+    u32 has_IRQ;
+    u32 has_mirroring_control;
+    u32 fourway;
     struct {
         u32 rC000;
         u32 bank_select;
@@ -119,8 +125,10 @@ static void MMC3b_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
             remap(bus, 0);
             break;
         case 0xA000:
-            bus->ppu_mirror_mode = val & 1 ? PPUM_Horizontal : PPUM_Vertical;
-            remap_PPU(bus);
+            if (this->has_mirroring_control && !this->fourway) {
+                bus->ppu_mirror_mode = val & 1 ? PPUM_Horizontal : PPUM_Vertical;
+                remap_PPU(bus);
+            }
             break;
         case 0xA001:
             break;
@@ -128,15 +136,21 @@ static void MMC3b_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
             this->regs.rC000 = val;
             break;
         case 0xC001:
-            this->irq.counter = 0;
-            this->irq.reload = 1;
+            if (this->has_IRQ) {
+                this->irq.counter = 0;
+                this->irq.reload = 1;
+            }
             break;
         case 0xE000:
-            this->irq.enable = 0;
-            r2A03_notify_IRQ(&bus->nes->cpu, 0, 1);
+            if (this->has_IRQ) {
+                this->irq.enable = 0;
+                r2A03_notify_IRQ(&bus->nes->cpu, 0, 1);
+            }
             break;
         case 0xE001:
-            this->irq.enable = 1;
+            if (this->has_IRQ) {
+                this->irq.enable = 1;
+            }
             break;
     }
 }
@@ -149,12 +163,20 @@ static u32 MMC3b_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_ef
 
 static void MMC3b_setcart(struct NES_bus *bus, struct NES_cart *cart)
 {
-    bus->ppu_mirror_mode = cart->header.mirroring;
+    THISM;
+    bus->ppu_mirror_mode = cart->header.mirroring ^ 1;
+    if (cart->header.four_screen_mode) {
+        printf("\nFOUR SCREEN MODE!");
+        bus->ppu_mirror_mode = PPUM_FourWay;
+        this->fourway = 1;
+    }
+    NES_bus_PPU_mirror_set(bus);
 }
 
 static void MMC3b_a12_watch(struct NES_bus *bus, u32 addr)
 {
     THISM;
+    if (!this->has_IRQ) return;
     if (a12_watcher_update(&this->a12_watcher, addr) == A12_RISE) {
         if ((this->irq.counter == 0) || (this->irq.reload)) {
             this->irq.counter = (i32)this->regs.rC000;
@@ -171,7 +193,7 @@ static void MMC3b_a12_watch(struct NES_bus *bus, u32 addr)
 
 }
 
-void MMC3b_init(struct NES_bus *bus, struct NES *nes)
+void MMC3b_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kind)
 {
     if (bus->ptr != NULL) free(bus->ptr);
     bus->ptr = malloc(sizeof(struct MMC3b));
@@ -179,6 +201,22 @@ void MMC3b_init(struct NES_bus *bus, struct NES *nes)
     memset(this, 0, sizeof(struct MMC3b));
 
     this->nes = nes;
+    this->kind = kind;
+    this->fourway = 0;
+
+    switch(kind) {
+        case NESM_MMC3b:
+            this->has_IRQ = 1;
+            this->has_mirroring_control = 1;
+            break;
+        case NESM_DXROM:
+            this->has_IRQ = 0;
+            this->has_mirroring_control = 0;
+            break;
+        default:
+            assert(1==2);
+            break;
+    }
 
     bus->destruct = &MMC3b_destruct;
     bus->reset = &MMC3b_reset;

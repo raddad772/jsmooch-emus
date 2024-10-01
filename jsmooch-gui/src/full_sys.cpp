@@ -545,13 +545,29 @@ void full_system::load_default_ROM()
             // MMC3
             //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "gauntlet.nes", nullptr);
 
             // Sunsoft 5b
             //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
 
             // ANROM
-            worked = grab_ROM(&ROMs, which, "battletoads.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "battletoads.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "marblemadness.nes", nullptr);
+
+            // CNROM
+            //worked = grab_ROM(&ROMs, which, "arkanoid.nes", nullptr);
+
+            //GNROM
+            //worked = grab_ROM(&ROMs, which, "doraemon.nes", nullptr);
+
+            //MMC1
+            //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
+
+            // DXROM
+            // TODO: fix this...
+            worked = grab_ROM(&ROMs, which, "indianatod.nes", nullptr);
 
             // UxROM
             //worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
@@ -570,8 +586,9 @@ void full_system::load_default_ROM()
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);

@@ -253,7 +253,7 @@ u32 NES_bus_PPU_read_regs(struct NES* nes, u32 addr, u32 val, u32 has_effect)
             //this->nes->bus.a12_watch(this->nes, this->io.v & 0x3FFF);
             break;
         default:
-            printf("READ UNIMPLEMENTED %04x", addr);
+            printf("\nREAD UNIMPLEMENTED %04x", addr);
             break;
     }
     return output;

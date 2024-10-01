@@ -24,7 +24,10 @@ enum NES_mappers {
     NESM_AXROM,
     NESM_VRC4E_4F,
     NESM_DXROM,
-    NESM_SUNSOFT_57
+    NESM_SUNSOFT_57,
+    NESM_JF11_JF14,
+    NESM_GNROM,
+    NESM_COLOR_DREAMS
 };
 
 struct NES_memmap {
@@ -82,13 +85,18 @@ struct NES_bus {
     struct simplebuf8 PRG_ROM;
     struct simplebuf8 CHR_ROM;
     struct simplebuf8 CHR_RAM;
+    struct simplebuf8 PPU_RAM;
 
     u32 num_PRG_ROM_banks8K;
     u32 num_PRG_ROM_banks16K;
     u32 num_PRG_ROM_banks32K;
-    u32 num_CHR_ROM_banks;
+    u32 num_CHR_ROM_banks1K;
+    u32 num_CHR_ROM_banks2K;
+    u32 num_CHR_ROM_banks4K;
+    u32 num_CHR_ROM_banks8K;
     u32 num_CHR_RAM_banks;
     u32 num_PRG_RAM_banks;
+    u32 has_PPU_RAM;
 };
 
 void NES_bus_init(struct NES_bus*, struct NES* nes);

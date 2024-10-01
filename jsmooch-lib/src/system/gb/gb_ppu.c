@@ -655,7 +655,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         u32 lylyc_enable = (val & 0x40) >> 6;
         this->io.STAT_IE = mode0_enable | (mode1_enable << 1) | (mode2_enable << 2) | (lylyc_enable << 3);
         GB_PPU_eval_STAT(this);
-        printf("\nWRITE STAT_IE frame:%d line:%d val:%d", this->clock->master_frame, this->clock->ly, this->io.STAT_IE);
+        //printf("\nWRITE STAT_IE frame:%d line:%d val:%d", this->clock->master_frame, this->clock->ly, this->io.STAT_IE);
         return;
     case 0xFF42: // SCY
         DBG_EVENT(DBG_GB_EVENT_SCY_WRITE);
