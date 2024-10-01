@@ -11,6 +11,7 @@
 #include "uxrom.h"
 #include "cnrom_gnrom_jf11_jf14_color_dreams.h"
 #include "mmc1_sxrom.h"
+#include "vrc_2b_2e_4f.h"
 
 static void init_memmap_empty(struct NES_bus *this)
 {
@@ -175,8 +176,7 @@ void NES_bus_set_which_mapper(struct NES_bus *this, u32 wh)
             printf("\nUXROM");
             break;
         case NESM_VRC4E_4F:
-            //NES_mapper_VRC2B_4E_4F_init(this, this->nes);
-            assert(1==2);
+            VRC2B_4E_4F_init(this, this->nes, which);
             printf("\nVRC4");
             break;
         case NESM_SUNSOFT_57:
@@ -340,7 +340,7 @@ static void set_bm(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 rang
         //printf("\nPAGE:%d ADDR:%04x OFFSET:%05x", addr >> shift, addr, offset);
         m->offset = offset;
         m->buf = buf;
-        m->empty = 0;
+        m->empty = buf == NULL;
         m->read_only = is_readonly;
         m->addr = addr;
         m->mask = range_size - 1;

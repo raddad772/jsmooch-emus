@@ -244,6 +244,8 @@ add_library(jsmooch-lib
         src/system/nes/mappers/cnrom_gnrom_jf11_jf14_color_dreams.h
         src/system/nes/mappers/mmc1_sxrom.c
         src/system/nes/mappers/mmc1_sxrom.h
+        src/system/nes/mappers/vrc_2b_2e_4f.c
+        src/system/nes/mappers/vrc_2b_2e_4f.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

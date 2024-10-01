@@ -562,12 +562,14 @@ void full_system::load_default_ROM()
 
             //MMC1
             //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
 
             // DXROM
-            // TODO: fix this...
-            worked = grab_ROM(&ROMs, which, "indianatod.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "indianatod.nes", nullptr);
+
+            // VRC4
+            worked = grab_ROM(&ROMs, which, "crisisforce.nes", nullptr);
 
             // UxROM
             //worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
