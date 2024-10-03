@@ -34,12 +34,11 @@ struct M6502_regs {
     i32 TA, TR;
 
     u32 HLT;
-    u32 IRQ_pending;
-    u32 NMI_pending, do_NMI;
+    u32 do_IRQ;
     u32 WAI;
     u32 STP;
 
-    u32 NMI_ack, NMI_old, IRQ_count;
+    u32 NMI_old, NMI_level_detected, do_NMI;
 };
 
 struct M6502_pins {

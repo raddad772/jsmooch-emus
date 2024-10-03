@@ -137,6 +137,7 @@ static void SXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
                 NES_bus_PPU_mirror_set(bus);
                 this->io.prg_bank_mode = (val >> 2) & 3;
                 this->io.chr_bank_mode = (val >> 4) & 1;
+                printf("\nline:%03d cycle:%d   (CTRL)  mirror_mode:%d  chr_bank_mode:%d", this->nes->clock.ppu_y, this->nes->ppu.line_cycle, val & 3, this->io.chr_bank_mode);
                 remap(bus, 0, 1);
                 break;
             case 0xA000: // CHR bank 0x0000

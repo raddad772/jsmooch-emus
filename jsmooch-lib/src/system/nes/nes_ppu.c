@@ -128,13 +128,13 @@ void NES_PPU_write_cgram(THIS, u32 addr, u32 val)
 {
     NES_bus_a12_watch(this->nes, addr | 0x3F00);
     if((addr & 0x13) == 0x10) addr &= 0xEF;
-    this->CGRAM[addr] = val & 0x3F;
+    this->CGRAM[addr & 0x1F] = val & 0x3F;
 }
 
 u32 NES_PPU_read_cgram(THIS, u32 addr)
 {
     if((addr & 0x13) == 0x10) addr &= 0xEF;
-    u32 data = this->CGRAM[addr];
+    u32 data = this->CGRAM[addr & 0x1F];
     if(this->io.greyscale) data &= 0x30;
     return data;
 }
@@ -198,9 +198,9 @@ void NES_bus_PPU_write_regs(struct NES* nes, u32 addr, u32 val)
             } else {
                 this->io.t = (this->io.t & 0x7F00) | val;
 
-                effect_buffer_set(&this->w2006_buffer, (nes->clock.ppu_master_clock / nes->clock.timing.ppu_divisor)+(3*nes->clock.timing.ppu_divisor), (i32)this->io.t);
-                //this->io.v = this->io.t;
-                //this->bus.mapper.a12_watch(this->io.v);
+                //effect_buffer_set(&this->w2006_buffer, (nes->clock.ppu_master_clock / nes->clock.timing.ppu_divisor)+(3*nes->clock.timing.ppu_divisor), (i32)this->io.t);
+                this->io.v = this->io.t;
+                NES_bus_a12_watch(this->nes, this->io.v);
                 this->io.w = 0;
             }
             return;
@@ -587,6 +587,7 @@ void PPU_scanline_visible(struct NES_PPU* this)
                 sprite_priority = (this->sprite_attribute_latches[m] & 0x20) >> 5;
                 sprite_color = this->CGRAM[0x10 + my_color];
                 if ((!this->io.sprite0_hit) && (this->sprite0_on_this_line) && (m == 0) && bg_has_pixel && (this->line_cycle < 256)) {
+                    //printf("\nSPRITE 0 LINE:%d CYCLE:%d FRAME:%lld", this->nes->clock.ppu_y, this->line_cycle, this->nes->clock.master_frame);
                     this->io.sprite0_hit = 1;
                 }
             }
@@ -682,11 +683,11 @@ void new_scanline(THIS) {
 
 u32 NES_PPU_cycle(THIS, u32 howmany) {
         for (u32 i = 0; i < howmany; i++) {
-            i32 r = effect_buffer_get(&this->w2006_buffer, this->nes->clock.ppu_master_clock / this->nes->clock.timing.ppu_divisor);
+            /*i32 r = effect_buffer_get(&this->w2006_buffer, this->nes->clock.ppu_master_clock / this->nes->clock.timing.ppu_divisor);
             if (r != -1) {
                 this->io.v = r;
                 NES_bus_a12_watch(this->nes, r);
-            }
+            }*/
             this->render_cycle(this);
             this->rendering_enabled = this->new_rendering_enabled;
             this->line_cycle++;

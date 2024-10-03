@@ -268,7 +268,7 @@ u8 NES_APU_read_IO(struct NES_APU* this, u32 addr, u8 old_val, u32 has_effect)
                 this->frame_counter.IF = 0;
                 update_IF(this);
             }
-            printf("\nREAD 2015 val:%02x cyc:%lld", r, *this->master_cycles);
+            //printf("\nREAD 2015 val:%02x cyc:%lld", r, *this->master_cycles);
             return r;
             // If an interrupt flag was set at the same moment of the read, it will read back as 1 but it will not be cleared.
     }

@@ -564,16 +564,20 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "backtothefuture23.nes", nullptr);
 
             // DXROM
             //worked = grab_ROM(&ROMs, which, "indianatod.nes", nullptr);
 
             // VRC4
-            worked = grab_ROM(&ROMs, which, "crisisforce.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "crisisforce.nes", nullptr);
 
             // UxROM
             //worked = grab_ROM(&ROMs, which, "castlevania.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "contra.nes", nullptr);
+
+            // SunSoft 5
+            worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
             break;
         case SYS_SG1000:
             worked = grab_ROM(&ROMs, which, "choplifter.sg", nullptr);
@@ -590,7 +594,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);

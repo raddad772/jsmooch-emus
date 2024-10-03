@@ -160,11 +160,8 @@ void GBMBC1_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
         this->cartRAM = malloc(cart->header.RAM_size);
     }
 
-    printf("\nCart RAM banks %d", this->num_RAM_banks);
     this->RAM_mask = cart->header.RAM_mask;
-    printf("\nRAM mask %04x", this->RAM_mask);
     this->has_RAM = cart->header.RAM_size > 0;
 
     this->num_ROM_banks = cart->header.ROM_size / 16384;
-    printf("\nNUMBER OF ROM BANKS %d", this->num_ROM_banks);
 }

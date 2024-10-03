@@ -26,10 +26,11 @@
 #define DBG_GB_EVENT_VRAM_WRITE 9
 #define DBG_GB_EVENT_SCX_WRITE 10
 #define DBG_GB_EVENT_SCY_WRITE 11
-#define DBG_GB_EVENT_LCDC_WRITE 12
-#define DBG_GB_EVENT_BGP_WRITE 13
+#define DBG_GB_EVENT_STAT_WRITE 12
+#define DBG_GB_EVENT_LCDC_WRITE 13
+#define DBG_GB_EVENT_BGP_WRITE 14
 
-#define DBG_GB_EVENT_MAX 14
+#define DBG_GB_EVENT_MAX 15
 
 void GBJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
 

@@ -12,6 +12,7 @@
 #include "cnrom_gnrom_jf11_jf14_color_dreams.h"
 #include "mmc1_sxrom.h"
 #include "vrc_2b_2e_4f.h"
+#include "sunsoft_5_7.h"
 
 static void init_memmap_empty(struct NES_bus *this)
 {
@@ -117,7 +118,7 @@ static enum NES_mappers iNES_mapper_to_my_mappers(u32 wh)
             which = NESM_GNROM;
             break;
         case 69: // JXROM/Sunsoft 7M and 5M
-            which = NESM_SUNSOFT_57;
+            which = NESM_SUNSOFT_5b;
             break;
         case 140:
             which = NESM_JF11_JF14;
@@ -179,9 +180,9 @@ void NES_bus_set_which_mapper(struct NES_bus *this, u32 wh)
             VRC2B_4E_4F_init(this, this->nes, which);
             printf("\nVRC4");
             break;
-        case NESM_SUNSOFT_57:
-            //NES_mapper_sunsoft_57_init(this, this->nes, NES_mapper_sunsoft_5b);
-            assert(1==2);
+        case NESM_SUNSOFT_5b:
+        case NESM_SUNSOFT_7:
+            sunsoft_5_7_init(this, this->nes, which);
             printf("\nSunsoft mapper");
             break;
         default:
@@ -301,7 +302,7 @@ void NES_bus_set_cart(struct NES *nes, struct NES_cart* cart)
     printf("\nPRG ROM sz:%lld  banks:%d", this->PRG_ROM.sz, this->num_PRG_ROM_banks8K);
 
     if (cart->header.chr_rom_size > 0) {
-        //printf("\nCHR ROM: %d bytes/%lld", cart->header.chr_rom_size, cart->CHR_ROM.size);
+        printf("\nCHR ROM: %d bytes/%lld", cart->header.chr_rom_size, cart->CHR_ROM.size);
         simplebuf8_copy_from_buf(&this->CHR_ROM, &cart->CHR_ROM);
         this->num_CHR_ROM_banks1K = this->CHR_ROM.sz >> 10;
         this->num_CHR_ROM_banks2K = this->CHR_ROM.sz >> 11;

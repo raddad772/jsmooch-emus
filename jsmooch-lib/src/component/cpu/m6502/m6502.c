@@ -39,7 +39,7 @@ void M6502_regs_init(struct M6502_regs* this)
     M6502_P_init(&this->P);
     this->TCU = this->IR = 0;
     this->TA = this->TR = 0;
-    this->HLT = this->IRQ_pending = this->NMI_pending = this->do_NMI = 0;
+    this->HLT = this->do_IRQ = this->do_NMI = 0;
     this->WAI = this->STP = 0;
 }
 
@@ -60,7 +60,7 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
     this->opcode_table = opcode_table;
     this->current_instruction = opcode_table[0];
 
-    this->regs.NMI_ack = this->regs.NMI_old = 0;
+    this->regs.NMI_old = this->regs.do_NMI = this->regs.do_IRQ = 0;
 
     this->trace.ok = 0;
     this->PCO = 0;
@@ -71,7 +71,6 @@ void M6502_init(struct M6502 *this, M6502_ins_func *opcode_table)
     this->dbg.events.IRQ = -1;
     this->dbg.events.NMI = -1;
 
-    this->regs.IRQ_count = 0;
     this->first_reset = 1;
     this->trace.strct.ptr = NULL;
     this->trace.strct.read_trace = NULL;
@@ -118,38 +117,25 @@ void M6502_cycle(struct M6502* this)
     // Perform 1 processor cycle
     if (this->regs.HLT || this->regs.STP) return;
 
-    if ((this->pins.IRQ) && (this->regs.P.I == 0)) {
-        this->regs.IRQ_count++;
-    }
-    else {
-        this->regs.IRQ_count = 0;
-        this->regs.IRQ_pending = false;
-    }
-
     // Edge-sensitive 0->1
     if (this->pins.NMI != this->regs.NMI_old) {
-        if (this->pins.NMI == 1) this->regs.NMI_pending = true;
-        this->regs.NMI_ack = false;
+        if (this->pins.NMI == 1) this->regs.NMI_level_detected = 1;
         this->regs.NMI_old = this->pins.NMI;
     }
 
-
-
     this->regs.TCU++;
-    if (this->regs.TCU == 1) { // T0
+    if (this->regs.TCU == 1) { // T0, instruction decode
         this->PCO = this->pins.Addr; // Capture PC before it runs away
         this->regs.IR = this->pins.D;
-        if (this->regs.do_NMI && !this->regs.NMI_ack) {
-            this->regs.NMI_ack = true;
-            this->regs.NMI_pending = false;
+        if (this->regs.do_NMI) {
             this->regs.do_NMI = false;
             this->regs.IR = M6502_OP_NMI;
             DBG_EVENT(this->dbg.events.NMI);
             if (dbg.brk_on_NMIRQ) {
                 dbg_break("M6502 NMI", *this->trace.cycles);
             }
-        } else if (this->regs.IRQ_pending) {
-            this->regs.IRQ_pending = false;
+        } else if (this->regs.do_IRQ) {
+            this->regs.do_IRQ = false;
             this->regs.IR = M6502_OP_IRQ;
             DBG_EVENT(this->dbg.events.IRQ);
             if (dbg.brk_on_NMIRQ) {
@@ -161,7 +147,6 @@ void M6502_cycle(struct M6502* this)
             printf("\nINVALID OPCODE %02x", this->regs.IR);
         }
     }
-    this->regs.NMI_ack = false;
 
     this->current_instruction(&this->regs, &this->pins);
     this->trace.my_cycles++;
@@ -169,11 +154,19 @@ void M6502_cycle(struct M6502* this)
 
 void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins)
 {
-    regs->do_NMI |= regs->NMI_pending;
+    if (regs->NMI_level_detected) {
+        regs->do_NMI = 1;
+        regs->NMI_level_detected = 0;
+    }
 }
 
+// Poll during second-to-last cycle
 void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins)
 {
-    regs->IRQ_pending = regs->IRQ_count >= 1 || regs->IRQ_pending;
-    regs->do_NMI |= regs->NMI_pending;
+    if (regs->NMI_level_detected) {
+        regs->do_NMI = 1;
+        regs->NMI_level_detected = 0;
+    }
+
+    regs->do_IRQ = pins->IRQ && !regs->P.I;
 }
