@@ -55,9 +55,6 @@ static void UXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
     if (addr >= 0x8000) {
         u32 old_num = this->io.bank_num;
         this->io.bank_num = val % bus->num_PRG_ROM_banks16K;
-        if (old_num != this->io.bank_num) {
-            debugger_interface_dirty_mem(bus->nes->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xBFFF);
-        }
         remap(bus, 0);
     }
 }

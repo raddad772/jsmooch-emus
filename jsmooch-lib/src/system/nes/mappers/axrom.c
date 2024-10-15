@@ -60,9 +60,6 @@ static void AXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
 {
     THISM;
     if (addr >= 0x8000) {
-        if (this->io.PRG_bank != (val & 7)) {
-            debugger_interface_dirty_mem(bus->nes->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xFFFF);
-        }
         this->io.PRG_bank = val & 7;
         this->io.nametable = (val >> 4) & 1;
         bus->ppu_mirror_mode = this->io.nametable ? PPUM_ScreenBOnly : PPUM_ScreenAOnly;

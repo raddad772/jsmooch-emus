@@ -64,8 +64,8 @@ struct disassembly_entry_strings {
 struct disassembly_range {
     u32 knowable;
     u32 valid;
-    u64 addr_range_start;
-    u64 addr_range_end;
+    i64 addr_range_start;
+    i64 addr_range_end;
     struct cvec entries; // disassembly_entry
 };
 

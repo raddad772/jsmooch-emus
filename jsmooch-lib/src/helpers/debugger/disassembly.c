@@ -9,6 +9,15 @@
 #include "debugger.h"
 #include "disassembly.h"
 
+/* The problem: represent all of RAM with pre-disassembled sections
+ * Only assemble as we come across them, add on to some sections
+ * Mark sections as invalid or dirty
+ *
+ *
+ *
+ */
+
+
 static void mark_disassembly_range_invalid(struct disassembly_range *range)
 {
     range->valid = 0;
@@ -53,6 +62,7 @@ void disassembly_entry_delete(struct disassembly_entry* this)
 {
     jsm_string_delete(&this->dasm);
     jsm_string_delete(&this->context);
+    this->addr = 0;
 }
 
 void disassembly_range_init(struct disassembly_range *this)

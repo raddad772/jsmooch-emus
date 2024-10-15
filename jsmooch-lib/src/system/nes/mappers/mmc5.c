@@ -59,22 +59,22 @@ struct MMC5 {
 
 static void map_CHR1K(struct MMC5 *mapper, u32 sprites_status, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 10, is_readonly);
+    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 10, is_readonly, NULL, 1);
 }
 
 static void map_CHR2K(struct MMC5 *mapper, u32 sprites_status, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 11, is_readonly);
+    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 11, is_readonly, NULL, 1);
 }
 
 static void map_CHR4K(struct MMC5 *mapper, u32 sprites_status, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 12, is_readonly);
+    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 12, is_readonly, NULL, 1);
 }
 
 static void map_CHR8K(struct MMC5 *mapper, u32 sprites_status, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 13, is_readonly);
+    NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 13, is_readonly, NULL, 1);
 }
 
 static void remap_CHR(struct NES_bus *bus)

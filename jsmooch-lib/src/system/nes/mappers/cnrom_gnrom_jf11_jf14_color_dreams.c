@@ -89,9 +89,6 @@ static void GNROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
         default:
             assert(1==2);
     }
-    if (dirty_RAM) {
-        debugger_interface_dirty_mem(bus->nes->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xFFFF);
-    }
 }
 
 static u32 GNROM_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)

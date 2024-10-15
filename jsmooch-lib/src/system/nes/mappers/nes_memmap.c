@@ -6,14 +6,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "helpers/debugger/debugger.h"
+
 #include "helpers/simplebuf.h"
 #include "nes_memmap.h"
 
-void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly)
+void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num)
 {
     u32 range_size = 1 << shift;
     for (u32 addr = range_start; addr < range_end; addr += range_size) {
         struct NES_memmap *m = mmap + (addr >> shift);
+        if (iface && ((m->offset != offset) || (m->buf != buf))) {
+            // Mark as dirty!
+            debugger_interface_dirty_mem(iface, bus_num, range_start, range_end);
+        }
         m->offset = offset;
         m->buf = buf;
         m->empty = buf == NULL;
