@@ -10,6 +10,8 @@
 #include "helpers/simplebuf.h"
 #include "../nes_cart.h"
 
+#include "nes_memmap.h"
+
 // NES_bus takes care of mappers!
 
 typedef u32 (*mirror_ppu_t)(u32);
@@ -28,18 +30,9 @@ enum NES_mappers {
     NESM_SUNSOFT_7,
     NESM_JF11_JF14,
     NESM_GNROM,
-    NESM_COLOR_DREAMS
+    NESM_COLOR_DREAMS,
+    NESM_MMC5
 };
-
-struct NES_memmap {
-    u32 addr;                       // Addr at which this chunk starts
-    u32 offset;                     // Offset from u8* data
-    u32 read_only, empty;
-    u32 mask;
-    u32 bank;
-    struct simplebuf8 *buf;         // Pointer to data
-};
-
 
 #ifndef NES_PPU_mirror_modes_def
 #define NES_PPU_mirror_modes_def
@@ -70,6 +63,11 @@ struct NES_bus {
     void (*a12_watch)(struct NES_bus*, u32 addr);
     void (*cpu_cycle)(struct NES_bus*);
 
+    float (*sample_audio)(struct NES_bus*);
+
+    u32 (*PPU_read_override)(struct NES_bus*, u32 addr, u32 has_effect);
+    void (*PPU_write_override)(struct NES_bus*, u32 addr, u32 val);
+
     mirror_ppu_t ppu_mirror;
     u32 ppu_mirror_mode;
     struct {
@@ -86,7 +84,9 @@ struct NES_bus {
     struct simplebuf8 PRG_ROM;
     struct simplebuf8 CHR_ROM;
     struct simplebuf8 CHR_RAM;
-    struct simplebuf8 PPU_RAM;
+
+    float NES_audio_bias;
+    float mapper_audio_bias;
 
     u32 num_PRG_ROM_banks8K;
     u32 num_PRG_ROM_banks16K;

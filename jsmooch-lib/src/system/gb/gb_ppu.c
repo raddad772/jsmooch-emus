@@ -653,6 +653,8 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         u32 mode1_enable = (val & 0x10) >> 4;
         u32 mode2_enable = (val & 0x20) >> 5;
         u32 lylyc_enable = (val & 0x40) >> 6;
+        printf("\n41: frame:%d line:%d line_cycle:%d STAT:$%02x", this->clock->master_frame, this->clock->ly, this->line_cycle, val);
+
         this->io.STAT_IE = mode0_enable | (mode1_enable << 1) | (mode2_enable << 2) | (lylyc_enable << 3);
         GB_PPU_eval_STAT(this);
         DBG_EVENT(DBG_GB_EVENT_STAT_WRITE);
@@ -668,7 +670,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
         return;
     case 0xFF45: // LYC
         this->io.lyc = val;
-        //console.log('LYC:', this->io.lyc)
+        printf("\n45: frame:%d line:%d line_cycle:%d LYC:$%02x", this->clock->master_frame, this->clock->ly, this->line_cycle, this->io.lyc);
         if (this->enabled) GB_PPU_eval_lyc(this);
         return;
     case 0xFF4A: // window Y
@@ -834,8 +836,9 @@ static void GB_PPU_IRQ_mode2_down(struct GB_PPU *this) {
 static void GB_PPU_eval_lyc(struct GB_PPU *this) {
     u32 cly = this->clock->ly;
     if ((cly == 153) && (this->io.lyc != 153)) cly = 0;
-    if (cly == this->io.lyc)
+    if (cly == this->io.lyc) {
         GB_PPU_IRQ_lylyc_up(this);
+    }
     else
         GB_PPU_IRQ_lylyc_down(this);
 }

@@ -248,6 +248,10 @@ add_library(jsmooch-lib
         src/system/nes/mappers/vrc_2b_2e_4f.h
         src/system/nes/mappers/sunsoft_5_7.c
         src/system/nes/mappers/sunsoft_5_7.h
+        src/system/nes/mappers/mmc5.c
+        src/system/nes/mappers/mmc5.h
+        src/system/nes/mappers/nes_memmap.c
+        src/system/nes/mappers/nes_memmap.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

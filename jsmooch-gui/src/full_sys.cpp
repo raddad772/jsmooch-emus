@@ -577,7 +577,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "contra.nes", nullptr);
 
             // SunSoft 5
-            worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
+
+            // MMC5
+            worked = grab_ROM(&ROMs, which, "castlevania3.nes", nullptr);
             break;
         case SYS_SG1000:
             worked = grab_ROM(&ROMs, which, "choplifter.sg", nullptr);

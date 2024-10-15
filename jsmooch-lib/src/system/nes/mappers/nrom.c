@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "helpers/debugger/debugger.h"
+#include "system/nes/nes.h"
+
 #include "mapper.h"
 #include "nrom.h"
 

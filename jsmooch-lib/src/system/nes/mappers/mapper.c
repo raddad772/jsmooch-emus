@@ -13,27 +13,7 @@
 #include "mmc1_sxrom.h"
 #include "vrc_2b_2e_4f.h"
 #include "sunsoft_5_7.h"
-
-static void init_memmap_empty(struct NES_bus *this)
-{
-    for (u32 i = 0; i < 0x10000; i += 0x2000) {
-        struct NES_memmap *m = &this->CPU_map[i >> 13];
-        m->empty = 1;
-        m->addr = i;
-        m->offset = 0;
-        m->read_only = 1;
-        m->buf = NULL;
-    }
-
-    for (u32 i = 0; i < 0x3000; i += 0x400) {
-        struct NES_memmap *m = &this->PPU_map[i >> 10];
-        m->empty = 1;
-        m->addr = i;
-        m->offset = 0;
-        m->read_only = 1;
-        m->buf = NULL;
-    }
-}
+#include "mmc5.h"
 
 void NES_bus_init(struct NES_bus *this, struct NES* nes)
 {
@@ -50,9 +30,12 @@ void NES_bus_init(struct NES_bus *this, struct NES* nes)
     simplebuf8_allocate(&this->CPU_RAM, 0x800); // 2KB of CPU RAM
     simplebuf8_allocate(&this->CIRAM, 0x1000); // 4KB of PPU RAM (normally only 2KB is accessible)
 
-    init_memmap_empty(this);
-    NROM_init(this, nes);
+    NES_memmap_init_empty(this->CPU_map, 0x0000, 0xFFFF, 13);
+    NES_memmap_init_empty(this->PPU_map, 0x0000, 0x3FFF, 10);
 
+    this->NES_audio_bias = 1.0f;
+    this->mapper_audio_bias = 0.0f;
+    NROM_init(this, nes);
     for (u32 addr = 0x2000; addr < 0x3FFF; addr += 0x400) {
         struct NES_memmap *m = &this->PPU_map[addr >> 10];
         m->empty = 0;
@@ -75,7 +58,6 @@ void NES_bus_delete(struct NES_bus *this)
     this->writecart = NULL;
     this->ptr = NULL;
 
-    // TODO: mapper delete first
     simplebuf8_delete(&this->PRG_RAM);
     simplebuf8_delete(&this->PRG_ROM);
     simplebuf8_delete(&this->CHR_ROM);
@@ -83,7 +65,9 @@ void NES_bus_delete(struct NES_bus *this)
     simplebuf8_delete(&this->CPU_RAM);
     simplebuf8_delete(&this->CIRAM);
 
-    init_memmap_empty(this);
+    NES_memmap_init_empty(this->CPU_map, 0x0000, 0xFFFF, 13);
+    NES_memmap_init_empty(this->PPU_map, 0x0000, 0x3FFF, 10);
+
 }
 
 static enum NES_mappers iNES_mapper_to_my_mappers(u32 wh)
@@ -104,6 +88,9 @@ static enum NES_mappers iNES_mapper_to_my_mappers(u32 wh)
             break;
         case 4: // MMC3
             which = NESM_MMC3b;
+            break;
+        case 5:
+            which = NESM_MMC5;
             break;
         case 7: // AXROM
             which = NESM_AXROM;
@@ -157,6 +144,10 @@ void NES_bus_set_which_mapper(struct NES_bus *this, u32 wh)
             MMC3b_init(this, this->nes, which);
             printf("\nMMC3B or DXROM");
             break;
+        case NESM_MMC5:
+            printf("\nMMC5! GOOD LUCK!");
+            MMC5_init(this, this->nes);
+            break;
         case NESM_AXROM:
             AXROM_init(this, this->nes);
             printf("\nAXROM");
@@ -198,26 +189,6 @@ void NES_bus_CPU_cycle(struct NES *nes)
     if (nes->bus.cpu_cycle) nes->bus.cpu_cycle(&nes->bus);
 }
 
-static inline u32 mmap_read(struct NES_memmap *this, u32 addr, u32 old_val)
-{
-    if (this->empty) {
-        printf("\nREAD EMPTY ADDR %04x", addr);
-        return old_val;
-    }
-    assert(this->buf);
-    assert(this->buf->ptr);
-    //if (do_print) printf("\nADDR:%04x  mask:%04x   offset:%x  sz:%lld", addr, this->mask, this->offset, this->buf->sz);
-    return this->buf->ptr[((addr & this->mask) + this->offset) % this->buf->sz];
-}
-
-static inline void mmap_write(struct NES_memmap *this, u32 addr, u32 val)
-{
-    if (this->read_only || this->empty) return;
-    assert(this->buf);
-    assert(this->buf->ptr);
-    this->buf->ptr[((addr & this->mask) + this->offset) % this->buf->sz] = val;
-}
-
 u32 NES_bus_CPU_read(struct NES *nes, u32 addr, u32 old_val, u32 has_effect)
 {
     if (addr < 0x2000)
@@ -230,11 +201,10 @@ u32 NES_bus_CPU_read(struct NES *nes, u32 addr, u32 old_val, u32 has_effect)
     u32 do_read = 1;
     u32 nv = nes->bus.readcart(&nes->bus, addr, old_val, has_effect, &do_read);
     if (!do_read) {
-        assert(1==0);
         return nv;
     }
 
-    u32 v = mmap_read(&nes->bus.CPU_map[addr >> 13], addr, old_val);
+    u32 v = NES_mmap_read(&nes->bus.CPU_map[addr >> 13], addr, old_val);
     return v;
 }
 
@@ -244,41 +214,46 @@ void NES_bus_CPU_write(struct NES *nes, u32 addr, u32 val)
         nes->bus.CPU_RAM.ptr[addr & 0x7FF] = val;
         return;
     }
+
+    u32 do_write = 1;
+    nes->bus.writecart(&nes->bus, addr, val, &do_write); // Thanks to MMC4 this has to go here
+
     if (addr < 0x4000)
         return NES_bus_PPU_write_regs(nes, addr, val);
     if (addr < 0x4020)
         return NES_bus_CPU_write_reg(nes, addr, val);
 
-    u32 do_write = 1;
-    nes->bus.writecart(&nes->bus, addr, val, &do_write);
     if (!do_write) {
         assert(1==0);
         return;
     }
 
-    mmap_write(&nes->bus.CPU_map[addr >> 13], addr, val);
+    NES_mmap_write(&nes->bus.CPU_map[addr >> 13], addr, val);
 }
 
 u32 NES_PPU_read_effect(struct NES *nes, u32 addr)
 {
     addr &= 0x3FFF;
+    if (nes->bus.PPU_read_override) return nes->bus.PPU_read_override(&nes->bus, addr, 1);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
     if (nes->bus.a12_watch) nes->bus.a12_watch(&nes->bus, addr);
-    return mmap_read(&nes->bus.PPU_map[addr >> 10], addr, 0);
+    return NES_mmap_read(&nes->bus.PPU_map[addr >> 10], addr, 0);
 }
 
 u32 NES_PPU_read_noeffect(struct NES *nes, u32 addr)
 {
     addr &= 0x3FFF;
+    if (nes->bus.PPU_read_override) return nes->bus.PPU_read_override(&nes->bus, addr, 0);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
-    return mmap_read(&nes->bus.PPU_map[addr >> 10], addr, 0);
+    return NES_mmap_read(&nes->bus.PPU_map[addr >> 10], addr, 0);
 }
 
 void NES_PPU_write(struct NES *nes, u32 addr, u32 val)
 {
     addr &= 0x3FFF;
+    if (nes->bus.PPU_write_override) return nes->bus.PPU_write_override(&nes->bus, addr, val);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
-    mmap_write(&nes->bus.PPU_map[addr >> 10], addr, val);
+    NES_mmap_write(&nes->bus.PPU_map[addr >> 10], addr, val);
 }
 
 void NES_bus_reset(struct NES *nes)
@@ -332,57 +307,40 @@ void NES_bus_a12_watch(struct NES *nes, u32 addr)
     if (nes->bus.a12_watch) nes->bus.a12_watch(&nes->bus, addr);
 }
 
-static void set_bm(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly)
-{
-    u32 range_size = 1 << shift;
-    //printf("\nRANGE SIZE %04x", range_size);
-    for (u32 addr = range_start; addr < range_end; addr += range_size) {
-        struct NES_memmap *m = mmap + (addr >> shift);
-        //printf("\nPAGE:%d ADDR:%04x OFFSET:%05x", addr >> shift, addr, offset);
-        m->offset = offset;
-        m->buf = buf;
-        m->empty = buf == NULL;
-        m->read_only = is_readonly;
-        m->addr = addr;
-        m->mask = range_size - 1;
-
-        offset = (offset + range_size) % buf->sz;
-    }
-}
 
 void NES_bus_map_PRG32K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly);
 }
 
 void NES_bus_map_PRG16K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly);
 }
 
 void NES_bus_map_PRG8K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly);
 }
 
 void NES_bus_map_CHR1K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 10, is_readonly);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 10, is_readonly);
 }
 
 void NES_bus_map_CHR2K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 11, is_readonly);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 11, is_readonly);
 }
 
 void NES_bus_map_CHR4K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 12, is_readonly);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 12, is_readonly);
 }
 
 void NES_bus_map_CHR8K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    set_bm(bus->PPU_map, 10, range_start, range_end, buf, bank << 13, is_readonly);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 13, is_readonly);
 }
 
 

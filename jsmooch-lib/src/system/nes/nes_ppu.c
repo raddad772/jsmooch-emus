@@ -390,6 +390,7 @@ void oam_evaluate_slow(THIS) {
                 this->sprite_pattern_shifters[this->secondary_OAM_sprite_index] = this->secondary_OAM[this->secondary_OAM_index];
                 this->secondary_OAM_index++;
                 NES_bus_a12_watch(this->nes, this->io.v);
+                printf("\nGARBAGE 1! %d", this->io.v);
                 break;
             case 2: // Read attributes 259
                 this->sprite_attribute_latches[this->secondary_OAM_sprite_index] = this->secondary_OAM[this->secondary_OAM_index];

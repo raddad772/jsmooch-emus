@@ -217,6 +217,9 @@ void sunsoft_5_7_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kin
     this->nes = nes;
     this->kind = kind;
 
+    bus->NES_audio_bias = 0.5f;
+    bus->mapper_audio_bias = 0.5f;
+
     switch(kind) {
         case NESM_SUNSOFT_5b:
             this->has_sound = 1;
