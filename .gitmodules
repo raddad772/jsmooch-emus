@@ -13,3 +13,6 @@
 [submodule "jsmooch-gui/vendor/WebGPU-distribution"]
 	path = jsmooch-gui/vendor/WebGPU-distribution
 	url = git@github.com:eliemichel/WebGPU-distribution.git
+[submodule "jsmooch-gui/vendor/clownresampler"]
+	path = jsmooch-gui/vendor/clownresampler
+	url = https://github.com/Clownacy/clownresampler

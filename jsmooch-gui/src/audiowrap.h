@@ -27,6 +27,7 @@ struct audiowrap {
     u32 sample_rate{};
     bool ok{};
     u32 num_channels{};
+    u32 resample;
 
     float samples_per_buf{};
     float fps{};

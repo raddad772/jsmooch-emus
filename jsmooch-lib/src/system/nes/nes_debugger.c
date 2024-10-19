@@ -31,7 +31,7 @@ static struct disassembly_vars get_disassembly_vars(void *nesptr, struct debugge
     return dvar;
 }
 
-static int render_p(struct cpu_reg_context*ctx, void *outbuf, size_t outbuf_sz)
+static int render_p(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
 {
     return snprintf(outbuf, outbuf_sz, "%c%c-%c%c%c%c%c",
                     ctx->int32_data & 0x80 ? 'N' : 'n',
@@ -63,26 +63,31 @@ static void create_and_bind_registers(struct NES* this, struct disassembly_view 
     sprintf(rg->name, "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "X");
     rg->kind = RK_int8;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "Y");
     rg->kind = RK_int8;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "PC");
     rg->kind = RK_int16;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "S");
     rg->kind = RK_int8;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "P");

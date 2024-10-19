@@ -341,7 +341,6 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
             if (num_rows >= total_lines) break;
 
             cur_search_addr = e->addr + e->ins_size_bytes;
-            assert(cur_search_addr < dview->mem_end);
             if (cur_search_addr > dview->mem_end) break;
         }
         if (num_rows >= total_lines) break;
@@ -352,7 +351,7 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
 }
 
 
-void cpu_reg_context_render(struct cpu_reg_context*ctx, char* outbuf, size_t outbuf_sz) {
+void cpu_reg_context_render(struct cpu_reg_context *ctx, char* outbuf, size_t outbuf_sz) {
     if (ctx->custom_render) {
         ctx->custom_render(ctx, outbuf, outbuf_sz);
     }

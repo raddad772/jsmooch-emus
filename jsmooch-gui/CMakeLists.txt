@@ -31,7 +31,7 @@ include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src)
 add_subdirectory(vendor/myimgui)
 add_subdirectory(vendor/WebGPU-distribution)
 add_subdirectory(vendor/glfw3webgpu)
-add_subdirectory(vendor/libresample)
+
 # [...]
 
 
