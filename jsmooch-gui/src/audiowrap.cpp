@@ -57,8 +57,8 @@ static int get_s16_audio_samples(audiowrap *me, u16 *output, u32 frameCount)
             if (!b) break;
         }
     }
-    if (lenleft > 0)
-        printf("\nOOPS! SHORT %d SAMPLES!", lenleft);
+    /*if (lenleft > 0)
+        printf("\nOOPS! SHORT %d SAMPLES!", lenleft);*/
     return total_samples;
 }
 

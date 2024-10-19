@@ -177,7 +177,6 @@ static struct disassembly_range *find_range_including(struct disassembly_view *d
                 struct disassembly_entry *e = (struct disassembly_entry *) cvec_get(&r->entries, j);
                 if (e->addr == instruction_addr) return r;
             }
-            printf("\nMARKING BLOCK AS BAD");
             mark_block_dirty(r);
             return NULL;
         }

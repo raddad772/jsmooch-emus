@@ -430,7 +430,6 @@ static void sample_audio(struct SMSGG* this)
         float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
         //assert(this->audio.buf->upos < this->audio.buf->samples_len);
         if (this->audio.buf->upos >= this->audio.buf->samples_len) {
-            printf("\nOVERFLOW TO %d", this->audio.buf->upos);
             this->audio.buf->upos++;
         }
         else {
