@@ -159,6 +159,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
 
 void genesisJ_describe_io(JSM, struct cvec *IOs)
 {
+    printf("\nDESCRIBE IO");
     JTHIS;
     if (this->jsm.described_inputs) return;
     this->jsm.described_inputs = 1;
