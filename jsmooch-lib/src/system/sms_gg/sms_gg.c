@@ -232,6 +232,7 @@ static void setup_audio(struct cvec* IOs)
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
     chan->sample_rate = (MASTER_CYCLES_PER_FRAME * 60) / 48;
+    chan->low_pass_filter = 16000;
 }
 
 void SMSGGJ_describe_io(JSM, struct cvec *IOs)

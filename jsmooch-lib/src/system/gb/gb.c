@@ -58,7 +58,7 @@ static void GBJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     JTHIS;
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
+        this->audio.master_cycles_per_audio_sample = (MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
         this->audio.next_sample_cycle = 0;
         struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
         this->apu.ext_enable = wf->ch_output_enabled;
@@ -200,7 +200,8 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 48000;
+    chan->sample_rate = (MASTER_CYCLES_PER_FRAME * 60) / 3;
+    chan->low_pass_filter = 16000;
 }
 
 void GBJ_describe_io(JSM, struct cvec *IOs)

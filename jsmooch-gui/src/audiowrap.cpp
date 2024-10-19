@@ -150,17 +150,21 @@ void audiowrap::configure_for_fps(float in_fps)
     ok = true;
 }
 
-int audiowrap::init_wrapper(u32 in_num_channels, u32 in_sample_rate) {
+int audiowrap::init_wrapper(u32 in_num_channels, u32 in_sample_rate, u32 low_pass_filter) {
     w = new wkrr();
     num_channels = in_num_channels;
     sample_rate = in_sample_rate;
+    u32 lpf = low_pass_filter;
+    if (lpf == 0) lpf = in_sample_rate >> 1;
+    if (lpf >= (in_sample_rate >> 1)) lpf = in_sample_rate >> 1;
     w->config = ma_device_config_init(ma_device_type_playback);
     w->config.playback.format   = ma_format_s16;   // Set to ma_format_unknown to use the device's native format.
     w->config.playback.channels = in_num_channels;               // Set to 0 to use the device's native channel count.
     if (in_sample_rate > 48000) {
+        printf("\nRESAMPLING! native rate:%d", in_sample_rate);
         resample = 1;
         w->config.sampleRate        = 48000;           // Set to 0 to use the device's native sample rate.
-        ClownResampler_HighLevel_Init(&resampler, 1, in_sample_rate, 48000, 44100);
+        ClownResampler_HighLevel_Init(&resampler, 1, in_sample_rate, 48000, lpf);
     }
     else {
         w->config.sampleRate = in_sample_rate;

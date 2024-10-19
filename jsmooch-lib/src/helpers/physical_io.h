@@ -245,6 +245,7 @@ struct JSM_CHASSIS {
 
 struct JSM_AUDIO_CHANNEL {
     u32 sample_rate;
+    u32 low_pass_filter;
     void *samples[2];
     u32 last_written;
 };
