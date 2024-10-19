@@ -121,7 +121,7 @@ static u32 clown_init_done = 0;
 static void clown_init()
 {
     ClownResampler_Precompute(&precomputed);
-
+    clown_init_done = 1;
 }
 
 
