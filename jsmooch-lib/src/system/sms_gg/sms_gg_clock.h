@@ -15,6 +15,7 @@ struct SMSGG_clock {
     u64 cpu_master_clock;
     u64 vdp_master_clock;
     u64 apu_master_clock;
+    u64 apu_sample_clock;
 
     u64 frames_since_restart;
 

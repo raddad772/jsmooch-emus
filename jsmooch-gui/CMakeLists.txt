@@ -26,11 +26,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 #FIND_PACKAGE(SDL2 REQUIRED)
 
 #include_directories( ${SDL2_INCLUDE_DIR} )
-include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src) # include files from ProjectB
+include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src)
 
 add_subdirectory(vendor/myimgui)
 add_subdirectory(vendor/WebGPU-distribution)
 add_subdirectory(vendor/glfw3webgpu)
+add_subdirectory(vendor/libresample)
 # [...]
 
 

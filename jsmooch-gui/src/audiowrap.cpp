@@ -5,6 +5,7 @@
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "../vendor/miniaudio/miniaudio.h"
+#include "../vendor/libresample/include/libresample.h"
 
 #include "helpers/int.h"
 
@@ -20,6 +21,13 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
     if (!b) {
         return;
     }
+
+    // Resample if needed
+    if (b->samples_len != frameCount) {
+        //printf("\nGot %d, wanted %d!", b->samples_len, frameCount);
+        // Do resample!
+    }
+
     u32 lenleft = frameCount;
     float *outptr = (float *)pOutput;
     while(lenleft > 0) {
