@@ -40,9 +40,17 @@ void cvec_delete(struct cvec* this)
     this->len = 0;
 }
 
-u32 cvec_len(struct cvec* this) {
+/*u32 cvec_len(struct cvec* this) {
     return this->len;
+}*/
+
+u32 cvec_index_of(struct cvec* this, void* ptr)
+{
+    u64 index = (u64)(ptr - this->data) / this->data_sz;
+    assert(index <= 0xFFFFFFFF);
+    return (u32)index;
 }
+
 
 void *cvec_push_back(struct cvec* this)
 {

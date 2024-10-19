@@ -110,6 +110,7 @@ static void setup_disassembly_view(struct NES* this, struct debugger_interface *
     jsm_string_sprintf(&dv->processor_name, "m6502");
 
     create_and_bind_registers(this, dv);
+    dv->mem_end = 0xFFFF;
     dv->fill_view.ptr = (void *)this;
     dv->fill_view.func = &fill_disassembly_view;
 

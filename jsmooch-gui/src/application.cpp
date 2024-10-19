@@ -129,124 +129,128 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
 
 static void render_event_view(struct full_system &fsys)
 {
-    if (fsys.events.view && ImGui::Begin("Event Viewer")) {
-        static bool ozoom = true;
-        ImGui::Checkbox("2x Zoom", &ozoom);
-        fsys.events_view_present();
-        ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.zoom_sz_for_display(ozoom ? 2  : 1), fsys.events.texture.uv0, fsys.events.texture.uv1, {1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0});
-        static bool things_open[50];
-        static float color_edits[50*10][3];
-        u32 idx = 0;
-        for (u32 cati = 0; cati < cvec_len(&fsys.events.view->categories); cati++) {
-            auto *cat = (struct event_category *)cvec_get(&fsys.events.view->categories, cati);
-            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-            if (ImGui::TreeNodeEx(cat->name, flags)) {
-                for (u32 evi = 0; evi < cvec_len(&fsys.events.view->events); evi++) {
-                    auto *event = (struct debugger_event *)cvec_get(&fsys.events.view->events, evi);
-                    if (event->category_id == cat->id) {
-                        color_edits[idx][0] = (float)(event->color & 0xFF) / 255.0;
-                        color_edits[idx][1] = (float)((event->color >> 8) & 0xFF) / 255.0;
-                        color_edits[idx][2] = (float)((event->color >> 16) & 0xFF) / 255.0;
-                        ImGui::ColorEdit3(event->name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
-                        idx++;
+    if (fsys.events.view) {
+        if (ImGui::Begin("Event Viewer")) {
+            static bool ozoom = true;
+            ImGui::Checkbox("2x Zoom", &ozoom);
+            fsys.events_view_present();
+            ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.zoom_sz_for_display(ozoom ? 2 : 1),
+                         fsys.events.texture.uv0, fsys.events.texture.uv1, {1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0});
+            static bool things_open[50];
+            static float color_edits[50 * 10][3];
+            u32 idx = 0;
+            for (u32 cati = 0; cati < cvec_len(&fsys.events.view->categories); cati++) {
+                auto *cat = (struct event_category *) cvec_get(&fsys.events.view->categories, cati);
+                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+                if (ImGui::TreeNodeEx(cat->name, flags)) {
+                    for (u32 evi = 0; evi < cvec_len(&fsys.events.view->events); evi++) {
+                        auto *event = (struct debugger_event *) cvec_get(&fsys.events.view->events, evi);
+                        if (event->category_id == cat->id) {
+                            color_edits[idx][0] = (float) (event->color & 0xFF) / 255.0;
+                            color_edits[idx][1] = (float) ((event->color >> 8) & 0xFF) / 255.0;
+                            color_edits[idx][2] = (float) ((event->color >> 16) & 0xFF) / 255.0;
+                            ImGui::ColorEdit3(event->name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
+                            idx++;
+                        }
                     }
+                    ImGui::TreePop();
                 }
-                ImGui::TreePop();
             }
         }
-
+        ImGui::End(); // end window
     }
-    ImGui::End(); // end window
 }
 
 static void render_disassembly_views(struct full_system &fsys, bool update_dasm_scroll) {
-    if (ImGui::Begin("Disassembly View") && fsys.dasm && fsys.enable_debugger && fsys.has_played_once) {
-        static ImGuiTableFlags flags =
-                ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
-                ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
+    if (fsys.dasm && fsys.enable_debugger && fsys.has_played_once) {
+        if (ImGui::Begin("Disassembly View")) {
+            static ImGuiTableFlags flags =
+                    ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
+                    ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
 
 
-        static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
-        static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+            static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+            static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
 
-        struct disassembly_vars dv = fsys.dasm->get_disassembly_vars.func(fsys.dasm->get_disassembly_vars.ptr,
-                                                                          &fsys.dbgr, fsys.dasm);
-        // void (*func)(void *, struct debugger_interface *, struct disassembly_view *, u32 start_addr, u32 lines);
-        u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, fsys.dasm, dv.address_of_executing_instruction, 20,
-                                                     40, &fsys.dasm_rows);
-        u32 numcols = (fsys.dasm ? fsys.dasm->has_context ? 3 : 2 : 2);
+            struct disassembly_vars dv = fsys.dasm->get_disassembly_vars.func(fsys.dasm->get_disassembly_vars.ptr,
+                                                                              &fsys.dbgr, fsys.dasm);
+            cvec_clear(&fsys.dasm_rows);
+            u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, fsys.dasm, dv.address_of_executing_instruction, 20,
+                                                         100, &fsys.dasm_rows);
+            u32 numcols = (fsys.dasm ? fsys.dasm->has_context ? 3 : 2 : 2);
 
-        // When using ScrollX or ScrollY we need to specify a size for our table container!
-        // Otherwise by default the table will fit all available space, like a BeginChild() call.
-        ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 80, TEXT_BASE_HEIGHT * 20);
-        if (ImGui::BeginTable("table_dasm", numcols, flags, outer_size)) {
-            ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-            ImGui::TableSetupColumn("addr", ImGuiTableColumnFlags_None);
-            ImGui::TableSetupColumn("disassembly", ImGuiTableColumnFlags_None);
-            if (numcols == 3) ImGui::TableSetupColumn("context at last execution", ImGuiTableColumnFlags_None);
-            ImGui::TableHeadersRow();
-            ImGuiListClipper clipper;
-            if (update_dasm_scroll) {
-                float scrl = clipper.ItemsHeight * (cur_line_num - 2);
-                float cur_scroll = ImGui::GetScrollY();
-                if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
-                    ImGui::SetScrollY(scrl);
-            }
-            clipper.Begin(100);
-            while (clipper.Step()) {
-                for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
-                    ImGui::TableNextRow();
-                    auto *strs = (struct disassembly_entry_strings *) cvec_get(&fsys.dasm_rows, row);
-
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Selectable(strs->addr, row == cur_line_num,
-                                      ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
-                    //ImGui::Text("%s", strs->addr);
-
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%s", strs->dasm);
-                    //ImGui::Selectable(strs->dasm, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
-
-                    if (numcols == 3) {
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::Text("%s", strs->context);
-                    }
-                }
-            }
-            ImGui::EndTable();
-            fsys.dasm->fill_view.func(fsys.dasm->fill_view.ptr, &fsys.dbgr, fsys.dasm);
-
-            ImGui::SameLine();
-            outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
-            if (ImGui::BeginTable("table_registers", 2, flags, outer_size)) {
+            // When using ScrollX or ScrollY we need to specify a size for our table container!
+            // Otherwise by default the table will fit all available space, like a BeginChild() call.
+            ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * 80, TEXT_BASE_HEIGHT * 20);
+            if (ImGui::BeginTable("table_dasm", numcols, flags, outer_size)) {
                 ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                ImGui::TableSetupColumn("register", ImGuiTableColumnFlags_None);
-                ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_None);
+                ImGui::TableSetupColumn("addr", ImGuiTableColumnFlags_None);
+                ImGui::TableSetupColumn("disassembly", ImGuiTableColumnFlags_None);
+                if (numcols == 3) ImGui::TableSetupColumn("context at last execution", ImGuiTableColumnFlags_None);
                 ImGui::TableHeadersRow();
-
                 ImGuiListClipper clipper;
-                clipper.Begin((int) cvec_len(&fsys.dasm->cpu.regs));
+                if (update_dasm_scroll) {
+                    float scrl = clipper.ItemsHeight * (cur_line_num - 2);
+                    float cur_scroll = ImGui::GetScrollY();
+                    if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
+                        ImGui::SetScrollY(scrl);
+                }
+                clipper.Begin(100);
                 while (clipper.Step()) {
                     for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                         ImGui::TableNextRow();
-                        auto *ctx = (struct cpu_reg_context *) cvec_get(&fsys.dasm->cpu.regs, row);
+                        auto *strs = (struct disassembly_entry_strings *) cvec_get(&fsys.dasm_rows, row);
 
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("%s", ctx->name);
+                        ImGui::Selectable(strs->addr, row == cur_line_num,
+                                          ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+                        //ImGui::Text("%s", strs->addr);
 
                         ImGui::TableSetColumnIndex(1);
-                        char rndr[50];
-                        //cpu_reg_context_render(ctx, rndr, sizeof(rndr));
-                        ImGui::Text("%s", rndr);
+                        ImGui::Text("%s", strs->dasm);
+                        //ImGui::Selectable(strs->dasm, row == cur_line_num, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+
+                        if (numcols == 3) {
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text("%s", strs->context);
+                        }
                     }
                 }
                 ImGui::EndTable();
+                fsys.dasm->fill_view.func(fsys.dasm->fill_view.ptr, &fsys.dbgr, fsys.dasm);
+
+                ImGui::SameLine();
+                outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
+                if (ImGui::BeginTable("table_registers", 2, flags, outer_size)) {
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                    ImGui::TableSetupColumn("register", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_None);
+                    ImGui::TableHeadersRow();
+
+                    ImGuiListClipper clipper;
+                    clipper.Begin((int) cvec_len(&fsys.dasm->cpu.regs));
+                    while (clipper.Step()) {
+                        for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                            ImGui::TableNextRow();
+                            auto *ctx = (struct cpu_reg_context *) cvec_get(&fsys.dasm->cpu.regs, row);
+
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("%s", ctx->name);
+
+                            ImGui::TableSetColumnIndex(1);
+                            char rndr[50];
+                            cpu_reg_context_render(ctx, rndr, sizeof(rndr));
+                            ImGui::Text("%s", rndr);
+                        }
+                    }
+                    ImGui::EndTable();
+
+                }
 
             }
-
         }
+        ImGui::End();
     }
-    ImGui::End();
 }
 
 static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
@@ -370,8 +374,8 @@ int main(int, char**)
     //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
-    //enum jsm_systems which = SYS_DMG;
-    enum jsm_systems which = SYS_NES;
+    enum jsm_systems which = SYS_DMG;
+    //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_GG;
     //enum jsm_systems which = SYS_SG1000;

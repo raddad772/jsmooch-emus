@@ -15,6 +15,7 @@ void cpu_reg_context_init(struct cpu_reg_context *);
 void disassembly_range_delete(struct disassembly_range *);
 void disassembly_range_init(struct disassembly_range *);
 void disassembly_entry_delete(struct disassembly_entry*);
+void disassembly_entry_clear_for_reuse(struct disassembly_entry*);
 void disassembly_entry_init(struct disassembly_entry *);
 
 

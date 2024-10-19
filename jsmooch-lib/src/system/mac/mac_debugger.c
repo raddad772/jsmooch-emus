@@ -171,6 +171,7 @@ void macJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
     struct disassembly_view *dv = &dview->disassembly;
+    dv->mem_end = 0xFFFFFF;
     dv->addr_column_size = 6;
     dv->has_context = 1;
     jsm_string_sprintf(&dv->processor_name, "m68000");

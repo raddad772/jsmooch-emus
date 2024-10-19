@@ -62,11 +62,13 @@ struct disassembly_entry_strings {
 };
 
 struct disassembly_range {
-    u32 knowable;
     u32 valid;
     i64 addr_range_start;
     i64 addr_range_end;
+    i64 addr_of_next_ins; // Address of next instruction we *would* disassemble
+    u32 index;
     struct cvec entries; // disassembly_entry
+    u32 num_entries_previously_made;
 };
 
 enum cpu_reg_kinds {
@@ -103,7 +105,9 @@ struct cpu_reg_context {
 };
 
 struct disassembly_view {
+    u32 mem_end;
     struct cvec ranges; // disassembly_range
+    struct cvec dirty_range_indices; // indices of dirty ranges we can re-use
     struct {
         struct cvec regs; // cpu_reg_context
     } cpu;
@@ -112,17 +116,17 @@ struct disassembly_view {
     u32 addr_column_size; // how many columns to put in address of disassembly view
     u32 has_context;
 
-    struct {
+    struct { // get_disassembly_vars gets variables for disassembly such as address of currently-executing instructions
         void *ptr;
         struct disassembly_vars (*func)(void *, struct debugger_interface *, struct disassembly_view *);
     } get_disassembly_vars;
 
-    struct {
+    struct { // fill_view fills out variables and stuff
         void *ptr;
         void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview);
     } fill_view;
 
-    struct {
+    struct { // get_disaassembly gets disasssembly
         void *ptr;
         void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry);
     } get_disassembly;
@@ -277,7 +281,7 @@ void debugger_view_init(struct debugger_view *, enum debugger_view_kinds kind);
 void debugger_interface_dirty_mem(struct debugger_interface *, u32 mem_bus, u32 addr_start, u32 addr_end);
 
 // Disassembly view functions
-int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 bytes_after, struct cvec *out_lines);
+int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines);
 void cpu_reg_context_render(struct cpu_reg_context*, char* outbuf, size_t outbuf_sz);
 
 // Event view functions

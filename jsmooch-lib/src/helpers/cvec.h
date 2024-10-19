@@ -37,8 +37,10 @@ struct cvec_ptr {
 
 void cvec_init(struct cvec *, u32 data_size, u32 prealloc);
 void cvec_delete(struct cvec *);
-u32 cvec_len(struct cvec *);
+//u32 cvec_len(struct cvec *);
+#define cvec_len(a) ((a)->len)
 void *cvec_push_back(struct cvec *);
+u32 cvec_index_of(struct cvec*, void* ptr);
 void *cvec_pop_back(struct cvec *);
 void cvec_clear(struct cvec *);
 void *cvec_get(struct cvec *, u32 index);

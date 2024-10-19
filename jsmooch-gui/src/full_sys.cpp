@@ -562,7 +562,7 @@ void full_system::load_default_ROM()
 
             //MMC1
             //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "backtothefuture23.nes", nullptr);
 
@@ -580,7 +580,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
 
             // MMC5
-            worked = grab_ROM(&ROMs, which, "castlevania3.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "castlevania3.nes", nullptr);
             break;
         case SYS_SG1000:
             worked = grab_ROM(&ROMs, which, "choplifter.sg", nullptr);

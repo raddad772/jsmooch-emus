@@ -378,6 +378,7 @@ static void setup_disassembly_view(struct SMSGG* this, struct debugger_interface
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
     struct disassembly_view *dv = &dview->disassembly;
+    dv->mem_end = 0xFFFF;
     dv->addr_column_size = 4;
     dv->has_context = 0;
     jsm_string_sprintf(&dv->processor_name, "Z80");
