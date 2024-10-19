@@ -188,7 +188,7 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 48000;
+    chan->sample_rate = APU_CYCLES_PER_FRAME * 60;
 }
 
 void NESJ_describe_io(JSM, struct cvec *IOs)
