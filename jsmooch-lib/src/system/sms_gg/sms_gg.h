@@ -59,7 +59,7 @@ struct SMSGG {
     } io;
 
     DBG_START
-        DBG_CPU_REG_START *A, *B, *C, *D, *E, *HL, *F, *AF_, *BC_, *DE_, *HL_, *PC, *SP, *IX, *IY, *EI, *HALT, *CE DBG_CPU_REG_END
+        DBG_CPU_REG_START1 *A, *B, *C, *D, *E, *HL, *F, *AF_, *BC_, *DE_, *HL_, *PC, *SP, *IX, *IY, *EI, *HALT, *CE DBG_CPU_REG_END1
         DBG_EVENT_VIEW
         DBG_IMAGE_VIEW(nametables)
         DBG_WAVEFORM_START

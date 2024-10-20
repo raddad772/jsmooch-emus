@@ -11,9 +11,14 @@ extern "C" {
 
 #include "helpers/cvec.h"
 
+
 #define DBG_START struct { struct debugger_interface *interface;
-#define DBG_CPU_REG_START struct { struct cpu_reg_context
-#define DBG_CPU_REG_END ; } dasm;
+
+#define DBG_CPU_REG_START1 struct { struct cpu_reg_context
+#define DBG_CPU_REG_END1 ; } dasm;
+
+#define DBG_CPU_REG_START(x) struct { struct cpu_reg_context
+#define DBG_CPU_REG_END(x) ; } dasm_##x;
 
 #define DBG_WAVEFORM_START struct { struct cvec_ptr view;
 #define DBG_WAVEFORM_MAIN struct cvec_ptr main;

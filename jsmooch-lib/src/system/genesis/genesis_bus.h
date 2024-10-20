@@ -215,6 +215,33 @@ struct genesis {
 
     struct genesis_controller_3button controller1;
     struct genesis_controller_3button controller2;
+
+    DBG_START
+        DBG_CPU_REG_START(m68k)
+            *D[8], *A[8],
+            *PC, *USP, *SSP, *SR,
+            *supervisor, *trace,
+            *IMASK, *CSR, *IR, *IRC
+        DBG_CPU_REG_END(m68k)
+
+        DBG_CPU_REG_START(z80)
+            *A, *B, *C, *D, *E, *HL, *F,
+            *AF_, *BC_, *DE_, *HL_,
+            *PC, *SP,
+            *IX, *IY,
+            *EI, *HALT, *CE
+        DBG_CPU_REG_END(z80)
+
+        DBG_IMAGE_VIEWS_START
+            MDBG_IMAGE_VIEW(nametables)
+            MDBG_IMAGE_VIEW(tiles)
+        DBG_IMAGE_VIEWS_END
+
+        /*DBG_WAVEFORM_START
+            DBG_WAVEFORM_MAIN
+            DBG_WAVEFORM_CHANS(4)
+        DBG_WAVEFORM_END*/
+    DBG_END
 };
 
 void genesis_cycle_m68k(struct genesis*);

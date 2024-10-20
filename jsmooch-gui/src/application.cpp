@@ -161,9 +161,14 @@ static void render_event_view(struct full_system &fsys)
     }
 }
 
-static void render_disassembly_views(struct full_system &fsys, bool update_dasm_scroll) {
-    if (fsys.dasm && fsys.enable_debugger && fsys.has_played_once) {
-        if (ImGui::Begin("Disassembly View")) {
+static void render_disassembly_view(struct full_system &fsys, struct DVIEW &dview, bool update_dasm_scroll)
+{
+    struct disassembly_view *dasm = &dview.view->disassembly;
+    struct cvec *dasm_rows = &dview.dasm_rows;
+    if (fsys.enable_debugger && fsys.has_played_once) {
+        char wname[100];
+        snprintf(wname, sizeof(wname), "%s Disassembly View", dasm->processor_name.ptr);
+        if (ImGui::Begin(wname)) {
             static ImGuiTableFlags flags =
                     ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
                     ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable;
@@ -172,12 +177,13 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
             static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
             static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
 
-            struct disassembly_vars dv = fsys.dasm->get_disassembly_vars.func(fsys.dasm->get_disassembly_vars.ptr,
-                                                                              &fsys.dbgr, fsys.dasm);
-            cvec_clear(&fsys.dasm_rows);
-            u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, fsys.dasm, dv.address_of_executing_instruction, 20,
-                                                         100, &fsys.dasm_rows);
-            u32 numcols = (fsys.dasm ? fsys.dasm->has_context ? 3 : 2 : 2);
+            struct disassembly_vars dv = dasm->get_disassembly_vars.func(dasm->get_disassembly_vars.ptr,
+                                                                              &fsys.dbgr, dasm);
+            cvec_clear(dasm_rows);
+            u32 cur_line_num = disassembly_view_get_rows(&fsys.dbgr, dasm, dv.address_of_executing_instruction,
+                                                         20,
+                                                         100, dasm_rows);
+            u32 numcols = (dasm ? dasm->has_context ? 3 : 2 : 2);
 
             // When using ScrollX or ScrollY we need to specify a size for our table container!
             // Otherwise by default the table will fit all available space, like a BeginChild() call.
@@ -199,7 +205,7 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
                 while (clipper.Step()) {
                     for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                         ImGui::TableNextRow();
-                        auto *strs = (struct disassembly_entry_strings *) cvec_get(&fsys.dasm_rows, row);
+                        auto *strs = (struct disassembly_entry_strings *) cvec_get(dasm_rows, row);
 
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Selectable(strs->addr, row == cur_line_num,
@@ -217,7 +223,7 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
                     }
                 }
                 ImGui::EndTable();
-                fsys.dasm->fill_view.func(fsys.dasm->fill_view.ptr, &fsys.dbgr, fsys.dasm);
+                dasm->fill_view.func(dasm->fill_view.ptr, &fsys.dbgr, dasm);
 
                 ImGui::SameLine();
                 outer_size = ImVec2(TEXT_BASE_WIDTH * 30, TEXT_BASE_HEIGHT * 20);
@@ -228,11 +234,11 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
                     ImGui::TableHeadersRow();
 
                     ImGuiListClipper clipper;
-                    clipper.Begin((int) cvec_len(&fsys.dasm->cpu.regs));
+                    clipper.Begin((int) cvec_len(&dasm->cpu.regs));
                     while (clipper.Step()) {
                         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                             ImGui::TableNextRow();
-                            auto *ctx = (struct cpu_reg_context *) cvec_get(&fsys.dasm->cpu.regs, row);
+                            auto *ctx = (struct cpu_reg_context *) cvec_get(&dasm->cpu.regs, row);
 
                             ImGui::TableSetColumnIndex(0);
                             ImGui::Text("%s", ctx->name);
@@ -250,6 +256,13 @@ static void render_disassembly_views(struct full_system &fsys, bool update_dasm_
             }
         }
         ImGui::End();
+    }
+
+}
+
+static void render_disassembly_views(struct full_system &fsys, bool update_dasm_scroll) {
+    for (auto &dv : fsys.dasm_views) {
+        render_disassembly_view(fsys, dv, update_dasm_scroll);
     }
 }
 
@@ -371,11 +384,11 @@ int main(int, char**)
     enum jsm_systems which = SYS_DREAMCAST;
 #else
     //enum jsm_systems which = SYS_ATARI2600;
-    //enum jsm_systems which = SYS_GENESIS;
+    enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
     //enum jsm_systems which = SYS_DMG;
-    enum jsm_systems which = SYS_NES;
+    //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
     //enum jsm_systems which = SYS_GG;
     //enum jsm_systems which = SYS_SG1000;

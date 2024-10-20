@@ -9,6 +9,7 @@
 
 #include "component/controller/genesis3/genesis3.h"
 #include "genesis.h"
+#include "genesis_debugger.h"
 #include "genesis_bus.h"
 #include "genesis_cart.h"
 #include "genesis_vdp.h"
@@ -31,7 +32,6 @@ static void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void genesisJ_enable_tracing(JSM);
 static void genesisJ_disable_tracing(JSM);
 static void genesisJ_describe_io(JSM, struct cvec* IOs);
-static void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
 /*
     u32 (*read_trace)(void *,u32);
@@ -106,13 +106,6 @@ void genesis_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
-static void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
-{
-    intf->supported_by_core = 0;
-    printf("\nWARNING: debugger interface not supported on core: genesis");
-}
-
-
 static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
 {
     JTHIS;
@@ -159,7 +152,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
 
 void genesisJ_describe_io(JSM, struct cvec *IOs)
 {
-    printf("\nDESCRIBE IO");
+    cvec_lock_reallocs(IOs);
     JTHIS;
     if (this->jsm.described_inputs) return;
     this->jsm.described_inputs = 1;
@@ -206,9 +199,9 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
     d->display.last_displayed = 1;
-    this->vdp.cur_output = (u16 *)d->display.output[d->display.last_written ^ 1];
+    this->vdp.cur_output = (u16 *)(d->display.output[0]);
 
-    this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
+    this->vdp.display = &d->display;//&((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
     //genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }

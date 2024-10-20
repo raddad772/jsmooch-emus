@@ -656,6 +656,21 @@ void full_system::add_waveform_view(u32 idx)
     waveform_views.push_back(myv);
 }
 
+void full_system::add_disassembly_view(u32 idx)
+{
+    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    printf("\nAdding disassembly view %s:", dview->disassembly.processor_name.ptr);
+    DVIEW myv;
+    myv.view = dview;
+    cvec_init(&myv.dasm_rows, sizeof(struct disassembly_entry_strings), 150);
+    for (u32 i = 0; i < 200; i++) {
+        auto *das = (struct disassembly_entry_strings *)cvec_push_back(&myv.dasm_rows);
+        memset(das, 0, sizeof(*das));
+    }
+
+    dasm_views.push_back(myv);
+}
+
 void full_system::add_image_view(u32 idx)
 {
     auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
@@ -669,12 +684,11 @@ void full_system::add_image_view(u32 idx)
 void full_system::setup_debugger_interface()
 {
     sys->setup_debugger_interface(sys, &dbgr);
-    dasm = nullptr;
     for (u32 i = 0; i < cvec_len(&dbgr.views); i++) {
         auto view = (struct debugger_view *)cvec_get(&dbgr.views, i);
         switch(view->kind) {
             case dview_disassembly:
-                dasm = &view->disassembly;
+                add_disassembly_view(i);
                 break;
             case dview_events:
                 events.view = &view->events;

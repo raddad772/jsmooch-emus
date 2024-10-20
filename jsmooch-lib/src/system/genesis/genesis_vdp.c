@@ -242,7 +242,7 @@ static void set_sc_array(struct genesis* this)
 
 static void new_scanline(struct genesis* this)
 {
-    this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1] + (this->clock.vdp.vcount * 1280);
+    this->vdp.cur_output = ((u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1]) + (this->clock.vdp.vcount * 1280);
 
     this->vdp.display->scan_x = 0;
     this->vdp.display->scan_y++;
@@ -781,7 +781,7 @@ void genesis_VDP_reset(struct genesis* this)
     this->clock.vdp.line_size = 320;
     this->clock.vdp.hblank = this->clock.vdp.vblank = 0;
     this->clock.vdp.vcount = this->clock.vdp.vcount = 0;
-    this->vdp.cur_output = (u16 *)&this->vdp.display->output[this->vdp.display->last_written ^ 1];
+    this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1];
     set_clock_divisor(this);
 }
 
@@ -926,14 +926,14 @@ static void render_8_more(struct genesis* this)
             if (ypos == 200) v = 15;
         }
         for (u32 j = 0; j < pw; j++) {
-            *this->vdp.cur_output = v;
+            *(this->vdp.cur_output) = v;
             this->vdp.cur_output++;
             this->vdp.display->scan_x++;
         }
         v =  px2 & 15;
 
         for (u32 j = 0; j < pw; j++) {
-            *this->vdp.cur_output = v;
+            *(this->vdp.cur_output) = v;
             this->vdp.display->scan_x++;
             this->vdp.cur_output++;
         }

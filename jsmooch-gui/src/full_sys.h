@@ -4,6 +4,7 @@
 #include "helpers/sys_interface.h"
 #include "helpers/physical_io.h"
 #include "helpers/debugger/debugger.h"
+#include "helpers/cvec.h"
 
 #include "my_texture.h"
 #include "audiowrap.h"
@@ -73,22 +74,26 @@ public:
     struct my_texture texture;
 };
 
+class DVIEW {
+public:
+    struct debugger_view *view{};
+    struct cvec dasm_rows{};
+};
 
 struct full_system {
 public:
     struct jsm_system *sys;
     struct debugger_interface dbgr{};
     std::vector<WVIEW> waveform_views;
+    std::vector<DVIEW> dasm_views;
 
     struct system_io inputs;
-    struct cvec dasm_rows{};
     std::vector<struct JSM_AUDIO_CHANNEL *> audiochans;
     bool has_played_once{};
     bool enable_debugger{};
     u32 worked;
     WGPUDevice        wgpu_device;
 
-    struct disassembly_view *dasm{};
     struct audiowrap audio{};
 
     full_system() {
@@ -96,19 +101,16 @@ public:
         sys = nullptr;
         debugger_interface_init(&dbgr);
         //cvec_ptr_init(&dasm);
-        cvec_init(&dasm_rows, sizeof(struct disassembly_entry_strings), 150);
-        for (u32 i = 0; i < 200; i++) {
-            auto *das = (struct disassembly_entry_strings *)cvec_push_back(&dasm_rows);
-            memset(das, 0, sizeof(*das));
-        }
         worked = 0;
         state = FSS_pause;
     }
 
     ~full_system() {
-        debugger_interface_delete(&dbgr);
         destroy_system();
-        cvec_delete(&dasm_rows);
+        for (auto & dv : dasm_views) {
+            cvec_delete(&dv.dasm_rows);
+        }
+        debugger_interface_delete(&dbgr);
     }
 
     enum full_system_states state;
@@ -171,6 +173,7 @@ private:
     void setup_bios();
     void setup_display();
     void setup_debugger_interface();
+    void add_disassembly_view(u32);
     void add_image_view(u32);
     void add_waveform_view(u32 idx);
     void waveform_view_present(struct debugger_view *dview, struct WFORM &wf);

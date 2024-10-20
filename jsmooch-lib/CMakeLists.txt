@@ -252,6 +252,8 @@ add_library(jsmooch-lib
         src/system/nes/mappers/mmc5.h
         src/system/nes/mappers/nes_memmap.c
         src/system/nes/mappers/nes_memmap.h
+        src/system/genesis/genesis_debugger.c
+        src/system/genesis/genesis_debugger.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

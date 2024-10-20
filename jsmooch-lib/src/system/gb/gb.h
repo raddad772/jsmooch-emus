@@ -60,7 +60,7 @@ struct GB {
     } audio;
 
     DBG_START
-    DBG_CPU_REG_START *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END
+    DBG_CPU_REG_START1 *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END1
     DBG_EVENT_VIEW
 
     DBG_IMAGE_VIEWS_START
