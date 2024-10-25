@@ -681,7 +681,9 @@ u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, 
         case 0xC00006: // VDP control
             return read_control_port(this, old, has_effect) & mask;
         case 0xC00008:
+        case 0xC0000A:
         case 0xC0000C:
+        case 0xC0000E:
             return read_counter(this) & mask;
     }
 
@@ -768,6 +770,21 @@ void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask
         case 0xC00004: // VDP control
         case 0xC00006:
             write_control_port(this, val, mask);
+            return;
+        case 0xC00008: // H/V READ ONLY
+        case 0xC0000A:
+        case 0xC0000C:
+        case 0xC0000E:
+            return;
+        case 0xC00010: // SN76489 write
+        case 0xC00012:
+        case 0xC00014:
+        case 0xC00016:
+            SN76489_write_data(&this->psg, val & 0xFF);
+            return;
+        case 0xC0001C: // debug reg
+        case 0xC0001E:
+            printf("\nDEBUG REG WRITE!");
             return;
     }
     printf("\nBAD VDP WRITE addr:%06x val:%04x cycle:%lld", addr, val, this->clock.master_cycle_count);
@@ -892,9 +909,9 @@ static void render_8_more(struct genesis* this)
     u32 pattern_addr[2] = { pa + this->vdp.io.plane_a_table_addr, pa + this->vdp.io.plane_b_table_addr };
     u32 pattern_entry[2] = { read_VRAM(this, pattern_addr[0]), read_VRAM(this, pattern_addr[1]) };
 
-    u32 tile_number[2] = {pattern_entry[0] & 0x3FF, pattern_entry[1] & 0x3FF};
+    u32 tile_number[2] = {pattern_entry[0] & 0x7FF, pattern_entry[1] & 0x7FF};
 
-    u32 tile_addr[2] = { (tile_number[0] << 4), (tile_number[1] << 4)};
+    u32 tile_addr[2] = { (tile_number[0] << 5), (tile_number[1] << 5)};
 
     u32 myx = (2 * 320 * ypos) + xpos;
 
@@ -903,18 +920,19 @@ static void render_8_more(struct genesis* this)
     u8* tile_ptr[2] = { };
 
     tile_ptr[0] = ((u8*)this->vdp.VRAM) + (tile_addr[0]) + ((ypos & 7) << 2);
+    tile_ptr[1] = ((u8*)this->vdp.VRAM) + (tile_addr[1]) + ((ypos & 7) << 2);
     u32 pw = this->vdp.io.h40 ? 4 : 5;
     for (u32 i = 0; i < 4; i++) {
         u8 px2 = *tile_ptr[0];
         tile_ptr[0]++;
-        if (px2 != 0) printf("\nPX2 x:%d y:%d", xpos+i, ypos);
+        //if (px2 != 0) printf("\nPX2 x:%d y:%d", xpos+i, ypos);
 
         /**optr = px2 >> 4;
         optr++;
         *optr = px2 & 15;
         optr++;*/
         u32 v = px2 >> 4;
-        u32 r = (this->clock.master_frame & 3);
+        /*u32 r = (this->clock.master_frame & 3);
         if (xpos == 20) v = 15;
         if (r == 0) {
             if (ypos == 0) v = 15;
@@ -924,14 +942,13 @@ static void render_8_more(struct genesis* this)
         }
         else {
             if (ypos == 200) v = 15;
-        }
+        }*/
         for (u32 j = 0; j < pw; j++) {
             *(this->vdp.cur_output) = v;
             this->vdp.cur_output++;
             this->vdp.display->scan_x++;
         }
-        v =  px2 & 15;
-
+        //v = 15;
         for (u32 j = 0; j < pw; j++) {
             *(this->vdp.cur_output) = v;
             this->vdp.display->scan_x++;

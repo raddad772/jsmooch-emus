@@ -178,10 +178,8 @@ u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect)
     switch(addr) {
         case 0: // Various stuff
             // TODO: make this more complete
-            if (bus->variant == SYS_GG)
-                return 0x40 | (bus->io.pause_button->state ? 0x80 : 0);
-            else
-                return 0x40;
+            SMSGG_gamepad_latch(&bus->io.controllerA);
+            return 0x40 | (bus->io.controllerA.pins.start ? 0x80 : 0);
         case 2:
             return bus->io.GGreg;
         case 1:

@@ -205,7 +205,7 @@ void M68k_set_interrupt_level(struct M68k* this, u32 val)
 static u32 M68k_process_interrupts(struct M68k* this)
 {
     if (this->state.exception.interrupt.on_next_instruction) {
-        printf("\nM68K IRQFIRE cyc:%lld", *this->trace.cycles);
+        //printf("\nM68K IRQFIRE cyc:%lld", *this->trace.cycles);
         this->state.exception.interrupt.on_next_instruction = 0;
         this->state.exception.interrupt.PC = this->regs.PC - 4;
         this->state.exception.interrupt.TCU = 0;

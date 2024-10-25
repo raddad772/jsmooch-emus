@@ -336,19 +336,18 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     //u16 *smso = (u16 *)device->display.output[device->display.last_written];
-    u16 *smso = (u16 *)device->display.output[0];
+    u16 *geno = (u16 *)device->display.output[0];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u8 *img8 = (u8 *) out_buf;
     for (u32 ry = 0; ry < 224; /*data.bottom_rendered_line; */ ry++) {
         u32 y = ry;
         u32 outyw = y * w;
-        for (u32 rx = 0; rx < 320; rx++) {
+        for (u32 rx = 0; rx < 1280; rx++) {
             u32 x = rx;
-            u32 di = ((y * 320) + x);
+            u32 di = ((y * 1280) + x);
             u32 b_out = (outyw + x) * 4;
 
-            u32 color = smso[di];
-            //printf("\nCOLOR? %d", color);
+            u32 color = geno[di];
             u32 r, g, b;
             b = (color & 15) * 16;
             g = (color & 15) * 16;

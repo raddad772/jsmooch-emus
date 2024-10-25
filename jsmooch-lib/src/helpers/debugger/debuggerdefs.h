@@ -20,10 +20,12 @@ extern "C" {
 #define DBG_CPU_REG_START(x) struct { struct cpu_reg_context
 #define DBG_CPU_REG_END(x) ; } dasm_##x;
 
-#define DBG_WAVEFORM_START struct { struct cvec_ptr view;
+#define DBG_WAVEFORM_START1 struct { struct cvec_ptr view;
+#define DBG_WAVEFORM_END1 } waveforms;
+#define DBG_WAVEFORM_START(x) struct { struct cvec_ptr view;
 #define DBG_WAVEFORM_MAIN struct cvec_ptr main;
 #define DBG_WAVEFORM_CHANS(x) struct cvec_ptr chan[x];
-#define DBG_WAVEFORM_END } waveforms;
+#define DBG_WAVEFORM_END(x) } waveforms_##x;
 
 
 #define DBG_EVENT_VIEW struct { struct cvec_ptr view; } events;

@@ -33,6 +33,17 @@ static void genesisJ_enable_tracing(JSM);
 static void genesisJ_disable_tracing(JSM);
 static void genesisJ_describe_io(JSM, struct cvec* IOs);
 
+#define MASTER_CYCLES_PER_SCANLINE 3420
+#define NTSC_SCANLINES 262
+
+// 896040
+#define MASTER_CYCLES_PER_FRAME MASTER_CYCLES_PER_SCANLINE*NTSC_SCANLINES
+
+// SMS/GG has 179208, so genesis master clock is *5
+// Sn76489 divider on SMS/GG is 48, so 48*5 = 240
+#define SN76489_DIVIDER 240
+
+
 /*
     u32 (*read_trace)(void *,u32);
     u32 (*read_trace_m68k)(void *,u32,u32,u32);
@@ -46,6 +57,52 @@ u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
     struct genesis* this = (struct genesis*)ptr;
     return genesis_mainbus_read(this, addr, UDS, LDS, this->io.m68k.open_bus_data, 0);
 }
+
+static void setup_debug_waveform(struct debug_waveform *dw)
+{
+    if (dw->samples_requested == 0) return;
+    dw->samples_rendered = dw->samples_requested;
+    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.buf_pos = 0;
+}
+
+void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+{
+    JTHIS;
+    this->audio.buf = ab;
+    if (this->audio.master_cycles_per_audio_sample == 0) {
+        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
+        this->audio.next_sample_cycle = 0;
+        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.main);
+        this->psg.ext_enable = wf->ch_output_enabled;
+    }
+
+    // PSG
+    struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
+    setup_debug_waveform(wf);
+    //this->clock.apu_divisor = wf->clock_divider;
+    for (u32 i = 0; i < 4; i++) {
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
+        setup_debug_waveform(wf);
+        if (i < 3) {
+            this->psg.sw[i].ext_enable = wf->ch_output_enabled;
+        }
+        else
+            this->psg.noise.ext_enable = wf->ch_output_enabled;
+    }
+
+    // ym2612
+    wf = cpg(this->dbg.waveforms_ym2612.main);
+    setup_debug_waveform(wf);
+    //this->clock.apu_divisor = wf->clock_divider;
+    for (u32 i = 0; i < 6; i++) {
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
+        setup_debug_waveform(wf);
+        this->ym2612.channel[i].ext_enable = wf->ch_output_enabled;
+    }
+
+}
+
 
 void genesis_new(JSM)
 {
@@ -82,6 +139,7 @@ void genesis_new(JSM)
     jsm->pause = &genesisJ_pause;
     jsm->stop = &genesisJ_stop;
     jsm->describe_io = &genesisJ_describe_io;
+    jsm->set_audiobuf = &genesisJ_set_audiobuf;
     jsm->sideload = NULL;
     jsm->setup_debugger_interface = &genesisJ_setup_debugger_interface;
 }
@@ -149,6 +207,15 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
+static void setup_audio(struct cvec* IOs)
+{
+    struct physical_io_device *pio = cvec_push_back(IOs);
+    pio->kind = HID_AUDIO_CHANNEL;
+    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->sample_rate = (MASTER_CYCLES_PER_FRAME * 60) / (7 * 144); // ~55kHz
+    printf("\nSAMPLERATE IS %d", chan->sample_rate);
+    chan->low_pass_filter = 16000;
+}
 
 void genesisJ_describe_io(JSM, struct cvec *IOs)
 {
@@ -201,7 +268,9 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     d->display.last_displayed = 1;
     this->vdp.cur_output = (u16 *)(d->display.output[0]);
 
-    this->vdp.display = &d->display;//&((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
+    setup_audio(IOs);
+
+    this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
     //genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }
@@ -276,7 +345,7 @@ u32 genesisJ_finish_frame(JSM)
 u32 genesisJ_finish_scanline(JSM)
 {
     JTHIS;
-    genesisJ_step_master(jsm, 3420);
+    genesisJ_step_master(jsm, MASTER_CYCLES_PER_SCANLINE);
     /*i32 cpu_step = (i32)this->clock.timing.cpu_divisor;
     i64 ppu_step = (i64)this->clock.timing.ppu_divisor;
     i32 done = 0;
@@ -301,6 +370,76 @@ u32 genesisJ_finish_scanline(JSM)
     return 0;
 }
 
+static float i16_to_float(i16 val)
+{
+    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
+}
+
+static void sample_audio(struct genesis* this)
+{
+    if (this->audio.buf && (this->clock.master_cycle_count >= (u64)this->audio.next_sample_cycle)) {
+        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+        if (this->audio.buf->upos < this->audio.buf->samples_len) {
+            i32 v = ((i32)SN76489_mix_sample(&this->psg, 0) + (i32)this->ym2612.output) / 2;
+            v = SN76489_mix_sample(&this->psg, 0);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
+        }
+        this->audio.buf->upos++;
+    }
+}
+
+static void debug_audio(struct genesis* this)
+{
+    /* PSG */
+    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
+    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
+        if (dw->user.buf_pos < dw->samples_requested) {
+            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
+            dw->user.next_sample_cycle += dw->user.cycle_stride;
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->psg, 1));
+            dw->user.buf_pos++;
+        }
+    }
+
+    dw = cpg(this->dbg.waveforms_psg.chan[0]);
+    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
+        for (int j = 0; j < 4; j++) {
+            dw = cpg(this->dbg.waveforms_psg.chan[j]);
+            if (dw->user.buf_pos < dw->samples_requested) {
+                dw->user.next_sample_cycle += dw->user.cycle_stride;
+                i16 sv = SN76489_sample_channel(&this->psg, j);
+                ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+                dw->user.buf_pos++;
+            }
+        }
+    }
+
+    /* YM2612 */
+    dw = cpg(this->dbg.waveforms_ym2612.main);
+    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
+        if (dw->user.buf_pos < dw->samples_requested) {
+            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
+            dw->user.next_sample_cycle += dw->user.cycle_stride;
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.output);
+            dw->user.buf_pos++;
+        }
+    }
+
+    dw = cpg(this->dbg.waveforms_ym2612.chan[0]);
+    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
+        for (int j = 0; j < 6; j++) {
+            dw = cpg(this->dbg.waveforms_ym2612.chan[j]);
+            if (dw->user.buf_pos < dw->samples_requested) {
+                dw->user.next_sample_cycle += dw->user.cycle_stride;
+                i16 sv = ym2612_sample_channel(&this->ym2612, j);
+                ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
+                dw->user.buf_pos++;
+            }
+        }
+    }
+
+}
+
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 u32 genesisJ_step_master(JSM, u32 howmany)
@@ -311,15 +450,17 @@ u32 genesisJ_step_master(JSM, u32 howmany)
     this->jsm.cycles_left = howmany;
     if(dbg.trace_on) printf("\nCYCLES LEFT? %lld", this->jsm.cycles_left);
     while (this->jsm.cycles_left >= 0) {
-        i32 biggest_step = MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock);
+        i32 biggest_step = MIN(MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock), this->clock.psg.cycles_til_clock);
         this->jsm.cycles_left -= biggest_step;
-        this->clock.master_cycle_count+= biggest_step;
+        this->clock.master_cycle_count += biggest_step;
         this->clock.m68k.cycles_til_clock -= biggest_step;
         this->clock.z80.cycles_til_clock -= biggest_step;
         this->clock.vdp.cycles_til_clock -= biggest_step;
+        this->clock.psg.cycles_til_clock -= biggest_step;
         if (this->clock.m68k.cycles_til_clock <= 0) {
             this->clock.m68k.cycles_til_clock += this->clock.m68k.clock_divisor;
             genesis_cycle_m68k(this);
+            ym2612_cycle(&this->ym2612);
         }
         if (this->clock.z80.cycles_til_clock <= 0) {
             this->clock.z80.cycles_til_clock += this->clock.z80.clock_divisor;
@@ -329,6 +470,12 @@ u32 genesisJ_step_master(JSM, u32 howmany)
             genesis_VDP_cycle(this);
             this->clock.vdp.cycles_til_clock += this->clock.vdp.clock_divisor;
         }
+        if (this->clock.psg.cycles_til_clock <= 0) {
+            SN76489_cycle(&this->psg);
+            this->clock.psg.cycles_til_clock += this->clock.psg.clock_divisor;
+        }
+        sample_audio(this);
+        debug_audio(this);
 
         if (dbg.do_break) break;
     }

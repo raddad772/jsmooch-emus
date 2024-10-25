@@ -591,7 +591,9 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             break;
         case SYS_GG:
-            worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
+            worked = grab_ROM(&ROMs, which, "buttontest.gg", nullptr);
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
@@ -751,6 +753,8 @@ struct framevars full_system::get_framevars() const
     return fv;
 }
 
+#define SCALE_DOWN 1
+
 void full_system::setup_display()
 {
     struct JSM_DISPLAY_PIXELOMETRY *p = &output.display->pixelometry;
@@ -777,7 +781,7 @@ void full_system::setup_display()
     double visible_how = visible_height / visible_width;  // .5
     double real_how = real_height / real_width;           // .6. real is narrower
 
-    if ((visible_how - real_how) < .01) {
+    if (fabs(visible_how - real_how) < .01) {
         output.x_scale_mult = 1;
         output.y_scale_mult = 1;
         output.with_overscan.x_size = (float)p->cols.visible;
@@ -785,7 +789,7 @@ void full_system::setup_display()
         output.without_overscan.x_size = (float)overscan_width;
         output.without_overscan.y_size = (float)overscan_height;
     }
-    else if (real_how > visible_how) { // real is narrower, so we stretch vertically. visible= 4:2 .5  real=3:2  .6
+    else if (!SCALE_DOWN && (real_how > visible_how)) { // real is narrower, so we stretch vertically. visible= 4:2 .5  real=3:2  .6
         output.x_scale_mult = 1;
         output.y_scale_mult = (real_how / visible_how); // we must
         output.with_overscan.x_size = (float)p->cols.visible;
@@ -794,6 +798,7 @@ void full_system::setup_display()
         output.without_overscan.y_size = (float)(overscan_height * output.y_scale_mult);
     }
     else { // real is wider, so we stretch horizontally  //    visible=4:2 = .5    real=5:2 = .4
+        printf("\nNo stretch that way...");
         output.x_scale_mult = (visible_how / real_how);
         output.y_scale_mult = 1;
         output.with_overscan.x_size = (float)(visible_width * output.x_scale_mult);

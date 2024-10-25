@@ -237,11 +237,24 @@ struct genesis {
             MDBG_IMAGE_VIEW(tiles)
         DBG_IMAGE_VIEWS_END
 
-        /*DBG_WAVEFORM_START
+        DBG_WAVEFORM_START(psg)
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(4)
-        DBG_WAVEFORM_END*/
+        DBG_WAVEFORM_END(psg)
+
+        DBG_WAVEFORM_START(ym2612)
+            DBG_WAVEFORM_MAIN
+            DBG_WAVEFORM_CHANS(6)
+        DBG_WAVEFORM_END(ym2612)
+
     DBG_END
+
+    struct {
+        double master_cycles_per_audio_sample;
+        double next_sample_cycle;
+        struct audiobuf *buf;
+    } audio;
+
 };
 
 void genesis_cycle_m68k(struct genesis*);

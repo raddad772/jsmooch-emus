@@ -26,6 +26,11 @@ struct genesis_clock {
     } vdp;
 
     struct {
+        i32 cycles_til_clock;
+        i32 clock_divisor;
+    } psg;
+
+    struct {
         i32 clock_divisor;
         i32 cycles_til_clock;
     } m68k;

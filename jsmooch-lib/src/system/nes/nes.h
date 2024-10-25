@@ -57,10 +57,10 @@ struct NES {
         MDBG_IMAGE_VIEW(nametables)
         DBG_IMAGE_VIEWS_END
 
-        DBG_WAVEFORM_START
+        DBG_WAVEFORM_START1
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(5)
-        DBG_WAVEFORM_END
+        DBG_WAVEFORM_END1
 
     DBG_END
 

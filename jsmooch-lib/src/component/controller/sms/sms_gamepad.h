@@ -9,7 +9,7 @@
 #include "helpers/sys_interface.h"
 
 struct SMSGG_gamepad {
-    struct SMSGG_gamepad_pins { u32 tr, th, tl, up, down, left, right; } pins;
+    struct SMSGG_gamepad_pins { u32 tr, th, tl, up, down, left, right, start; } pins;
     u32 num;
     enum jsm_systems variant;
 

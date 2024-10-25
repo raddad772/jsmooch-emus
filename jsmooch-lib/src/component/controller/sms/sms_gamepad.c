@@ -59,6 +59,9 @@ void SMSGG_gamepad_latch(struct SMSGG_gamepad* this)
         B_GET(right, 3);
         B_GET(tr, 4);
         B_GET(tl, 5);
+        if (this->variant == SYS_GG) {
+            B_GET(start, 6);
+        }
 #undef B_GET
     }
     else {

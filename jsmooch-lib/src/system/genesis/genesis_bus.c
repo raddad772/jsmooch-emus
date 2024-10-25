@@ -81,7 +81,7 @@ void genesis_mainbus_write_a1k(struct genesis* this, u32 addr, u16 val, u16 mask
         case 0xA11100: // Z80 BUSREQ
             this->io.z80.bus_request = ((val >> 8) & 1);
             if (this->io.z80.bus_request) if (this->io.z80.reset_line) this->io.z80.bus_ack = 1;
-            printf("\nZ80 BUSREQ:%d cycle:%lld", this->io.z80.bus_request, this->clock.master_cycle_count);
+            //printf("\nZ80 BUSREQ:%d cycle:%lld", this->io.z80.bus_request, this->clock.master_cycle_count);
             return;
         case 0xA11200: // Z80 reset line
             // 1 = no reset. 0 = reset. so invert it
@@ -295,7 +295,7 @@ void genesis_cycle_m68k(struct genesis* this)
 void genesis_m68k_line_count_irq(struct genesis* this, u32 level)
 {
     // TODO: multiplex/priority encode these
-    if (level) printf("\nM68k line count irq! cycle:%lld line:%d", this->clock.master_cycle_count, this->clock.vdp.vcount);
+    //if (level) printf("\nM68k line count irq! cycle:%lld line:%d", this->clock.master_cycle_count, this->clock.vdp.vcount);
     if ((this->m68k.pins.IPL == 4) || (this->m68k.pins.IPL == 0))
         M68k_set_interrupt_level(&this->m68k, 4 * level);
 }

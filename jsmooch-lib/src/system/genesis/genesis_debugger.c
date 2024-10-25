@@ -372,6 +372,111 @@ static void setup_z80_disassembly(struct debugger_interface *dbgr, struct genesi
 
 }
 
+static void setup_waveforms_ym2612(struct genesis* this, struct debugger_interface *dbgr)
+{
+    this->dbg.waveforms_ym2612.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(this->dbg.waveforms_ym2612.view);
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    sprintf(wv->name, "YM2612");
+
+    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_ym2612.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+    dw->default_clock_divider = 144;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_ym2612.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "CH1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_ym2612.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "CH2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_ym2612.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "CH3");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_ym2612.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "CH4");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_ym2612.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "CH5");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+    dw = cvec_push_back(&wv->waveforms);
+
+    debug_waveform_init(dw);
+    this->dbg.waveforms_ym2612.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "CH6/PCM");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+}
+
+
+static void setup_waveforms_psg(struct genesis* this, struct debugger_interface *dbgr)
+{
+    this->dbg.waveforms_psg.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(this->dbg.waveforms_psg.view);
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    sprintf(wv->name, "SN76489");
+
+    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_psg.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+    dw->default_clock_divider = 240;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_psg.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Square 0");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_psg.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Square 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_psg.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Square 2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms_psg.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    sprintf(dw->name, "Noise");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+}
+
+
 void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
@@ -383,4 +488,6 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     // Setup diassembly for m68k, z80
     setup_m68k_disassembly(dbgr, this);
     setup_z80_disassembly(dbgr, this);
+    setup_waveforms_psg(this, dbgr);
+    setup_waveforms_ym2612(this, dbgr);
 }
