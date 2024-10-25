@@ -23,6 +23,8 @@
 static void ch_update_pitches(struct ym2612* ym, struct YM2612_CHANNEL *ch);
 static void op_update_level(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *this);
 static void env_update(struct ym2612_env *this, u16 pitch, u16 octave);
+static void ch_update_pitch(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op);
+
 
 static int init_tables = 0;
 
@@ -261,7 +263,9 @@ static void write_data(struct ym2612* this, u8 val) {
 
     }
 
+    struct YM2612_CHANNEL *ch2 = &this->channel[2];
     struct YM2612_OPERATOR *op3 = &ch->operator[3];
+    struct YM2612_OPERATOR *mop = NULL;
     switch (this->io.address & 0xFC) {
         case 0xA0:
             op3->pitch.reload = op3->pitch.latch | val;
@@ -272,15 +276,60 @@ static void write_data(struct ym2612* this, u8 val) {
             op3->pitch.latch = val << 8;
             op3->octave.latch = val >> 3;
             break;
+        case 0xA8:
+            switch (this->io.address) {
+                case 0xA8:
+                    op_num = 2;
+                    break;
+                case 0xA9:
+                    op_num = 0;
+                    break;
+                case 0xAA:
+                    op_num = 1;
+                    break;
+            }
+            mop = &ch2->operator[op_num];
+            mop->pitch.reload = mop->pitch.latch | val;
+            mop->octave.reload = mop->octave.latch;
+            ch_update_pitch(this, ch, op);
+        case 0xAC:
+            switch (this->io.address) {
+                case 0xAD:
+                    op_num = 0;
+                    break;
+                case 0xAC:
+                    op_num = 2;
+                    break;
+                case 0xAE:
+                    op_num = 1;
+                    break;
+            }
+            mop = &ch2->operator[op_num];
+            mop->pitch.latch = val << 8;
+            mop->octave.latch = val >> 3;
+            break;
+        case 0xB0:
+            ch->algorithm = val & 7;
+            ch->feedback = (val >> 3) & 7;
+            break;
+        case 0xB4:
+            ch->vibrato = val & 7;
+            ch->tremolo = (val >> 4) & 3;
+            ch->right_on = (val >> 6) & 1;
+            ch->left_on = (val >> 7) & 1;
+            for (u32 i = 0; i < 4; i++) {
+                mop = &ch->operator[i];
+                op_update_level(this, ch, mop);
+                op_update_phase(this, ch, mop);
+            }
+            break;
     }
-
 
 }
 
-static u32 tremolo_table[4] = { 7, 3, 1, 0 };
+static u32 tremolo_table[4] = {7, 3, 1, 0};
 
-static void op_update_level(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *this)
-{
+static void op_update_level(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *this) {
     u32 invert_clock = (((ym->lfo.clock >> 6) & 1) ^ 1) * 0x3F;
     u32 lfo = (ym->lfo.clock ^ invert_clock) & 0x3F;
 
@@ -297,34 +346,29 @@ static void op_update_level(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct
     this->output_level = (this->output_level << 3) & 0x3FFF;
 }
 
-void ym2612_write(struct ym2612* this, u32 addr, u8 val)
-{
+void ym2612_write(struct ym2612 *this, u32 addr, u8 val) {
     addr &= 3;
-    switch(0x4000 | addr) {
-        case 0x4000: return write_addr(this, 0x000 | val);
-        case 0x4001: return write_data(this, val);
-        case 0x4002: return write_addr(this, 0x100 | val);
-        case 0x4003: return write_data(this, val);
-        /*case 0x4000: return opn2.writeAddress(0 << 8 | data);
-        case 0x4001: return opn2.writeData(data);
-        case 0x4002: return opn2.writeAddress(1 << 8 | data);
-        case 0x4003: return opn2.writeData(data);*/
-        //printf("\nYM2612 write addr:%d val:%d", addr, val);
+    switch (0x4000 | addr) {
+        case 0x4000:
+            return write_addr(this, 0x000 | val);
+        case 0x4001:
+            return write_data(this, val);
+        case 0x4002:
+            return write_addr(this, 0x100 | val);
+        case 0x4003:
+            return write_data(this, val);
     }
 }
 
-void ym2612_reset(struct ym2612* this)
-{
+void ym2612_reset(struct ym2612 *this) {
 
 }
 
-u8 ym2612_read(struct ym2612* this, u32 addr, u32 old, u32 has_effect)
-{
+u8 ym2612_read(struct ym2612 *this, u32 addr, u32 old, u32 has_effect) {
     return this->timer_a.line | (this->timer_b.line << 1);
 }
 
-static void tick_timers(struct ym2612* this)
-{
+static void tick_timers(struct ym2612 *this) {
     if (this->timer_a.enabled) {
         this->timer_a.counter = (this->timer_a.counter + 1) & 0x3FF;
         if (this->timer_a.counter == 0) {
@@ -336,7 +380,7 @@ static void tick_timers(struct ym2612* this)
     if (this->timer_b.enabled) {
         this->timer_b.divider = (this->timer_b.divider + 1) & 0x0F;
         if (this->timer_b.divider == 0) {
-            this->timer_b.counter = (this->timer_b. counter + 1) & 0xFF;
+            this->timer_b.counter = (this->timer_b.counter + 1) & 0xFF;
             if (this->timer_b.counter == 0) {
                 this->timer_b.counter = this->timer_b.period;
                 this->timer_b.line |= this->timer_b.irq_enable;
@@ -345,15 +389,14 @@ static void tick_timers(struct ym2612* this)
     }
 }
 
-static void env_update(struct ym2612_env *this, u16 pitch, u16 octave)
-{
+static void env_update(struct ym2612_env *this, u16 pitch, u16 octave) {
 
     // "The envelope generator performs the rate calculation once, as the operator enters a new phase of the ADSR envelope."
-    u32 key = MIN(MAX((u32)pitch, 0x300), 0x4FF);
+    u32 key = MIN(MAX((u32) pitch, 0x300), 0x4FF);
     u32 ksr = (octave << 2) + ((key - 0x300) >> 7);
     this->rate = 0;
     u16 v = 0;
-    switch(this->env_phase) {
+    switch (this->env_phase) {
         case EP_attack:
             this->rate = this->AR;
             break;
@@ -375,20 +418,22 @@ static void env_update(struct ym2612_env *this, u16 pitch, u16 octave)
     this->steps = env_steps[this->rate];
 }
 
+static void ch_update_pitch(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op) {
+    struct YM2612_OPERATOR *op3 = &ch->operator[3];
+    op->pitch.value = ch->mode ? op->pitch.reload : op3->pitch.reload;
+    op->octave.value = ch->mode ? op->octave.reload : op3->octave.reload;
 
-static void ch_update_pitches(struct ym2612* ym, struct YM2612_CHANNEL *ch)
-{
+    op_update_phase(ym, ch, op);
+    env_update(&op->env, op->pitch.value, op->octave.value);
+}
+
+static void ch_update_pitches(struct ym2612* ym, struct YM2612_CHANNEL *ch) {
     //only channel[2] allows per-operator frequencies
     //implemented by forcing mode to zero (single frequency) for other channels
     //in single frequency mode, operator[3] frequency is used for all operators
-    struct YM2612_OPERATOR *op3 = &ch->operator[3];
     for (u32 i = 0; i < 4; i++) {
         struct YM2612_OPERATOR *op = &ch->operator[i];
-        op->pitch.value = ch->mode ? op->pitch.reload : op3->pitch.reload;
-        op->octave.value = ch->mode ? op->octave.reload : op3->octave.reload;
-
-        op_update_phase(ym, ch, op);
-        env_update(&op->env, op->pitch.value, op->octave.value);
+        ch_update_pitch(ym, ch, op);
     }
 }
 

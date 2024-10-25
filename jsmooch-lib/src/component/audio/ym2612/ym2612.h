@@ -47,7 +47,7 @@ struct ym2612 {
 
     struct YM2612_CHANNEL {
         u32 mode; // 0 = single-frequency. Only ch[2] allows any other mode
-        u32 algorithm, tremolo, vibrato, feedback;
+        u32 algorithm, tremolo, vibrato, feedback, left_on, right_on;
 
         u32 ext_enable;
 

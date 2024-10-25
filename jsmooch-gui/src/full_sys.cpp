@@ -591,9 +591,9 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             break;
         case SYS_GG:
-            //worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
+            worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
-            worked = grab_ROM(&ROMs, which, "buttontest.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "buttontest.gg", nullptr);
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
@@ -606,6 +606,7 @@ void full_system::load_default_ROM()
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
             worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "densha.gbc", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);

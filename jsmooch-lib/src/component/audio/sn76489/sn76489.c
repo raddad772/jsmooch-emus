@@ -14,9 +14,9 @@ static i16 SMSGG_voltable[16] = {
 void SN76489_reset(struct SN76489* this)
 {
     this->polarity[0] = this->polarity[1] = this->polarity[2] = this->polarity[3] = 1;
-    /*this->vol[0] = this->vol[1] = this->vol[2] = 0x0F;
-    this->vol[3] = 0x07;*/
-    this->vol[0] = this->vol[1] = this->vol[2] = this->vol[3] = 0;
+    this->vol[0] = this->vol[1] = this->vol[2] = 0x0F;
+    this->vol[3] = 0x07;
+    //this->vol[0] = this->vol[1] = this->vol[2] = this->vol[3] = 0;
     
     this->sw[0].freq = this->sw[1].freq = this->sw[2].freq = 0;
     this->noise.lfsr = 0x8000;
@@ -122,7 +122,7 @@ i16 SN76489_mix_sample(struct SN76489* this, u32 for_debug)
         }
     }
 
-    i16 intensity = SMSGG_voltable[this->vol[3]];
+    i16 intensity = SMSGG_voltable[(this->vol[3] << 1) + 1];
     if (this->noise.ext_enable) sample += ((this->polarity[3] * 2) - 1) * intensity;
 
     return sample;

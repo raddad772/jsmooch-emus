@@ -925,30 +925,15 @@ static void render_8_more(struct genesis* this)
     for (u32 i = 0; i < 4; i++) {
         u8 px2 = *tile_ptr[0];
         tile_ptr[0]++;
-        //if (px2 != 0) printf("\nPX2 x:%d y:%d", xpos+i, ypos);
-
-        /**optr = px2 >> 4;
-        optr++;
-        *optr = px2 & 15;
-        optr++;*/
         u32 v = px2 >> 4;
-        /*u32 r = (this->clock.master_frame & 3);
-        if (xpos == 20) v = 15;
-        if (r == 0) {
-            if (ypos == 0) v = 15;
-        }
-        else if (r == 1) {
-            if (ypos == 50) v = 15;
-        }
-        else {
-            if (ypos == 200) v = 15;
-        }*/
+
         for (u32 j = 0; j < pw; j++) {
             *(this->vdp.cur_output) = v;
             this->vdp.cur_output++;
             this->vdp.display->scan_x++;
         }
-        //v = 15;
+
+        v = px2 & 15;
         for (u32 j = 0; j < pw; j++) {
             *(this->vdp.cur_output) = v;
             this->vdp.display->scan_x++;
