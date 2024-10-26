@@ -2,6 +2,10 @@
 // Created by . on 7/19/24.
 //
 
+// Some aspects of this rely heavily on forum posts by Nemesis,
+//  others on Ares. I've tried to keep it as original as possible.
+// I plan to redo it once I fully understand it.
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -25,13 +29,11 @@ static void op_update_level(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct
 static void env_update(struct ym2612_env *this, u16 pitch, u16 octave);
 static void ch_update_pitch(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op);
 
-
 static int init_tables = 0;
 
 static u16 sine_table[256], pow_table[256];
-static u16 env_dividers[16] = {
-        11, 10, 9, 8, 7, 6, 5, 4,3, 2, 1, 0, 0, 0, 0, 0
-};
+static const u16 env_dividers[16] = {11, 10, 9, 8, 7, 6, 5, 4,3, 2, 1, 0, 0, 0, 0, 0};
+static const u8 lfo_divider[8] = {108, 77, 71, 67, 62, 44, 8, 5};
 
 // These tables were taken from Ares, thanks!
 static u32 env_steps[64] = {
@@ -61,6 +63,33 @@ static const u32 vibratos[8][16] = {
     {0, 0, 4, 6, 8, 8,10,12,12,10, 8, 8, 6, 4, 0, 0}, {0, 0, 8,12,16,16,20,24,24,20,16,16,12, 8, 0, 0},
 };
 
+static void update_key_state(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+{
+    if (op->key == op->key_on) return;
+    op->key = op->key_on;
+
+    if (op->key_on) {
+        op->phase.value = 0;
+        op->env.invert_xor = 0;
+        op->env.env_phase = EP_attack;
+        env_update(&op->env, op->pitch.value, op->octave.value);
+
+        if (op->env.rate >= 62) {
+            // skip attack phase
+            op->env.attenuation = 0;
+        }
+    }
+    else {
+        op->env.env_phase = EP_release;
+        env_update(&op->env, op->pitch.value, op->octave.value);
+
+        if (op->env.ssg.enable && (op->env.ssg.attack != op->env.ssg.invert)) {
+            op->env.attenuation = 0x200 - op->env.attenuation;
+        }
+    }
+
+    op_update_level(ym, ch, op);
+}
 
 static void do_init_tables() {
     // using @Nemesis' code from https://gendev.spritesmind.net/forum/viewtopic.php?t=386&start=150
@@ -202,7 +231,7 @@ static void write_data(struct ym2612* this, u8 val) {
             if (ch_num >= 4) ch_num--;
 
             struct YM2612_CHANNEL *ch = &this->channel[ch_num];
-            ch->operator[0].key = ch->operator[1].key = ch->operator[2].key = ch->operator[3].key = (val >> 4) & 1;
+            ch->operator[0].key_on = ch->operator[1].key_on = ch->operator[2].key_on = ch->operator[3].key_on = (val >> 4) & 1;
             break;
         }
         case 0x2a: // DAC sample
@@ -459,8 +488,6 @@ static void ch_keyoff(struct ym2612 *ym, struct YM2612_CHANNEL *ch)
     }
 }
 
-
-
 static void do_env_tick(struct ym2612 *ym, struct ym2612_env *this, u16 pitch, u16 octave)
 {
     this->divider.counter = (this->divider.counter + 1);
@@ -501,7 +528,7 @@ static void do_env_tick(struct ym2612 *ym, struct ym2612_env *this, u16 pitch, u
 
 #define BIT10 0x3FF
 
-static u16 calculate_operator(u16 phase_modulation, u16 phase, u16 env_input)
+static u16 calculate_operator(u16 phase, u16 phase_modulation, u16 env_input)
 {
     u16 output = 0;
     // 10-bit add of phase and phase modulation
@@ -559,21 +586,130 @@ i16 ym2612_sample_channel(struct ym2612* this, u32 ch)
     return (i16)((SIGNe14to32(this->channel[ch].output)) * 4);
 }
 
+#define op_old(n) (ch->operator[n].prev & 0xFFFFFFFD)
+#define op_mod(n) (ch->operator[n].output_level & 0xFFFFFFFD)
+#define op_out(n) (ch->operator[n].output_level & 0xFFFFFFDF)
+
+static void tick_channels(struct ym2612* this)
+{
+    // Go through all the operators and synthesize th sound...
+    struct YM2612_OPERATOR *op[4];
+    for (u32 ch_num = 0; ch_num < 6; ch_num++) {
+        struct YM2612_CHANNEL *ch = &this->channel[ch_num];
+        i16 accumulator = 0;
+        op[0] = &ch->operator[0];
+        op[1] = &ch->operator[1];
+        op[2] = &ch->operator[2];
+        op[3] = &ch->operator[3];
+
+        i32 feedback = 0; // later
+        op[0]->buffer_prev = op[0]->prev;
+        for (u32 i = 0; i < 4; i++) {
+            op[i]->prev = op[i]->output_level;
+        }
+
+        op[0]->output_level = calculate_operator(op[0]->phase.value, 0, op[0]->env.attenuation);
+
+        switch(ch->algorithm) {
+            case 0:
+#define opout(n) op[n]->output_level
+#define ophase(n) op[n]->phase.value
+#define openv(n) op[n]->env.attenuation
+                // chain 0 > 1 > 2 > 3
+                opout(1) = calculate_operator(ophase(0), op_mod(0), openv(1));
+                opout(2) = calculate_operator(op_old(2), op_old(1), openv(2));
+                opout(3) = calculate_operator(ophase(3), op_mod(2), openv(3));
+                accumulator += op_out(3);
+                break;
+            case 1: // 0 + 1 > 2 > 3
+                opout(1) = calculate_operator(ophase(1), 0, openv(1));
+                opout(2) = calculate_operator(ophase(2), op_old(0) + op_old(1), openv(2));
+                opout(3) = calculate_operator(ophase(3), op_mod(2), openv(3));
+                accumulator += op_out(3);
+                break;
+            case 2: // 0+ (1 > 2) > 3
+                opout(1) = calculate_operator(ophase(1), 0, openv(1));
+                opout(2) = calculate_operator(ophase(2), op_old(1), openv(2));
+                opout(3) = calculate_operator(ophase(3), op_mod(0) + op_mod(2), openv(3));
+                accumulator += op_out(3);
+                break;
+            case 3: // (0 > 1) + 2 > 3
+                opout(1) = calculate_operator(ophase(1), op_mod(0), openv(1));
+                opout(2) = calculate_operator(ophase(2), 0, openv(2));
+                opout(3) = calculate_operator(ophase(3), op_mod(1) + op_mod(2), openv(3));
+                accumulator += op_out(3);
+                break;
+            case 4: // 0>1, 2>3, then add
+                opout(1) = calculate_operator(ophase(1), op_mod(0), openv(1));
+                opout(2) = calculate_operator(ophase(2), 0, openv(2));
+                opout(3) = calculate_operator(ophase(3), op_mod(2), openv(3));
+                accumulator += op_out(1) + op_out(3);
+                break;
+            case 5: // 0 > (1+2+3)
+                opout(1) = calculate_operator(ophase(1), op_mod(0), openv(1));
+                opout(2) = calculate_operator(ophase(2), op_old(0), openv(2));
+                opout(3) = calculate_operator(ophase(3), op_mod(0), openv(3));
+                accumulator += op_out(1) + op_out(2) + op_out(3);
+                break;
+            case 6: // (0 > 1) + 2 + 3
+                opout(1) = calculate_operator(ophase(1), op_mod(0), openv(1));
+                opout(2) = calculate_operator(ophase(2), 0, openv(2));
+                opout(3) = calculate_operator(ophase(3), 0, openv(3));
+                accumulator += op_out(1) + op_out(2) + op_out(3);
+                break;
+            case 7: // add all together
+                opout(1) = calculate_operator(ophase(1), 0, openv(1));
+                opout(2) = calculate_operator(ophase(2), 0, openv(2));
+                opout(3) = calculate_operator(ophase(3), 0, openv(3));
+                accumulator += op_out(0) + op_out(1) + op_out(2) + op_out(3);
+                break;
+        }
+
+        // If we're channel 6, do DAC?
+        i32 ch_output = SIGNe14to32(accumulator & 0xFFFFFFDF);
+        if (this->dac.enable && (ch_num == 5)) ch_output = ((i32)this->dac.sample - 0x80) << 6;
+        ch->output = (i16)ch_output;
+    }
+}
+
+static void tick_lfo(struct ym2612* this)
+{
+    if (this->lfo.enable) {
+        this->lfo.divider++;
+        if (this->lfo.divider >= lfo_divider[this->lfo.divider]) {
+            this->lfo.divider = 0;
+            this->lfo.clock++;
+            for (u32 ch_num = 0; ch_num < 6; ch_num++) {
+                struct YM2612_CHANNEL *ch = &this->channel[ch_num];
+                for (u32 op_num = 0; op_num < 4; op_num++) {
+                    struct YM2612_OPERATOR *op = &ch->operator[op_num];
+                    op_update_phase(this, ch, op);
+                    op_update_level(this, ch, op);
+                }
+            }
+        }
+    }
+}
+
+
 void ym2612_cycle(struct ym2612* this)
 {
     this->clock.div144++;
     this->clock.div24++;
     this->clock.env_divider++;
 
-    if (this->clock.div144 >= 144) { // Samples are output at this rate
+    if (this->clock.div144 >= 144) { // Samples are output at this rate.
         this->clock.div144 = 0;
+        tick_channels(this);
         tick_timers(this);
+        tick_lfo(this);
+        update_mix(this);
     }
-    if (this->clock.div24 >= 24) { // Samples are updated at this rate
+    /*if (this->clock.div24 >= 24) { // Samples are updated at this rate, one operator per tick
         this->clock.div24 = 24;
         //tick_channels(this);
         update_mix(this);
-    }
+    }*/
     if (this->clock.env_divider >= 351) {
         this->clock.env_divider = 0;
         tick_envs(this);

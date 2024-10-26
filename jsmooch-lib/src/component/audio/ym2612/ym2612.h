@@ -51,15 +51,16 @@ struct ym2612 {
 
         u32 ext_enable;
 
-        u16 output; // Output value of channel, mixed
+        i16 output; // Output value of channel, mixed
 
         struct YM2612_OPERATOR {
             struct ym2612_env env;
-            u16 output_level;
+            i16 output_level;
             u16 total_level;
             u32 lfo_enable;
             u32 detune, multiple;
-            u32 key;
+            u32 key, key_on;
+            i16 prev, buffer_prev;
 
             struct {
                 u32 reload, latch, value;
