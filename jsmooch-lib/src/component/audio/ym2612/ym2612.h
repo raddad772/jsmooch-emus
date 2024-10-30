@@ -5,74 +5,84 @@
 #ifndef JSMOOCH_EMUS_YM2612_H
 #define JSMOOCH_EMUS_YM2612_H
 
+/* Old version was hybrid.
+ * New version is straight Ares port to learn from
+ */
+
 #include "helpers/int.h"
 
-struct ym2612_env {
-    u16 TL; // 7 bits Total Level
-    u16 SL; // 4 bits Sustain Level
-    u16 AR; // 5 bits Attack Rate
-    u16 DR; // 5 bits Decay Rate
-    u16 SR; // 5 bits Sustain Rate
-    u16 RR; // 4 bits Release Rate
-    u16 RS; // Rate Scale
-
-    struct {
-        u32 enable, attack, alt, hold, invert;
-    } ssg;
-    enum {
-        EP_attack = 0,
-        EP_decay = 1,
-        EP_sustain = 2,
-        EP_release = 3,
-    } env_phase;
-    u16 rate; // 6-bit calculated Rate value
-    u16 attenuation; // Current 10-bit attentuation value
-    u16 polarity; // flag indicating polarity of output; inverts output
-    u16 key_scale; // 3 bits key scaling
-    u32 invert_xor;
-
-    struct {
-        u32 period, counter;
-        u32 phase;
-    } divider;
-    u32 steps;
+enum OPN2_variant {
+    OPN2V_ym2612,
+    OPN2V_ym3438
 };
 
 struct ym2612 {
-    u16 output; // Current mixed sample
+
+    enum OPN2_variant variant;
+    struct {
+        i32 left_output, right_output, mono_output; // Current mixed sample
+        u64 last_master_clock_op0;
+    } mix;
 
     struct {
-        u16 address;
+        u16 address; // 9bit
     } io;
 
     struct YM2612_CHANNEL {
-        u32 mode; // 0 = single-frequency. Only ch[2] allows any other mode
-        u32 algorithm, tremolo, vibrato, feedback, left_on, right_on;
-
         u32 ext_enable;
+        u32 left_enable, right_enable;
+        struct {
+            i32 mono, left, right; // 14 bits
+        } ext_output;
 
-        i16 output; // Output value of channel, mixed
+        u32 algorithm, feedback, vibrato; //3bit
+        u32 tremolo, mode; // 2bit
 
         struct YM2612_OPERATOR {
-            struct ym2612_env env;
-            i16 output_level;
-            u16 total_level;
-            u32 lfo_enable;
-            u32 detune, multiple;
-            u32 key, key_on;
-            i16 prev, buffer_prev;
+            u32 key_on; // 1bit
+            u32 key_line; // 1bit
+            u32 lfo_enable; // 1bit
+            u32 detune; // 3bit
+            u32 multiple; //4bit
+            u32 total_level; // 7bit
+
+            u16 output_level;
+            i16 output, prior, prior_buffer;
 
             struct {
-                u32 reload, latch, value;
+                u16 value, reload, latch; // 11 bits
             } pitch;
 
             struct {
-                u32 reload, latch, value;
+                u16 value, reload, latch; // 3 bits
             } octave;
 
             struct {
-                u32 delta, value;
+                u32 value, delta; // 20bit
             } phase;
+
+            struct YM2612_ENV {
+                enum {
+                    EP_attack = 0,
+                    EP_decay = 1,
+                    EP_sustain = 2,
+                    EP_release = 3,
+                } state;
+                i32 rate, divider;
+                u32 steps;
+                u32 value;
+
+                u32 key_scale; // 2bit
+                u32 attack_rate; // 5bit
+                u32 decay_rate; // 5bit
+                u32 sustain_rate; // 5bit
+                u32 sustain_level; // 4bit
+                u32 release_rate; // 5bit
+            } envelope;
+
+            struct {
+                u32 enable, attack, alternate, hold, invert; // 1bit
+            } ssg;
         } operator[4];
     } channel[6];
 
@@ -83,34 +93,27 @@ struct ym2612 {
 
     struct {
         u32 div144;
-        u32 div24;
-        u32 env_divider;
-        u32 env_cycle_counter;
-        u32 timer_count;
     } clock;
+
+    struct {
+        u32 clock, divider; // clock=12bit, divider = 32bit
+    } envelope;
 
     struct {
         u32 clock, rate, enable, divider;
     } lfo;
 
     struct {
-        u32 enabled;
-        u16 period;
-        u32 counter;
-        u32 line;
-        u32 irq_enable;
+        u32 enable, irq, line, period, counter;
     } timer_a;
 
     struct {
-        u32 enabled;
-        u16 period;
-        u32 counter, divider;
-        u32 line;
-        u32 irq_enable;
+        u32 enable, irq, line, period, counter, divider;
     } timer_b;
+
 };
 
-void ym2612_init(struct ym2612*);
+void ym2612_init(struct ym2612*, enum OPN2_variant variant);
 void ym2612_delete(struct ym2612*);
 
 void ym2612_write(struct ym2612*, u32 addr, u8 val);

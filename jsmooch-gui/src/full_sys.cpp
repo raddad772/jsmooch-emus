@@ -601,7 +601,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
@@ -629,6 +630,9 @@ void full_system::load_default_ROM()
             break;
         case SYS_GENESIS:
             worked = grab_ROM(&ROMs, which, "sonic.md", nullptr);
+            dbg_enable_trace();
+            dbg.traces.dma = 1;
+            dbg.traces.fifo = 1;
             break;
         default:
             printf("\nSYS NOT IMPLEMENTED!");
@@ -1044,6 +1048,7 @@ void full_system::do_frame() {
             if (b && sys->set_audiobuf) audio.commit_emu_buffer();
         }
         sys->get_framevars(sys, &fv);
+        dbg_flush();
         //TODO: here
     }
     else {

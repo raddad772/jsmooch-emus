@@ -14,7 +14,6 @@
 
 static void GBMBC1_update_banks(struct GB_mapper_MBC1 *this);
 
-
 void GB_mapper_MBC1_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus)
 {
     struct GB_mapper_MBC1 *this = (struct GB_mapper_MBC1 *)malloc(sizeof(struct GB_mapper_MBC1));
@@ -88,10 +87,10 @@ static void GBMBC1_update_banks(struct GB_mapper_MBC1 *this)
         this->cartRAM_offset = 0;
     } else {
         // Mode 1, hard-mode!
-        this->ROM_bank_lo_offset = ((32 * this->regs.BANK2) % this->num_ROM_banks) * 16384;
-        this->cartRAM_offset = (this->regs.BANK2 % this->num_RAM_banks) * 8192;
+        this->ROM_bank_lo_offset = ((this->regs.BANK2 << 5) % this->num_ROM_banks) << 14;
+        this->cartRAM_offset = (this->regs.BANK2 % this->num_RAM_banks) << 13;
     }
-    this->ROM_bank_hi_offset = (((this->regs.BANK2 << 5) | this->regs.BANK1) % this->num_ROM_banks) * 16384;
+    this->ROM_bank_hi_offset = (((this->regs.BANK2 << 5) | this->regs.BANK1) % this->num_ROM_banks) << 14;
 }
 
 u32 GBMBC1_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)

@@ -167,7 +167,6 @@ add_library(jsmooch-lib
         src/component/cpu/m68000/m68000_disassembler.h
         src/component/cpu/m68000/m68000_internal.c
         src/system/dreamcast/aica_mem.h
-        src/component/audio/ym2612/ym2612.c
         src/system/genesis/genesis_controllerport.c
         src/system/mac/mac.h
         src/system/mac/mac_internal.c
@@ -254,6 +253,7 @@ add_library(jsmooch-lib
         src/system/nes/mappers/nes_memmap.h
         src/system/genesis/genesis_debugger.c
         src/system/genesis/genesis_debugger.h
+        src/component/audio/ym2612/ym2612.c
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

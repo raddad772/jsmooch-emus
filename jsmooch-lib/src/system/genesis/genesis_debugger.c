@@ -2,15 +2,11 @@
 // Created by . on 10/20/24.
 //
 
-#include "genesis_debugger.h"
-
-//
-// Created by . on 8/7/24.
-//
-
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
+#include "genesis_debugger.h"
 #include "genesis.h"
 #include "genesis_bus.h"
 #include "component/cpu/z80/z80_disassembler.h"
@@ -476,6 +472,149 @@ static void setup_waveforms_psg(struct genesis* this, struct debugger_interface 
     dw->samples_requested = 200;
 }
 
+static u32 calc_stride(u32 out_width, u32 in_width)
+{
+    return (out_width - in_width);
+}
+
+#define PAL_BOX_SIZE 10
+#define PAL_BOX_SIZE_W_BORDER 11
+
+static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct genesis *this = (struct genesis *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width*(4*PAL_BOX_SIZE_W_BORDER)*4); // Clear out at least 4 rows worth
+
+    u32 line_stride = calc_stride(out_width, iv->width);
+    for (u32 palette = 0; palette < 4; palette++) {
+        for (u32 color = 0; color < 16; color++) {
+            u32 y_top = palette * PAL_BOX_SIZE_W_BORDER;
+            u32 x_left = color * PAL_BOX_SIZE_W_BORDER;
+            u32 c = this->vdp.CRAM[(palette * 16) + color];
+            //printf("\nP:%d C:%d VAL:%04x", palette, color, c);
+            u32 r, g, b;
+            b = ((c >> 6) & 7) * 0x24;
+            g = ((c >> 3) & 7) * 0x24;
+            r = ((c >> 0) & 7) * 0x24;
+            u32 cout = 0xFF000000 | (b << 16) | (g << 8) | r;
+            for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
+                u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
+                for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
+                    // ALPHA BLUE GREEN RED
+                    box_ptr[x] = cout;
+                }
+            }
+        }
+    }
+
+}
+
+static void render_image_view_tilemap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct genesis *this = (struct genesis *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+
+    u32 line_stride = calc_stride(out_width, 256);
+    u32 tile_line_stride = out_width - 8; // Amount to get to next line after drawing 8 pixel
+
+    // Physical layout in RAM of big-endian 16-bit VRAM is...
+
+    //           3 2 1 0
+    //    addr+3  +2 +1 +0
+    u32 x_col = 0, y_row = 0;
+    const static u32 offset[4] = {0, 1, 2, 3}; // D7...0, so take upper 4 first
+    for (u32 tile_num = 0; tile_num < 0x7FF; tile_num++) {
+        u32 *draw_ptr = (outbuf + (out_width * y_row * 8) + (x_col * 8));
+
+        for (u32 tile_y = 0; tile_y < 8; tile_y++) {
+            u8 *tile_ptr = ((u8*)this->vdp.VRAM) + (tile_num * 32) + (tile_y * 4);
+            for (u32 x = 0; x < 4; x++) {
+                /* IN BIG ENDIAN,
+                      16    bits          16 bits
+                 * D7...D0   D7...D0   D7...D0 D7...D0
+                 * so let's label it
+                 * B7...B0   A7...A0
+                 *
+                 * We want the upper 8 bits first.
+                 * In a big-endian system, that means we want the first 8 bits physically in RAM.
+                 * */
+
+                u32 px2 =   tile_ptr[offset[x]];
+                u32 v;
+                //v = px2 >> 4;
+                v = px2 & 15;
+                //if (tile_y == 0) v = 15;
+
+                //if (x == 0) v = 15;
+
+                *draw_ptr = 0xFF000000 | (0x111111 * v);
+                draw_ptr++;
+                v = px2 >> 4;
+                //v = px2 & 15;
+                //if (tile_y == 0) v = 15;
+                *draw_ptr = 0xFF000000 | (0x111111 * v);
+                draw_ptr++;
+            }
+            draw_ptr += tile_line_stride;
+        }
+
+        x_col++;
+        if (x_col == 64) {
+            x_col = 0;
+            y_row++;
+        }
+    }
+}
+
+static void setup_image_view_tilemap(struct genesis* this, struct debugger_interface *dbgr)
+{
+    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 512;
+    iv->height = 256;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 512, 256 };
+
+    // Up to 2048 tiles
+    // 8x8
+    // so, 32x64 tiles.
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_tilemap;
+
+    sprintf(iv->label, "Pattern Table Viewer");
+}
+
+static void setup_image_view_palette(struct genesis* this, struct debugger_interface *dbgr)
+{
+    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
+    iv->height = 4 * PAL_BOX_SIZE_W_BORDER;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
+
+    // Up to 2048 tiles
+    // 8x8
+    // so, 32x64 tiles.
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_palette;
+
+    sprintf(iv->label, "Palette Table Viewer");
+}
+
 
 void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
@@ -490,4 +629,6 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_z80_disassembly(dbgr, this);
     setup_waveforms_psg(this, dbgr);
     setup_waveforms_ym2612(this, dbgr);
+    setup_image_view_tilemap(this, dbgr);
+    setup_image_view_palette(this, dbgr);
 }

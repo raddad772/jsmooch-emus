@@ -73,8 +73,9 @@ static void write_CRAM(struct genesis* this, u16 addr, u16 val)
     o |= ((val >> 9) & 7) << 6;
     if (addr > 63) addr = 0;
     if (dbg.trace_on && dbg.traces.vram) {
-        dbg_printf("\nWRITE CRAM addr:%d val:04x cyc:%d", addr, o, *this->m68k.trace.cycles);
+        dbg_printf("\nWRITE CRAM addr:%d val:%04x cyc:%d", addr, o, *this->m68k.trace.cycles);
     }
+    printf("\nWRITE CRAM addr:%d val:%04x cyc:%lld", addr, o, this->clock.master_cycle_count);
     this->vdp.CRAM[addr] = o;
 }
 
@@ -318,10 +319,11 @@ static void write_VRAM_byte(struct genesis* this, u16 addr, u16 val)
 {
     if (dbg.trace_on && dbg.traces.vram)
         dbg_printf("\nVRAM WRITE addr:%d val:%02x", addr, val);
-    if (val != 0) dbg_printf("\nVRAM WRITE addr:%d val:%02x cyc:%lld", addr, val, *this->m68k.trace.cycles);
+    //if (val != 0) dbg_printf("\nVRAM WRITE addr:%d val:%02x cyc:%lld", addr, val, *this->m68k.trace.cycles);
     u32 LDS = addr & 1;
     u32 UDS = LDS ^ 1;
     u32 mask = write_maskmem[LDS  + (UDS << 1)];
+    //printf("\nMASK! %02x LDS:%d UDS:%d", mask, LDS, UDS);
     addr &= 0xFFFF;
     this->vdp.VRAM[addr >> 1] = (this->vdp.VRAM[addr >> 1] & mask) | (val & ~mask);
 }
@@ -397,14 +399,16 @@ static u32 run_FIFO(struct genesis* this) {
     if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: using slot %d", this->vdp.fifo.head);
     if (slot0->target == 1 && this->vdp.io.vram_mode == 0) {
         if (slot0->LDS) {
+            //if (slot0->addr < 128) printf("\nWRITE VRAM BYTE LDS %04x: %02x", slot0->addr ^ 1, slot0->val & 0xFF);
             slot0->LDS = 0;
-            write_VRAM_byte(this, slot0->addr ^ 1, slot0->val & 0xFF);
-            if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: WROTE BYTE addr:%04x byte:%02x", slot0->addr ^ 1, slot0->val & 0xFF);
+            write_VRAM_byte(this, slot0->addr ^ 1, slot0->val);
+            //if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: WROTE BYTE addr:%04x byte:%02x", slot0->addr ^ 1, slot0->val & 0xFF);
             return 1;
         }
         if (slot0->UDS) {
             slot0->UDS = 0;
-            write_VRAM_byte(this, slot0->addr, slot0->val >> 8);
+            //if (slot0->addr < 128) printf("\nWRITE VRAM BYTE UDS %04x: %02x", slot0->addr, slot0->val >> 8);
+            write_VRAM_byte(this, slot0->addr, slot0->val);
             if (this->vdp.command.pending && this->vdp.dma.mode == 2) {
                 this->vdp.dma.data = slot0->val;
                 this->vdp.dma.wait = 0;
@@ -468,13 +472,16 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
             if (!vdp->io.mode5) printf("\nWARNING MODE5 DISABLED");
             return;
         case 2: // Plane A table location
-            vdp->io.plane_a_table_addr = (val & 0b11111000) << 9;
+            // 16 15 14 13 0 0 0
+            vdp->io.plane_a_table_addr = (val & 0b00111000) << 10;
+            // 13 is 3
+            // << 10
             return;
         case 3: // Window nametable location
             vdp->io.window_table_addr = (val & 0b1111110) << 9; // lowest bit ignored in H40
             return;
         case 4: // Plane B location
-            vdp->io.plane_b_table_addr = (val & 7) << 12;
+            vdp->io.plane_b_table_addr = (val & 7) << 13;
             return;
         case 5: // Sprite table location
             vdp->io.sprite_table_addr = (val & 0xFF) << 8; // lowest bit ignored in H40
@@ -580,7 +587,8 @@ static void dma_test_enable(struct genesis* this)
 {
     if (this->vdp.command.pending && !this->vdp.dma.wait && this->vdp.dma.mode <= 1) {
         this->vdp.dma.active = 1;
-        dbg_printf("\nDMA GO! dest:%04x len:%d cyc:%lld", this->vdp.command.address, this->vdp.dma.len, *this->m68k.trace.cycles);
+        //dbg_printf("\nDMA GO! dest:%04x len:%d cyc:%lld", this->vdp.command.address, this->vdp.dma.len, *this->m68k.trace.cycles);
+        printf("\nDMA GO! dest:%04x len:%d cyc:%lld", this->vdp.command.address, this->vdp.dma.len, *this->m68k.trace.cycles);
     }
     else {
         dbg_printf("\nDMA STOP!");
@@ -596,9 +604,11 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
         // bis 14-16 = data 0-2
         this->vdp.command.address = (this->vdp.command.address & 0x3FFF) | ((val & 7) << 14);
         this->vdp.command.target = (this->vdp.command.target & 0b0011) | ((val >> 2) & 0b1100);
-        printif(vdp, "\nSET TARGET %d FROM VAL %04x", this->vdp.command.target, val);
+        printif(vdp, "\nSET TARGET %d FROM VAL %04x CYC:%lld", this->vdp.command.target, val, this->clock.master_cycle_count);
+        printf("\nSET TARGET %d", this->vdp.command.target);
         this->vdp.command.ready = ((val >> 6) & 1) | (this->vdp.command.target & 1);
         this->vdp.command.pending |= ((val >> 7) & 1) & this->vdp.io.enable_dma;
+        printf("\nPENDING? %d VAL:%02x ENABLE_DMA:%d", this->vdp.command.pending, val, this->vdp.io.enable_dma);
 
         if ((this->vdp.command.target & 1) == 0) {
             this->vdp.fifo.prefetch.UDS = this->vdp.fifo.prefetch.LDS = 0;
@@ -687,8 +697,8 @@ u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, 
             return read_counter(this) & mask;
     }
 
-    printf("\nBAD VDP READ addr:%06x cycle:%lld", addr, this->clock.master_cycle_count);
-    gen_test_dbg_break(this, "vdp_mainbus_read");
+    //printf("\nBAD VDP READ addr:%06x cycle:%lld", addr, this->clock.master_cycle_count);
+    //gen_test_dbg_break(this, "vdp_mainbus_read");
     return old;
 }
 
@@ -780,6 +790,7 @@ void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask
         case 0xC00012:
         case 0xC00014:
         case 0xC00016:
+            if ((mask & 0xFF) == 0) return; // Byte writes to wrong address have no effect
             SN76489_write_data(&this->psg, val & 0xFF);
             return;
         case 0xC0001C: // debug reg
@@ -831,6 +842,7 @@ static void DMA_load_FIFO_fill(struct genesis* this)
             write_VRAM_byte(this, this->vdp.command.address ^ 1, this->vdp.dma.data >> 8);
             break;
         case 3:
+            printf("\nDMA TO CRAM ADDR %04x VAL %04x", this->vdp.command.address, this->vdp.dma.data);
             this->vdp.CRAM[this->vdp.command.address] = this->vdp.dma.data;
             break;
         case 5:
@@ -881,6 +893,7 @@ static u32 DMA_load_FIFO(struct genesis* this)
         }
         printif(dma, "\nDMA FALL THRU? %d", this->vdp.dma.mode);
     }
+    printif(dma, "\nNEVERMIND NO LOAD! %d %d", this->vdp.command.pending, this->vdp.dma.wait);
     return 0;
 }
 
@@ -909,37 +922,58 @@ static void render_8_more(struct genesis* this)
     u32 pattern_addr[2] = { pa + this->vdp.io.plane_a_table_addr, pa + this->vdp.io.plane_b_table_addr };
     u32 pattern_entry[2] = { read_VRAM(this, pattern_addr[0]), read_VRAM(this, pattern_addr[1]) };
 
-    u32 tile_number[2] = {pattern_entry[0] & 0x7FF, pattern_entry[1] & 0x7FF};
-
+    u32 tile_number[2] = {pattern_entry[0] & 0x3FF, pattern_entry[1] & 0x3FF};
+    u32 hflip[2] = {(pattern_entry[0] >> 11) & 1, (pattern_entry[1] >> 11) & 1};
+    u32 vflip[2] = {(pattern_entry[0] >> 12) & 1, (pattern_entry[1] >> 12) & 1};
+    u32 palette[2] = {((pattern_entry[0] >> 13) & 3) << 4, ((pattern_entry[1] >> 13) & 3) << 4};
+    u32 priority[2] = {(pattern_entry[0] >> 15) & 1, (pattern_entry[1] >> 15) & 1};
     u32 tile_addr[2] = { (tile_number[0] << 5), (tile_number[1] << 5)};
-
-    u32 myx = (2 * 320 * ypos) + xpos;
 
     //u16 *optr = this->vdp.display->output[0] + (1280 * ypos) + xpos;
 
     u8* tile_ptr[2] = { };
-
-    tile_ptr[0] = ((u8*)this->vdp.VRAM) + (tile_addr[0]) + ((ypos & 7) << 2);
-    tile_ptr[1] = ((u8*)this->vdp.VRAM) + (tile_addr[1]) + ((ypos & 7) << 2);
+    u32 yp = ypos & 7;
+    u32 tile_y[2] = {vflip[0] ? 7 - yp : yp, vflip[1] ? 7 - yp : yp};
+    tile_ptr[0] = ((u8*)this->vdp.VRAM) + (tile_addr[0]) + (tile_y[0] << 2);
+    tile_ptr[1] = ((u8*)this->vdp.VRAM) + (tile_addr[1]) + (tile_y[1] << 2);
+    // 4 bytes per line of 8 pixels
+    //static const u32 offset[4] = {0, 1, 2, 3};
+    // 4 bytes = 8 pixels
     u32 pw = this->vdp.io.h40 ? 4 : 5;
-    for (u32 i = 0; i < 4; i++) {
-        u8 px2 = *tile_ptr[0];
-        tile_ptr[0]++;
-        u32 v = px2 >> 4;
+    u32 bg = this->vdp.CRAM[this->vdp.io.bg_color];
+    u32 plane = 1;
+    //for (u32 plane=0; plane<2; plane++) { // For 2 planes...
+        for (u32 i = 0; i < 4; i++) { // For 8 pixels...
+            u32 offset = hflip[plane] ? 3 - i : i;
+            u8 px2 = tile_ptr[plane][offset];
+            u32 v;
+            if (hflip[plane]) v = px2 & 15;
+            else v = px2 >> 4;
+            /*if (v == 0) v = bg;
+            else v = this->vdp.CRAM[palette[plane] + v];*/
 
-        for (u32 j = 0; j < pw; j++) {
-            *(this->vdp.cur_output) = v;
-            this->vdp.cur_output++;
-            this->vdp.display->scan_x++;
+            // Draw 4 or 5 repeated pixel
+            for (u32 j = 0; j < pw; j++) {
+                *(this->vdp.cur_output) = v;
+                this->vdp.cur_output++;
+                this->vdp.display->scan_x++;
+            }
+
+            if (hflip[plane]) v = px2 >> 4;
+            else v = px2 & 15;
+
+            /*if (v == 0) v = bg;
+            else v = this->vdp.CRAM[palette[plane] + v];*/
+
+            // Draw 4 or 5 repeated pixel
+            for (u32 j = 0; j < pw; j++) {
+                *(this->vdp.cur_output) = v;
+                this->vdp.cur_output++;
+                this->vdp.display->scan_x++;
+            }
         }
 
-        v = px2 & 15;
-        for (u32 j = 0; j < pw; j++) {
-            *(this->vdp.cur_output) = v;
-            this->vdp.display->scan_x++;
-            this->vdp.cur_output++;
-        }
-    }
+    //}
 
     // + 4 * (ypos & 7)
 
@@ -977,14 +1011,12 @@ void genesis_VDP_cycle(struct genesis* this)
         this->vdp.sc_slot++;
         // Do FIFO if this is an external slot
         if (this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot] == slot_external_access) {
-            if (dbg.trace_on && dbg.traces.fifo)
-                dbg_printf("\nGOT EXT", *this->m68k.trace.cycles);
             if (!run_FIFO(this)) prefetch_run(this);
             DMA_load_FIFO(this);
         }
         else {
-            if (dbg.trace_on && dbg.traces.fifo)
-                dbg_printf("\nGOT SLOT:%d ARR:%d CYC:%lld SCC:%d ARRAY:%d", this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot], this->vdp.sc_array, *this->m68k.trace.cycles, this->vdp.sc_slot, this->vdp.sc_array);
+            //if (dbg.trace_on && dbg.traces.fifo)
+            //    dbg_printf("\nGOT SLOT:%d ARR:%d CYC:%lld SCC:%d ARRAY:%d", this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot], this->vdp.sc_array, *this->m68k.trace.cycles, this->vdp.sc_slot, this->vdp.sc_array);
         }
     }
 

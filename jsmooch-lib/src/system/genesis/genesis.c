@@ -112,7 +112,7 @@ void genesis_new(JSM)
     genesis_clock_init(&this->clock);
     genesis_cart_init(&this->cart);
     genesis_VDP_init(this);
-    ym2612_init(&this->ym2612);
+    ym2612_init(&this->ym2612, OPN2V_ym2612);
     SN76489_init(&this->psg);
     snprintf(jsm->label, sizeof(jsm->label), "Sega Genesis");
 
@@ -380,8 +380,8 @@ static void sample_audio(struct genesis* this)
     if (this->audio.buf && (this->clock.master_cycle_count >= (u64)this->audio.next_sample_cycle)) {
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         if (this->audio.buf->upos < this->audio.buf->samples_len) {
-            i32 v = ((i32)SN76489_mix_sample(&this->psg, 0) + (i32)this->ym2612.output) / 2;
-            v = SN76489_mix_sample(&this->psg, 0);
+            i32 v = ((i32)SN76489_mix_sample(&this->psg, 0) + (i32)this->ym2612.mix.mono_output) / 2;
+            //v = SN76489_mix_sample(&this->psg, 0);
             ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
         }
         this->audio.buf->upos++;
@@ -420,7 +420,7 @@ static void debug_audio(struct genesis* this)
         if (dw->user.buf_pos < dw->samples_requested) {
             //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
             dw->user.next_sample_cycle += dw->user.cycle_stride;
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.output);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output);
             dw->user.buf_pos++;
         }
     }
@@ -448,7 +448,6 @@ u32 genesisJ_step_master(JSM, u32 howmany)
     this->clock.mem_break = 0;
     //this->jsm.cycles_left += howmany;
     this->jsm.cycles_left = howmany;
-    if(dbg.trace_on) printf("\nCYCLES LEFT? %lld", this->jsm.cycles_left);
     while (this->jsm.cycles_left >= 0) {
         i32 biggest_step = MIN(MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock), this->clock.psg.cycles_til_clock);
         this->jsm.cycles_left -= biggest_step;
