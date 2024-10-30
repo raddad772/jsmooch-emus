@@ -327,117 +327,9 @@ static void write_VRAM_byte(struct genesis* this, u16 addr, u16 val)
     addr &= 0xFFFF;
     this->vdp.VRAM[addr >> 1] = (this->vdp.VRAM[addr >> 1] & mask) | (val & ~mask);
 }
-
-static u32 prefetch_run(struct genesis* this)
-{
-    struct genesis_vdp_prefetch *pf = &this->vdp.fifo.prefetch;
-    if (pf->UDS && pf->LDS) return 0; // prefetch is full
-
-    u32 target = this->vdp.command.target;
-    if (target == 0 && this->vdp.io.vram_mode == 0) {
-        pf->LDS = pf->UDS = 1;
-        pf->val = (read_VRAM_byte(this, this->vdp.command.address & 0xFFFE) << 8) | (read_VRAM_byte(this, (this->vdp.command.address & 0xFFFE) | 1));
-        this->vdp.command.ready = 1;
-        return 1;
-    }
-
-    if (target == 0 && this->vdp.io.vram_mode == 1) {
-        pf->UDS = pf->LDS = 1;
-        pf->val = read_VRAM_byte(this, this->vdp.command.address | 1);
-        pf->val |= (pf->val << 8);
-        this->vdp.command.ready = 1;
-        return 1;
-    }
-
-    if (target == 4) {
-        pf->UDS = pf->LDS = 1;
-        pf->val = read_VSRAM(this,this->vdp.command.address >> 1);
-        pf->val = (pf->val & 0x07FF) | (this->vdp.fifo.slots[this->vdp.fifo.head].val & 0xF800);
-        this->vdp.command.ready = 1;
-        return 1;
-    }
-
-    if (target == 8) {
-        pf->UDS = pf->LDS = 1;
-        pf->val = read_CRAM(this, this->vdp.command.address >> 1);
-        pf->val = ((pf->val & 0x0EEE) | (this->vdp.fifo.slots[this->vdp.fifo.head].val & ~0x0EEE)) & 0xFFFF;
-        this->vdp.command.ready = 1;
-        return 1;
-    }
-
-    if (target == 12) {
-        pf->UDS = pf->LDS = 1;
-        pf->val = read_VRAM_byte(this, this->vdp.command.address ^ 1);
-        pf->val |= (pf->val << 8);
-        this->vdp.command.ready = 1;
-        return 1;
-    }
-
-    pf->UDS = pf->LDS = 1;
-    this->vdp.command.ready = 1;
-    printif(fifo, "\nREAD PREFETCH TARGET %d", target);
-    return 1;
-}
-
-
 static u32 fifo_full(struct genesis* this)
 {
     return this->vdp.fifo.len > 3;
-}
-
-// Discharge 1 FIFO entry, if external slot is available.
-static u32 run_FIFO(struct genesis* this) {
-    // Empty FIFO, don't bother...
-    if (this->vdp.fifo.len == 0) {
-        if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: FIFO EMPTY");
-        assert(this->io.m68k.VDP_FIFO_stall == 0);
-        return 0;
-    }
-    struct genesis_vdp_fifo_slot *e = &this->vdp.fifo.slots[this->vdp.fifo.head];
-
-    struct genesis_vdp_fifo_slot *slot0 = &this->vdp.fifo.slots[this->vdp.fifo.head];
-    if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: using slot %d", this->vdp.fifo.head);
-    if (slot0->target == 1 && this->vdp.io.vram_mode == 0) {
-        if (slot0->LDS) {
-            //if (slot0->addr < 128) printf("\nWRITE VRAM BYTE LDS %04x: %02x", slot0->addr ^ 1, slot0->val & 0xFF);
-            slot0->LDS = 0;
-            write_VRAM_byte(this, slot0->addr ^ 1, slot0->val);
-            //if (dbg.traces.fifo) dbg_printf("\nrun_FIFO: WROTE BYTE addr:%04x byte:%02x", slot0->addr ^ 1, slot0->val & 0xFF);
-            return 1;
-        }
-        if (slot0->UDS) {
-            slot0->UDS = 0;
-            //if (slot0->addr < 128) printf("\nWRITE VRAM BYTE UDS %04x: %02x", slot0->addr, slot0->val >> 8);
-            write_VRAM_byte(this, slot0->addr, slot0->val);
-            if (this->vdp.command.pending && this->vdp.dma.mode == 2) {
-                this->vdp.dma.data = slot0->val;
-                this->vdp.dma.wait = 0;
-            }
-            FIFO_advance(this);
-            if (dbg.traces.fifo) dbg_printf("\nFIFO WROTE BYTE AND SLIMMED %d", this->vdp.fifo.len);
-            return 1;
-        }
-        assert(1==2);
-    }
-
-    if (slot0->target == 1 && this->vdp.io.vram_mode == 1)
-        write_VRAM_byte(this, slot0->addr | 1, slot0->val & 0xFF);
-    else if (slot0->target == 3)
-        write_CRAM(this, slot0->addr >> 1, slot0->val);
-    else if (slot0->target == 5)
-        write_VSRAM(this, slot0->addr >> 1, slot0->val);
-    else
-        if (dbg.traces.fifo) dbg_printf("\nWarning, FIFO write target? %d addr:%04x val:%04x", slot0->target, slot0->addr, slot0->val);
-
-    if ((this->vdp.command.pending) && (this->vdp.dma.mode == 2)) {
-        struct genesis_vdp_fifo_slot *slot1 = &(this->vdp.fifo.slots[(this->vdp.fifo.head + 1) % 5]);
-        this->vdp.dma.data = slot1->val;
-        this->vdp.dma.wait = 0;
-    }
-
-    slot0->UDS = slot0->LDS = 0;
-    FIFO_advance(this);
-    return 1;
 }
 
 
@@ -741,18 +633,15 @@ static void write_data_port(struct genesis* this, u16 val, u16 mask, u32 is_cpu)
 
     if (is_cpu && fifo_full(this)) {
         if (fifo_overfull(this)) assert(1==2);
+        // Stall CPU here...
         /*this->io.m68k.VDP_FIFO_stall = 1; // We're going to over-fill the FIFO and stall m68k until it's back to normal
         printf("\nDONE1");
         set_m68k_dtack(this);
         dbg_printf("\nPausing the m68k....");*/
         // no stalls...
-        run_FIFO(this);
-        run_FIFO(this);
-        run_FIFO(this);
     }
 
-    fifo_write(this, this->vdp.command.target, this->vdp.command.address, val);
-    //run_FIFO(this);
+    //fifo_write(this, this->vdp.command.target, this->vdp.command.address, val);
     this->vdp.command.address += this->vdp.command.increment;
 }
 
@@ -816,85 +705,6 @@ void genesis_VDP_reset(struct genesis* this)
 static void do_pixel(struct genesis* this)
 {
     // Render a pixel!
-}
-
-static void DMA_load_FIFO_load(struct genesis* this)
-{
-    if (this->vdp.dma.delay > 0) { this->vdp.dma.delay--; printif(dma, "\nLOAD DELAY %d", this->vdp.dma.delay); return; }
-    if (fifo_full(this)) { if (dbg.traces.fifo) dbg_printf("\nLOAD FIFO FULL"); return; }
-
-    u32 addr = ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source << 1);
-    u16 data = genesis_mainbus_read(this, addr, 1, 1, this->io.m68k.open_bus_data, 1);
-    write_data_port(this, data, 0xFFFF, 0);
-    if (dbg.traces.fifo) dbg_printf("\nLOADED val:%04x addr:%06x!", data, addr);
-
-    this->vdp.dma.source = (this->vdp.dma.source & 0xFF0000) | ((this->vdp.dma.source + 1) & 0xFFFF);
-    if (--this->vdp.dma.len == 0) {
-        this->vdp.command.pending = 0;
-        dma_test_enable(this);
-    }
-}
-
-static void DMA_load_FIFO_fill(struct genesis* this)
-{
-    switch(this->vdp.command.target) {
-        case 1:
-            write_VRAM_byte(this, this->vdp.command.address ^ 1, this->vdp.dma.data >> 8);
-            break;
-        case 3:
-            printf("\nDMA TO CRAM ADDR %04x VAL %04x", this->vdp.command.address, this->vdp.dma.data);
-            this->vdp.CRAM[this->vdp.command.address] = this->vdp.dma.data;
-            break;
-        case 5:
-            this->vdp.VSRAM[this->vdp.command.address] = this->vdp.dma.data;
-            break;
-    }
-    this->vdp.dma.source = (this->vdp.dma.source & 0xFF0000) | ((this->vdp.dma.source + 1) & 0xFFFF);
-    if (--this->vdp.dma.len == 0) {
-        this->vdp.command.pending = 0;
-        dma_test_enable(this);
-    }
-}
-
-static void DMA_load_FIFO_copy(struct genesis* this)
-{
-    if (!this->vdp.dma.read) {
-        this->vdp.dma.read = 1;
-        this->vdp.dma.data = read_VRAM_byte(this, this->vdp.dma.source ^ 1);
-        return;
-    }
-    this->vdp.dma.read = 0;
-    write_VRAM_byte(this, this->vdp.command.address ^ 1, this->vdp.dma.data);
-
-    this->vdp.dma.source = (this->vdp.dma.source & 0xFF0000) | ((this->vdp.dma.source + 1) & 0xFFFF);
-    if (--this->vdp.dma.len == 0) {
-        this->vdp.command.pending = 0;
-        dma_test_enable(this);
-    }
-}
-
-static u32 DMA_load_FIFO(struct genesis* this)
-{
-    if (this->vdp.command.pending && !this->vdp.dma.wait) {
-        if (this->vdp.dma.mode <= 1 && !fifo_full(this)) {
-            printif(dma, "\nDMA LOAD FIFO!");
-            DMA_load_FIFO_load(this);
-            return 1;
-        }
-        else if (this->vdp.dma.mode == 2 && fifo_empty(this)) {
-            if (dbg.traces.dma) dbg_printf("\nDMA FILL!");
-            DMA_load_FIFO_fill(this);
-            return 1;
-        }
-        else if (this->vdp.dma.mode == 3) {
-            if (dbg.traces.dma) dbg_printf("\nDMA LOAD COPY!");
-            DMA_load_FIFO_copy(this);
-            return 1;
-        }
-        printif(dma, "\nDMA FALL THRU? %d", this->vdp.dma.mode);
-    }
-    printif(dma, "\nNEVERMIND NO LOAD! %d %d", this->vdp.command.pending, this->vdp.dma.wait);
-    return 0;
 }
 
 
@@ -1011,8 +821,7 @@ void genesis_VDP_cycle(struct genesis* this)
         this->vdp.sc_slot++;
         // Do FIFO if this is an external slot
         if (this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot] == slot_external_access) {
-            if (!run_FIFO(this)) prefetch_run(this);
-            DMA_load_FIFO(this);
+            // Do FIFO and prefetch here, when we implement it!
         }
         else {
             //if (dbg.trace_on && dbg.traces.fifo)
