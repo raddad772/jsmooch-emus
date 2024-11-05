@@ -16,6 +16,8 @@
 #include "genesis_bus.h"
 #include "genesis_vdp.h"
 
+//#define DMALOG
+
 #define SC_ARRAY_H32      0
 #define SC_ARRAY_H40      1
 #define SC_ARRAY_DISABLED 2 // H32 timing
@@ -35,7 +37,8 @@
 static u32 write_maskmem[4] = { 0,     0xFF00,    0x00FF,      0 };
 
 static void write_data_port(struct genesis* this, u16 val, u16 mask, u32 is_cpu);
-
+static u32 dma_run(struct genesis* this);
+static void dma_poll(struct genesis* this);
 static void set_m68k_dtack(struct genesis* this)
 {
     printf("\nYAR");
@@ -317,6 +320,25 @@ static void FIFO_advance(struct genesis* this)
     }
 }
 
+static void write_CRAM_byte(struct genesis* this, u16 addr, u16 val)
+{
+    addr = (addr >> 1) & 0x3F;
+    u16 v = this->vdp.CRAM[addr];
+    if (addr & 1) v = (v & 0xFF00) | (val & 0xFF);
+    else v = (v & 0xFF) | ((val << 8) & 0xFF00);
+    this->vdp.CRAM[addr] = v;
+}
+
+static void write_VSRAM_byte(struct genesis* this, u16 addr, u16 val)
+{
+    addr = (addr >> 1) % 40;
+    u16 v = this->vdp.VSRAM[addr];
+    if (addr & 1) v = (v & 0xFF00) | (val & 0xFF);
+    else v = (v & 0xFF) | ((val << 8) & 0xFF00);
+    this->vdp.VSRAM[addr] = v;
+
+}
+
 static void write_VRAM_byte(struct genesis* this, u16 addr, u16 val)
 {
     if (dbg.trace_on && dbg.traces.vram)
@@ -335,7 +357,7 @@ static u32 fifo_full(struct genesis* this)
 }
 
 
-static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
+static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
 {
     if (rn >= 24) {
         if (dbg.traces.vdp) dbg_printf("\nWARNING illegal VDP register write %d %04x on cycle:%lld", rn, val, this->clock.master_cycle_count);
@@ -364,6 +386,7 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
             if (vdp->io.cell30) printf("\nWARNING PAL DISPLAY 240 SELECTED");
             vdp->io.mode5 = (val >> 2) & 1;
             if (!vdp->io.mode5) printf("\nWARNING MODE5 DISABLED");
+            dma_poll(this);
             return;
         case 2: // Plane A table location
             // 16 15 14 13 0 0 0
@@ -459,43 +482,30 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val, u16 mask)
             vdp->io.window_draw_top_to_bottom = (val >> 7) & 1;
             return;
         case 19:
-            vdp->dma.len = (vdp->dma.len & 0xFF00) | (val & 0xFF);
+            vdp->dma.io.len = (vdp->dma.io.len & 0xFF00) | (val & 0xFF);
             return;
         case 20:
-            vdp->dma.len = (vdp->dma.len & 0xFF) | ((val << 8) & 0xFF00);
+            vdp->dma.io.len = (vdp->dma.io.len & 0xFF) | ((val << 8) & 0xFF00);
             return;
         case 21:
-            vdp->dma.source = (vdp->dma.source & 0xFFFF00) | (val & 0xFF);
+            vdp->dma.io.source = (vdp->dma.io.source & 0xFFFF00) | (val & 0xFF);
             return;
         case 22:
-            vdp->dma.source = (vdp->dma.source & 0xFF00FF) | ((val << 8) & 0xFF00);
+            vdp->dma.io.source = (vdp->dma.io.source & 0xFF00FF) | ((val << 8) & 0xFF00);
             return;
         case 23:
-            vdp->dma.source = (vdp->dma.source & 0xFFFF) | (((val & 0xFF) << 16) & 0x3F0000);
-            vdp->dma.mode = (val >> 6) & 3;
+            vdp->dma.io.source = (vdp->dma.io.source & 0xFFFF) | ((val & 0x3F) << 16);
+            vdp->dma.io.mode = (val >> 6) & 3;
+            vdp->dma.io.wait = (vdp->dma.io.mode >> 1) & 1;
+            dma_poll(this);
             return;
-    }
-}
-
-static u16 dma_read(struct genesis* this, u32 addr)
-{
-    if ((addr >= 0x400000) && (addr < 0xFF0000)) {
-        printf("\nMODE:%06x ADDR:%06x", (this->vdp.dma.mode & 1) << 23, this->vdp.dma.source << 1);
-        fflush(stdout);
-    }
-    //assert((addr < 0x400000) || (addr >= 0xFF0000));
-    if (addr < 0x400000) {
-        return genesis_cart_read(&this->cart, addr, 0xFFFF, 1);
-    }
-    else {
-        return this->RAM[(addr >> 1) & 0x7FFF];
     }
 }
 
 static inline void inc_dma_source(struct genesis* this)
 {
     //printf("\nDMA SOURCE IN:%06x", this->vdp.dma.source);
-    this->vdp.dma.source = (((this->vdp.dma.source & 0xFFFF) + 1) & 0xFFFF) | (this->vdp.dma.source & 0xFF0000);
+    this->vdp.dma.io.source = (((this->vdp.dma.io.source & 0xFFFF) + 1) & 0xFFFF) | (this->vdp.dma.io.source & 0xFF0000);
     //printf(" OUT:%06x", this->vdp.dma.source);
 }
 
@@ -503,123 +513,129 @@ static inline void inc_dma_source(struct genesis* this)
 static void dma_load(struct genesis* this)
 {
     // Copy 1 byte
-    printf("\nDMA RAM:%06x len:%04x VRAM:%04x (cyc:%lld) mode:%d target:%d", ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source << 1), this->vdp.dma.len, this->vdp.command.address, this->clock.master_cycle_count, this->vdp.dma.mode, this->vdp.command.target);
+#ifdef DMALOG
     FILE *f = fopen("/users/dave/Documents/emu/rom/genesis/dma.log", "a");
     char FSTR[500];
-    while(--this->vdp.dma.len) {
-        // Read 2 bytes, write 2 bytes....
-        u32 addr = ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source << 1);
-        u32 data = dma_read(this, addr);
-        write_data_port(this, data, 0xFFFF, 0);
+#endif
+
+    this->vdp.dma.active = 1;
+
+    u32 address = ((this->vdp.dma.io.mode & 1) << 23) | this->vdp.dma.io.source << 1;
+    u16 data = genesis_mainbus_read(this, address, 1, 1, 0, 1);
+    write_data_port(this, data, 0xFFFF, 0);
+
+    inc_dma_source(this);
+    if (--this->vdp.dma.io.len == 0) {
+        this->vdp.command.pending = 0;
+        this->vdp.dma.active = 0;
+    }
+
+#ifdef DMALOG
         int a = sprintf(FSTR, "VDP DMA: load(%06x, %d:%05x, %04x)\n", addr, this->vdp.command.target, this->vdp.command.address, data);
         fwrite(FSTR, 1, a+1, f);
-        inc_dma_source(this);
-    }
+#endif
+#ifdef DMALOG
     fflush(f);
     fclose(f);
+#endif
 }
 
 static void dma_fill(struct genesis* this)
 {
-    this->vdp.dma.active = 5;
-    this->vdp.dma.fill_pending = 0;
-
-
+#ifdef DMALOG
     FILE *f = fopen("/users/dave/Documents/emu/rom/genesis/dma.log", "a");
     char FSTR[500];
+#endif
 
-    while(--this->vdp.dma.len) {
-        switch (this->vdp.command.target) {
-            case 1:
-                write_VRAM_byte(this, this->vdp.command.address ^ 1, this->vdp.command.fill_value >> 8);
-                break;
-            case 3:
-                write_CRAM(this, this->vdp.command.address >> 1, this->vdp.command.fill_value);
-                break;
-            case 5:
-                write_VSRAM(this, this->vdp.command.address >> 1, this->vdp.command.fill_value);
-                break;
-        }
+    switch (this->vdp.command.target) {
+        case 1:
+            write_VRAM_byte(this, this->vdp.command.address, this->vdp.dma.io.fill);
+            break;
+        case 5:
+            write_VSRAM_byte(this, this->vdp.command.address, this->vdp.dma.io.fill);
+            break;
+        case 3:
+            write_CRAM_byte(this, this->vdp.command.address, this->vdp.dma.io.fill);
+            break;
+        default:
+            printf("\nDMA fill bad target %d", this->vdp.command.target);
+            break;
+    }
+
+    inc_dma_source(this);
+    this->vdp.command.address += this->vdp.command.increment;
+    if (--this->vdp.dma.io.len == 0) {
+        this->vdp.command.pending = 0;
+    }
+#ifdef DMALOG
         int a = sprintf(FSTR, "VDP DMA: fill(%01x:%05x, %04x)\n", this->vdp.command.target, this->vdp.command.address, this->vdp.command.fill_value);
         fwrite(FSTR, 1, a+1, f);
+#endif
 
-        inc_dma_source(this);
-        this->vdp.command.address += this->vdp.command.increment;
-    }
+
+
+#ifdef DMALOG
     fflush(f);
     fclose(f);
+#endif
 }
 
 static void dma_copy(struct genesis* this)
 {
-    u8 *vram_ptr = ((u8 *)this->vdp.VRAM);
-    while (--this->vdp.dma.len) {
-        u16 data = vram_ptr[(this->vdp.dma.source ^ 1) & 0xFFFF];
-        vram_ptr[this->vdp.command.address ^ 1] = data;
-        inc_dma_source(this);
-        this->vdp.command.address += this->vdp.command.increment;
+    u16 v = read_VRAM_byte(this, this->vdp.dma.io.source);
+    write_VRAM_byte(this, this->vdp.command.address, v);
+
+    inc_dma_source(this);
+    this->vdp.command.address += this->vdp.command.increment;
+    if (--this->vdp.dma.io.len == 0) {
+        this->vdp.command.pending = 0;
     }
+}
+
+static void dma_poll(struct genesis* this)
+{
+    while(dma_run(this));
+}
+
+static u32 dma_run(struct genesis* this)
+{
+    if (this->vdp.command.pending && !this->vdp.dma.io.wait) {
+        if (this->vdp.dma.io.mode <= 1) { dma_load(this); return 1; }
+        if (this->vdp.dma.io.mode == 2) { dma_fill(this); return 1; }
+        if (this->vdp.dma.io.mode == 3) { dma_copy(this); return 1; }
+    }
+    return 0;
 }
 
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
     // c000004
-    printif(vdp, "\nVDP controlport write: %04x", val);
-    // Start DMA here if needed...
-    // this->vdp.io.enable_dma
-    // this->vdp.command.increment = val;
-    // this->vdp->dma.len
-    // this->vdp->dma.source (addr)
-    // this->vdp->dma.source. is 16-bit addr
-    // this->vdp->dma.mode...only 2 bits
-    // this->vdp.command.latch
+    if (this->vdp.command.latch) {
+        this->vdp.command.latch = 0;
 
-    // DMA modes
-    // 0x    memory to VRAM, and the lower mode bit is upper address bit
-    // 10    VRAM fill
-    // 11    VRAM copy
-
-    //upper bits 10 , RS# 8-12, #0-7 = data to write
-    u32 m = ((val >> 14) & 3);
-    if ((this->vdp.command.latch == 0) && (m == 2)) { // Register read/write
-        u32 reg = (val >> 8) & 31;
-        write_vdp_reg(this, reg, val & 0xFF, mask);
+        this->vdp.command.address = (this->vdp.command.address & 0x3FFF) | ((val & 7) << 14);
+        this->vdp.command.target = (this->vdp.command.target & 3) | (((val >> 4) & 3) << 2);
+        this->vdp.command.ready = ((val >> 6) | this->vdp.command.target) & 1;
+        this->vdp.command.pending = ((val >> 7) & 1) & this->vdp.dma.io.enable;
+        this->vdp.dma.io.wait = this->vdp.dma.io.mode == 2;
+        dma_poll(this);
         return;
     }
 
-    if (this->vdp.command.latch == 0) { // 1st write! time to do adress setup then!
-        this->vdp.command.target = m;
-        this->vdp.command.address = val & 0x3FFF;
+    this->vdp.command.address = (this->vdp.command.address & 0xE000) | (val & 0x1FFF);
+    this->vdp.command.target = (this->vdp.command.target & 0xC) | ((val >> 14) & 3);
+    this->vdp.command.ready = 1;
+
+    u32 m = (val >> 14) & 3;
+    if (m != 2) {
         this->vdp.command.latch = 1;
         return;
     }
 
-    // INITIATE DMA!
-    this->vdp.command.target |= (val >> 2) & 0xC;
-    this->vdp.command.address |= (val & 3) << 14;
+    // write reg
 
-    if (!(this->vdp.io.enable_dma && (val & 0x80))) return;
-
-    switch(this->vdp.dma.mode) {
-        case 0: // mem to VRAM
-        case 1:
-            this->vdp.dma.active = (this->vdp.dma.len - 1) & 0xFFFF;
-            this->vdp.dma.fill_pending = 0;
-            dma_load(this);
-            break;
-        case 2: // VRAM fill
-            printf("\nALMOST DMA FILL target:%04x len:%04x", this->vdp.command.address, this->vdp.dma.len);
-            this->vdp.dma.fill_pending = 1;
-            //command.ready              = data.bit(6) | command.target.bit(0);
-            //if ()
-            break;
-        case 3: // VRAM copy
-            printf("\nVRAM COPY");
-            this->vdp.dma.active = (this->vdp.dma.len - 1) & 0xFFFF;
-            this->vdp.dma.fill_pending = 0;
-            dma_copy(this);
-            break;
-    }
+    u32 rn = (val >> 8) & 0x1F;
+    write_vdp_reg(this, rn, val & 0xFF);
 }
 
 static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
@@ -653,27 +669,34 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
 static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
 {
     this->vdp.command.latch = 0;
-    u16 rval = 0xFFFF;
+    this->vdp.command.ready = 0;
+    u16 v;
 
-    switch(this->vdp.command.target) {
-        case 0b000000: // VRAM read
-            rval = this->vdp.VRAM[(this->vdp.command.address >> 1) & 0x7FFF];
-            break;
-        case 0b001000: // CRAM read
-            assert(mask == 0xFFFF);
-            rval = this->vdp.CRAM[(this->vdp.command.address > 127 ? 127 : this->vdp.command.address) >> 1];
-            break;
-        case 0b000100: // VSRAM read
-            rval = this->vdp.VSRAM[(this->vdp.command.address >> 1) % 40];
-            break;
-        default:
-            printf("\nUNKNOWN DATA PORT READ TYPE %d", this->vdp.command.target);
-            break;
+    //VRAM read
+    if(this->vdp.command.target == 0) {
+        v = this->vdp.VRAM[this->vdp.command.address >> 1];
+        this->vdp.command.address += this->vdp.command.increment;
+        return v;
     }
 
-    this->vdp.command.address += this->vdp.command.increment;
+    //VSRAM read
+    if(this->vdp.command.target == 4) {
+        u32 address = ((this->vdp.command.address) % 80) >> 1;
+        v = this->vdp.VSRAM[address];
+        this->vdp.command.address += this->vdp.command.increment;
+        return v;
+    }
 
-    return rval;
+    //CRAM read
+    if(this->vdp.command.target == 8) {
+        u32 address = ((this->vdp.command.address) >> 1) & 0x3F; // TODO: check if ok
+        v = this->vdp.CRAM[address];
+        this->vdp.command.address += this->vdp.command.increment;
+        return ((v & 7) << 1) | (((v >> 3) & 7) << 5) | (((v >> 6) & 7) << 9);
+    }
+
+    printf("\nWAIT WHAT DP READ?");
+    return 0;
 }
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
@@ -722,49 +745,42 @@ void genesis_VDP_z80_write(struct genesis* this, u32 addr, u8 val)
 
 static void write_data_port(struct genesis* this, u16 val, u16 mask, u32 is_cpu)
 {
-    // C00000
-    if (dbg.traces.vdp) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
     this->vdp.command.latch = 0;
+    this->vdp.command.ready = 0;
 
-    if (is_cpu && fifo_full(this)) {
-        if (fifo_overfull(this)) assert(1==2);
-        // Stall CPU here...
-        /*this->io.m68k.VDP_FIFO_stall = 1; // We're going to over-fill the FIFO and stall m68k until it's back to normal
-        printf("\nDONE1");
-        set_m68k_dtack(this);
-        dbg_printf("\nPausing the m68k....");*/
-        // no stalls...
+    //DMA VRAM fill
+    if (this->vdp.dma.io.wait) {
+        this->vdp.dma.io.wait = false;
+        this->vdp.dma.io.fill = val >> 8;
     }
 
-    if (this->vdp.dma.fill_pending) {
-        this->vdp.command.fill_value = val;
-        dma_fill(this);
+    //VRAM write
+    if (this->vdp.command.target == 1) {
+        u32 address = (this->vdp.command.address >> 1) & 0xFFFF;
+        if (this->vdp.command.address & 1) val = val >> 8 | val << 8;
+        this->vdp.VRAM[address >> 1] = val;
+        this->vdp.command.address += this->vdp.command.increment;
+        dma_poll(this);
         return;
     }
 
-    //fifo_write(this, this->vdp.command.target, this->vdp.command.address, val);
-    // all 16 bits = data
-    switch(this->vdp.command.target) {
-        // hi and lo bytes are exchanged if A0=1
-        case 0b000001: // VRAM write
-            assert(mask==0xFFFF);
-            if (this->vdp.command.address & 1) val = (((val & 0xFF00) >> 8) | (val << 8)) & 0xFFFF;
-            this->vdp.VRAM[(this->vdp.command.address >> 1) & 0x7FFF] = val;
-            break;
-        case 0b000011: {// CRAM write
-            u32 a = this->vdp.command.address;
-            if (a > 127) a = 127;
-            this->vdp.CRAM[a >> 1] = val;
-            break;
-        }
-        case 0b000101: // VSRAM write
-            this->vdp.VSRAM[(this->vdp.command.address >> 1) % 40] = val;
-            break;
-        default:
-            printf("\nunknown VDP write target %d", this->vdp.command.target);
-            break;
+    //VSRAM write
+    if (this->vdp.command.target == 5) {
+        u32 address = (this->vdp.command.address >> 1) % 40;
+        this->vdp.VRAM[address] = val & 0x1FF;
+        this->vdp.command.address += this->vdp.command.increment;
+        return;
     }
-    this->vdp.command.address += this->vdp.command.increment;
+
+    //CRAM write
+    if (this->vdp.command.target == 3) {
+        u32 address = ((this->vdp.command.address) >> 1) & 0x3F;
+        this->vdp.CRAM[address] = ((val >> 1) & 7) | (((val >> 5) & 7) << 3) | (((val >> 9) & 7) << 6); // TODO: correct address?
+        this->vdp.command.address += this->vdp.command.increment;
+        return;
+    }
+
+    printf("\nERR %d", this->vdp.command.target);
 }
 
 void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask)
@@ -804,9 +820,13 @@ void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask
             if ((mask & 0xFF) == 0) return; // Byte writes to wrong address have no effect
             SN76489_write_data(&this->psg, val & 0xFF);
             return;
+        case 0xC00018:
+        case 0xC0001A:
+            //printf("\nDEBUG ADDR WRITE!");
+            return;
         case 0xC0001C: // debug reg
         case 0xC0001E:
-            printf("\nDEBUG REG WRITE!");
+            //printf("\nDEBUG REG WRITE!");
             return;
     }
     printf("\nBAD VDP WRITE addr:%06x val:%04x cycle:%lld", addr, val, this->clock.master_cycle_count);
@@ -943,8 +963,7 @@ void genesis_VDP_cycle(struct genesis* this)
         this->vdp.sc_slot++;
         // Do FIFO if this is an external slot
         if (this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot] == slot_external_access) {
-            // Do FIFO and prefetch here, when we implement it!
-            if (this->vdp.dma.active) this->vdp.dma.active--;
+            //dma_run(this);
         }
         else {
             //if (dbg.trace_on && dbg.traces.fifo)
@@ -960,12 +979,12 @@ void genesis_VDP_cycle(struct genesis* this)
 
     /*
      * move this to take effect on HV read, not for all our tracking, for now
-    if(this->vdp.io.h40) {
+    if (this->vdp.io.h40) {
         // hcount 0-b5, e4-ff
-        if(this->clock.vdp.hcount == 0xb6) this->clock.vdp.hcount = 0xe4;
+        if (this->clock.vdp.hcount == 0xb6) this->clock.vdp.hcount = 0xe4;
     } else {
         // hcount 0-93, e9-ff
-        if(this->clock.vdp.hcount == 0x94) this->clock.vdp.hcount = 0xe9;
+        if (this->clock.vdp.hcount == 0x94) this->clock.vdp.hcount = 0xe9;
     }
 
      *
@@ -975,7 +994,7 @@ void genesis_VDP_cycle(struct genesis* this)
     this->vdp.cycle ^= 1;
 
     // Do last 8 pixels
-    if(this->vdp.io.h32) {
+    if (this->vdp.io.h32) {
         // 1 sc count = 4 serial clocks. 2 serial clocks per pixel. so
         // 1 sc count = 2 pixels
         // we want to do 8 pixels every 4 SC count

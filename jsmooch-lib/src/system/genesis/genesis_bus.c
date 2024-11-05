@@ -303,7 +303,7 @@ void genesis_m68k_line_count_irq(struct genesis* this, u32 level)
 void genesis_m68k_vblank_irq(struct genesis* this, u32 level)
 {
     // TODO: multiplex/priority encode these
-    //if (level) printf("\nM68K vblank irq! cycle:%lld", this->clock.master_cycle_count);
+    if (level) printf("\nM68K vblank irq! cycle:%lld", this->clock.master_cycle_count);
     if ((this->m68k.pins.IPL == 6) || (this->m68k.pins.IPL == 0))
         M68k_set_interrupt_level(&this->m68k, 6 * level);
 }

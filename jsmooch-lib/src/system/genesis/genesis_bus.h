@@ -120,24 +120,20 @@ struct genesis {
         } io;
 
         struct {
-            u16 address; // in words
-            u32 active; // are we active?
-            u16 fill_value; // what to DMA fill with
             u32 latch;  // for 2-part writes
             u32 target; // VRAM, CSRAM, VSRAM
-            u16 increment; // amount to increment by
+            u32 ready;
+            u32 pending;
+            u16 address;
+            u32 increment;
         } command;
 
         struct {
-            u16 len; // in words
-            u32 mode;
-            u32 fill_pending;
-            u32 wait;
-            u32 delay;
             u32 active;
-            u32 source;
-            u16 data;
-            u32 read;
+            struct {
+                u32 mode, source, enable, fill, wait;
+                u16 len;
+            } io;
         } dma;
 
         u32 cycle;
