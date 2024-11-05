@@ -599,10 +599,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
-            //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
@@ -973,6 +973,7 @@ void full_system::step_seconds(int num)
 
 void full_system::step_scanlines(int num)
 {
+    dbg_unbreak();
     for (u32 i = 0; i < num; i++) {
         if (dbg.do_break) break;
         sys->finish_scanline(sys);
@@ -981,6 +982,7 @@ void full_system::step_scanlines(int num)
 
 void full_system::step_cycles(int num)
 {
+    dbg_unbreak();
     framevars fv{};
     if (dbg.do_break) return;
     sys->get_framevars(sys, &fv);

@@ -189,42 +189,50 @@ static void create_and_bind_registers_m68k(struct genesis* this, struct disassem
         sprintf(rg->name, "D%d", i);
         rg->kind = RK_int32;
         rg->index = tkindex++;
+        rg->custom_render = NULL;
     }
     for (u32 i = 0; i < 7; i++) {
         struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
         sprintf(rg->name, "A%d", i);
         rg->kind = RK_int32;
         rg->index = tkindex++;
+        rg->custom_render = NULL;
     }
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "PC");
     rg->kind = RK_int32;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "USP");
     rg->kind = RK_int32;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "SSP");
     rg->kind = RK_int32;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "SR");
     rg->kind = RK_int32;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "supervisor");
     rg->kind = RK_bool;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "trace");
     rg->kind = RK_bool;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "IMASK");
@@ -242,11 +250,13 @@ static void create_and_bind_registers_m68k(struct genesis* this, struct disassem
     sprintf(rg->name, "IR");
     rg->kind = RK_bool;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
     sprintf(rg->name, "IRC");
     rg->kind = RK_bool;
     rg->index = tkindex++;
+    rg->custom_render = NULL;
 
 #define BIND(dn, index) this->dbg.dasm_m68k. dn = cvec_get(&dv->cpu.regs, index)
     for (u32 i = 0; i < 8; i++) {

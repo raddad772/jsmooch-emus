@@ -110,10 +110,11 @@ struct ym2612 {
     struct {
         u32 enable, irq, line, period, counter, divider;
     } timer_b;
-
+    u64 *master_clock_cycles;
+    u64 last_master_clock;
 };
 
-void ym2612_init(struct ym2612*, enum OPN2_variant variant);
+void ym2612_init(struct ym2612*, enum OPN2_variant variant, u64 *master_clock_cycles);
 void ym2612_delete(struct ym2612*);
 
 void ym2612_write(struct ym2612*, u32 addr, u8 val);

@@ -120,22 +120,18 @@ struct genesis {
         } io;
 
         struct {
-            u32 address; // in words
-            u32 direction;
-            u32 active;
-            u32 fill_value;
-            u32 latch;
-            u32 ready;
-            u32 pending;
-            u32 val;
-            u32 target;
-            u32 increment;
-            u32 delay;
+            u16 address; // in words
+            u32 active; // are we active?
+            u16 fill_value; // what to DMA fill with
+            u32 latch;  // for 2-part writes
+            u32 target; // VRAM, CSRAM, VSRAM
+            u16 increment; // amount to increment by
         } command;
 
         struct {
-            i32 len; // in words
+            u16 len; // in words
             u32 mode;
+            u32 fill_pending;
             u32 wait;
             u32 delay;
             u32 active;
@@ -153,7 +149,7 @@ struct genesis {
         u32 sc_array;
 
         u16 CRAM[64];
-        u16 VSRAM[20];
+        u16 VSRAM[40];
         u16 VRAM[32768];
 
         // new_slot = (head + len++) % 5

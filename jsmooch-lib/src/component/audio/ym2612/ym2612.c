@@ -294,10 +294,11 @@ void ym2612_reset(struct ym2612* this)
     }
 }
 
-void ym2612_init(struct ym2612 *this, enum OPN2_variant variant)
+void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_clock_cycles)
 {
     memset(this, 0, sizeof(*this));
     this->variant = variant;
+    this->master_clock_cycles = master_clock_cycles;
 
     for (u32 i = 0; i < 6; i++) {
         this->channel[i].ext_enable = 1;
@@ -544,6 +545,8 @@ static void write_data(struct ym2612 *this, u32 val)
 
             //DAC sample
         case 0x2a: {
+            printf("\nDAC sample after %lld Z80 master cycles", ((*this->master_clock_cycles) - this->last_master_clock) / 15);
+            this->last_master_clock = *this->master_clock_cycles;
             this->dac.sample = val;
             break;
         }
