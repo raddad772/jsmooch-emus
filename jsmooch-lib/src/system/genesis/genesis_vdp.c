@@ -302,19 +302,6 @@ static u16 read_VRAM_byte(struct genesis* this, u16 addr)
     return this->vdp.VRAM[addr >> 1] >> 8;
 }
 
-static void FIFO_advance(struct genesis* this)
-{
-    this->vdp.fifo.head = (this->vdp.fifo.head + 1) % 5;
-    this->vdp.fifo.len--;
-    if (dbg.trace_on && dbg.traces.fifo) dbg_printf("\nFIFO_advance. new head: %d, new len: %d", this->vdp.fifo.head, this->vdp.fifo.len);
-    assert(this->vdp.fifo.len<6);
-    if (this->io.m68k.VDP_FIFO_stall) {
-        this->io.m68k.VDP_FIFO_stall = 0;
-        printf("\nDONE2");
-        set_m68k_dtack(this);
-    }
-}
-
 static void write_VRAM_byte(struct genesis* this, u16 addr, u16 val)
 {
     if (dbg.trace_on && dbg.traces.vram)
@@ -490,41 +477,6 @@ static void dma_test_enable(struct genesis* this)
 
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
-    printif(vdp, "\nVDP controlport write: %04x", val);
-    if (this->vdp.command.latch) {
-        this->vdp.command.latch = 0;
-        // bis 14-16 = data 0-2
-        this->vdp.command.address = (this->vdp.command.address & 0x3FFF) | ((val & 7) << 14);
-        this->vdp.command.target = (this->vdp.command.target & 0b0011) | ((val >> 2) & 0b1100);
-        printif(vdp, "\nSET TARGET %d FROM VAL %04x CYC:%lld", this->vdp.command.target, val, this->clock.master_cycle_count);
-        printf("\nSET TARGET %d", this->vdp.command.target);
-        this->vdp.command.ready = ((val >> 6) & 1) | (this->vdp.command.target & 1);
-        this->vdp.command.pending |= ((val >> 7) & 1) & this->vdp.io.enable_dma;
-        printf("\nPENDING? %d VAL:%02x ENABLE_DMA:%d", this->vdp.command.pending, val, this->vdp.io.enable_dma);
-
-        if ((this->vdp.command.target & 1) == 0) {
-            this->vdp.fifo.prefetch.UDS = this->vdp.fifo.prefetch.LDS = 0;
-        }
-        if (this->vdp.command.pending && this->vdp.dma.mode == 1) this->vdp.dma.delay = 4;
-        this->vdp.dma.wait = this->vdp.dma.mode == 2;
-        dma_test_enable(this);
-        return;
-    }
-
-    this->vdp.command.target = (this->vdp.command.target & 0b1100) | ((val >> 14) & 3);
-    printif(dma, "\nSET TARGET2 %d from %04x", this->vdp.command.target, val);
-    this->vdp.command.ready = 1;
-
-    if (((val >> 14) & 3) != 2) {
-        // bits 0-13
-        // 14, 15 = 4, 8 = C, 3
-        this->vdp.command.address = (this->vdp.command.address & 0x1C000) | (val & 0x3FFFF);
-        this->vdp.command.latch = 1;
-        return;
-    }
-
-    u32 reg = (val >> 8) & 31;
-    write_vdp_reg(this, reg, val, mask);
 }
 
 static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
@@ -559,10 +511,17 @@ static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
 {
     this->vdp.command.latch = 0;
     this->vdp.command.ready = 0;
-    // TODO: this
+
+    // TODO: this.
     this->vdp.command.address += this->vdp.command.increment;
 
     return 0;
+}
+
+static void write_data_port(struct genesis* this, u16 val, u16 mask, u32 is_cpu)
+{
+    if (dbg.traces.vdp) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
+    this->vdp.command.address += this->vdp.command.increment;
 }
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
@@ -607,42 +566,6 @@ void genesis_VDP_z80_write(struct genesis* this, u32 addr, u8 val)
     if ((addr >= 0x7F00) && (addr < 0x7F20)) {
         genesis_VDP_mainbus_write(this, (addr & 0x1E) | 0xC00000, val, 0xFF);
     }
-}
-
-static void fifo_write(struct genesis* this, u32 target, u16 dest_addr, u16 val)
-{
-    u32 slot = (this->vdp.fifo.head + this->vdp.fifo.len) % 5;
-    this->vdp.fifo.len++;
-    assert(this->vdp.fifo.len < 6);
-    struct genesis_vdp_fifo_slot *e = &this->vdp.fifo.slots[slot];
-
-    printif(fifo, "\nFIFO WRITE addr:%04x val:%04x target:%d slot:%d len:%d", dest_addr, val, target, slot, this->vdp.fifo.len);
-
-    e->addr = dest_addr;
-    e->val = val;
-    e->UDS = 1;
-    e->LDS = 1;
-    e->target = target;
-}
-
-static void write_data_port(struct genesis* this, u16 val, u16 mask, u32 is_cpu)
-{
-    if (dbg.traces.vdp) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
-    this->vdp.command.latch = 0;
-    this->vdp.command.ready = 1;
-
-    if (is_cpu && fifo_full(this)) {
-        if (fifo_overfull(this)) assert(1==2);
-        // Stall CPU here...
-        /*this->io.m68k.VDP_FIFO_stall = 1; // We're going to over-fill the FIFO and stall m68k until it's back to normal
-        printf("\nDONE1");
-        set_m68k_dtack(this);
-        dbg_printf("\nPausing the m68k....");*/
-        // no stalls...
-    }
-
-    //fifo_write(this, this->vdp.command.target, this->vdp.command.address, val);
-    this->vdp.command.address += this->vdp.command.increment;
 }
 
 void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask)
