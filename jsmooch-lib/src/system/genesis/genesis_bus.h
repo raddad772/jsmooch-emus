@@ -93,7 +93,6 @@ struct genesis {
             u32 blank_left_8_pixels;
             u32 enable_virq;
             u32 enable_line_irq;
-            u32 enable_dma;
             u32 counter_latch;
             u16 counter_latch_value;
             u32 enable_overlay, enable_display;
@@ -116,32 +115,23 @@ struct genesis {
             u32 window_v_pos;
             u32 window_draw_L_to_R;
             u32 window_draw_top_to_bottom;
-
         } io;
 
         struct {
-            u32 address; // in words
-            u32 direction;
-            u32 active;
-            u32 fill_value;
+            u16 address; // in words
             u32 latch;
             u32 ready;
             u32 pending;
-            u32 val;
-            u32 target;
             u32 increment;
-            u32 delay;
+            u32 target;
         } command;
 
         struct {
-            i32 len; // in words
+            u16 len;
+            u32 source_address;
+            u32 active, enable;
+            u32 fill_pending, fill_value;
             u32 mode;
-            u32 wait;
-            u32 delay;
-            u32 active;
-            u32 source;
-            u16 data;
-            u32 read;
         } dma;
 
         u32 cycle;
@@ -150,11 +140,11 @@ struct genesis {
         enum slot_kinds slot_array[4][212];
 
         u32 sc_count, sc_slot;
-        u32 sc_array;
+        u32 sc_array, sc_skip;
 
-        u16 CRAM[64];
-        u16 VSRAM[20];
-        u16 VRAM[32768];
+        u16 CRAM[64]; // 64 colors total on screen + background
+        u16 VSRAM[40]; // one entry for each of up to 40 tiles
+        u16 VRAM[32768]; // 64K VRAM
 
         // new_slot = (head + len++) % 5
         // "final" slot is for next queued command after 4
@@ -180,6 +170,9 @@ struct genesis {
             u32 screen_x;
             u32 screen_y;
         } line;
+
+        char term_out[16384]; // YES This is memory unsafe.
+        char *term_out_ptr;
 
     } vdp;
 
