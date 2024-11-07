@@ -53,6 +53,7 @@ static u16 VRAM_read(struct genesis* this, u16 addr)
 static void VRAM_write(struct genesis* this, u16 addr, u16 val)
 {
     assert(this->vdp.io.vram_mode == 0);
+    if (dbg.traces.vdp) printf("\nVRAM write %04x: %04x, cyc:%lld", addr & 0x7FFF, val, this->clock.master_cycle_count);
     this->vdp.VRAM[addr & 0x7FFF] = val;
 }
 
@@ -470,12 +471,11 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             vdp->dma.source_address = (vdp->dma.source_address & 0xFF00FF) | ((val << 8) & 0xFF00);
             return;
         case 23:
-            vdp->dma.source_address = (vdp->dma.source_address & 0xFFFF) | (((val & 0xFF) << 16) & 0x3F0000);
+            vdp->dma.source_address = (vdp->dma.source_address & 0xFFFF) | (((val & 0xFF) << 16) & 0x7F0000);
             vdp->dma.mode = (val >> 6) & 3;
             vdp->dma.fill_pending = (val >> 7) & 1;
-            dma_run_if_ready(this);
+            if (dbg.traces.vdp) printf("\nMODE! %d FILL PENDING! %d", this->vdp.dma.mode, this->vdp.dma.fill_pending);
             return;
-
         case 29: // KGEN debug register, enable debugger
             dbg_break("KGEN debugger", this->clock.master_cycle_count);
             break;
@@ -541,7 +541,7 @@ static void dma_fill(struct genesis* this)
             VSRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         default:
-            printf("\nDMA FILL UNKNOWN!?");
+            if (dbg.traces.vdp) printf("\nDMA FILL UNKNOWN!? target:%d value:%02x addr:%04x cyc:%lld", this->vdp.command.target, this->vdp.dma.fill_value, this->vdp.command.target, this->clock.master_cycle_count);
             break;
     }
 
@@ -582,6 +582,7 @@ static void dma_run_if_ready(struct genesis* this)
 
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
+    if (dbg.traces.vdp) printf("\nWRITE VDP CTRL PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
     if (this->vdp.command.latch == 1) { // Finish latching a DMA transfer command
         this->vdp.command.latch = 0;
         this->vdp.command.address = (this->vdp.command.address & 0x3FFF) | ((val & 7) << 14);
@@ -590,12 +591,15 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
         this->vdp.command.pending = ((val >> 7) & 1) & this->vdp.dma.enable;
 
         this->vdp.dma.fill_pending = this->vdp.dma.mode == 2; // Wait for fill
-        dma_run_if_ready(this);
+        if (dbg.traces.vdp) printf("\nLATCHED. MODE! %d FILL PENDING! %d", this->vdp.dma.mode, this->vdp.dma.fill_pending);
+        //dma_run_if_ready(this);
         return;
     }
 
     this->vdp.command.address = (this->vdp.command.address & 0b111100000000000000) | (val & 0b11111111111111);
-    this->vdp.command.target = (this->vdp.command.target & 0xC) | ((val >> 14) & 3);
+    //   command.target.bit(0,1)   = data.bit(14,15);
+    this->vdp.command.target = (this->vdp.command.target & 0b1100) | ((val >> 14) & 3);
+    if (dbg.traces.vdp) printf("   SETTING TARGET TO %d", this->vdp.command.target);
 
     if (((val >> 14) & 3) != 2) { // It'll equal 2 if we're writing a register
         this->vdp.command.latch = 1;
@@ -656,7 +660,7 @@ static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
             return ((data & 7) << 1) | (((data >> 3) & 7) << 5) | (((data >> 6) & 7) << 9);
     }
 
-    printf("\nUnknown read port target %d", this->vdp.command.target);
+    if (dbg.traces.vdp) printf("\nUnknown read port target %d", this->vdp.command.target);
     return 0;
 }
 
@@ -665,6 +669,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
     if (dbg.traces.vdp) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
 
     this->vdp.command.latch = 0;
+    if (dbg.traces.vdp) printf("\nWRITE VDP DATA PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
 
     if(this->vdp.dma.fill_pending) {
         this->vdp.dma.fill_pending = false;
@@ -674,7 +679,8 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
     u32 addr;
 
     if (this->vdp.command.target == 1) { // VRAM write
-        addr = (this->vdp.command.address << 1) & 0x1FFFE;
+        //addr = (this->vdp.command.address << 1) & 0x1FFFE;
+        addr = (this->vdp.command.address & 0x1FFFE) >> 1;
         if (this->vdp.command.address & 1) val = (val >> 8) | (val << 8);
         VRAM_write(this, addr, val);
         this->vdp.command.address += this->vdp.command.increment;
@@ -697,7 +703,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         this->vdp.command.address += this->vdp.command.increment;
         return;
     }
-    printf("\nUnknown data port write! Target:%d is_cpu:%d", this->vdp.command.target, is_cpu);
+    if (dbg.traces.vdp) printf("\nUnknown data port write! Target:%d is_cpu:%d", this->vdp.command.target, is_cpu);
 }
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)

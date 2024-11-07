@@ -370,7 +370,6 @@ void M68k_ins_RESET_POWER(struct M68k* this, struct M68k_ins_t *ins) {
         STEP(4)
             this->regs.PC = this->state.instruction.result | this->state.bus_cycle.data;
             this->regs.SR.I = 7;
-            printf("\nSTART ADDR %08x", this->regs.PC);
             // Start filling prefetch queue
             M68k_start_read(this, this->regs.PC, 2, M68k_FC_supervisor_program, M68K_RW_ORDER_NORMAL, M68kS_exec);
             this->regs.PC += 2;

@@ -111,9 +111,12 @@ struct ym2612 {
         u32 enable, irq, line, period, counter, divider;
     } timer_b;
 
+    u64 *master_cycle_count;
+    u64 last_master_cycle;
+
 };
 
-void ym2612_init(struct ym2612*, enum OPN2_variant variant);
+void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count);
 void ym2612_delete(struct ym2612*);
 
 void ym2612_write(struct ym2612*, u32 addr, u8 val);

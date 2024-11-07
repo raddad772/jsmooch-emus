@@ -631,8 +631,8 @@ void full_system::load_default_ROM()
         case SYS_GENESIS:
             worked = grab_ROM(&ROMs, which, "sonic.md", nullptr);
             dbg_enable_trace();
-            dbg.traces.dma = 1;
-            dbg.traces.fifo = 1;
+            //dbg.traces.dma = 1;
+            //dbg.traces.fifo = 1;
             break;
         default:
             printf("\nSYS NOT IMPLEMENTED!");

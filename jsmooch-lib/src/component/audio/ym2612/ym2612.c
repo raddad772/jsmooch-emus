@@ -294,10 +294,11 @@ void ym2612_reset(struct ym2612* this)
     }
 }
 
-void ym2612_init(struct ym2612 *this, enum OPN2_variant variant)
+void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count)
 {
     memset(this, 0, sizeof(*this));
     this->variant = variant;
+    this->master_cycle_count = master_cycle_count;
 
     for (u32 i = 0; i < 6; i++) {
         this->channel[i].ext_enable = 1;
@@ -544,6 +545,8 @@ static void write_data(struct ym2612 *this, u32 val)
 
             //DAC sample
         case 0x2a: {
+            u64 diff = *this->master_cycle_count - this->last_master_cycle;
+            this->last_master_cycle = *this->master_cycle_count;
             this->dac.sample = val;
             break;
         }
@@ -551,6 +554,7 @@ static void write_data(struct ym2612 *this, u32 val)
             //DAC enable
         case 0x2b: {
             this->dac.enable = (val >> 7) & 1;
+            printf("\nDAC ENABLE %d", this->dac.enable);
             break;
         }
 
@@ -566,7 +570,7 @@ static void write_data(struct ym2612 *this, u32 val)
     struct YM2612_CHANNEL *channel = &this->channel[voice];
     struct YM2612_OPERATOR *op = &channel->operator[index];
 
-    switch(this->io.address & 0x0f0) {
+    switch(this->io.address & 0x0f0) {;
 
         //detune, multiple
         case 0x030: {

@@ -231,8 +231,8 @@ static void genesis_z80_ym2612_write(struct genesis* this, u32 addr, u32 val)
 
 static void write_z80_bank_address_register(struct genesis* this, u32 val)
 {
-    u32 v = (this->io.z80.bank_address_register << 1) & 0xFF0000;
-    this->io.z80.bank_address_register = v | ((val & 1) << 15);
+    u32 v = (this->io.z80.bank_address_register >> 1) & 0x7F0000;
+    this->io.z80.bank_address_register = v | ((val & 1) << 23);
 }
 
 static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val)
