@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "helpers/debugger/debugger.h"
 
@@ -107,6 +108,7 @@ void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 void genesis_new(JSM)
 {
     struct genesis* this = (struct genesis*)malloc(sizeof(struct genesis));
+    memset(this, 0, sizeof(*this));
     Z80_init(&this->z80, 0);
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock);

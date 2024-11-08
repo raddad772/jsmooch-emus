@@ -517,7 +517,9 @@ static void dma_load(struct genesis* this)
 
     u32 addr = ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source_address << 1);
     u16 data = genesis_mainbus_read(this, addr & 0xFFFFFF, 1, 1, 0, 1);
+    tracer.dma->notify({"load(", hex(source, 6L), ", ", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
     write_data_port(this, data, 0);
+
 
     dma_source_inc(this);
     if (--this->vdp.dma.len == 0) {
@@ -544,6 +546,7 @@ static void dma_fill(struct genesis* this)
             if (dbg.traces.vdp) printf("\nDMA FILL UNKNOWN!? target:%d value:%02x addr:%04x cyc:%lld", this->vdp.command.target, this->vdp.dma.fill_value, this->vdp.command.target, this->clock.master_cycle_count);
             break;
     }
+    tracer.dma->notify({"fill(", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
 
     dma_source_inc(this);
     this->vdp.command.address += this->vdp.command.increment;
@@ -559,6 +562,7 @@ static void dma_copy(struct genesis* this)
 
     u32 data = VRAM_read_byte(this, this->vdp.dma.source_address);
     VRAM_write_byte(this, this->vdp.command.address, data);
+    tracer.dma->notify({"copy(", hex(source, 6L), ", ", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
 
     dma_source_inc(this);
     this->vdp.command.address += this->vdp.command.increment;
@@ -852,7 +856,7 @@ static void render_8_more(struct genesis* this)
     // 4 bytes = 8 pixels
     u32 pw = this->vdp.io.h40 ? 4 : 5;
     u32 bg = this->vdp.CRAM[this->vdp.io.bg_color];
-    u32 plane = 1;
+    u32 plane = 0;
     //for (u32 plane=0; plane<2; plane++) { // For 2 planes...
         for (u32 i = 0; i < 4; i++) { // For 8 pixels...
             u32 offset = hflip[plane] ? 3 - i : i;

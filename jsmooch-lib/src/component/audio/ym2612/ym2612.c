@@ -245,18 +245,25 @@ static void update_mix(struct ym2612* this)
         if (accumulator < -0x1FFF) accumulator = -0x1FFF;
         if (accumulator > 0x1FFF) accumulator = 0x1FFF;
         i32 voiceData = SIGNe14to32(accumulator) & outMask;
-        if(this->dac.enable && (ch_num == 5)) voiceData = ((s32)this->dac.sample - 0x80) << 6;
+        //if(this->dac.enable && (ch_num == 5)) voiceData = ((s32)this->dac.sample - 0x80) << 6;
+        if(this->dac.enable && (ch_num == 5)) {
+            //voiceData = ((i32)this->dac.sample - 0x80) << 6;
+            voiceData = ((i32)(i8)(u8)this->dac.sample - 0x80) << 6;
+            //voiceData = this->dac.sample << 6;
+        }
 
         // DAC output + voltage offset (crossover distortion)
         if (ch->ext_enable) {
             if (this->variant == OPN2V_ym2612) {
-                if (voiceData < 0) {
+/*                if (voiceData < 0) {
                     left += ch->left_enable * (voiceData + (1 << 5)) - (4 << 5);
                     right += ch->right_enable * (voiceData + (1 << 5)) - (4 << 5);
                 } else {
                     left += ch->left_enable * (voiceData + (0 << 5)) + (4 << 5);
                     right += ch->right_enable * (voiceData + (0 << 5)) + (4 << 5);
-                }
+                }*/
+                left += voiceData;
+                right += voiceData;
             }
             else {
                 // DAC output (ym3438 fix)
@@ -545,8 +552,8 @@ static void write_data(struct ym2612 *this, u32 val)
 
             //DAC sample
         case 0x2a: {
-            u64 diff = *this->master_cycle_count - this->last_master_cycle;
-            this->last_master_cycle = *this->master_cycle_count;
+            //u64 diff = *this->master_cycle_count - this->last_master_cycle;
+            //this->last_master_cycle = *this->master_cycle_count;
             this->dac.sample = val;
             break;
         }
@@ -554,7 +561,6 @@ static void write_data(struct ym2612 *this, u32 val)
             //DAC enable
         case 0x2b: {
             this->dac.enable = (val >> 7) & 1;
-            printf("\nDAC ENABLE %d", this->dac.enable);
             break;
         }
 
