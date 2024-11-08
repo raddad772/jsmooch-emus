@@ -666,7 +666,7 @@ static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
 
 static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
 {
-    if (dbg.traces.vdp) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
+    if (dbg.traces.vdp && is_cpu) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
 
     this->vdp.command.latch = 0;
     if (dbg.traces.vdp) printf("\nWRITE VDP DATA PORT %04x cyc:%lld", val, this->clock.master_cycle_count);

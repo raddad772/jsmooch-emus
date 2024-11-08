@@ -84,6 +84,7 @@ sed.
         default:
             assert(1==2);
     }
+    NOGOHERE;
 }
 
 static u8 access_c0xx(struct apple2* this, u32 addr, u32 is_write, u8 old_val, u32 has_effect)

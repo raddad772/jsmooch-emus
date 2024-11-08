@@ -301,8 +301,9 @@ static u32 condition(struct M68k* this, u32 condition) {
         case 13: return  this->regs.SR.N !=  this->regs.SR.V;  //LT
         case 14: return  this->regs.SR.N ==  this->regs.SR.V && !this->regs.SR.Z;  //GT
         case 15: return  this->regs.SR.N !=  this->regs.SR.V ||  this->regs.SR.Z;  //LE
-        default: assert(1==0);        
+        default: assert(1==2);
     }
+    NOGOHERE;
 }
 
 #define HOLD_WORD_POSTINC             u32 hold = HOLD;\

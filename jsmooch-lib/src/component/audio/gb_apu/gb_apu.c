@@ -2,6 +2,7 @@
 // Created by . on 9/6/24.
 //
 
+#include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,7 +44,7 @@ static inline u8 read_NRx1(struct GBSNDCHAN *chan)
         case 2:
             return chan->length_counter ^ 0xFF;
     }
-    assert(1==2);
+    NOGOHERE;
 }
 
 static inline u8 read_NRx2(struct GBSNDCHAN *chan)
@@ -60,7 +61,7 @@ static inline u8 read_NRx2(struct GBSNDCHAN *chan)
             r |= chan->env.initial_vol << 5;
             return r;
     }
-    assert(1==2);
+    NOGOHERE;
 }
 
 static inline u8 read_NRx3(struct GBSNDCHAN* chan)

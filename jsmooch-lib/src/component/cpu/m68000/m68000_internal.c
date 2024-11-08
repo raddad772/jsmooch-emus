@@ -2,6 +2,7 @@
 // Created by . on 6/20/24.
 //
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include "m68000.h"
@@ -135,6 +136,7 @@ static u32 get_ar(struct M68k* this, u32 num, u32 sz)
             return (u32)(i32)v;
     }
     assert(1==0);
+    return 0;
 }
 
 static u32 am_in_group0_or_1(struct M68k* this)
@@ -600,6 +602,7 @@ static u32 M68k_write_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32
         default:
             assert(1==0);
     }
+    return 0;
 }
 
 void M68k_start_write_operand(struct M68k* this, u32 commit, u32 op_num, u32 next_state, u32 allow_reverse, u32 force_reverse)
@@ -656,6 +659,7 @@ u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz)
         default:
             assert(1==0);
     }
+    NOGOHERE;
 }
 
 static void eval_ea_wait(struct M68k* this, u32 num_ea, u32 opnum, u32 sz)

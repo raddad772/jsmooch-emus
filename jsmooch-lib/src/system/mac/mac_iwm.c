@@ -2,6 +2,7 @@
 // Created by . on 8/5/24.
 //
 
+#include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 
@@ -241,7 +242,7 @@ static u32 get_drive_reg(struct mac* this) {
             printf("\nSTATUSREG.F: new interface: %d", v);
             return v;
     }
-    assert(1==0);
+    NOGOHERE;
 }
 
 void mac_iwm_clock(struct mac* this)

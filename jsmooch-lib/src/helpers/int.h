@@ -107,4 +107,9 @@ typedef double f64;
 }
 #endif
 
+#ifdef DEBUG
+#define NOGOHERE assert(1==2)
+#else
+#define NOGOHERE { abort(); __builtin_unreachable(); }
+#endif
 #endif
