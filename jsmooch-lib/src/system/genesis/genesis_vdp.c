@@ -517,7 +517,7 @@ static void dma_load(struct genesis* this)
 
     u32 addr = ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source_address << 1);
     u16 data = genesis_mainbus_read(this, addr & 0xFFFFFF, 1, 1, 0, 1);
-    tracer.dma->notify({"load(", hex(source, 6L), ", ", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
+    if (dbg.traces.vdp2) printf("\nload(%06x, %d:%06x, %04x)", this->vdp.dma.source_address, this->vdp.command.target, this->vdp.command.address, data);
     write_data_port(this, data, 0);
 
 
@@ -546,7 +546,7 @@ static void dma_fill(struct genesis* this)
             if (dbg.traces.vdp) printf("\nDMA FILL UNKNOWN!? target:%d value:%02x addr:%04x cyc:%lld", this->vdp.command.target, this->vdp.dma.fill_value, this->vdp.command.target, this->clock.master_cycle_count);
             break;
     }
-    tracer.dma->notify({"fill(", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
+    //tracer.dma->notify({"fill(", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
 
     dma_source_inc(this);
     this->vdp.command.address += this->vdp.command.increment;
@@ -562,7 +562,7 @@ static void dma_copy(struct genesis* this)
 
     u32 data = VRAM_read_byte(this, this->vdp.dma.source_address);
     VRAM_write_byte(this, this->vdp.command.address, data);
-    tracer.dma->notify({"copy(", hex(source, 6L), ", ", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
+    //tracer.dma->notify({"copy(", hex(source, 6L), ", ", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
 
     dma_source_inc(this);
     this->vdp.command.address += this->vdp.command.increment;
@@ -587,6 +587,12 @@ static void dma_run_if_ready(struct genesis* this)
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
     if (dbg.traces.vdp) printf("\nWRITE VDP CTRL PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
+    if (val == 0x8F02) {
+        dbg.var++;
+        if (dbg.var > 1) {
+            dbg_break("Broke on weird control port write", this->clock.master_cycle_count);
+        }
+    }
     if (this->vdp.command.latch == 1) { // Finish latching a DMA transfer command
         this->vdp.command.latch = 0;
         this->vdp.command.address = (this->vdp.command.address & 0x3FFF) | ((val & 7) << 14);
@@ -921,6 +927,7 @@ void genesis_VDP_cycle(struct genesis* this)
     set_clock_divisor(this);
 
     // 4 of our cycles per SC transfer
+    u32 run_dma = 0;
     this->vdp.sc_count = (this->vdp.sc_count + 1) & 3;
     if (this->vdp.sc_count == 0) {
         this->vdp.sc_slot++;
@@ -929,9 +936,11 @@ void genesis_VDP_cycle(struct genesis* this)
             if (this->vdp.sc_skip) {
                 this->vdp.sc_skip--;
             }
-            else dma_run_if_ready(this);
+            else run_dma = 1;
         }
     }
+    run_dma |= (this->vdp.io.enable_display ^ 1);
+    if (run_dma) dma_run_if_ready(this);
 
     if (this->vdp.sc_slot == SC_HSYNC_GOES_OFF) hblank(this, 0);
     if (this->vdp.sc_slot == SC_HSYNC_GOES_ON) hblank(this, 1);

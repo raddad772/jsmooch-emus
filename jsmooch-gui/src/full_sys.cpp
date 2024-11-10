@@ -519,9 +519,13 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             break;
         case SYS_GG:
-            worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sonic_triple.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "buttontest.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "gunstar.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tails.gg", nullptr);
+            worked = grab_ROM(&ROMs, which, "sonicblast.gg", nullptr);
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
@@ -562,6 +566,7 @@ void full_system::load_default_ROM()
             //dbg.traces.dma = 1;
             //dbg.traces.fifo = 1;
             dbg.traces.vdp = 1;
+            //dbg.traces.vdp2 = 1;
             break;
         default:
             printf("\nSYS NOT IMPLEMENTED!");

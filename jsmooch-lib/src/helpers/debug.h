@@ -99,6 +99,7 @@ struct jsm_debug_struct {
         u32 vram;
         u32 fifo;
         u32 vdp;
+        u32 vdp2;
     } traces;
 
     struct {

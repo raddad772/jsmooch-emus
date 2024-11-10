@@ -384,13 +384,13 @@ int main(int, char**)
     enum jsm_systems which = SYS_DREAMCAST;
 #else
     //enum jsm_systems which = SYS_ATARI2600;
-    enum jsm_systems which = SYS_GENESIS;
+    //enum jsm_systems which = SYS_GENESIS;
     //enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
     //enum jsm_systems which = SYS_DMG;
     //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
-    //enum jsm_systems which = SYS_GG;
+    enum jsm_systems which = SYS_GG;
     //enum jsm_systems which = SYS_SG1000;
     //enum jsm_systems which = SYS_MAC512K;
 #endif
@@ -595,14 +595,17 @@ int main(int, char**)
                 }
             }
             if (step_scanlines) {
+                dbg_unbreak();
                 fsys.step_scanlines(steps[1]);
                 last_frame_was_whole = false;
             }
             if (step_clocks) {
+                dbg_unbreak();
                 fsys.step_cycles(steps[0]);
                 last_frame_was_whole = false;
             }
             if (step_seconds) {
+                dbg_unbreak();
                 fsys.step_seconds(steps[2]);
                 last_frame_was_whole = false;
             }
