@@ -51,27 +51,31 @@ u32 cvec_index_of(struct cvec* this, void* ptr)
     return (u32)index;
 }
 
+static void cvec_int_grow(struct cvec* this)
+{
+    if (this->len_allocated == 0) {
+        assert(!this->realloc_locked);
+        this->len_allocated = 20;
+        this->data = malloc(this->data_sz * this->len_allocated);
+    }
+    else {
+        assert(!this->realloc_locked);
+        this->len_allocated = this->len_allocated * 2;
+        u32 sz = this->data_sz * this->len_allocated;
+        if (sz > (16*1024*1024)) {
+            printf("\nWARNING REALLOC ARRAY TO SIZE %d", sz);
+        }
+        void *new = realloc(this->data, sz);
+        assert(new!=NULL);
+        this->data = new;
+    }
+}
 
 void *cvec_push_back(struct cvec* this)
 {
     //printf("\nPUSH BACK! %d", this->allocated_len);
     if (this->len >= this->len_allocated) {
-        if (this->len_allocated == 0) {
-            assert(!this->realloc_locked);
-            this->len_allocated = 20;
-            this->data = malloc(this->data_sz * this->len_allocated);
-        }
-        else {
-            assert(!this->realloc_locked);
-            this->len_allocated = this->len_allocated * 2;
-            u32 sz = this->data_sz * this->len_allocated;
-            if (sz > (16*1024*1024)) {
-                printf("\nWARNING REALLOC ARRAY TO SIZE %d", sz);
-            }
-            void *new = realloc(this->data, sz);
-            assert(new!=NULL);
-            this->data = new;
-        }
+        cvec_int_grow(this);
     }
     void *ret = this->data + (this->len * this->data_sz);
     this->len++;
@@ -83,6 +87,13 @@ void cvec_grow(struct cvec *this, u32 num)
     // TODO: make this one op
     for (u32 i = 0; i < num; i++) {
         cvec_push_back(this);
+    }
+}
+
+void cvec_alloc_atleast(struct cvec* this, u64 howmuch)
+{
+    while(this->len_allocated < howmuch) {
+        cvec_int_grow(this);
     }
 }
 

@@ -103,6 +103,7 @@ u32 SMSGG_VDP_read_vcounter(struct SMSGG_VDP*);
 void SMSGG_VDP_write_data(struct SMSGG_VDP*, u32 val);
 u32 SMSGG_VDP_read_data(struct SMSGG_VDP*);
 u32 SMSGG_VDP_read_hcounter(struct SMSGG_VDP*);
-
+void SMSGG_VDP_update_videomode(struct SMSGG_VDP* this);
+void SMSGG_VDP_set_scanline_kind(struct SMSGG_VDP* this, u32 vpos);
 
 #endif //JSMOOCH_EMUS_SMS_GG_VDP_H

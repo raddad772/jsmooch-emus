@@ -160,7 +160,7 @@ static void sprite_gfx3(struct SMSGG_VDP* this) {
 }
 
 
-static void update_videomode(struct SMSGG_VDP* this) {
+void SMSGG_VDP_update_videomode(struct SMSGG_VDP* this) {
     u32 bottom_row = 192;
     if (this->variant == SYS_SMS1) bottom_row = 192;
     if (false) {}
@@ -435,11 +435,11 @@ static void new_frame(struct SMSGG_VDP* this)
     this->display->last_written ^= 1;
 }
 
-static void set_scanline_kind(struct SMSGG_VDP* this, u32 vpos)
+void SMSGG_VDP_set_scanline_kind(struct SMSGG_VDP* this, u32 vpos)
 {
-    if (vpos == 0)
+    if (vpos < this->bus->clock.timing.rendered_lines)
         this->scanline_cycle = &scanline_visible;
-    else if (vpos == this->bus->clock.timing.rendered_lines)
+    else
         this->scanline_cycle = &scanline_invisible;
 }
 
@@ -485,7 +485,7 @@ static void new_scanline(struct SMSGG_VDP* this)
         update_irqs(this);
     }
 
-    set_scanline_kind(this, this->bus->clock.vpos);
+    SMSGG_VDP_set_scanline_kind(this, this->bus->clock.vpos);
 
     if (this->bus->clock.vpos < this->bus->clock.timing.cc_line)
         this->bus->clock.ccounter = (this->bus->clock.ccounter + 1) & 0xFFF;
@@ -514,7 +514,7 @@ void SMSGG_VDP_reset(struct SMSGG_VDP* this)
     }
     memset(this->VRAM, 0, 16384);
     memset(this->CRAM, 0, 64);
-    update_videomode(this);
+    SMSGG_VDP_update_videomode(this);
 }
 
 u32 SMSGG_VDP_read_hcounter(struct SMSGG_VDP* this)
@@ -611,7 +611,7 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
             this->io.bg_hscroll_lock = (val & 0x40) >> 6;
             this->io.bg_vscroll_lock = (val & 0x80) >> 7;
             update_irqs(this);
-            update_videomode(this);
+            SMSGG_update_videomode(this);
             return;
         case 1: // mode control thing, #2
             //dbg_break();
@@ -622,7 +622,7 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
             this->io.display_enable = (val & 0x40) >> 6;
             //this->io.irq_frame_pending &= this->io.irq_frame_enabled;
             update_irqs(this);
-            update_videomode(this);
+            SMSGG_update_videomode(this);
             return;
         case 2: // name table base address
             this->io.bg_name_table_address = val & 0x0F;

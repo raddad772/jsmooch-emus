@@ -8,13 +8,13 @@
 #include "stdio.h"
 
 #include "helpers/debugger/debugger.h"
-
 #include "sms_gg.h"
 #include "sms_gg_clock.h"
 #include "sms_gg_io.h"
 #include "sms_gg_mapper_sega.h"
 #include "sms_gg_vdp.h"
 #include "smsgg_debugger.h"
+#include "sms_gg_serialize.h"
 
 #define JTHIS struct SMSGG* this = (struct SMSGG*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -41,6 +41,7 @@ void SMSGGJ_disable_tracing(JSM);
 void SMSGGJ_describe_io(JSM, struct cvec *IOs);
 static void SMSGGIO_unload_cart(JSM);
 static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
+
 
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
 {
@@ -131,7 +132,6 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     }
 
     // bus init done
-    this->display_enabled = 1;
     this->last_frame = 0;
 
     this->audio.buf = NULL;
@@ -156,6 +156,8 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     jsm->sideload = NULL;
     jsm->set_audiobuf = &SMSGGJ_set_audiobuf;
     jsm->setup_debugger_interface = &SMSGGJ_setup_debugger_interface;
+    jsm->save_state = &SMSGGJ_save_state;
+    jsm->load_state = &SMSGGJ_load_state;
     //SMSGGJ_reset(jsm);
 }
 
@@ -289,8 +291,8 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(256 * 240 * 2);
-    d->display.output[1] = malloc(256 * 240 * 2);
+    d->display.output[0] = SMSGG_DISPLAY_DRAW_SZ;
+    d->display.output[1] = SMSGG_DISPLAY_DRAW_SZ;
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);

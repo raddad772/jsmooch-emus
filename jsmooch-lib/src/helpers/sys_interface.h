@@ -9,6 +9,7 @@ extern "C" {
 #include "enums.h"
 #include "buf.h"
 #include "cvec.h"
+#include "serialize/serialize.h"
 #include "helpers/audiobuf.h"
 
 enum JSM_filekind {
@@ -78,6 +79,11 @@ struct framevars {
     //console: string = '';
 };
 
+struct deserialize_ret {
+    char reason[50];
+    u32 success;
+};
+
 struct debugger_interface;
 struct jsm_system {
     void* ptr; // Pointer that holds the system
@@ -101,6 +107,9 @@ struct jsm_system {
     void (*stop)(struct jsm_system* jsm);
 
     void (*setup_debugger_interface)(struct jsm_system* jsm, struct debugger_interface *intf);
+
+    void (*save_state)(struct jsm_system *jsm, struct serialized_state *state);
+    void (*load_state)(struct jsm_system *jsm, struct serialized_state *state, struct deserialize_ret *ret);
 
     struct cvec IOs;
 };

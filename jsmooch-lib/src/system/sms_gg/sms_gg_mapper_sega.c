@@ -87,7 +87,7 @@ static void refresh_sega_mapper(struct SMSGG_mapper_sega *this)
     // C000-FFFF stays mapped to RAM
 }
 
-static void refresh_mapping(struct SMSGG_mapper_sega *this)
+void SMSGG_mapper_refresh_mapping(struct SMSGG_mapper_sega *this)
 {
     if (!this->sega_mapper_enabled) // Just generic SMS mapping
         refresh_nomapper(this);
@@ -142,7 +142,7 @@ void SMSGG_mapper_sega_delete(struct SMSGG_mapper_sega* this)
 void SMSGG_mapper_sega_reset(struct SMSGG_mapper_sega* this)
 {
     this->io.bios_enabled = this->has_bios;
-    refresh_mapping(this);
+    SMSGG_mapper_refresh_mapping(this);
 }
 
 void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega* this, u32 to)
@@ -151,7 +151,7 @@ void SMSGG_mapper_sega_set_BIOS(struct SMSGG_mapper_sega* this, u32 to)
     return;
     if ((this->has_bios) && (to != this->io.bios_enabled)) {
         this->io.bios_enabled = to;
-        refresh_mapping(this);
+        SMSGG_mapper_refresh_mapping(this);
     }
 }
 
@@ -188,7 +188,7 @@ static void write_registers(struct SMSGG_mapper_sega* this, u16 addr, u8 val)
                 ;u32 w = addr - 0xFFFD;
                 mapping_changed = (val != this->io.frame_control_register[w]);
                 this->io.frame_control_register[w] = val;
-                if (mapping_changed) refresh_mapping(this);
+                if (mapping_changed) SMSGG_mapper_refresh_mapping(this);
                 break;
         }
     }

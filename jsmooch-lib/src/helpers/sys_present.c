@@ -188,30 +188,6 @@ void DMG_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
     }
 }
 
-/*function GBC_present(data, imgdata, GB_output_buffer) {
-    u32 gbo = new Uint16Array(GB_output_buffer);
-    for (u32 y = 0; y < 144; y++) {
-        for (u32 counter = 0; counter < 160; counter++) {
-            u32 ppui = (y * 160) + counter;
-            u32 di = ppui * 4;
-            u32 r, g, b;
-            u32 o = gbo[ppui];
-            r = (o & 0x1F);
-            g = (o >> 5) & 0x1F;
-            b = (o >> 10) & 0x1F;
-            r = (r << 3) | (r >> 2);
-            g = (g << 3) | (g >> 2);
-            b = (b << 3) | (b >> 2);
-            imgdata[di] = r;
-            imgdata[di+1] = g;
-            imgdata[di+2] = b;
-            imgdata[di+3] = 255;
-        }
-    }
-    // draw lines around screen
-    //this.draw_lines_around_screen(imgdata);
-}
-*/
 void GBC_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present)
 {
     u16* ibuf = (u16 *)device->display.output[device->display.last_written];
@@ -307,31 +283,6 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
     }
 }
 
-/*
- * function SMS_present(data, imgdata, SMS_output_buffer, rendered_lines) {
-    u32 output = new Uint8Array(SMS_output_buffer)
-    for (u32 ry = 0; ry < data.bottom_rendered_line; ry++) {
-        u32 y = ry;
-        for (u32 rx = 0; rx < 256; rx++) {
-            u32 counter = rx;
-            u32 di = ((y * 256) + counter) * 4;
-            u32 ulai = (y * 256) + counter;
-
-            u32 color = output[ulai];
-            u32 r, g, b;
-            b = ((color >> 4) & 3) * 0x55;
-            g = ((color >> 2) & 3) * 0x55;
-            r = (color & 3) * 0x55;
-
-            imgdata[di] = r;
-            imgdata[di+1] = g;
-            imgdata[di+2] = b;
-            imgdata[di+3] = 255;
-        }
-    }
-}
-
- */
 
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {

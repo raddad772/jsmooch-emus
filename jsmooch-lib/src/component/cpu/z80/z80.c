@@ -43,8 +43,6 @@ void Z80_regs_init(struct Z80_regs* this)
 
     this->AF_ = this->BC_ = this->DE_ = this->HL_ = 0;
 
-    this->junkvar = 0;
-
     this->AFt = this->BCt = this->DEt = this->HLt = this->Ht = this->Lt = 0;
 
     this->PC = this->SP = this->IX = this->IY = 0;
@@ -111,7 +109,7 @@ void Z80_regs_exchange_shadow_af(struct Z80_regs* this)
 
 void Z80_pins_init(struct Z80_pins* this)
 {
-    this->RES = this->NMI = this->IRQ = 0;
+    this->NMI = this->IRQ = 0;
     this->Addr = 0;
     this->D = 0;
     this->IRQ_maskable = 1;
@@ -438,3 +436,159 @@ u32 Z80_parity(u32 val) {
     val ^= val >> 1;
     return (val & 1) == 0;
 }
+
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+static void serialize_regs(struct Z80_regs *this, struct serialized_state *state)
+{
+    S(IR);
+    S(TCU);
+
+    S(A);
+    S(B);
+    S(C);
+    S(D);
+    S(E);
+    S(H);
+    S(L);
+    u32 fbyte = Z80_regs_F_getbyte(&this->F);
+    Sadd(state, &fbyte, sizeof(fbyte));
+
+    S(I);
+    S(R);
+
+    S(AF_);
+    S(BC_);
+    S(DE_);
+    S(HL_);
+
+    S(TR);
+    S(TA);
+
+    S(PC);
+    S(SP);
+    S(IX);
+    S(IY);
+    for (u32 i = 0; i < 10; i++) {
+        S(t[0]);
+    }
+
+    S(WZ);
+    S(EI);
+    S(P);
+    S(Q);
+    S(IFF1);
+    S(IFF2);
+    S(IM);
+    S(HALT);
+    S(data);
+    S(IRQ_vec);
+    S(rprefix);
+    S(prefix);
+    S(poll_IRQ);
+}
+
+static void serialize_pins(struct Z80_pins* this, struct serialized_state *state)
+{
+    S(NMI);
+    S(IRQ);
+    S(Addr);
+    S(D);
+    S(IRQ_maskable);
+    S(RD);
+    S(WR);
+    S(IO);
+    S(MRQ);
+}
+
+void Z80_serialize(struct Z80 *this, struct serialized_state *state)
+{
+    serialize_regs(&this->regs, state);
+    serialize_pins(&this->pins, state);
+
+    S(CMOS);
+    S(IRQ_pending);
+    S(NMI_pending);
+    S(NMI_ack);
+
+    S(PCO);
+}
+#undef S
+
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+static void deserialize_regs(struct Z80_regs* this, struct serialized_state *state)
+{
+    L(IR);
+    L(TCU);
+
+    L(A);
+    L(B);
+    L(C);
+    L(D);
+    L(E);
+    L(H);
+    L(L);
+    u32 fbyte = Z80_regs_F_getbyte(&this->F);
+    Sadd(state, &fbyte, sizeof(fbyte));
+
+    L(I);
+    L(R);
+
+    L(AF_);
+    L(BC_);
+    L(DE_);
+    L(HL_);
+
+    L(TR);
+    L(TA);
+
+    L(PC);
+    L(SP);
+    L(IX);
+    L(IY);
+    for (u32 i = 0; i < 10; i++) {
+        L(t[0]);
+    }
+
+    L(WZ);
+    L(EI);
+    L(P);
+    L(Q);
+    L(IFF1);
+    L(IFF2);
+    L(IM);
+    L(HALT);
+    L(data);
+    L(IRQ_vec);
+    L(rprefix);
+    L(prefix);
+    L(poll_IRQ);
+}
+
+static void deserialize_pins(struct Z80_pins* this, struct serialized_state *state)
+{
+    L(NMI);
+    L(IRQ);
+    L(Addr);
+    L(D);
+    L(IRQ_maskable);
+    L(RD);
+    L(WR);
+    L(IO);
+    L(MRQ);
+
+}
+
+void Z80_deserialize(struct Z80* this, struct serialized_state *state)
+{
+    deserialize_regs(&this->regs, state);
+    deserialize_pins(&this->pins, state);
+
+    L(CMOS);
+    L(IRQ_pending);
+    L(NMI_pending);
+    L(NMI_ack);
+
+    L(PCO);
+    this->current_instruction = Z80_fetch_decoded(this->regs.IR, this->regs.prefix);
+}
+#undef L

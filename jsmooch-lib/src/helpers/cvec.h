@@ -15,9 +15,9 @@ extern "C" {
 
 struct cvec {
     void *data;
-    u32 data_sz;
-    u32 len;
-    u32 len_allocated;
+    u64 data_sz;
+    u64 len;
+    u64 len_allocated;
     u32 realloc_locked;
 
     // For use by outsiders
@@ -47,7 +47,8 @@ void *cvec_get(struct cvec *, u32 index);
 void *cvec_get_unsafe(struct cvec *, u32 index);
 void cvec_lock_reallocs(struct cvec *); // For locking reallocs to preserve pointers
 void cvec_push_back_copy(struct cvec *, void *src);
-void cvec_grow(struct cvec *, u32 num);
+void cvec_grow(struct cvec *, u32 num); // Grow a specific # of elements
+void cvec_alloc_atleast(struct cvec*, u64 howmuch); // Make sure at least # elements are allocated
 
 void cvec_iterator_init(struct cvec_iterator *);
 

@@ -166,3 +166,53 @@ void SN76489_write_data(struct SN76489* this, u32 val)
         }
     }
 }
+
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+void SN76489_serialize(struct SN76489 *this, struct serialized_state *state)
+{
+    u32 i;
+    S(io_reg);
+    S(io_kind);
+
+    for (i = 0; i < 4; i++) {
+        S(vol[i]);
+        S(polarity[i]);
+    }
+
+    for (i = 0; i < 3; i++) {
+        S(sw[i].counter);
+        S(sw[i].freq);
+    }
+
+    S(noise.lfsr);
+    S(noise.shift_rate);
+    S(noise.mode);
+    S(noise.counter);
+    S(noise.countdown);
+}
+#undef S
+
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+void SN76489_deserialize(struct SN76489 *this, struct serialized_state *state)
+{
+    u32 i;
+    L(io_reg);
+    L(io_kind);
+
+    for (i = 0; i < 4; i++) {
+        L(vol[i]);
+        L(polarity[i]);
+    }
+
+    for (i = 0; i < 3; i++) {
+        L(sw[i].counter);
+        L(sw[i].freq);
+    }
+
+    L(noise.lfsr);
+    L(noise.shift_rate);
+    L(noise.mode);
+    L(noise.counter);
+    L(noise.countdown);
+}
+#undef L

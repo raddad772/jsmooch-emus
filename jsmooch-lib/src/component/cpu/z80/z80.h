@@ -9,6 +9,7 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "helpers/debugger/debuggerdefs.h"
+#include "helpers/serialize/serialize.h"
 
 #define Z80_S_IRQ 0x100
 #define Z80_S_RESET 0x101
@@ -51,7 +52,6 @@ struct Z80_regs {
     u32 HL_;
 
     // Junk calculations
-    u32 junkvar;
     u32 TR, TA;
 
     // Temps for register swapping
@@ -93,7 +93,7 @@ void Z80_regs_exchange_de_hl(struct Z80_regs*);
 void Z80_regs_exchange_shadow(struct Z80_regs*);
 
 struct Z80_pins {
-    u32 RES, NMI, IRQ;
+    u32 NMI, IRQ;
     u32 Addr;
     u32 D;
 
@@ -138,6 +138,7 @@ void Z80_cycle(struct Z80*);
 void Z80_notify_NMI(struct Z80*, u32 level);
 void Z80_notify_IRQ(struct Z80*, u32 level);
 void Z80_setup_tracing(struct Z80*, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
-
+void Z80_serialize(struct Z80*, struct serialized_state *state);
+void Z80_deserialize(struct Z80*, struct serialized_state *state);
 
 #endif //JSMOOCH_EMUS_Z80_H

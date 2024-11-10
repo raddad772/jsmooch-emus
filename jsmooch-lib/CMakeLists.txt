@@ -254,6 +254,12 @@ add_library(jsmooch-lib
         src/system/genesis/genesis_debugger.c
         src/system/genesis/genesis_debugger.h
         src/component/audio/ym2612/ym2612.c
+        src/helpers/serialize/serialize.c
+        src/helpers/serialize/serialize.h
+        src/helpers/img.c
+        src/helpers/img.h
+        src/system/sms_gg/sms_gg_serialize.c
+        src/system/sms_gg/sms_gg_serialize.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

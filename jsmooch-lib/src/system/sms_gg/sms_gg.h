@@ -18,6 +18,18 @@
 #include "sms_gg_mapper_sega.h"
 #include "sms_gg_io.h"
 
+#define SMSGG_DISPLAY_DRAW_SZ (256 * 240 * 2)
+
+enum SMSGGSS_kinds {
+    SMSGGSS_console,
+    SMSGGSS_debug,
+    SMSGGSS_vdp,
+    SMSGGSS_sn76489,
+    SMSGGSS_z80,
+    SMSGGSS_clock,
+    SMSGGSS_mapper
+};
+
 void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_regions region);
 void SMSGG_delete(struct jsm_system* jsm);
 
@@ -35,9 +47,6 @@ struct SMSGG {
         double next_sample_cycle;
         struct audiobuf *buf;
     } audio;
-
-    u32 display_enabled;
-    u32 tracing;
 
     struct cvec* IOs;
 
