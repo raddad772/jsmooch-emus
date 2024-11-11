@@ -291,8 +291,8 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = SMSGG_DISPLAY_DRAW_SZ;
-    d->display.output[1] = SMSGG_DISPLAY_DRAW_SZ;
+    d->display.output[0] = malloc(SMSGG_DISPLAY_DRAW_SZ);
+    d->display.output[1] = malloc(SMSGG_DISPLAY_DRAW_SZ);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);

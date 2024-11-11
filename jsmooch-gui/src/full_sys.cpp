@@ -538,8 +538,10 @@ void full_system::load_default_ROM()
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
-            worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
-            //worked = grab_ROM(&ROMs, which, "densha.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
+            // worked = grab_ROM(&ROMs, which, "densha.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "cutedemo.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "aitd.gbc", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);

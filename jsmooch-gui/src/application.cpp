@@ -385,12 +385,12 @@ int main(int, char**)
 #else
     //enum jsm_systems which = SYS_ATARI2600;
     //enum jsm_systems which = SYS_GENESIS;
-    //enum jsm_systems which = SYS_GBC;
+    enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
     //enum jsm_systems which = SYS_DMG;
     //enum jsm_systems which = SYS_NES;
     //enum jsm_systems which = SYS_SMS2;
-    enum jsm_systems which = SYS_GG;
+    //enum jsm_systems which = SYS_GG;
     //enum jsm_systems which = SYS_SG1000;
     //enum jsm_systems which = SYS_MAC512K;
 #endif

@@ -60,6 +60,11 @@ static inline u8 read_NRx2(struct GBSNDCHAN *chan)
         case 2:
             r |= chan->env.initial_vol << 5;
             return r;
+        case 3:
+            r |= chan->env.initial_vol << 4;
+            r |= chan->env.direction << 3;
+            r |= chan->env.period;
+            return r;
     }
     NOGOHERE;
 }

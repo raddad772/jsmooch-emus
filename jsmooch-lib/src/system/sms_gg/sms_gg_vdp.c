@@ -611,7 +611,7 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
             this->io.bg_hscroll_lock = (val & 0x40) >> 6;
             this->io.bg_vscroll_lock = (val & 0x80) >> 7;
             update_irqs(this);
-            SMSGG_update_videomode(this);
+            SMSGG_VDP_update_videomode(this);
             return;
         case 1: // mode control thing, #2
             //dbg_break();
@@ -622,7 +622,7 @@ static void register_write(struct SMSGG_VDP* this, u32 addr, u32 val)
             this->io.display_enable = (val & 0x40) >> 6;
             //this->io.irq_frame_pending &= this->io.irq_frame_enabled;
             update_irqs(this);
-            SMSGG_update_videomode(this);
+            SMSGG_VDP_update_videomode(this);
             return;
         case 2: // name table base address
             this->io.bg_name_table_address = val & 0x0F;

@@ -50,7 +50,7 @@ void GB_timer_detect_edge(struct GB_timer *this, u32 before, u32 after)
 {
     if ((before == 1) && (after == 0)) {
         this->TIMA = (this->TIMA + 1) & 0xFF; // Increment TIMA
-        DBG_EVENT(DBG_GB_EVENT_TIMER_TICK);
+        //DBG_EVENT(DBG_GB_EVENT_TIMER_TICK);
         if (this->TIMA == 0) { // If we overflow, schedule IRQ
             this->cycles_til_TIMA_IRQ = 1;
         }
