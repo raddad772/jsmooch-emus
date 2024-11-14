@@ -99,7 +99,10 @@ struct jsm_debug_struct {
         u32 vram;
         u32 fifo;
         u32 vdp;
-        u32 vdp2;
+        u32 vdp3; // DFT(stuff)
+        u32 vdp2; // printf(stuff)
+        u32 cpu2; // DFT(PC-4)
+        u32 cpu3; // RD/WR spam
     } traces;
 
     struct {
@@ -160,6 +163,8 @@ void LT_printf(struct last_traces_t *, char *format, ...);
 void LT_endline(struct last_traces_t *);
 void LT_seek_in_line(struct last_traces_t *, u32 where);
 void LT_dump_to_dbg(struct last_traces_t *);
+
+void DFT(char *format, ...);
 
 #ifdef DO_LAST_TRACES
 #define dbg_LT_printf(...) LT_printf(&dbg.last_traces, __VA_ARGS__)

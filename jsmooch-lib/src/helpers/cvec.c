@@ -63,6 +63,7 @@ static void cvec_int_grow(struct cvec* this)
         this->len_allocated = this->len_allocated * 2;
         u32 sz = this->data_sz * this->len_allocated;
         if (sz > (16*1024*1024)) {
+            assert(1==2);
             printf("\nWARNING REALLOC ARRAY TO SIZE %d", sz);
         }
         void *new = realloc(this->data, sz);

@@ -541,6 +541,7 @@ static void dma_fill(struct genesis* this)
     switch(this->vdp.command.target) {
         case 1:
             VRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
+            if (dbg.traces.vdp3) DFT("\nVDP DMA FILL VRAM ADDR:%04x DATA:%02x", this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         case 3:
             CRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
@@ -594,6 +595,9 @@ static void dma_run_if_ready(struct genesis* this)
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
     if (dbg.traces.vdp) printf("\nWRITE VDP CTRL PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
+    if (dbg.traces.vdp3) DFT("\nWR VDP CTRL: %04x", val);
+    //printf("\nIT HAPPENED!");
+    //dbg_break("yes", this->clock.master_cycle_count);
     /*if (val == 0x8F02) {
         dbg.var++;
         if (dbg.var > 1) {
@@ -633,7 +637,7 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
     u16 v = 0; // NTSC only for now
     v |= this->vdp.dma.active; // no DMA yet
     v |= this->clock.vdp.hblank << 2;
-    v |= this->clock.vdp.vblank << 3;
+    v |= (this->clock.vdp.vblank || (1 ^ this->vdp.io.enable_display)) << 3;
     v |= (this->clock.vdp.field && this->vdp.io.interlace_field) << 4;
     //<< 5; SC: 1 = any two sprites have non-transparent pixels overlapping. Used for pixel-accurate collision detection.
     //<< 6; SO: 1 = sprite limit has been hit on current scanline. i.e. 17+ in 256 pixel wide mode or 21+ in 320 pixel wide mode.
@@ -644,7 +648,8 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
     v |= fifo_empty(this) << 9;
 
     // Open bus bits 10-15
-    v |= (old & 0xFC00);
+    //v |= (old & 0xFC00);
+    v |= 0b0011010000000000;
 
     if (has_effect && !this->vdp.io.mode5) {
         //assert(1==2);
@@ -652,7 +657,7 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
         //genesis_m68k_vblank_irq(this, 0);
         printf("\nWHAT!?!");
     }
-
+    if (dbg.traces.vdp3) DFT("\nRD VDP CP DATA:%04x", v);
     return v;
 }
 
@@ -693,6 +698,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
     if(this->vdp.dma.fill_pending) {
         this->vdp.dma.fill_pending = false;
         this->vdp.dma.fill_value = val >> 8;
+        if (dbg.traces.vdp3) DFT("\nWR VDP DATA, FILL START");
     }
 
     u32 addr;
@@ -701,6 +707,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         //addr = (this->vdp.command.address << 1) & 0x1FFFE;
         addr = (this->vdp.command.address & 0x1FFFE) >> 1;
         if (this->vdp.command.address & 1) val = (val >> 8) | (val << 8);
+        if (dbg.traces.vdp3) DFT("\nWR VDP DP VRAM DEST:%04x DATA:%04x", addr, val);
         VRAM_write(this, addr, val);
         this->vdp.command.address += this->vdp.command.increment;
         return;
@@ -710,6 +717,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         addr = (this->vdp.command.address << 1) & 0x7E;
         //data format: ---- --yy yyyy yyyy
         addr = (addr % 40);
+        if (dbg.traces.vdp3) DFT("\nWR VDP DP VSRAM DEST:%04x DATA:%04x", addr, val);
         this->vdp.VSRAM[addr] = val & 0x3FF;
         this->vdp.command.address += this->vdp.command.increment;
         return;
@@ -718,6 +726,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
     if (this->vdp.command.target == 3) { // CRAM write
         addr = (this->vdp.command.address << 1) & 0x7E;
         //data format: ---- bbb- ggg- rrr-
+        if (dbg.traces.vdp3) DFT("\nWR VDP DP CRAM DEST:%04x DATA:%04x", addr, val);
         this->vdp.CRAM[addr >> 1] = (((val >> 1) & 7) << 0) | (((val >> 5) & 7) << 3) | (((val >> 9) & 7) << 6);
         this->vdp.command.address += this->vdp.command.increment;
         return;

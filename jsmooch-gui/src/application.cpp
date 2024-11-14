@@ -165,7 +165,7 @@ static void render_disassembly_view(struct full_system &fsys, struct DVIEW &dvie
 {
     struct disassembly_view *dasm = &dview.view->disassembly;
     struct cvec *dasm_rows = &dview.dasm_rows;
-    if (fsys.enable_debugger && fsys.has_played_once) {
+    if (fsys.enable_debugger) {
         char wname[100];
         snprintf(wname, sizeof(wname), "%s Disassembly View", dasm->processor_name.ptr);
         if (ImGui::Begin(wname)) {

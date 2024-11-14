@@ -49,10 +49,10 @@ static u16 read_version_register(struct genesis* this, u32 mask)
 {
     // bit 7 0 = japanese, 1 = other
     // bit 6 0 = NTSC, 1 = PAL
-    // bit 5 0 = no expansion like 32x, 1 = expansion like 32x
+    // bit 5 0 = expansion like 32x/CD, 1 = no expansion like 32x/CD
     // bit 1-3 version, must be 0
-    u32 v = 0b10000000;
-    return ((v << 8) | v) & mask;
+    u32 v = 0b10100000;
+    return (v << 8) | v;
 }
 
 //      A11200
@@ -113,7 +113,7 @@ u16 genesis_mainbus_read_a1k(struct genesis* this, u32 addr, u16 old, u16 mask, 
         case 0xA1000A:
             return genesis_controllerport_read_control(&this->io.controller_port2);
         case 0xA1000C:
-            return old; // TODO: this
+            return 0;
         case 0xA11100: // Z80 BUSREQ
         /*
          * TT
@@ -274,6 +274,9 @@ void genesis_cycle_m68k(struct genesis* this)
     if (this->m68k.pins.AS && (!this->m68k.pins.DTACK) && (!this->io.m68k.stuck)) {
         if (!this->m68k.pins.RW) { // read
             this->io.m68k.open_bus_data = this->m68k.pins.D = genesis_mainbus_read(this, this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->io.m68k.open_bus_data, 1);
+
+            if (dbg.traces.cpu3) DFT("\nRD %06x(%d%d) %04x", this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
+
             this->m68k.pins.DTACK = !(this->io.m68k.VDP_FIFO_stall | this->io.m68k.VDP_prefetch_stall);
             this->io.m68k.stuck = !this->m68k.pins.DTACK;
             if (dbg.trace_on && dbg.traces.m68000.mem && ((this->m68k.pins.FC & 1) || dbg.traces.m68000.ifetch)) {
@@ -282,6 +285,7 @@ void genesis_cycle_m68k(struct genesis* this)
         }
         else { // write
             genesis_mainbus_write(this, this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
+            if (dbg.traces.cpu3) DFT("\nWR %06x(%d%d) %04x", this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
             this->m68k.pins.DTACK = !(this->io.m68k.VDP_FIFO_stall | this->io.m68k.VDP_prefetch_stall);
             this->io.m68k.stuck = !this->m68k.pins.DTACK;
             if (dbg.trace_on && dbg.traces.m68000.mem && (this->m68k.pins.FC & 1)) {

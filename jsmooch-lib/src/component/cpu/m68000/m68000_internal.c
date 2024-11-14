@@ -232,6 +232,7 @@ void M68k_bus_cycle_read(struct M68k* this)
             this->pins.LDS = this->pins.UDS = 0;
             if ((this->state.current != M68kS_read32) || (this->state.bus_cycle.TCU == 7)) {
                 this->state.bus_cycle.done = 1;
+
                 this->state.bus_cycle.TCU = -1;
                 this->state.current = this->state.bus_cycle.next_state;
             }

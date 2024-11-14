@@ -293,6 +293,7 @@ void M68k_cycle(struct M68k* this)
                 lycoder_pprint1(this);
                 lycoder_pprint2(this);
 #else
+                if (dbg.traces.cpu2) DFT("\nPC %06x", this->regs.PC-4);
                 if (dbg.trace_on && this->trace.ok && dbg.traces.m68000.instruction) {
                     M68k_trace_format(this);
                 }

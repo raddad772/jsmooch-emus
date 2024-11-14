@@ -42,6 +42,26 @@ void dbg_clear_msg()
     dbg.msg_last_newline = dbg.msg.cur;
 }
 
+static int did_DFT = 0;
+static char DFT_buf[4096];
+
+#define DFT_file "/Users/Dave/js_sonic_cpu.log"
+
+void DFT(char *format, ...)
+{
+    if (did_DFT) {
+        did_DFT = 1;
+        unlink(DFT_file);
+    }
+    va_list va;
+    va_start(va, format);
+    int a = vsnprintf(DFT_buf, 4096, format, va);
+    va_end(va);
+    FILE *f = fopen(DFT_file, "a");
+    fwrite(DFT_buf, 1, a, f);
+    fclose(f);
+}
+
 int dbg_printf(char *format, ...)
 {
     if (!dbg.trace_on) return 0;
