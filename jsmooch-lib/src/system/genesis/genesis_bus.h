@@ -174,6 +174,9 @@ struct genesis {
         char term_out[16384]; // YES This is memory unsafe.
         char *term_out_ptr;
 
+        u32 assert_hblank_irq;
+        u32 assert_vblank_irq;
+
     } vdp;
 
     u16 RAM[32768]; // RAM is stored little-endian for some reason
@@ -258,4 +261,6 @@ void genesis_z80_interrupt(struct genesis*, u32 level);
 void genesis_m68k_vblank_irq(struct genesis*, u32 level);
 void genesis_m68k_line_count_irq(struct genesis*, u32 level);
 u8 genesis_z80_bus_read(struct genesis*, u16 addr, u8 old, u32 has_effect);
+void genesis_bus_update_irqs(struct genesis* this);
+
 #endif //JSMOOCH_EMUS_GENESIS_BUS_H

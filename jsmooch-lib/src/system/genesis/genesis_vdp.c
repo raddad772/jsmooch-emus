@@ -207,11 +207,20 @@ void init_slot_tables(struct genesis* this)
 #undef S
 #undef SR
 
+void genesis_VDP_handle_iack(void* ptr)
+{
+    struct genesis *this = (struct genesis*)ptr;
+    if (this->vdp.assert_vblank_irq) this->vdp.assert_vblank_irq = 0;
+    else if (this->vdp.assert_hblank_irq) this->vdp.assert_hblank_irq = 0;
+    genesis_bus_update_irqs(this);
+}
+
 void genesis_VDP_init(struct genesis* this)
 {
     memset(&this->vdp, 0, sizeof(this->vdp));
     this->vdp.term_out_ptr = &this->vdp.term_out[0];
     init_slot_tables(this);
+    M68k_register_iack_handler(&this->m68k, (void*)this, &genesis_VDP_handle_iack);
 }
 
 static void set_clock_divisor(struct genesis* this)
@@ -236,9 +245,7 @@ static void vblank(struct genesis* this, u32 new_value)
     this->clock.vdp.vblank = new_value;  // Our value that indicates vblank yes or no
     this->vdp.io.vblank = new_value;     // Our IO vblank value, which can be reset
 
-    if ((!old_value) && new_value) {
-        genesis_m68k_vblank_irq(this, 1);
-    }
+    genesis_m68k_vblank_irq(this, 1);
 
     if (new_value) {
         this->vdp.sc_slot = SC_ARRAY_DISABLED + this->vdp.io.h40; //
@@ -520,7 +527,6 @@ static void dma_load(struct genesis* this)
     if (dbg.traces.vdp2) printf("\nload(%06x, %d:%06x, %04x)", this->vdp.dma.source_address, this->vdp.command.target, this->vdp.command.address, data);
     write_data_port(this, data, 0);
 
-
     dma_source_inc(this);
     if (--this->vdp.dma.len == 0) {
         this->vdp.command.pending = 0;
@@ -575,11 +581,12 @@ static void dma_copy(struct genesis* this)
 
 static void dma_run_if_ready(struct genesis* this)
 {
-    if (this->vdp.command.pending && !this->vdp.dma.fill_pending) {
+    //if (this->vdp.command.pending && !this->vdp.dma.fill_pending) {
+    while(this->vdp.command.pending && !this->vdp.dma.fill_pending) {
         switch(this->vdp.dma.mode) {
-            case 0: case 1: dma_load(this); return;
-            case 2: dma_fill(this); return;
-            case 3: dma_copy(this); return;
+            case 0: case 1: dma_load(this); break;
+            case 2: dma_fill(this); break;
+            case 3: dma_copy(this); break;
         }
     }
 }
@@ -587,12 +594,12 @@ static void dma_run_if_ready(struct genesis* this)
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
     if (dbg.traces.vdp) printf("\nWRITE VDP CTRL PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
-    if (val == 0x8F02) {
+    /*if (val == 0x8F02) {
         dbg.var++;
         if (dbg.var > 1) {
             dbg_break("Broke on weird control port write", this->clock.master_cycle_count);
         }
-    }
+    }*/
     if (this->vdp.command.latch == 1) { // Finish latching a DMA transfer command
         this->vdp.command.latch = 0;
         this->vdp.command.address = (this->vdp.command.address & 0x3FFF) | ((val & 7) << 14);
@@ -639,9 +646,11 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
     // Open bus bits 10-15
     v |= (old & 0xFC00);
 
-    if (has_effect) {
-        this->vdp.io.vblank = 0;
-        genesis_m68k_vblank_irq(this, 0);
+    if (has_effect && !this->vdp.io.mode5) {
+        //assert(1==2);
+        //this->vdp.io.vblank = 0;
+        //genesis_m68k_vblank_irq(this, 0);
+        printf("\nWHAT!?!");
     }
 
     return v;
@@ -862,7 +871,7 @@ static void render_8_more(struct genesis* this)
     // 4 bytes = 8 pixels
     u32 pw = this->vdp.io.h40 ? 4 : 5;
     u32 bg = this->vdp.CRAM[this->vdp.io.bg_color];
-    u32 plane = 0;
+    u32 plane = 1;
     //for (u32 plane=0; plane<2; plane++) { // For 2 planes...
         for (u32 i = 0; i < 4; i++) { // For 8 pixels...
             u32 offset = hflip[plane] ? 3 - i : i;

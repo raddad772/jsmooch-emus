@@ -534,14 +534,17 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
         case SYS_GBC:
             //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
             // worked = grab_ROM(&ROMs, which, "densha.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "cutedemo.gbc", nullptr);
-            worked = grab_ROM(&ROMs, which, "aitd.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "aitd.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
@@ -563,7 +566,7 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case SYS_GENESIS:
-            worked = grab_ROM(&ROMs, which, "sonic.md", nullptr);
+            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr);
             dbg_enable_trace();
             //dbg.traces.dma = 1;
             //dbg.traces.fifo = 1;

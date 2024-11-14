@@ -6,6 +6,7 @@
 #define JSMOOCH_EMUS_M68000_H
 
 #include "helpers/int.h"
+#include "helpers/cvec.h"
 #include "m68000_instructions.h"
 
 #define M68K_E_CLOCK
@@ -132,9 +133,16 @@ enum M68k_states {
 
 struct M68k_ins_t;
 
+struct M68k_iack_handler {
+    void (*handler)(void*);
+    void *ptr;
+};
+
 struct M68k {
     struct M68k_regs regs;
     struct M68k_pins pins;
+
+    struct cvec iack_handlers;
 
     u32 ins_decoded;
     u32 testing;
@@ -298,5 +306,6 @@ void M68k_set_interrupt_level(struct M68k*, u32 val);
 void M68k_disassemble_entry(struct M68k*, struct disassembly_entry* entry);
 void M68k_set_SR(struct M68k*, u32 val, u32 immediate_t);
 u32 M68k_get_SR(struct M68k*);
+void M68k_register_iack_handler(struct M68k*, void *, void (*handler)(void*));
 
 #endif //JSMOOCH_EMUS_M68000_H

@@ -384,8 +384,8 @@ int main(int, char**)
     enum jsm_systems which = SYS_DREAMCAST;
 #else
     //enum jsm_systems which = SYS_ATARI2600;
-    //enum jsm_systems which = SYS_GENESIS;
-    enum jsm_systems which = SYS_GBC;
+    enum jsm_systems which = SYS_GENESIS;
+    //enum jsm_systems which = SYS_GBC;
     //enum jsm_systems which = SYS_APPLEIIe;
     //enum jsm_systems which = SYS_DMG;
     //enum jsm_systems which = SYS_NES;

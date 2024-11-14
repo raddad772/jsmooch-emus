@@ -27,6 +27,7 @@ void M68k_init(struct M68k* this, u32 megadrive_bug)
     this->megadrive_bug = megadrive_bug;
     //this->regs.D[0] = this->regs.A[0] = 0xFFFFFFFF;
     jsm_string_init(&this->trace.str, 1000);
+    cvec_init(&this->iack_handlers, sizeof(struct M68k_iack_handler), 2);
 }
 
 void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
@@ -41,6 +42,7 @@ void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct, u
 void M68k_delete(struct M68k* this)
 {
     jsm_string_delete(&this->trace.str);
+    cvec_delete(&this->iack_handlers);
 }
 
 static void M68k_decode(struct M68k* this)
@@ -192,6 +194,13 @@ static void M68k_trace_format(struct M68k* this)
     pprint_ea(this, this->ins, 1, NULL);
     dbg_printf(DBGC_RST);
 #endif
+}
+
+void M68k_register_iack_handler(struct M68k *this, void *ptr, void (*handler)(void*))
+{
+    struct M68k_iack_handler *nh = cvec_push_back(&this->iack_handlers);
+    nh->ptr = ptr;
+    nh->handler = handler;
 }
 
 void M68k_set_interrupt_level(struct M68k* this, u32 val)

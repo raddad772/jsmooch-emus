@@ -113,7 +113,7 @@ void genesis_new(JSM)
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock);
     genesis_cart_init(&this->cart);
-    genesis_VDP_init(this);
+    genesis_VDP_init(this); // must be after m68k init
     ym2612_init(&this->ym2612, OPN2V_ym2612, &this->clock.master_cycle_count);
     SN76489_init(&this->psg);
     snprintf(jsm->label, sizeof(jsm->label), "Sega Genesis");

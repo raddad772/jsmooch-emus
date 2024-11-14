@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "helpers/cvec.h"
 #include "m68000.h"
 #include "m68000_instructions.h"
 #include "m68000_internal.h"
@@ -1056,6 +1057,10 @@ void M68k_exc_interrupt(struct M68k* this)
         case 3:
             this->state.internal_interrupt_level = this->state.bus_cycle_iaq.ilevel;
             M68k_start_wait(this, 4, M68kS_exc_interrupt);
+            for (u32 i = 0; i < cvec_len(&this->iack_handlers); i++) {
+                struct M68k_iack_handler *h = (struct M68k_iack_handler *)cvec_get(&this->iack_handlers, i);
+                h->handler(h->ptr);
+            }
             break;
         case 4: // PC HI
             M68k_start_write(this, this->state.exception.interrupt.base_addr + 4, this->state.exception.interrupt.PC & 0xFFFF, 2, MAKE_FC(0), M68K_RW_ORDER_NORMAL, M68kS_exc_interrupt);

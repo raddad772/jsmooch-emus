@@ -292,20 +292,30 @@ void genesis_cycle_m68k(struct genesis* this)
     assert(this->io.m68k.stuck == 0);
 }
 
+void genesis_bus_update_irqs(struct genesis* this)
+{
+    u32 old_IPL = this->m68k.pins.IPL;
+
+    u32 lvl = 0;
+    if (this->vdp.assert_hblank_irq) lvl = 4;
+    if (this->vdp.assert_vblank_irq) lvl = 6;
+    if (lvl != old_IPL) {
+        M68k_set_interrupt_level(&this->m68k, lvl);
+    }
+}
+
 void genesis_m68k_line_count_irq(struct genesis* this, u32 level)
 {
-    // TODO: multiplex/priority encode these
     //if (level) printf("\nM68k line count irq! cycle:%lld line:%d", this->clock.master_cycle_count, this->clock.vdp.vcount);
-    if ((this->m68k.pins.IPL == 4) || (this->m68k.pins.IPL == 0))
-        M68k_set_interrupt_level(&this->m68k, 4 * level);
+    this->vdp.assert_hblank_irq = level;
+    genesis_bus_update_irqs(this);
 }
 
 void genesis_m68k_vblank_irq(struct genesis* this, u32 level)
 {
-    // TODO: multiplex/priority encode these
     //if (level) printf("\nM68K vblank irq! cycle:%lld", this->clock.master_cycle_count);
-    if ((this->m68k.pins.IPL == 6) || (this->m68k.pins.IPL == 0))
-        M68k_set_interrupt_level(&this->m68k, 6 * level);
+    this->vdp.assert_vblank_irq = level;
+    genesis_bus_update_irqs(this);
 }
 
 void genesis_z80_interrupt(struct genesis* this, u32 level)
