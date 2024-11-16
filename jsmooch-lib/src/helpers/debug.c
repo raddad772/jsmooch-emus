@@ -43,22 +43,28 @@ void dbg_clear_msg()
 }
 
 static int did_DFT = 0;
+static int DFT_line = 0;
 static char DFT_buf[4096];
 
-#define DFT_file "/Users/Dave/js_sonic_cpu.log"
+#define DFT_file "/Users/Dave/js_sonic_vdp.log"
 
 void DFT(char *format, ...)
 {
-    if (did_DFT) {
+    FILE *f;
+    if (!did_DFT) {
         did_DFT = 1;
-        unlink(DFT_file);
+        f = fopen(DFT_file, "w");
+
+    }
+    else {
+        f = fopen(DFT_file, "a");
     }
     va_list va;
     va_start(va, format);
     int a = vsnprintf(DFT_buf, 4096, format, va);
     va_end(va);
-    FILE *f = fopen(DFT_file, "a");
     fwrite(DFT_buf, 1, a, f);
+    DFT_line++;
     fclose(f);
 }
 

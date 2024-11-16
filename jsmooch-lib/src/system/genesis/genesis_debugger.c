@@ -490,6 +490,119 @@ static u32 calc_stride(u32 out_width, u32 in_width)
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
+static inline u32 gen_to_rgb(u32 color, int use_palette)
+{
+    u32 o = 0xFF000000;
+    u32 r, g, b;
+    if (use_palette) {
+        b = ((color >> 0) & 7) * 0x24;
+        g = ((color >> 3) & 7) * 0x24;
+        r = ((color >> 6) & 7) * 0x24;
+    }
+    else {
+        b = g = r = (color & 15) * 16;
+    }
+    return o | b | (g << 8) | (r << 16);
+}
+
+
+static void render_image_view_plane(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int plane_num)
+{
+    struct genesis *this = (struct genesis *) ptr;
+
+    // Clear output
+    struct image_view *iv = &dview->image;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 1024);
+
+    // Render tilemap
+    u32 num_tiles_x = this->vdp.io.foreground_width;
+    u32 num_tiles_y = this->vdp.io.foreground_height;
+
+    u32 nametable_addr;
+
+    switch(plane_num) {
+        case 0:
+            nametable_addr = this->vdp.io.plane_a_table_addr;
+            break;
+        case 1:
+            nametable_addr = this->vdp.io.plane_b_table_addr;
+            break;
+        case 2:
+            nametable_addr = this->vdp.io.window_table_addr;
+            if (this->vdp.io.h40)
+                nametable_addr &= (0b1111100 << 9); // Ignore lowest bit in h40
+            num_tiles_x = this->vdp.io.h40 ? 40 : 32;
+            num_tiles_y = 32;
+            break;
+    }
+
+    u32 use_screen_palette = 1;
+    u32 use_bg = 0 && use_screen_palette;
+    u32 bg_color = this->vdp.CRAM[this->vdp.io.bg_color];
+
+    static int fetch_order[4] = { 1, 0, 3, 2 };
+    // Loop through rows of tiles
+    for (u32 screen_ty = 0; screen_ty < num_tiles_y; screen_ty++) {
+        u16 *tile_row_ptr = this->vdp.VRAM + nametable_addr;
+        tile_row_ptr += screen_ty * num_tiles_x;
+
+        u32 *screen_ty_ptr = outbuf + (screen_ty * 8 * out_width); // 8 line sdown
+
+        for (u32 screen_tx = 0; screen_tx < num_tiles_x; screen_tx++) {
+            u32 tile_data = tile_row_ptr[screen_tx];
+            u32 hflip = (tile_data >> 11) & 1;
+            u32 vflip = (tile_data >> 12) & 1;
+            u32 palette = ((tile_data >> 13) & 3) << 4;
+            u8 *pattern_start_ptr = (u8*)this->vdp.VRAM + ((tile_data & 0x3FF) << 5);
+
+            u32 *screen_tx_ptr = screen_ty_ptr + (screen_tx * 8); // however many x in
+
+            // Now draw the tile
+            for (u32 tile_y = 0; tile_y < 8; tile_y++) {
+                u32 in_top_line = 0, in_bottom_line = 0;
+                u32 border_left = 0, border_right = 0;
+
+                // Calculate scroll stuff
+
+                u32 *outptr = screen_tx_ptr + (tile_y * out_width); // more lines down
+                u32 ty = vflip? 7 - tile_y : tile_y;
+                u8 *pattern_ptr = pattern_start_ptr + (ty << 2);
+                for (u32 tile_halfx = 0; tile_halfx < 4; tile_halfx++) {
+                    u32 offset = hflip ? 3 - tile_halfx : tile_halfx;
+                    u8 px2 = pattern_ptr[fetch_order[offset]];
+
+                    u32 v;
+                    v = hflip ? px2 & 15 : px2 >> 4;
+                    if ((v == 0) && use_bg) v = bg_color;
+                    else v = (v == 0) ? 0 : this->vdp.CRAM[palette + v];
+                    *outptr = gen_to_rgb(v, use_screen_palette);
+                    outptr++;
+
+                    v = hflip ? px2 >> 4 : px2 & 15;
+                    if ((v == 0) && use_bg) v = bg_color;
+                    else v = (v == 0) ? 0 : this->vdp.CRAM[palette + v];
+                    *outptr = gen_to_rgb(v, use_screen_palette);
+                    outptr++;
+                }
+            }
+        }
+    }
+}
+
+static void render_image_view_planea(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    render_image_view_plane(dbgr, dview, ptr, out_width, 0);
+}
+
+static void render_image_view_planeb(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    render_image_view_plane(dbgr, dview, ptr, out_width, 1);
+}
+
+static void render_image_view_planew(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    render_image_view_plane(dbgr, dview, ptr, out_width, 2);
+}
+
+
 static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *this = (struct genesis *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -581,6 +694,58 @@ static void render_image_view_tilemap(struct debugger_interface *dbgr, struct de
     }
 }
 
+static void setup_image_view_plane(struct genesis* this, struct debugger_interface *dbgr, int plane_num)
+{
+    // 0 = plane A
+    // 1 = plane B
+    // 2 = window
+    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    struct image_view *iv = &dview->image;
+
+    switch(plane_num) {
+        case 0:
+        case 1:
+            iv->width = 1024;
+            iv->height = 1024;
+            iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+            iv->viewport.p[1] = (struct ivec2){ 1024, 1024 };
+            break;
+        case 2:
+            iv->width = 320;
+            iv->height = 256;
+            iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+            iv->viewport.p[1] = (struct ivec2){ 320, 256 };
+    }
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+
+    // Up to 2048 tiles
+    // 8x8
+    // so, 32x64 tiles.
+    iv->update_func.ptr = this;
+    switch(plane_num) {
+        case 0:
+            iv->update_func.func = &render_image_view_planea;
+            sprintf(iv->label, "BG Plane A");
+            break;
+        case 1:
+            iv->update_func.func = &render_image_view_planeb;
+            sprintf(iv->label, "BG Plane B");
+            break;
+        case 2:
+            iv->update_func.func = &render_image_view_planew;
+            sprintf(iv->label, "BG Window");
+            break;
+
+    }
+
+
+
+
+}
+
+
 static void setup_image_view_tilemap(struct genesis* this, struct debugger_interface *dbgr)
 {
     this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
@@ -641,4 +806,7 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_waveforms_ym2612(this, dbgr);
     setup_image_view_tilemap(this, dbgr);
     setup_image_view_palette(this, dbgr);
+    setup_image_view_plane(this, dbgr, 0);
+    setup_image_view_plane(this, dbgr, 1);
+    setup_image_view_plane(this, dbgr, 2);
 }

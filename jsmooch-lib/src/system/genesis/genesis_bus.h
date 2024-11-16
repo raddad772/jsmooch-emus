@@ -82,8 +82,6 @@ struct genesis {
 
             i32 z80_irq_clocks;
 
-            i32 irq_vcounter;
-
             u32 plane_a_table_addr, plane_b_table_addr, window_table_addr;
             u32 sprite_table_addr;
             u32 sprite_generator_addr;
@@ -91,8 +89,6 @@ struct genesis {
             u32 bg_color;
 
             u32 blank_left_8_pixels;
-            u32 enable_virq;
-            u32 enable_line_irq;
             u32 counter_latch;
             u16 counter_latch_value;
             u32 enable_overlay, enable_display;
@@ -102,7 +98,6 @@ struct genesis {
             enum vertical_scroll_modes vscroll_mode; // 1 = 16-pixel columns, 0 = one word for whole screen
             enum horizontal_scroll_modes hscroll_mode;
             enum interlace_modes interlace_mode;
-            u32 line_irq_counter;
             u32 enable_shadow_highlight;
 
             u32 hscroll_addr;
@@ -118,7 +113,21 @@ struct genesis {
         } io;
 
         struct {
-            u16 address; // in words
+            struct {
+                u8 counter;
+                u32 enable;
+                u32 pending;
+                u8 reload;
+            } hblank;
+
+            struct {
+                u32 enable;
+                u32 pending;
+            } vblank;
+        } irq;
+
+        struct {
+            u32 address; // in words
             u32 latch;
             u32 ready;
             u32 pending;
@@ -173,10 +182,6 @@ struct genesis {
 
         char term_out[16384]; // YES This is memory unsafe.
         char *term_out_ptr;
-
-        u32 assert_hblank_irq;
-        u32 assert_vblank_irq;
-
     } vdp;
 
     u16 RAM[32768]; // RAM is stored little-endian for some reason
@@ -258,8 +263,6 @@ void genesis_cycle_z80(struct genesis*);
 void gen_test_dbg_break(struct genesis*, const char *where);
 u16 genesis_mainbus_read(struct genesis*, u32 addr, u32 UDS, u32 LDS, u16 old, u32 has_effect);
 void genesis_z80_interrupt(struct genesis*, u32 level);
-void genesis_m68k_vblank_irq(struct genesis*, u32 level);
-void genesis_m68k_line_count_irq(struct genesis*, u32 level);
 u8 genesis_z80_bus_read(struct genesis*, u16 addr, u8 old, u32 has_effect);
 void genesis_bus_update_irqs(struct genesis* this);
 

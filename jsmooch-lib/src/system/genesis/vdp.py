@@ -13,7 +13,7 @@ class file_lines:
         ln = ''
         while len(ln) < 1:
             if self.index >= len(self.lines):
-                raise Exception('END!')
+                raise Exception('END at line ' + str(self.index) + '!')
             ln = self.lines[self.index].strip()
             self.index += 1
             if self.is_ares:
@@ -80,13 +80,29 @@ def CPU_RD_chkswitch(ares_lines, my_lines, ares_line, my_line) -> bool:
     next_my_line = my_lines.get_line()
     if (next_my_line == ares_line) and (next_ares_line == my_line):
         return True
+    ares_lines.deadvance_line()
+    my_lines.deadvance_line()
     return False
+
+def CPU_WR_chkUDS(ares_lines, my_lines, ares_line, my_line) -> bool:
+    if comp_UDS(ares_line, my_line):
+        return True
+
+    next_ares_line = ares_lines.get_line()
+    next_my_line = my_lines.get_line()
+    if (next_my_line == ares_line) and (next_ares_line == my_line):
+        return True
+    ares_lines.deadvance_line()
+    my_lines.deadvance_line()
+    return False
+
 
 def main():
     bpath = os.path.expanduser('~')
-    #bfile = '_sonic_vdp.log'
-    bfile = '_sonic_cpu.log'
+    bfile = '_sonic_vdp.log'
+    #bfile = '_sonic_cpu.log'
 
+    IS_CPU = 'cpu' in bfile
     ares_lines = file_lines(os.path.join(bpath, 'ares' + bfile), True)
     my_lines = file_lines(os.path.join(bpath, 'js' + bfile), False)
 
@@ -99,22 +115,59 @@ def main():
     ares_line = ''
     my_line = ''
 
+    ares_last_pc_line = ('', 0)
+    my_last_pc_line = ('', 0)
+
     while True:
         last_ares_line = ares_line
         last_my_line = my_line
         ares_line = ares_lines.get_line()
         my_line = my_lines.get_line()
+
+        if 'PC ' in ares_line:
+            ares_last_pc_line = (ares_line, ares_lines.index-1)
+
+        if 'PC ' in my_line:
+            my_last_pc_line = (my_line, my_lines.index-1)
+
         if ares_line != my_line:
             if 'RD VDP CP DATA:' in ares_line and 'RD VDP CP DATA:' in my_line:
                 if VDP_CP_ok(ares_line, my_line, ares_lines.index - 1, my_lines.index - 1):
                     continue
-            if 'RD ' in ares_line and 'RD ' in my_line:
-                if CPU_RD_chkswitch(ares_lines, my_lines, ares_line, my_line):
+            if IS_CPU:
+                if 'RD ' in ares_line and 'RD ' in my_line:
+                    if CPU_RD_chkswitch(ares_lines, my_lines, ares_line, my_line):
+                        continue
+                if 'WR ' in ares_line and 'WR ' in my_line:
+                    if CPU_WR_chkUDS(ares_lines, my_lines, ares_line, my_line):
+                        continue
+
+                # Skip a minor difference in how processor cores do reads
+                if 'RD 000294' in ares_line and 'RD 000292' in my_line:
+                    my_lines.get_line()
                     continue
-            print(
-                'ARES(' + str(ares_lines.index) + '): ' + ares_line + '\nMINE(' + str(my_lines.index) + '): ' + my_line)
-            print('LINE-1:ARES: ' + last_ares_line)
+                # Skip a dumb thing
+                if 'PC 000300' in ares_last_pc_line[0]:
+                    continue
+
+                #if 'RD ' in ares_line and 'RD ' in my_line:
+                #    continue
+            else:
+                #if 'RD VDP CP DATA' in ares_line:
+                #    continue
+                SKIPEMS = {65680,131310,131312,133023}
+                if ares_lines.index in SKIPEMS:
+                    continue
+                pass
+            print('\nLINE-1:ARES: ' + last_ares_line)
             print('LINE-1:MINE: ' + last_my_line)
+            print('ARES(' + str(ares_lines.index) + '): ' + ares_line)
+            print('MINE(' + str(my_lines.index) + '): ' + my_line)
+            print('LINE+1:ARES: ' + ares_lines.get_line())
+            print('LINE+1:MINE: ' + my_lines.get_line())
+            if IS_CPU:
+                print('\nLAST PC:ARES(' + str(ares_last_pc_line[1]) + '): ' + ares_last_pc_line[0])
+                print('LAST PC:MINE(' + str(my_last_pc_line[1]) + '): ' + my_last_pc_line[0])
             break
 
 

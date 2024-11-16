@@ -300,12 +300,12 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
 
             u32 color = geno[di];
             u32 r, g, b;
-            b = (color & 15) * 16;
+            /*b = (color & 15) * 16;
             g = (color & 15) * 16;
-            r = (color & 15) * 16;
-            /*b = ((color >> 6) & 7) * 0x24;
+            r = (color & 15) * 16;*/
+            b = ((color >> 0) & 7) * 0x24;
             g = ((color >> 3) & 7) * 0x24;
-            r = ((color >> 0) & 7) * 0x24;*/
+            r = ((color >> 6) & 7) * 0x24;
             // 0x24 * b, g, r
             img8[b_out] = b;
             img8[b_out+1] = g;

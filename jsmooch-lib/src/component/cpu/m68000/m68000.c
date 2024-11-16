@@ -357,7 +357,6 @@ void M68k_reset(struct M68k* this)
     this->state.instruction.done = 0;
     this->state.e_clock_count = 0;
     M68k_set_SR(this, (M68k_get_SR(this) & 0x1F) | 0x2700, 1);
-    printf("\nSUPERVISOR? %d", this->regs.SR.S);
     this->ins = &this->SPEC_RESET;
     this->state.instruction.TCU = 0;
     this->state.instruction.prefetch = 0;
