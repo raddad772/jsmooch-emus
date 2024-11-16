@@ -440,13 +440,14 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 3: // Window nametable location
             // window.io.nametableAddress.bit(10,15) = data.bit(1,6);
-            vdp->io.window_table_addr = (val & 0b1111110) << 9; // lowest bit ignored in H40
+            vdp->io.window_table_addr = (val & 0b1111111) << 9; // lowest bit ignored in H40
             return;
         case 4: // Plane B location
             vdp->io.plane_b_table_addr = (val & 15) << 12;
             return;
         case 5: // Sprite table location
-            vdp->io.sprite_table_addr = (val & 0xFF) << 8; // lowest bit ignored in H40
+            vdp->io.sprite_table_addr = (val & 0xFF) << 7;
+            printf("\nSP TABLE val:%d  so addr: %04x", val & 0xFF, vdp->io.sprite_table_addr);
             return;
         case 6: // um
             vdp->io.sprite_generator_addr = (vdp->io.sprite_generator_addr & 0x7FFF) | (((val >> 5) & 1) << 15);
@@ -1006,6 +1007,7 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
     slice->attr[1] = tile_data;
 
     tile_addr = (tile_data & 0x3FF) << 5;
+    vflip = (tile_data >> 12) & 1;
     tile_addr += (vflip ? (7 - fine_row) : fine_row) << 2;
 
     ptr = ((u8 *)this->vdp.VRAM) + tile_addr;
@@ -1034,8 +1036,9 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
     u32 next_sprite_num = 0;
     struct spr_out *nxt;
     u32 sprite_limit = this->vdp.io.h40 ? 20 : 16;
+    u32 total_max_sprites = this->vdp.io.h40 ? 80 : 64;
 
-    for (u32 i = 0; i < 80; i++) {
+    for (u32 i = 0; i < total_max_sprites; i++) {
         assert(num<20);
         nxt = &sprites[num];
         u16 sprite_addr = (4 * next_sprite_num) + this->vdp.io.sprite_table_addr;
@@ -1051,6 +1054,7 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
 
         if ((this->clock.vdp.vcount >= sprite_y_min) && (this->clock.vdp.vcount < sprite_y_max)) {
             // Fill in rest of
+            printf("\nFIND n:%d HSIZE:%d VSIZE:%d", num, (sprite_ptr[0] >> 10) & 3, (sprite_ptr[0] >> 8) & 3);
             nxt->hsize = ((sprite_ptr[0] >> 10) & 3) + 1;
             nxt->vpos -= 128;
             nxt->gfx = sprite_ptr[2] & 0x7FF;
@@ -1092,12 +1096,13 @@ static void render_sprites(struct genesis *this)
         u32 sp_ytile = sp_line >> 3;
         u32 tile_y_addr_offset = (sp->vflip ? (7 - fine_row) : fine_row) << 2;
 
+        printf("\nSPRITE NUM:%d HSIZE: %d VSIZE:%d", spr, sp->hsize, sp->vsize);
         for (i32 tx = 0; tx < sp->hsize; tx++) { // Render across tiles...
             u32 tile_num = sp->gfx + (tx * tile_stride) + sp_ytile;
             u32 tile_addr = this->vdp.io.sprite_generator_addr + (tile_num * 20) + tile_y_addr_offset;
             i32 x = x_start;
             u8 *ptr = ((u8 *)this->vdp.VRAM) + tile_addr;
-            for (u32 byte = 0; byte < 4; byte++) { // 4 bytes per 8 pixels
+            /*for (u32 byte = 0; byte < 4; byte++) { // 4 bytes per 8 pixels
                 u32 offset = sp->hflip ? 3 - byte : byte;
                 u8 px2 = ptr[fetch_order[offset]];
                 u32 px[2];
@@ -1115,7 +1120,16 @@ static void render_sprites(struct genesis *this)
                     }
                     x++;
                 }
+            }*/
+
+            for (u32 i = 0; i < 8; i++) {
+                struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x];
+                p->has_px = 1;
+                p->color = 63;
+                p->priority = sp->priority;
+                x++;
             }
+
             x_start += 8;
         }
     }
