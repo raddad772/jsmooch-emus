@@ -68,7 +68,12 @@ struct genesis {
     struct SN76489 psg;
 
     struct genesis_vdp {
+        struct genesis_vdp_sprite_pixel {
+            u32 has_px, color, palette, priority;
+        } sprite_line_buf[320];
+
         u16 *cur_output;
+        u16 *cur_pixel;
         struct cvec_ptr display_ptr;
         struct JSM_DISPLAY *display;
 
@@ -103,6 +108,7 @@ struct genesis {
             u32 hscroll_addr;
 
             u32 foreground_width, foreground_height;
+            u32 foreground_width_mask, foreground_height_mask;
 
             u32 enable_th_interrupts;
 
@@ -182,6 +188,29 @@ struct genesis {
 
         char term_out[16384]; // YES This is memory unsafe.
         char *term_out_ptr;
+
+        struct {
+            u32 hscroll[2]; // HSCROLL for planes A and B, de-negativized
+            int column;
+        } fetcher;
+
+        struct {
+            struct genesis_vdp_pixel_buf {
+                u32 has[3];
+                u32 palette[3];
+                u32 color[3];
+                u32 priority[3];
+            } buf[32];
+            u32 head;
+            u32 tail[3];
+        } ringbuf;
+
+
+        struct {
+            u32 h40;
+            u32 hscroll[2];
+            u32 vscroll[2][20];
+        } debug_info[240];
     } vdp;
 
     u16 RAM[32768]; // RAM is stored little-endian for some reason
