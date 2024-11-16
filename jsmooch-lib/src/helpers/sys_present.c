@@ -286,8 +286,8 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
 
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
-    //u16 *smso = (u16 *)device->display.output[device->display.last_written];
-    u16 *geno = (u16 *)device->display.output[0];
+    u16 *geno = (u16 *)device->display.output[device->display.last_written];
+    //u16 *geno = (u16 *)device->display.output[0];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u8 *img8 = (u8 *) out_buf;
     for (u32 ry = 0; ry < 224; /*data.bottom_rendered_line; */ ry++) {
@@ -306,6 +306,11 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
             b = ((color >> 0) & 7) * 0x24;
             g = ((color >> 3) & 7) * 0x24;
             r = ((color >> 6) & 7) * 0x24;
+            /*if (y == 105) {
+                g = 0xFF;
+                b = 0xFF;
+                r = 0;
+            }*/
             // 0x24 * b, g, r
             img8[b_out] = b;
             img8[b_out+1] = g;

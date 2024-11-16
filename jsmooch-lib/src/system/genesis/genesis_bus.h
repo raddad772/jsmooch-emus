@@ -69,7 +69,7 @@ struct genesis {
 
     struct genesis_vdp {
         struct genesis_vdp_sprite_pixel {
-            u32 has_px, color, palette, priority;
+            u32 has_px, color, priority;
         } sprite_line_buf[320];
 
         u16 *cur_output;
@@ -197,12 +197,12 @@ struct genesis {
         struct {
             struct genesis_vdp_pixel_buf {
                 u32 has[3];
-                u32 palette[3];
                 u32 color[3];
                 u32 priority[3];
             } buf[32];
             u32 head;
             u32 tail[3];
+            i32 num[3];
         } ringbuf;
 
 
@@ -211,6 +211,7 @@ struct genesis {
             u32 hscroll[2];
             u32 vscroll[2][20];
         } debug_info[240];
+        i32 last_r;
     } vdp;
 
     u16 RAM[32768]; // RAM is stored little-endian for some reason
