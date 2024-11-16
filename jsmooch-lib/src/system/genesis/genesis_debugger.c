@@ -560,9 +560,6 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
 
             // Now draw the tile
             for (u32 tile_y = 0; tile_y < 8; tile_y++) {
-                u32 in_top_line = 0, in_bottom_line = 0;
-                u32 border_left = 0, border_right = 0;
-
                 // Calculate scroll stuff
 
                 u32 *outptr = screen_tx_ptr + (tile_y * out_width); // more lines down
@@ -586,6 +583,51 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
                     outptr++;
                 }
             }
+        }
+    }
+
+    if (plane_num < 2) {
+        // Now, we must draw the scroll frames.
+        u32 col_left = 0xFF00FF00;
+        u32 col_right = 0xFFFF0000;
+        u32 col_top = 0xFF00FF00;
+        u32 col_bottom = 0xFFFF0000;
+
+        // To do top-line, we have a bit to do.
+        // First, we use row #0. We use its hscroll, and then use the individual column v-scrolls to settle stuff
+        // But remember, the scrolls may have 0-15 pixels off the left.
+
+        struct genesis_vdp_debug_row *top = &this->vdp.debug_info[0];
+        struct genesis_vdp_debug_row *bottom = &this->vdp.debug_info[0];
+
+        u32 h_mask = (this->vdp.io.foreground_width * 8) - 1;
+        u32 v_mask = (this->vdp.io.foreground_height * 8) - 1;
+        u32 top_left = top->hscroll[plane_num] & h_mask;
+        u32 mx = top_left;
+
+        for (u32 sec = 1; sec < 21; sec++) {
+            u32 my = (top->vscroll[plane_num][sec]) & v_mask;
+            u32 bottom_my = (my + 224) & v_mask;
+            u32 *top_y_pointer = outbuf + (my * out_width);
+            u32 *bottom_y_pointer = outbuf + (bottom_my * out_width);
+            for (u32 i = 0; i < 16; i++) {
+                top_y_pointer[mx] = col_top;
+                bottom_y_pointer[mx] = col_bottom;
+                mx = (mx + 1) & h_mask;
+            }
+        }
+
+        u32 vscroll = top->vscroll[plane_num][1];
+
+        // Now we do left and right lines!
+        for (u32 mline = 1; mline < 223; mline++) {
+            u32 y = (mline + vscroll) & v_mask;
+            u32 *line_ptr = outbuf + (y * out_width);
+            struct genesis_vdp_debug_row *row = &this->vdp.debug_info[mline];
+            u32 left_x = row->hscroll[plane_num] & h_mask;
+            u32 right_x = (left_x + (row->h40 ? 320 : 256)) & h_mask;
+            line_ptr[left_x] = col_left;
+            line_ptr[right_x] = col_right;
         }
     }
 }

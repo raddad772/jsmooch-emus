@@ -191,6 +191,7 @@ struct genesis {
 
         struct {
             u32 hscroll[2]; // HSCROLL for planes A and B, de-negativized
+            u32 fine_x[2];
             int column;
         } fetcher;
 
@@ -206,12 +207,16 @@ struct genesis {
         } ringbuf;
 
 
-        struct {
+        struct genesis_vdp_debug_row {
             u32 h40;
             u32 hscroll[2];
-            u32 vscroll[2][20];
+            u32 vscroll[2][21];
+            u32 hscroll_mode, vscroll_mode;
+            u32 video_mode;
         } debug_info[240];
         i32 last_r;
+
+        u32 hscroll_debug;
     } vdp;
 
     u16 RAM[32768]; // RAM is stored little-endian for some reason

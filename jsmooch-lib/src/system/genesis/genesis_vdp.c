@@ -45,6 +45,7 @@ static void dma_run_if_ready(struct genesis* this);
 static void write_data_port(struct genesis* this, u16 val, u32 is_cpu);
 static void render_sprites(struct genesis *this);
 static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes);
+static void get_vscrolls(struct genesis* this, int column, u32 *planes);
 
 static void set_m68k_dtack(struct genesis* this)
 {
@@ -269,11 +270,11 @@ static void vblank(struct genesis* this, u32 new_value)
 static void new_frame(struct genesis* this)
 {
     this->vdp.cur_output = ((u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1]);
-    this->vdp.display->scan_x = this->vdp.display->scan_y = 0;
     this->clock.master_frame++;
+    this->vdp.hscroll_debug = (this->vdp.hscroll_debug + 1) & 511;
     //printf("\nNEW GENESIS FRAME! %lld", this->clock.master_frame);
     this->clock.vdp.field ^= 1;
-    this->clock.vdp.vcount = 0;
+    this->clock.vdp.vcount = -1;
     this->clock.vdp.vblank = 0;
     this->vdp.cur_output = this->vdp.display->output[this->vdp.display->last_written];
     this->vdp.display->last_written ^= 1;
@@ -296,9 +297,9 @@ static void set_sc_array(struct genesis* this)
 
 static void new_scanline(struct genesis* this)
 {
-
-    this->vdp.display->scan_x = 0;
-    this->vdp.display->scan_y++;
+    if (this->clock.vdp.vcount == 261) {
+        new_frame(this);
+    }
     this->clock.vdp.hcount = 0;
     this->vdp.cur_pixel = this->vdp.cur_output + (this->clock.vdp.vcount * 1280);
     this->clock.vdp.vcount++;
@@ -309,17 +310,46 @@ static void new_scanline(struct genesis* this)
         this->vdp.fetcher.column = 0;
         memset(&this->vdp.ringbuf, 0, sizeof(this->vdp.ringbuf));
 
+        u32 planes[2];
+        get_line_hscroll(this, this->clock.vdp.vcount, planes);
+
         u32 plane_wrap = (8 * this->vdp.io.foreground_width) - 1;
-        this->vdp.fetcher.hscroll[0] = (((this->vdp.fetcher.hscroll[0] - 1) & plane_wrap) ^ (~plane_wrap));
-        this->vdp.fetcher.hscroll[1] = (((this->vdp.fetcher.hscroll[1] - 1) & plane_wrap) ^ (~plane_wrap));
+
+        for (u32 p = 0; p < 2; p++) {
+            // Calculate fine X...
+            this->vdp.fetcher.fine_x[p] = planes[p] & 15;
+
+            // Unflip the hscroll value...
+            this->vdp.fetcher.hscroll[p] = (0 - ((i32)planes[p])) & plane_wrap;
+        }
+
+        // DEBUG STUFF NOW
+        struct genesis_vdp_debug_row *r = &this->vdp.debug_info[this->clock.vdp.vcount];
+        r->h40 = this->vdp.io.h40;
+        r->hscroll_mode = this->vdp.io.hscroll_mode;
+        r->vscroll_mode = this->vdp.io.vscroll_mode;
+        r->video_mode = this->vdp.io.mode5 ? 5 : 4;
+        r->hscroll[0] = this->vdp.fetcher.hscroll[0];
+        r->hscroll[1] = this->vdp.fetcher.hscroll[1];
+
+        if (this->clock.vdp.vcount == 0) {
+            struct genesis_vdp_debug_row *b = &this->vdp.debug_info[223];
+            i32 col = -1;
+            for (u32 i = 0; i < 21; i++) {
+                u32 vscrolls[2];
+                get_vscrolls(this, col++, vscrolls);
+                r->vscroll[0][i] = vscrolls[0];
+                r->vscroll[1][i] = vscrolls[1];
+            }
+        }
+
+
 
         // Render out sprites...
         render_sprites(this);
 
         // So, fetches happen in 16-pixel (2-word) groups.
         // There's an extra 16-pixel fetch off the left side of the screen, for fine hscroll &15
-
-        get_line_hscroll(this, this->clock.vdp.vcount, this->vdp.fetcher.hscroll);
     }
 
     this->vdp.line.hscroll = 0;
@@ -338,9 +368,6 @@ static void new_scanline(struct genesis* this)
             vblank(this, 1);
             this->vdp.io.z80_irq_clocks = 2573; // Thanks @MaskOfDestiny
             genesis_z80_interrupt(this, 1); // Z80 asserts vblank interrupt for 2573 mclocks
-            break;
-        case 262: // frame end
-            new_frame(this);
             break;
     }
     if (this->clock.vdp.vcount == 0) latch_hcounter(this);
@@ -492,7 +519,12 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             }
             vdp->io.foreground_width_mask = vdp->io.foreground_width - 1;
             vdp->io.foreground_height_mask = vdp->io.foreground_height - 1;
-            // 64x128, 128x64, and 128x128 are invalid TODO: complain about it
+
+            // 64x128, 128x64, and 128x128 are invalid
+            u32 total = vdp->io.foreground_width * vdp->io.foreground_height;
+            if (total > 4096) {
+                printf("\nWARNING INVALID FOREGROUND HEIGHT AND WIDTH COMBO");
+            }
             return;
         case 17: // window plane horizontal position
             vdp->io.window_h_pos = (val & 0x1F) << 14;
@@ -918,8 +950,8 @@ static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes)
             break;
     }
     // - 1 & 1023 ^ 1023 should convert from negative to positive here. 0 = FFFF = 0 for instance. 1 = 0 = FFFF.
-    planes[PLANE_A] = read_VRAM(this, addr);
-    planes[PLANE_B] = read_VRAM(this, addr+1);
+    planes[PLANE_A] = read_VRAM(this, addr) & 1023;
+    planes[PLANE_B] = read_VRAM(this, addr+1) & 1023;
 }
 
 static void get_vscrolls(struct genesis* this, int column, u32 *planes)
@@ -1196,12 +1228,14 @@ static void render_16_more(struct genesis* this)
     // Fetch a slice
     u32 vscrolls[2];
     get_vscrolls(this, this->vdp.fetcher.column, vscrolls);
+    u32 plane_wrap = (this->vdp.io.foreground_width * 8) - 1;
     //printf("\nRENDER 16 line:%d col:%d screen_x:%d sc_slot:%d", this->clock.vdp.vcount, this->vdp.fetcher.column, this->vdp.line.screen_x, this->vdp.sc_slot);
 
     // Dump to ringbuffer
     struct slice slice;
     for (u32 plane = 0; plane < 2; plane++) {
-        fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, (16 * this->vdp.fetcher.column) + this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, &slice);
+        fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, &slice);
+        this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + 16) & plane_wrap;
         u32 *tail = &this->vdp.ringbuf.tail[plane];
         i32 *num = &this->vdp.ringbuf.num[plane];
         for (u32 half = 0; half < 2; half++) {
@@ -1237,33 +1271,30 @@ static void render_left_column(struct genesis* this)
     //printf("\nRENDER LEFT COLUMN line:%d", this->clock.vdp.vcount);
     u32 plane_wrap = (8 * this->vdp.io.foreground_width) - 1;
 
-    u32 fine_x[2];
-    fine_x[0] = ((this->vdp.fetcher.hscroll[0] ^ plane_wrap) + 1) & 15;
-    fine_x[1] = ((this->vdp.fetcher.hscroll[1] ^ plane_wrap) + 1) & 15;
-
     u32 vscrolls[2];
     get_vscrolls(this, -1, vscrolls);
 
     // Fill pixel buffers
-    struct slice slices[2];
-    fetch_slice(this, this->vdp.io.plane_a_table_addr, this->vdp.fetcher.hscroll[0], vscrolls[0]+this->clock.vdp.vcount, slices);
-    fetch_slice(this, this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[1], vscrolls[1]+this->clock.vdp.vcount, slices+1);
-
+    struct slice slice;
     // Now draw 0-15 pixels of each one out to the ringbuffer...
     for (u32 plane = 0; plane < 2; plane++) {
+        fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, &slice);
+
         // hscroll was 0. we want 0 pixels of it
         // hscroll was 2. we want 2 pixels of it
         u32 tail = 0; // We know this because we're only here at start of a row
         i32 num = 0;
-        if (fine_x[plane] > 0) {
-            u32 pattern_pos = 15 - fine_x[plane];
+        u32 fine_x = this->vdp.fetcher.fine_x[plane];
+        if (fine_x > 0) {
+            u32 pattern_pos = 15 - fine_x;
+            this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + fine_x) & plane_wrap;
             while(pattern_pos < 16) {
                 u32 pbuf = pattern_pos > 8 ? 1 : 0;
                 u32 ppos = pattern_pos > 8 ? pattern_pos - 8: pattern_pos;
                 struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[tail];
                 b->has[plane] = 1;
-                b->color[plane] = slices[plane].pattern[pbuf][ppos] + (((slices[plane].attr[pbuf] >> 13) & 3) << 4);
-                b->priority[plane] = (slices[plane].attr[pbuf] >> 15) & 1;
+                b->color[plane] = slice.pattern[pbuf][ppos] + (((slice.attr[pbuf] >> 13) & 3) << 4);
+                b->priority[plane] = (slice.attr[pbuf] >> 15) & 1;
 
                 pattern_pos++;
                 tail++;
