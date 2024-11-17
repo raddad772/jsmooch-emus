@@ -573,6 +573,7 @@ void full_system::load_default_ROM()
             dbg.traces.vdp = 0;
             dbg.traces.vdp2 = 0;
             dbg.traces.vdp3 = 0;
+            dbg.traces.vdp4 = 1;
             dbg.traces.cpu2 = 0;
             dbg.traces.cpu3 = 0;
             break;

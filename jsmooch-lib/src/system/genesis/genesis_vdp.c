@@ -64,6 +64,7 @@ static void VRAM_write(struct genesis* this, u16 addr, u16 val)
 {
     assert(this->vdp.io.vram_mode == 0);
     if (dbg.traces.vdp) printf("\nVRAM write %04x: %04x, cyc:%lld", addr & 0x7FFF, val, this->clock.master_cycle_count);
+    if (dbg.traces.vdp4) DFT("\nVRAM write %04x: %04x", addr & 0x7FFF, val);
     this->vdp.VRAM[addr & 0x7FFF] = val;
 }
 
@@ -437,17 +438,25 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             dma_run_if_ready(this);
             return;
         case 2: // Plane A table location
-             vdp->io.plane_a_table_addr = (val & 0b01111000) << 9;
+            vdp->io.plane_a_table_addr = (val & 0b01111000) << 9;
+            printf("\nPLANE A ADDR %04x", vdp->io.plane_a_table_addr);
             return;
         case 3: // Window nametable location
             // window.io.nametableAddress.bit(10,15) = data.bit(1,6);
-            vdp->io.window_table_addr = (val & 0b1111111) << 9; // lowest bit ignored in H40
+            /*
+ Bits 5-1 of this register correspond to bits A15-A11 of the name table
+ address for the window.
+
+ In 40-cell mode, A11 is always forced to zero.*/
+            vdp->io.window_table_addr = (val & 0b111110) >> 1; // lowest bit ignored in H40 << 9
             return;
         case 4: // Plane B location
             vdp->io.plane_b_table_addr = (val & 15) << 12;
+            printf("\nPLANE B ADDR %04x", vdp->io.plane_b_table_addr);
             return;
         case 5: // Sprite table location
             vdp->io.sprite_table_addr = (val & 0xFF) << 8;
+            printf("\nSPRITE TABLE ADDR %04x", vdp->io.sprite_table_addr);
             return;
         case 6: // um
             //vdp->io.sprite_generator_addr = (vdp->io.sprite_generator_addr & 0x7FFF) | (((val >> 5) & 1) << 15);
@@ -821,7 +830,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
         return;
     }
-    if (dbg.traces.vdp) printf("\nUnknown data port write! Target:%d is_cpu:%d", this->vdp.command.target, is_cpu);
+    printf("\nUnknown data port write! Target:%d is_cpu:%d", this->vdp.command.target, is_cpu);
 }
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
@@ -1056,7 +1065,6 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
 
         if ((this->clock.vdp.vcount >= sprite_y_min) && (this->clock.vdp.vcount < sprite_y_max)) {
             // Fill in rest of
-            //printf("\nFIND n:%d HSIZE:%d VSIZE:%d", num, (sprite_ptr[0] >> 10) & 3, (sprite_ptr[0] >> 8) & 3);
             nxt->hsize = ((sprite_ptr[0] >> 10) & 3) + 1;
             nxt->vpos -= 128;
             nxt->gfx = sprite_ptr[2] & 0x7FF;
@@ -1065,6 +1073,13 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
             nxt->palette = ((sprite_ptr[2] >> 13) & 3) << 4;
             nxt->priority = (sprite_ptr[2] >> 15) & 1;
             nxt->hpos = (sprite_ptr[3] & 0x3FF) - 128;
+            /*if (this->clock.vdp.vcount == 70) printf("\nSprite %d: X=%d(%d), Y=%d(%d), Width=%d, Height=%d, Link=%d, Pal=%d, Pri=%d, Pat=%04X",
+                   num, nxt->hpos+128, nxt->hpos, nxt->vpos+128, nxt->vpos,
+                   nxt->hsize * 8, nxt->vsize * 8,
+                   next_sprite_num, nxt->palette >> 4, nxt->priority,
+                   nxt->gfx * 0x200);*/
+/*
+Sprite 31: X=296(168), Y=174(46), Width=16, Height=8, Link=32, Pal=1, Pri=0, Pat=9F20 */
             num++;
             if (num >= sprite_limit) {
                 this->vdp.sprite_overflow = 1;
@@ -1172,63 +1187,58 @@ static void render_16(struct genesis* this)
 #define COLORBG 0x1FF
 //#define SHOW_COLOR_BLEND
 
-        if (ring->has[PLANE_WINDOW] && ring->priority[PLANE_WINDOW]) { // 1. window with priority set
-            color = ring->color[PLANE_WINDOW];
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORWINDOW;
-#endif
-        }
-        else if (sprite->has_px && sprite->priority) { // 2. sprite with prioty set
+/*
+ A = Backdrop color
+ B = Low priority plane B
+ C = Low priority plane A
+ D = Low priority sprites
+ E = High priority plane B
+ F = High priority plane A
+ G = High priority sprites
+ */
+        if (sprite->has_px && sprite->priority) { // G - sprite with prioty set
             color = sprite->color;
             assert(color<64);
 #ifdef SHOW_COLOR_BLEND
             color = COLORSPRITE;
 #endif
         }
-        else if (ring->has[PLANE_A] && ring->priority[PLANE_A]) { // 3. plane A with priority set
+        else if (ring->has[PLANE_A] && ring->priority[PLANE_A]) { // F. plane A with priority set
             color = ring->color[PLANE_A];
             assert(color<64);
 #ifdef SHOW_COLOR_BLEND
             color = COLORA;
 #endif
         }
-        else if (ring->has[PLANE_B] && ring->priority[PLANE_B]) { // 4. plane B with priority set
+        else if (ring->has[PLANE_B] && ring->priority[PLANE_B]) { // E. plane B with priority set
             color = ring->color[PLANE_B];
             assert(color<64);
 #ifdef SHOW_COLOR_BLEND
             color = COLORB;
 #endif
         }
-        else if (ring->has[PLANE_WINDOW]) { // 5. window with priority clear
-            color = ring->color[PLANE_WINDOW];
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORWINDOW;
-#endif
-        }
-        else if (sprite->has_px) { // 6. sprite with priority clear
+        else if (sprite->has_px) { // D. sprite with priority clear
             color = sprite->color;
             assert(color<64);
 #ifdef SHOW_COLOR_BLEND
             color = COLORSPRITE;
 #endif
         }
-        else if (ring->has[PLANE_A]) { // 7. plane A with priority clear
+        else if (ring->has[PLANE_A]) { // C. plane A with priority clear
             color = ring->color[PLANE_A];
             assert(color<64);
 #ifdef SHOW_COLOR_BLEND
             color = COLORA;
 #endif
         }
-        else if (ring->has[PLANE_B]) { // 8. background with priority clear
+        else if (ring->has[PLANE_B]) { // B. background with priority clear
             color = ring->color[PLANE_B];
             assert(color<64);
 #ifdef SHOW_COLOR_BLEND
             color = COLORB;
 #endif
         }
-        else { // 9. background color
+        else { // A. background color
             color = this->vdp.io.bg_color;
             assert(color<64);
 #ifdef SHOW_COLOR_BLEND

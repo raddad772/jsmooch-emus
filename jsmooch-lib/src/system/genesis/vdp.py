@@ -117,12 +117,16 @@ def main():
 
     ares_last_pc_line = ('', 0)
     my_last_pc_line = ('', 0)
+    diffs = []
 
     while True:
         last_ares_line = ares_line
         last_my_line = my_line
-        ares_line = ares_lines.get_line()
-        my_line = my_lines.get_line()
+        try:
+            ares_line = ares_lines.get_line()
+            my_line = my_lines.get_line()
+        except:
+            break
 
         if 'PC ' in ares_line:
             ares_last_pc_line = (ares_line, ares_lines.index-1)
@@ -155,21 +159,26 @@ def main():
             else:
                 #if 'RD VDP CP DATA' in ares_line:
                 #    continue
-                SKIPEMS = {65680,131310,131312,133023}
+                SKIPEMS = {}
                 if ares_lines.index in SKIPEMS:
                     continue
                 pass
+
+            diffs.append([ares_line, my_line])
             print('\nLINE-1:ARES: ' + last_ares_line)
             print('LINE-1:MINE: ' + last_my_line)
             print('ARES(' + str(ares_lines.index) + '): ' + ares_line)
             print('MINE(' + str(my_lines.index) + '): ' + my_line)
-            print('LINE+1:ARES: ' + ares_lines.get_line())
-            print('LINE+1:MINE: ' + my_lines.get_line())
+            try:
+                print('LINE+1:ARES: ' + ares_lines.get_line())
+                print('LINE+1:MINE: ' + my_lines.get_line())
+            except:
+                pass
             if IS_CPU:
                 print('\nLAST PC:ARES(' + str(ares_last_pc_line[1]) + '): ' + ares_last_pc_line[0])
                 print('LAST PC:MINE(' + str(my_last_pc_line[1]) + '): ' + my_last_pc_line[0])
-            break
-
+            continue
+    print('# diffs ' + str(len(diffs)))
 
 if __name__ == '__main__':
     main()

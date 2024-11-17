@@ -101,6 +101,7 @@ struct jsm_debug_struct {
         u32 vdp;
         u32 vdp3; // DFT(stuff)
         u32 vdp2; // printf(stuff)
+        u32 vdp4; // just VRAM writes
         u32 cpu2; // DFT(PC-4)
         u32 cpu3; // RD/WR spam
     } traces;

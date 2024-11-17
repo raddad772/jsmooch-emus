@@ -529,10 +529,12 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
             nametable_addr = this->vdp.io.plane_b_table_addr;
             break;
         case 2:
+
             nametable_addr = this->vdp.io.window_table_addr;
             if (this->vdp.io.h40)
-                nametable_addr &= (0b1111100 << 9); // Ignore lowest bit in h40
-            num_tiles_x = this->vdp.io.h40 ? 40 : 32;
+                nametable_addr &= 0b111110; // Ignore lowest bit in h40
+            nametable_addr <<= 10;
+            num_tiles_x = this->vdp.io.h40 ? 64 : 32;
             num_tiles_y = 32;
             break;
     }
