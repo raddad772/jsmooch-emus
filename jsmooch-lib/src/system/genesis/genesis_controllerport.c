@@ -67,8 +67,8 @@ u16 genesis_controllerport_read_data(struct genesis_controller_port* this)
     }
     refresh(this);
 
-    //return this->data_lines;
-    return 0;
+    return this->data_lines;
+    //return 0;
 }
 
 void genesis_controllerport_write_data(struct genesis_controller_port* this, u16 val)

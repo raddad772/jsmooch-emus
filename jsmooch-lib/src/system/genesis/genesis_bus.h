@@ -149,6 +149,7 @@ struct genesis {
             u32 mode;
         } dma;
 
+        u32 sprite_collision, sprite_overflow;
         u32 cycle;
 
         // there's...h32, h40, vblank/off

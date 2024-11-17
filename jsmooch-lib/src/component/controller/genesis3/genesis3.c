@@ -31,7 +31,7 @@ void genesis_controller_3button_latch(struct genesis_controller_3button* this)
     B_GET(c, 6);
     B_GET(start, 7);
 #undef B_GET
-
+    if (this->input_buffer.up) printf("\nSTATE OF UP:%d", this->input_buffer.a);
 }
 
 void genesis3_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
@@ -42,6 +42,7 @@ void genesis3_setup_pio(struct physical_io_device *d, u32 num, const char*name, 
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;
+    d->enabled = connected;
 
     struct JSM_CONTROLLER* cnt = &d->controller;
 

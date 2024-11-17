@@ -231,6 +231,7 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     // controllers
     struct physical_io_device *c1 = cvec_push_back(this->jsm.IOs);
     struct physical_io_device *c2 = cvec_push_back(this->jsm.IOs);
+    genesis_controller_3button_init(&this->controller1);
     genesis3_setup_pio(c1, 0, "Player 1", 1);
     genesis3_setup_pio(c2, 1, "Player 2", 0);
     this->controller1.pio = c1;
@@ -273,7 +274,7 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     setup_audio(IOs);
 
     this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
-    //genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
+    genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_3button, &this->controller1);
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }
 

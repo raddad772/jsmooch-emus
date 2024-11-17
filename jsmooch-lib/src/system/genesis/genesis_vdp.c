@@ -300,6 +300,7 @@ static void new_scanline(struct genesis* this)
     if (this->clock.vdp.vcount == 261) {
         new_frame(this);
     }
+    this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;
     this->vdp.cur_pixel = this->vdp.cur_output + (this->clock.vdp.vcount * 1280);
     this->clock.vdp.vcount++;
@@ -446,11 +447,10 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             vdp->io.plane_b_table_addr = (val & 15) << 12;
             return;
         case 5: // Sprite table location
-            vdp->io.sprite_table_addr = (val & 0xFF) << 7;
-            printf("\nSP TABLE val:%d  so addr: %04x", val & 0xFF, vdp->io.sprite_table_addr);
+            vdp->io.sprite_table_addr = (val & 0xFF) << 8;
             return;
         case 6: // um
-            vdp->io.sprite_generator_addr = (vdp->io.sprite_generator_addr & 0x7FFF) | (((val >> 5) & 1) << 15);
+            //vdp->io.sprite_generator_addr = (vdp->io.sprite_generator_addr & 0x7FFF) | (((val >> 5) & 1) << 15);
             return;
         case 7:
             vdp->io.bg_color = val & 63;
@@ -727,6 +727,8 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
     v |= this->clock.vdp.hblank << 2;
     v |= (this->clock.vdp.vblank || (1 ^ this->vdp.io.enable_display)) << 3;
     v |= (this->clock.vdp.field && this->vdp.io.interlace_field) << 4;
+    v |= this->vdp.sprite_collision << 5;
+    v |= this->vdp.sprite_overflow << 6;
     //<< 5; SC: 1 = any two sprites have non-transparent pixels overlapping. Used for pixel-accurate collision detection.
     //<< 6; SO: 1 = sprite limit has been hit on current scanline. i.e. 17+ in 256 pixel wide mode or 21+ in 320 pixel wide mode.
     //<< 7; VI: 1 = vertical interrupt occurred.
@@ -1054,7 +1056,7 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
 
         if ((this->clock.vdp.vcount >= sprite_y_min) && (this->clock.vdp.vcount < sprite_y_max)) {
             // Fill in rest of
-            printf("\nFIND n:%d HSIZE:%d VSIZE:%d", num, (sprite_ptr[0] >> 10) & 3, (sprite_ptr[0] >> 8) & 3);
+            //printf("\nFIND n:%d HSIZE:%d VSIZE:%d", num, (sprite_ptr[0] >> 10) & 3, (sprite_ptr[0] >> 8) & 3);
             nxt->hsize = ((sprite_ptr[0] >> 10) & 3) + 1;
             nxt->vpos -= 128;
             nxt->gfx = sprite_ptr[2] & 0x7FF;
@@ -1064,7 +1066,10 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
             nxt->priority = (sprite_ptr[2] >> 15) & 1;
             nxt->hpos = (sprite_ptr[3] & 0x3FF) - 128;
             num++;
-            if (num >= sprite_limit) break;
+            if (num >= sprite_limit) {
+                this->vdp.sprite_overflow = 1;
+                break;
+            }
         }
     }
 
@@ -1096,13 +1101,13 @@ static void render_sprites(struct genesis *this)
         u32 sp_ytile = sp_line >> 3;
         u32 tile_y_addr_offset = (sp->vflip ? (7 - fine_row) : fine_row) << 2;
 
-        printf("\nSPRITE NUM:%d HSIZE: %d VSIZE:%d", spr, sp->hsize, sp->vsize);
+        //printf("\nSPRITE NUM:%d HSIZE: %d VSIZE:%d", spr, sp->hsize, sp->vsize);
         for (i32 tx = 0; tx < sp->hsize; tx++) { // Render across tiles...
             u32 tile_num = sp->gfx + (tx * tile_stride) + sp_ytile;
-            u32 tile_addr = this->vdp.io.sprite_generator_addr + (tile_num * 20) + tile_y_addr_offset;
+            u32 tile_addr = (tile_num * 20) + tile_y_addr_offset;
             i32 x = x_start;
             u8 *ptr = ((u8 *)this->vdp.VRAM) + tile_addr;
-            /*for (u32 byte = 0; byte < 4; byte++) { // 4 bytes per 8 pixels
+            for (u32 byte = 0; byte < 4; byte++) { // 4 bytes per 8 pixels
                 u32 offset = sp->hflip ? 3 - byte : byte;
                 u8 px2 = ptr[fetch_order[offset]];
                 u32 px[2];
@@ -1112,23 +1117,28 @@ static void render_sprites(struct genesis *this)
                     u32 v = px[ps];
                     if ((x >= 0) && (x < xmax)) {
                         struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x];
-                        if (!p->has_px && (v != 0)) { // If there's not already a sprite pixel here, and ours HAS something other than transparent...
-                            p->has_px = 1;
-                            p->priority = sp->priority;
-                            p->color = sp->palette + v;
+                        if (v != 0) { // If there's not already a sprite pixel here, and ours HAS something other than transparent...
+                            if (p->has_px) {
+                                this->vdp.sprite_collision = 1;
+                            }
+                            else {
+                                p->has_px = 1;
+                                p->priority = sp->priority;
+                                p->color = sp->palette + v;
+                            }
                         }
                     }
                     x++;
                 }
-            }*/
+            }
 
-            for (u32 i = 0; i < 8; i++) {
+            /*for (u32 i = 0; i < 8; i++) {
                 struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x];
                 p->has_px = 1;
                 p->color = 63;
                 p->priority = sp->priority;
                 x++;
-            }
+            }*/
 
             x_start += 8;
         }

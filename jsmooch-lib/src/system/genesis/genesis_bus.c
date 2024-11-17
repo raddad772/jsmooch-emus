@@ -104,8 +104,10 @@ u16 genesis_mainbus_read_a1k(struct genesis* this, u32 addr, u16 old, u16 mask, 
     switch(addr) {
         case 0xA10000: // Version register
             return read_version_register(this, mask);
-        case 0xA10002:
-            return genesis_controllerport_read_data(&this->io.controller_port1);
+        case 0xA10002: {
+            u16 a = genesis_controllerport_read_data(&this->io.controller_port1);
+            return a;
+        }
         case 0xA10004:
             return genesis_controllerport_read_data(&this->io.controller_port2);
         case 0xA10008:
