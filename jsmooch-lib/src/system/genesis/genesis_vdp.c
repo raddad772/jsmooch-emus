@@ -1051,56 +1051,49 @@ struct spr_out {
 
 static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
 {
+    u32 compare_y = this->clock.vdp.vcount + 128;
+    u16 *sprite_table_ptr = this->vdp.VRAM + this->vdp.io.sprite_table_addr;
     u32 num = 0;
-    u32 next_sprite_num = 0;
-    struct spr_out *nxt;
-    u32 sprite_limit = this->vdp.io.h40 ? 20 : 16;
-    u32 total_max_sprites = this->vdp.io.h40 ? 80 : 64;
-    u32 tiles = 0;
-    u32 cur_y = this->clock.vdp.vcount + 128;
-    for (u32 i = 0; i < total_max_sprites; i++) {
-        assert(num<20);
-        nxt = &sprites[num];
-        u16 sprite_addr = (4 * next_sprite_num) + this->vdp.io.sprite_table_addr;
-        u16 *sprite_ptr = this->vdp.VRAM+sprite_addr;
+    u16 next_sprite = 0;
+    u32 tiles_on_line = 0;
+    u32 sprites_total_max = this->vdp.io.h40 ? 80 : 64;
+    u32 sprites_max_on_line = this->vdp.io.h40 ? 20 : 16;
+    for (u32 i = 0; i < sprites_total_max; i++) {
+        u16 *sp = sprite_table_ptr + (4 * next_sprite);
+        next_sprite = sp[1] & 127;
 
-        nxt->vpos = sprite_ptr[0] & 0x3FF;
-        nxt->vsize = ((sprite_ptr[0] >> 8) & 3) + 1;
-        // Now check if this sprite even belongs on this line
-        u32 sprite_y_min = nxt->vpos;
-        u32 sprite_y_max = nxt->vpos + (nxt->vsize*8);
-        next_sprite_num = sprite_ptr[1] & 127;
-        assert(next_sprite_num < 80);
-        if ((sprite_ptr[3] & 0x1FF) == 0) break;
+        sprites->vpos = sp[0] & 0x1FF;
+        sprites->vsize = ((sp[1] >> 8) & 3) + 1;
 
-        if ((cur_y >= sprite_y_min) && (cur_y < sprite_y_max)) {
-            // Fill in rest of
-            nxt->hsize = ((sprite_ptr[0] >> 10) & 3) + 1;
-            nxt->gfx = sprite_ptr[2] & 0x7FF;
-            nxt->hflip = (sprite_ptr[2] >> 11) & 1;
-            nxt->vflip = (sprite_ptr[2] >> 12) & 1;
-            nxt->palette = ((sprite_ptr[2] >> 13) & 3) << 4;
-            nxt->priority = (sprite_ptr[2] >> 15) & 1;
-            nxt->hpos = (sprite_ptr[3] & 0x1FF);
-            tiles += nxt->hsize;
+        u32 sprite_max = sprites->vpos + (sprites->vsize * 8);
+        if ((compare_y >= sprites->vpos) && (compare_y < sprite_max)) {
+            sprites->hsize = ((sp[1] >> 10) & 3) + 1;
+            sprites->hflip = (sp[2] >> 11) & 1;
+            sprites->vflip = (sp[2] >> 12) & 1;
+            sprites->palette = ((sp[2] >> 13) & 3) << 4;
+            sprites->hpos = sp[3] & 0x1FF;
+            // TODO: exit when x = 0?
+            sprites->gfx = sp[2] & 0x7FF;
+            sprites->priority = (sp[2] >> 15) & 1;
+
+            tiles_on_line += sprites->hsize;
+
+            sprites++;
             num++;
-            /*if (this->clock.vdp.vcount == 80) printf("\nSprite %d: X=%d(%d), Y=%d(%d), Width=%d, Height=%d, Link=%d, Pal=%d, Pri=%d, Pat=%04X",
-                   num, nxt->hpos, nxt->hpos-128, nxt->vpos, nxt->vpos-128,
-                   nxt->hsize * 8, nxt->vsize * 8,
-                   next_sprite_num, nxt->palette >> 4, nxt->priority,
-                   nxt->gfx * 20);*/
-            if (tiles > 40) break;
-/*
-Sprite 31: X=296(168), Y=174(46), Width=16, Height=8, Link=32, Pal=1, Pri=0, Pat=9F20 */
-            if (num >= sprite_limit) {
-                this->vdp.sprite_overflow = 1;
-                break;
-            }
         }
+        if ((tiles_on_line >= 40) || (num >= sprites_max_on_line)) break;
     }
 
     return num;
 }
+
+static inline u32 sprite_tile_index(u32 tile_x, u32 tile_y, u32 hsize, u32 vsize, u32 hflip, u32 vflip)
+{
+    u32 ty = vflip ? (vsize-1) - tile_y : tile_y;
+    u32 tx = hflip ? (hsize-1) - tile_x : tile_x;
+    return (vsize * tx) + ty;
+}
+
 
 static void render_sprites(struct genesis *this)
 {
@@ -1120,9 +1113,7 @@ static void render_sprites(struct genesis *this)
         // Render sprite from left to right
         struct spr_out *sp = &sprites[spr];
         u32 x_right = 128 + (this->vdp.io.h40 ? 320 : 256);
-        u32 x_min = sp->hpos;
         u32 tile_stride = sp->vsize;
-        u32 x_start = x_min;
 
         u32 y_min = sp->vpos;
         u32 sp_line = cur_y - y_min;
@@ -1132,16 +1123,16 @@ static void render_sprites(struct genesis *this)
 
         //if (this->clock.vdp.vcount == 80) printf("\nSPRITE NUM:%d HSIZE: %d VSIZE:%d", spr, sp->hsize, sp->vsize);
         for (u32 tx = 0; tx < sp->hsize; tx++) { // Render across tiles...
-            /*u32 tile_num = sp->gfx + (tx * tile_stride) + sp_ytile;
-            u32 tile_addr = (tile_num * 20) + tile_y_addr_offset;
-            i32 x = x_start;
+            u32 tile_num = sp->gfx + sprite_tile_index(tx, sp_ytile, sp->hsize, sp->vsize, sp->hflip, sp->vflip);
+            u32 tile_addr = (tile_num << 5) + tile_y_addr_offset;
+            i32 x = (((i32)sp->hpos) - 128) + (tx * 8);
             u8 *ptr = ((u8 *)this->vdp.VRAM) + tile_addr;
             for (u32 byte = 0; byte < 4; byte++) { // 4 bytes per 8 pixels
                 u32 offset = sp->hflip ? 3 - byte : byte;
                 u8 px2 = ptr[fetch_order[offset]];
                 u32 px[2];
-                px[0 ^ sp->hflip] = px2 & 15;
-                px[1 ^ sp->hflip] = px2 >> 4;
+                px[sp->hflip] = px2 >> 4;
+                px[sp->hflip ^ 1] = px2 & 15;
                 for (u32 ps = 0; ps < 2; ps++) {
                     u32 v = px[ps];
                     if ((x >= 0) && (x < xmax)) {
@@ -1159,18 +1150,7 @@ static void render_sprites(struct genesis *this)
                     }
                     x++;
                 }
-            }*/
-
-            for (u32 i = 0; i < 8; i++) {
-                u32 x = x_start + i;
-                if ((x >= 128) && (x < x_right)) {
-                    struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x - 128];
-                    p->has_px = 1;
-                    p->color = 63;
-                    p->priority = 1;
-                }
             }
-            x_start += 8;
         }
     }
 }

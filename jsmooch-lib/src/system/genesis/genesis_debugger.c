@@ -728,25 +728,6 @@ static void render_image_view_planew(struct debugger_interface *dbgr, struct deb
 // sprite_tile_index(sprite_tile_x, sprite_tile_y, hsize, vsize, hflip, vflip);
 static u32 sprite_tile_index(u32 tile_x, u32 tile_y, u32 hsize, u32 vsize, u32 hflip, u32 vflip)
 {
-    // 0  3
-    // 1  4
-    // 2  5
-
-    // so an h-flipped one...
-
-    // 3 0
-    // 4 1
-    // 5 2
-
-    // hsize = 2
-    // vsize = 3
-
-    // h:1,v:1 = 2 - 1 = 1
-
-    // to any #, do (vsize * x) + y
-
-    // just reverse either
-
     u32 ty = vflip ? (vsize-1) - tile_y : tile_y;
     u32 tx = hflip ? (hsize-1) - tile_x : tile_x;
     return (vsize * tx) + ty;

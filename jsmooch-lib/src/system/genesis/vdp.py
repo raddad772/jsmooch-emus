@@ -72,15 +72,18 @@ def comp_UDS(ares_line, my_line) -> bool:
     my_val = int(my_val_s, 16) & my_mask
     return ares_val == my_val
 
-def print_context(who: str, lines: file_lines, start: int, total:int):
+
+def print_context(who: str, lines: file_lines, start: int, total: int):
     print('\nCONTEXT FOR ' + who)
     num = 0
-    for idx in range(start, start+total):
+    for idx in range(start, start + total):
         try:
             print(str(num) + ': ' + lines.lines[idx].strip())
         except:
             break
         num += 1
+
+
 def VDP_FILL_SWITCH(ares_lines, my_lines, ares_line, my_line) -> bool:
     # We want to return true if next line works swapped
     next_ares_line = ares_lines.get_line()
@@ -90,6 +93,7 @@ def VDP_FILL_SWITCH(ares_lines, my_lines, ares_line, my_line) -> bool:
     ares_lines.deadvance_line()
     my_lines.deadvance_line()
     return False
+
 
 def CPU_RD_chkswitch(ares_lines, my_lines, ares_line, my_line) -> bool:
     if comp_UDS(ares_line, my_line):
@@ -119,6 +123,7 @@ def one_in_vblank(ares_PC, my_PC, addrs):
         return True
     return False
 
+
 def CPU_WR_chkUDS(ares_lines, my_lines, ares_line, my_line) -> bool:
     if comp_UDS(ares_line, my_line):
         return True
@@ -146,7 +151,7 @@ class thing:
         # bfile = '_sonic_cpu.log'
 
         self.IS_CPU = 'cpu' in bfile
-        #self.IS_CPU = True
+        # self.IS_CPU = True
         self.ares_lines = file_lines(os.path.join(bpath, 'ares' + bfile), True)
         self.my_lines = file_lines(os.path.join(bpath, 'js' + bfile), False)
         self.dobreak = False
