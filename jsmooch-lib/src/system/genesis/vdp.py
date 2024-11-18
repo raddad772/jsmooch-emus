@@ -1,9 +1,11 @@
 #!/usr/bin/python3
+
 import os
+from typing import Optional, Tuple
 
 
 class file_lines:
-    def __init__(self, fpath: str, is_ares: bool):
+    def __init__(self, fpath: str, is_ares):
         with open(fpath) as infile:
             self.lines = infile.readlines()
         self.index = 0
@@ -70,6 +72,24 @@ def comp_UDS(ares_line, my_line) -> bool:
     my_val = int(my_val_s, 16) & my_mask
     return ares_val == my_val
 
+def print_context(who: str, lines: file_lines, start: int, total:int):
+    print('\nCONTEXT FOR ' + who)
+    num = 0
+    for idx in range(start, start+total):
+        try:
+            print(str(num) + ': ' + lines.lines[idx].strip())
+        except:
+            break
+        num += 1
+def VDP_FILL_SWITCH(ares_lines, my_lines, ares_line, my_line) -> bool:
+    # We want to return true if next line works swapped
+    next_ares_line = ares_lines.get_line()
+    next_my_line = my_lines.get_line()
+    if (next_my_line == ares_line) and (next_ares_line == my_line):
+        return True
+    ares_lines.deadvance_line()
+    my_lines.deadvance_line()
+    return False
 
 def CPU_RD_chkswitch(ares_lines, my_lines, ares_line, my_line) -> bool:
     if comp_UDS(ares_line, my_line):
@@ -82,6 +102,21 @@ def CPU_RD_chkswitch(ares_lines, my_lines, ares_line, my_line) -> bool:
         return True
     ares_lines.deadvance_line()
     my_lines.deadvance_line()
+    return False
+
+
+def get_PC(line: str) -> Optional[int]:
+    if 'PC ' not in line:
+        return None
+    addr = int(line.split('PC ')[1], 16)
+    return addr
+
+
+def one_in_vblank(ares_PC, my_PC, addrs):
+    if ares_PC in addrs and my_PC not in addrs:
+        return True
+    if my_PC in addrs and ares_PC not in addrs:
+        return True
     return False
 
 def CPU_WR_chkUDS(ares_lines, my_lines, ares_line, my_line) -> bool:
@@ -97,88 +132,146 @@ def CPU_WR_chkUDS(ares_lines, my_lines, ares_line, my_line) -> bool:
     return False
 
 
-def main():
-    bpath = os.path.expanduser('~')
-    bfile = '_sonic_vdp.log'
-    #bfile = '_sonic_cpu.log'
+class thing:
+    def __init__(self):
+        self.my_line: str = ''
+        self.ares_line: str = ''
+        self.last_ares_line: str = ''
+        self.last_my_line: str = ''
+        self.ares_lines: file_lines
+        self.ares_last_pc_line: Tuple[str, int] = ('', 0)
+        self.my_last_pc_line: Tuple[str, int] = ('', 0)
+        bpath = os.path.expanduser('~')
+        bfile = '_sonic_vdp.log'
+        # bfile = '_sonic_cpu.log'
 
-    IS_CPU = 'cpu' in bfile
-    ares_lines = file_lines(os.path.join(bpath, 'ares' + bfile), True)
-    my_lines = file_lines(os.path.join(bpath, 'js' + bfile), False)
+        self.IS_CPU = 'cpu' in bfile
+        #self.IS_CPU = True
+        self.ares_lines = file_lines(os.path.join(bpath, 'ares' + bfile), True)
+        self.my_lines = file_lines(os.path.join(bpath, 'js' + bfile), False)
+        self.dobreak = False
 
-    ares_index = 0
-    my_index = 0
-    line_num = 0
-
-    last_ares_line = ''
-    last_my_line = ''
-    ares_line = ''
-    my_line = ''
-
-    ares_last_pc_line = ('', 0)
-    my_last_pc_line = ('', 0)
-    diffs = []
-
-    while True:
-        last_ares_line = ares_line
-        last_my_line = my_line
+    def feed_my_line(self):
+        self.last_my_line = self.my_line
         try:
-            ares_line = ares_lines.get_line()
-            my_line = my_lines.get_line()
+            self.my_line = self.my_lines.get_line()
         except:
-            break
+            self.dobreak = True
 
-        if 'PC ' in ares_line:
-            ares_last_pc_line = (ares_line, ares_lines.index-1)
+    def feed_ares_line(self):
+        self.last_ares_line = self.ares_line
+        try:
+            self.ares_line = self.ares_lines.get_line()
+        except:
+            self.dobreak = True
 
-        if 'PC ' in my_line:
-            my_last_pc_line = (my_line, my_lines.index-1)
+    def main(self):
+        diffs = []
 
-        if ares_line != my_line:
-            if 'RD VDP CP DATA:' in ares_line and 'RD VDP CP DATA:' in my_line:
-                if VDP_CP_ok(ares_line, my_line, ares_lines.index - 1, my_lines.index - 1):
-                    continue
-            if IS_CPU:
-                if 'RD ' in ares_line and 'RD ' in my_line:
-                    if CPU_RD_chkswitch(ares_lines, my_lines, ares_line, my_line):
+        while True:
+            self.feed_my_line()
+            self.feed_ares_line()
+            if self.dobreak:
+                break
+
+            if 'PC ' in self.ares_line:
+                self.ares_last_pc_line = (self.ares_line, self.ares_lines.index - 1)
+
+            if 'PC ' in self.my_line:
+                self.my_last_pc_line = (self.my_line, self.my_lines.index - 1)
+
+            if self.ares_line != self.my_line:
+                if 'RD VDP CP DATA:' in self.ares_line and 'RD VDP CP DATA:' in self.my_line:
+                    if VDP_CP_ok(self.ares_line, self.my_line, self.ares_lines.index - 1, self.my_lines.index - 1):
                         continue
-                if 'WR ' in ares_line and 'WR ' in my_line:
-                    if CPU_WR_chkUDS(ares_lines, my_lines, ares_line, my_line):
+                if self.IS_CPU:
+                    if 'RD ' in self.ares_line and 'RD ' in self.my_line:
+                        if CPU_RD_chkswitch(self.ares_lines, self.my_lines, self.ares_line, self.my_line):
+                            continue
+                    if 'WR ' in self.ares_line and 'WR ' in self.my_line:
+                        if CPU_WR_chkUDS(self.ares_lines, self.my_lines, self.ares_line, self.my_line):
+                            continue
+
+                    # Skip VBlank differences
+                    ares_PC = get_PC(self.ares_line)
+                    my_PC = get_PC(self.my_line)
+                    # if ares_PC is not None and my_pc is not None:
+                    VBLANK_WAIT_ADDRS = {0x29a4, 0x2900, 0x29a8}
+                    if ares_PC in VBLANK_WAIT_ADDRS and my_PC in VBLANK_WAIT_ADDRS:
                         continue
 
-                # Skip a minor difference in how processor cores do reads
-                if 'RD 000294' in ares_line and 'RD 000292' in my_line:
-                    my_lines.get_line()
-                    continue
-                # Skip a dumb thing
-                if 'PC 000300' in ares_last_pc_line[0]:
-                    continue
+                    if one_in_vblank(ares_PC, my_PC, VBLANK_WAIT_ADDRS):
+                        num = 0
+                        while one_in_vblank(ares_PC, my_PC, VBLANK_WAIT_ADDRS):
+                            if my_PC in VBLANK_WAIT_ADDRS:
+                                self.feed_my_line()
+                                my_PC = get_PC(self.my_line)
+                                if my_PC is None:
+                                    print('VBLANK SYNC FAILED2!')
+                                    break
+                            else:
+                                self.feed_ares_line()
+                                ares_PC = get_PC(self.ares_line)
+                                if ares_PC is None:
+                                    print('VBLANK SYNC FAILED2!')
+                                    break
 
-                #if 'RD ' in ares_line and 'RD ' in my_line:
-                #    continue
-            else:
-                #if 'RD VDP CP DATA' in ares_line:
-                #    continue
-                SKIPEMS = {}
-                if ares_lines.index in SKIPEMS:
-                    continue
-                pass
+                            if self.dobreak:
+                                print("VBLANK SYNC FAILED DOBREAK!")
+                                break
+                            num += 1
+                            if num > 10:
+                                print('VBLANK SYNC FAILED')
+                                break
+                        print('VBLANK SYNC DONE WITH ' + str(num))
+                        self.my_lines.index -= 1
+                        self.ares_lines.index -= 1
+                        continue
 
-            diffs.append([ares_line, my_line])
-            print('\nLINE-1:ARES: ' + last_ares_line)
-            print('LINE-1:MINE: ' + last_my_line)
-            print('ARES(' + str(ares_lines.index) + '): ' + ares_line)
-            print('MINE(' + str(my_lines.index) + '): ' + my_line)
-            try:
-                print('LINE+1:ARES: ' + ares_lines.get_line())
-                print('LINE+1:MINE: ' + my_lines.get_line())
-            except:
-                pass
-            if IS_CPU:
-                print('\nLAST PC:ARES(' + str(ares_last_pc_line[1]) + '): ' + ares_last_pc_line[0])
-                print('LAST PC:MINE(' + str(my_last_pc_line[1]) + '): ' + my_last_pc_line[0])
-            continue
-    print('# diffs ' + str(len(diffs)))
+                    # Skip a dumb thing
+                    '''if 'PC 000300' in ares_last_pc_line[0]:
+                        continue'''
+
+                    # if 'RD ' in self.ares_line and 'RD ' in self.my_line:
+                    #    continue
+                else:
+                    # if 'RD VDP CP DATA' in self.ares_line:
+                    #    continue
+                    '''if VDP_FILL_SWITCH(self.ares_lines, self.my_lines, self.ares_line, self.my_line):
+                        continue'''
+                    SKIPEMS = {}
+                    if self.ares_lines.index in SKIPEMS:
+                        continue
+                    pass
+
+                ares_context_index = self.ares_lines.index - 10
+                my_context_index = self.my_lines.index - 10
+
+                diffs.append([self.ares_line, self.my_line])
+                print('\nLINE-1:ARES: ' + self.last_ares_line)
+                print('ARES(' + str(self.ares_lines.index) + '): ' + self.ares_line)
+                try:
+                    print('LINE+1:ARES: ' + self.ares_lines.get_line())
+                except:
+                    pass
+
+                print('\nLINE-1:MINE: ' + self.last_my_line)
+                print('MINE(' + str(self.my_lines.index) + '): ' + self.my_line)
+                try:
+                    print('LINE+1:MINE: ' + self.my_lines.get_line())
+                except:
+                    pass
+                if self.IS_CPU:
+                    print('\nLAST PC:ARES(' + str(self.ares_last_pc_line[1]) + '): ' + self.ares_last_pc_line[0])
+                    print('LAST PC:MINE(' + str(self.my_last_pc_line[1]) + '): ' + self.my_last_pc_line[0])
+
+                print_context('ARES', self.ares_lines, ares_context_index, 12)
+                print_context('MINE', self.my_lines, my_context_index, 12)
+                # continue
+                break
+        print('# diffs ' + str(len(diffs)))
+
 
 if __name__ == '__main__':
-    main()
+    a = thing()
+    a.main()

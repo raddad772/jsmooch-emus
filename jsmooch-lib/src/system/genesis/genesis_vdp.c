@@ -30,6 +30,7 @@
 
 
 #define MCLOCKS_PER_LINE 3420
+//#define MCLOCKS_PER_LINE 3400
 #define SC_HSYNC_GOES_OFF 5
 #define SC_HSYNC_GOES_ON 658
 
@@ -47,17 +48,19 @@ static void render_sprites(struct genesis *this);
 static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes);
 static void get_vscrolls(struct genesis* this, int column, u32 *planes);
 
+static inline u16 VRAM_read(struct genesis* this, u32 addr, int report)
+{
+    u16 a = this->vdp.VRAM[addr & 0x7FFF];
+    if (dbg.traces.vdp4 && report) DFT("\nVRAM READ %04x: %04x", addr, a);
+    return a;
+}
+
+
 static void set_m68k_dtack(struct genesis* this)
 {
     printf("\nYAR");
     //this->m68k.pins.DTACK = !(this->io.m68k.VDP_FIFO_stall | this->io.m68k.VDP_prefetch_stall);
     //this->io.m68k.stuck = !this->m68k.pins.DTACK;
-}
-
-static u16 VRAM_read(struct genesis* this, u16 addr)
-{
-    assert(this->vdp.io.vram_mode == 0);
-    return this->vdp.VRAM[addr & 0x7FFF];
 }
 
 static void VRAM_write(struct genesis* this, u16 addr, u16 val)
@@ -73,7 +76,7 @@ static void VRAM_write(struct genesis* this, u16 addr, u16 val)
 
 static u16 VRAM_read_byte(struct genesis* this, u16 addr)
 {
-    u16 val = VRAM_read(this, addr);
+    u16 val = VRAM_read(this, addr, 1);
     u16 v = 0;
     WSWAP;
     return v;
@@ -81,10 +84,11 @@ static u16 VRAM_read_byte(struct genesis* this, u16 addr)
 
 static void VRAM_write_byte(struct genesis* this, u16 addr, u16 val)
 {
-    addr = (addr >> 1) & 0x7FFF;
-    u16 v = VRAM_read(this, addr);
+    u16 v = VRAM_read(this, addr >> 1, 1);
+    if (dbg.traces.vdp4) DFT("\nVRAM writebyte_r %04x: %04x", addr, v);
     WSWAP;
-    VRAM_write(this, addr, v);
+    if (dbg.traces.vdp4) DFT("\nVRAM writebyte %04x: %04x", addr, v);
+    VRAM_write(this, addr >> 1, v);
 }
 
 static u16 VSRAM_read(struct genesis* this, u16 addr)
@@ -111,7 +115,8 @@ static u16 CRAM_read(struct genesis* this, u16 addr)
 
 static void CRAM_write(struct genesis* this, u16 addr, u16 val)
 {
-    this->vdp.VSRAM[addr & 0x3F] = val & 0x1FF;
+    if (dbg.traces.vdp4) DFT("\nCRAM WRITE %04x: %04x", addr & 0x3F, val & 0x1FF);
+    this->vdp.CRAM[addr & 0x3F] = val & 0x1FF;
 }
 
 static void CRAM_write_byte(struct genesis* this, u16 addr, u16 val)
@@ -626,10 +631,11 @@ static void dma_fill(struct genesis* this)
     this->vdp.dma.active = 1;
     switch(this->vdp.command.target) {
         case 1:
-            VRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             if (dbg.traces.vdp2) DFT("\nVDP DMA FILL VRAM ADDR:%04x DATA:%02x", this->vdp.command.address, this->vdp.dma.fill_value);
+            VRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         case 3:
+            if (dbg.traces.vdp2) DFT("\nVDP DMA FILL CRAM ADDR:%04x DATA:%02x", this->vdp.command.address, this->vdp.dma.fill_value);
             CRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         case 5:
@@ -654,6 +660,8 @@ static void dma_copy(struct genesis* this)
     this->vdp.dma.active = 1;
 
     u32 data = VRAM_read_byte(this, this->vdp.dma.source_address);
+    if (dbg.traces.vdp4) DFT("\nVDP DMA COPY VRAM SRC:%04x DEST:%04x DATA:%04x", (u32)this->vdp.dma.source_address, (u32)this->vdp.command.address, (u32)data);
+
     VRAM_write_byte(this, this->vdp.command.address, data);
     //tracer.dma->notify({"copy(", hex(source, 6L), ", ", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
 
@@ -668,13 +676,19 @@ static void dma_copy(struct genesis* this)
 
 static void dma_run_if_ready(struct genesis* this)
 {
-    //if (this->vdp.command.pending && !this->vdp.dma.fill_pending) {
-    while(this->vdp.command.pending && !this->vdp.dma.fill_pending) {
-        switch(this->vdp.dma.mode) {
-            case 0: case 1: dma_load(this); break;
-            case 2: dma_fill(this); break;
-            case 3: dma_copy(this); break;
+    if (!this->vdp.dma.locked) {
+        this->vdp.dma.locked = 1;
+        if (this->vdp.dma.enable) {
+            //if (this->vdp.command.pending && !this->vdp.dma.fill_pending) {
+            while(this->vdp.command.pending && !this->vdp.dma.fill_pending) {
+                switch(this->vdp.dma.mode) {
+                    case 0: case 1: dma_load(this); break;
+                    case 2: dma_fill(this); break;
+                    case 3: dma_copy(this); break;
+                }
+            }
         }
+        this->vdp.dma.locked = 0;
     }
 }
 
@@ -768,7 +782,7 @@ static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
     switch(this->vdp.command.target) {
         case 0: // VRAM read
             addr = (this->vdp.command.address & 0x1FFFE) >> 1;
-            data = VRAM_read(this, addr);
+            data = VRAM_read(this, addr, 1);
             this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
             return data;
         case 4: // VSRAM read
@@ -777,7 +791,7 @@ static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
             this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
             return data;
         case 8: // CRAM read
-            addr = (this->vdp.command.address >> 1) & 63;
+            addr = (this->vdp.command.address >> 1) & 0x3F;
             data = CRAM_read(this, addr);
             this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
             return ((data & 7) << 1) | (((data >> 3) & 7) << 5) | (((data >> 6) & 7) << 9);
@@ -809,6 +823,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         if (dbg.traces.vdp3) DFT("\nWR VDP DP VRAM DEST:%04x DATA:%04x", addr, val);
         VRAM_write(this, addr, val);
         this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
+        dma_run_if_ready(this);
         return;
     }
 
@@ -826,11 +841,11 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         addr = (this->vdp.command.address >> 1) & 0x3F;
         if (dbg.traces.vdp3) DFT("\nWR VDP DP CRAM DEST:%04x DATA:%04x", addr, val);
         u32 v = (((val >> 1) & 7) << 0) | (((val >> 5) & 7) << 3) | (((val >> 9) & 7) << 6);
-        this->vdp.CRAM[addr] = v;
+        CRAM_write(this, addr, v);
         this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
         return;
     }
-    printf("\nUnknown data port write! Target:%d is_cpu:%d", this->vdp.command.target, is_cpu);
+    printf("\nUnknown data port write! Target:%d is_cpu:%d addr:%04x", this->vdp.command.target, is_cpu, this->vdp.command.address);
 }
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
@@ -939,10 +954,6 @@ static void do_pixel(struct genesis* this)
     // Render a pixel!
 }
 
-static inline u16 read_VRAM(struct genesis* this, u32 addr)
-{
-    return this->vdp.VRAM[addr & 0x7FFF];
-}
 
 static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes)
 {
@@ -962,8 +973,8 @@ static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes)
             break;
     }
     // - 1 & 1023 ^ 1023 should convert from negative to positive here. 0 = FFFF = 0 for instance. 1 = 0 = FFFF.
-    planes[PLANE_A] = read_VRAM(this, addr) & 1023;
-    planes[PLANE_B] = read_VRAM(this, addr+1) & 1023;
+    planes[PLANE_A] = VRAM_read(this, addr, 0) & 1023;
+    planes[PLANE_B] = VRAM_read(this, addr + 1, 0) & 1023;
 }
 
 static void get_vscrolls(struct genesis* this, int column, u32 *planes)
@@ -996,7 +1007,7 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
     u32 tile_row = (row >> 3) & this->vdp.io.foreground_height_mask;
     u32 tile_col = (col >> 3) & this->vdp.io.foreground_width_mask;
     //printf("\nline:%d screen_x:%d row:%d col:%d  /  hmask:%d vmask:%d  /  tile_row:%d tile_col:%d FGW:%d", this->clock.vdp.vcount, this->vdp.line.screen_x, row, col, this->vdp.io.foreground_height_mask, this->vdp.io.foreground_width_mask, tile_row, tile_col, this->vdp.io.foreground_width);
-    u32 tile_data = read_VRAM(this, nt_base_addr + (tile_row * this->vdp.io.foreground_width) + tile_col);
+    u32 tile_data = VRAM_read(this, nt_base_addr + (tile_row * this->vdp.io.foreground_width) + tile_col, 0);
     u32 vflip = (tile_data >> 12) & 1;
     u32 tile_addr = (tile_data & 0x3FF) << 5;
     u32 fine_row = row & 7;
@@ -1014,7 +1025,7 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
     }
 
     tile_col = (tile_col + 1) & this->vdp.io.foreground_width_mask;
-    tile_data = read_VRAM(this, nt_base_addr + (tile_row * this->vdp.io.foreground_width) + tile_col);
+    tile_data = VRAM_read(this, nt_base_addr + (tile_row * this->vdp.io.foreground_width) + tile_col, 0);
     slice->attr[1] = tile_data;
 
     tile_addr = (tile_data & 0x3FF) << 5;

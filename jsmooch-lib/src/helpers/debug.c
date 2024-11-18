@@ -48,24 +48,21 @@ static char DFT_buf[4096];
 
 #define DFT_file "/Users/Dave/js_sonic_vdp.log"
 
+static FILE* DFTf = NULL;
+
 void DFT(char *format, ...)
 {
-    FILE *f;
-    if (!did_DFT) {
-        did_DFT = 1;
-        f = fopen(DFT_file, "w");
-
-    }
-    else {
-        f = fopen(DFT_file, "a");
+    if (DFTf == NULL) {
+        DFTf = fopen(DFT_file, "w");
     }
     va_list va;
     va_start(va, format);
     int a = vsnprintf(DFT_buf, 4096, format, va);
     va_end(va);
-    fwrite(DFT_buf, 1, a, f);
+    fwrite(DFT_buf, 1, a, DFTf);
     DFT_line++;
-    fclose(f);
+    if ((DFT_line % 1000) == 0)
+        fflush(DFTf);
 }
 
 int dbg_printf(char *format, ...)

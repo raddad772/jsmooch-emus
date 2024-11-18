@@ -145,6 +145,7 @@ struct genesis {
             u16 len;
             u32 source_address;
             u32 active, enable;
+            u32 locked;
             u32 fill_pending, fill_value;
             u32 mode;
         } dma;

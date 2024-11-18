@@ -571,7 +571,7 @@ void full_system::load_default_ROM()
             //dbg.traces.dma = 1;
             //dbg.traces.fifo = 1;
             dbg.traces.vdp = 0;
-            dbg.traces.vdp2 = 0;
+            dbg.traces.vdp2 = 1;
             dbg.traces.vdp3 = 0;
             dbg.traces.vdp4 = 1;
             dbg.traces.cpu2 = 0;
