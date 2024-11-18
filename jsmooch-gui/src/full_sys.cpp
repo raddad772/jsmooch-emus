@@ -567,13 +567,14 @@ void full_system::load_default_ROM()
             break;
         case SYS_GENESIS:
             worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr);
-            dbg_enable_trace();
+            //dbg_enable_trace();
+            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr);
             //dbg.traces.dma = 1;
             //dbg.traces.fifo = 1;
             dbg.traces.vdp = 0;
-            dbg.traces.vdp2 = 1;
+            dbg.traces.vdp2 = 0;
             dbg.traces.vdp3 = 0;
-            dbg.traces.vdp4 = 1;
+            dbg.traces.vdp4 = 0;
             dbg.traces.cpu2 = 0;
             dbg.traces.cpu3 = 0;
             break;

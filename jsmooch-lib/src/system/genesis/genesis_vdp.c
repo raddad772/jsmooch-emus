@@ -444,7 +444,6 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 2: // Plane A table location
             vdp->io.plane_a_table_addr = (val & 0b01111000) << 9;
-            printf("\nPLANE A ADDR %04x", vdp->io.plane_a_table_addr);
             return;
         case 3: // Window nametable location
             // window.io.nametableAddress.bit(10,15) = data.bit(1,6);
@@ -457,11 +456,9 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 4: // Plane B location
             vdp->io.plane_b_table_addr = (val & 15) << 12;
-            printf("\nPLANE B ADDR %04x", vdp->io.plane_b_table_addr);
             return;
         case 5: // Sprite table location
             vdp->io.sprite_table_addr = (val & 0xFF) << 8;
-            printf("\nSPRITE TABLE ADDR %04x", vdp->io.sprite_table_addr);
             return;
         case 6: // um
             //vdp->io.sprite_generator_addr = (vdp->io.sprite_generator_addr & 0x7FFF) | (((val >> 5) & 1) << 15);
@@ -1045,7 +1042,7 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
 }
 
 struct spr_out {
-    i32 hpos, vpos;
+    u32 hpos, vpos;
     u32 hsize, vsize;
     u32 priority, palette;
     u32 vflip, hflip;
@@ -1059,7 +1056,8 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
     struct spr_out *nxt;
     u32 sprite_limit = this->vdp.io.h40 ? 20 : 16;
     u32 total_max_sprites = this->vdp.io.h40 ? 80 : 64;
-
+    u32 tiles = 0;
+    u32 cur_y = this->clock.vdp.vcount + 128;
     for (u32 i = 0; i < total_max_sprites; i++) {
         assert(num<20);
         nxt = &sprites[num];
@@ -1069,29 +1067,31 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
         nxt->vpos = sprite_ptr[0] & 0x3FF;
         nxt->vsize = ((sprite_ptr[0] >> 8) & 3) + 1;
         // Now check if this sprite even belongs on this line
-        i32 sprite_y_min = ((i32)nxt->vpos) - 128;
-        i32 sprite_y_max = ((i32)(nxt->vpos + (nxt->vsize*8))) - 128;
+        u32 sprite_y_min = nxt->vpos;
+        u32 sprite_y_max = nxt->vpos + (nxt->vsize*8);
         next_sprite_num = sprite_ptr[1] & 127;
         assert(next_sprite_num < 80);
+        if ((sprite_ptr[3] & 0x1FF) == 0) break;
 
-        if ((this->clock.vdp.vcount >= sprite_y_min) && (this->clock.vdp.vcount < sprite_y_max)) {
+        if ((cur_y >= sprite_y_min) && (cur_y < sprite_y_max)) {
             // Fill in rest of
             nxt->hsize = ((sprite_ptr[0] >> 10) & 3) + 1;
-            nxt->vpos -= 128;
             nxt->gfx = sprite_ptr[2] & 0x7FF;
             nxt->hflip = (sprite_ptr[2] >> 11) & 1;
             nxt->vflip = (sprite_ptr[2] >> 12) & 1;
             nxt->palette = ((sprite_ptr[2] >> 13) & 3) << 4;
             nxt->priority = (sprite_ptr[2] >> 15) & 1;
-            nxt->hpos = (sprite_ptr[3] & 0x3FF) - 128;
-            /*if (this->clock.vdp.vcount == 70) printf("\nSprite %d: X=%d(%d), Y=%d(%d), Width=%d, Height=%d, Link=%d, Pal=%d, Pri=%d, Pat=%04X",
-                   num, nxt->hpos+128, nxt->hpos, nxt->vpos+128, nxt->vpos,
+            nxt->hpos = (sprite_ptr[3] & 0x1FF);
+            tiles += nxt->hsize;
+            num++;
+            /*if (this->clock.vdp.vcount == 80) printf("\nSprite %d: X=%d(%d), Y=%d(%d), Width=%d, Height=%d, Link=%d, Pal=%d, Pri=%d, Pat=%04X",
+                   num, nxt->hpos, nxt->hpos-128, nxt->vpos, nxt->vpos-128,
                    nxt->hsize * 8, nxt->vsize * 8,
                    next_sprite_num, nxt->palette >> 4, nxt->priority,
-                   nxt->gfx * 0x200);*/
+                   nxt->gfx * 20);*/
+            if (tiles > 40) break;
 /*
 Sprite 31: X=296(168), Y=174(46), Width=16, Height=8, Link=32, Pal=1, Pri=0, Pat=9F20 */
-            num++;
             if (num >= sprite_limit) {
                 this->vdp.sprite_overflow = 1;
                 break;
@@ -1114,22 +1114,25 @@ static void render_sprites(struct genesis *this)
 
     i32 xmax = this->vdp.io.h40 ? 320 : 256;
 
+    u32 cur_y = this->clock.vdp.vcount + 128;
+
     for (u32 spr=0; spr < num_sprites; spr++) {
         // Render sprite from left to right
         struct spr_out *sp = &sprites[spr];
-        i32 x_min = sp->hpos;
+        u32 x_right = 128 + (this->vdp.io.h40 ? 320 : 256);
+        u32 x_min = sp->hpos;
         u32 tile_stride = sp->vsize;
-        i32 x_start = x_min;
+        u32 x_start = x_min;
 
-        i32 y_min = sp->vpos;
-        u32 sp_line = (u32)((i32)this->clock.vdp.vcount - y_min);
+        u32 y_min = sp->vpos;
+        u32 sp_line = cur_y - y_min;
         u32 fine_row = sp_line & 7;
         u32 sp_ytile = sp_line >> 3;
         u32 tile_y_addr_offset = (sp->vflip ? (7 - fine_row) : fine_row) << 2;
 
-        //printf("\nSPRITE NUM:%d HSIZE: %d VSIZE:%d", spr, sp->hsize, sp->vsize);
-        for (i32 tx = 0; tx < sp->hsize; tx++) { // Render across tiles...
-            u32 tile_num = sp->gfx + (tx * tile_stride) + sp_ytile;
+        //if (this->clock.vdp.vcount == 80) printf("\nSPRITE NUM:%d HSIZE: %d VSIZE:%d", spr, sp->hsize, sp->vsize);
+        for (u32 tx = 0; tx < sp->hsize; tx++) { // Render across tiles...
+            /*u32 tile_num = sp->gfx + (tx * tile_stride) + sp_ytile;
             u32 tile_addr = (tile_num * 20) + tile_y_addr_offset;
             i32 x = x_start;
             u8 *ptr = ((u8 *)this->vdp.VRAM) + tile_addr;
@@ -1156,16 +1159,17 @@ static void render_sprites(struct genesis *this)
                     }
                     x++;
                 }
-            }
-
-            /*for (u32 i = 0; i < 8; i++) {
-                struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x];
-                p->has_px = 1;
-                p->color = 63;
-                p->priority = sp->priority;
-                x++;
             }*/
 
+            for (u32 i = 0; i < 8; i++) {
+                u32 x = x_start + i;
+                if ((x >= 128) && (x < x_right)) {
+                    struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x - 128];
+                    p->has_px = 1;
+                    p->color = 63;
+                    p->priority = 1;
+                }
+            }
             x_start += 8;
         }
     }

@@ -230,7 +230,6 @@ struct waveform_view {
 };
 
 
-
 struct image_view {
     char label[50];
     u32 ready_for_display;
@@ -248,12 +247,41 @@ struct image_view {
     struct buf img_buf[2];
 };
 
+
+enum JSMD_widgets {
+    JSMD_checkbox,
+    JSMD_radiogroup
+};
+
+struct debugger_widget_checkbox
+{
+    char text[100];
+    u32 value;
+};
+
+struct debugger_widget_radiogroup {
+    char title[100];
+    u32 value;
+    struct cvec buttons; // debugger_widget_checkbox
+};
+
+struct debugger_widget {
+    enum JSMD_widgets kind;
+    u32 same_line, enabled;
+
+    union {
+        struct debugger_widget_checkbox checkbox;
+        struct debugger_widget_radiogroup radiogroup;
+    };
+};
+
 struct debugger_view {
     enum debugger_view_kinds kind;
     struct {
         u32 on_break, on_pause, on_step;
         struct { u32 enabled; u32 line_num; } on_line;
     } update;
+    struct cvec options;
 
     union {
         struct disassembly_view disassembly;
@@ -279,6 +307,12 @@ struct cvec_ptr debugger_view_new(struct debugger_interface *, enum debugger_vie
 
 void debugger_view_init(struct debugger_view *, enum debugger_view_kinds kind);
 void debugger_interface_dirty_mem(struct debugger_interface *, u32 mem_bus, u32 addr_start, u32 addr_end);
+
+void debugger_widget_init(struct debugger_widget *, enum JSMD_widgets kind);
+void debugger_widget_delete(struct debugger_widget *);
+void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
+struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
+void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, const char *text, u32 value, u32 same_line);
 
 // Disassembly view functions
 int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines);

@@ -2,6 +2,7 @@
 // Created by . on 10/20/24.
 //
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -505,10 +506,32 @@ static inline u32 gen_to_rgb(u32 color, int use_palette)
     return o | b | (g << 8) | (r << 16);
 }
 
+static inline u32 shade_boundary_func(u32 kind, u32 incolor)
+{
+    switch(kind) {
+        case 0:
+            return incolor;
+        case 1: {// Shaded
+            u32 c = (incolor & 0xFFFFFF00) | 0xFF000000;
+            u32 v = incolor & 0xFF;
+            v += 0xA0;
+            v >>= 1;
+            if (v > 255) v = 255;
+            return c | v; }
+        case 2:
+            return 0xFF000000;
+        case 3:
+            return 0xFFFFFFFF;
+    }
+    NOGOHERE;
+}
+
+static int fetch_order[4] = { 1, 0, 3, 2 };
 
 static void render_image_view_plane(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int plane_num)
 {
     struct genesis *this = (struct genesis *) ptr;
+    if (this->clock.master_frame == 0) return;
 
     // Clear output
     struct image_view *iv = &dview->image;
@@ -521,6 +544,16 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
 
     u32 nametable_addr;
 
+    struct debugger_widget_checkbox *draw_box_cb = NULL;
+    struct debugger_widget_radiogroup *shade_boundary_rg = NULL;
+    u32 draw_box = 0;
+    u32 shade_boundary = 0;
+    if (plane_num < 2) {
+        draw_box_cb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
+        shade_boundary_rg = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
+        draw_box = draw_box_cb->value;
+        shade_boundary = shade_boundary_rg->value;
+    }
     switch(plane_num) {
         case 0:
             nametable_addr = this->vdp.io.plane_a_table_addr;
@@ -543,7 +576,6 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
     u32 use_bg = 0 && use_screen_palette;
     u32 bg_color = this->vdp.CRAM[this->vdp.io.bg_color];
 
-    static int fetch_order[4] = { 1, 0, 3, 2 };
     // Loop through rows of tiles
     for (u32 screen_ty = 0; screen_ty < num_tiles_y; screen_ty++) {
         u16 *tile_row_ptr = this->vdp.VRAM + nametable_addr;
@@ -588,7 +620,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
         }
     }
 
-    if (plane_num < 2) {
+    if (draw_box || shade_boundary) {
         // Now, we must draw the scroll frames.
         u32 col_left = 0xFF00FF00;
         u32 col_right = 0xFFFF0000;
@@ -607,29 +639,76 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
         u32 top_left = top->hscroll[plane_num] & h_mask;
         u32 mx = top_left;
 
-        for (u32 sec = 1; sec < 21; sec++) {
-            u32 my = (top->vscroll[plane_num][sec]) & v_mask;
-            u32 bottom_my = (my + 224) & v_mask;
-            u32 *top_y_pointer = outbuf + (my * out_width);
-            u32 *bottom_y_pointer = outbuf + (bottom_my * out_width);
-            for (u32 i = 0; i < 16; i++) {
-                top_y_pointer[mx] = col_top;
-                bottom_y_pointer[mx] = col_bottom;
-                mx = (mx + 1) & h_mask;
+        if (draw_box) {
+            for (u32 sec = 1; sec < 21; sec++) {
+                u32 my = (top->vscroll[plane_num][sec]) & v_mask;
+                u32 bottom_my = (my + 223) & v_mask;
+                u32 *top_y_pointer = outbuf + (my * out_width);
+                u32 *bottom_y_pointer = outbuf + (bottom_my * out_width);
+                for (u32 i = 0; i < 16; i++) {
+                    top_y_pointer[mx] = col_top;
+                    bottom_y_pointer[mx] = col_bottom;
+                    mx = (mx + 1) & h_mask;
+                }
+            }
+
+            u32 vscroll = top->vscroll[plane_num][1];
+
+            // Now we do left and right lines!
+            for (u32 mline = 1; mline < 223; mline++) {
+                u32 y = (mline + vscroll) & v_mask;
+                u32 *line_ptr = outbuf + (y * out_width);
+                struct genesis_vdp_debug_row *row = &this->vdp.debug_info[mline];
+                u32 left_x = row->hscroll[plane_num] & h_mask;
+                u32 right_x = (left_x + (row->h40 ? 320 : 256)) & h_mask;
+                line_ptr[left_x] = col_left;
+                line_ptr[right_x] = col_right;
             }
         }
 
-        u32 vscroll = top->vscroll[plane_num][1];
-
-        // Now we do left and right lines!
-        for (u32 mline = 1; mline < 223; mline++) {
-            u32 y = (mline + vscroll) & v_mask;
-            u32 *line_ptr = outbuf + (y * out_width);
-            struct genesis_vdp_debug_row *row = &this->vdp.debug_info[mline];
-            u32 left_x = row->hscroll[plane_num] & h_mask;
-            u32 right_x = (left_x + (row->h40 ? 320 : 256)) & h_mask;
-            line_ptr[left_x] = col_left;
-            line_ptr[right_x] = col_right;
+        if (shade_boundary) {
+            u32 line_is_leftright[1024];
+            memset(&line_is_leftright, 0, sizeof(line_is_leftright));
+            for (u32 i = 0; i < 224; i++) {
+                u32 l = (i + top->vscroll[plane_num][1]) & v_mask;
+                line_is_leftright[l] = i + 1;
+            }
+            for (u32 line = 0; line <= v_mask; line++) {
+                u32 *out_line_ptr = outbuf + (line * out_width);
+                if (line_is_leftright[line]) { // Shade left-right
+                    // Check if we are left-right or middle
+                    u32 screen_line = line_is_leftright[line] - 1;
+                    assert(screen_line < 224);
+                    struct genesis_vdp_debug_row *row = &this->vdp.debug_info[screen_line];
+                    u32 hscroll_left = row->hscroll[plane_num] & h_mask;
+                    u32 hscroll_right = (hscroll_left + (row->h40 ? 320 : 256)) & h_mask;
+                    assert(hscroll_left < 1023);
+                    assert(hscroll_right < 1023);
+                    if (hscroll_right < hscroll_left) {
+                        for (u32 i = hscroll_right+1; i <= hscroll_left-1; i++) {
+                            if (i >= 1024) break;
+                            out_line_ptr[i] = shade_boundary_func(shade_boundary, out_line_ptr[i]);
+                        }
+                        // Shade from hscroll_left to hscroll_right
+                    }
+                    else {
+                        // Shade from 0...hscroll_left and hscroll_right...end
+                        for (u32 i = 0; i < hscroll_left; i++) {
+                            if (i >= 1024) break;
+                            out_line_ptr[i] = shade_boundary_func(shade_boundary, out_line_ptr[i]);
+                        }
+                        for (u32 i = hscroll_right+1; i <= h_mask; i++) {
+                            if (i >= 1024) break;
+                            out_line_ptr[i] = shade_boundary_func(shade_boundary, out_line_ptr[i]);
+                        }
+                    }
+                }
+                else { // Shade whole line
+                    for (u32 x = 0; x <= h_mask; x++) {
+                        out_line_ptr[x] = shade_boundary_func(shade_boundary, out_line_ptr[x]);
+                    }
+                }
+            }
         }
     }
 }
@@ -646,6 +725,162 @@ static void render_image_view_planew(struct debugger_interface *dbgr, struct deb
     render_image_view_plane(dbgr, dview, ptr, out_width, 2);
 }
 
+// sprite_tile_index(sprite_tile_x, sprite_tile_y, hsize, vsize, hflip, vflip);
+static u32 sprite_tile_index(u32 tile_x, u32 tile_y, u32 hsize, u32 vsize, u32 hflip, u32 vflip)
+{
+    // 0  3
+    // 1  4
+    // 2  5
+
+    // so an h-flipped one...
+
+    // 3 0
+    // 4 1
+    // 5 2
+
+    // hsize = 2
+    // vsize = 3
+
+    // h:1,v:1 = 2 - 1 = 1
+
+    // to any #, do (vsize * x) + y
+
+    // just reverse either
+
+    u32 ty = vflip ? (vsize-1) - tile_y : tile_y;
+    u32 tx = hflip ? (hsize-1) - tile_x : tile_x;
+    return (vsize * tx) + ty;
+}
+
+static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct genesis *this = (struct genesis *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width*(4*512)); // Clear out 512 lines
+
+    struct debugger_widget *draw_boxes_only_w =(struct debugger_widget *)cvec_get(&dview->options, 0);
+    struct debugger_widget *use_palette_w = (struct debugger_widget *)cvec_get(&dview->options, 1);
+    u32 use_palette = use_palette_w->checkbox.value;
+    u32 draw_boxes_only = draw_boxes_only_w->checkbox.value;
+    if (draw_boxes_only) {
+        use_palette = 0;
+        use_palette_w->enabled = 0;
+    }
+    else {
+        use_palette_w->enabled = 1;
+    }
+
+    // We need to paint back to front to preserve order
+    // First gather sprite order
+    u32 sprites_total_max = this->vdp.io.h40 ? 80 : 64;
+    u32 num_sprites = 0;
+    u32 sprite_order[80] = {};
+
+    u16 *sprite_table_ptr = this->vdp.VRAM + this->vdp.io.sprite_table_addr;
+    u16 next_sprite = 0;
+    for (u32 i = 0; i < sprites_total_max; i++) {
+        u16 *sp = sprite_table_ptr + (4 * next_sprite);
+        sprite_order[num_sprites++] = next_sprite;
+        next_sprite = sp[1] & 127;
+        if (next_sprite == 0) break;
+    }
+
+    for (u32 spr_index = 0; spr_index < num_sprites; spr_index++) {
+        u32 spr_num = sprite_order[(num_sprites-1) - spr_index];
+        u16 *sp = sprite_table_ptr + (4 * spr_num);
+        u32 hflip, vflip, hpos, vpos, hsize, vsize, palette, gfx;
+        vpos = sp[0] & 0x1FF;
+        hsize = ((sp[1] >> 10) & 3) + 1;
+        vsize = ((sp[1] >> 8) & 3) + 1;
+        hflip = (sp[2] >> 11) & 1;
+        vflip = (sp[2] >> 12) & 1;
+        palette = ((sp[2] >> 13) & 3) << 4;
+        hpos = sp[3] & 0x1FF;
+        gfx = sp[2] & 0x7FF;
+
+        // Now....start drawing tiles, top-to-bottom then left-to-right
+        for (u32 sprite_tile_x = 0; sprite_tile_x < hsize; sprite_tile_x++) {
+            for (u32 sprite_tile_y = 0; sprite_tile_y < vsize; sprite_tile_y++) {
+                u32 tile_num = gfx + sprite_tile_index(sprite_tile_x, sprite_tile_y, hsize, vsize, hflip, vflip);
+                u32 tile_sy = (sprite_tile_y * 8) + vpos;
+                u32 tile_sx = (sprite_tile_x * 8) + hpos;
+                u32 *screen_corner_ptr = outbuf + (out_width * tile_sy) + tile_sx;
+                if (draw_boxes_only) {
+                    for (u32 y = 0; y < 8; y++) {
+                        u32 screeny = y + tile_sy;
+                        u32 *line_ptr = screen_corner_ptr + (out_width * y);
+                        if (screeny < 511) {
+                            for (u32 x = 0; x < 8; x++) {
+                                u32 screenx = x + tile_sx;
+                                if (screenx < 511) line_ptr[x] = 0xFFFFFFFF;
+                            }
+                        }
+                    }
+                }
+                else { // !draw_boxes_only
+                    u8 *pattern_start_ptr = (u8*)this->vdp.VRAM + (tile_num << 5);
+                    for (u32 tile_y = 0; tile_y < 8; tile_y++) {
+                        u32 screeny = tile_y + tile_sy;
+                        if (screeny < 511) {
+                            // Fetch the tile
+                            u32 fine_y = vflip ? 7 - tile_y : tile_y;
+                            // 4 bytes = 1 line
+                            // 4 * 8 = 32 bytes per tile
+                            u8 *tile_row_ptr = pattern_start_ptr + (fine_y << 2);
+                            u32 *outptr = screen_corner_ptr + (out_width * tile_y);
+                            u32 screenx = tile_sx;
+                            for (u32 half = 0; half < 4; half++) {
+                                u32 offset = hflip ? 3 - half : half;
+                                u8 px2 = tile_row_ptr[fetch_order[offset]];
+
+                                u32 v[2];
+                                v[hflip] = px2 >> 4;
+                                v[hflip ^ 1] = px2 & 15;
+
+                                for (u32 i = 0; i < 2; i++) {
+                                    if (screenx < 511) {
+                                        if (v[i] != 0) {
+                                            u32 n = use_palette ? this->vdp.CRAM[palette | v[i]] : v[i];
+                                            u32 c = gen_to_rgb(n, use_palette);
+                                            *outptr = c;
+                                        }
+                                    }
+                                    screenx++;
+                                    outptr++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Now shade in non-visible space slightly green
+    u32 top = 0x80;
+    u32 left = 0x80;
+    u32 bottom = top + 224;
+    u32 right = left + (this->vdp.io.h40 ? 320 : 256);
+    u32 *line_ptr = outbuf;
+    for (u32 y = 0; y < 511; y++) {
+        for (u32 x = 0; x < 511; x++) {
+            u32 doit = 0;
+            if ((y < top) || (y >= bottom))
+                doit = 1;
+            else if ((x < left) || (x >= right))
+                doit = 1;
+            if (doit) {
+                u32 g = (line_ptr[x] & 0xFF00) >> 8;
+                g = ((g + 0x80) / 2);
+                if (g > 255) g = 255;
+                line_ptr[x] = (line_ptr[x] & 0xFFFF00FF) | (g << 8) | 0xFF000000;
+            }
+        }
+        line_ptr += out_width;
+    }
+}
 
 static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *this = (struct genesis *) ptr;
@@ -694,36 +929,18 @@ static void render_image_view_tilemap(struct debugger_interface *dbgr, struct de
     //           3 2 1 0
     //    addr+3  +2 +1 +0
     u32 x_col = 0, y_row = 0;
-    const static u32 offset[4] = {0, 1, 2, 3}; // D7...0, so take upper 4 first
     for (u32 tile_num = 0; tile_num < 0x7FF; tile_num++) {
         u32 *draw_ptr = (outbuf + (out_width * y_row * 8) + (x_col * 8));
 
         for (u32 tile_y = 0; tile_y < 8; tile_y++) {
             u8 *tile_ptr = ((u8*)this->vdp.VRAM) + (tile_num * 32) + (tile_y * 4);
-            for (u32 x = 0; x < 4; x++) {
-                /* IN BIG ENDIAN,
-                      16    bits          16 bits
-                 * D7...D0   D7...D0   D7...D0 D7...D0
-                 * so let's label it
-                 * B7...B0   A7...A0
-                 *
-                 * We want the upper 8 bits first.
-                 * In a big-endian system, that means we want the first 8 bits physically in RAM.
-                 * */
-
-                u32 px2 =   tile_ptr[offset[x]];
+            for (u32 half = 0; half < 4; half++) {
+                u32 px2 =   tile_ptr[fetch_order[half]];
                 u32 v;
-                //v = px2 >> 4;
-                v = px2 & 15;
-                //if (tile_y == 0) v = 15;
-
-                //if (x == 0) v = 15;
-
+                v = px2 >> 4;
                 *draw_ptr = 0xFF000000 | (0x111111 * v);
                 draw_ptr++;
-                v = px2 >> 4;
-                //v = px2 & 15;
-                //if (tile_y == 0) v = 15;
+                v = px2 & 15;
                 *draw_ptr = 0xFF000000 | (0x111111 * v);
                 draw_ptr++;
             }
@@ -743,8 +960,8 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
     // 0 = plane A
     // 1 = plane B
     // 2 = window
-    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    this->dbg.image_views.nametables[plane_num] = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.nametables[plane_num]);
     struct image_view *iv = &dview->image;
 
     switch(plane_num) {
@@ -754,12 +971,25 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
             iv->height = 1024;
             iv->viewport.p[0] = (struct ivec2){ 0, 0 };
             iv->viewport.p[1] = (struct ivec2){ 1024, 1024 };
+            debugger_widgets_add_checkbox(&dview->options, "Draw scroll boundary box", 1, 1, 0);
+            struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade outside visible region", 1, 0, 1);
+            debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
+            debugger_widget_radiogroup_add_button(rg, "Shaded", 1, 1);
+            debugger_widget_radiogroup_add_button(rg, "Black", 2, 1);
+            debugger_widget_radiogroup_add_button(rg, "White", 3, 1);
+            for (u32 i = 0; i < cvec_len(&rg->radiogroup.buttons); i++) {
+                struct debugger_widget *cb = cvec_get(&rg->radiogroup.buttons, i);
+                printf("\nFound button %s with value %d", cb->checkbox.text, cb->checkbox.value);
+            }
             break;
         case 2:
             iv->width = 320;
             iv->height = 256;
             iv->viewport.p[0] = (struct ivec2){ 0, 0 };
             iv->viewport.p[1] = (struct ivec2){ 320, 256 };
+            break;
+        default:
+            NOGOHERE;
     }
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
@@ -792,8 +1022,8 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
 
 static void setup_image_view_tilemap(struct genesis* this, struct debugger_interface *dbgr)
 {
-    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.tiles);
     struct image_view *iv = &dview->image;
 
     iv->width = 512;
@@ -805,17 +1035,40 @@ static void setup_image_view_tilemap(struct genesis* this, struct debugger_inter
 
     // Up to 2048 tiles
     // 8x8
-    // so, 32x64 tiles.
+    // so, 64x32 tiles.
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_tilemap;
 
     sprintf(iv->label, "Pattern Table Viewer");
 }
 
+static void setup_image_view_sprites(struct genesis* this, struct debugger_interface *dbgr)
+{
+    this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 512;
+    iv->height = 512;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_sprites;
+
+    sprintf(iv->label, "Sprites Debug");
+
+    debugger_widgets_add_checkbox(&dview->options, "Draw boxes only", 1, 0, 0);
+    debugger_widgets_add_checkbox(&dview->options, "Use palette", 1, 1, 1);
+}
+
+
 static void setup_image_view_palette(struct genesis* this, struct debugger_interface *dbgr)
 {
-    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    this->dbg.image_views.palette = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.palette);
     struct image_view *iv = &dview->image;
 
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
@@ -853,4 +1106,5 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_plane(this, dbgr, 0);
     setup_image_view_plane(this, dbgr, 1);
     setup_image_view_plane(this, dbgr, 2);
+    setup_image_view_sprites(this, dbgr);
 }

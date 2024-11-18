@@ -336,10 +336,70 @@ static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
     ImGui::End();
 }
 
+static void render_radiogroup(struct debugger_widget *widget)
+{
+    if (widget->same_line) ImGui::SameLine();
+
+    ImGuiWindowFlags window_flags = ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX;
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+    static int draw_lines = 2;
+    static int max_height_in_lines = 2;
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 1), ImVec2(FLT_MAX, ImGui::GetTextLineHeightWithSpacing() * max_height_in_lines));
+    ImGui::BeginChild(widget->radiogroup.title, ImVec2(-FLT_MIN, 0.0f), window_flags);
+    /*if (ImGui::BeginMenuBar())
+    {
+        if (ImGui::BeginMenu(widget->radiogroup.title))
+        {
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }*/
+    int ch = int(widget->radiogroup.value);
+    //         ImGui::RadioButton("radio a", &e, 0); ImGui::SameLine();
+    //        ImGui::RadioButton("radio b", &e, 1); ImGui::SameLine();
+    //        ImGui::RadioButton("radio c", &e, 2);
+    for (u32 i = 0; i < cvec_len(&widget->radiogroup.buttons); i++) {
+        struct debugger_widget *cb = (struct debugger_widget *)cvec_get(&widget->radiogroup.buttons, i);
+        if (cb->same_line) ImGui::SameLine();
+        ImGui::RadioButton(cb->checkbox.text, &ch, (int)cb->checkbox.value);
+    }
+    widget->radiogroup.value = u32(ch);
+
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+}
+
+
+static void render_debugger_widgets(struct cvec *options)
+{
+    for (u32 i = 0; i < cvec_len(options); i++) {
+        struct debugger_widget *widget = (struct debugger_widget *)cvec_get(options, i);
+        switch(widget->kind) {
+            case JSMD_checkbox: {
+                bool mval = widget->checkbox.value ? true : false;
+                bool disabled = widget->enabled ? false : true;
+                if (!widget->same_line) ImGui::SameLine();
+                ImGui::BeginDisabled(disabled);
+                ImGui::Checkbox(widget->checkbox.text, &mval);
+                ImGui::EndDisabled();
+                widget->checkbox.value = mval ? 1 : 0;
+                break; }
+            case JSMD_radiogroup:
+                render_radiogroup(widget);
+                break;
+            default:
+                printf("\nWHAT KIND BAD %d", widget->kind);
+                break;
+        }
+    }
+}
+
 static void render_image_views(struct full_system &fsys)
 {
     for (auto &myv: fsys.images) {
         if (ImGui::Begin(myv.view->image.label)) {
+            render_debugger_widgets(&myv.view->options);
             fsys.image_view_present(myv.view, myv.texture);
             ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
         }

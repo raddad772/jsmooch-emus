@@ -2,6 +2,7 @@
 // Created by . on 8/7/24.
 //
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -77,6 +78,7 @@ void debugger_view_init(struct debugger_view *this, enum debugger_view_kinds kin
     this->update.on_line.line_num = UPDATE_ON_LINE_NUM_DEFAULT;
     this->update.on_pause = UPDATE_ON_PAUSE_DEFAULT;
     this->update.on_step = UPDATE_ON_STEP_DEFAULT;
+    cvec_init(&this->options, sizeof(struct debugger_widget), 5);
     switch(this->kind) {
         case dview_null:
             assert(1==2);
@@ -101,8 +103,74 @@ void debugger_view_init(struct debugger_view *this, enum debugger_view_kinds kin
     }
 }
 
+void debugger_widget_init(struct debugger_widget *this, enum JSMD_widgets kind)
+{
+    memset(this, 0, sizeof(struct debugger_widget));
+    this->kind = kind;
+
+    switch(this->kind) {
+        case JSMD_checkbox:
+            break;
+        case JSMD_radiogroup:
+            cvec_init(&this->radiogroup.buttons, sizeof(struct debugger_widget), 5);
+            break;
+        default:
+            NOGOHERE;
+    }
+}
+
+void debugger_widget_delete(struct debugger_widget *this)
+{
+    if (!this) return;
+    switch(this->kind) {
+        case JSMD_checkbox:
+            break;
+        case JSMD_radiogroup:
+            cvec_delete(&this->radiogroup.buttons);
+            break;
+        default:
+            NOGOHERE;
+    }
+}
+
+void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+{
+    struct debugger_widget *w = cvec_push_back(widgets);
+    debugger_widget_init(w, JSMD_checkbox);
+    w->same_line = same_line;
+    snprintf(w->checkbox.text, sizeof(w->checkbox.text), "%s", text);
+    w->enabled = enabled;
+    w->checkbox.value = default_value;
+}
+
+struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+{
+    struct debugger_widget *w = cvec_push_back(widgets);
+    debugger_widget_init(w, JSMD_radiogroup);
+    w->same_line = same_line;
+    w->enabled = enabled;
+    snprintf(w->radiogroup.title, sizeof(w->radiogroup.title), "%s", text);
+    w->radiogroup.value = default_value;
+    return w;
+}
+
+void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, const char *text, u32 value, u32 same_line)
+{
+    struct debugger_widget *w = cvec_push_back(&radiogroup->radiogroup.buttons);
+    debugger_widget_init(w, JSMD_checkbox);
+    w->same_line = same_line;
+    w->enabled = 1;
+    snprintf(w->checkbox.text, sizeof(w->checkbox.text), "%s", text);
+    w->checkbox.value = value;
+}
+
 void debugger_view_delete(struct debugger_view *this)
 {
+    for (u32 i = 0; i < cvec_len(&this->options); i++) {
+        struct debugger_widget *p = cvec_get(&this->options, i);
+        debugger_widget_delete(p);
+    }
+    cvec_delete(&this->options);
     switch(this->kind) {
         case dview_null:
             assert(1==2);

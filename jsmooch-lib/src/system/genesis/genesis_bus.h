@@ -89,7 +89,6 @@ struct genesis {
 
             u32 plane_a_table_addr, plane_b_table_addr, window_table_addr;
             u32 sprite_table_addr;
-            u32 sprite_generator_addr;
 
             u32 bg_color;
 
@@ -271,7 +270,9 @@ struct genesis {
         DBG_CPU_REG_END(z80)
 
         DBG_IMAGE_VIEWS_START
-            MDBG_IMAGE_VIEW(nametables)
+            MDBG_IMAGE_VIEW(nametables[3])
+            MDBG_IMAGE_VIEW(palette)
+            MDBG_IMAGE_VIEW(sprites)
             MDBG_IMAGE_VIEW(tiles)
         DBG_IMAGE_VIEWS_END
 
