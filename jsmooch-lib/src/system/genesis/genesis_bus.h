@@ -199,13 +199,13 @@ struct genesis {
 
         struct {
             struct genesis_vdp_pixel_buf {
-                u32 has[3];
-                u32 color[3];
-                u32 priority[3];
+                u32 has[2];
+                u32 color[2];
+                u32 priority[2];
             } buf[32];
             u32 head;
-            u32 tail[3];
-            i32 num[3];
+            u32 tail[2];
+            i32 num[2];
         } ringbuf;
 
 

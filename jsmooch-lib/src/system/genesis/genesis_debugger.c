@@ -960,7 +960,6 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
             debugger_widget_radiogroup_add_button(rg, "White", 3, 1);
             for (u32 i = 0; i < cvec_len(&rg->radiogroup.buttons); i++) {
                 struct debugger_widget *cb = cvec_get(&rg->radiogroup.buttons, i);
-                printf("\nFound button %s with value %d", cb->checkbox.text, cb->checkbox.value);
             }
             break;
         case 2:

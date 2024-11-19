@@ -566,17 +566,22 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case SYS_GENESIS:
-            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr);
+            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr);
             //dbg_enable_trace();
             //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr);
-            worked = grab_ROM(&ROMs, which, "window.bin", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "window.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr);
             //dbg.traces.dma = 1;
             //dbg.traces.fifo = 1;
             dbg.traces.vdp = 0;

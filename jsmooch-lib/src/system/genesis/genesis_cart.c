@@ -157,7 +157,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
     tptr += 4;
     //assert(this->header.ram_addr_start == 0xFF0000);
     //assert(this->header.ram_addr_end == 0xFFFFFF);
-
+    printf("\nTPTR: %d %d", (u32)tptr[0], (u32)tptr[1]);
     if ((tptr[0] == 'R') && (tptr[1] == 'A')) {
         u8 r = (u8)tptr[2];
         this->RAM_persists = 0;
