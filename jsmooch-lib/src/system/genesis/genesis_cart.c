@@ -63,7 +63,7 @@ static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
 // Carts are read in 16 bits at a time
 u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect)
 {
-    u8* ptr = &((u8 *)this->ROM.ptr)[addr & this->ROM_mask];
+    u8* ptr = &((u8 *)this->ROM.ptr)[addr % this->ROM.size];
     // Carts are big-endian, 16-bit
     return ((ptr[0] << 8) | ptr[1]) & mask;
 }
@@ -155,8 +155,8 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
     tptr += 4;
     this->header.ram_addr_end = bswap_32(*(u32 *)tptr);
     tptr += 4;
-    assert(this->header.ram_addr_start == 0xFF0000);
-    assert(this->header.ram_addr_end == 0xFFFFFF);
+    //assert(this->header.ram_addr_start == 0xFF0000);
+    //assert(this->header.ram_addr_end == 0xFFFFFF);
 
     if ((tptr[0] == 'R') && (tptr[1] == 'A')) {
         u8 r = (u8)tptr[2];

@@ -15,6 +15,7 @@
 #include "component/audio/ym2612/ym2612.h"
 
 #include "component/controller/genesis3/genesis3.h"
+#include "component/controller/genesis6/genesis6.h"
 
 #include "genesis.h"
 #include "genesis_clock.h"
@@ -113,8 +114,8 @@ struct genesis {
 
             u32 window_h_pos;
             u32 window_v_pos;
-            u32 window_draw_L_to_R;
-            u32 window_draw_top_to_bottom;
+            u32 window_RIGHT;
+            u32 window_DOWN;
         } io;
 
         struct {
@@ -191,7 +192,7 @@ struct genesis {
         char *term_out_ptr;
 
         struct {
-            u32 hscroll[2]; // HSCROLL for planes A and B, de-negativized
+            u32 hscroll[3]; // HSCROLL for planes A and B, de-negativized. and for window...
             u32 fine_x[2];
             int column;
         } fetcher;
@@ -218,6 +219,12 @@ struct genesis {
         i32 last_r;
 
         u32 hscroll_debug;
+
+        struct {
+            u32 left_col, right_col;
+            u32 top_row, bottom_row;
+            u32 nt_base;
+        } window;
     } vdp;
 
     u16 RAM[32768]; // RAM is stored little-endian for some reason
@@ -250,8 +257,8 @@ struct genesis {
 
     } io;
 
-    struct genesis_controller_3button controller1;
-    struct genesis_controller_3button controller2;
+    struct genesis_controller_6button controller1;
+    struct genesis_controller_6button controller2;
 
     DBG_START
         DBG_CPU_REG_START(m68k)

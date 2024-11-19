@@ -588,7 +588,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
             u32 hflip = (tile_data >> 11) & 1;
             u32 vflip = (tile_data >> 12) & 1;
             u32 palette = ((tile_data >> 13) & 3) << 4;
-            u8 *pattern_start_ptr = (u8*)this->vdp.VRAM + ((tile_data & 0x3FF) << 5);
+            u8 *pattern_start_ptr = (u8*)this->vdp.VRAM + ((tile_data & 0x7FF) << 5);
 
             u32 *screen_tx_ptr = screen_ty_ptr + (screen_tx * 8); // however many x in
 

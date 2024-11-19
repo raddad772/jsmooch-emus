@@ -1,7 +1,11 @@
 
 #include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
 
 #include "genesis_bus.h"
+#include "component/controller/genesis3/genesis3.h"
+#include "component/controller/genesis6/genesis6.h"
 
 void genesis_controllerport_connect(struct genesis_controller_port *this, enum genesis_controller_kinds kind, void *ptr)
 {
@@ -30,8 +34,12 @@ static void refresh(struct genesis_controller_port* this)
             case genesis_controller_3button:
                 data = genesis3_read_data(this->controller_ptr);
                 break;
+            case genesis_controller_6button:
+                data = genesis6_read_data(this->controller_ptr);
+                break;
             default:
                 printf("\nYOU FORGOT THISSSSS89");
+                data = 0x3F;
                 break;
         }
     }
@@ -47,6 +55,9 @@ static void refresh(struct genesis_controller_port* this)
             case genesis_controller_3button:
                 //genesis3_write_data(this->controller_ptr, this->data_lines);
                 break;
+            case genesis_controller_6button:
+                //genesis6_write_data(this->controller_ptr, this->data_lines);
+                break;
             default:
                 printf("\nYOU FORGOT THISSSSS90");
         }
@@ -59,6 +70,9 @@ u16 genesis_controllerport_read_data(struct genesis_controller_port* this)
         switch(this->controller_kind) {
             case genesis_controller_3button:
                 genesis_controller_3button_latch(this->controller_ptr);
+                break;
+            case genesis_controller_6button:
+                genesis_controller_6button_latch(this->controller_ptr);
                 break;
             default:
                 printf("FORGOT THIS55");
@@ -75,8 +89,21 @@ void genesis_controllerport_write_data(struct genesis_controller_port* this, u16
 {
     //this->data_latch = val;
     //refresh(this);
-    if (this->controller_ptr)
-        genesis3_write_data(this->controller_ptr, val);
+    if (this->controller_ptr) {
+        switch(this->controller_kind) {
+            case genesis_controller_none:
+                return;
+            case genesis_controller_3button:
+                genesis3_write_data(this->controller_ptr, val);
+                return;
+            case genesis_controller_6button:
+                genesis6_write_data(this->controller_ptr, val);
+                return;
+        }
+    }
+    else {
+        return;
+    }
 }
 
 u16 genesis_controllerport_read_control(struct genesis_controller_port* this)
