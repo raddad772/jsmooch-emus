@@ -1039,12 +1039,13 @@ static int fetch_order[4] = { 1, 0, 3, 2 };
 
 static inline u32 window_transitions_off(struct genesis* this)
 {
-    if (this->vdp.window.left_col != 0) return 0; // Window only transitions ON if middle-right
+    u32 row = this->clock.vdp.vcount >> 3;
+    if ((row >= this->vdp.window.top_row) && (row < this->vdp.window.bottom_row)) return 0;
+    if (this->vdp.io.window_RIGHT) return 0; // Window only transitions OFF if left-to-middle
+    if (this->vdp.window.right_col == 0) return 0; // Window doesn't transition OFF if hpos == 0
     int col = this->vdp.fetcher.column;
 
-    // So window in 0...3
-    // Transition off will happen at 4
-    return this->vdp.window.right_col == ((u32)(col - 1));
+    return this->vdp.window.right_col == (u32)(col);
 }
 
 
@@ -1347,9 +1348,31 @@ static void render_16_more(struct genesis* this)
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + 16) & plane_wrap;
 
         // HHH here is where we will do the extra PlaneA scrolled pixels
-
         u32 *tail = &this->vdp.ringbuf.tail[plane];
         i32 *num = &this->vdp.ringbuf.num[plane];
+
+        if ((plane == 0) && window_transitions_off(this) && (this->vdp.fetcher.fine_x[0] != 0)) {
+        //if (false) {
+            u32 pattern_index = 15 - this->vdp.fetcher.fine_x[0];
+            while (pattern_index < 16) {
+                struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[*tail];
+                *tail = (*tail + 1) & 31;
+                (*num)++;
+
+                u32 c = slice.pattern[pattern_index] & 63;
+                u32 priority = (slice.pattern[pattern_index] >> 7) & 1;
+                pattern_index++;
+                if (c != 0) {
+                    b->has[plane] = 1;
+                    b->color[plane] = c;
+                    b->priority[plane] = priority;
+                }
+                else {
+                    b->has[plane] = 0;
+                }
+            }
+        }
+
         u32 pattern_index = 0;
         for (u32 half = 0; half < 2; half++) {
             for (u32 px = 0; px < 8; px++) {
@@ -1402,7 +1425,6 @@ static void render_left_column(struct genesis* this)
         u32 fine_x = this->vdp.fetcher.fine_x[plane];
         if ((((plane == 0) && (!in_window(this))) || (plane == 1)) && (fine_x > 0)) {
             u32 pattern_pos = 15 - fine_x;
-            this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + fine_x) & plane_wrap;
             while(pattern_pos < 16) {
                 struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[tail];
                 u32 c = slice.pattern[pattern_pos] & 63;
@@ -1420,6 +1442,7 @@ static void render_left_column(struct genesis* this)
                 num++;
             }
         }
+        this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + fine_x) & plane_wrap;
         this->vdp.ringbuf.tail[plane] = tail;
         this->vdp.ringbuf.num[plane] = num;
     }

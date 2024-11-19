@@ -566,12 +566,11 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case SYS_GENESIS:
-            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr);
             //dbg_enable_trace();
             //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr);
-            //worked = grab_ROM(&ROMs, which, "window.bin", nullptr);
+            worked = grab_ROM(&ROMs, which, "window.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr);
@@ -582,8 +581,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr);
-            //dbg.traces.dma = 1;
-            //dbg.traces.fifo = 1;
+            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr);
+            dbg.traces.dma = 0;
+            dbg.traces.fifo = 0;
             dbg.traces.vdp = 0;
             dbg.traces.vdp2 = 0;
             dbg.traces.vdp3 = 0;
