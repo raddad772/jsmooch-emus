@@ -18,7 +18,7 @@ void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out
 void DMG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present);
 void GBC_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, bool is_event_view_present);
 void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height);
-void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height);
+void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present);
 void SMS_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height);
 void GG_present(struct physical_io_device *device, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height);
 

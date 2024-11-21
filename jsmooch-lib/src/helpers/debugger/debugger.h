@@ -186,6 +186,7 @@ struct events_view {
 
     struct DVDP {
         u32 width, height;
+        float width_scale, height_scale;
         u32 *buf;
         u64 frame_num;
     } display[2];
@@ -326,6 +327,10 @@ void debugger_report_event(struct cvec_ptr viewptr, u32 event_id);
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
 void debug_waveform_init(struct debug_waveform *);
+
+
+void waveform_view_init(struct waveform_view *);
+void waveform_view_delete(struct waveform_view *);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)

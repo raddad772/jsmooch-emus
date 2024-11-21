@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_M68000_H
 #define JSMOOCH_EMUS_M68000_H
 
+#include "helpers/debugger/debuggerdefs.h"
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "m68000_instructions.h"
@@ -152,7 +153,11 @@ struct M68k {
 
     struct {
         u32 ins_PC;
-    } dbg;
+    } debug;
+
+    DBG_EVENT_VIEW_ONLY_START
+    IRQ
+    DBG_EVENT_VIEW_ONLY_END
 
     struct {
         enum M68k_states current;

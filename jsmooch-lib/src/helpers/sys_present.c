@@ -284,19 +284,23 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
 }
 
 
-void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *geno = (u16 *)device->display.output[device->display.last_written];
     //u16 *geno = (u16 *)device->display.output[0];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u8 *img8 = (u8 *) out_buf;
+    if (is_event_view_present) memset(out_buf, 0, out_width*out_height*4);
+
     for (u32 ry = 0; ry < 224; /*data.bottom_rendered_line; */ ry++) {
         u32 y = ry;
         u32 outyw = y * w;
         for (u32 rx = 0; rx < 1280; rx++) {
             u32 x = rx;
             u32 di = ((y * 1280) + x);
-            u32 b_out = (outyw + x) * 4;
+            u32 b_out;
+            if (is_event_view_present) b_out = (outyw + (x >> 2)) * 4;
+            else b_out = (outyw + x) * 4;
 
             u32 color = geno[di];
             u32 r, g, b;
@@ -316,6 +320,9 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
             img8[b_out+1] = g;
             img8[b_out+2] = r;
             img8[b_out+3] = 255;
+            if (is_event_view_present) {
+                rx += 3;
+            }
         }
     }
 }
@@ -401,7 +408,7 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
 {
     switch(which) {
         case SYS_GENESIS:
-            genesis_present(display, out_buf, out_width, out_height);
+            genesis_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
         case SYS_DMG:
             DMG_present(display, out_buf, x_offset, y_offset, out_width, out_height, is_event_view_present);

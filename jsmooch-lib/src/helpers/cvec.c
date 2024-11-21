@@ -83,10 +83,10 @@ void *cvec_push_back(struct cvec* this)
     return ret;
 }
 
-void cvec_grow(struct cvec *this, u32 num)
+void cvec_grow_by(struct cvec *this, u32 num)
 {
     // TODO: make this one op
-    for (u32 i = 0; i < num; i++) {
+    while (this->len < num) {
         cvec_push_back(this);
     }
 }

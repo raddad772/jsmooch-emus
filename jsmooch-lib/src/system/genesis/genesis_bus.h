@@ -215,6 +215,7 @@ struct genesis {
             u32 vscroll[2][21];
             u32 hscroll_mode, vscroll_mode;
             u32 video_mode;
+            u32 pixel_timing[320];
         } debug_info[240];
         i32 last_r;
 
@@ -275,6 +276,8 @@ struct genesis {
             *IX, *IY,
             *EI, *HALT, *CE
         DBG_CPU_REG_END(z80)
+
+        DBG_EVENT_VIEW
 
         DBG_IMAGE_VIEWS_START
             MDBG_IMAGE_VIEW(nametables[3])

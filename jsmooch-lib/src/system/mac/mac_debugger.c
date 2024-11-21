@@ -148,7 +148,7 @@ static struct disassembly_vars get_disassembly_vars(void *macptr, struct debugge
 {
     struct mac* this = (struct mac*)macptr;
     struct disassembly_vars dvar;
-    dvar.address_of_executing_instruction = this->cpu.dbg.ins_PC;
+    dvar.address_of_executing_instruction = this->cpu.debug.ins_PC;
     dvar.current_clock_cycle = this->clock.master_cycles;
     return dvar;
 }

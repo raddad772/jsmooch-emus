@@ -30,6 +30,7 @@ void SN76489_init(struct SN76489* this)
     memset(this, 0, sizeof(*this));
     this->sw[0] = this->sw[1] = this->sw[2] = (struct SN76489_SW) { .counter=0, .freq=0 };
     this->io_kind = 0;
+    DBG_EVENT_VIEW_INIT;
     SN76489_reset(this);
 
     this->noise.ext_enable = 1;

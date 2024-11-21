@@ -306,6 +306,7 @@ void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cyc
     memset(this, 0, sizeof(*this));
     this->variant = variant;
     this->master_cycle_count = master_cycle_count;
+    DBG_EVENT_VIEW_INIT;
 
     for (u32 i = 0; i < 6; i++) {
         this->channel[i].ext_enable = 1;

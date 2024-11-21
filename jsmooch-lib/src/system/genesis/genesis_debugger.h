@@ -8,6 +8,20 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
 
+#define DBG_GEN_CATEGORY_VDP 00
+
+#define DBG_GEN_EVENT_WRITE_VRAM   0
+#define DBG_GEN_EVENT_WRITE_VSRAM  1
+#define DBG_GEN_EVENT_WRITE_CRAM   2
+#define DBG_GEN_EVENT_HBLANK_IRQ   3
+#define DBG_GEN_EVENT_VBLANK_IRQ   4
+#define DBG_GEN_EVENT_DMA_FILL_START 5
+#define DBG_GEN_EVENT_DMA_COPY_START 6
+#define DBG_GEN_EVENT_DMA_LOAD_START 7
+
+#define DBG_GEN_EVENT_MAX 8
+
+
 void genesisJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
 
 #endif //JSMOOCH_EMUS_GENESIS_DEBUGGER_H

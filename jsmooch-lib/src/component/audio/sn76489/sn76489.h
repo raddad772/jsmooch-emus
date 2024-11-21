@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_SN76489_H
 #define JSMOOCH_EMUS_SN76489_H
 
+#include "helpers/debugger/debuggerdefs.h"
 #include "helpers/int.h"
 #include "helpers/serialize/serialize.h"
 
@@ -35,6 +36,8 @@ struct SN76489 {
     u32 ext_enable;
     u32 io_reg; // current register selected
     u32 io_kind; // 0 = tone, 1 = volume
+
+    DBG_EVENT_VIEW_ONLY;
 };
 
 void SN76489_init(struct SN76489*);

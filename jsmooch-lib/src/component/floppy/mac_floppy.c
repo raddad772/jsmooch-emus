@@ -103,7 +103,7 @@ void fill_mac_floppy_tracks(struct mac_floppy *mflpy, u32 num_heads) {
         track->length_mm = track->radius_mm * track->radius_mm * M_PI;
         track->rpm = track_RPM[speed_group];
 
-        cvec_grow(&track->sectors, num_sectors);
+        cvec_grow_by(&track->sectors, num_sectors);
         for (u32 s = 0; s < num_sectors; s++) {
             struct generic_floppy_sector *sector = cvec_get(&track->sectors, s);
             sector->track = track->id;

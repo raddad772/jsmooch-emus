@@ -310,7 +310,7 @@ static struct disassembly_vars get_disassembly_vars_m68k(void *macptr, struct de
 {
     struct genesis* this = (struct genesis*)macptr;
     struct disassembly_vars dvar;
-    dvar.address_of_executing_instruction = this->m68k.dbg.ins_PC;
+    dvar.address_of_executing_instruction = this->m68k.debug.ins_PC;
     dvar.current_clock_cycle = this->clock.master_cycle_count;
     return dvar;
 }
@@ -428,14 +428,13 @@ static void setup_waveforms_ym2612(struct genesis* this, struct debugger_interfa
     sprintf(dw->name, "CH5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
-    dw = cvec_push_back(&wv->waveforms);
 
+    dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     sprintf(dw->name, "CH6/PCM");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
-
 }
 
 
@@ -445,6 +444,9 @@ static void setup_waveforms_psg(struct genesis* this, struct debugger_interface 
     struct debugger_view *dview = cpg(this->dbg.waveforms_psg.view);
     struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
     sprintf(wv->name, "SN76489");
+
+    cvec_alloc_atleast(&wv->waveforms, 6);
+    cvec_lock_reallocs(&wv->waveforms);
 
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -1067,6 +1069,41 @@ static void setup_image_view_palette(struct genesis* this, struct debugger_inter
     sprintf(iv->label, "Palette Table Viewer");
 }
 
+static void setup_events_view(struct genesis* this, struct debugger_interface *dbgr)
+{
+    this->dbg.events.view = debugger_view_new(dbgr, dview_events);
+    struct debugger_view *dview = cpg(this->dbg.events.view);
+    struct events_view *ev = &dview->events;
+
+    for (u32 i = 0; i < 2; i++) {
+        ev->display[i].width = 424; // 320 pixels + 104 hblank
+        ev->display[i].height = 262; // 262 pixels high
+
+        ev->display[i].buf = NULL;
+        ev->display[i].frame_num = 0;
+    }
+    ev->associated_display = this->vdp.display_ptr;
+
+    DEBUG_REGISTER_EVENT_CATEGORY("VDP events", DBG_GEN_CATEGORY_VDP);
+
+    cvec_grow_by(&ev->events, DBG_GEN_EVENT_MAX);
+    DEBUG_REGISTER_EVENT("VRAM write", 0x0000FF, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_WRITE_VRAM);
+    DEBUG_REGISTER_EVENT("VSRAM write", 0x00FF00, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_WRITE_VSRAM);
+    DEBUG_REGISTER_EVENT("CRAM write", 0x802060, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_WRITE_CRAM);
+    DEBUG_REGISTER_EVENT("IRQ: HBlank", 0xFF0000, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_HBLANK_IRQ);
+    DEBUG_REGISTER_EVENT("IRQ: VBlank", 0x00FFFF, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_VBLANK_IRQ);
+    DEBUG_REGISTER_EVENT("DMA start: fill", 0xFF00FF, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_FILL_START);
+    DEBUG_REGISTER_EVENT("DMA start: copy", 0x004090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_COPY_START);
+    DEBUG_REGISTER_EVENT("DMA start: load", 0xFF4090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_LOAD_START);
+
+    SET_EVENT_VIEW(this->m68k);
+    SET_EVENT_VIEW(this->z80);
+    SET_EVENT_VIEW(this->ym2612);
+    SET_EVENT_VIEW(this->psg);
+
+    event_view_begin_frame(this->dbg.events.view);
+}
+
 
 void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
@@ -1076,9 +1113,9 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 2;
 
-    // Setup diassembly for m68k, z80
-    setup_m68k_disassembly(dbgr, this);
-    setup_z80_disassembly(dbgr, this);
+    //setup_m68k_disassembly(dbgr, this);
+    //setup_z80_disassembly(dbgr, this);
+    setup_events_view(this, dbgr);
     setup_waveforms_psg(this, dbgr);
     setup_waveforms_ym2612(this, dbgr);
     setup_image_view_tilemap(this, dbgr);

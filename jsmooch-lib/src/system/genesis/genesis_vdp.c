@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 #include "genesis_bus.h"
 #include "genesis_vdp.h"
 
@@ -30,6 +31,8 @@
 
 
 #define MCLOCKS_PER_LINE 3420
+#define DEBUG_PIXELS_PER_LINE 440
+#define DEBUG_MCLOCK_DIVISOR (MCLOCKS_PER_LINE / DEBUG_PIXELS_PER_LINE)
 //#define MCLOCKS_PER_LINE 3400
 #define SC_HSYNC_GOES_OFF 5
 #define SC_HSYNC_GOES_ON 658
@@ -275,6 +278,7 @@ static void vblank(struct genesis* this, u32 new_value)
 
 static void new_frame(struct genesis* this)
 {
+    if (this->dbg.events.view.vec) event_view_begin_frame(this->dbg.events.view);
     this->vdp.cur_output = ((u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1]);
     this->clock.master_frame++;
     this->vdp.hscroll_debug = (this->vdp.hscroll_debug + 1) & 511;
@@ -284,6 +288,8 @@ static void new_frame(struct genesis* this)
     this->clock.vdp.vblank = 0;
     this->vdp.cur_output = this->vdp.display->output[this->vdp.display->last_written];
     this->vdp.display->last_written ^= 1;
+    this->vdp.display->scan_y = 0;
+    this->vdp.display->scan_x = 0;
 
     set_clock_divisor(this);
 }
@@ -308,6 +314,7 @@ static void new_scanline(struct genesis* this)
     }
     this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;
+    this->vdp.display->scan_x = 0;
     this->vdp.cur_pixel = this->vdp.cur_output + (this->clock.vdp.vcount * 1280);
     this->clock.vdp.vcount++;
     if (this->clock.vdp.vcount < 224) {
@@ -973,6 +980,7 @@ void genesis_VDP_reset(struct genesis* this)
     this->clock.vdp.hblank = this->clock.vdp.vblank = 0;
     this->clock.vdp.vcount = this->clock.vdp.vcount = 0;
     this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1];
+    this->vdp.display->scan_x = this->vdp.display->scan_y = 0;
     set_clock_divisor(this);
 }
 
@@ -1235,7 +1243,7 @@ static void render_sprites(struct genesis *this)
 
 static void render_16(struct genesis* this)
 {
-    // Point of this function is to render 16 pixels outta the ringbuffer. Also combine with sprites and priority.
+    // Point of this function is to render 16 pixels outta the ringbuffer, to the pixelbuffer. Also combine with sprites and priority.
     // At this point, there will be 16-31 pixels in the ring buffer.
     u32 wide = this->vdp.io.h40 ? 4 : 5;
     u32 xmax = this->vdp.io.h40 ? 320 : 256;
@@ -1243,9 +1251,9 @@ static void render_16(struct genesis* this)
         struct genesis_vdp_pixel_buf *ring = this->vdp.ringbuf.buf + this->vdp.ringbuf.head;
         this->vdp.ringbuf.head = (this->vdp.ringbuf.head + 1) & 31;
         assert(this->vdp.ringbuf.num[PLANE_A] > 0);
-        assert(this->vdp.ringbuf.num[PLANE_A] < 32);
+        assert(this->vdp.ringbuf.num[PLANE_A] <= 32);
         assert(this->vdp.ringbuf.num[PLANE_B] > 0);
-        assert(this->vdp.ringbuf.num[PLANE_B] < 32);
+        assert(this->vdp.ringbuf.num[PLANE_B] <= 32);
         this->vdp.ringbuf.num[PLANE_A]--;
         this->vdp.ringbuf.num[PLANE_B]--;
         if (this->vdp.line.screen_x >= xmax) continue;
@@ -1472,6 +1480,9 @@ void genesis_VDP_cycle(struct genesis* this)
     // 4 of our cycles per SC transfer
     u32 run_dma = 0, run_pixels = 0;
     this->vdp.sc_count = (this->vdp.sc_count + 1) & 3;
+    if ((this->vdp.sc_count & 1) == 0) {
+        this->vdp.display->scan_x++;
+    }
     if (this->vdp.sc_count == 0) {
         this->vdp.sc_slot++;
         // Do FIFO if this is an external slot
@@ -1494,8 +1505,6 @@ void genesis_VDP_cycle(struct genesis* this)
         hblank(this, 1);
     }
 
-
-    // Do last 8 pixels
     if (this->vdp.io.enable_display && (this->clock.vdp.vcount < 224)) {
         if (this->vdp.io.h32) {
             // 1 sc count = 4 serial clocks. 2 serial clocks per pixel. so

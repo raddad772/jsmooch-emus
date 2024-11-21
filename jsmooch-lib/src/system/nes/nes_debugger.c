@@ -362,7 +362,7 @@ static void setup_events_view(struct NES* this, struct debugger_interface *dbgr)
     }
     ev->associated_display = this->ppu.display_ptr;
 
-    cvec_grow(&ev->events, DBG_NES_EVENT_MAX);
+    cvec_grow_by(&ev->events, DBG_NES_EVENT_MAX);
     DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_NES_CATEGORY_CPU);
     DEBUG_REGISTER_EVENT_CATEGORY("PPU events", DBG_NES_CATEGORY_PPU);
 

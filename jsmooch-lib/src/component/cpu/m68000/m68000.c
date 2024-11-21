@@ -28,6 +28,8 @@ void M68k_init(struct M68k* this, u32 megadrive_bug)
     //this->regs.D[0] = this->regs.A[0] = 0xFFFFFFFF;
     jsm_string_init(&this->trace.str, 1000);
     cvec_init(&this->iack_handlers, sizeof(struct M68k_iack_handler), 2);
+    DBG_EVENT_VIEW_INIT;
+
 }
 
 void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
@@ -283,7 +285,7 @@ void M68k_cycle(struct M68k* this)
 #endif
                 if (M68k_process_interrupts(this)) break;
                 M68k_decode(this);
-                this->dbg.ins_PC = this->regs.PC - 4;
+                this->debug.ins_PC = this->regs.PC - 4;
                 // This must be done AFTER interrupt, trace, etc. processing
                 this->regs.SR.T = this->regs.next_SR_T;
                 this->ins_decoded = 1;

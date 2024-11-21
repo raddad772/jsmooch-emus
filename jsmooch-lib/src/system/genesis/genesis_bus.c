@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "genesis_debugger.h"
 #include "genesis_bus.h"
 #include "genesis_vdp.h"
 
@@ -281,7 +282,7 @@ void genesis_cycle_m68k(struct genesis* this)
             if (dbg.traces.cpu3) DFT("\nRD %06x(%d%d) %04x", this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
 
             this->m68k.pins.DTACK = !(this->io.m68k.VDP_FIFO_stall | this->io.m68k.VDP_prefetch_stall);
-            this->io.m68k.stuck = !this->m68k.pins.DTACK;
+            //this->io.m68k.stuck = !this->m68k.pins.DTACK;
             if (dbg.trace_on && dbg.traces.m68000.mem && ((this->m68k.pins.FC & 1) || dbg.traces.m68000.ifetch)) {
                 dbg_printf(DBGC_READ "\nr.M68k(%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycle_count, this->m68k.pins.Addr, this->m68k.pins.D);
             }
@@ -290,7 +291,7 @@ void genesis_cycle_m68k(struct genesis* this)
             genesis_mainbus_write(this, this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
             if (dbg.traces.cpu3) DFT("\nWR %06x(%d%d) %04x", this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
             this->m68k.pins.DTACK = !(this->io.m68k.VDP_FIFO_stall | this->io.m68k.VDP_prefetch_stall);
-            this->io.m68k.stuck = !this->m68k.pins.DTACK;
+            //this->io.m68k.stuck = !this->m68k.pins.DTACK;
             if (dbg.trace_on && dbg.traces.m68000.mem && (this->m68k.pins.FC & 1)) {
                 dbg_printf(DBGC_WRITE "\nw.M68k(%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycle_count, this->m68k.pins.Addr, this->m68k.pins.D);
             }
@@ -307,6 +308,8 @@ void genesis_bus_update_irqs(struct genesis* this)
     if (this->vdp.irq.hblank.pending && this->vdp.irq.hblank.enable) lvl = 4;
     if (this->vdp.irq.vblank.pending && this->vdp.irq.vblank.enable) lvl = 6;
     if (lvl != old_IPL) {
+        if (lvl == 4) DBG_EVENT(DBG_GEN_EVENT_HBLANK_IRQ);
+        if (lvl == 6) DBG_EVENT(DBG_GEN_EVENT_VBLANK_IRQ);
         M68k_set_interrupt_level(&this->m68k, lvl);
     }
 }

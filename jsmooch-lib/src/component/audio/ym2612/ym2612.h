@@ -9,6 +9,7 @@
  * New version is straight Ares port to learn from
  */
 
+#include "helpers/debugger/debuggerdefs.h"
 #include "helpers/int.h"
 
 enum OPN2_variant {
@@ -114,6 +115,7 @@ struct ym2612 {
     u64 *master_cycle_count;
     u64 last_master_cycle;
 
+    DBG_EVENT_VIEW_ONLY;
 };
 
 void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count);
