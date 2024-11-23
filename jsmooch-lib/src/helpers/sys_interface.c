@@ -23,8 +23,10 @@ struct jsm_system* new_system(enum jsm_systems which)
     cvec_lock_reallocs(&out->IOs);
     out->kind = which;
 	switch (which) {
-        case SYS_GENESIS:
-            genesis_new(out);
+        case SYS_GENESIS_JAP:
+        case SYS_GENESIS_USA:
+        case SYS_MEGADRIVE_PAL:
+            genesis_new(out, which);
             break;
         case SYS_ATARI2600:
             atari2600_new(out);
@@ -93,7 +95,9 @@ void jsm_delete(struct jsm_system* jsm)
 {
     struct cvec* o = &jsm->IOs;
     switch(jsm->kind) {
-        case SYS_GENESIS:
+        case SYS_GENESIS_USA:
+        case SYS_GENESIS_JAP:
+        case SYS_MEGADRIVE_PAL:
             genesis_delete(jsm);
             break;
         case SYS_ATARI2600:

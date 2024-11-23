@@ -254,15 +254,34 @@ static void set_clock_divisor(struct genesis* this)
     this->clock.vdp.clock_divisor = (i32)clk;
 }
 
+static inline void latch_hcounter(struct genesis* this)
+{
+    this->vdp.irq.hblank.counter = this->vdp.irq.hblank.reload; // TODO: load this from register
+}
+
+static void do_vcounter(struct genesis* this)
+{
+    if ((this->clock.vdp.vcount > 0) && (this->clock.vdp.vcount < 224)) {
+        // Do down counter if we're not in line 0 or 225
+        if (this->vdp.irq.hblank.counter == 0) {
+            this->vdp.irq.hblank.pending = 1;
+            latch_hcounter(this);
+            genesis_bus_update_irqs(this);
+        } else this->vdp.irq.hblank.counter--;
+    }
+}
+
 static void hblank(struct genesis* this, u32 new_value)
 {
-    this->clock.vdp.hblank = new_value;
+    this->clock.vdp.hblank_active = new_value;
+    //if (new_value)
+
 }
 
 static void vblank(struct genesis* this, u32 new_value)
 {
-    u32 old_value = this->clock.vdp.vblank;
-    this->clock.vdp.vblank = new_value;  // Our value that indicates vblank yes or no
+    u32 old_value = this->clock.vdp.vblank_active;
+    this->clock.vdp.vblank_active = new_value;  // Our value that indicates vblank yes or no
     this->vdp.io.vblank = new_value;     // Our IO vblank value, which can be reset
 
     if (new_value) {
@@ -285,8 +304,9 @@ static void new_frame(struct genesis* this)
     //printf("\nNEW GENESIS FRAME! %lld", this->clock.master_frame);
     this->clock.vdp.field ^= 1;
     this->clock.vdp.vcount = -1;
-    this->clock.vdp.vblank = 0;
+    this->clock.vdp.vblank_active = 0;
     this->vdp.cur_output = this->vdp.display->output[this->vdp.display->last_written];
+    memset(this->vdp.cur_output, 0, 1280*240*2);
     this->vdp.display->last_written ^= 1;
     this->vdp.display->scan_y = 0;
     this->vdp.display->scan_x = 0;
@@ -294,14 +314,9 @@ static void new_frame(struct genesis* this)
     set_clock_divisor(this);
 }
 
-static void latch_hcounter(struct genesis* this)
-{
-    this->vdp.irq.hblank.counter = this->vdp.irq.hblank.reload; // TODO: load this from register
-}
-
 static void set_sc_array(struct genesis* this)
 {
-    if ((this->clock.vdp.vblank) || (!this->vdp.io.enable_display)) {
+    if ((this->clock.vdp.vblank_active) || (!this->vdp.io.enable_display)) {
         this->vdp.sc_array = SC_ARRAY_DISABLED + this->vdp.io.h40;
     }
     else this->vdp.sc_array = this->vdp.io.h40;
@@ -314,6 +329,7 @@ static void new_scanline(struct genesis* this)
     }
     this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;
+    this->vdp.display->scan_y++;
     this->vdp.display->scan_x = 0;
     this->clock.vdp.vcount++;
     this->vdp.cur_pixel = this->clock.vdp.vcount * 1280;
@@ -375,6 +391,8 @@ static void new_scanline(struct genesis* this)
     this->clock.vdp.line_mclock -= MCLOCKS_PER_LINE;
     this->vdp.sc_count = 0;
     this->vdp.sc_slot = 0;
+    this->vdp.fetcher.vscroll_latch[0] = this->vdp.VSRAM[0];
+    this->vdp.fetcher.vscroll_latch[1] = this->vdp.VSRAM[1];
 
     switch(this->clock.vdp.vcount) {
         case 0:
@@ -388,16 +406,7 @@ static void new_scanline(struct genesis* this)
     }
     if (this->clock.vdp.vcount == 0) latch_hcounter(this);
     if (this->clock.vdp.vcount >= 225) latch_hcounter(this); // in vblank, continually reload. TODO: make dependent on vblank
-    else if (this->clock.vdp.vcount != 0) {
-        // Do down counter if we're not in line 0 or 225
-        if (this->vdp.irq.hblank.counter == 0) {
-            this->vdp.irq.hblank.pending = 1;
-            latch_hcounter(this);
-            genesis_bus_update_irqs(this);
-        }
-        else this->vdp.irq.hblank.counter--;
-    }
-
+    else do_vcounter(this);
     set_clock_divisor(this);
     set_sc_array(this);
 }
@@ -780,8 +789,8 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
 
     u16 v = 0; // NTSC only for now
     v |= this->vdp.dma.active; // no DMA yet
-    v |= this->clock.vdp.hblank << 2;
-    v |= (this->clock.vdp.vblank || (1 ^ this->vdp.io.enable_display)) << 3;
+    v |= this->clock.vdp.hblank_active << 2;
+    v |= (this->clock.vdp.vblank_active || (1 ^ this->vdp.io.enable_display)) << 3;
     v |= (this->clock.vdp.field && this->vdp.io.interlace_field) << 4;
     v |= this->vdp.sprite_collision << 5;
     v |= this->vdp.sprite_overflow << 6;
@@ -975,19 +984,12 @@ void genesis_VDP_reset(struct genesis* this)
 {
     this->vdp.io.h32 = 0;
     this->vdp.io.h40 = 1; // H40 mode to start
-    this->clock.vdp.line_size = 320;
-    this->clock.vdp.hblank = this->clock.vdp.vblank = 0;
+    this->clock.vdp.hblank_active = this->clock.vdp.vblank_active = 0;
     this->clock.vdp.vcount = this->clock.vdp.vcount = 0;
     this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1];
     this->vdp.display->scan_x = this->vdp.display->scan_y = 0;
     set_clock_divisor(this);
 }
-
-static void do_pixel(struct genesis* this)
-{
-    // Render a pixel!
-}
-
 
 static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes)
 {
@@ -1014,8 +1016,10 @@ static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes)
 static void get_vscrolls(struct genesis* this, int column, u32 *planes)
 {
     if (this->vdp.io.vscroll_mode == 0) {
-        planes[0] = this->vdp.VSRAM[0];
-        planes[1] = this->vdp.VSRAM[1];
+        //planes[0] = this->vdp.VSRAM[0];
+        //planes[1] = this->vdp.VSRAM[1];
+        planes[0] = this->vdp.fetcher.vscroll_latch[0];
+        planes[1] = this->vdp.fetcher.vscroll_latch[1];
         return;
     }
     if (column == -1) { // TODO: correctly simulate this

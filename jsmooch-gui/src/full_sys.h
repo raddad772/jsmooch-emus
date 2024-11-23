@@ -64,7 +64,7 @@ public:
 class WVIEW {
 public:
     struct waveform_view *view{};
-    std::vector<struct WFORM> waveforms{};
+    std::vector<class WFORM> waveforms{};
 };
 
 class IVIEW {

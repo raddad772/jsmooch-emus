@@ -183,7 +183,6 @@ struct genesis {
         } fifo;
 
         struct {
-            u32 hscroll;
             u32 screen_x;
             u32 screen_y;
         } line;
@@ -193,6 +192,7 @@ struct genesis {
 
         struct {
             u32 hscroll[3]; // HSCROLL for planes A and B, de-negativized. and for window...
+            u32 vscroll_latch[2]; // per-line vscroll latch
             u32 fine_x[2];
             int column;
         } fetcher;

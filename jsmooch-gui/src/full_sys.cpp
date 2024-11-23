@@ -150,7 +150,9 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             break;
         case SYS_SG1000:
         case SYS_PSX:
-        case SYS_GENESIS:
+        case SYS_GENESIS_JAP:
+        case SYS_GENESIS_USA:
+        case SYS_MEGADRIVE_PAL:
         case SYS_SNES:
         case SYS_NES:
         case SYS_BBC_MICRO:
@@ -219,7 +221,9 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/zx_spectrum", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_GENESIS:
+        case SYS_GENESIS_USA:
+        case SYS_GENESIS_JAP:
+        case SYS_MEGADRIVE_PAL:
             snprintf(out, out_sz, "%s/genesis", BASER_PATH);
             *worked = 1;
             break;
@@ -468,7 +472,7 @@ void full_system::load_default_ROM()
         case SYS_NES:
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //NROM
-            //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
 
             // MMC3
@@ -491,7 +495,7 @@ void full_system::load_default_ROM()
 
             //MMC1
             //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "backtothefuture23.nes", nullptr);
 
@@ -565,12 +569,14 @@ void full_system::load_default_ROM()
         case SYS_APPLEIIe:
             worked = 1;
             break;
-        case SYS_GENESIS:
+        case SYS_GENESIS_USA:
+        case SYS_GENESIS_JAP:
+        case SYS_MEGADRIVE_PAL:
             //dbg_enable_trace();
             //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // needs SRAM
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
@@ -582,7 +588,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // wont boot
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
+            worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
             dbg.traces.dma = 0;
@@ -700,8 +706,8 @@ void full_system::setup_system(enum jsm_systems which)
 
     setup_audio();
 
-    sys->reset(sys);
     setup_debugger_interface();
+    sys->reset(sys);
 }
 
 void full_system::destroy_system()

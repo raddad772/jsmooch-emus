@@ -2,22 +2,40 @@
 // Created by . on 6/1/24.
 //
 
+#include <stdlib.h>
 #include "genesis_clock.h"
 
 void genesis_clock_ntsc(struct genesis_clock* this);
+void genesis_clock_pal(struct genesis_clock* this);
 
-void genesis_clock_init(struct genesis_clock* this)
+void genesis_clock_init(struct genesis_clock* this, enum jsm_systems kind)
 {
     *this = (struct genesis_clock) {};
     this->master_cycle_count = 0;
     genesis_clock_reset(this);
-    genesis_clock_ntsc(this);
+    this->kind = kind;
+    switch(kind) {
+        case SYS_GENESIS_USA:
+        case SYS_GENESIS_JAP:
+            genesis_clock_ntsc(this);
+            break;
+        case SYS_MEGADRIVE_PAL:
+            genesis_clock_pal(this);
+            break;
+        default:
+            abort();
+    }
 }
 
 void genesis_clock_reset(struct genesis_clock* this)
 {
     this->master_frame = 0;
     this->vdp.hcount = this->vdp.vcount = 0;
+}
+
+void genesis_clock_pal(struct genesis_clock* this)
+{
+    abort();
 }
 
 void genesis_clock_ntsc(struct genesis_clock* this)

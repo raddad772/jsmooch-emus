@@ -6,23 +6,27 @@
 #define JSMOOCH_EMUS_GENESIS_CLOCK_H
 
 #include "helpers/int.h"
+#include "helpers/enums.h"
 
 struct genesis_clock {
     u64 master_cycle_count;
     u64 master_frame;
     u64 frames_since_reset;
 
+    enum jsm_systems kind;
+
     u32 mem_break;
 
     struct {
         i32 hcount, vcount;
-        u32 hblank, vblank;
+        u32 hblank_active, vblank_active;
         u32 hblank_fast;
         u32 field;
         i32 clock_divisor;
         i32 cycles_til_clock;
-        u32 line_size;
         u32 line_mclock;
+
+        u32 bottom_rendered_line;
     } vdp;
 
     struct {
@@ -56,7 +60,7 @@ struct genesis_clock {
                  / 4 = ~13MHz VDP
  */
 
-void genesis_clock_init(struct genesis_clock* );
+void genesis_clock_init(struct genesis_clock*, enum jsm_systems kind);
 void genesis_clock_reset(struct genesis_clock*);
 
 #endif //JSMOOCH_EMUS_GENESIS_CLOCK_H

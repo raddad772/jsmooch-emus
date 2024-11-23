@@ -112,6 +112,7 @@ void debugger_report_event(struct cvec_ptr viewptr, u32 event_id)
     upd->frame_num = this->current_frame;
     upd->scan_x = d->scan_x;
     upd->scan_y = d->scan_y;
+    //upd->
 }
 
 static void draw_box_3x3(u32 *buf, u32 x_center, u32 y_center, u32 out_width, u32 out_height, u32 color)
