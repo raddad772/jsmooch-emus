@@ -63,6 +63,7 @@ void events_view_add_event(struct debugger_interface *dbgr, struct events_view *
 
 void event_view_begin_frame(struct cvec_ptr event_view)
 {
+
     struct events_view *eview = &((struct debugger_view *)cpg(event_view))->events;
     eview->last_frame = eview->current_frame;
     eview->current_frame++;

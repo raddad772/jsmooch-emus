@@ -10,75 +10,34 @@
 #include <cstdio>
 
 #include "../vendor/myimgui/imgui.h"
-#include "../vendor/myimgui/backends/imgui_impl_glfw.h"
-#include "../vendor/myimgui/backends/imgui_impl_wgpu.h"
-#include "helpers/debug.h"
-#include "keymap_translate.h"
-#include "my_texture.h"
-#include "full_sys.h"
-#include "helpers/inifile.h"
-
-
-
-//#define STOPAFTERAWHILE
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#include <emscripten/html5.h>
-#include <emscripten/html5_webgpu.h>
+#include "../vendor/myimgui/backends/imgui_impl_sdl3.h"
+#include "../vendor/myimgui/backends/imgui_impl_opengl3.h"
+#include <SDL3/SDL.h>
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+#include <SDL3/SDL_opengles2.h>
 #else
-#include <webgpu/webgpu_glfw.h>
+#include <SDL3/SDL_opengl.h>
 #endif
 
-#include <GLFW/glfw3.h>
-#include <webgpu/webgpu.h>
-#include <webgpu/webgpu_cpp.h>
-
-// This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-// TODO:
-// video doubling for <256 wide
-// custom texture sizes
-// set texture UVs
-// encapsulate systems
-// lots of UI work
-// load directories from inifile
 
-// Global WebGPU required states
-static WGPUInstance      wgpu_instance = nullptr;
-static WGPUDevice        wgpu_device = nullptr;
-static WGPUSurface       wgpu_surface = nullptr;
-static WGPUTextureFormat wgpu_preferred_fmt = WGPUTextureFormat_RGBA8Unorm;
-static WGPUSwapChain     wgpu_swap_chain = nullptr;
-static int               wgpu_swap_chain_width = 1280;
-static int               wgpu_swap_chain_height = 720;
+#include "helpers/debug.h"
+#include "keymap_translate.h"
+#include "my_texture_ogl3.h"
+#include "full_sys.h"
+#include "helpers/inifile.h"
+
+//#define STOPAFTERAWHILE
+
+
+#ifdef __EMSCRIPTEN__
+#include "../libs/emscripten/emscripten_mainloop_stub.h"
+#endif
 
 // Forward declarations
-static bool InitWGPU(GLFWwindow* window);
-static void CreateSwapChain(int width, int height);
-
-static void glfw_error_callback(int error, const char* description)
-{
-    printf("GLFW Error %d: %s\n", error, description);
-}
-
-static void wgpu_error_callback(WGPUErrorType error_type, const char* message, void*)
-{
-    const char* error_type_lbl = "";
-    switch (error_type)
-    {
-        case WGPUErrorType_Validation:  error_type_lbl = "Validation"; break;
-        case WGPUErrorType_OutOfMemory: error_type_lbl = "Out of memory"; break;
-        case WGPUErrorType_Unknown:     error_type_lbl = "Unknown"; break;
-        case WGPUErrorType_DeviceLost:  error_type_lbl = "Device lost"; break;
-        default:                        error_type_lbl = "Unknown";
-    }
-    printf("%s error: %s\n", error_type_lbl, message);
-}
-
 static void load_inifile(struct inifile* ini)
 {
     inifile_init(ini);
@@ -455,45 +414,52 @@ int main(int, char**)
     //enum jsm_systems which = SYS_MAC512K;
 #endif
 
-    full_system fsys;
-    fsys.setup_system(which);
-    if (!fsys.worked) {
-        printf("\nCould not initialize system! %d", fsys.worked);
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
+    {
+        printf("Error: SDL_Init(): %s\n", SDL_GetError());
         return -1;
     }
-    fsys.state = FSS_pause;
 
-#ifdef NEWSYS
-    newsys(&fsys);
-    return;
+
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+    // GL ES 2.0 + GLSL 100
+    const char* glsl_version = "#version 100";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#elif defined(__APPLE__)
+    // GL 3.2 Core + GLSL 150
+    const char* glsl_version = "#version 150";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+#else
+    // GL 3.0 + GLSL 130
+    const char* glsl_version = "#version 130";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 
-
-    glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit()) {
-        return 1;
-    }
-
-    // Make sure GLFW does not initialize any graphics context.
-    // This needs to be done explicitly later.
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(wgpu_swap_chain_width, wgpu_swap_chain_height, "JSmooCh", nullptr, nullptr);
-    if (window == nullptr) {
-        return 1;
-    }
-
-    // Initialize the WebGPU environment
-    if (!InitWGPU(window))
+    // Create window with graphics context
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    Uint32 window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
+    SDL_Window* window = SDL_CreateWindow("Dear ImGui SDL3+OpenGL3 example", 1280, 720, window_flags);
+    if (window == nullptr)
     {
-        if (window)
-            glfwDestroyWindow(window);
-        glfwTerminate();
-        return 1;
+        printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
+        return -1;
     }
-    CreateSwapChain(wgpu_swap_chain_width, wgpu_swap_chain_height);
-    glfwSwapInterval(0);
-    glfwShowWindow(window);
-    static int last_frame_was_whole = true;
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, gl_context);
+    SDL_GL_SetSwapInterval(1); // Enable vsync
+    SDL_ShowWindow(window);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -505,20 +471,20 @@ int main(int, char**)
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    fsys.has_played_once = false;
+
+    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+    ImGuiStyle& style = ImGui::GetStyle();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+
     //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOther(window, true);
-#ifdef __EMSCRIPTEN__
-    ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
-#endif
-    ImGui_ImplWGPU_InitInfo init_info;
-    init_info.Device = wgpu_device;
-    init_info.NumFramesInFlight = 3;
-    init_info.RenderTargetFormat = wgpu_preferred_fmt;
-    init_info.DepthStencilFormat = WGPUTextureFormat_Undefined;
-    ImGui_ImplWGPU_Init(&init_info);
+    ImGui_ImplSDL3_InitForOpenGL(window, gl_context);
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
@@ -543,19 +509,27 @@ int main(int, char**)
     // Our state
     static int done_break = 0;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    fsys.wgpu_device = wgpu_device;
+    bool last_frame_was_whole = false;
 
     // Main loop
+    static bool playing = true;
+    bool done = false;
+    full_system fsys;
+    fsys.setup_system(which);
+    if (!fsys.worked) {
+        printf("\nCould not initialize system! %d", fsys.worked);
+        return -1;
+    }
+    fsys.state = FSS_pause;
+    fsys.has_played_once = false;
+    fsys.setup_wgpu();
 #ifdef __EMSCRIPTEN__
     // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
     // You may manually call LoadIniSettingsFromMemory() to load settings from your own storage.
     io.IniFilename = nullptr;
     EMSCRIPTEN_MAINLOOP_BEGIN
 #else
-    fsys.setup_wgpu();
-
-    static bool playing = true;
-    while (!glfwWindowShouldClose(window))
+    while (!done)
 #endif
     {
         // Poll and handle events (inputs, window resize, etc.)
@@ -573,25 +547,25 @@ int main(int, char**)
             dbg_break("Because", fv.master_cycle);
         }
 #endif
-        glfwPollEvents();
-        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
         {
-            ImGui_ImplGlfw_Sleep(10);
+            ImGui_ImplSDL3_ProcessEvent(&event);
+            if (event.type == SDL_EVENT_QUIT)
+                done = true;
+            if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
+                done = true;
+        }
+        if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
+        {
+            SDL_Delay(10);
             continue;
         }
 
         // React to changes in screen size
         int width, height;
-        glfwGetFramebufferSize((GLFWwindow*)window, &width, &height);
-        if (width != wgpu_swap_chain_width || height != wgpu_swap_chain_height)
-        {
-            ImGui_ImplWGPU_InvalidateDeviceObjects();
-            CreateSwapChain(width, height);
-            ImGui_ImplWGPU_CreateDeviceObjects();
-        }
-        // Start the Dear ImGui frame
-        ImGui_ImplWGPU_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
         framevars start_fv = fsys.get_framevars();
@@ -625,15 +599,21 @@ int main(int, char**)
             if (ImGui::BeginChild("Playback Controls", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
                 play_pause = ImGui::Button("Play/pause");
 
+                ImGui::PushID(1);
                 step_clocks = ImGui::Button("Step");
+                ImGui::PopID();
                 ImGui::SameLine();
                 ImGui::InputInt("cycles", &steps[0]);
 
+                ImGui::PushID(2);
                 step_scanlines = ImGui::Button("Step");
+                ImGui::PopID();
                 ImGui::SameLine();
                 ImGui::InputInt("lines", &steps[1]);
 
+                ImGui::PushID(3);
                 step_seconds = ImGui::Button("Step");
+                ImGui::PopID();
                 ImGui::SameLine();
                 ImGui::InputInt("frames", &steps[2]);
 
@@ -691,57 +671,38 @@ int main(int, char**)
         // Rendering
         ImGui::Render();
 
-#ifndef __EMSCRIPTEN__
-        // Tick needs to be called in Dawn to display validation errors
-        wgpuDeviceTick(wgpu_device);
-#endif
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        WGPURenderPassColorAttachment color_attachments = {};
-        color_attachments.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
-        color_attachments.loadOp = WGPULoadOp_Clear;
-        color_attachments.storeOp = WGPUStoreOp_Store;
-        color_attachments.clearValue = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
-        color_attachments.view = wgpuSwapChainGetCurrentTextureView(wgpu_swap_chain);
+        // Update and Render additional Platform Windows
+        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+        //  For this specific demo app we could also call SDL_GL_MakeCurrent(window, gl_context) directly)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+            SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+        }
 
-        WGPURenderPassDescriptor render_pass_desc = {};
-        render_pass_desc.colorAttachmentCount = 1;
-        render_pass_desc.colorAttachments = &color_attachments;
-        render_pass_desc.depthStencilAttachment = nullptr;
-
-        WGPUCommandEncoderDescriptor enc_desc = {};
-        WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(wgpu_device, &enc_desc);
-
-        WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(encoder, &render_pass_desc);
-        ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), pass);
-        wgpuRenderPassEncoderEnd(pass);
-
-        WGPUCommandBufferDescriptor cmd_buffer_desc = {};
-        WGPUCommandBuffer cmd_buffer = wgpuCommandEncoderFinish(encoder, &cmd_buffer_desc);
-        WGPUQueue queue = wgpuDeviceGetQueue(wgpu_device);
-
-        wgpuQueueSubmit(queue, 1, &cmd_buffer);
-
-
-#ifndef __EMSCRIPTEN__
-        wgpuSwapChainPresent(wgpu_swap_chain);
-#endif
-
-        wgpuTextureViewRelease(color_attachments.view);
-        wgpuRenderPassEncoderRelease(pass);
-        wgpuCommandEncoderRelease(encoder);
-        wgpuCommandBufferRelease(cmd_buffer);
+        SDL_GL_SwapWindow(window);
     }
 #ifdef __EMSCRIPTEN__
     EMSCRIPTEN_MAINLOOP_END;
 #endif
 
-
-    ImGui_ImplWGPU_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    SDL_GL_DestroyContext(gl_context);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
 
     fsys.destroy_system();
 
@@ -750,86 +711,3 @@ int main(int, char**)
     return 0;
 }
 
-#ifndef __EMSCRIPTEN__
-static WGPUAdapter RequestAdapter(WGPUInstance instance)
-{
-    auto onAdapterRequestEnded = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* pUserData)
-    {
-        if (status == WGPURequestAdapterStatus_Success)
-            *(WGPUAdapter*)(pUserData) = adapter;
-        else
-            printf("Could not get WebGPU adapter: %s\n", message);
-    };
-    WGPUAdapter adapter;
-    wgpuInstanceRequestAdapter(instance, nullptr, onAdapterRequestEnded, (void*)&adapter);
-    return adapter;
-}
-
-static WGPUDevice RequestDevice(WGPUAdapter& adapter)
-{
-    auto onDeviceRequestEnded = [](WGPURequestDeviceStatus status, WGPUDevice device, const char* message, void* pUserData)
-    {
-        if (status == WGPURequestDeviceStatus_Success)
-            *(WGPUDevice*)(pUserData) = device;
-        else
-            printf("Could not get WebGPU device: %s\n", message);
-    };
-    WGPUDevice device;
-    wgpuAdapterRequestDevice(adapter, nullptr, onDeviceRequestEnded, (void*)&device);
-    return device;
-}
-#endif
-
-static bool InitWGPU(GLFWwindow* window)
-{
-    wgpu::Instance instance = wgpuCreateInstance(nullptr);
-
-#ifdef __EMSCRIPTEN__
-    wgpu_device = emscripten_webgpu_get_device();
-    if (!wgpu_device)
-        return false;
-#else
-    WGPUAdapter adapter = RequestAdapter(instance.Get());
-    if (!adapter)
-        return false;
-    wgpu_device = RequestDevice(adapter);
-#endif
-
-#ifdef __EMSCRIPTEN__
-    wgpu::SurfaceDescriptorFromCanvasHTMLSelector html_surface_desc = {};
-    html_surface_desc.selector = "#canvas";
-    wgpu::SurfaceDescriptor surface_desc = {};
-    surface_desc.nextInChain = &html_surface_desc;
-    wgpu::Surface surface = instance.CreateSurface(&surface_desc);
-
-    wgpu::Adapter adapter = {};
-    wgpu_preferred_fmt = (WGPUTextureFormat)surface.GetPreferredFormat(adapter);
-#else
-    wgpu::Surface surface = wgpu::glfw::CreateSurfaceForWindow(instance, window);
-    if (!surface)
-        return false;
-    wgpu_preferred_fmt = WGPUTextureFormat_BGRA8Unorm;
-#endif
-
-    wgpu_instance = instance.MoveToCHandle();
-    wgpu_surface = surface.MoveToCHandle();
-
-    wgpuDeviceSetUncapturedErrorCallback(wgpu_device, wgpu_error_callback, nullptr);
-
-    return true;
-}
-
-static void CreateSwapChain(int width, int height)
-{
-    if (wgpu_swap_chain)
-        wgpuSwapChainRelease(wgpu_swap_chain);
-    wgpu_swap_chain_width = width;
-    wgpu_swap_chain_height = height;
-    WGPUSwapChainDescriptor swap_chain_desc = {};
-    swap_chain_desc.usage = WGPUTextureUsage_RenderAttachment;
-    swap_chain_desc.format = wgpu_preferred_fmt;
-    swap_chain_desc.width = width;
-    swap_chain_desc.height = height;
-    swap_chain_desc.presentMode = WGPUPresentMode_Fifo;
-    wgpu_swap_chain = wgpuDeviceCreateSwapChain(wgpu_device, wgpu_surface, &swap_chain_desc);
-}

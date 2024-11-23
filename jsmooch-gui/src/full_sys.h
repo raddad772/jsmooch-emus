@@ -6,7 +6,7 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/cvec.h"
 
-#include "my_texture.h"
+#include "my_texture_ogl3.h"
 #include "audiowrap.h"
 
 
@@ -92,12 +92,10 @@ public:
     bool has_played_once{};
     bool enable_debugger{};
     u32 worked;
-    WGPUDevice        wgpu_device;
 
     struct audiowrap audio{};
 
     full_system() {
-        wgpu_device = nullptr;
         sys = nullptr;
         debugger_interface_init(&dbgr);
         //cvec_ptr_init(&dasm);

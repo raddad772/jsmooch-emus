@@ -2,14 +2,16 @@
 // Created by . on 8/8/24.
 //
 
+#include <string>
 #include "my_texture.h"
-
+#ifdef USE_WGPU
 void my_texture::setup(WGPUDevice device, const char *label, u32 twidth, u32 theight) {
     width = twidth;
     height = theight;
     wgpu_device = device;
     tex.desc = {};
-    tex.desc.label = label;
+    tex.desc.label = store_label;
+    //tex.desc.label.data = store_label;
     tex.desc.nextInChain = nullptr;
     tex.desc.dimension = WGPUTextureDimension_2D;
     tex.desc.size = { twidth, theight, 1 };
@@ -31,6 +33,7 @@ void my_texture::setup(WGPUDevice device, const char *label, u32 twidth, u32 the
     is_good = 1;
 }
 
+
 void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height)
 {
     WGPUImageCopyTexture destination;
@@ -44,4 +47,19 @@ void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 
     source.bytesPerRow = 4 * source_width;
     source.rowsPerImage = source_height;
     wgpuQueueWriteTexture(wgpuDeviceGetQueue(wgpu_device), &destination, source_ptr, sz, &source, &tex.desc.size);
+}
+
+#endif
+
+my_texture::~my_texture() {
+{
+    if (tex.item) {
+        wgpuTextureDestroy(tex.item);
+        wgpuTextureRelease(tex.item);
+        tex.item = nullptr;
+    }
+    if (view.item) {
+        wgpuTextureViewRelease(view.item);
+        view.item = nullptr;
+    }
 }

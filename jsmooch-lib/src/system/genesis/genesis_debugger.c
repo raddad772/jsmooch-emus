@@ -1115,7 +1115,8 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 
     setup_m68k_disassembly(dbgr, this);
     setup_z80_disassembly(dbgr, this);
-    setup_events_view(this, dbgr);
+    //setup_events_view(this, dbgr);
+    cvec_ptr_init(&this->dbg.events.view);
     setup_waveforms_psg(this, dbgr);
     setup_waveforms_ym2612(this, dbgr);
     setup_image_view_tilemap(this, dbgr);
