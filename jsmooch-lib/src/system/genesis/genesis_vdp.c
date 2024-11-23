@@ -1062,7 +1062,7 @@ static void render_to_ringbuffer(struct genesis* this, u32 plane, u8 *pattern, u
             b->has[plane] = 0;
         }
         pattern_pos++;
-        (*tail)++;
+        *tail = (*tail + 1) & 31;
         (*num)++;
     }
 }
@@ -1386,29 +1386,7 @@ static void render_16_more(struct genesis* this)
             render_to_ringbuffer(this, plane, pattern, 15 - this->vdp.fetcher.fine_x[0], 15);
         }
 
-        //render_to_ringbuffer(this, plane, &slice, 0, 15);
-        u32 pattern_index = 0;
-        u32 *tail = &this->vdp.ringbuf.tail[plane];
-        i32 *num = &this->vdp.ringbuf.num[plane];
-        for (u32 half = 0; half < 2; half++) {
-            for (u32 px = 0; px < 8; px++) {
-                struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[*tail];
-                *tail = (*tail + 1) & 31;
-                (*num)++;
-
-                u32 c = pattern[pattern_index] & 63;
-                u32 priority = (pattern[pattern_index] >> 7) & 1;
-                pattern_index++;
-                if (c != 0) {
-                    b->has[plane] = 1;
-                    b->color[plane] = c;
-                    b->priority[plane] = priority;
-                }
-                else {
-                    b->has[plane] = 0;
-                }
-            }
-        }
+        render_to_ringbuffer(this, plane, pattern, 0, 15);
     }
     this->vdp.fetcher.hscroll[2] += 16;
     this->vdp.fetcher.column++;
