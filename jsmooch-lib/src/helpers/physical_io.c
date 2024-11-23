@@ -84,7 +84,7 @@ void physical_io_device_delete(struct physical_io_device* this)
 void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
-    sprintf(b->name, "%s", name);
+    snprintf(b->name, sizeof(b->name), "%s", name);
     b->state = 0;
     b->id = 0;
     b->kind = DBK_BUTTON;

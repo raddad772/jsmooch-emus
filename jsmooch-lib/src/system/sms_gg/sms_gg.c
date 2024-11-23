@@ -164,7 +164,7 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
-    sprintf(b->name, "%s", name);
+    snprintf(b->name, sizeof(b->name), "%s", name);
     b->state = 0;
     b->id = 0;
     b->kind = DBK_BUTTON;
@@ -260,14 +260,14 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
     b = cvec_push_back(&chassis->chassis.digital_buttons);
-    sprintf(b->name, "Power");
+    snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
     if (this->variant != SYS_GG) {
         b = cvec_push_back(&chassis->chassis.digital_buttons);
         b->common_id = DBCID_ch_reset;
-        sprintf(b->name, "Reset");
+        snprintf(b->name, sizeof(b->name), "Reset");
         b->state = 0;
     }
 
@@ -276,7 +276,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     if (this->variant != SYS_GG) {
         b = cvec_push_back(&chassis->chassis.digital_buttons);
         b->common_id = DBCID_ch_pause;
-        sprintf(b->name, "Pause");
+        snprintf(b->name, sizeof(b->name), "Pause");
         b->state = 0;
 
         this->io.pause_button = b;

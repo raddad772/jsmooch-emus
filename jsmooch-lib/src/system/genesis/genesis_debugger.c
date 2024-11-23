@@ -52,109 +52,109 @@ static void create_and_bind_registers_z80(struct genesis* this, struct disassemb
 {
     u32 tkindex = 0;
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "A");
+    snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "B");
+    snprintf(rg->name, sizeof(rg->name), "B");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "C");
+    snprintf(rg->name, sizeof(rg->name), "C");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "D");
+    snprintf(rg->name, sizeof(rg->name), "D");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "E");
+    snprintf(rg->name, sizeof(rg->name), "E");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "F");
+    snprintf(rg->name, sizeof(rg->name), "F");
     rg->kind = RK_int32;
     rg->index = tkindex++;
     rg->custom_render = &render_f_z80;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "HL");
+    snprintf(rg->name, sizeof(rg->name), "HL");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "PC");
+    snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "SP");
+    snprintf(rg->name, sizeof(rg->name), "SP");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IX");
+    snprintf(rg->name, sizeof(rg->name), "IX");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IY");
+    snprintf(rg->name, sizeof(rg->name), "IY");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "EI");
+    snprintf(rg->name, sizeof(rg->name), "EI");
     rg->kind = RK_bool;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "HALT");
+    snprintf(rg->name, sizeof(rg->name), "HALT");
     rg->kind = RK_bool;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "AF_");
+    snprintf(rg->name, sizeof(rg->name), "AF_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "BC_");
+    snprintf(rg->name, sizeof(rg->name), "BC_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "DE_");
+    snprintf(rg->name, sizeof(rg->name), "DE_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "HL_");
+    snprintf(rg->name, sizeof(rg->name), "HL_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "CxI");
+    snprintf(rg->name, sizeof(rg->name), "CxI");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
@@ -187,74 +187,74 @@ static void create_and_bind_registers_m68k(struct genesis* this, struct disassem
     u32 tkindex = 0;
     for (u32 i = 0; i < 8; i++) {
         struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-        sprintf(rg->name, "D%d", i);
+        snprintf(rg->name, sizeof(rg->name), "D%d", i);
         rg->kind = RK_int32;
         rg->custom_render = NULL;
         rg->index = tkindex++;
     }
     for (u32 i = 0; i < 7; i++) {
         struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-        sprintf(rg->name, "A%d", i);
+        snprintf(rg->name, sizeof(rg->name), "A%d", i);
         rg->kind = RK_int32;
         rg->custom_render = NULL;
         rg->index = tkindex++;
     }
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "PC");
+    snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int32;
     rg->custom_render = NULL;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "USP");
+    snprintf(rg->name, sizeof(rg->name), "USP");
     rg->kind = RK_int32;
     rg->custom_render = NULL;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "SSP");
+    snprintf(rg->name, sizeof(rg->name), "SSP");
     rg->kind = RK_int32;
     rg->custom_render = NULL;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "SR");
+    snprintf(rg->name, sizeof(rg->name), "SR");
     rg->kind = RK_int32;
     rg->custom_render = NULL;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "supervisor");
+    snprintf(rg->name, sizeof(rg->name), "supervisor");
     rg->kind = RK_bool;
     rg->custom_render = NULL;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "trace");
+    snprintf(rg->name, sizeof(rg->name), "trace");
     rg->kind = RK_bool;
     rg->custom_render = NULL;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IMASK");
+    snprintf(rg->name, sizeof(rg->name), "IMASK");
     rg->kind = RK_int32;
     rg->custom_render = &render_imask;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "CSR");
+    snprintf(rg->name, sizeof(rg->name), "CSR");
     rg->kind = RK_int32;
     rg->custom_render = &render_csr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IR");
+    snprintf(rg->name, sizeof(rg->name), "IR");
     rg->kind = RK_bool;
     rg->custom_render = NULL;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IRC");
+    snprintf(rg->name, sizeof(rg->name), "IRC");
     rg->kind = RK_bool;
     rg->custom_render = NULL;
     rg->index = tkindex++;
@@ -384,12 +384,12 @@ static void setup_waveforms_ym2612(struct genesis* this, struct debugger_interfa
     this->dbg.waveforms_ym2612.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms_ym2612.view);
     struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
-    sprintf(wv->name, "YM2612");
+    snprintf(wv->name, sizeof(wv->name), "YM2612");
 
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Output");
+    snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
     dw->default_clock_divider = 144;
@@ -397,42 +397,42 @@ static void setup_waveforms_ym2612(struct genesis* this, struct debugger_interfa
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "CH1");
+    snprintf(dw->name, sizeof(dw->name), "CH1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "CH2");
+    snprintf(dw->name, sizeof(dw->name), "CH2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "CH3");
+    snprintf(dw->name, sizeof(dw->name), "CH3");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "CH4");
+    snprintf(dw->name, sizeof(dw->name), "CH4");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "CH5");
+    snprintf(dw->name, sizeof(dw->name), "CH5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_ym2612.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "CH6/PCM");
+    snprintf(dw->name, sizeof(dw->name), "CH6/PCM");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 }
@@ -443,7 +443,7 @@ static void setup_waveforms_psg(struct genesis* this, struct debugger_interface 
     this->dbg.waveforms_psg.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms_psg.view);
     struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
-    sprintf(wv->name, "SN76489");
+    snprintf(wv->name, sizeof(wv->name), "SN76489");
 
     cvec_alloc_atleast(&wv->waveforms, 6);
     cvec_lock_reallocs(&wv->waveforms);
@@ -451,7 +451,7 @@ static void setup_waveforms_psg(struct genesis* this, struct debugger_interface 
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_psg.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Output");
+    snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
     dw->default_clock_divider = 240;
@@ -459,28 +459,28 @@ static void setup_waveforms_psg(struct genesis* this, struct debugger_interface 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_psg.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Square 0");
+    snprintf(dw->name, sizeof(dw->name), "Square 0");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_psg.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Square 1");
+    snprintf(dw->name, sizeof(dw->name), "Square 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_psg.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Square 2");
+    snprintf(dw->name, sizeof(dw->name), "Square 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms_psg.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Noise");
+    snprintf(dw->name, sizeof(dw->name), "Noise");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 }
@@ -983,15 +983,15 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
     switch(plane_num) {
         case 0:
             iv->update_func.func = &render_image_view_planea;
-            sprintf(iv->label, "BG Plane A");
+            snprintf(iv->label, sizeof(iv->label), "BG Plane A");
             break;
         case 1:
             iv->update_func.func = &render_image_view_planeb;
-            sprintf(iv->label, "BG Plane B");
+            snprintf(iv->label, sizeof(iv->label), "BG Plane B");
             break;
         case 2:
             iv->update_func.func = &render_image_view_planew;
-            sprintf(iv->label, "BG Window");
+            snprintf(iv->label, sizeof(iv->label),  "BG Window");
             break;
 
     }
@@ -1021,7 +1021,7 @@ static void setup_image_view_tilemap(struct genesis* this, struct debugger_inter
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_tilemap;
 
-    sprintf(iv->label, "Pattern Table Viewer");
+    snprintf(iv->label, sizeof(iv->label), "Pattern Table Viewer");
 }
 
 static void setup_image_view_sprites(struct genesis* this, struct debugger_interface *dbgr)
@@ -1040,7 +1040,7 @@ static void setup_image_view_sprites(struct genesis* this, struct debugger_inter
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_sprites;
 
-    sprintf(iv->label, "Sprites Debug");
+    snprintf(iv->label, sizeof(iv->label), "Sprites Debug");
 
     debugger_widgets_add_checkbox(&dview->options, "Draw boxes only", 1, 0, 0);
     debugger_widgets_add_checkbox(&dview->options, "Use palette", 1, 1, 1);
@@ -1066,7 +1066,7 @@ static void setup_image_view_palette(struct genesis* this, struct debugger_inter
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_palette;
 
-    sprintf(iv->label, "Palette Table Viewer");
+    snprintf(iv->label, sizeof(iv->label), "Palette Table Viewer");
 }
 
 static void setup_events_view(struct genesis* this, struct debugger_interface *dbgr)

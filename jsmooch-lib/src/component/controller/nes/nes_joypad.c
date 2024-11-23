@@ -69,7 +69,7 @@ void NES_joypad_setup_pio(struct physical_io_device *d, u32 num, const char*name
     // = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    sprintf(d->controller.name, "%s", name);
+    snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;

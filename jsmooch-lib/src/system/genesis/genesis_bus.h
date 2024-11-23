@@ -74,7 +74,7 @@ struct genesis {
         } sprite_line_buf[320];
 
         u16 *cur_output;
-        u16 *cur_pixel;
+        u32 cur_pixel;
         struct cvec_ptr display_ptr;
         struct JSM_DISPLAY *display;
 

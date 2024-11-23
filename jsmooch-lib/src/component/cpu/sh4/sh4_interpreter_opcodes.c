@@ -1880,22 +1880,29 @@ static void emplace_mnemonic(u32 opcode, const char *mnemonic, u32 n, u32 m, u32
     char *copy_to = SH4_disassembled[szpr][opcode];
     *copy_to = 0;
 
+    u32 l = 0;
     for (char *mn = (char *)mnemonic; *mn!=0; mn++) {
         if ((*mn == 'R') && ((*(mn+1) == 'n') || (*(mn+1) == 'm'))) {
             // Rm or Rn
-            copy_to += sprintf(copy_to, "R%d", *(mn+1) == 'n' ? n : m);
+            u32 rl = snprintf(copy_to, 30, "R%d", *(mn+1) == 'n' ? n : m);
+            copy_to += rl;
+            l += rl;
             mn++;
             continue;
         }
         if ((*mn == 'd') && (*(mn+1) == 'i') && (*(mn+2) == 's')) {
             // disp
-            copy_to += sprintf(copy_to, "%02x", d);
+            u32 rl = snprintf(copy_to, 30 - l, "%02x", d);
+            copy_to += rl;
+            l += rl;
             mn += 3;
             continue;
         }
         if ((*mn == 'i') && (*(mn+1) == 'm' && (*(mn+2) == 'm'))) {
             // imm
-            copy_to += sprintf(copy_to, "%d", imm);
+            u32 rl = snprintf(copy_to, 30 - l, "%d", imm);
+            copy_to += rl;
+            l += rl;
             mn += 2;
             continue;
         }
@@ -2002,8 +2009,8 @@ void do_sh4_decode() {
         for (u32 i = 0; i < 65536; i++) {
             if (SH4_decoded[szpr][i].decoded == 0) {
                 SH4_decoded[szpr][i].exec = &SH4_EMPTY;
-                sprintf(SH4_disassembled[szpr][i], "UNKNOWN OPCODE %04x", i);
-                sprintf(SH4_mnemonic[szpr][i], "UNKNOWN OPCODE %04x", i);
+                snprintf(SH4_disassembled[szpr][i], 30, "UNKNOWN OPCODE %04x", i);
+                snprintf(SH4_mnemonic[szpr][i], 30, "UNKNOWN OPCODE %04x", i);
                 unencoded++;
             }
         }

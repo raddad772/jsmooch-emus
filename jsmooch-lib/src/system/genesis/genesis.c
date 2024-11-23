@@ -244,13 +244,13 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     struct HID_digital_button* b;
 
     b = cvec_push_back(&chassis->chassis.digital_buttons);
-    sprintf(b->name, "Power");
+    snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
     b = cvec_push_back(&chassis->chassis.digital_buttons);
     b->common_id = DBCID_ch_reset;
-    sprintf(b->name, "Reset");
+    snprintf(b->name, sizeof(b->name), "Reset");
     b->state = 0;
 
     // cartridge port

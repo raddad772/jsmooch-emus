@@ -406,7 +406,7 @@ static void DCIO_insert_disc(JSM, struct physical_io_device *pio, struct multi_f
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
-    sprintf(b->name, "%s", name);
+    snprintf(b->name, sizeof(b->name), "%s", name);
     b->state = 0;
     b->id = 0;
     b->kind = DBK_BUTTON;
@@ -418,7 +418,7 @@ static void setup_controller(struct DC* this, u32 num, const char*name, u32 conn
     struct physical_io_device *d = cvec_push_back(this->IOs);
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    sprintf(d->controller.name, "%s", name);
+    snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
     d->id = num;
     d->kind = HID_CONTROLLER;
     d->connected = connected;
@@ -477,13 +477,13 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
     b = cvec_push_back(&chassis->chassis.digital_buttons);
-    sprintf(b->name, "Power");
+    snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
     b = cvec_push_back(&chassis->chassis.digital_buttons);
     b->common_id = DBCID_ch_reset;
-    sprintf(b->name, "Reset");
+    snprintf(b->name, sizeof(b->name), "Reset");
     b->state = 0;
 
     // GDROM
@@ -680,7 +680,7 @@ static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
 #ifdef DC_SUPPORT_ELF
     if (ends_with(mfs->files[0].name, ".elf")) {
         char YOYO[500];
-        sprintf(YOYO, "%s/%s", mfs->files[0].path, mfs->files[0].name);
+        snprintf(YOYO, sizeof(YOYO), "%s/%s", mfs->files[0].path, mfs->files[0].name);
         printf("\nOPEN ELF %s", YOYO);
         Elf32_Ehdr eh;        /* elf-header is fixed size */
         i32 fd = open(YOYO, O_RDONLY | O_SYNC);

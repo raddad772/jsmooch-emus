@@ -225,7 +225,7 @@ void macJ_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
     b = cvec_push_back(&chassis->chassis.digital_buttons);
-    sprintf(b->name, "Power");
+    snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 

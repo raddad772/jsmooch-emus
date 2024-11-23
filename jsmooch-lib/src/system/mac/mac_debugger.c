@@ -35,65 +35,65 @@ static void create_and_bind_registers(struct mac* this, struct disassembly_view 
     u32 tkindex = 0;
     for (u32 i = 0; i < 8; i++) {
         struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-        sprintf(rg->name, "D%d", i);
+        snprintf(rg->name, sizeof(rg->name), "D%d", i);
         rg->kind = RK_int32;
         rg->index = tkindex++;
     }
     for (u32 i = 0; i < 7; i++) {
         struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-        sprintf(rg->name, "A%d", i);
+        snprintf(rg->name, sizeof(rg->name), "A%d", i);
         rg->kind = RK_int32;
         rg->index = tkindex++;
     }
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "PC");
+    snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int32;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "USP");
+    snprintf(rg->name, sizeof(rg->name), "USP");
     rg->kind = RK_int32;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "SSP");
+    snprintf(rg->name, sizeof(rg->name), "SSP");
     rg->kind = RK_int32;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "SR");
+    snprintf(rg->name, sizeof(rg->name), "SR");
     rg->kind = RK_int32;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "supervisor");
+    snprintf(rg->name, sizeof(rg->name), "supervisor");
     rg->kind = RK_bool;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "trace");
+    snprintf(rg->name, sizeof(rg->name), "trace");
     rg->kind = RK_bool;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IMASK");
+    snprintf(rg->name, sizeof(rg->name), "IMASK");
     rg->kind = RK_int32;
     rg->custom_render = &render_imask;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "CSR");
+    snprintf(rg->name, sizeof(rg->name), "CSR");
     rg->kind = RK_int32;
     rg->custom_render = &render_csr;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IR");
+    snprintf(rg->name, sizeof(rg->name), "IR");
     rg->kind = RK_bool;
     rg->index = tkindex++;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IRC");
+    snprintf(rg->name, sizeof(rg->name), "IRC");
     rg->kind = RK_bool;
     rg->index = tkindex++;
 

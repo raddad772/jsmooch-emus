@@ -111,7 +111,7 @@ static void apple2J_setup_debugger_interface(JSM, struct debugger_interface *int
 static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)
 {
     struct HID_digital_button *b = cvec_push_back(&cnt->digital_buttons);
-    sprintf(b->name, "%s", name);
+    snprintf(b->name, sizeof(b->name), "%s", name);
     b->state = 0;
     b->id = 0;
     b->kind = DBK_BUTTON;
@@ -167,7 +167,7 @@ void apple2J_describe_io(JSM, struct cvec *IOs)
     physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
     struct HID_digital_button* b;
     b = cvec_push_back(&chassis->chassis.digital_buttons);
-    sprintf(b->name, "Power");
+    snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 

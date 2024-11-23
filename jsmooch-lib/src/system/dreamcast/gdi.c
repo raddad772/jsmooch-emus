@@ -240,7 +240,7 @@ void GDI_GetToc(struct GDI_image *this, u32* to, u32 area)
 void GDI_load(char *folder, const char *filename, struct GDI_image *img)
 {
     struct GDI_image *this = img;
-    sprintf(this->path, "%s/%s", folder, filename);
+    snprintf(this->path, sizeof(this->path), "%s/%s", folder, filename);
     printf("\nPATH! %s", this->path);
     GDI_clear(this);
 
@@ -261,7 +261,7 @@ void GDI_load(char *folder, const char *filename, struct GDI_image *img)
         this->tracks[i].offset = strtol(p, &p, 10);
         assert(this->tracks[i].offset == 0);
         char fpath[500];
-        sprintf(fpath, "%s/%s", folder, fn);
+        snprintf(fpath, sizeof(fpath), "%s/%s", folder, fn);
         FILE *dt = fopen(fpath, "rb");
         fseek(dt, 0L, SEEK_END);
         this->tracks[i].data_sz = ftell(dt);

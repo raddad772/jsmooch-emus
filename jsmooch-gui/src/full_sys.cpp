@@ -581,8 +581,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // wont boot
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr);
-            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
+            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
             dbg.traces.dma = 0;

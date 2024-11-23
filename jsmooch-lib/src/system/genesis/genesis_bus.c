@@ -308,8 +308,13 @@ void genesis_bus_update_irqs(struct genesis* this)
     if (this->vdp.irq.hblank.pending && this->vdp.irq.hblank.enable) lvl = 4;
     if (this->vdp.irq.vblank.pending && this->vdp.irq.vblank.enable) lvl = 6;
     if (lvl != old_IPL) {
-        if (lvl == 4) DBG_EVENT(DBG_GEN_EVENT_HBLANK_IRQ);
-        if (lvl == 6) DBG_EVENT(DBG_GEN_EVENT_VBLANK_IRQ);
+        if (lvl == 4) {
+            DBG_EVENT(DBG_GEN_EVENT_HBLANK_IRQ);
+            printf("\nSET HBLANK IRQ! frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.vdp.vcount, this->clock.master_cycle_count);
+        }
+        if (lvl == 6) {
+            DBG_EVENT(DBG_GEN_EVENT_VBLANK_IRQ);
+        }
         M68k_set_interrupt_level(&this->m68k, lvl);
     }
 }

@@ -315,8 +315,10 @@ static void new_scanline(struct genesis* this)
     this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;
     this->vdp.display->scan_x = 0;
-    this->vdp.cur_pixel = this->vdp.cur_output + (this->clock.vdp.vcount * 1280);
     this->clock.vdp.vcount++;
+    this->vdp.cur_pixel = this->clock.vdp.vcount * 1280;
+    assert(this->vdp.cur_pixel < (1280*300));
+    assert(this->clock.vdp.vcount < 280);
     if (this->clock.vdp.vcount < 224) {
         this->vdp.line.screen_x = 0;
 
@@ -367,7 +369,6 @@ static void new_scanline(struct genesis* this)
         // There's an extra 16-pixel fetch off the left side of the screen, for fine hscroll &15
     }
 
-    this->vdp.line.hscroll = 0;
     this->vdp.line.screen_x = 0;
     this->vdp.line.screen_y = this->clock.vdp.vcount;
 
@@ -389,12 +390,12 @@ static void new_scanline(struct genesis* this)
     if (this->clock.vdp.vcount >= 225) latch_hcounter(this); // in vblank, continually reload. TODO: make dependent on vblank
     else if (this->clock.vdp.vcount != 0) {
         // Do down counter if we're not in line 0 or 225
-        this->vdp.irq.hblank.counter--;
         if (this->vdp.irq.hblank.counter == 0) {
             this->vdp.irq.hblank.pending = 1;
             latch_hcounter(this);
             genesis_bus_update_irqs(this);
         }
+        else this->vdp.irq.hblank.counter--;
     }
 
     set_clock_divisor(this);
@@ -444,8 +445,6 @@ static void recalc_window(struct genesis* this)
     if (this->vdp.io.h40)
         this->vdp.window.nt_base &= 0b111110; // Ignore lowest bit in h40
     this->vdp.window.nt_base <<= 10;
-    printf("\nwindow left:%d right:%d top:%d bottom:%d", this->vdp.window.left_col, this->vdp.window.right_col, this->vdp.window.top_row, this->vdp.window.bottom_row);
-    printf("\nwidnwo h_pos:%d v_pos:%d RIGHT:%d DOWN:%d", this->vdp.io.window_h_pos, this->vdp.io.window_v_pos, this->vdp.io.window_RIGHT, this->vdp.io.window_DOWN);
 }
 
 static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
@@ -1033,6 +1032,7 @@ static void get_vscrolls(struct genesis* this, int column, u32 *planes)
         }
     }
     u32 col = (u32)column << 1;
+    assert(col<20);
     planes[0] = this->vdp.VSRAM[col];
     planes[1] = this->vdp.VSRAM[col+1];
 }
@@ -1334,8 +1334,11 @@ static void render_16(struct genesis* this)
 #endif
         //color = this->vdp.CRAM[ring->color[PLANE_B]];
         for (u32 i = 0; i < wide; i++) {
-            *this->vdp.cur_pixel = color;
+            assert(this->vdp.cur_pixel < (1280*240));
+            this->vdp.cur_output[this->vdp.cur_pixel] = color;
+
             this->vdp.cur_pixel++;
+            assert(this->vdp.cur_pixel < (1280*240));
         }
         this->vdp.line.screen_x++;
     }
@@ -1355,12 +1358,11 @@ static void render_16_more(struct genesis* this)
         fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, &slice, plane == 0);
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + 16) & plane_wrap;
 
-        // HHH here is where we will do the extra PlaneA scrolled pixels
         u32 *tail = &this->vdp.ringbuf.tail[plane];
         i32 *num = &this->vdp.ringbuf.num[plane];
 
+        // If we just went from window to regular and (xscroll % 15) != 0, glitch time!
         if ((plane == 0) && window_transitions_off(this) && (this->vdp.fetcher.fine_x[0] != 0)) {
-        //if (false) {
             u32 pattern_index = 15 - this->vdp.fetcher.fine_x[0];
             while (pattern_index < 16) {
                 struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[*tail];
@@ -1501,7 +1503,6 @@ void genesis_VDP_cycle(struct genesis* this)
         hblank(this, 0);
     }
     if (sc_clock == SC_HSYNC_GOES_ON) {
-        //printf("\nHBLANK ON %d x:%d", this->clock.vdp.vcount, this->vdp.line.screen_x);
         hblank(this, 1);
     }
 

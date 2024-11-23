@@ -142,10 +142,11 @@ u32 DC_controller_read(void *ptr, u32* more)
                 memset(ci.name, 0x20, 30);
                 memset(ci.license, 0x20, 60);
                 char *sptr = ci.name;
-                sptr += sprintf(sptr, "Dreamcast Controller");
+                u32 l = snprintf(sptr, 30, "Dreamcast Controller");
+                sptr += l;
                 *sptr = 0x20;
                 sptr = ci.license;
-                sptr += sprintf(ci.license, "Produced By or Under License From SEGA ENTERPRISES,LTD.");
+                sptr += snprintf(ci.license, 60, "Produced By or Under License From SEGA ENTERPRISES,LTD.");
                 *sptr = 0x20;
                 memcpy(&this->reply_buf, &ci, sizeof(struct controller_info));
                 swap_32s(this->reply_buf + 4, 28 - 4);

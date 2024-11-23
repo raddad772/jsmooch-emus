@@ -75,109 +75,109 @@ static void create_and_bind_registers(struct SMSGG* this, struct disassembly_vie
 {
     u32 tkindex = 0;
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "A");
+    snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "B");
+    snprintf(rg->name, sizeof(rg->name), "B");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "C");
+    snprintf(rg->name, sizeof(rg->name), "C");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "D");
+    snprintf(rg->name, sizeof(rg->name), "D");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "E");
+    snprintf(rg->name, sizeof(rg->name), "E");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "F");
+    snprintf(rg->name, sizeof(rg->name), "F");
     rg->kind = RK_int32;
     rg->index = tkindex++;
     rg->custom_render = &render_f;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "HL");
+    snprintf(rg->name, sizeof(rg->name), "HL");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "PC");
+    snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "SP");
+    snprintf(rg->name, sizeof(rg->name), "SP");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IX");
+    snprintf(rg->name, sizeof(rg->name), "IX");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "IY");
+    snprintf(rg->name, sizeof(rg->name), "IY");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "EI");
+    snprintf(rg->name, sizeof(rg->name), "EI");
     rg->kind = RK_bool;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "HALT");
+    snprintf(rg->name, sizeof(rg->name), "HALT");
     rg->kind = RK_bool;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "AF_");
+    snprintf(rg->name, sizeof(rg->name), "AF_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "BC_");
+    snprintf(rg->name, sizeof(rg->name), "BC_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "DE_");
+    snprintf(rg->name, sizeof(rg->name), "DE_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "HL_");
+    snprintf(rg->name, sizeof(rg->name), "HL_");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
     rg = cvec_push_back(&dv->cpu.regs);
-    sprintf(rg->name, "CxI");
+    snprintf(rg->name, sizeof(rg->name), "CxI");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
@@ -370,7 +370,7 @@ static void setup_debugger_view_nametables(struct SMSGG* this, struct debugger_i
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_nametables;
 
-    sprintf(iv->label, "Tilemap Viewer");
+    snprintf(iv->label, sizeof(iv->label), "Tilemap Viewer");
 }
 
 static void setup_disassembly_view(struct SMSGG* this, struct debugger_interface *dbgr)
@@ -434,12 +434,12 @@ static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)
     this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms.view);
     struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
-    sprintf(wv->name, "SN76489");
+    snprintf(wv->name, sizeof(wv->name), "SN76489");
 
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Output");
+    snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
     dw->default_clock_divider = 48;
@@ -447,28 +447,28 @@ static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Square 0");
+    snprintf(dw->name, sizeof(dw->name), "Square 0");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Square 1");
+    snprintf(dw->name, sizeof(dw->name), "Square 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Square 2");
+    snprintf(dw->name, sizeof(dw->name), "Square 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Noise");
+    snprintf(dw->name, sizeof(dw->name), "Noise");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 }

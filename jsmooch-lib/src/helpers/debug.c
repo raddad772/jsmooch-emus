@@ -106,7 +106,7 @@ void dbg_seek_in_line(u32 pos)
     }
 }
 
-static void construct_path(char* w, const char* who)
+static void construct_path(char* w, size_t sz, const char* who)
 {
     const char *homeDir = getenv("HOME");
 
@@ -117,7 +117,7 @@ static void construct_path(char* w, const char* who)
     }
 
     char *tp = w;
-    tp += sprintf(tp, "%s/dev/%s", homeDir, who);
+    tp += snprintf(tp, sz, "%s/dev/%s", homeDir, who);
 }
 
 void dbg_flush()
@@ -129,7 +129,7 @@ void dbg_flush()
 #endif
 #ifdef DBG_LOG_TO_FILE
     char fpath[250];
-    construct_path(fpath, "m68k.log");
+    construct_path(fpath, sizeof(fpath), "m68k.log");
     if (dbg.first_flush) {
         dbg.first_flush = 0;
         remove(fpath);
@@ -246,7 +246,7 @@ void LT_printf(struct last_traces_t* this, char *format, ...)
     va_list va;
     va_start(va, format);
 
-    this->curptr += vsprintf(this->curptr, format, va);
+    this->curptr += vsnprintf(this->curptr, len_left, format, va);
     va_end(va);
 }
 

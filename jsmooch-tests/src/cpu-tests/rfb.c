@@ -1,14 +1,15 @@
 //
 // Created by RadDad772 on 2/28/24.
 //
-
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "rfb.h"
 
 int open_and_read(char *fname, struct read_file_buf *rfb)
 {
-    FILE *fil = fopen(fname, "rb");
+    assert(1==2);
+    /*FILE *fil = fopen(fname, "rb");
     if (fil == NULL) {
         rfb->success = 0;
         printf("\nCould not open %s", fname);
@@ -23,15 +24,15 @@ int open_and_read(char *fname, struct read_file_buf *rfb)
     rfb->success = 1;
 
     fclose(fil);
-    return 0;
+    return 0;*/
 }
 
 void rfb_cleanup(struct read_file_buf *rfb)
 {
-    if (rfb->buf != NULL) {
+    /*if (rfb->buf != NULL) {
         free(rfb->buf);
         rfb->buf = NULL;
     }
-    rfb->sz = 0;
+    rfb->sz = 0;*/
 }
 

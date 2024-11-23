@@ -381,7 +381,7 @@ void Z80_trace_format(struct Z80* this)
     //Z80(   931)    008C  LDIR          TCU:1 PC:008E  A:00 B:1F C:F5 D:C0 E:0B H:C0 L:0A SP:DFF0 IX:0000 IY:0000 I:00 R:5E WZ:008D F:sZyhxPnc
     u32 b = this->read_trace.read_trace(this->read_trace.ptr, this->PCO);
     u32 mPC = this->PCO;
-    Z80_disassemble(&mPC, b, &this->read_trace, t);
+    Z80_disassemble(&mPC, b, &this->read_trace, t, sizeof(t));
     dbg_printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s", *this->trace.cycles, this->PCO, t);
     dbg_seek_in_line(TRACE_BRK_POS);
     dbg_printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,

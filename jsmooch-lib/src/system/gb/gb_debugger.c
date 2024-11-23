@@ -269,7 +269,7 @@ static void setup_debugger_view_tiles(struct GB* this, struct debugger_interface
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_tiles;
 
-    sprintf(iv->label, "Tile View");
+    snprintf(iv->label, sizeof(iv->label), "Tile View");
 }
 
 static void setup_debugger_view_sprites(struct GB* this, struct debugger_interface *dbgr)
@@ -285,7 +285,7 @@ static void setup_debugger_view_sprites(struct GB* this, struct debugger_interfa
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_sprites;
 
-    sprintf(iv->label, "Sprite Position Viewer");
+    snprintf(iv->label, sizeof(iv->label), "Sprite Position Viewer");
 }
 
 static void setup_debugger_view_nametables(struct GB* this, struct debugger_interface *dbgr)
@@ -303,7 +303,7 @@ static void setup_debugger_view_nametables(struct GB* this, struct debugger_inte
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_nametables;
 
-    sprintf(iv->label, "Nametable Viewer");
+    snprintf(iv->label, sizeof(iv->label), "Nametable Viewer");
 }
 
 static void setup_waveforms(struct GB* this, struct debugger_interface *dbgr)
@@ -311,41 +311,41 @@ static void setup_waveforms(struct GB* this, struct debugger_interface *dbgr)
     this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms.view);
     struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
-    sprintf(wv->name, "Audio");
+    snprintf(wv->name, sizeof(wv->name), "Audio");
 
     // 384 8x8 tiles, or 2x for CGB
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Output");
+    snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Channel 0");
+    snprintf(dw->name, sizeof(dw->name), "Channel 0");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Channel 1");
+    snprintf(dw->name, sizeof(dw->name), "Channel 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Channel 2");
+    snprintf(dw->name, sizeof(dw->name), "Channel 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
     this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
-    sprintf(dw->name, "Channel 3");
+    snprintf(dw->name, sizeof(dw->name), "Channel 3");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 }
