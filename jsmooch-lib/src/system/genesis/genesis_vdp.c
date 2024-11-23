@@ -1045,6 +1045,29 @@ struct slice {
 
 static int fetch_order[4] = { 1, 0, 3, 2 };
 
+static void render_to_ringbuffer(struct genesis* this, u32 plane, u8 *pattern, u32 pattern_pos, u32 pattern_max)
+{
+    u32 epos = pattern_max + 1;
+    u32 *tail = &this->vdp.ringbuf.tail[plane];
+    i32 *num = &this->vdp.ringbuf.num[plane];
+    while(pattern_pos < epos) {
+        struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[*tail];
+        u32 c = pattern[pattern_pos] & 63;
+        u32 priority = (pattern[pattern_pos] >> 7) & 1;
+        if (c != 0) {
+            b->has[plane] = 1;
+            b->color[plane] = c;
+            b->priority[plane] = priority;
+        } else {
+            b->has[plane] = 0;
+        }
+        pattern_pos++;
+        (*tail)++;
+        (*num)++;
+    }
+}
+
+
 static inline u32 window_transitions_off(struct genesis* this)
 {
     u32 row = this->clock.vdp.vcount >> 3;
@@ -1065,7 +1088,7 @@ static inline u32 in_window(struct genesis* this)
             ((row >= this->vdp.window.top_row) && (row < this->vdp.window.bottom_row)));
 }
 
-static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row, struct slice *slice, u32 is_planea)
+static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row, u8 *pattern, u32 is_planea)
 {
     // Fetch a 16-pixel slice of a nametable to a provided struct
     u32 tile_row = (row >> 3) & this->vdp.io.foreground_height_mask;
@@ -1100,7 +1123,7 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
         px[hflip] = px2 >> 4;
         px[hflip ^ 1] = px2 & 15;
         for (u32 j = 0; j < 2; j++) {
-            slice->pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
+            pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
         }
     }
 
@@ -1122,7 +1145,7 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
         px[hflip] = px2 >> 4;
         px[hflip ^ 1] = px2 & 15;
         for (u32 j = 0; j < 2; j++) {
-            slice->pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
+            pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
         }
     }
 }
@@ -1353,45 +1376,28 @@ static void render_16_more(struct genesis* this)
     //printf("\nRENDER 16 line:%d col:%d screen_x:%d sc_slot:%d", this->clock.vdp.vcount, this->vdp.fetcher.column, this->vdp.line.screen_x, this->vdp.sc_slot);
 
     // Dump to ringbuffer
-    struct slice slice;
+    u8 pattern[16];
     for (u32 plane = 0; plane < 2; plane++) {
-        fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, &slice, plane == 0);
+        fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, pattern, plane == 0);
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + 16) & plane_wrap;
-
-        u32 *tail = &this->vdp.ringbuf.tail[plane];
-        i32 *num = &this->vdp.ringbuf.num[plane];
 
         // If we just went from window to regular and (xscroll % 15) != 0, glitch time!
         if ((plane == 0) && window_transitions_off(this) && (this->vdp.fetcher.fine_x[0] != 0)) {
-            u32 pattern_index = 15 - this->vdp.fetcher.fine_x[0];
-            while (pattern_index < 16) {
-                struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[*tail];
-                *tail = (*tail + 1) & 31;
-                (*num)++;
-
-                u32 c = slice.pattern[pattern_index] & 63;
-                u32 priority = (slice.pattern[pattern_index] >> 7) & 1;
-                pattern_index++;
-                if (c != 0) {
-                    b->has[plane] = 1;
-                    b->color[plane] = c;
-                    b->priority[plane] = priority;
-                }
-                else {
-                    b->has[plane] = 0;
-                }
-            }
+            render_to_ringbuffer(this, plane, pattern, 15 - this->vdp.fetcher.fine_x[0], 15);
         }
 
+        //render_to_ringbuffer(this, plane, &slice, 0, 15);
         u32 pattern_index = 0;
+        u32 *tail = &this->vdp.ringbuf.tail[plane];
+        i32 *num = &this->vdp.ringbuf.num[plane];
         for (u32 half = 0; half < 2; half++) {
             for (u32 px = 0; px < 8; px++) {
                 struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[*tail];
                 *tail = (*tail + 1) & 31;
                 (*num)++;
 
-                u32 c = slice.pattern[pattern_index] & 63;
-                u32 priority = (slice.pattern[pattern_index] >> 7) & 1;
+                u32 c = pattern[pattern_index] & 63;
+                u32 priority = (pattern[pattern_index] >> 7) & 1;
                 pattern_index++;
                 if (c != 0) {
                     b->has[plane] = 1;
@@ -1411,6 +1417,7 @@ static void render_16_more(struct genesis* this)
     render_16(this);
 }
 
+
 static void render_left_column(struct genesis* this)
 {
     // Fetch left column. Discard xscroll pixels, render the rest.
@@ -1421,40 +1428,17 @@ static void render_left_column(struct genesis* this)
     get_vscrolls(this, -1, vscrolls);
 
     // Fill pixel buffers
-    struct slice slice;
+    u8 pattern[16];
     // Now draw 0-15 pixels of each one out to the ringbuffer...
     for (u32 pl = 0; pl < 2; pl++) {
         u32 plane = pl;
         u32 hs = this->vdp.fetcher.hscroll[plane];
-        fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, hs & 0x3F0, vscrolls[plane]+this->clock.vdp.vcount, &slice, 0);
-
-        // hscroll was 0. we want 0 pixels of it
-        // hscroll was 2. we want 2 pixels of it
-        u32 tail = 0; // We know this because we're only here at start of a row
-        i32 num = 0;
+        fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, hs & 0x3F0, vscrolls[plane]+this->clock.vdp.vcount, pattern, 0);
         u32 fine_x = this->vdp.fetcher.fine_x[plane];
         if ((((plane == 0) && (!in_window(this))) || (plane == 1)) && (fine_x > 0)) {
-            u32 pattern_pos = 15 - fine_x;
-            while(pattern_pos < 16) {
-                struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[tail];
-                u32 c = slice.pattern[pattern_pos] & 63;
-                u32 priority = (slice.pattern[pattern_pos] >> 7) & 1;
-                if (c != 0) {
-                    b->has[plane] = 1;
-                    b->color[plane] = c;
-                    b->priority[plane] = priority;
-                }
-                else {
-                    b->has[plane] = 0;
-                }
-                pattern_pos++;
-                tail++;
-                num++;
-            }
+            render_to_ringbuffer(this, plane, pattern, 15 - fine_x, 15);
         }
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + fine_x) & plane_wrap;
-        this->vdp.ringbuf.tail[plane] = tail;
-        this->vdp.ringbuf.num[plane] = num;
     }
 
     // Now that the initial data and pixel load is done, do one more regular one!

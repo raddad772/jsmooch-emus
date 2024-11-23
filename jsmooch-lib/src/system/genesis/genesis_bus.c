@@ -310,7 +310,6 @@ void genesis_bus_update_irqs(struct genesis* this)
     if (lvl != old_IPL) {
         if (lvl == 4) {
             DBG_EVENT(DBG_GEN_EVENT_HBLANK_IRQ);
-            printf("\nSET HBLANK IRQ! frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.vdp.vcount, this->clock.master_cycle_count);
         }
         if (lvl == 6) {
             DBG_EVENT(DBG_GEN_EVENT_VBLANK_IRQ);

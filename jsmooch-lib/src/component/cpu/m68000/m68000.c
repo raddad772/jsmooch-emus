@@ -223,9 +223,6 @@ static u32 M68k_process_interrupts(struct M68k* this)
         this->state.exception.interrupt.new_I = this->pins.IPL;
         this->state.current = M68kS_exc_interrupt;
         //printf("\nM68K IRQ FIRE! cyc:%lld", *this->trace.cycles);
-        if (this->state.exception.interrupt.new_I == 4) {
-            printf("\nACCEPT IRQ 4 cycle:%lld", *this->trace.cycles);
-        }
         if (dbg.trace_on && dbg.traces.m68000.irq) {
             dbg_printf(DBGC_M68K "\n M68K  (%06llu)  !!!!    INTERRUPT level:%d!" DBGC_RST, *this->trace.cycles, this->state.exception.interrupt.new_I);
         }

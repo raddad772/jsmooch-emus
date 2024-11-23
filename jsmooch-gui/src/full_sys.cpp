@@ -570,7 +570,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // needs SRAM
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
@@ -582,7 +582,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // wont boot
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
+            //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
             dbg.traces.dma = 0;
