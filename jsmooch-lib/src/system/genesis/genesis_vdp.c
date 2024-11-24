@@ -134,10 +134,11 @@ static u16 read_counter(struct genesis* this)
 {
     if (this->vdp.io.counter_latch) return this->vdp.io.counter_latch_value;
     u16 vcnt = this->clock.vdp.vcount;
-    if (this->vdp.io.interlace_mode & 1) {
+    /*if (this->vdp.io.interlace_mode & 1) {
         if (this->vdp.io.interlace_mode & 2) vcnt <<= 1;
         vcnt = (vcnt & 0xFFFE) | ((vcnt >> 8) ^ 1);
-    }
+    }*/
+    if(vcnt >= 0xEB) vcnt += 0xFA;
     return vcnt << 8 | this->clock.vdp.hcount;
 }
 
@@ -1494,6 +1495,7 @@ void genesis_VDP_cycle(struct genesis* this)
     }
 
     this->clock.vdp.hcount++;
+    if (this->clock.vdp.hcount >= 0xE9) this->clock.vdp.hcount = 0xE9;
     if (this->clock.vdp.line_mclock >= MCLOCKS_PER_LINE)
         new_scanline(this);
 }

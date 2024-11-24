@@ -31,7 +31,7 @@
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
-u32 get_closest_pow2(u32 b)
+static u32 get_closest_pow2(u32 b)
 {
     //u32 b = MAX(w, h);
     u32 out = 128;
@@ -574,10 +574,11 @@ void full_system::load_default_ROM()
         case SYS_MEGADRIVE_PAL:
             //dbg_enable_trace();
             //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // needs SRAM
+            worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // needs SRAM
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
             //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works! but menu
@@ -588,7 +589,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // wont boot
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
+            //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
             dbg.traces.dma = 0;

@@ -140,7 +140,7 @@ u16 genesis_mainbus_read(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 o
     u32 mask = UDSMASK;
     u16 v = 0;
     if (addr < 0x400000)
-        return genesis_cart_read(&this->cart, addr, mask, has_effect);
+        return genesis_cart_read(&this->cart, addr, mask, has_effect, this->io.SRAM_enabled);
     // $A00000	$A0FFFF, audio RAM
     if ((addr >= 0xA00000) && (addr < 0xA10000)) {
         if (UDS) {
@@ -169,8 +169,7 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
 {
     u32 mask = UDSMASK;
     if (addr < 0x400000) {
-        gen_test_dbg_break(this, "mainbus_write cart");
-        dbg_printf("\nWARNING ATTEMPTED WRITE TO CART AT %06x cycle:%lld", addr, this->clock.master_cycle_count);
+        genesis_cart_write(&this->cart, addr, mask, val, this->io.SRAM_enabled);
         return;
     } //     // A06000
 
@@ -183,6 +182,10 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
     if ((addr >= 0xA10000) && (addr < 0xA12000)) {
         genesis_mainbus_write_a1k(this, addr, val, mask);
         return;
+    }
+    if (addr == 0xA130F0) {
+        this->io.SRAM_enabled = val & 1;
+        printf("\nSRAM enable set to %d", this->io.SRAM_enabled);
     }
     if ((addr >= 0xC00000) && (addr < 0xFF0000)) {
         genesis_VDP_mainbus_write(this, addr, val, mask);

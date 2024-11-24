@@ -255,7 +255,7 @@ struct genesis {
 
         struct genesis_controller_port controller_port1;
         struct genesis_controller_port controller_port2;
-
+        u32 SRAM_enabled;
     } io;
 
     struct genesis_controller_6button controller1;

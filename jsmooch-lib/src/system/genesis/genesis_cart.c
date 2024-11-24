@@ -60,12 +60,160 @@ void genesis_cart_delete(struct genesis_cart *this)
 static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
 #define UDSMASK UDS_mask[((UDS) << 1) | (LDS)]
 
+void genesis_cart_write(struct genesis_cart *this, u32 addr, u32 mask, u32 val, u32 SRAM_enable) {
+    u32 ramaddr = addr - 0x200000;
+    val &= mask;
+
+    /* it looks like carts don't actually enable SRAM to enable writes. it's always writable */
+    if (this->RAM_present && (addr >= this->header.extra_ram_addr_start) && (addr < this->header.extra_ram_addr_end)) {
+        switch (this->header.extra_ram_kind) {
+            case sega_cart_exram_none:
+                break;
+            case sega_cart_exram_8bit_even:
+            case sega_cart_exram_8bit_odd:
+                ramaddr >>= 1;
+                if (this->header.extra_ram_kind == sega_cart_exram_8bit_odd)
+                    val &= 0xFF;
+                else
+                    val >>= 8;
+                ((u8 *) this->RAM.ptr)[ramaddr & this->RAM_mask] = (u8) val;
+                break;
+            case sega_cart_exram_16bit: {
+                u8 *ptr = ((u8 *) this->RAM.ptr) + (ramaddr & this->RAM_mask);
+                ptr[0] = val >> 8;
+                ptr[1] = val & 0xFF;
+                break;
+            }
+            default:
+                assert(1 == 2);
+                break;
+        }
+    }
+}
+
 // Carts are read in 16 bits at a time
-u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect)
+u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect, u32 SRAM_enable)
 {
     u8* ptr = &((u8 *)this->ROM.ptr)[addr % this->ROM.size];
-    // Carts are big-endian, 16-bit
-    return ((ptr[0] << 8) | ptr[1]) & mask;
+    u16 v = 0;
+
+    if (addr < 0x200000) {
+        v = ((ptr[0] << 8) | ptr[1]);
+    }
+    else {
+        if (this->RAM_present && SRAM_enable) {
+            u32 ramaddr = addr - 0x200000;
+            ramaddr &= this->RAM_mask;
+            switch(this->header.extra_ram_kind) {
+                case sega_cart_exram_8bit_even:
+                case sega_cart_exram_8bit_odd:
+                    ramaddr >>= 1;
+                    v = ((u8 *)this->RAM.ptr)[ramaddr];
+                    if (this->header.extra_ram_kind == sega_cart_exram_8bit_even) {
+                        v <<= 8;
+                    }
+                    break;
+                case sega_cart_exram_16bit:
+                    ramaddr &= this->RAM_mask;
+                    ptr = &((u8 *)this->RAM.ptr)[ramaddr];
+                    v = ((ptr[0] << 8) | ptr[1]);;
+                    break;
+                default:
+                    assert(1==2);
+                    break;
+            }
+        }
+        else {
+            v = ((ptr[0] << 8) | ptr[1]);
+        }
+    }
+    return v & mask;
+}
+
+static u32 get_closest_pow2(u32 b)
+{
+    //u32 b = MAX(w, h);
+    u32 out = 128;
+    while(out < b) {
+        out <<= 1;
+        assert(out < 0x40000000);
+    }
+    return out;
+}
+
+static char *eval_cart_RAM(struct genesis_cart* this, char *tptr)
+{
+    u32 silly_goose = 0;
+    // If Sonic & Knuckles 3, use Sonic 3's header for RAM
+    if ((strncmp("GM MK-1563 -00", this->header.serial_number, 14) == 0) && (this->ROM.size == 4194304)) {
+        silly_goose = 1;
+        tptr += 0x200000;
+    }
+    if ((tptr[0] == 'R') && (tptr[1] == 'A')) {
+        u8 r = (u8)tptr[2];
+        this->RAM_persists = 0;
+        if (r & 0x40) {
+            this->RAM_persists = 1;
+            r -= 0x40;
+        }
+        switch(r) {
+            case 0xA0:
+                this->header.extra_ram_kind = sega_cart_exram_16bit;
+                break;
+            case 0xB0:
+                this->header.extra_ram_kind = sega_cart_exram_8bit_even;
+                break;
+            case 0xB8:
+                this->header.extra_ram_kind = sega_cart_exram_8bit_odd;
+                break;
+            default:
+                printf("\nUnknown extra RAM type %02x", (u32)r);
+                break;
+        }
+        r = tptr[3];
+        switch(r) {
+            case 0x20:
+                this->header.extra_ram_is_eeprom = 0;
+                break;
+            case 0x40:
+                this->header.extra_ram_is_eeprom = 1;
+                break;
+            default:
+                printf("\nUnknown extra RAM extra %02x", (u32)r);
+                break;
+        }
+        tptr += 4;
+        this->header.extra_ram_addr_start = bswap_32(*(u32 *)tptr);
+        tptr += 4;
+        this->header.extra_ram_addr_end = bswap_32(*(u32 *)tptr);
+        tptr += 4;
+        u32 ram_size = (this->header.extra_ram_addr_end - this->header.extra_ram_addr_start) + 1;
+        ram_size = get_closest_pow2(ram_size);
+        switch(this->header.extra_ram_kind) {
+            case sega_cart_exram_8bit_odd:
+            case sega_cart_exram_8bit_even:
+                ram_size >>= 1;
+                break;
+            default:
+                break;
+        }
+        printf("\nRAM addr start:%06x end:%06x", this->header.extra_ram_addr_start, this->header.extra_ram_addr_end);
+        printf("\nFound %d bytes of extra RAM!", ram_size);
+        assert(ram_size<(1 * 1024 * 1024));
+
+        buf_allocate(&this->RAM, ram_size);
+        this->RAM_present = 1;
+        this->RAM_mask = ram_size-1;
+    } else {
+        this->RAM_present = 0;
+        this->RAM_persists = 0;
+        this->header.extra_ram_kind = sega_cart_exram_none;
+        buf_delete(&this->RAM);
+        this->RAM_present = 0;
+        tptr += 12;
+    }
+    if (silly_goose) tptr -= 0x200000;
+    return tptr;
 }
 
 u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz)
@@ -157,61 +305,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
     tptr += 4;
     //assert(this->header.ram_addr_start == 0xFF0000);
     //assert(this->header.ram_addr_end == 0xFFFFFF);
-    printf("\nTPTR: %d %d", (u32)tptr[0], (u32)tptr[1]);
-    if ((tptr[0] == 'R') && (tptr[1] == 'A')) {
-        u8 r = (u8)tptr[2];
-        this->RAM_persists = 0;
-        if (r & 0x40) {
-            this->RAM_persists = 1;
-            r -= 0x40;
-        }
-        switch(r) {
-            case 0xA0:
-                this->header.extra_ram_kind = sega_cart_exram_16bit;
-                break;
-            case 0xB0:
-                this->header.extra_ram_kind = sega_cart_exram_8bit_even;
-                break;
-            case 0xB8:
-                this->header.extra_ram_kind = sega_cart_exram_8bit_odd;
-                break;
-            default:
-                printf("\nUnknown extra RAM type %02x", (u32)r);
-                break;
-        }
-        r = tptr[3];
-        switch(r) {
-            case 0x20:
-                this->header.extra_ram_is_eeprom = 0;
-                break;
-            case 0x40:
-                this->header.extra_ram_is_eeprom = 1;
-                break;
-            default:
-                printf("\nUnknown extra RAM extra %02x", (u32)r);
-                break;
-        }
-        tptr += 4;
-        this->header.extra_ram_addr_start = bswap_32(*(u32 *)tptr);
-        tptr += 4;
-        this->header.extra_ram_addr_end = bswap_32(*(u32 *)tptr);
-        tptr += 4;
-        u32 ram_size = (this->header.extra_ram_addr_end - this->header.extra_ram_addr_start) + 1;
-        printf("\nFound %d bytes of extra RAM!", ram_size);
-        assert(ram_size<(1 * 1024 * 1024));
-
-        buf_allocate(&this->RAM, ram_size);
-        this->RAM_present = 1;
-        this->RAM_mask = ram_size-1;
-    } else {
-        this->RAM_present = 0;
-        this->RAM_persists = 0;
-        this->header.extra_ram_kind = sega_cart_exram_none;
-        buf_delete(&this->RAM);
-        this->RAM_present = 0;
-        tptr += 12;
-    }
-
+    tptr = eval_cart_RAM(this, tptr);
     tptr += 52; // skip modem, padding
     u32 num_regions = 0;
     for (u32 i = 0; i < 3; i++) {
