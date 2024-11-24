@@ -118,15 +118,17 @@ void debugger_report_event(struct cvec_ptr viewptr, u32 event_id)
 
 static void draw_box_3x3(u32 *buf, u32 x_center, u32 y_center, u32 out_width, u32 out_height, u32 color)
 {
+    u32 max_ptr = (out_width * out_height);
     if (y_center < 1) y_center = 1;
     if (x_center < 1) x_center = 1;
-    buf += ((y_center - 1) * out_width) + (x_center - 1);
+    u32 buf_ptr = ((y_center - 1) * out_width) + (x_center - 1);
     for (u32 y = 0; y < 3; y++) {
         for (u32 x = 0; x < 3; x++) {
-            *buf = 0xFF000000 | color;
-            buf++;
+            buf[buf_ptr] = 0xFF000000 | color;
+            buf_ptr++;
         }
-        buf = (buf + out_width) - 3;
+        buf_ptr = (buf_ptr + out_width) - 3;
+        assert(buf_ptr<max_ptr);
         assert((y+y_center) < (out_height - 1));
     }
 }

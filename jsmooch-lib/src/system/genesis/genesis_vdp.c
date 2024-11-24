@@ -1062,10 +1062,12 @@ static void render_to_ringbuffer(struct genesis* this, u32 plane, u8 *pattern, u
         if (c != 0) {
             b->has[plane] = 1;
             b->color[plane] = c;
-            b->priority[plane] = priority;
+            //b->priority[plane] = priority;
         } else {
             b->has[plane] = 0;
+            b->color[plane] = 0;
         }
+        b->priority[plane] = priority;
         pattern_pos++;
         *tail = (*tail + 1) & 31;
         (*num)++;
@@ -1248,10 +1250,10 @@ static void render_sprites(struct genesis *this)
                 px[sp->hflip] = px2 >> 4;
                 px[sp->hflip ^ 1] = px2 & 15;
                 for (u32 ps = 0; ps < 2; ps++) {
-                    u32 v = px[ps];
                     if ((x >= 0) && (x < xmax)) {
-                        struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x];
+                        u32 v = px[ps];
                         if (v != 0) { // If there's not already a sprite pixel here, and ours HAS something other than transparent...
+                            struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x];
                             if (p->has_px) {
                                 this->vdp.sprite_collision = 1;
                             }
@@ -1290,80 +1292,83 @@ static void render_16(struct genesis* this)
         struct genesis_vdp_sprite_pixel *sprite = this->vdp.sprite_line_buf + this->vdp.line.screen_x;
 
         // Now figure out...background color, plane a, plane b, or sprite?
-        u32 color;
+#define PX_NONE 0
+#define PX_A 1
+#define PX_B 2
+#define PX_SP 3
+#define PX_BG 4
 
-#define COLORA 7 // red
-#define COLORB (7 << 3) // green
-#define COLORWINDOW (7 << 6) // blue
-#define COLORSPRITE ((7 << 6) | 7) // purple
-#define COLORBG 0x1FF
-//#define SHOW_COLOR_BLEND
 
-/*
- A = Backdrop color
- B = Low priority plane B
- C = Low priority plane A
- D = Low priority sprites
- E = High priority plane B
- F = High priority plane A
- G = High priority sprites
- */
-        if (sprite->has_px && sprite->priority) { // G - sprite with priority set
-            color = sprite->color;
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORSPRITE;
-#endif
+#define solid_sprite (sprite->color & 15)
+#define above_sprite (sprite->has_px && solid_sprite && sprite->priority)
+#define solid(plane) (ring->has[plane] && (ring->color[plane] & 15))
+#define above(plane) (solid(plane) && ring->priority[plane])
+
+        u32 bg = PX_NONE;
+        u32 fg = PX_NONE;
+        if (above(PLANE_A) || solid(PLANE_A) && !above(PLANE_B)) {
+            bg = PX_A;
         }
-        else if (ring->has[PLANE_A] && ring->priority[PLANE_A]) { // F. plane A with priority set
-            color = ring->color[PLANE_A];
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORA;
-#endif
+        else {
+            if (solid(PLANE_B)) {
+                bg = PX_B;
+            }
+            else
+            {
+                bg = PX_BG;
+            }
         }
-        else if (ring->has[PLANE_B] && ring->priority[PLANE_B]) { // E. plane B with priority set
-            color = ring->color[PLANE_B];
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORB;
-#endif
+        if (above_sprite || (solid_sprite && !above(PLANE_B) && !above(PLANE_A)))
+            fg = PX_SP;
+        else
+            fg = bg;
+
+        u32 pixel = fg; // Output pixel will now be sprite or backgorund color or A or B
+        u32 mode = 1;
+
+
+        if(this->vdp.io.enable_shadow_highlight) {
+            mode = ring->priority[PLANE_A] || ring->priority[PLANE_B];
+            if(fg == PX_SP) switch(sprite->color) {
+                    case 0x0E:
+                    case 0x1E:
+                    case 0x2E: mode  = 1; break;
+                    case 0x3E: mode += 1; pixel = bg; break;
+                    case 0x3F: mode  = 0; pixel = bg; break;
+                    default:  if (sprite->has_px) mode |= sprite->priority; break;
+                }
         }
-        else if (sprite->has_px) { // D. sprite with priority clear
-            color = sprite->color;
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORSPRITE;
-#endif
+
+        u32 final_color = 0;
+        switch(pixel) {
+            case PX_A:
+                final_color = ring->color[PLANE_A];
+                break;
+            case PX_B:
+                final_color = ring->color[PLANE_B];
+                break;
+            case PX_SP:
+                final_color = sprite->color;
+                break;
+            case PX_BG:
+                final_color = this->vdp.io.bg_color;
+                break;
+            default:
+                assert(1==2);
+                break;
         }
-        else if (ring->has[PLANE_A]) { // C. plane A with priority clear
-            color = ring->color[PLANE_A];
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORA;
-#endif
+
+        assert(final_color < 64);
+        final_color = this->vdp.CRAM[final_color];
+        if (mode != 1) {
+            final_color = (final_color >> 1) & 0b011011011; // Apply shadow
+            if (mode == 2) { // Apply highlight
+                final_color |= 0b100100100;
+            }
         }
-        else if (ring->has[PLANE_B]) { // B. background with priority clear
-            color = ring->color[PLANE_B];
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORB;
-#endif
-        }
-        else { // A. background color
-            color = this->vdp.io.bg_color;
-            assert(color<64);
-#ifdef SHOW_COLOR_BLEND
-            color = COLORBG;
-#endif
-        }
-#ifndef SHOW_COLOR_BLEND
-        color = this->vdp.CRAM[color];
-#endif
-        //color = this->vdp.CRAM[ring->color[PLANE_B]];
+
         for (u32 i = 0; i < wide; i++) {
-            assert(this->vdp.cur_pixel < (1280*240));
-            this->vdp.cur_output[this->vdp.cur_pixel] = color;
+            this->vdp.cur_output[this->vdp.cur_pixel] = final_color;
 
             this->vdp.cur_pixel++;
             assert(this->vdp.cur_pixel < (1280*240));
