@@ -185,7 +185,7 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
     }
     if (addr == 0xA130F0) {
         this->io.SRAM_enabled = val & 1;
-        printf("\nSRAM enable set to %d", this->io.SRAM_enabled);
+        return;
     }
     if ((addr >= 0xC00000) && (addr < 0xFF0000)) {
         genesis_VDP_mainbus_write(this, addr, val, mask);
