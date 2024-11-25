@@ -304,6 +304,15 @@ struct genesis {
         struct audiobuf *buf;
     } audio;
 
+    struct {
+        struct {
+            u32 enable_A;
+            u32 enable_B;
+            u32 enable_sprites;
+            u32 ex_trace;
+        } vdp;
+    } opts;
+
 };
 
 void genesis_cycle_m68k(struct genesis*);

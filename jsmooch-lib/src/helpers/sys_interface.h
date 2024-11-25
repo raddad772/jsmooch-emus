@@ -112,6 +112,7 @@ struct jsm_system {
     void (*load_state)(struct jsm_system *jsm, struct serialized_state *state, struct deserialize_ret *ret);
 
     struct cvec IOs;
+    struct cvec opts;
 };
 
 struct jsm_system* new_system(enum jsm_systems which);

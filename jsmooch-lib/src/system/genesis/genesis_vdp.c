@@ -262,7 +262,7 @@ static inline void latch_hcounter(struct genesis* this)
 
 static void do_vcounter(struct genesis* this)
 {
-    if ((this->clock.vdp.vcount > 0) && (this->clock.vdp.vcount < 224)) {
+    if ((this->clock.vdp.vcount >= 0) && (this->clock.vdp.vcount <= 224)) {
         // Do down counter if we're not in line 0 or 225
         if (this->vdp.irq.hblank.counter == 0) {
             this->vdp.irq.hblank.pending = 1;
@@ -304,7 +304,7 @@ static void new_frame(struct genesis* this)
     this->vdp.hscroll_debug = (this->vdp.hscroll_debug + 1) & 511;
     //printf("\nNEW GENESIS FRAME! %lld", this->clock.master_frame);
     this->clock.vdp.field ^= 1;
-    this->clock.vdp.vcount = -1;
+    this->clock.vdp.vcount = 0;
     this->clock.vdp.vblank_active = 0;
     this->vdp.cur_output = this->vdp.display->output[this->vdp.display->last_written];
     memset(this->vdp.cur_output, 0, 1280*240*2);
@@ -323,16 +323,23 @@ static void set_sc_array(struct genesis* this)
     else this->vdp.sc_array = this->vdp.io.h40;
 }
 
+static void print_scroll_info(struct genesis* this)
+{
+    printf("\nSCROLL AT LINE %d. HMODE:%d VMODE:%d", this->clock.vdp.vcount, this->vdp.io.hscroll_mode, this->vdp.io.vscroll_mode);
+    printf("\nHSCROLL A:%d VSCROLL A:%d", this->vdp.fetcher.hscroll[0], this->vdp.fetcher.vscroll_latch[0]);
+    printf("\nFG WIDTH:%d  HEIGHT:%d", this->vdp.io.foreground_width, this->vdp.io.foreground_height);
+}
+
 static void new_scanline(struct genesis* this)
 {
-    if (this->clock.vdp.vcount == 261) {
+    this->clock.vdp.vcount++;
+    if (this->clock.vdp.vcount == 262) {
         new_frame(this);
     }
     this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;
     this->vdp.display->scan_y++;
     this->vdp.display->scan_x = 0;
-    this->clock.vdp.vcount++;
     this->vdp.cur_pixel = this->clock.vdp.vcount * 1280;
     assert(this->vdp.cur_pixel < (1280*300));
     assert(this->clock.vdp.vcount < 280);
@@ -377,8 +384,6 @@ static void new_scanline(struct genesis* this)
             }
         }
 
-
-
         // Render out sprites...
         render_sprites(this);
 
@@ -405,7 +410,7 @@ static void new_scanline(struct genesis* this)
             genesis_z80_interrupt(this, 1); // Z80 asserts vblank interrupt for 2573 mclocks
             break;
     }
-    if (this->clock.vdp.vcount == 0) latch_hcounter(this);
+    //if (this->clock.vdp.vcount == 0) latch_hcounter(this);
     if (this->clock.vdp.vcount >= 225) latch_hcounter(this); // in vblank, continually reload. TODO: make dependent on vblank
     else do_vcounter(this);
     set_clock_divisor(this);
@@ -510,8 +515,10 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             vdp->io.bg_color = val & 63;
             return;
         case 8: // master system hscroll
+            printf("\nwrite SMS hscroll %d", val & 0xFF);
             return;
         case 9: // master system vscroll
+            printf("\nwrite SMS vscroll %d", val & 0xFF);
             return;
         case 10: // horizontal interrupt counter
             vdp->irq.hblank.reload = val;
@@ -536,6 +543,7 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 13: // horizontal scroll data addr
             vdp->io.hscroll_addr = (val & 0x7F) << 9;
+            printf("\nNEW HSCROLL ADDR %04x", vdp->io.hscroll_addr);
             return;
         case 14: // mostly unused
             return;
@@ -972,6 +980,10 @@ void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask
             if ((mask & 0xFF) == 0) return; // Byte writes to wrong address have no effect
             SN76489_write_data(&this->psg, val & 0xFF);
             return;
+        case 0xC00018:
+        case 0xC0001A:
+            printf("\nDEBUG REG ADDR WRITE!");
+            return;
         case 0xC0001C: // debug reg
         case 0xC0001E:
             printf("\nDEBUG REG WRITE!");
@@ -1010,8 +1022,8 @@ static void get_line_hscroll(struct genesis* this, u32 line_num, u32 *planes)
             break;
     }
     // - 1 & 1023 ^ 1023 should convert from negative to positive here. 0 = FFFF = 0 for instance. 1 = 0 = FFFF.
-    planes[PLANE_A] = VRAM_read(this, addr, 0) & 1023;
-    planes[PLANE_B] = VRAM_read(this, addr + 1, 0) & 1023;
+    planes[PLANE_A] = VRAM_read(this, addr, 0);
+    planes[PLANE_B] = VRAM_read(this, addr + 1, 0);
 }
 
 static void get_vscrolls(struct genesis* this, int column, u32 *planes)
@@ -1291,13 +1303,26 @@ static void render_16(struct genesis* this)
         // We've got out ringbuffer. Now get our sprite pixel...
         struct genesis_vdp_sprite_pixel *sprite = this->vdp.sprite_line_buf + this->vdp.line.screen_x;
 
-        // Now figure out...background color, plane a, plane b, or sprite?
+        if (!this->opts.vdp.enable_A) {
+            ring->has[PLANE_A] = ring->color[PLANE_A] = ring->priority[PLANE_A] = 0;
+        }
+        if (!this->opts.vdp.enable_B) {
+            ring->has[PLANE_B] = ring->color[PLANE_B] = ring->priority[PLANE_B] = 0;
+        }
+        if (!this->opts.vdp.enable_sprites) {
+            sprite->has_px = sprite->color = sprite->priority = 0;
+        }
+
+
 #define PX_NONE 0
 #define PX_A 1
 #define PX_B 2
 #define PX_SP 3
 #define PX_BG 4
-
+        // Using logic from Ares here.
+        // I originally had my own. Then I went to do shadow&highlight, and use Ares logic.
+        // I couldn't get it to work. Then I tried making my own and realized I was just reproducing Ares but
+        //  understanding it, so gave in.
 
 #define solid_sprite (sprite->color & 15)
 #define above_sprite (sprite->has_px && solid_sprite && sprite->priority)
@@ -1359,15 +1384,9 @@ static void render_16(struct genesis* this)
         }
 
         assert(final_color < 64);
-        final_color = this->vdp.CRAM[final_color];
-        if (mode != 1) {
-            final_color = (final_color >> 1) & 0b011011011; // Apply shadow
-            if (mode == 2) { // Apply highlight
-                final_color |= 0b100100100;
-            }
-        }
-
+        final_color = this->vdp.CRAM[final_color] | (mode << 10);
         for (u32 i = 0; i < wide; i++) {
+            assert(this->vdp.cur_pixel < (1280*240));
             this->vdp.cur_output[this->vdp.cur_pixel] = final_color;
 
             this->vdp.cur_pixel++;

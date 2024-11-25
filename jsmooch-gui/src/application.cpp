@@ -330,27 +330,38 @@ static void render_radiogroup(struct debugger_widget *widget)
 }
 
 
+static void render_checkbox(struct debugger_widget *widget)
+{
+    bool mval = widget->checkbox.value ? true : false;
+    bool disabled = widget->enabled ? false : true;
+    if (widget->same_line) ImGui::SameLine();
+    ImGui::BeginDisabled(disabled);
+    ImGui::Checkbox(widget->checkbox.text, &mval);
+    ImGui::EndDisabled();
+    widget->checkbox.value = mval ? 1 : 0;
+}
+
+static void render_debugger_widget(struct debugger_widget *widget)
+{
+    switch(widget->kind) {
+        case JSMD_checkbox: {
+            render_checkbox(widget);
+            break; }
+        case JSMD_radiogroup:
+            render_radiogroup(widget);
+            break;
+        default:
+            printf("\nWHAT KIND BAD %d", widget->kind);
+            break;
+    }
+}
+
+
 static void render_debugger_widgets(struct cvec *options)
 {
     for (u32 i = 0; i < cvec_len(options); i++) {
         struct debugger_widget *widget = (struct debugger_widget *)cvec_get(options, i);
-        switch(widget->kind) {
-            case JSMD_checkbox: {
-                bool mval = widget->checkbox.value ? true : false;
-                bool disabled = widget->enabled ? false : true;
-                if (!widget->same_line) ImGui::SameLine();
-                ImGui::BeginDisabled(disabled);
-                ImGui::Checkbox(widget->checkbox.text, &mval);
-                ImGui::EndDisabled();
-                widget->checkbox.value = mval ? 1 : 0;
-                break; }
-            case JSMD_radiogroup:
-                render_radiogroup(widget);
-                break;
-            default:
-                printf("\nWHAT KIND BAD %d", widget->kind);
-                break;
-        }
+        render_debugger_widget(widget);
     }
 }
 
@@ -366,6 +377,19 @@ static void render_image_views(struct full_system &fsys)
     }
 }
 
+static void render_opt_view(struct full_system &fsys)
+{
+    struct cvec *opts = &fsys.sys->opts;
+    if (cvec_len(opts) > 0) {
+        if (ImGui::Begin("Core Options")) {
+            for (u32 i = 0; i < cvec_len(opts); i++) {
+                struct debugger_widget *w = (struct debugger_widget *)cvec_get(opts, i);
+                render_debugger_widget(w);
+            }
+        }
+        ImGui::End();
+    }
+}
 
 static void render_debug_views(struct full_system &fsys, ImGuiIO& io, bool update_dasm_scroll)
 {
@@ -665,6 +689,7 @@ int main(int, char**)
         }
 
         // disassembly+ view
+        render_opt_view(fsys);
         render_debug_views(fsys, io, update_dasm_scroll);
 
 

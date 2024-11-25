@@ -303,19 +303,23 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
             else b_out = (outyw + x) * 4;
 
             u32 color = geno[di];
+            u32 mode = (color >> 10) & 3;
+            color &= 0x1FF;
             u32 r, g, b;
-            /*b = (color & 15) * 16;
-            g = (color & 15) * 16;
-            r = (color & 15) * 16;*/
             b = ((color >> 0) & 7) * 0x24;
             g = ((color >> 3) & 7) * 0x24;
             r = ((color >> 6) & 7) * 0x24;
-            /*if (y == 105) {
-                g = 0xFF;
-                b = 0xFF;
-                r = 0;
-            }*/
-            // 0x24 * b, g, r
+            if (mode != 1) { // Shadow...
+                b >>= 1; // Highlight!
+                g >>= 1;
+                r >>= 1;
+                if (mode == 2)
+                {
+                    r += 0x7F;
+                    g += 0x7F;
+                    b += 0x7F;
+                }
+            }
             img8[b_out] = b;
             img8[b_out+1] = g;
             img8[b_out+2] = r;

@@ -105,11 +105,35 @@ void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 
 }
 
+static void populate_opts(struct jsm_system *jsm)
+{
+    debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer A", 1, 1, 0);
+    debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Layer B", 1, 1, 0);
+    debugger_widgets_add_checkbox(&jsm->opts, "VDP: Enable Sprites", 1, 1, 0);
+    debugger_widgets_add_checkbox(&jsm->opts, "VDP: trace", 1, 0, 0);
+}
+
+static void read_opts(struct jsm_system *jsm, struct genesis* this)
+{
+    struct debugger_widget *w = cvec_get(&jsm->opts, 0);
+    this->opts.vdp.enable_A = w->checkbox.value;
+
+    w = cvec_get(&jsm->opts, 1);
+    this->opts.vdp.enable_B = w->checkbox.value;
+
+    w = cvec_get(&jsm->opts, 2);
+    this->opts.vdp.enable_sprites = w->checkbox.value;
+
+    w = cvec_get(&jsm->opts, 3);
+    this->opts.vdp.ex_trace = w->checkbox.value;
+
+}
 
 void genesis_new(JSM, enum jsm_systems kind)
 {
     struct genesis* this = (struct genesis*)malloc(sizeof(struct genesis));
     memset(this, 0, sizeof(*this));
+    populate_opts(jsm);
     Z80_init(&this->z80, 0);
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock, kind);
@@ -338,6 +362,7 @@ void genesisJ_killall(JSM)
 u32 genesisJ_finish_frame(JSM)
 {
     JTHIS;
+    read_opts(jsm, this);
     u32 current_frame = this->clock.master_frame;
     while (this->clock.master_frame == current_frame) {
         genesisJ_finish_scanline(jsm);

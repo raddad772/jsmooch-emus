@@ -13,6 +13,7 @@
 #include "system/apple2/apple2.h"
 #include "system/mac/mac.h"
 #include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 
 struct jsm_system* new_system(enum jsm_systems which)
 {
@@ -20,6 +21,7 @@ struct jsm_system* new_system(enum jsm_systems which)
     struct jsm_system* out = malloc(sizeof(struct jsm_system));
     memset(out, 0, sizeof(struct jsm_system));
     cvec_init(&out->IOs, sizeof(struct physical_io_device), 20);
+    cvec_init(&out->opts, sizeof(struct debugger_widget), 5);
     cvec_lock_reallocs(&out->IOs);
     out->kind = which;
 	switch (which) {
@@ -136,6 +138,7 @@ void jsm_delete(struct jsm_system* jsm)
             break;
     }
     cvec_delete(o);
+    cvec_delete(&jsm->opts);
     dbg_delete();
     free(jsm);
 }
