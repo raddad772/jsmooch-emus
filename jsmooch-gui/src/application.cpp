@@ -8,7 +8,7 @@
 // - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
 // - Introduction, links and more at the top of imgui.cpp
 #include <cstdio>
-
+#include "application.h"
 #include "../vendor/myimgui/imgui.h"
 #include "../vendor/myimgui/backends/imgui_impl_sdl3.h"
 #include "../vendor/myimgui/backends/imgui_impl_opengl3.h"
@@ -401,16 +401,10 @@ static void render_debug_views(struct full_system &fsys, ImGuiIO& io, bool updat
     }
 }
 
-// Main code
-int main(int, char**)
+void imgui_jsmooch_app::do_setup_onstart()
 {
-    struct inifile ini;
     load_inifile(&ini);
-    char BIOS_BASE_PATH[500];
-    char ROM_BASE_PATH[500];
 
-    char *debugger_cols[3];
-    constexpr size_t debugger_col_sizes[3] = { 10 * 1024, 100 * 1024, 500 * 1024 };
     debugger_cols[0] = (char *)malloc(debugger_col_sizes[0]);
     debugger_cols[1] = (char *)malloc(debugger_col_sizes[1]);
     debugger_cols[2] = (char *)malloc(debugger_col_sizes[2]);
@@ -422,22 +416,150 @@ int main(int, char**)
     kvp = inifile_get_or_make_key(&ini, "general", "rom_base_path");
     assert(kvp);
     snprintf(BIOS_BASE_PATH, sizeof(ROM_BASE_PATH), "%s", kvp->str_value);
+}
 
+int imgui_jsmooch_app::do_setup_before_mainloop()
+{
 #ifdef DO_DREAMCAST
-    enum jsm_systems which = SYS_DREAMCAST;
+    which = SYS_DREAMCAST;
 #else
-    //enum jsm_systems which = SYS_ATARI2600;
-    enum jsm_systems which = SYS_GENESIS_USA;
-    //enum jsm_systems which = SYS_GBC;
-    //enum jsm_systems which = SYS_APPLEIIe;
-    //enum jsm_systems which = SYS_DMG;
-    //enum jsm_systems which = SYS_NES;
-    //enum jsm_systems which = SYS_SMS2;
-    //enum jsm_systems which = SYS_GG;
-    //enum jsm_systems which = SYS_SG1000;
-    //enum jsm_systems which = SYS_MAC512K;
+    //which = SYS_ATARI2600;
+    //which = SYS_GBC;
+    //which = SYS_APPLEIIe;
+    which = SYS_GENESIS_USA;
+    //which = SYS_DMG;
+    //which = SYS_NES;
+    //which = SYS_SMS2;
+    //which = SYS_GG;
+    //which = SYS_SG1000;
+    //which = SYS_MAC512K;
 #endif
 
+    fsys.setup_system(which);
+    if (!fsys.worked) {
+        printf("\nCould not initialize system! %d", fsys.worked);
+        return -1;
+    }
+    fsys.state = FSS_pause;
+    fsys.has_played_once = false;
+    fsys.setup_wgpu();
+    return 0;
+}
+
+void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
+    framevars start_fv = fsys.get_framevars();
+
+    fsys.enable_debugger = true;
+
+    // Update the system
+    if (dbg.do_break) {
+        if (fsys.state == FSS_play)
+            fsys.state = FSS_pause;
+    }
+
+    if (fsys.state == FSS_play) {
+        update_input(&fsys, io);
+        fsys.do_frame();
+        last_frame_was_whole = true;
+        fsys.events_view_present();
+        fsys.has_played_once = true;
+    }
+    fsys.present();
+
+    render_emu_window(fsys, io);
+
+    // debug controls window
+    if (ImGui::Begin("Play")){
+        static int steps[3] = { 10, 1, 1 };
+        bool play_pause = false;
+        bool step_clocks = false, step_scanlines = false, step_seconds = false;
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+        if (ImGui::BeginChild("Playback Controls", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
+            play_pause = ImGui::Button("Play/pause");
+
+            ImGui::PushID(1);
+            step_clocks = ImGui::Button("Step");
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::InputInt("cycles", &steps[0]);
+
+            ImGui::PushID(2);
+            step_scanlines = ImGui::Button("Step");
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::InputInt("lines", &steps[1]);
+
+            ImGui::PushID(3);
+            step_seconds = ImGui::Button("Step");
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::InputInt("frames", &steps[2]);
+
+
+        }
+        ImGui::EndChild(); // end sub-window
+        ImGui::PopStyleVar();
+        if (play_pause) {
+            switch(fsys.state) {
+                case FSS_pause:
+                    fsys.state = FSS_play;
+                    dbg_unbreak();
+                    fsys.audio.pause();
+                    break;
+                case FSS_play:
+                    fsys.audio.play();
+                    fsys.state = FSS_pause;
+                    break;
+            }
+        }
+        if (step_scanlines) {
+            dbg_unbreak();
+            fsys.step_scanlines(steps[1]);
+            last_frame_was_whole = false;
+        }
+        if (step_clocks) {
+            dbg_unbreak();
+            fsys.step_cycles(steps[0]);
+            last_frame_was_whole = false;
+        }
+        if (step_seconds) {
+            dbg_unbreak();
+            fsys.step_seconds(steps[2]);
+            last_frame_was_whole = false;
+        }
+
+        framevars fv = fsys.get_framevars();
+        ImGui::SameLine();
+        ImGui::Text("Frame: %lld", fv.master_frame);
+        ImGui::Text("X,Y:%d,%d", fv.x, fv.scanline);
+    }
+    ImGui::End();
+
+    framevars end_fv = fsys.get_framevars();
+    bool update_dasm_scroll = false;
+    if (start_fv.master_cycle != end_fv.master_cycle) {
+        // Update stuff like scroll
+        update_dasm_scroll = true;
+    }
+
+    // disassembly+ view
+    render_opt_view(fsys);
+    render_debug_views(fsys, io, update_dasm_scroll);
+}
+
+void imgui_jsmooch_app::at_end()
+{
+    fsys.destroy_system();
+
+    inifile_delete(&ini);
+}
+
+// Main code
+int main(int, char**)
+{
+    imgui_jsmooch_app app;
+    app.do_setup_onstart();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
     {
         printf("Error: SDL_Init(): %s\n", SDL_GetError());
@@ -530,30 +652,17 @@ int main(int, char**)
     //IM_ASSERT(font != nullptr);
 #endif
 
-    // Our state
-    static int done_break = 0;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    bool last_frame_was_whole = false;
-
-    // Main loop
-    static bool playing = true;
-    bool done = false;
-    full_system fsys;
-    fsys.setup_system(which);
-    if (!fsys.worked) {
-        printf("\nCould not initialize system! %d", fsys.worked);
-        return -1;
-    }
-    fsys.state = FSS_pause;
-    fsys.has_played_once = false;
-    fsys.setup_wgpu();
 #ifdef __EMSCRIPTEN__
     // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
     // You may manually call LoadIniSettingsFromMemory() to load settings from your own storage.
     io.IniFilename = nullptr;
     EMSCRIPTEN_MAINLOOP_BEGIN
 #else
-    while (!done)
+    int a = app.do_setup_before_mainloop();
+    if (a) {
+        return a;
+    }
+    while (!app.done)
 #endif
     {
         // Poll and handle events (inputs, window resize, etc.)
@@ -562,23 +671,14 @@ int main(int, char**)
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         //io.WantCaptureKeyboard = false;
-#ifdef STOPAFTERAWHILE
-        // 14742566
-        framevars fv = fsys.get_framevars();
-        if ((fv.master_frame > 240) && (!done_break) && (!dbg.do_break)) {
-            //if (fv.master_cycle >= 12991854) {
-            done_break = 1;
-            dbg_break("Because", fv.master_cycle);
-        }
-#endif
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
             ImGui_ImplSDL3_ProcessEvent(&event);
             if (event.type == SDL_EVENT_QUIT)
-                done = true;
+                app.done = true;
             if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
-                done = true;
+                app.done = true;
         }
         if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
         {
@@ -592,110 +692,11 @@ int main(int, char**)
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        framevars start_fv = fsys.get_framevars();
-
-        fsys.enable_debugger = true;
-
-        // Update the system
-        if (dbg.do_break) {
-            if (fsys.state == FSS_play)
-                fsys.state = FSS_pause;
-        }
-
-        if (fsys.state == FSS_play) {
-            update_input(&fsys, io);
-            fsys.do_frame();
-            last_frame_was_whole = true;
-            fsys.events_view_present();
-            fsys.has_played_once = true;
-        }
-        fsys.present();
-
-        render_emu_window(fsys, io);
-
-        // debug controls window
-        if (ImGui::Begin("Play")){
-            static int steps[3] = { 10, 1, 1 };
-            bool play_pause = false;
-            bool step_clocks = false, step_scanlines = false, step_seconds = false;
-            ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
-            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-            if (ImGui::BeginChild("Playback Controls", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
-                play_pause = ImGui::Button("Play/pause");
-
-                ImGui::PushID(1);
-                step_clocks = ImGui::Button("Step");
-                ImGui::PopID();
-                ImGui::SameLine();
-                ImGui::InputInt("cycles", &steps[0]);
-
-                ImGui::PushID(2);
-                step_scanlines = ImGui::Button("Step");
-                ImGui::PopID();
-                ImGui::SameLine();
-                ImGui::InputInt("lines", &steps[1]);
-
-                ImGui::PushID(3);
-                step_seconds = ImGui::Button("Step");
-                ImGui::PopID();
-                ImGui::SameLine();
-                ImGui::InputInt("frames", &steps[2]);
-
-
-            }
-            ImGui::EndChild(); // end sub-window
-            ImGui::PopStyleVar();
-            if (play_pause) {
-                switch(fsys.state) {
-                    case FSS_pause:
-                        fsys.state = FSS_play;
-                        dbg_unbreak();
-                        fsys.audio.pause();
-                        break;
-                    case FSS_play:
-                        fsys.audio.play();
-                        fsys.state = FSS_pause;
-                        break;
-                }
-            }
-            if (step_scanlines) {
-                dbg_unbreak();
-                fsys.step_scanlines(steps[1]);
-                last_frame_was_whole = false;
-            }
-            if (step_clocks) {
-                dbg_unbreak();
-                fsys.step_cycles(steps[0]);
-                last_frame_was_whole = false;
-            }
-            if (step_seconds) {
-                dbg_unbreak();
-                fsys.step_seconds(steps[2]);
-                last_frame_was_whole = false;
-            }
-
-            framevars fv = fsys.get_framevars();
-            ImGui::SameLine();
-            ImGui::Text("Frame: %lld", fv.master_frame);
-            ImGui::Text("X,Y:%d,%d", fv.x, fv.scanline);
-        }
-        ImGui::End();
-
-        framevars end_fv = fsys.get_framevars();
-        bool update_dasm_scroll = false;
-        if (start_fv.master_cycle != end_fv.master_cycle) {
-            // Update stuff like scroll
-            update_dasm_scroll = true;
-        }
-
-        // disassembly+ view
-        render_opt_view(fsys);
-        render_debug_views(fsys, io, update_dasm_scroll);
-
+        app.mainloop(io);
 
         // Rendering
         ImGui::Render();
-
+        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -728,10 +729,7 @@ int main(int, char**)
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-
-    fsys.destroy_system();
-
-    inifile_delete(&ini);
+    app.at_end();
 
     return 0;
 }
