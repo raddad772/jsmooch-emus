@@ -147,7 +147,7 @@ class thing:
         self.ares_last_pc_line: Tuple[str, int] = ('', 0)
         self.my_last_pc_line: Tuple[str, int] = ('', 0)
         bpath = os.path.expanduser('~')
-        bfile = '_sonic_vdp.log'
+        bfile = '_sonic3_save.log'
         # bfile = '_sonic_cpu.log'
 
         self.IS_CPU = 'cpu' in bfile
@@ -270,8 +270,8 @@ class thing:
                     print('\nLAST PC:ARES(' + str(self.ares_last_pc_line[1]) + '): ' + self.ares_last_pc_line[0])
                     print('LAST PC:MINE(' + str(self.my_last_pc_line[1]) + '): ' + self.my_last_pc_line[0])
 
-                print_context('ARES', self.ares_lines, ares_context_index, 12)
-                print_context('MINE', self.my_lines, my_context_index, 12)
+                print_context('ARES', self.ares_lines, ares_context_index, 16)
+                print_context('MINE', self.my_lines, my_context_index, 16)
                 # continue
                 break
         print('# diffs ' + str(len(diffs)))

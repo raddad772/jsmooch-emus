@@ -262,6 +262,8 @@ add_library(jsmooch-lib
         src/system/sms_gg/sms_gg_serialize.h
         src/component/controller/genesis6/genesis6.c
         src/component/controller/genesis6/genesis6.h
+        src/helpers/sram.c
+        src/helpers/sram.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

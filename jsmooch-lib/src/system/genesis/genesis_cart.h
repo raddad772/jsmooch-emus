@@ -51,11 +51,12 @@ enum sega_cart_extra_RAM_kind {
 
 struct genesis_cart {
     struct buf ROM;
-    struct buf RAM;
 
     u32 ROM_mask;
     u32 RAM_mask;
     u32 RAM_present;
+    u32 RAM_always_on;
+    u32 RAM_size;
     u32 RAM_persists;
 
     struct {
@@ -86,6 +87,8 @@ struct genesis_cart {
     } header;
 
     enum genesis_cart_kinds kind;
+
+    struct persistent_store *SRAM;
 };
 
 
@@ -94,6 +97,6 @@ void genesis_cart_delete(struct genesis_cart *);
 u16 genesis_cart_read(struct genesis_cart *, u32 addr, u32 mask, u32 has_effect, u32 SRAM_enable);
 void genesis_cart_write(struct genesis_cart *this, u32 addr, u32 mask, u32 val, u32 SRAM_enable);
 
-u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart*, char* fil, u64 fil_sz);
+u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable);
 
 #endif //JSMOOCH_EMUS_GENESIS_CART_H

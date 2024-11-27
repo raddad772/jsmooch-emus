@@ -21,6 +21,7 @@ void buf_allocate(struct buf* this, u64 size)
     if (this->ptr != NULL) {
         free(this->ptr);
     }
+    this->dirty = 0;
     if (size == 0) {
         this->ptr = NULL;
         this->size = 0;

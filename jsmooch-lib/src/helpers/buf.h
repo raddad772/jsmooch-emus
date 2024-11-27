@@ -10,6 +10,7 @@
 struct buf {
     void *ptr;
     u64 size;
+    u32 dirty; // used by external programs
 };
 
 void buf_init(struct buf*);

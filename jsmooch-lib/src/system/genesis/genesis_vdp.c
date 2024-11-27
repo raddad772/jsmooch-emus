@@ -543,7 +543,6 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 13: // horizontal scroll data addr
             vdp->io.hscroll_addr = (val & 0x7F) << 9;
-            printf("\nNEW HSCROLL ADDR %04x", vdp->io.hscroll_addr);
             return;
         case 14: // mostly unused
             return;

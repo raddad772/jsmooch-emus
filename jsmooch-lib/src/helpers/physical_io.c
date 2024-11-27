@@ -35,6 +35,7 @@ void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES ki
         case HID_AUDIO_CHANNEL:
             break;
         case HID_CART_PORT:
+            persistent_store_init(&this->cartridge_port.SRAM);
             break;
         case HID_DISC_DRIVE:
             break;
@@ -70,7 +71,8 @@ void physical_io_device_delete(struct physical_io_device* this)
             break;
         case HID_CART_PORT:
             //TODO: this
-            //this->cartridge_port.unload_cart(this->d)
+            persistent_store_delete(&this->cartridge_port.SRAM);
+            //this->cartridge_port.unload_cart(this);
             break;
         case HID_DISC_DRIVE:
             break;

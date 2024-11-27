@@ -42,7 +42,7 @@ void GBJ_enable_tracing(JSM);
 void GBJ_disable_tracing(JSM);
 void GBJ_describe_io(JSM, struct cvec* IOs);
 static void GBIO_unload_cart(JSM);
-static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
+static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio);
 
 #define MASTER_CYCLES_PER_FRAME GB_CYCLES_PER_FRAME
 static void setup_debug_waveform(struct debug_waveform *dw)
@@ -428,8 +428,7 @@ void GBJ_stop(JSM)
 
 }
 
-static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
-{
+static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
     GB_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);

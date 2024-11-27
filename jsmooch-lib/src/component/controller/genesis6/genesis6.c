@@ -42,7 +42,7 @@ void genesis6_setup_pio(struct physical_io_device *d, u32 num, const char*name, 
     pio_new_button(cnt, "y", DBCID_co_fire5);
     pio_new_button(cnt, "z", DBCID_co_fire6);
     pio_new_button(cnt, "start", DBCID_co_start);
-    pio_new_button(cnt, "mode", DBCID_co_start);
+    pio_new_button(cnt, "mode", DBCID_co_select);
 }
 
 void genesis_controller_6button_latch(struct genesis_controller_6button* this)

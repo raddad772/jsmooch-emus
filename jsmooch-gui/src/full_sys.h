@@ -84,6 +84,8 @@ struct full_system {
 public:
     struct jsm_system *sys;
     struct debugger_interface dbgr{};
+
+    struct multi_file_set ROMs;
     std::vector<WVIEW> waveform_views;
     std::vector<DVIEW> dasm_views;
 
@@ -103,14 +105,7 @@ public:
         state = FSS_pause;
     }
 
-    ~full_system() {
-        destroy_system();
-        for (auto & dv : dasm_views) {
-            cvec_delete(&dv.dasm_rows);
-        }
-        debugger_interface_delete(&dbgr);
-    }
-
+    ~full_system();
     enum full_system_states state;
 
     struct fsio {
@@ -150,6 +145,9 @@ public:
     [[nodiscard]] ImVec2 output_size() const;
     [[nodiscard]] ImVec2 output_uv0() const;
     [[nodiscard]] ImVec2 output_uv1() const;
+    void setup_persistent_store(struct persistent_store *ps, struct multi_file_set *mfs);
+    void sync_persistent_storage();
+    struct persistent_store *my_ps{};
     void setup_system(enum jsm_systems which);
     void destroy_system();
     void do_frame();

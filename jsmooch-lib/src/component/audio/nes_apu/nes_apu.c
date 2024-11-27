@@ -370,16 +370,11 @@ static void clock_length_counters_and_sweeps(struct NES_APU *this)
             if (c->length_counter.count <= 0) {
                 c->length_counter.overflow = 1;
                 c->length_counter.count = 0;
-                //printf("\nOVERFLOW FOR %d cyc:%lld", c->number, *this->master_cycles);
             }
             else {
                 c->length_counter.count--;
-                //printf("\nCLOCK LENGTH COUNTER FOR %d: %d cyc:%lld", i, c->length_counter.count, *this->master_cycles);
             }
         }
-        /*else {
-            //printf("\nNO CLOCK FOR CHAN:%d ENABLE:%d HC:%d VAL:%d", c->number, c->length_counter.enabled, c->env_loop_or_length_counter_halt, c->length_counter.count);
-        }*/
     }
 }
 
@@ -457,7 +452,7 @@ static void clock_triangle(struct NES_APU* this)
     else c->period.count++;
 }
 
-static void clock_noise(struct NES_APU* this)
+    static void clock_noise(struct NES_APU* this)
 {
     struct NESSNDCHAN *c = &this->channels[NOISE];
     c->period.count++;

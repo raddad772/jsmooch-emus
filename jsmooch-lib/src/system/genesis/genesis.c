@@ -191,11 +191,12 @@ void genesis_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
-static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
+static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
-    genesis_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
+
+    genesis_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, which_pio, &this->io.SRAM_enabled);
     genesisJ_reset(jsm);
 }
 

@@ -141,8 +141,7 @@ void NES_delete(JSM)
     jsm_clearfuncs(jsm);
 }
 
-static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
-{
+static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
     NES_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);

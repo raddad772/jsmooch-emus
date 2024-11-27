@@ -5,7 +5,10 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+#include "helpers/debug.h"
+#include "helpers/physical_io.h"
 #include "genesis_cart.h"
 
 static void bswap_16_array(void *where, u32 num_bytes)
@@ -48,17 +51,79 @@ void genesis_cart_init(struct genesis_cart* this)
     *this = (struct genesis_cart) {}; // Set all fields to 0
 
     buf_init(&this->ROM);
-    buf_init(&this->RAM);
 }
 
 void genesis_cart_delete(struct genesis_cart *this)
 {
     buf_delete(&this->ROM);
-    buf_delete(&this->RAM);
 }
 
 static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
 #define UDSMASK UDS_mask[((UDS) << 1) | (LDS)]
+
+
+static void write_cart_RAM8(struct genesis_cart* this, u32 addr, u32 val)
+{
+    if (!this->SRAM) {
+        printf("\nAttempt to write bad SRAM!");
+        return;
+    }
+    if (!this->SRAM->ready_to_use) {
+        printf("\nSRAM not ready to use!");
+        abort();
+    }
+    ((u8 *) this->SRAM->data)[(addr >> 1) & this->RAM_mask] = (u8) val;
+    //printf("\nWRITE SRAM %04x %02x", (u32)(address >> 1), (u32)data);
+    //printf("\nWRITE SRAM ")
+
+    this->SRAM->dirty = 1;
+}
+
+static void write_cart_RAM16(struct genesis_cart* this, u32 addr, u32 val)
+{
+    if (!this->SRAM) {
+        printf("\nAttempt to write bad SRAM!");
+        return;
+    }
+    if (!this->SRAM->ready_to_use) {
+        printf("\nSRAM not ready to use!");
+        abort();
+    }
+    u8 *ptr = ((u8 *) this->SRAM->data) + (addr & this->RAM_mask);
+    ptr[0] = val >> 8;
+    ptr[1] = val & 0xFF;
+    this->SRAM->dirty = 1;
+}
+
+static u8 read_cart_RAM8(struct genesis_cart* this, u32 addr)
+{
+    if (!this->SRAM) {
+        printf("\nAttempt to read bad SRAM!");
+        return 0;
+    }
+    if (!this->SRAM->ready_to_use) {
+        printf("\nSRAM not ready to use!");
+        abort();
+    }
+    addr >>= 1;
+    u32 v = ((u8 *)this->SRAM->data)[addr & this->RAM_mask];
+    return v;
+}
+
+static u16 read_cart_RAM16(struct genesis_cart* this, u32 addr)
+{
+    if (!this->SRAM) {
+        printf("\nAttempt to read bad SRAM!");
+        return 0;
+    }
+    if (!this->SRAM->ready_to_use) {
+        printf("\nSRAM not ready to use!");
+        abort();
+    }
+    u8 *ptr = &((u8 *)this->SRAM->data)[addr & this->RAM_mask];
+    return ((ptr[0] << 8) | ptr[1]);;
+
+}
 
 void genesis_cart_write(struct genesis_cart *this, u32 addr, u32 mask, u32 val, u32 SRAM_enable) {
     u32 ramaddr = addr - 0x200000;
@@ -71,17 +136,14 @@ void genesis_cart_write(struct genesis_cart *this, u32 addr, u32 mask, u32 val, 
                 break;
             case sega_cart_exram_8bit_even:
             case sega_cart_exram_8bit_odd:
-                ramaddr >>= 1;
                 if (this->header.extra_ram_kind == sega_cart_exram_8bit_odd)
                     val &= 0xFF;
                 else
                     val >>= 8;
-                ((u8 *) this->RAM.ptr)[ramaddr & this->RAM_mask] = (u8) val;
+                write_cart_RAM8(this, ramaddr, val);
                 break;
             case sega_cart_exram_16bit: {
-                u8 *ptr = ((u8 *) this->RAM.ptr) + (ramaddr & this->RAM_mask);
-                ptr[0] = val >> 8;
-                ptr[1] = val & 0xFF;
+                write_cart_RAM16(this, ramaddr, val);
                 break;
             }
             default:
@@ -101,22 +163,17 @@ u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_eff
         v = ((ptr[0] << 8) | ptr[1]);
     }
     else {
-        if (this->RAM_present && SRAM_enable) {
+        if (this->RAM_present && (SRAM_enable || this->RAM_always_on)) {
             u32 ramaddr = addr - 0x200000;
-            ramaddr &= this->RAM_mask;
             switch(this->header.extra_ram_kind) {
                 case sega_cart_exram_8bit_even:
                 case sega_cart_exram_8bit_odd:
-                    ramaddr >>= 1;
-                    v = ((u8 *)this->RAM.ptr)[ramaddr];
-                    if (this->header.extra_ram_kind == sega_cart_exram_8bit_even) {
-                        v <<= 8;
-                    }
+                    v = read_cart_RAM8(this, ramaddr);
+                    v |= (v << 8);
                     break;
                 case sega_cart_exram_16bit:
                     ramaddr &= this->RAM_mask;
-                    ptr = &((u8 *)this->RAM.ptr)[ramaddr];
-                    v = ((ptr[0] << 8) | ptr[1]);;
+                    v = read_cart_RAM16(this, ramaddr);
                     break;
                 default:
                     assert(1==2);
@@ -189,6 +246,7 @@ static char *eval_cart_RAM(struct genesis_cart* this, char *tptr)
         tptr += 4;
         u32 ram_size = (this->header.extra_ram_addr_end - this->header.extra_ram_addr_start) + 1;
         ram_size = get_closest_pow2(ram_size);
+        printf("\nPRE RAM SIZE: %d", ram_size);
         switch(this->header.extra_ram_kind) {
             case sega_cart_exram_8bit_odd:
             case sega_cart_exram_8bit_even:
@@ -197,30 +255,32 @@ static char *eval_cart_RAM(struct genesis_cart* this, char *tptr)
             default:
                 break;
         }
+        printf("\nPOST RAM SIZE: %d", ram_size);
         printf("\nRAM addr start:%06x end:%06x", this->header.extra_ram_addr_start, this->header.extra_ram_addr_end);
         printf("\nFound %d bytes of extra RAM!", ram_size);
         assert(ram_size<(1 * 1024 * 1024));
 
-        buf_allocate(&this->RAM, ram_size);
         this->RAM_present = 1;
         this->RAM_mask = ram_size-1;
+        this->RAM_size = ram_size;
     } else {
         this->RAM_present = 0;
         this->RAM_persists = 0;
         this->header.extra_ram_kind = sega_cart_exram_none;
-        buf_delete(&this->RAM);
         this->RAM_present = 0;
+        this->RAM_size = 0;
         tptr += 12;
     }
     if (silly_goose) tptr -= 0x200000;
     return tptr;
 }
 
-u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz)
+u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable)
 {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);
     this->ROM_mask = (fil_sz - 1) & ~1;
+    *SRAM_enable = 0;
 
     char *tptr = (char *)this->ROM.ptr;
 
@@ -306,6 +366,11 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
     //assert(this->header.ram_addr_start == 0xFF0000);
     //assert(this->header.ram_addr_end == 0xFFFFFF);
     tptr = eval_cart_RAM(this, tptr);
+    pio->cartridge_port.SRAM.requested_size = this->RAM_size;
+    pio->cartridge_port.SRAM.ready_to_use = 0;
+    pio->cartridge_port.SRAM.dirty = 1;
+    this->SRAM = &pio->cartridge_port.SRAM;
+    if ((this->SRAM->requested_size > 0) && (this->ROM.size <= 0x200000)) *SRAM_enable = 1;
     tptr += 52; // skip modem, padding
     u32 num_regions = 0;
     for (u32 i = 0; i < 3; i++) {

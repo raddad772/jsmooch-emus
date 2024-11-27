@@ -8,6 +8,7 @@
 #include <cmath>
 #include "application.h"
 #include "helpers/sys_interface.h"
+#include "helpers/cvec.h"
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
 #include "full_sys.h"
@@ -310,7 +311,7 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
         pio = nullptr;
     }
     // TODO: add sram support
-    if (pio) pio->cartridge_port.load_cart(sys, mfs, nullptr);
+    if (pio) pio->cartridge_port.load_cart(sys, mfs, pio);
     return pio;
 }
 
@@ -460,12 +461,74 @@ void full_system::setup_bios()
     mfs_delete(&BIOSes);
 }
 
+void full_system::setup_persistent_store(struct persistent_store *ps, struct multi_file_set *mfs)
+{
+    struct read_file_buf *rfb = &mfs->files[0];
+    //printf("\nPATH: %s", rfb->path); // path of file
+    //printf("\nNAME: %s", rfb->name); // file name
+    snprintf(ps->filename, sizeof(ps->filename), "%s/%s.sram", rfb->path, rfb->name);
+    ps->kind = PSK_SIMPLE_FILE;
+    // get file size
+    printf("\nFILENAME:%s", ps->filename);
+    ps->fno = fopen(ps->filename, "rb+");
+    u32 fsize;
+    if (!ps->fno) {
+        ps->fno = fopen(ps->filename, "wb");
+        printf("\nWriting soem zeroes!");
+        u8 *a = (u8 *)malloc( ps->requested_size);
+        memset(a, 0xFF,  ps->requested_size);
+        fwrite(a, 1,  ps->requested_size, ps->fno);
+        free(a);
+        fflush(ps->fno);
+        fclose(ps->fno);
+        fopen(ps->filename, "rb+");
+    }
+
+    fseek(ps->fno, 0, SEEK_SET);
+    ps->data = malloc(ps->requested_size);
+    fread(ps->data, 1, ps->requested_size, ps->fno);
+
+    ps->actual_size = ps->requested_size;
+    ps->ready_to_use = 1;
+    my_ps = ps;
+}
+
+void full_system::sync_persistent_storage()
+{
+    if (my_ps) {
+        if (my_ps->dirty) {
+            printf("\nWriting save data..,");
+            fseek(my_ps->fno, 0, SEEK_SET);
+            fwrite(my_ps->data, 1, my_ps->actual_size, my_ps->fno);
+            fflush(my_ps->fno);
+            my_ps->dirty = 0;
+        }
+    }
+}
+
+full_system::~full_system() {
+    sync_persistent_storage();
+
+    destroy_system();
+
+    if (my_ps) {
+        sync_persistent_storage();
+        fclose(my_ps->fno);
+        my_ps = nullptr;
+    }
+
+    for (auto & dv : dasm_views) {
+        cvec_delete(&dv.dasm_rows);
+    }
+    debugger_interface_delete(&dbgr);
+}
+
+
 void full_system::load_default_ROM()
 {
     struct cvec *IOs = &sys->IOs;
     enum jsm_systems which = sys->kind;
 
-    struct multi_file_set ROMs;
     mfs_init(&ROMs);
     assert(sys);
     switch(which) {
@@ -578,22 +641,39 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // needs SRAM
+            worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
-            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works! but menu
+            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // wont boot
-            //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
             //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // hblank dmas issue?
+            //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "test1536.bin", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "shadow_highlight.bin", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "crusader_centy.md", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "xmen2.md", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "roadrash2.bin", nullptr); // works fine
+            //worked = grab_ROM(&ROMs, which, "roadrash.md", nullptr); // works
+
+            //worked = grab_ROM(&ROMs, which, "240p.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "240p_emu.bin", nullptr);
+
+            //worked = grab_ROM(&ROMs, which, "golden_axe2.md", nullptr); // works fine
+            //worked = grab_ROM(&ROMs, which, "alien_storm.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tyrants.md", nullptr); // :-(
+            // worked = grab_ROM(&ROMs, which, "afterburner2.md", nullptr); // works!
+            // worked = grab_ROM(&ROMs, which, "skitchin.md", nullptr); // works
+            //worked = grab_ROM(&ROMs, which, "haunting.md", nullptr); // works
+            //worked = grab_ROM(&ROMs, which, "herzog_zwei.md", nullptr); // works
+            //worked = grab_ROM(&ROMs, which, "desert_strike.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "flashback.md", nullptr); // 6-button doesn't work?
+            //worked = grab_ROM(&ROMs, which, "rocket_knight.md", nullptr); // works
             dbg.traces.dma = 0;
             dbg.traces.fifo = 0;
             dbg.traces.vdp = 0;
@@ -612,7 +692,9 @@ void full_system::load_default_ROM()
     }
 
     struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
-    mfs_delete(&ROMs);
+    if (fileioport->cartridge_port.SRAM.requested_size > 0) {
+        setup_persistent_store(&fileioport->cartridge_port.SRAM, &ROMs);
+    }
 }
 
 void full_system::add_waveform_view(u32 idx)
@@ -938,6 +1020,7 @@ void full_system::step_seconds(int num)
 
 void full_system::step_scanlines(int num)
 {
+    sync_persistent_storage();
     for (u32 i = 0; i < num; i++) {
         if (dbg.do_break) break;
         sys->finish_scanline(sys);
@@ -947,6 +1030,7 @@ void full_system::step_scanlines(int num)
 void full_system::step_cycles(int num)
 {
     framevars fv{};
+    sync_persistent_storage();
     if (dbg.do_break) return;
     sys->get_framevars(sys, &fv);
     u64 cur_frame = fv.master_frame;
@@ -1014,6 +1098,7 @@ void full_system::do_frame() {
         }
         sys->get_framevars(sys, &fv);
         dbg_flush();
+        sync_persistent_storage();
         //TODO: here
     }
     else {

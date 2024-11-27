@@ -46,7 +46,7 @@ static int did_DFT = 0;
 static int DFT_line = 0;
 static char DFT_buf[4096];
 
-#define DFT_file "/Users/Dave/js_sonic_vdp.log"
+#define DFT_file "/Users/Dave/js_sonic3_save.log"
 
 static FILE* DFTf = NULL;
 

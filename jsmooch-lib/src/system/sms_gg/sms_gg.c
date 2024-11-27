@@ -40,7 +40,7 @@ void SMSGGJ_enable_tracing(JSM);
 void SMSGGJ_disable_tracing(JSM);
 void SMSGGJ_describe_io(JSM, struct cvec *IOs);
 static void SMSGGIO_unload_cart(JSM);
-static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
+static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio);
 
 
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
@@ -525,7 +525,7 @@ static void SMSGGIO_unload_cart(JSM)
 
 }
 
-static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram) {
+static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
     JTHIS;
     struct buf *b = &mfs->files[0].buf;
     SMSGG_mapper_load_ROM_from_RAM(&this->mapper, b);

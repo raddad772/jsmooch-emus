@@ -43,7 +43,7 @@ void atari2600J_load_ROM(JSM, struct multi_file_set* mfs);
 void atari2600J_enable_tracing(JSM);
 void atari2600J_disable_tracing(JSM);
 void atari2600J_describe_io(JSM, struct cvec* IOs);
-static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram);
+static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio);
 static void atari2600IO_unload_cart(JSM);
 static void atari2600J_setup_debugger_interface(JSM, struct debugger_interface *intf);
 
@@ -432,8 +432,7 @@ void atari2600J_load_BIOS(JSM, struct multi_file_set* mfs)
     printf("\nAtari 2600 doesn't have a BIOS...?");
 }
 
-static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct buf* sram)
-{
+static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
     printf("\nLoad ROM");

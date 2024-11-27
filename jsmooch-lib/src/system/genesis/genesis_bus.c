@@ -184,7 +184,8 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
         return;
     }
     if (addr == 0xA130F0) {
-        this->io.SRAM_enabled = val & 1;
+        if (this->cart.ROM.size > 0x200000)
+            this->io.SRAM_enabled = val & 1;
         return;
     }
     if ((addr >= 0xC00000) && (addr < 0xFF0000)) {

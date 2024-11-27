@@ -9,10 +9,12 @@
 extern "C" {
 #endif
 
-
+#include "helpers/sram.h"
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "helpers/buf.h"
+
+struct physical_io_device;
 
 enum JKEYS {
     JK_NONE,
@@ -254,8 +256,9 @@ struct JSM_AUDIO_CHANNEL {
 };
 
 struct JSM_CARTRIDGE_PORT {
-    void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct buf* sram);
+    void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct physical_io_device *whichpio);
     void (*unload_cart)(struct jsm_system *ptr);
+    struct persistent_store SRAM;
 };
 
 struct physical_io_device;
