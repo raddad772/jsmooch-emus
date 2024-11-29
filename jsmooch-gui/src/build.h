@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_BUILD_H
 #define JSMOOCH_EMUS_BUILD_H
 
-#define JSM_WEBGPU
+//#define JSM_WEBGPU
 //#define JSM_SDLR3
 //#define JSM_OPENGL
 //#define JSM_METAL

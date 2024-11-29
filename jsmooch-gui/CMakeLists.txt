@@ -2,7 +2,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 add_definitions(-DJSM_WEBGPU)
-add_definitions(-DIMGUI_IMPL_WEBGPU_BACKEND_WGPU)
+add_definitions(-DIMGUI_IMPL_WEBGPU_BACKEND_DAWN)
 include_directories(~/dev/libs/include)
 link_directories(~/dev/libs/bin)
 
@@ -45,7 +45,8 @@ add_subdirectory(vendor/myimgui)
 
 
 #target_link_libraries(jsmooch-gui jsmooch-lib imgui SDL3 "-framework OpenGL")
-target_link_libraries(jsmooch-gui jsmooch-lib imgui webgpu_dawn glfw3 "-framework CoreFoundation")
+target_link_libraries(jsmooch-gui jsmooch-lib imgui glfw3 imgui webgpu_dawn dawn_glfw "-framework CoreFoundation" "-framework AppKit" "-framework Cocoa" "-framework IOKit" "-framework OpenGL" "-framework Quartz")
+#webgpu glfw3webgpu webgpu_cpp  webgpu_glfw
 #target_link_libraries(jsmooch-gui PRIVATE )
 
 install(TARGETS jsmooch-gui RUNTIME DESTINATION bin)
