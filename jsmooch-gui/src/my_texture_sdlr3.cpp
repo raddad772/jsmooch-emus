@@ -6,6 +6,8 @@
 #include "build.h"
 #include "my_texture_sdlr3.h"
 
+#ifdef JSM_SDLR3
+
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_render.h"
 
@@ -34,3 +36,4 @@ my_texture::~my_texture() {
     }
     tex.item = nullptr;
 }
+#endif

@@ -14,6 +14,9 @@ struct imgui_jsmooch_app {
     SDL_Renderer *renderer;
     void platform_setup(SDL_Renderer *mrenderer) {renderer = mrenderer; fsys.platform_setup(renderer); };
 #endif
+#ifdef JSM_WEBGPU
+    void platform_setup(WGPUDevice device) {fsys.platform_setup(device);};
+#endif
 
     int done_break = 0;
     bool last_frame_was_whole = false;

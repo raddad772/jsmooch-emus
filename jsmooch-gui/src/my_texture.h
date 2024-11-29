@@ -19,4 +19,8 @@
 #include "my_texture_sdlr3.h"
 #endif
 
+#ifdef JSM_WEBGPU
+#include "my_texture_wgpu.h"
+#endif
+
 #endif //JSMOOCH_EMUS_MY_TEXTURE_H

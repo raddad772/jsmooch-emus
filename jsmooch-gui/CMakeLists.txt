@@ -26,6 +26,10 @@ add_executable(jsmooch-gui
         # src/my_texture_metal.cpp
         src/my_texture_sdlr3.cpp
         src/my_texture_sdlr3.h
+        src/my_texture_wgpu.h
+        src/my_texture_ogl3.h
+        src/my_texture_ogl3.cpp
+        src/my_texture_wgpu.cpp
 )
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 

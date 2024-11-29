@@ -5,12 +5,13 @@
 #ifndef JSMOOCH_EMUS_my_texture_H
 #define JSMOOCH_EMUS_my_texture_H
 
+#ifdef JSM_WEBGPU
 #include <stdio.h>
-
+#include "build.h"
 #include "helpers/int.h"
 #include "../vendor/myimgui/imgui.h"
-#include "../vendor/myimgui/backends/imgui_impl_sdl3.h"
-#include "../vendor/myimgui/backends/imgui_impl_opengl3.h"
+#include "../vendor/myimgui/backends/imgui_impl_glfw.h"
+#include "../vendor/myimgui/backends/imgui_impl_wgpu.h"
 
 
 struct my_texture {
@@ -30,14 +31,14 @@ struct my_texture {
     WGPUDevice wgpu_device{};
 
 
-    char store_label[500];
+    char store_label[500]{};
 
     ~my_texture();
 
     void setup(WGPUDevice device, const char *label, u32 width, u32 height);
     void upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height);
-    [[nodiscard]] WGPUTextureView for_image() const { return view.item; }
+    [[nodiscard]] ImTextureID for_image() const { return (ImTextureID)view.item; }
 };
 
-
+#endif
 #endif //JSMOOCH_EMUS_my_texture_H

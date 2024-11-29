@@ -32,7 +32,11 @@
 #ifdef JSM_SDLR3
 #define TS(f,a,b,c) f.setup(renderer, a, b, c);
 #else
+#ifdef JSM_WEBGPU
+#define TS(f,a,b,c) f.setup(wgpu_device, a, b, c)
+#else
 #define TS(f,a,b,c) f##.setup(a,b,c);
+#endif
 #endif
 
 

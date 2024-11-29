@@ -1,4 +1,7 @@
 #include <string>
+#include "build.h"
+
+#ifdef JSM_OPENGL
 #include "my_texture_ogl3.h"
 #include "SDL3/SDL.h"
 
@@ -48,3 +51,4 @@ my_texture::~my_texture() {
     }
     tex.item = 0;
 }
+#endif

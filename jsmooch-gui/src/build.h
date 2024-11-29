@@ -5,12 +5,15 @@
 #ifndef JSMOOCH_EMUS_BUILD_H
 #define JSMOOCH_EMUS_BUILD_H
 
-#define JSM_DAWN
+#define JSM_WEBGPU
 //#define JSM_SDLR3
 //#define JSM_OPENGL
 //#define JSM_METAL
 
-#ifdef JSM_DAWN
+#ifdef JSM_WEBGPU
+#include "../vendor/myimgui/backends/imgui_impl_glfw.h"
+#include "../vendor/myimgui/backends/imgui_impl_wgpu.h"
+#endif
 
 #ifdef JSM_OPENGL
 #include "../vendor/myimgui/backends/imgui_impl_sdl3.h"

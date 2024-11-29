@@ -3,18 +3,21 @@
 //
 
 #include <string>
-#include "my_texture.h"
-#ifdef USE_WGPU
+#include "build.h"
+#include "my_texture_wgpu.h"
+
+#ifdef JSM_DAWN
 void my_texture::setup(WGPUDevice device, const char *label, u32 twidth, u32 theight) {
     width = twidth;
     height = theight;
     wgpu_device = device;
     tex.desc = {};
-    tex.desc.label = store_label;
+    tex.desc.label.data = store_label;
+    tex.desc.label.length = snprintf(store_label, sizeof(store_label), "%s", label);
     //tex.desc.label.data = store_label;
     tex.desc.nextInChain = nullptr;
     tex.desc.dimension = WGPUTextureDimension_2D;
-    tex.desc.size = { twidth, theight, 1 };
+    tex.desc.size = {twidth, theight, 1};
     tex.desc.mipLevelCount = 1;
     tex.desc.sampleCount = 1;
     tex.desc.format = WGPUTextureFormat_RGBA8Unorm;
@@ -49,9 +52,7 @@ void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 
     wgpuQueueWriteTexture(wgpuDeviceGetQueue(wgpu_device), &destination, source_ptr, sz, &source, &tex.desc.size);
 }
 
-#endif
-
-my_texture::~my_texture() {
+my_texture::~my_texture()
 {
     if (tex.item) {
         wgpuTextureDestroy(tex.item);
@@ -63,3 +64,5 @@ my_texture::~my_texture() {
         view.item = nullptr;
     }
 }
+
+#endif

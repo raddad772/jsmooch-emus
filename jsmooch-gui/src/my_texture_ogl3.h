@@ -7,6 +7,11 @@
 
 #include <stdio.h>
 
+#include "build.h"
+
+
+#ifdef JSM_OPENGL
+
 #include "helpers/int.h"
 #include "../vendor/myimgui/imgui.h"
 #include "SDL3/SDL_render.h"
@@ -37,5 +42,5 @@ struct my_texture  {
     void upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height);
 };
 
-
+#endif
 #endif //JSMOOCH_EMUS_my_texture_H

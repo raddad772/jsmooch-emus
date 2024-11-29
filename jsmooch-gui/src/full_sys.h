@@ -9,18 +9,7 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/cvec.h"
 
-
-#ifdef JSM_SDLR3
-#include "my_texture_sdlr3.h"
-#endif
-
-#ifdef JSM_OPENGL
-#include "my_texture_ogl3.h"
-#endif
-
-#ifdef JSM_METAL
-#include "my_texture_metal.h"
-#endif
+#include "my_texture.h"
 
 #include "audiowrap.h"
 
@@ -97,12 +86,15 @@ public:
 
 struct full_system {
 public:
-
 #ifdef JSM_SDLR3
     SDL_Renderer *renderer;
     void platform_setup(SDL_Renderer *mrenderer) {
         renderer = mrenderer;
     }
+#endif
+#ifdef JSM_WEBGPU
+    WGPUDevice wgpu_device{};
+    void platform_setup(WGPUDevice device) { wgpu_device = device; };
 #endif
     struct jsm_system *sys;
     struct debugger_interface dbgr{};
