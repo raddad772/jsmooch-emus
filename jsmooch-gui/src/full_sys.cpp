@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <cmath>
+#include "build.h"
+#include "my_texture.h"
 #include "application.h"
 #include "helpers/sys_interface.h"
 #include "helpers/cvec.h"
@@ -25,6 +27,13 @@
 //#define DO_DREAMCAST
 //#define SIDELOAD
 //#define STOPAFTERAWHILE
+
+
+#ifdef JSM_SDLR3
+#define TS(f,a,b,c) f.setup(renderer, a, b, c);
+#else
+#define TS(f,a,b,c) f##.setup(a,b,c);
+#endif
 
 
 
@@ -817,7 +826,7 @@ void full_system::setup_display()
 
     // Determine final output resolution
     u32 wh = get_closest_pow2(MAX(p->cols.max_visible, p->rows.max_visible));
-    output.backbuffer_texture.setup("emulator backbuffer", wh, wh);
+    TS(output.backbuffer_texture,"emulator backbuffer", wh, wh);
     //printf("\nMAX COLS:%d ROWS:%d POW2:%d", p->cols.max_visible, p->rows.max_visible, wh);
 
     u32 overscan_x_offset = p->overscan.left;
@@ -901,7 +910,7 @@ void full_system::events_view_present()
         struct events_view::DVDP *evd = &events.view->display[events.view->index_in_use];
         if (!events.texture.is_good) {
             u32 szpo2 = get_closest_pow2(MAX(events.view->display[0].width, events.view->display[0].height));
-            events.texture.setup("Events View texture", szpo2, szpo2);
+            TS(events.texture, "Events View texture", szpo2, szpo2);
             events.texture.uv0 = ImVec2(0, 0);
             events.texture.uv1 = ImVec2((float)((double)events.view->display[0].width / (double)events.texture.width),
                                               (float)((double)events.view->display[0].height / (double)events.texture.height));
@@ -951,7 +960,7 @@ void full_system::waveform_view_present(struct WVIEW &wv)
     for (auto& wf : wv.waveforms) {
         if (!wf.tex.is_good) {
             u32 szpo2 = 1024;
-            wf.tex.setup(wf.wf->name, szpo2, szpo2);
+            TS(wf.tex, wf.wf->name, szpo2, szpo2);
             assert(wf.tex.is_good);
             wf.tex.uv0 = ImVec2(0, 0);
             wf.drawbuf.resize(1024*1024*4);
@@ -993,7 +1002,7 @@ void full_system::image_view_present(struct debugger_view *dview, struct my_text
     struct image_view *iview = &dview->image;
     if (!tex.is_good) {
         u32 szpo2 = get_closest_pow2(MAX(iview->height, iview->width));
-        tex.setup(iview->label, szpo2, szpo2);
+        TS(tex, iview->label, szpo2, szpo2);
         assert(tex.is_good);
         tex.uv0 = ImVec2(0, 0);
         tex.uv1 = ImVec2((float)((double)iview->width / (double)szpo2),

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "full_sys.h"
 #include "helpers/int.h"
 #include "helpers/inifile.h"
@@ -7,6 +9,11 @@ struct imgui_jsmooch_app {
     int do_setup_before_mainloop();
     void mainloop(ImGuiIO& io);
     void at_end();
+
+#ifdef JSM_SDLR3
+    SDL_Renderer *renderer;
+    void platform_setup(SDL_Renderer *mrenderer) {renderer = mrenderer; fsys.platform_setup(renderer); };
+#endif
 
     int done_break = 0;
     bool last_frame_was_whole = false;

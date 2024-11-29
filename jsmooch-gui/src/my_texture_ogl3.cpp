@@ -1,7 +1,6 @@
 #include <string>
 #include "my_texture_ogl3.h"
 #include "SDL3/SDL.h"
-#include "SDL3/SDL_opengl.h"
 
 static GLuint create_texture(int width, int height)
 {
@@ -39,6 +38,7 @@ void my_texture::setup(const char *label, u32 twidth, u32 theight) {
 
 void my_texture::upload_data(void *source_ptr, size_t sz, u32 source_width, u32 source_height)
 {
+    assert(tex.is_good);
     upload_to_texture(tex.item, source_ptr, source_width, source_height);
 }
 
