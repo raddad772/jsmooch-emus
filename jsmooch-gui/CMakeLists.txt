@@ -1,7 +1,8 @@
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
-#add_definitions(-DIMGUI_IMPL_WEBGPU_BACKEND_WGPU)
+add_definitions(-DJSM_WEBGPU)
+add_definitions(-DIMGUI_IMPL_WEBGPU_BACKEND_WGPU)
 include_directories(~/dev/libs/include)
 link_directories(~/dev/libs/bin)
 
@@ -21,9 +22,6 @@ add_executable(jsmooch-gui
         src/audiowrap.h
         src/build.h
         src/my_texture.h
-        #src/my_texture_ogl3.cpp
-        #src/my_texture_ogl3.h
-        # src/my_texture_metal.cpp
         src/my_texture_sdlr3.cpp
         src/my_texture_sdlr3.h
         src/my_texture_wgpu.h
@@ -46,7 +44,8 @@ add_subdirectory(vendor/myimgui)
 # [...]
 
 
-target_link_libraries(jsmooch-gui jsmooch-lib imgui SDL3 "-framework OpenGL")
+#target_link_libraries(jsmooch-gui jsmooch-lib imgui SDL3 "-framework OpenGL")
+target_link_libraries(jsmooch-gui jsmooch-lib imgui webgpu_dawn glfw3 "-framework CoreFoundation")
 #target_link_libraries(jsmooch-gui PRIVATE )
 
 install(TARGETS jsmooch-gui RUNTIME DESTINATION bin)

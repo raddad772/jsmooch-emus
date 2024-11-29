@@ -6,7 +6,7 @@
 #include "build.h"
 #include "my_texture_wgpu.h"
 
-#ifdef JSM_DAWN
+#ifdef JSM_WEBGPU
 void my_texture::setup(WGPUDevice device, const char *label, u32 twidth, u32 theight) {
     width = twidth;
     height = theight;

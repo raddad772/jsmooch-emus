@@ -10,6 +10,8 @@
 //#define JSM_OPENGL
 //#define JSM_METAL
 
+#include "imgui.h"
+
 #ifdef JSM_WEBGPU
 #include "../vendor/myimgui/backends/imgui_impl_glfw.h"
 #include "../vendor/myimgui/backends/imgui_impl_wgpu.h"

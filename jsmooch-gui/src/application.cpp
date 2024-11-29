@@ -25,6 +25,8 @@
 #endif // jsm_opengl
 
 #ifdef JSM_WEBGPU
+#include <stdio.h>
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -37,17 +39,12 @@
 #include <webgpu/webgpu.h>
 #include <webgpu/webgpu_cpp.h>
 
-// This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
-#ifdef __EMSCRIPTEN__
-#include "../libs/emscripten/emscripten_mainloop_stub.h"
-#endif
-
 // Global WebGPU required states
+static WGPUSwapChain     wgpu_swap_chain = nullptr;
 static WGPUInstance      wgpu_instance = nullptr;
 static WGPUDevice        wgpu_device = nullptr;
 static WGPUSurface       wgpu_surface = nullptr;
 static WGPUTextureFormat wgpu_preferred_fmt = WGPUTextureFormat_RGBA8Unorm;
-static WGPUSwapChain     wgpu_swap_chain = nullptr;
 static int               wgpu_swap_chain_width = 1280;
 static int               wgpu_swap_chain_height = 720;
 
