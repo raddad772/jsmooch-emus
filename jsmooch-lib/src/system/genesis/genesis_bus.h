@@ -5,6 +5,8 @@
 #ifndef JSMOOCH_EMUS_GENESIS_BUS_H
 #define JSMOOCH_EMUS_GENESIS_BUS_H
 
+//#define TRACE_SONIC1
+
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "helpers/physical_io.h"
@@ -79,6 +81,7 @@ struct genesis {
         struct JSM_DISPLAY *display;
 
         struct {
+            u32 bus_locked;
             u32 interlace_field;
             u32 vblank;
             u32 h32, h40;
@@ -116,6 +119,8 @@ struct genesis {
             u32 window_v_pos;
             u32 window_RIGHT;
             u32 window_DOWN;
+
+            u32 sc_dmas;
         } io;
 
         struct {
@@ -208,7 +213,6 @@ struct genesis {
             i32 num[2];
         } ringbuf;
 
-
         struct genesis_vdp_debug_row {
             u32 h40;
             u32 hscroll[2];
@@ -260,6 +264,14 @@ struct genesis {
 
     struct genesis_controller_6button controller1;
     struct genesis_controller_6button controller2;
+
+    struct {
+        u32 num_symbols;
+        struct SYMDO {
+            char name[50];
+            u32 addr;
+        } symbols[20000];
+    } debugging;
 
     DBG_START
         DBG_CPU_REG_START(m68k)

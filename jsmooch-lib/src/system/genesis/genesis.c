@@ -191,12 +191,30 @@ void genesis_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
+static void load_symbols(struct genesis* this) {
+    FILE *f = fopen("/Users/dave/s1symbols", "r");
+    if (f == 0) abort();
+    char buf[200];
+    this->debugging.num_symbols = 0;
+    while (fgets(buf, sizeof(buf), f)) {
+        char *num = strtok(buf, "=");
+        char *name = strtok(NULL, "\n");
+        u32 addr = atoi(num);
+        this->debugging.symbols[this->debugging.num_symbols].addr = addr;
+        snprintf(this->debugging.symbols[this->debugging.num_symbols].name, 50, "%s", name);
+        this->debugging.num_symbols++;
+        if (this->debugging.num_symbols >= 20000) abort();
+    }
+    fclose(f);
+}
+
 static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
 
     genesis_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, which_pio, &this->io.SRAM_enabled);
+    load_symbols(this);
     genesisJ_reset(jsm);
 }
 

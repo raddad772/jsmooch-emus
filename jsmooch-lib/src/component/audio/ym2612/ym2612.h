@@ -30,6 +30,7 @@ struct ym2612 {
     } io;
 
     struct YM2612_CHANNEL {
+        u32 num;
         u32 ext_enable;
         u32 left_enable, right_enable;
         struct {
@@ -40,6 +41,7 @@ struct ym2612 {
         u32 tremolo, mode; // 2bit
 
         struct YM2612_OPERATOR {
+            u32 num;
             u32 key_on; // 1bit
             u32 key_line; // 1bit
             u32 lfo_enable; // 1bit

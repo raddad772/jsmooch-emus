@@ -279,6 +279,14 @@ static void hblank(struct genesis* this, u32 new_value)
 
 }
 
+static void set_sc_array(struct genesis* this)
+{
+    if ((this->clock.vdp.vblank_active) || (!this->vdp.io.enable_display)) {
+        this->vdp.sc_array = SC_ARRAY_DISABLED + this->vdp.io.h40;
+    }
+    else this->vdp.sc_array = this->vdp.io.h40;
+}
+
 static void vblank(struct genesis* this, u32 new_value)
 {
     u32 old_value = this->clock.vdp.vblank_active;
@@ -286,8 +294,7 @@ static void vblank(struct genesis* this, u32 new_value)
     this->vdp.io.vblank = new_value;     // Our IO vblank value, which can be reset
 
     if (new_value) {
-        this->vdp.sc_slot = SC_ARRAY_DISABLED + this->vdp.io.h40; //
-
+        set_sc_array(this);
         this->vdp.irq.vblank.pending = 1;
         genesis_bus_update_irqs(this);
     }
@@ -315,14 +322,6 @@ static void new_frame(struct genesis* this)
     set_clock_divisor(this);
 }
 
-static void set_sc_array(struct genesis* this)
-{
-    if ((this->clock.vdp.vblank_active) || (!this->vdp.io.enable_display)) {
-        this->vdp.sc_array = SC_ARRAY_DISABLED + this->vdp.io.h40;
-    }
-    else this->vdp.sc_array = this->vdp.io.h40;
-}
-
 static void print_scroll_info(struct genesis* this)
 {
     printf("\nSCROLL AT LINE %d. HMODE:%d VMODE:%d", this->clock.vdp.vcount, this->vdp.io.hscroll_mode, this->vdp.io.vscroll_mode);
@@ -332,6 +331,8 @@ static void print_scroll_info(struct genesis* this)
 
 static void new_scanline(struct genesis* this)
 {
+    //printf("\nL:%d SC_DMAS:%d", this->clock.vdp.vcount, this->vdp.io.sc_dmas);
+    this->vdp.io.sc_dmas = 0;
     this->clock.vdp.vcount++;
     if (this->clock.vdp.vcount == 262) {
         new_frame(this);
@@ -479,6 +480,7 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
                 vdp->io.counter_latch_value = read_counter(this);
             vdp->io.counter_latch = (val >> 1) & 1;
             vdp->io.enable_overlay = (val & 1) ^ 1;
+            //printf("\nDISPLAY ENABLED: %d", vdp->io.enable_display);
             genesis_bus_update_irqs(this);
             // TODO: handle more bits
             return;
@@ -486,6 +488,8 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             vdp->io.vram_mode = (val >> 7) & 1;
             vdp->io.enable_display = (val >> 6) & 1;
             vdp->irq.vblank.enable = (val >> 5) & 1;
+            //printf("\nVBLANK ENABLE?%d", vdp->irq.vblank.enable);
+            //if (vdp->irq.vblank.enable) printf("\nENABLE PC: %06x", this->m68k.regs.PC);
             vdp->dma.enable = (val >> 4) & 1;
             vdp->io.cell30 = (val >> 3) & 1;
             // TODO: handle more bits
@@ -515,10 +519,10 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             vdp->io.bg_color = val & 63;
             return;
         case 8: // master system hscroll
-            printf("\nwrite SMS hscroll %d", val & 0xFF);
+            //printf("\nwrite SMS hscroll %d", val & 0xFF);
             return;
         case 9: // master system vscroll
-            printf("\nwrite SMS vscroll %d", val & 0xFF);
+            //printf("\nwrite SMS vscroll %d", val & 0xFF);
             return;
         case 10: // horizontal interrupt counter
             vdp->irq.hblank.reload = val;
@@ -601,11 +605,11 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 19:
             vdp->dma.len = (vdp->dma.len & 0xFF00) | (val & 0xFF);
-            if (dbg.traces.vdp2) DFT("\nWR DMALEN(13) %04x %02x", vdp->dma.len, val);
+            //printf("\nWR DMALEN(13) %04x %02x", vdp->dma.len, val);
             return;
         case 20:
             vdp->dma.len = (vdp->dma.len & 0xFF) | ((val << 8) & 0xFF00);
-            if (dbg.traces.vdp2) DFT("\nWR DMALEN(14) %04x %02x", vdp->dma.len, val);
+            //printf("\nWR DMALEN(14) %04x %02x", vdp->dma.len, val);
             return;
         case 21:
             // source be 22 bits
@@ -662,16 +666,17 @@ static void dma_source_inc(struct genesis* this)
 static void dma_load(struct genesis* this)
 {
     this->vdp.dma.active = 1;
-
+    this->vdp.io.bus_locked = 1;
     u32 addr = ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source_address << 1);
     u16 data = genesis_mainbus_read(this, addr & 0xFFFFFF, 1, 1, 0, 1);
-    if (dbg.traces.vdp2) DFT("\nVDP DMA LOAD ADDR:%04x DATA:%04x LEN:%04x", (u32)addr, (u32)data, (u32)this->vdp.dma.len);
+    //printf("\nVDP DMA LOAD ADDR:%04x DATA:%04x LEN:%04x VBLANK:%d DIS_ENABLE:%d LINE:%d cyc:%lld", (u32)addr, (u32)data, (u32)this->vdp.dma.len, this->clock.vdp.vblank_active, this->vdp.io.enable_display, this->clock.vdp.vcount, this->clock.master_cycle_count);
     write_data_port(this, data, 0);
 
     dma_source_inc(this);
     if (--this->vdp.dma.len == 0) {
         this->vdp.command.pending = 0;
         this->vdp.dma.active = 0;
+        this->vdp.io.bus_locked = 0;
     }
     this->vdp.sc_skip = 1; // every-other
 }
@@ -681,7 +686,7 @@ static void dma_fill(struct genesis* this)
     this->vdp.dma.active = 1;
     switch(this->vdp.command.target) {
         case 1:
-            if (dbg.traces.vdp2) DFT("\nVDP DMA FILL VRAM ADDR:%04x DATA:%02x", this->vdp.command.address, this->vdp.dma.fill_value);
+            //printf("\nVDP DMA FILL VRAM ADDR:%04x DATA:%02x VBLANK:%d cyc:%lld", this->vdp.command.address, this->vdp.dma.fill_value, this->clock.vdp.vblank_active, this->clock.master_cycle_count);
             VRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         case 3:
@@ -729,8 +734,8 @@ static void dma_run_if_ready(struct genesis* this)
     if (!this->vdp.dma.locked) {
         this->vdp.dma.locked = 1;
         if (this->vdp.dma.enable) {
-            //if (this->vdp.command.pending && !this->vdp.dma.fill_pending) {
-            while(this->vdp.command.pending && !this->vdp.dma.fill_pending) {
+            if (this->vdp.command.pending && !this->vdp.dma.fill_pending) { // Run once YO!
+            //while(this->vdp.command.pending && !this->vdp.dma.fill_pending) {
                 switch(this->vdp.dma.mode) {
                     case 0: case 1: dma_load(this); break;
                     case 2: dma_fill(this); break;
@@ -744,7 +749,7 @@ static void dma_run_if_ready(struct genesis* this)
 
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
-    if (dbg.traces.vdp) printf("\nWRITE VDP CTRL PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
+    //printf("\nWRITE VDP CTRL PORT val:%04x PC:%06x cyc:%lld", val, this->m68k.regs.PC, this->clock.master_cycle_count);
     //if (dbg.traces.vdp3) DFT("\nWR VDP CTRL: %04x", val);
     //printf("\nIT HAPPENED!");
     //dbg_break("yes", this->clock.master_cycle_count);
@@ -764,7 +769,7 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
         this->vdp.dma.fill_pending = this->vdp.dma.mode == 2; // Wait for fill
 
         if (dbg.traces.vdp2) DFT("\nSECOND WRITE. VAL:%04x ADDR:%06x DMA_ENABLE:%d TARGET:%d PENDING:%d WAIT:%d", val, this->vdp.command.address, this->vdp.dma.enable, this->vdp.command.target, this->vdp.command.pending, this->vdp.dma.fill_pending);
-        if (dbg.traces.vdp) printf("\nLATCHED. MODE! %d FILL PENDING! %d", this->vdp.dma.mode, this->vdp.dma.fill_pending);
+        //printf("\nLATCHED. MODE! %d FILL PENDING! %d DMA_ENABLE:%d LEN:%d", this->vdp.dma.mode, this->vdp.dma.fill_pending, this->vdp.dma.enable, this->vdp.dma.len);
         dma_run_if_ready(this);
         return;
     }
@@ -773,9 +778,9 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
     this->vdp.command.address = (this->vdp.command.address & 0b111100000000000000) | (val & 0b11111111111111);
     //   command.target.bit(0,1)   = data.bit(14,15);
     this->vdp.command.target = (this->vdp.command.target & 0b1100) | ((val >> 14) & 3);
-    if (dbg.traces.vdp) printf("   SETTING TARGET TO %d", this->vdp.command.target);
+    //printf("   SETTING TARGET TO %d", this->vdp.command.target);
 
-    if (dbg.traces.vdp2) DFT("\nFIRST WRITE. VAL:%04x ADDR:%06x TARGET:%d PENDING:%d", val, this->vdp.command.address, this->vdp.command.target, this->vdp.command.pending);
+    //printf("\nFIRST WRITE. VAL:%04x ADDR:%06x TARGET:%d PENDING:%d", val, this->vdp.command.address, this->vdp.command.target, this->vdp.command.pending);
     //  VAL:c000 ADDR:00c000
     /*if ((val == 0xc000) && (this->vdp.command.address == 0xc000) && (this->vdp.command.target == 3)) {
         printf("\nDID IT HERE AT CYCLE:%lld", this->clock.master_cycle_count);
@@ -792,11 +797,12 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
 static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
 {
     this->vdp.command.latch = 0;
+    //printf("\nREAD VDP CONTROL PORT. FILL PEND?%d", this->vdp.dma.fill_pending);
     // Ares 360c  1000001100
     // Me   3688  1010001000
 
     u16 v = 0; // NTSC only for now
-    v |= this->vdp.dma.active; // no DMA yet
+    v |= this->vdp.dma.active << 1; // no DMA yet
     v |= this->clock.vdp.hblank_active << 2;
     v |= (this->clock.vdp.vblank_active || (1 ^ this->vdp.io.enable_display)) << 3;
     v |= (this->clock.vdp.field && this->vdp.io.interlace_field) << 4;
@@ -859,9 +865,14 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
     if (dbg.traces.vdp) printf("\nWRITE VDP DATA PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
 
     if(this->vdp.dma.fill_pending) {
-        this->vdp.dma.fill_pending = false;
+        this->vdp.dma.fill_pending = 0;
         this->vdp.dma.fill_value = val >> 8;
         if (dbg.traces.vdp3) DFT("\nWR VDP DATA, FILL START");
+        /*if (this->clock.master_cycle_count == 53021297) {
+            printf("\nPC: %06x", this->m68k.regs.PC);
+            //dbg_break("Last good fill?", this->clock.master_cycle_count);
+        }*/
+        //printf("\nFILL START PC:%06x cyc:%lld", this->m68k.regs.PC, this->clock.master_cycle_count);
     }
 
     u32 addr;
@@ -895,7 +906,8 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
         return;
     }
-    printf("\nUnknown data port write! Target:%d is_cpu:%d addr:%04x", this->vdp.command.target, is_cpu, this->vdp.command.address);
+    printf("\nUnknown data port write! Target:%d is_cpu:%d addr:%04x PC:%06x  cyc:%lld", this->vdp.command.target, is_cpu, this->vdp.command.address, this->m68k.regs.PC, this->clock.master_cycle_count);
+    dbg_break("Bad port write", this->clock.master_cycle_count);
 }
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
@@ -999,6 +1011,7 @@ void genesis_VDP_reset(struct genesis* this)
     this->clock.vdp.hblank_active = this->clock.vdp.vblank_active = 0;
     this->clock.vdp.vcount = this->clock.vdp.vcount = 0;
     this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1];
+    this->vdp.io.enable_display = 0;
     this->vdp.display->scan_x = this->vdp.display->scan_y = 0;
     set_clock_divisor(this);
 }
@@ -1486,7 +1499,10 @@ void genesis_VDP_cycle(struct genesis* this)
         }
     }
     run_dma |= (this->vdp.io.enable_display ^ 1);
-    if (run_dma) dma_run_if_ready(this);
+    if (run_dma) {
+        dma_run_if_ready(this);
+        this->vdp.io.sc_dmas++;
+    }
 
     if (sc_clock == SC_HSYNC_GOES_OFF) {
         //printf("\nHBLANK OFF %d x:%d", this->clock.vdp.vcount, this->vdp.line.screen_x);

@@ -253,7 +253,6 @@ add_library(jsmooch-lib
         src/system/nes/mappers/nes_memmap.h
         src/system/genesis/genesis_debugger.c
         src/system/genesis/genesis_debugger.h
-        src/component/audio/ym2612/ym2612.c
         src/helpers/serialize/serialize.c
         src/helpers/serialize/serialize.h
         src/helpers/img.c
@@ -264,6 +263,7 @@ add_library(jsmooch-lib
         src/component/controller/genesis6/genesis6.h
         src/helpers/sram.c
         src/helpers/sram.h
+        src/component/audio/ym2612/ym2612.c
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

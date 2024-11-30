@@ -37,7 +37,7 @@ void genesis_z80_reset_line(struct genesis* this, u32 enabled)
         this->io.z80.reset_line_count = 0;
     }
     if ((this->io.z80.reset_line) && (!enabled) && (this->io.z80.reset_line_count >= 3)) {
-        // 1->0 transition means reset it
+        // 1->0 transition means actually reset it. only after >= 3 cycles
         Z80_reset(&this->z80);
         ym2612_reset(&this->ym2612);
     }
@@ -81,7 +81,7 @@ void genesis_mainbus_write_a1k(struct genesis* this, u32 addr, u16 val, u16 mask
             return;
         case 0xA11100: // Z80 BUSREQ
             this->io.z80.bus_request = ((val >> 8) & 1);
-            if (this->io.z80.bus_request) if (this->io.z80.reset_line) this->io.z80.bus_ack = 1;
+            //if (this->io.z80.bus_request) if (this->io.z80.reset_line) this->io.z80.bus_ack = 1;
             //printf("\nZ80 BUSREQ:%d cycle:%lld", this->io.z80.bus_request, this->clock.master_cycle_count);
             return;
         case 0xA11200: // Z80 reset line
@@ -127,7 +127,7 @@ u16 genesis_mainbus_read_a1k(struct genesis* this, u32 addr, u16 old, u16 mask, 
          *   1         0       0
          */
             //
-        return ((!(this->io.z80.bus_ack && !this->io.z80.reset_line)) << 8) | this->io.m68k.open_bus_data;
+        return ((this->io.z80.bus_ack ^ 1) << 8) | (this->io.m68k.open_bus_data & 0b1111111011111111);
     }
 
     gen_test_dbg_break(this, "mainbus_read_a1k");
@@ -269,9 +269,19 @@ static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val)
 
 }
 
+static struct SYMDO *get_at_addr(struct genesis* this, u32 addr)
+{
+    for (u32 i = 0; i < this->debugging.num_symbols; i++) {
+        if (this->debugging.symbols[i].addr == addr) return &this->debugging.symbols[i];
+    }
+    return NULL;
+}
+
 void genesis_cycle_m68k(struct genesis* this)
 {
+    static u32 PCO = 0;
     if (this->io.m68k.stuck) dbg_printf("\nSTUCK cyc %lld", *this->m68k.trace.cycles);
+    if (this->vdp.io.bus_locked) return;
 
     M68k_cycle(&this->m68k);
     if (this->m68k.pins.FC == 7) {
@@ -282,7 +292,14 @@ void genesis_cycle_m68k(struct genesis* this)
     if (this->m68k.pins.AS && (!this->m68k.pins.DTACK) && (!this->io.m68k.stuck)) {
         if (!this->m68k.pins.RW) { // read
             this->io.m68k.open_bus_data = this->m68k.pins.D = genesis_mainbus_read(this, this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->io.m68k.open_bus_data, 1);
-
+#ifdef TRACE_SONIC1
+            if (PCO != this->m68k.regs.PC) {
+                struct SYMDO *sd = get_at_addr(this, this->m68k.regs.PC);
+                if (sd) {
+                    printf("\n%06x: func %s    line:%d cyc:%lld", this->m68k.regs.PC, sd->name, this->clock.vdp.vcount, this->clock.master_cycle_count);
+                }
+            }
+#endif
             if (dbg.traces.cpu3) DFT("\nRD %06x(%d%d) %04x", this->m68k.pins.Addr, this->m68k.pins.UDS, this->m68k.pins.LDS, this->m68k.pins.D);
 
             this->m68k.pins.DTACK = !(this->io.m68k.VDP_FIFO_stall | this->io.m68k.VDP_prefetch_stall);
@@ -332,10 +349,12 @@ void genesis_cycle_z80(struct genesis* this)
 {
     if (this->io.z80.reset_line) {
         this->io.z80.reset_line_count++;
-        if (this->io.z80.reset_line_count >= 3) return; // If it's held down 3 or more, freeze
+        if (this->io.z80.reset_line_count >= 3) return; // If it's held down 3 or more, freeze!
     }
     this->io.z80.reset_line_count = 0;
-    if (this->io.z80.bus_request && this->io.z80.bus_ack) return;
+    if (this->io.z80.bus_request && this->io.z80.bus_ack) {
+        return;
+    }
 
     Z80_cycle(&this->z80);
     if (this->z80.pins.RD) {

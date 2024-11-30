@@ -15,7 +15,7 @@ void persistent_store_init(struct persistent_store*this)
 
 void persistent_store_delete(struct persistent_store*this)
 {
-    if (this->dirty){
+    if (this->dirty && this->requested_size > 0){
         printf("\nWARNING: DELETING DIRTY PERSISTENT STORE!");
     }
     this->ready_to_use = 0;
