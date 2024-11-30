@@ -1426,9 +1426,9 @@ static void render_16_more(struct genesis* this)
     // Dump to ringbuffer
     u8 pattern[16];
     for (u32 plane = 0; plane < 2; plane++) {
-        if ((plane == 0) && window_transitions_on(this)) {
+        if ((plane == 0) && window_transitions_on(this) && (this->vdp.fetcher.fine_x[0] != 0)) {
             u32 head = this->vdp.ringbuf[0].head;
-            this->vdp.ringbuf[0].head = (head + this->vdp.fetcher.fine_x[0]) & 31;
+            this->vdp.ringbuf[0].head = (head + (this->vdp.fetcher.fine_x[0] + 1)) & 31;
         }
 
         fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, pattern, plane == 0);
