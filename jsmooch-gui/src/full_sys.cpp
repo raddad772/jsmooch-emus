@@ -694,9 +694,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "golden_axe2.md", nullptr); // fine
             //worked = grab_ROM(&ROMs, which, "golden_axe.md", nullptr); // fine
             //worked = grab_ROM(&ROMs, which, "kid_chameleon.md", nullptr); // fine
-            //worked = grab_ROM(&ROMs, which, "kawasaki_superbike.md", nullptr); // gfx corruption!
+            worked = grab_ROM(&ROMs, which, "kawasaki_superbike.md", nullptr); // gfx corruption!
             //worked = grab_ROM(&ROMs, which, "panorama_cotton.bin", nullptr); // seems fine
-            worked = grab_ROM(&ROMs, which, "shadow_run.md", nullptr); // right-side window bug!!! other than that works fine!
+            //worked = grab_ROM(&ROMs, which, "shadow_run.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "mega_man_wiley_wars.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "lost_vikings.md", nullptr); // does nothing
             //worked = grab_ROM(&ROMs, which, "shining_force_2.md", nullptr); // works fine!

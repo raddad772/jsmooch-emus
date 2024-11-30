@@ -461,6 +461,7 @@ static void recalc_window(struct genesis* this)
     if (this->vdp.io.h40)
         this->vdp.window.nt_base &= 0b111110; // Ignore lowest bit in h40
     this->vdp.window.nt_base <<= 10;
+    //printf("\nWINDOW LEFT:%d RIGHT:%d TOP:%d BOTTOM:%d", this->vdp.window.left_col, this->vdp.window.right_col, this->vdp.window.top_row, this->vdp.window.bottom_row);
 }
 
 static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
@@ -505,6 +506,7 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 3: // Window nametable location
             vdp->io.window_table_addr = (val & 0b111110) >> 1; // lowest bit ignored in H40 << 9
+            recalc_window(this);
             return;
         case 4: // Plane B location
             vdp->io.plane_b_table_addr = (val & 15) << 12;
@@ -1164,6 +1166,10 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
         px[hflip ^ 1] = px2 & 15;
         for (u32 j = 0; j < 2; j++) {
             pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
+            /*
+            if (is_planea && in_window(this)) pattern[pattern_idex++] = 0b10000001;
+            else pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
+             */
         }
     }
 

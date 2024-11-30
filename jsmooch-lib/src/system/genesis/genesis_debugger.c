@@ -564,7 +564,6 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
             nametable_addr = this->vdp.io.plane_b_table_addr;
             break;
         case 2:
-
             nametable_addr = this->vdp.io.window_table_addr;
             if (this->vdp.io.h40)
                 nametable_addr &= 0b111110; // Ignore lowest bit in h40
