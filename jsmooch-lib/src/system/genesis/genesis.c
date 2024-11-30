@@ -214,7 +214,12 @@ static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct physical
     struct buf* b = &mfs->files[0].buf;
 
     genesis_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, which_pio, &this->io.SRAM_enabled);
-    load_symbols(this);
+    if ((this->cart.header.region_japan) && (!this->cart.header.region_usa)) {
+        this->opts.JP = 1;
+    }
+    else
+        this->opts.JP = 0;
+    //load_symbols(this);
     genesisJ_reset(jsm);
 }
 

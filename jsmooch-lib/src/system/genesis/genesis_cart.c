@@ -417,7 +417,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
                 break;
         }
     }
-
+    printf("\nREGION JP:%d US:%d", this->header.region_japan, this->header.region_usa);
     printf("\nCOPYRIGHT: %s", this->header.copyright);
     printf("\nTITLE: %s", this->header.title_domestic);
     printf("\nROM END: %08x", this->header.rom_addr_end);

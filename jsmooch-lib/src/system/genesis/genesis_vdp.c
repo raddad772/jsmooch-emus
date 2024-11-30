@@ -907,7 +907,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         return;
     }
     printf("\nUnknown data port write! Target:%d is_cpu:%d addr:%04x PC:%06x  cyc:%lld", this->vdp.command.target, is_cpu, this->vdp.command.address, this->m68k.regs.PC, this->clock.master_cycle_count);
-    dbg_break("Bad port write", this->clock.master_cycle_count);
+    //dbg_break("Bad port write", this->clock.master_cycle_count);
 }
 
 u16 genesis_VDP_mainbus_read(struct genesis* this, u32 addr, u16 old, u16 mask, u32 has_effect)
@@ -1077,21 +1077,21 @@ static int fetch_order[4] = { 1, 0, 3, 2 };
 static void render_to_ringbuffer(struct genesis* this, u32 plane, u8 *pattern, u32 pattern_pos, u32 pattern_max)
 {
     u32 epos = pattern_max + 1;
-    u32 *tail = &this->vdp.ringbuf.tail[plane];
-    i32 *num = &this->vdp.ringbuf.num[plane];
+    u32 *tail = &this->vdp.ringbuf[plane].tail;
+    i32 *num = &this->vdp.ringbuf[plane].num;
     while(pattern_pos < epos) {
-        struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf.buf[*tail];
+        struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf[plane].buf[*tail];
         u32 c = pattern[pattern_pos] & 63;
         u32 priority = (pattern[pattern_pos] >> 7) & 1;
         if (c != 0) {
-            b->has[plane] = 1;
-            b->color[plane] = c;
+            b->has = 1;
+            b->color = c;
             //b->priority[plane] = priority;
         } else {
-            b->has[plane] = 0;
-            b->color[plane] = 0;
+            b->has = 0;
+            b->color = 0;
         }
-        b->priority[plane] = priority;
+        b->priority = priority;
         pattern_pos++;
         *tail = (*tail + 1) & 31;
         (*num)++;
@@ -1108,6 +1108,15 @@ static inline u32 window_transitions_off(struct genesis* this)
     int col = this->vdp.fetcher.column;
 
     return this->vdp.window.right_col == (u32)(col);
+}
+static inline u32 window_transitions_on(struct genesis* this)
+{
+    u32 row = this->clock.vdp.vcount >> 3;
+    if ((row >= this->vdp.window.top_row) && (row < this->vdp.window.bottom_row)) return 0;
+    if (!this->vdp.io.window_RIGHT) return 0; // Window only transitions OFF if left-to-middle
+    if (this->vdp.window.left_col == 0) return 0; // Window doesn't transition ON if hpos == 0
+    int col = this->vdp.fetcher.column;
+    return this->vdp.window.left_col == (u32)(col);
 }
 
 
@@ -1302,24 +1311,22 @@ static void render_16(struct genesis* this)
     u32 wide = this->vdp.io.h40 ? 4 : 5;
     u32 xmax = this->vdp.io.h40 ? 320 : 256;
     for (u32 num = 0; num < 16; num++) {
-        struct genesis_vdp_pixel_buf *ring = this->vdp.ringbuf.buf + this->vdp.ringbuf.head;
-        this->vdp.ringbuf.head = (this->vdp.ringbuf.head + 1) & 31;
-        assert(this->vdp.ringbuf.num[PLANE_A] > 0);
-        assert(this->vdp.ringbuf.num[PLANE_A] <= 32);
-        assert(this->vdp.ringbuf.num[PLANE_B] > 0);
-        assert(this->vdp.ringbuf.num[PLANE_B] <= 32);
-        this->vdp.ringbuf.num[PLANE_A]--;
-        this->vdp.ringbuf.num[PLANE_B]--;
+        struct genesis_vdp_pixel_buf *ring0 = this->vdp.ringbuf[PLANE_A].buf + this->vdp.ringbuf[PLANE_A].head;
+        struct genesis_vdp_pixel_buf *ring1 = this->vdp.ringbuf[PLANE_B].buf + this->vdp.ringbuf[PLANE_B].head;
+        this->vdp.ringbuf[PLANE_A].head = (this->vdp.ringbuf[PLANE_A].head + 1) & 31;
+        this->vdp.ringbuf[PLANE_B].head = (this->vdp.ringbuf[PLANE_B].head + 1) & 31;
+        this->vdp.ringbuf[PLANE_A].num--;
+        this->vdp.ringbuf[PLANE_B].num--;
         if (this->vdp.line.screen_x >= xmax) continue;
 
         // We've got out ringbuffer. Now get our sprite pixel...
         struct genesis_vdp_sprite_pixel *sprite = this->vdp.sprite_line_buf + this->vdp.line.screen_x;
 
         if (!this->opts.vdp.enable_A) {
-            ring->has[PLANE_A] = ring->color[PLANE_A] = ring->priority[PLANE_A] = 0;
+            ring0->has = ring0->color = ring0->priority = 0;
         }
         if (!this->opts.vdp.enable_B) {
-            ring->has[PLANE_B] = ring->color[PLANE_B] = ring->priority[PLANE_B] = 0;
+            ring1->has = ring1->color = ring1->priority = 0;
         }
         if (!this->opts.vdp.enable_sprites) {
             sprite->has_px = sprite->color = sprite->priority = 0;
@@ -1338,16 +1345,16 @@ static void render_16(struct genesis* this)
 
 #define solid_sprite (sprite->color & 15)
 #define above_sprite (sprite->has_px && solid_sprite && sprite->priority)
-#define solid(plane) (ring->has[plane] && (ring->color[plane] & 15))
-#define above(plane) (solid(plane) && ring->priority[plane])
+#define solid(plane) (ring##plane->has && (ring##plane->color & 15))
+#define above(plane) (solid(plane) && ring##plane->priority)
 
         u32 bg = PX_NONE;
         u32 fg = PX_NONE;
-        if (above(PLANE_A) || solid(PLANE_A) && !above(PLANE_B)) {
+        if (above(0) || solid(0) && !above(1)) {
             bg = PX_A;
         }
         else {
-            if (solid(PLANE_B)) {
+            if (solid(1)) {
                 bg = PX_B;
             }
             else
@@ -1355,7 +1362,7 @@ static void render_16(struct genesis* this)
                 bg = PX_BG;
             }
         }
-        if (above_sprite || (solid_sprite && !above(PLANE_B) && !above(PLANE_A)))
+        if (above_sprite || (solid_sprite && !above(1) && !above(0)))
             fg = PX_SP;
         else
             fg = bg;
@@ -1365,7 +1372,7 @@ static void render_16(struct genesis* this)
 
 
         if(this->vdp.io.enable_shadow_highlight) {
-            mode = ring->priority[PLANE_A] || ring->priority[PLANE_B];
+            mode = ring0->priority || ring1->priority;
             if(fg == PX_SP) switch(sprite->color) {
                     case 0x0E:
                     case 0x1E:
@@ -1379,10 +1386,10 @@ static void render_16(struct genesis* this)
         u32 final_color = 0;
         switch(pixel) {
             case PX_A:
-                final_color = ring->color[PLANE_A];
+                final_color = ring0->color;
                 break;
             case PX_B:
-                final_color = ring->color[PLANE_B];
+                final_color = ring1->color;
                 break;
             case PX_SP:
                 final_color = sprite->color;
@@ -1419,6 +1426,11 @@ static void render_16_more(struct genesis* this)
     // Dump to ringbuffer
     u8 pattern[16];
     for (u32 plane = 0; plane < 2; plane++) {
+        if ((plane == 0) && window_transitions_on(this)) {
+            u32 head = this->vdp.ringbuf[0].head;
+            this->vdp.ringbuf[0].head = (head + this->vdp.fetcher.fine_x[0]) & 31;
+        }
+
         fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, pattern, plane == 0);
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + 16) & plane_wrap;
 

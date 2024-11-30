@@ -662,9 +662,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // wont boot
+            //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
@@ -687,14 +687,23 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "desert_strike.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "flashback.md", nullptr); // 6-button doesn't work?
             //worked = grab_ROM(&ROMs, which, "rocket_knight.md", nullptr); // works
-            dbg.traces.dma = 0;
-            dbg.traces.fifo = 0;
-            dbg.traces.vdp = 0;
-            dbg.traces.vdp2 = 0;
-            dbg.traces.vdp3 = 0;
-            dbg.traces.vdp4 = 0;
-            dbg.traces.cpu2 = 0;
-            dbg.traces.cpu3 = 0;
+
+            //worked = grab_ROM(&ROMs, which, "vectorman.md", nullptr); // well!
+            //worked = grab_ROM(&ROMs, which, "vectorman2.md", nullptr); // well!
+            // worked = grab_ROM(&ROMs, which, "golden_axe3.bin", nullptr); // fine!
+            //worked = grab_ROM(&ROMs, which, "golden_axe2.md", nullptr); // fine
+            //worked = grab_ROM(&ROMs, which, "golden_axe.md", nullptr); // fine
+            //worked = grab_ROM(&ROMs, which, "kid_chameleon.md", nullptr); // fine
+            //worked = grab_ROM(&ROMs, which, "kawasaki_superbike.md", nullptr); // gfx corruption!
+            //worked = grab_ROM(&ROMs, which, "panorama_cotton.bin", nullptr); // seems fine
+            worked = grab_ROM(&ROMs, which, "shadow_run.md", nullptr); // right-side window bug!!! other than that works fine!
+            //worked = grab_ROM(&ROMs, which, "mega_man_wiley_wars.md", nullptr); // works fine!
+            //worked = grab_ROM(&ROMs, which, "lost_vikings.md", nullptr); // does nothing
+            //worked = grab_ROM(&ROMs, which, "shining_force_2.md", nullptr); // works fine!
+            // worked = grab_ROM(&ROMs, which, "shining_force.md", nullptr); // works!
+            // worked = grab_ROM(&ROMs, which, "battletoads.md", nullptr); // fine!
+            //worked = grab_ROM(&ROMs, which, "comix_zone.md", nullptr); // works!
+
             break;
         default:
             printf("\nSYS NOT IMPLEMENTED!");

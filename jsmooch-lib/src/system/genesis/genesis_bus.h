@@ -204,14 +204,14 @@ struct genesis {
 
         struct {
             struct genesis_vdp_pixel_buf {
-                u32 has[2];
-                u32 color[2];
-                u32 priority[2];
+                u32 has;
+                u32 color;
+                u32 priority;
             } buf[32];
             u32 head;
-            u32 tail[2];
-            i32 num[2];
-        } ringbuf;
+            u32 tail;
+            i32 num;
+        } ringbuf[2];
 
         struct genesis_vdp_debug_row {
             u32 h40;
@@ -322,7 +322,9 @@ struct genesis {
             u32 enable_B;
             u32 enable_sprites;
             u32 ex_trace;
+
         } vdp;
+        u32 JP;
     } opts;
 
 };

@@ -52,7 +52,8 @@ static u16 read_version_register(struct genesis* this, u32 mask)
     // bit 6 0 = NTSC, 1 = PAL
     // bit 5 0 = expansion like 32x/CD, 1 = no expansion like 32x/CD
     // bit 1-3 version, must be 0
-    u32 v = 0b10100000;
+    u32 v = 0b00100000;
+    v |= ((this->opts.JP ^ 1) << 7);
     return (v << 8) | v;
 }
 
