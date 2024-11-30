@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include "helpers/debug.h"
+#include "helpers/serialize/serialize.h"
 #include "helpers/debugger/debugger.h"
 #include "m68000.h"
 #include "m68000_instructions.h"
@@ -58,6 +59,7 @@ static void M68k_decode(struct M68k* this)
         //printf("\nBREAK FOR WAIT ON INTERRUPT!! cycle:%d", *this->trace.cycles);
     }
 #endif
+    this->last_decode = IRD & 0xFFFF;
     struct M68k_ins_t *ins = &M68k_decoded[IRD & 0xFFFF];
     this->state.instruction.TCU = 0;
     this->ins = ins;
@@ -359,6 +361,7 @@ void M68k_reset(struct M68k* this)
     this->state.instruction.done = 0;
     this->state.e_clock_count = 0;
     M68k_set_SR(this, (M68k_get_SR(this) & 0x1F) | 0x2700, 1);
+    this->last_decode = 0x50000;
     this->ins = &this->SPEC_RESET;
     this->state.instruction.TCU = 0;
     this->state.instruction.prefetch = 0;
@@ -378,4 +381,124 @@ void M68k_disassemble_entry(struct M68k *this, struct disassembly_entry* entry)
     struct M68k_ins_t *t =  &M68k_decoded[IR & 0xFFFF];
     pprint_ea(this, t, 0, &entry->context);
     pprint_ea(this, t, 1, &entry->context);
+}
+
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+static void serialize_regs(struct M68k_regs *this, struct serialized_state *state) {
+    S(D);
+    S(A);
+    S(IPC);
+    S(PC);
+    S(ASP);
+    S(SR.u);
+    S(IRC);
+    S(IR);
+    S(IRD);
+    S(next_SR_T);
+}
+
+static void serialize_pins(struct M68k_pins* this, struct serialized_state *state) {
+    S(FC);
+    S(Addr);
+    S(D);
+    S(DTACK);
+    S(VPA);
+    S(VMA);
+    S(AS);
+    S(RW);
+    S(IPL);
+    S(UDS);
+    S(LDS);
+    S(RESET);
+}
+
+// #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+void M68k_serialize(struct M68k *this, struct serialized_state *state)
+{
+    serialize_regs(&this->regs, state);
+    serialize_pins(&this->pins, state);
+
+    S(ins_decoded);
+    S(testing);
+    S(opc);
+    S(megadrive_bug);
+    S(debug);
+    S(state);
+    S(last_decode);
+    u32 ea = 0;
+    if (this->state.operands.ea == &this->ins->ea[0])
+        ea = 1;
+    else if (this->state.operands.ea == &this->ins->ea[1])
+        ea = 2;
+    Sadd(state, &ea, sizeof(ea));
+
+    u32 func = M68k_serialize_func(this);
+    Sadd(state, &func, sizeof(func));
+}
+#undef S
+
+
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+static void deserialize_regs(struct M68k_regs* this, struct serialized_state *state)
+{
+    L(D);
+    L(A);
+    L(IPC);
+    L(PC);
+    L(ASP);
+    L(SR.u);
+    L(IRC);
+    L(IR);
+    L(IRD);
+    L(next_SR_T);
+}
+
+static void deserialize_pins(struct M68k_pins* this, struct serialized_state *state)
+{
+    L(FC);
+    L(Addr);
+    L(D);
+    L(DTACK);
+    L(VPA);
+    L(VMA);
+    L(AS);
+    L(RW);
+    L(IPL);
+    L(UDS);
+    L(LDS);
+    L(RESET);
+}
+
+void M68k_deserialize(struct M68k*this, struct serialized_state *state)
+{
+    deserialize_regs(&this->regs, state);
+    deserialize_pins(&this->pins, state);
+
+    L(ins_decoded);
+    L(testing);
+    L(opc);
+    L(megadrive_bug);
+    L(debug);
+    L(state);
+    L(last_decode);
+    struct M68k_ins_t *ins;
+    if (this->last_decode == 0x50000)
+        ins = &this->SPEC_RESET;
+    else
+        ins = &M68k_decoded[this->last_decode];
+    this->ins = ins;
+
+    // state.bus_cycle.func
+    // state.operands.ea,
+    // ins
+    u32 ea = 0;
+    Sload(state, &ea, sizeof(ea));
+    if (ea == 1)
+        this->state.operands.ea = &this->ins->ea[0];
+    else if (ea == 2)
+        this->state.operands.ea = &this->ins->ea[1];
+
+    u32 func = 0;
+    Sload(state, &func, sizeof(func));
+    M68k_deserialize_func(this, func);
 }

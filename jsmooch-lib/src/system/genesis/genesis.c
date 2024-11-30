@@ -15,6 +15,7 @@
 #include "genesis_bus.h"
 #include "genesis_cart.h"
 #include "genesis_vdp.h"
+#include "genesis_serialize.h"
 
 #define JTHIS struct genesis* this = (struct genesis*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -169,6 +170,8 @@ void genesis_new(JSM, enum jsm_systems kind)
     jsm->set_audiobuf = &genesisJ_set_audiobuf;
     jsm->sideload = NULL;
     jsm->setup_debugger_interface = &genesisJ_setup_debugger_interface;
+    jsm->save_state = genesisJ_save_state;
+    jsm->load_state = genesisJ_load_state;
 }
 
 void genesis_delete(JSM) {

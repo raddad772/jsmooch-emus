@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "helpers/debug.h"
+#include "helpers/serialize/serialize.h"
 #include "ym2612.h"
 
 #define SIGNe14to32(x) (((((x) >> 13) & 1) * 0xFFFFC000) | ((x) & 0x3FFF))
@@ -99,4 +100,14 @@ void ym2612_cycle(struct ym2612*this)
 i16 ym2612_sample_channel(struct ym2612*this, u32 ch)
 {
     return 0;
+}
+
+void ym2612_serialize(struct ym2612*this, struct serialized_state *state)
+{
+
+}
+
+void ym2612_deserialize(struct ym2612*this, struct serialized_state *state)
+{
+
 }

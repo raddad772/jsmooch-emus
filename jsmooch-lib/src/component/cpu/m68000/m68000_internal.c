@@ -1219,3 +1219,20 @@ void M68k_set_r(struct M68k* this, struct M68k_EA *ea, u32 val, u32 sz)
             break;
     }
 }
+
+u32 M68k_serialize_func(struct M68k*this)
+{
+    if (this->state.bus_cycle.func == &M68k_bus_cycle_read)
+        return 1;
+    if (this->state.bus_cycle.func == &M68k_bus_cycle_write)
+        return 2;
+    return 0;
+}
+
+void M68k_deserialize_func(struct M68k*this, u32 v)
+{
+    if (v == 1)
+        this->state.bus_cycle.func = &M68k_bus_cycle_read;
+    else if (v == 2)
+        this->state.bus_cycle.func = &M68k_bus_cycle_write;
+}

@@ -81,7 +81,8 @@ void M68k_read_operands_prefetch(struct M68k*, u32 opnum);
 void M68k_adjust_IPC(struct M68k*, u32 opnum, u32 sz);
 void M68k_bus_cycle_iaq(struct M68k*);
 void M68k_sample_interrupts(struct M68k*);
-
+u32 M68k_serialize_func(struct M68k*);
+void M68k_deserialize_func(struct M68k*, u32 v);
 
 #define MAKE_FC(is_program) ((this->regs.SR.S ? 4 : 0) | ((is_program) ? 2 : 1))
 

@@ -168,10 +168,10 @@ void SN76489_write_data(struct SN76489* this, u32 val)
     }
 }
 
-#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
 void SN76489_serialize(struct SN76489 *this, struct serialized_state *state)
 {
     u32 i;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
     S(io_reg);
     S(io_kind);
 
@@ -190,8 +190,8 @@ void SN76489_serialize(struct SN76489 *this, struct serialized_state *state)
     S(noise.mode);
     S(noise.counter);
     S(noise.countdown);
-}
 #undef S
+}
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
 void SN76489_deserialize(struct SN76489 *this, struct serialized_state *state)

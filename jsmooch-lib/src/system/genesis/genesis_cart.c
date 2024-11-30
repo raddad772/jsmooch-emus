@@ -279,7 +279,6 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
 {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);
-    this->ROM_mask = (fil_sz - 1) & ~1;
     *SRAM_enable = 0;
 
     char *tptr = (char *)this->ROM.ptr;

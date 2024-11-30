@@ -264,6 +264,8 @@ add_library(jsmooch-lib
         src/helpers/sram.c
         src/helpers/sram.h
         src/component/audio/ym2612/ym2612.c
+        src/system/genesis/genesis_serialize.c
+        src/system/genesis/genesis_serialize.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

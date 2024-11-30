@@ -1146,13 +1146,11 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
         foreground_width = this->vdp.io.h40 ? 64 : 32;
     }
     u32 foreground_width_mask = foreground_width - 1;
-    //printf("\nline:%d screen_x:%d row:%d col:%d  /  hmask:%d vmask:%d  /  tile_row:%d tile_col:%d FGW:%d", this->clock.vdp.vcount, this->vdp.line.screen_x, row, col, this->vdp.io.foreground_height_mask, this->vdp.io.foreground_width_mask, tile_row, tile_col, this->vdp.io.foreground_width);
     u32 tile_data = VRAM_read(this, nt_base_addr + (tile_row * foreground_width) + tile_col, 0);
     u32 vflip = (tile_data >> 12) & 1;
     u32 tile_addr = (tile_data & 0x7FF) << 5;
     tile_addr += (vflip ? (7 - fine_row) : fine_row) << 2;
 
-    u32 attr = tile_data;
     u8 *ptr = ((u8 *)this->vdp.VRAM) + tile_addr;
     u32 pattern_idex = 0;
     u32 hflip = (tile_data >> 11) & 1;
@@ -1166,10 +1164,6 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
         px[hflip ^ 1] = px2 & 15;
         for (u32 j = 0; j < 2; j++) {
             pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
-            /*
-            if (is_planea && in_window(this)) pattern[pattern_idex++] = 0b10000001;
-            else pattern[pattern_idex++] = priority | (px[j] ? (palette | px[j]) : 0);
-             */
         }
     }
 

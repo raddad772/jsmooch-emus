@@ -295,6 +295,7 @@ struct M68k {
         u64 *cycles;
     } trace;
 
+    u32 last_decode;
     struct M68k_ins_t *ins;
     struct M68k_ins_t SPEC_RESET;
 };
@@ -312,5 +313,8 @@ void M68k_disassemble_entry(struct M68k*, struct disassembly_entry* entry);
 void M68k_set_SR(struct M68k*, u32 val, u32 immediate_t);
 u32 M68k_get_SR(struct M68k*);
 void M68k_register_iack_handler(struct M68k*, void *, void (*handler)(void*));
+struct serialized_state;
+void M68k_serialize(struct M68k *, struct serialized_state *state);
+void M68k_deserialize(struct M68k*, struct serialized_state *state);
 
 #endif //JSMOOCH_EMUS_M68000_H

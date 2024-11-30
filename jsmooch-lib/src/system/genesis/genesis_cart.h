@@ -52,7 +52,6 @@ enum sega_cart_extra_RAM_kind {
 struct genesis_cart {
     struct buf ROM;
 
-    u32 ROM_mask;
     u32 RAM_mask;
     u32 RAM_present;
     u32 RAM_always_on;

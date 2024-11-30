@@ -664,7 +664,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
@@ -677,8 +677,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "240p.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "240p_emu.bin", nullptr);
 
-            //worked = grab_ROM(&ROMs, which, "golden_axe2.md", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "alien_storm.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "alien_storm.md", nullptr); // hangs at menu
             //worked = grab_ROM(&ROMs, which, "tyrants.md", nullptr); // :-(
             // worked = grab_ROM(&ROMs, which, "afterburner2.md", nullptr); // works!
             // worked = grab_ROM(&ROMs, which, "skitchin.md", nullptr); // works
@@ -694,7 +693,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "golden_axe2.md", nullptr); // fine
             //worked = grab_ROM(&ROMs, which, "golden_axe.md", nullptr); // fine
             //worked = grab_ROM(&ROMs, which, "kid_chameleon.md", nullptr); // fine
-            worked = grab_ROM(&ROMs, which, "kawasaki_superbike.md", nullptr); // gfx corruption!
+            //worked = grab_ROM(&ROMs, which, "kawasaki_superbike.md", nullptr); // (less)gfx corruption!
             //worked = grab_ROM(&ROMs, which, "panorama_cotton.bin", nullptr); // seems fine
             //worked = grab_ROM(&ROMs, which, "shadow_run.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "mega_man_wiley_wars.md", nullptr); // works fine!
