@@ -129,8 +129,8 @@ static void serialize_vdp(struct genesis *this, struct serialized_state *state) 
 static void serialize_cartridge(struct genesis *this, struct serialized_state *state) {
     serialized_state_new_section(state, "cartridge", genesisSS_cartridge, 1);
 #define S(x) Sadd(state, &this->cart. x, sizeof(this->cart. x))
-    S(ROM.size);
-    Sadd(state, &this->cart.ROM.ptr, this->cart.ROM.size);
+    //S(ROM.size);
+    //Sadd(state, &this->cart.ROM.ptr, this->cart.ROM.size);
     S(RAM_persists);
     S(RAM_mask);
     S(RAM_present);
@@ -138,13 +138,9 @@ static void serialize_cartridge(struct genesis *this, struct serialized_state *s
     S(RAM_size);
     S(header);
     S(kind);
+    S(SRAM->requested_size);
     if (this->cart.SRAM->requested_size > 0) {
-        S(SRAM->requested_size);
         Sadd(state, this->cart.SRAM->data, this->cart.SRAM->requested_size);
-    }
-    else {
-        u64 a = 0;
-        Sadd(state, &a, sizeof(a));
     }
 #undef S
 }
@@ -179,6 +175,7 @@ void genesisJ_save_state(struct jsm_system *jsm, struct serialized_state *state)
     serialize_debug(this, state);
     serialize_clock(this, state);
     serialize_cartridge(this, state);
+    serialize_m68k(this, state);
     serialize_z80(this, state);
     serialize_vdp(this, state);
     serialize_sn76489(this, state);
@@ -227,7 +224,6 @@ static void deserialize_console(struct genesis* this, struct serialized_state *s
     L(opts.vdp.enable_sprites);
     L(opts.vdp.ex_trace);
     L(opts.JP);
-
 #undef L
 }
 
@@ -238,10 +234,10 @@ static void deserialize_debug(struct genesis* this, struct serialized_state *sta
 
 static void deserialize_cartridge(struct genesis* this, struct serialized_state *state) {
 #define L(x) Sload(state, &this->cart. x, sizeof(this->cart. x))
-    u64 sz;
-    Sload(state, &sz, sizeof(sz));
-    buf_allocate(&this->cart.ROM, sz);
-    Sload(state, &this->cart.ROM.ptr, sz);
+    //u64 sz;
+    //Sload(state, &sz, sizeof(sz));
+    //buf_allocate(&this->cart.ROM, sz);
+    //Sload(state, &this->cart.ROM.ptr, sz);
     L(RAM_persists);
     L(RAM_mask);
     L(RAM_present);
@@ -249,11 +245,10 @@ static void deserialize_cartridge(struct genesis* this, struct serialized_state 
     L(RAM_size);
     L(header);
     L(kind);
-    u64 requested_size = 0;
-    Sload(state, &requested_size, sizeof(requested_size));
-    if (requested_size > 0) {
-        L(SRAM->requested_size);
+    L(SRAM->requested_size);
+    if (this->cart.SRAM->requested_size > 0) {
         Sload(state, this->cart.SRAM->data, this->cart.SRAM->requested_size);
+        this->cart.SRAM->dirty = 1;
     }
 #undef L
 }
@@ -291,7 +286,6 @@ static void deserialize_vdp(struct genesis* this, struct serialized_state *state
     L(last_r);
     L(hscroll_debug);
     L(window);
-
 #undef L
 }
 
@@ -331,6 +325,7 @@ static void deserialize_clock(struct genesis* this, struct serialized_state *sta
     L(timing.fps);
 #undef L
 }
+
 void genesisJ_load_state(struct jsm_system *jsm, struct serialized_state *state, struct deserialize_ret *ret) {
     state->iter.offset = 0;
     assert(state->version == 1);
@@ -351,7 +346,7 @@ void genesisJ_load_state(struct jsm_system *jsm, struct serialized_state *state,
                 deserialize_vdp(this, state);
                 break;
             case genesisSS_ym2612:
-                deserialize_sn76489(this, state);
+                deserialize_ym2612(this, state);
                 break;
             case genesisSS_sn76489:
                 deserialize_sn76489(this, state);

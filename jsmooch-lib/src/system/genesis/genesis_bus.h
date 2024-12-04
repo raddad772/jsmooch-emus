@@ -326,7 +326,6 @@ struct genesis {
         } vdp;
         u32 JP;
     } opts;
-
 };
 
 void genesis_cycle_m68k(struct genesis*);

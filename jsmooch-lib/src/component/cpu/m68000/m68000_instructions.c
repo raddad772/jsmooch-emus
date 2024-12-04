@@ -3311,7 +3311,7 @@ static u32 M68k_disasm_BAD(struct M68k_ins_t *ins, struct jsm_debug_read_trace *
 M68KINS(NOINS)
     STEP0
         printf("\nERROR UNIMPLEMENTED M68K INSTRUCTION %04x at PC %06x cyc:%lld", ins->opcode, this->regs.PC, *this->trace.cycles);
-        //assert(1==0);
+        assert(1==0);
         //dbg_break("UNIMPLEMENTED INSTRUCTION", *this->trace.cycles);
         M68k_start_wait(this, 2, M68kS_exec);
     STEP(1)

@@ -425,6 +425,7 @@ void M68k_serialize(struct M68k *this, struct serialized_state *state)
     S(debug);
     S(state);
     S(last_decode);
+
     u32 ea = 0;
     if (this->state.operands.ea == &this->ins->ea[0])
         ea = 1;

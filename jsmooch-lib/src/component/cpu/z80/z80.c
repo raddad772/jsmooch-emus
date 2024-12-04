@@ -469,7 +469,7 @@ static void serialize_regs(struct Z80_regs *this, struct serialized_state *state
     S(IX);
     S(IY);
     for (u32 i = 0; i < 10; i++) {
-        S(t[0]);
+        S(t[i]);
     }
 
     S(WZ);
@@ -527,8 +527,9 @@ static void deserialize_regs(struct Z80_regs* this, struct serialized_state *sta
     L(E);
     L(H);
     L(L);
-    u32 fbyte = Z80_regs_F_getbyte(&this->F);
-    Sadd(state, &fbyte, sizeof(fbyte));
+    u32 fbyte;
+    Sload(state, &fbyte, sizeof(fbyte));
+    Z80_regs_F_setbyte(&this->F, fbyte);
 
     L(I);
     L(R);
@@ -546,7 +547,7 @@ static void deserialize_regs(struct Z80_regs* this, struct serialized_state *sta
     L(IX);
     L(IY);
     for (u32 i = 0; i < 10; i++) {
-        L(t[0]);
+        L(t[i]);
     }
 
     L(WZ);

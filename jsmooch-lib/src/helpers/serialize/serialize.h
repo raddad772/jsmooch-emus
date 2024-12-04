@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
+
 #include "helpers/int.h"
 #include "helpers/enums.h"
 #include "helpers/cvec.h"
@@ -29,7 +31,7 @@ struct serialized_state_section {
     u32 offset;
 
     char friendly_name[50]; // PPU, CPU, etc.
-    int kind; // each system will have its own section kinds
+    u32 kind; // each system will have its own section kinds
     u32 version;
     struct serialized_opt_data opt;
     u64 sz;
@@ -54,12 +56,13 @@ struct serialized_state {
 };
 
 
-void seralized_state_init(struct serialized_state *);
+void serialized_state_init(struct serialized_state *);
 void serialized_state_delete(struct serialized_state *);
 void serialized_state_new_section(struct serialized_state *, const char *friendly_name, int kind, int version);
 void Sadd(struct serialized_state *, void *ptr, u64 howmuch);
 void Sload(struct serialized_state *, void *ptr, u64 howmuch);
-
+void serialized_state_write_to_file(struct serialized_state *, FILE *f);
+int serialized_state_read_from_file(struct serialized_state *, FILE *f, size_t file_size);
 #define u64S(x) Sadd(state, &(x), 8)
 #define i64S(x) u64S(x)
 #define u32S(x) Sadd(state, &(x), 4)

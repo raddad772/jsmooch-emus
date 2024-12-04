@@ -164,6 +164,8 @@ public:
     struct persistent_store *my_ps{};
     void setup_system(enum jsm_systems which);
     void destroy_system();
+    void save_state();
+    void load_state();
     void do_frame();
     struct framevars get_framevars() const;
     void present();
@@ -181,6 +183,7 @@ private:
     void setup_ios();
     void load_default_ROM();
     void setup_bios();
+    void get_savestate_filename(char *pth, size_t sz);
     void setup_display();
     void setup_debugger_interface();
     void add_disassembly_view(u32);

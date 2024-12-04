@@ -13,6 +13,7 @@
 #include "helpers/cvec.h"
 #include "helpers/sys_present.h"
 #include "helpers/debug.h"
+#include "helpers/buf.h"
 #include "full_sys.h"
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
@@ -323,7 +324,6 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
         if (pio->kind == HID_CART_PORT) break;
         pio = nullptr;
     }
-    // TODO: add sram support
     if (pio) pio->cartridge_port.load_cart(sys, mfs, pio);
     return pio;
 }
@@ -814,6 +814,67 @@ void full_system::setup_system(enum jsm_systems which)
 
     setup_debugger_interface();
     sys->reset(sys);
+}
+
+void full_system::get_savestate_filename(char *pth, size_t sz)
+{
+    struct read_file_buf *rfb = &ROMs.files[0];
+    snprintf(pth, sz, "%s/%s.save", rfb->path, rfb->name);
+    printf("\nSAVE NAME: %s", pth);
+}
+
+
+void full_system::save_state() {
+    char PATH[500];
+    PATH[0] = 0;
+    if (sys->save_state) {
+        printf("\nSaving...");
+        struct serialized_state state;
+        serialized_state_init(&state);
+        sys->save_state(sys, &state);
+
+        get_savestate_filename(PATH, sizeof(PATH));
+        FILE *f = fopen(PATH, "w");
+        serialized_state_write_to_file(&state, f);
+        fclose(f);
+
+        serialized_state_delete(&state);
+    }
+    else {
+        printf("\nSaves not defined for system!");
+    }
+}
+
+void full_system::load_state() {
+    char PATH[500];
+    PATH[0] = 0;
+    if (sys->load_state) {
+        printf("\nLoading...");
+        struct serialized_state state;
+        serialized_state_init(&state);
+        struct deserialize_ret ret;
+        memset(&ret, 0, sizeof(ret));
+
+        get_savestate_filename(PATH, sizeof(PATH));
+        FILE *f = fopen(PATH, "r");
+        if (f == NULL) {
+            printf("\nFILE NOT FOUND!");
+        }
+        else {
+            fseek(f, 0, SEEK_END);
+            u64 sz = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            serialized_state_read_from_file(&state, f, sz);
+            fclose(f);
+
+            sys->load_state(sys, &state, &ret);
+        }
+        serialized_state_delete(&state);
+    }
+    else {
+        printf("\nSaves not defined for system!");
+    }
+
 }
 
 void full_system::destroy_system()

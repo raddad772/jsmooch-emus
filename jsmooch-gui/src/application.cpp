@@ -60,6 +60,7 @@ static void CreateSwapChain(int width, int height);
 #include "my_texture.h"
 #include "full_sys.h"
 #include "helpers/inifile.h"
+#include "helpers/serialize/serialize.h"
 
 //#define STOPAFTERAWHILE
 
@@ -79,7 +80,7 @@ static void load_inifile(struct inifile* ini)
 
 }
 
-static void update_input(struct full_system* fsys, ImGuiIO& io) {
+static void update_input(struct full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
     //if (io.WantCaptureKeyboard) {
         // Handle KB
         if (fsys->io.keyboard.vec) {
@@ -91,6 +92,8 @@ static void update_input(struct full_system* fsys, ImGuiIO& io) {
                 }
             }
         }
+        hotkeys[0] = ImGui::IsKeyPressed(ImGuiKey_K, false); // save
+        hotkeys[1] = ImGui::IsKeyPressed(ImGuiKey_L, false); // load
         // Handle controller 1
         if (fsys->io.controller1.vec) {
             auto *pio = (struct physical_io_device *)cpg(fsys->io.controller1);
@@ -488,8 +491,15 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
             fsys.state = FSS_pause;
     }
 
+    static u32 hotkeys[2];
+    update_input(&fsys, hotkeys, io);
+    if (hotkeys[0]) {
+        fsys.save_state();
+    }
+    if (hotkeys[1]) {
+        fsys.load_state();
+    }
     if (fsys.state == FSS_play) {
-        update_input(&fsys, io);
         fsys.do_frame();
         last_frame_was_whole = true;
         fsys.events_view_present();
