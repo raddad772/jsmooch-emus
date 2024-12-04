@@ -315,7 +315,7 @@ static struct disassembly_vars get_disassembly_vars_m68k(void *macptr, struct de
     return dvar;
 }
 
-static void get_dissasembly_m68k(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
+static void get_disassembly_m68k(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
 {
     struct genesis* this = (struct genesis*)genptr;
     M68k_disassemble_entry(&this->m68k, entry);
@@ -336,7 +336,7 @@ static void setup_m68k_disassembly(struct debugger_interface *dbgr, struct genes
     dv->fill_view.func = &fill_disassembly_view;
 
     dv->get_disassembly.ptr = (void *)this;
-    dv->get_disassembly.func = &get_dissasembly_m68k;
+    dv->get_disassembly.func = &get_disassembly_m68k;
 
     dv->get_disassembly_vars.ptr = (void *)this;
     dv->get_disassembly_vars.func = &get_disassembly_vars_m68k;

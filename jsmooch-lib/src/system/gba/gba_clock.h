@@ -1,0 +1,24 @@
+//
+// Created by . on 12/4/24.
+//
+
+#ifndef JSMOOCH_EMUS_GBA_CLOCK_H
+#define JSMOOCH_EMUS_GBA_CLOCK_H
+
+#include "helpers/int.h"
+
+struct GBA_clock {
+    u64 master_cycle_count;
+    u64 master_frame;
+
+    struct {
+        u32 hcount, vcount;
+        u64 scanline_start;
+    } ppu;
+};
+
+
+void GBA_clock_init(struct GBA_clock *);
+void GBA_clock_reset(struct GBA_clock *);
+
+#endif //JSMOOCH_EMUS_GBA_CLOCK_H

@@ -27,13 +27,10 @@ static void genesisJ_pause(JSM);
 static void genesisJ_stop(JSM);
 static void genesisJ_get_framevars(JSM, struct framevars* out);
 static void genesisJ_reset(JSM);
-static void genesisJ_killall(JSM);
 static u32 genesisJ_finish_frame(JSM);
 static u32 genesisJ_finish_scanline(JSM);
 static u32 genesisJ_step_master(JSM, u32 howmany);
 static void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs);
-static void genesisJ_enable_tracing(JSM);
-static void genesisJ_disable_tracing(JSM);
 static void genesisJ_describe_io(JSM, struct cvec* IOs);
 
 #define MASTER_CYCLES_PER_SCANLINE 3420
@@ -179,6 +176,7 @@ void genesis_delete(JSM) {
 
     M68k_delete(&this->m68k);
     ym2612_delete(&this->ym2612);
+    genesis_VDP_delete(this);
 
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
@@ -330,18 +328,6 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     //genesis_controllerport_connect(&this->io.controller_port2, genesis_controller_3button, &this->controller2);
 }
 
-void genesisJ_enable_tracing(JSM)
-{
-    // TODO
-    assert(1==0);
-}
-
-void genesisJ_disable_tracing(JSM)
-{
-    // TODO
-    assert(1==0);
-}
-
 void genesisJ_play(JSM)
 {
 }
@@ -380,11 +366,6 @@ void genesisJ_reset(JSM)
     printf("\nGenesis reset!");
 }
 
-
-void genesisJ_killall(JSM)
-{
-
-}
 
 u32 genesisJ_finish_frame(JSM)
 {

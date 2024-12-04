@@ -190,6 +190,8 @@ enum JKEYS dbcid_to_default(enum JKEYS key_id)
         case DBCID_co_fire4: return JK_A;
         case DBCID_co_fire5: return JK_S;
         case DBCID_co_fire6: return JK_D;
+        case DBCID_co_shoulder_left: return JK_A;
+        case DBCID_co_shoulder_right: return JK_S;
         case DBCID_co_start: return JK_ENTER;
         case DBCID_co_select: return JK_TAB;
         case DBCID_ch_power: return JK_Q;

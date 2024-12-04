@@ -21,6 +21,8 @@ struct system_io {
         for (auto & i : p) {
             i.up = i.down = i.left = i.right = nullptr;
             i.fire1 = i.fire2 = i.fire3 = nullptr;
+            i.fire4 = i.fire5 = i.fire6 = nullptr;
+            i.shoulder_right = i.shoulder_left = nullptr;
             i.start = i.select = nullptr;
         }
         ch_power = ch_reset = ch_pause = nullptr;
@@ -33,6 +35,11 @@ struct system_io {
         struct HID_digital_button* fire1;
         struct HID_digital_button* fire2;
         struct HID_digital_button* fire3;
+        struct HID_digital_button* fire4;
+        struct HID_digital_button* fire5;
+        struct HID_digital_button* fire6;
+        struct HID_digital_button* shoulder_left;
+        struct HID_digital_button* shoulder_right;
         struct HID_digital_button* start;
         struct HID_digital_button* select;
     } p[2]{};

@@ -57,29 +57,6 @@ static u32 get_closest_pow2(u32 b)
     return out;
 }
 
-void map_inputs(const u32 *input_buffer, struct system_io* inputs, struct jsm_system *jsm)
-{
-    struct system_io::CDKRKR *p1 = &inputs->p[0];
-    struct system_io::CDKRKR *p2 = &inputs->p[1];
-    // Arrows
-    if (p1->up) p1->up->state = input_buffer[0];
-    if (p1->down) p1->down->state = input_buffer[1];
-    if (p1->left) p1->left->state = input_buffer[2];
-    if (p1->right) p1->right->state = input_buffer[3];
-
-    // fire buttons
-    if (p1->fire1) p1->fire1->state = input_buffer[4];
-    if (p1->fire2) p1->fire2->state = input_buffer[5];
-    if (p1->fire3) p1->fire3->state = input_buffer[8];
-
-    // Start, select on controller
-    if (p1->start) p1->start->state = input_buffer[7];
-    if (p1->select) p1->select->state = input_buffer[6];
-
-    // Pause/start on chassis
-    if (inputs->ch_pause) inputs->ch_pause->state = input_buffer[7];
-}
-
 void test_gdi() {
     struct GDI_image foo;
     GDI_init(&foo);
@@ -163,6 +140,11 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
             mfs_add("macplus_1mb.rom", BIOS_PATH, BIOSes);
             break;
+        case SYS_GBA:
+            has_bios = 1;
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gba", BASE_PATH);
+            mfs_add("gba.bin", BIOS_PATH, BIOSes);
+            break;
         case SYS_SG1000:
         case SYS_PSX:
         case SYS_GENESIS_JAP:
@@ -234,6 +216,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
             snprintf(out, out_sz, "%s/zx_spectrum", BASER_PATH);
+            *worked = 1;
+            break;
+        case SYS_GBA:
+            snprintf(out, out_sz, "%s/gba", BASER_PATH);
             *worked = 1;
             break;
         case SYS_GENESIS_USA:
@@ -354,6 +340,21 @@ static void setup_controller(struct system_io* io, struct physical_io_device* pi
                 continue;
             case DBCID_co_fire3:
                 io->p[pnum].fire3 = db;
+                continue;
+            case DBCID_co_fire4:
+                io->p[pnum].fire4 = db;
+                continue;
+            case DBCID_co_fire5:
+                io->p[pnum].fire5 = db;
+                continue;
+            case DBCID_co_fire6:
+                io->p[pnum].fire6 = db;
+                continue;
+            case DBCID_co_shoulder_left:
+                io->p[pnum].shoulder_left = db;
+                continue;
+            case DBCID_co_shoulder_right:
+                io->p[pnum].shoulder_right = db;
                 continue;
             case DBCID_co_select:
                 io->p[pnum].select = db;
@@ -644,6 +645,9 @@ void full_system::load_default_ROM()
             break;
         case SYS_APPLEIIe:
             worked = 1;
+            break;
+        case SYS_GBA:
+            assert(1==2);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

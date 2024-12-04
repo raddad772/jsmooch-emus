@@ -266,6 +266,20 @@ add_library(jsmooch-lib
         src/component/audio/ym2612/ym2612.c
         src/system/genesis/genesis_serialize.c
         src/system/genesis/genesis_serialize.h
+        src/component/cpu/arm7tdmi/arm7tdmi.c
+        src/component/cpu/arm7tdmi/arm7tdmi.h
+        src/system/gba/gba.c
+        src/system/gba/gba.h
+        src/system/gba/gba_bus.c
+        src/system/gba/gba_bus.h
+        src/system/gba/gba_clock.c
+        src/system/gba/gba_clock.h
+        src/system/gba/gba_debugger.c
+        src/system/gba/gba_debugger.h
+        src/system/gba/gba_ppu.c
+        src/system/gba/gba_ppu.h
+        src/system/gba/gba_controller.c
+        src/system/gba/gba_controller.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

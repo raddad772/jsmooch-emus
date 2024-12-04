@@ -244,6 +244,11 @@ void genesis_VDP_init(struct genesis* this)
     this->vdp.last_r = 50000;
 }
 
+void genesis_VDP_delete(struct genesis *this)
+{
+
+}
+
 static void set_clock_divisor(struct genesis* this)
 {
     u32 clk = 5;
@@ -301,7 +306,6 @@ static void vblank(struct genesis* this, u32 new_value)
 
     set_clock_divisor(this);
 }
-
 
 static void new_frame(struct genesis* this)
 {

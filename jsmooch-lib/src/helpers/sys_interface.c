@@ -7,6 +7,7 @@
 #include "system/nes/nes.h"
 #include "system/sms_gg/sms_gg.h"
 #include "system/dreamcast/dreamcast.h"
+#include "system/gba/gba.h"
 #include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
@@ -25,6 +26,9 @@ struct jsm_system* new_system(enum jsm_systems which)
     cvec_lock_reallocs(&out->IOs);
     out->kind = which;
 	switch (which) {
+        case SYS_GBA:
+            GBA_new(out);
+            break;
         case SYS_GENESIS_JAP:
         case SYS_GENESIS_USA:
         case SYS_MEGADRIVE_PAL:
@@ -97,6 +101,9 @@ void jsm_delete(struct jsm_system* jsm)
 {
     struct cvec* o = &jsm->IOs;
     switch(jsm->kind) {
+        case SYS_GBA:
+            GBA_delete(jsm);
+            break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:

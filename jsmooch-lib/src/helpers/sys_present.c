@@ -283,6 +283,10 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
     }
 }
 
+void GBA_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
+{
+    assert(1==2);
+}
 
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
@@ -411,10 +415,13 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
 void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     switch(which) {
+        case SYS_GBA:
+            GBA_present(display, out_buf, out_width, out_height, is_event_view_present);
+            break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
-            genesis_present(display, out_buf, out_width, out_height, is_event_view_present);
+            genesis_present(display, out_buf, out_width, out_height, is_event_view_present);;
             break;
         case SYS_DMG:
             DMG_present(display, out_buf, x_offset, y_offset, out_width, out_height, is_event_view_present);
