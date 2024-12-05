@@ -367,7 +367,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
     tptr = eval_cart_RAM(this, tptr);
     pio->cartridge_port.SRAM.requested_size = this->RAM_size;
     pio->cartridge_port.SRAM.ready_to_use = 0;
-    pio->cartridge_port.SRAM.dirty = 1;
+    pio->cartridge_port.SRAM.dirty = this->RAM_size > 0;
     this->SRAM = &pio->cartridge_port.SRAM;
     if ((this->SRAM->requested_size > 0) && (this->ROM.size <= 0x200000)) *SRAM_enable = 1;
     tptr += 52; // skip modem, padding

@@ -280,6 +280,12 @@ add_library(jsmooch-lib
         src/system/gba/gba_ppu.h
         src/system/gba/gba_controller.c
         src/system/gba/gba_controller.h
+        src/system/gba/gba_cart.c
+        src/system/gba/gba_cart.h
+        src/component/cpu/arm7tdmi/arm7tdmi_decode.c
+        src/component/cpu/arm7tdmi/arm7tdmi_decode.h
+        src/component/cpu/arm7tdmi/arm7tdmi_instructions.c
+        src/component/cpu/arm7tdmi/arm7tdmi_instructions.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

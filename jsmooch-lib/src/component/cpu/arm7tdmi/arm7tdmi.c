@@ -2,11 +2,22 @@
 // Created by . on 12/4/24.
 //
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+
 #include "arm7tdmi.h"
+#include "arm7tdmi_decode.h"
+
 
 void ARM7TDMI_init(struct ARM7TDMI *this)
 {
-
+    memset(this, 0, sizeof(*this));
+    ARM7TDMI_fill_arm_table(this);
+    for (u32 i = 0; i < 16; i++) {
+        this->regmap[i] = &this->regs.R[i];
+    }
 }
 
 void ARM7TDMI_delete(struct ARM7TDMI *this)
@@ -16,6 +27,8 @@ void ARM7TDMI_delete(struct ARM7TDMI *this)
 
 void ARM7TDMI_reset(struct ARM7TDMI *this)
 {
+    this->regs.CPSR.u = 0;
+    this->regs.CPSR.mode = ARM7_user;
 
 }
 
@@ -43,7 +56,91 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry*
     pprint_ea(this, t, 1, &entry->context);*/
 }
 
-void ARM7TDMI_cycle(struct ARM7TDMI*, u32 num)
+static void do_IRQ(struct ARM7TDMI* this)
 {
 
+}
+
+static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
+    this->cycles_executed++;
+
+    return this->fetch_ins(this->fetch_ptr, this->regs.PC, sz, this->pipeline.access);
+}
+
+static int condition_passes(struct ARM7TDMI_regs *this, int which) {
+#define flag(x) (this->CPSR. x)
+    switch(which) {
+        case ARM7CC_AL:    return 1;
+        case ARM7CC_NV:    return 0;
+        case ARM7CC_EQ:    return flag(Z) == 1;
+        case ARM7CC_NE:    return flag(Z) != 1;
+        case ARM7CC_CS_HS: return flag(C) == 1;
+        case ARM7CC_CC_LO: return flag(C) == 0;
+        case ARM7CC_MI:    return flag(N) == 1;
+        case ARM7CC_PL:    return flag(N) == 0;
+        case ARM7CC_VS:    return flag(V) == 1;
+        case ARM7CC_VC:    return flag(V) == 0;
+        case ARM7CC_HI:    return (flag(C) == 1) && (flag(Z) == 0);
+        case ARM7CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
+        case ARM7CC_GE:    return flag(N) == flag(V);
+        case ARM7CC_LT:    return flag(N) != flag(V);
+        case ARM7CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(N));
+        case ARM7CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
+        default:
+            NOGOHERE;
+    }
+#undef flag
+}
+
+
+#define ARM7P_nonsequential 0
+#define ARM7P_sequential 1
+#define ARM7P_code 2
+#define ARM7P_dma 4
+#define ARM7P_lock 8
+
+static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode)
+{
+
+}
+
+static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode)
+{
+    // bits 27-0 and 7-4
+    u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
+    this->last_arm7_opcode = opcode;
+    this->arm7_ins = &this->opcode_table_arm[decode];
+    this->arm7_ins->exec(this, opcode);
+}
+
+void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
+{
+    /*this->cycles_executed -= (i32)num;
+    printf("\nCALL CYCLE! %d", this->cycles_executed);
+    while(this->cycles_executed < 0) {*/
+    for (u32 i = 0; i < num; i++) {
+        printf("\nCYCLE!");
+        if (this->regs.IRQ_line) {
+            do_IRQ(this);
+        }
+
+        u32 opcode = this->pipeline.opcode[0];
+        this->pipeline.opcode[0] = this->pipeline.opcode[1];
+        this->regs.PC &= 0xFFFFFFFE;
+
+        if (this->regs.CPSR.T) { // THUMB mode!
+            this->pipeline.opcode[1] = fetch_ins(this, 2);
+            decode_and_exec_thumb(this, opcode);
+        }
+        else {
+            this->pipeline.opcode[1] = fetch_ins(this, 4);
+            if (condition_passes(&this->regs, (int)(opcode >> 28))) {
+                decode_and_exec_arm(this, opcode);
+            }
+            else {
+                this->pipeline.access = ARM7P_code | ARM7P_sequential;
+                this->regs.PC += 4;
+            }
+        }
+    }
 }

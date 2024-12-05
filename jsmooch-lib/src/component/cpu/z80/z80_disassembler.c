@@ -378,7 +378,7 @@ u32 Z80_disassemble(u32 *PC, u32 IR, struct jsm_debug_read_trace *rt, char *w, s
                         l += snprintf(w, sz, "%s %s", Z80D_tabl_rot[y], Z80D_tabl_r[z]);
                         break;
                     case 1:
-                        l += snprintf(w, sz, "BIT %d, %s", y, Z80D_tabl_r[z]);
+                        l += snprintf(w, sz, "TEST %d, %s", y, Z80D_tabl_r[z]);
                         break;
                     case 2:
                         l += snprintf(w, sz, "RES %d, %s", y, Z80D_tabl_r[z]);
@@ -453,7 +453,7 @@ u32 Z80_disassemble(u32 *PC, u32 IR, struct jsm_debug_read_trace *rt, char *w, s
                         else l += snprintf(w, sz, "%s (%s+%s)", Z80D_tabl_rot[y], IXY, d);
                         break;
                     case 1: // CBd counter=1
-                        l += snprintf(w, sz, "BIT %d, (%s+%s)", y, IXY, d);
+                        l += snprintf(w, sz, "TEST %d, (%s+%s)", y, IXY, d);
                         break;
                     case 2: // CBd counter=2
                         if (z != 6)

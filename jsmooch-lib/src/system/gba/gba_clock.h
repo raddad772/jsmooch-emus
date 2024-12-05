@@ -14,6 +14,7 @@ struct GBA_clock {
     struct {
         u32 hcount, vcount;
         u64 scanline_start;
+        u32 hblank_active, vblank_active;
     } ppu;
 };
 

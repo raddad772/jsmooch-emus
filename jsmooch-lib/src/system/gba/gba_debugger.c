@@ -14,7 +14,7 @@
 static void create_and_bind_registers_ARM7TDMI(struct GBA* this, struct disassembly_view *dv)
 {
     u32 tkindex = 0;
-    struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+    /*struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
     snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
@@ -141,7 +141,7 @@ static void create_and_bind_registers_ARM7TDMI(struct GBA* this, struct disassem
     BIND(DE_, 15);
     BIND(HL_, 16);
     BIND(CE, 17);
-#undef BIND
+#undef BIND*/
 }
 
 static void fill_disassembly_view(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dview)

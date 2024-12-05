@@ -1070,14 +1070,17 @@ SH4ins(NOP) { // No operation
 }
 
 SH4ins(OCBI) { // Invalidate operand cache block
+    // We don't emulate operand cache except on-chip RAM mode. Writes will have already just happened as they were done
     PCinc;
 }
 
 SH4ins(OCBP) { // Write back and invalidate operand cache block
+    // We don't emulate operand cache except on-chip RAM mode. Writes will have already just happened as they were done
     PCinc;
 }
 
 SH4ins(OCBWB) { // Write back operand cache block
+    // We don't emulate operand cache except on-chip RAM mode. Writes will have already just happened as they were done
     PCinc;
 }
 

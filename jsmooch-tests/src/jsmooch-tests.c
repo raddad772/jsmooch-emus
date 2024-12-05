@@ -14,6 +14,7 @@
 #include "cpu-tests/m68000-tests.h"
 #include "helper-tests/dasm-range-tests.h"
 #include "helper-tests/scheduler-tests.h"
+#include "cpu-tests/arm7tdmi_tests.h"
 #include "helpers/debug.h"
 #include "helpers/bitbuffer.h"
 
@@ -92,5 +93,6 @@ int main()
     //test_m68000();
     //test_bitbuf();
     //test_dasm_ranges();
-    test_nesm6502();
+    //test_nesm6502();
+    test_arm7tdmi();
 }

@@ -143,7 +143,7 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
         case SYS_GBA:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gba", BASE_PATH);
-            mfs_add("gba.bin", BIOS_PATH, BIOSes);
+            mfs_add("gba_bios.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_SG1000:
         case SYS_PSX:

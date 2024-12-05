@@ -4,15 +4,15 @@
 
 #include "gba_controller.h"
 
-void GBA_controller_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
+void GBA_controller_setup_pio(struct physical_io_device *d)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
 
-    snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
-    d->id = num;
+    snprintf(d->controller.name, sizeof(d->controller.name), "%s", "GBA Input");
+    d->id = 0;
     d->kind = HID_CONTROLLER;
-    d->connected = connected;
-    d->enabled = connected;
+    d->connected = 1;
+    d->enabled = 1;
 
     struct JSM_CONTROLLER* cnt = &d->controller;
 
@@ -27,10 +27,4 @@ void GBA_controller_setup_pio(struct physical_io_device *d, u32 num, const char*
     pio_new_button(cnt, "r", DBCID_co_shoulder_right);
     pio_new_button(cnt, "start", DBCID_co_start);
     pio_new_button(cnt, "select", DBCID_co_select);
-
-}
-
-void GBA_controller_setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
-{
-
 }

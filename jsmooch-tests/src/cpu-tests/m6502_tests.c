@@ -165,7 +165,7 @@ static void parse_state(struct json_object_s *object, struct test_state *state)
 
 static void parse_and_fill_out(struct jsontest tests[NTESTS], struct read_file_buf *infile)
 {
-    struct json_value_s *root = json_parse(infile->buf, infile->sz);
+    struct json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
     assert(root->type == json_type_array);
 
     struct json_array_s* arr = (struct json_array_s*)root->payload;
@@ -446,8 +446,8 @@ u32 test_m6502_ins(struct M6502* cpu, u32 ins, u32 is_call)
     construct_path(path, ins);
 
     struct read_file_buf infile;
-    open_and_read(path, &infile);
-    if (infile.success == 0) {
+    rfb_init(&infile);
+    if (!rfb_read(path, NULL, &infile)) {
         printf("\n\nCouldn't open file! %s", path);
         return 0;
     }
@@ -459,7 +459,7 @@ u32 test_m6502_ins(struct M6502* cpu, u32 ins, u32 is_call)
         printf("\nFAILED INSTRUCTION: %02x", ins);
         pprint_test(result.failed_test_struct, result.cycles);
     }
-    rfb_cleanup(&infile);
+    rfb_delete(&infile);
 
     return result.passed;
 }

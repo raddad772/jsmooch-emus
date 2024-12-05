@@ -52,7 +52,7 @@ static char *construct_path(char* w, const char* who)
 }
 
 #define FILE_BUF_SIZE 10 * 1024 * 1024
-char *filebuf = 0;
+static char *filebuf = 0;
 
 #define M8 1
 #define M16 2

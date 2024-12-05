@@ -7,15 +7,22 @@
 
 #include "gba_clock.h"
 #include "gba_ppu.h"
+#include "gba_controller.h"
+#include "gba_cart.h"
 
-#include "component/cpu/arm7tdmi//arm7tdmi.h"
+#include "component/cpu/arm7tdmi/arm7tdmi.h"
 
 struct GBA {
     struct ARM7TDMI cpu;
     struct GBA_clock clock;
-    //struct GBA_cart cart;
+    struct GBA_cart cart;
     struct GBA_PPU ppu;
     struct GBA_controller controller;
+
+    struct {
+        u32 has;
+        char data[16384];
+    } BIOS;
 
     struct {
         struct {

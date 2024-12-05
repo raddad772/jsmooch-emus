@@ -33,7 +33,7 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs);
 #define MASTER_CYCLES_PER_SCANLINE 1232
 #define HBLANK_CYCLES 226
 #define MASTER_CYCLES_BEFORE_HBLANK (MASTER_CYCLES_PER_SCANLINE - HBLANK_CYCLES)
-#define MASTER_CYCLES_PER_FRAME = (228 * MASTER_CYCLES_PER_SCANLINE)
+#define MASTER_CYCLES_PER_FRAME (228 * MASTER_CYCLES_PER_SCANLINE)
 #define SCANLINE_HBLANK 1006
 
 void GBAJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
@@ -64,7 +64,7 @@ void GBA_new(struct jsm_system *jsm)
     memset(this, 0, sizeof(*this));
     ARM7TDMI_init(&this->cpu);
     GBA_clock_init(&this->clock);
-    //GBA_cart_init(&this->cart);
+    GBA_cart_init(&this->cart);
     GBA_PPU_init(this);
 
     snprintf(jsm->label, sizeof(jsm->label), "GameBoy Advance");
@@ -103,6 +103,7 @@ void GBA_delete(struct jsm_system *jsm)
 
     ARM7TDMI_delete(&this->cpu);
     GBA_PPU_delete(this);
+    GBA_cart_delete(&this->cart);
 
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
@@ -181,7 +182,9 @@ static u32 GBAJ_step_master(JSM, u32 howmany)
 
 static void GBAJ_load_BIOS(JSM, struct multi_file_set* mfs)
 {
-
+    JTHIS;
+    memcpy(this->BIOS.data, mfs->files[0].buf.ptr, 16384);
+    this->BIOS.has = 1;
 }
 
 static void GBAIO_unload_cart(JSM)
@@ -191,7 +194,48 @@ static void GBAIO_unload_cart(JSM)
 
 static void GBAIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
     JTHIS;
-    assert(1==2);
+    struct buf* b = &mfs->files[0].buf;
+
+    u32 r;
+    GBA_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, pio, &r);
+    GBAJ_reset(jsm);
+}
+
+void setup_lcd(struct JSM_DISPLAY *d)
+{
+    d->standard = JSS_LCD;
+    d->enabled = 1;
+
+    d->fps = 59.727;
+    d->fps_override_hint = 60;
+    // 240x160, but 308x228 with v and h blanks
+
+    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.visible = 240;
+    d->pixelometry.cols.max_visible = 160;
+    d->pixelometry.cols.right_hblank = 68;
+    d->pixelometry.offset.x = 0;
+
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 160;
+    d->pixelometry.rows.max_visible = 160;
+    d->pixelometry.rows.bottom_vblank = 68;
+    d->pixelometry.offset.y = 0;
+
+    d->geometry.physical_aspect_ratio.width = 1; // 69.4mm
+    d->geometry.physical_aspect_ratio.height = 1; // 53.24mm
+
+    d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
+    d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
+}
+
+static void setup_audio(struct cvec* IOs)
+{
+    struct physical_io_device *pio = cvec_push_back(IOs);
+    pio->kind = HID_AUDIO_CHANNEL;
+    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->sample_rate = 48000;
+    chan->low_pass_filter = 24000;
 }
 
 
@@ -206,9 +250,8 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs)
 
     // controllers
     struct physical_io_device *controller = cvec_push_back(this->jsm.IOs);
-    GBA_controller_init(&this->controller, &this->clock.master_cycle_count);
-    GBA_controller_setup_pio(c1, 0, "Player 1", 1);
-    this->controller1.pio = c1;
+    GBA_controller_setup_pio(controller);
+    this->controller.pio = controller;
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -219,11 +262,6 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs)
     snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
-
-    b = cvec_push_back(&chassis->chassis.digital_buttons);
-    b->common_id = DBCID_ch_reset;
-    snprintf(b->name, sizeof(b->name), "Reset");
-    b->state = 0;
 
     // cartridge port
     struct physical_io_device *d = cvec_push_back(IOs);
@@ -243,10 +281,9 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs)
     d->display.last_written = 1;
     d->display.last_displayed = 1;
     this->ppu.cur_output = (u16 *)(d->display.output[0]);
+    this->ppu.cur_pixel = 0;
 
     setup_audio(IOs);
 
-    this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
-    genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_6button, &this->controller1);
-
+    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
 }

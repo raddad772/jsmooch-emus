@@ -24,6 +24,8 @@ add_executable(jsmooch-tests
         src/helper-tests/dasm-range-tests.h
         src/cpu-tests/m6502_tests.c
         src/cpu-tests/m6502_tests.h
+        src/cpu-tests/arm7tdmi_tests.c
+        src/cpu-tests/arm7tdmi_tests.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src ${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)
