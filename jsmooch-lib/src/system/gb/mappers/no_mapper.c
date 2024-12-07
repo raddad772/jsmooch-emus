@@ -18,7 +18,6 @@ void GB_mapper_none_new(struct GB_mapper *parent, struct GB_clock *clock, struct
     this->bus = bus;
     this->clock = clock;
     this->ROM_bank_offset = 16384;
-    this->cartRAM = NULL;
     this->RAM_mask = 0;
     this->has_RAM = false;
     this->cart = NULL;
@@ -37,11 +36,6 @@ void GB_mapper_none_delete(struct GB_mapper *parent)
     if(this->ROM != NULL) {
         free(this->ROM);
         this->ROM = NULL;
-    }
-
-    if (this->cartRAM != NULL) {
-        free(this->cartRAM);
-        this->cartRAM = NULL;
     }
 
     free(parent->ptr);
@@ -64,14 +58,6 @@ void GBMN_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
     this->ROM = malloc(cart->header.ROM_size);
     memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
 
-    if (this->cartRAM != NULL) {
-        free(this->cartRAM);
-        this->cartRAM = NULL;
-    }
-
-    if (cart->header.RAM_size > 0) {
-        this->cartRAM = malloc(cart->header.RAM_size);
-    }
     this->has_RAM = cart->header.RAM_size > 0;
 }
 
@@ -85,7 +71,7 @@ u32 GBMN_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
         return this->ROM[(addr & 0x3FFF) + this->ROM_bank_offset];
     if ((addr >= 0xA000) && (addr < 0xC000)) { // // cart RAM if it's there
         if (!this->has_RAM) return 0xFF;
-        return this->cartRAM[(addr - 0xA000) & this->RAM_mask];
+        return ((u8 *)this->cart->SRAM->data)[(addr - 0xA000) & this->RAM_mask];
     }
     return val;
 }
@@ -95,7 +81,8 @@ void GBMN_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
     THIS;
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
         if (!this->has_RAM) return;
-        this->cartRAM[(addr - 0xA000) & this->RAM_mask] = val;
+        ((u8 *)this->cart->SRAM->data)[(addr - 0xA000) & this->RAM_mask] = val;
+        this->cart->SRAM->dirty = 1;
         return;
     }
 }

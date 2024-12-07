@@ -4,6 +4,7 @@
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "helpers/debugger/debuggerdefs.h"
+#include "helpers/sram.h"
 
 #ifndef NULL
 #define NULL 0
@@ -28,6 +29,7 @@ struct GB_bus {
         u32 WRAM_bank_offset;
         u32 BIOS_big;
     } generic_mapper;
+
 
     u32 VRAM_bank;
     u32 WRAM_bank;

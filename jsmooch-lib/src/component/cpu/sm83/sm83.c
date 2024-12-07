@@ -4,6 +4,7 @@
 #include "stdio.h"
 #include "helpers/debug.h"
 #include "helpers/debugger/debugger.h"
+#include "helpers/serialize/serialize.h"
 
 u32 SM83_regs_F_getbyte(struct SM83_regs_F* this) {
 	return (this->C << 4) | (this->H << 5) | (this->N << 6) | (this->Z << 7);
@@ -41,6 +42,7 @@ void SM83_regs_init(struct SM83_regs* this) {
 
 void SM83_init(struct SM83* this) {
     dbg_init();
+    this->last_decoded_opcode = SM83_S_RESET;
 	this->current_instruction = SM83_decoded_opcodes[SM83_S_RESET];
 	SM83_regs_init(&(this->regs));
 	SM83_pins_init(&(this->pins));
@@ -80,6 +82,7 @@ void SM83_ins_cycles(struct SM83* this) {
 			break;
 		}
 
+        this->last_decoded_opcode = this->regs.IR;
 		this->current_instruction = SM83_decoded_opcodes[this->regs.IR];
         //printf("\nIR: %d", this->regs.IR);
 
@@ -87,7 +90,8 @@ void SM83_ins_cycles(struct SM83* this) {
 		break;
 	case 2:
 		this->regs.IR = this->pins.D;
-		this->current_instruction = SM83_decoded_opcodes[0x102 + this->regs.IR];
+        this->last_decoded_opcode = 0x102 + this->regs.IR;
+        this->current_instruction = SM83_decoded_opcodes[0x102 + this->regs.IR];
 		this->regs.IR |= 0xCB00;
         /*if (this->trace_on) {
 			dbg.traces.add(TRACERS.SM83, this->trace_cycles, this->trace_format(SM83_disassemble((this->pins.Addr-1) & 0xFFFF, this->trace_peek), this->pins.Addr));
@@ -161,6 +165,7 @@ void SM83_cycle(struct SM83* this) {
                     this->regs.IF &= imask;
 					this->regs.HLT = 0;
 					this->regs.IR = SM83_S_IRQ;
+                    this->last_decoded_opcode = SM83_S_IRQ;
 					this->current_instruction = SM83_decoded_opcodes[SM83_S_IRQ];
 				}
 			}
@@ -189,3 +194,108 @@ void SM83_disable_tracing(struct SM83* this)
 {
     this->trace_on = 0;
 }
+
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+static void serialize_regs(struct SM83_regs *this, struct serialized_state *state)
+{
+    S(A);
+    S(F.Z);
+    S(F.N);
+    S(F.H);
+    S(F.C);
+    S(B);
+    S(C);
+    S(D);
+    S(E);
+    S(H);
+    S(L);
+    S(SP);
+    S(PC);
+    S(IV);
+    S(IME_DELAY);
+    S(IE);
+    S(IF);
+    S(HLT);
+    S(STP);
+    S(IME);
+    S(halt_bug);
+    S(interrupt_latch);
+    S(interrupt_flag);
+    S(TCU);
+    S(IR);
+    S(TR);
+    S(TA);
+    S(RR);
+    S(prefix);
+    S(poll_IRQ);
+}
+
+static void serialize_pins(struct SM83_pins* this, struct serialized_state *state)
+{
+    S(RD);
+    S(WR);
+    S(MRQ);
+    S(D);
+    S(Addr);
+}
+
+void SM83_serialize(struct SM83 *this, struct serialized_state *state) {
+    serialize_regs(&this->regs, state);
+    serialize_pins(&this->pins, state);
+    S(last_decoded_opcode);
+}
+#undef S
+
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+static void deserialize_regs(struct SM83_regs *this, struct serialized_state *state)
+{
+    L(A);
+    L(F.Z);
+    L(F.N);
+    L(F.H);
+    L(F.C);
+    L(B);
+    L(C);
+    L(D);
+    L(E);
+    L(H);
+    L(L);
+    L(SP);
+    L(PC);
+    L(IV);
+    L(IME_DELAY);
+    L(IE);
+    L(IF);
+    L(HLT);
+    L(STP);
+    L(IME);
+    L(halt_bug);
+    L(interrupt_latch);
+    L(interrupt_flag);
+    L(TCU);
+    L(IR);
+    L(TR);
+    L(TA);
+    L(RR);
+    L(prefix);
+    L(poll_IRQ);
+}
+
+static void deserialize_pins(struct SM83_pins *this, struct serialized_state *state)
+{
+    L(RD);
+    L(WR);
+    L(MRQ);
+    L(D);
+    L(Addr);
+}
+
+
+void SM83_deserialize(struct SM83 *this, struct serialized_state *state) {
+    deserialize_regs(&this->regs, state);
+    deserialize_pins(&this->pins, state);
+    L(last_decoded_opcode);
+    this->current_instruction = SM83_decoded_opcodes[this->last_decoded_opcode];
+}
+
+#undef L

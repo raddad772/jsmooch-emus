@@ -16,7 +16,6 @@ struct GB_mapper_MBC3 {
 
     u8 *ROM;
     u32 ROM_bank_offset;
-    u8* cartRAM;
     u32 has_RAM;
     struct GB_cart* cart;
 

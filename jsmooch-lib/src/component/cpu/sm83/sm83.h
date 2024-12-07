@@ -69,6 +69,7 @@ struct SM83 {
     u32 trace_on;
     u64 trace_cycles;
 
+    u32 last_decoded_opcode;
     SM83_ins_func current_instruction;
 
     struct jsm_debug_read_trace read_trace;
@@ -91,6 +92,10 @@ void SM83_cycle(struct SM83*); // Runs SM83 cycle
 void SM83_reset(struct SM83*); // Resets SM83 processor
 void SM83_enable_tracing(struct SM83*, struct jsm_debug_read_trace *dbg_read_trace);
 void SM83_disable_tracing(struct SM83*);
+
+struct serialized_state;
+void SM83_serialize(struct SM83*, struct serialized_state *state);
+void SM83_deserialize(struct SM83*, struct serialized_state *state);
 
 
 #endif

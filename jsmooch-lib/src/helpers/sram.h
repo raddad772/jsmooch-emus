@@ -20,19 +20,22 @@ enum persistent_store_kind {
 };
 
 struct persistent_store {
+    // Internal to persisten store
     void *data;
     u64 actual_size;
 
     enum persistent_store_kind kind;
+
+    // These values must be set on discovery of RAM/SRAM
     u64 requested_size;
-
     u32 ready_to_use; // Set by host
-
     u32 dirty; // Set by guest on dirtying it
+    u32 persistent;
 
+    // Internal to UI
     char filename[500]; // Filename if present
-
     FILE *fno;
+
 };
 
 void persistent_store_init(struct persistent_store*);

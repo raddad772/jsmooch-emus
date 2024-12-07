@@ -8,9 +8,9 @@
 #include "arm7tdmi.h"
 #include "arm7tdmi_instructions.h"
 
-#define UNIMPLEMENTED assert(1==2)
-#define AREAD(addr, sz) this->read(this->read_ptr, addr, sz, this->pipeline.access, 1)
-#define AWRITE(addr, sz, val) this->write(this->write_ptr, addr, sz, this->pipeline.access, val & mask)
+#define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x", opcode); assert(1==2)
+#define AREAD(addr, sz) this->read(this->read_ptr, (addr), (sz), this->pipeline.access, 1)
+#define AWRITE(addr, sz, val) this->write(this->write_ptr, (addr), (sz), this->pipeline.access, (val) & mask)
 
 static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
     switch(num) {
@@ -30,7 +30,7 @@ static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
         case 12:
             return this->regs.CPSR.mode == ARM7_fiq ? &this->regs.R_fiq[num - 8] : &this->regs.R[num];
         case 13:
-        case 14:
+        case 14: {
             switch(this->regs.CPSR.mode) {
                 case ARM7_abort:
                     return &this->regs.R_abt[num - 13];
@@ -48,7 +48,7 @@ static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
                     assert(1==2);
                     return NULL;
             }
-            break;
+            break; }
         case 15:
             return &this->regs.R[15];
         default:
@@ -67,7 +67,18 @@ void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
     }
 }
 
+static inline void flush_pipeline(struct ARM7TDMI *this)
+{
+    //assert(1==2);
+    printf("\nFLUSH THE PIPE!@");
+}
 
+static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
+    *r = v;
+    if (r == &this->regs.PC) {
+        flush_pipeline(this);
+    }
+}
 
 void ARM7TDMI_ins_MUL_MLA(struct ARM7TDMI *this, u32 opcode)
 {
@@ -147,22 +158,22 @@ static u32 SUB(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 carry, u32 S)
 
 static u32 ALU(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32 *out) {
     switch(alu_opcode) {
-        case 0: *out = TEST(this, Rn & Rm, S); break;
-        case 1: *out = TEST(this, Rn ^ Rm, S); break;
-        case 2: *out = SUB(this, Rn, Rm, 1, S); break;
-        case 3: *out = SUB(this, Rm, Rn, 1, S); break;
-        case 4: *out = ADD(this, Rn, Rm, 0, S); break;
-        case 5: *out = ADD(this, Rn, Rm, this->regs.CPSR.C, S); break; // ADDC
-        case 6: *out = SUB(this, Rn, Rm, this->regs.CPSR.C, S); break;
-        case 7: *out = SUB(this, Rm, Rn, this->regs.CPSR.C, S); break;
+        case 0: write_reg(this, out, TEST(this, Rn & Rm, S)); break;
+        case 1: write_reg(this, out, TEST(this, Rn ^ Rm, S)); break;
+        case 2: write_reg(this, out, SUB(this, Rn, Rm, 1, S)); break;
+        case 3: write_reg(this, out, SUB(this, Rm, Rn, 1, S)); break;
+        case 4: write_reg(this, out, ADD(this, Rn, Rm, 0, S)); break;
+        case 5: write_reg(this, out, ADD(this, Rn, Rm, this->regs.CPSR.C, S)); break; // ADDC
+        case 6: write_reg(this, out, SUB(this, Rn, Rm, this->regs.CPSR.C, S)); break;
+        case 7: write_reg(this, out, SUB(this, Rm, Rn, this->regs.CPSR.C, S)); break;
         case 8: TEST(this, Rn & Rm, S); break;
         case 9: TEST(this, Rn ^ Rm, S); break;
         case 10: SUB(this, Rn, Rm, 1, S); break;
         case 11: ADD(this, Rn, Rm, 0, S); break;
-        case 12: *out = TEST(this, Rn | Rm, S); break;
-        case 13: *out = TEST(this, Rm, S); break;
-        case 14: *out = TEST(this, Rn & ~Rm, S); break;
-        case 15: *out = TEST(this, Rm ^ 0xFFFFFFFF, S); break;
+        case 12: write_reg(this, out, TEST(this, Rn | Rm, S)); break;
+        case 13: write_reg(this, out, TEST(this, Rm, S)); break;
+        case 14: write_reg(this, out, TEST(this, Rn & ~Rm, S)); break;
+        case 15: write_reg(this, out, TEST(this, Rm ^ 0xFFFFFFFF, S)); break;
     }
     return *out;
 }
@@ -244,7 +255,7 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
             break;
     }
 
-    ALU(this, Rn, Rm, alu_opcode, opcode, Rd);
+    ALU(this, Rn, Rm, alu_opcode, S, Rd);
 }
 
 void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
@@ -300,18 +311,63 @@ void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
         if ((addr & 2) && (B == 0)) {
             v = (v & 0xFFFF) | ((*Rd - 2) << 16);
         }
-        *Rd = v;
+        write_reg(this, Rd, v);
     }
     else { // load from RAM
         AWRITE(addr, sz, *Rd);
     }
     if (!P) addr = U ? (addr + offset) : (addr - offset);
-    if (W) *Rn = addr;
+    if (W) write_reg(this, Rn, addr);
 }
 
 void ARM7TDMI_ins_LDR_STR_register_offset(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    u32 P = OBIT(24);
+    u32 U = OBIT(23);
+    u32 B = OBIT(22);
+    u32 T = 0; // 0 = normal, 1 = force unprivileged
+    u32 W = 0; // writeback. 0 = no, 1 = write into base
+    if (P == 0) { T = OBIT(21); W = 1; }
+    else W = OBIT(21);
+    u32 L = OBIT(20); // 0 store, 1 load
+    u32 Rnd = (opcode >> 16) & 15; // base reg
+    u32 Rdd = (opcode >> 12) & 15; // source/dest reg
+    u32 Is = (opcode >> 7) & 31;
+    u32 shift_type = (opcode >> 5) & 3;
+    u32 Rmd = opcode & 15;
+
+    u32 *Rn = getR(this, Rnd);
+    u32 Rm = *getR(this, Rmd);
+    u32 *Rd = getR(this, Rdd);
+    this->carry = this->regs.CPSR.C;
+    switch(shift_type) {
+        case 0: //
+            Rm = LSL(this, Rm, Is);
+            break;
+        case 1:
+            Rm = LSR(this, Rm, Is ? Is : 32);
+            break;
+        case 2:
+            Rm = ASR(this, Rm, Is ? Is : 32);
+            break;
+        case 3:
+            Rm = Is ? ROR(this, Rm, Is) : RRX(this, Rm);
+            break;
+    }
+
+    u32 addr = *Rn;
+    if (P) addr = U ? (addr + Rm) : (addr - Rm);
+    u32 sz = B ? 1 : 4;
+    u32 mask = B ? 0xFF : 0xFFFFFFFF;
+    if (L == 0) { // store to RAM
+        u32 v = AREAD(addr, sz);
+        write_reg(this, Rd, v);
+    }
+    else {
+        AWRITE(addr, sz, *Rd);
+    }
+    if (!P) addr = U ? (addr + Rm) : (addr - Rm);
+    if (W) write_reg(this, Rn, addr);
 }
 
 void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)

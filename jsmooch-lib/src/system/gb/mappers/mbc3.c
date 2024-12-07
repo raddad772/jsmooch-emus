@@ -27,7 +27,6 @@ void GB_mapper_MBC3_new(struct GB_mapper *parent, struct GB_clock *clock, struct
     this->bus = bus;
     this->clock = clock;
     this->ROM_bank_offset = 16384;
-    this->cartRAM = NULL;
     this->cart = NULL;
 
     parent->CPU_read = &GBMBC3_CPU_read;
@@ -57,11 +56,6 @@ void GB_mapper_MBC3_delete(struct GB_mapper *parent)
     if(this->ROM != NULL) {
         free(this->ROM);
         this->ROM = NULL;
-    }
-
-    if (this->cartRAM != NULL) {
-        free(this->cartRAM);
-        this->cartRAM = NULL;
     }
 
     free(parent->ptr);
@@ -113,7 +107,7 @@ u32 GBMBC3_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
         if (!this->regs.ext_RAM_enable) return 0xFF;
         if (this->regs.RAM_bank < 4) {
             if (!this->has_RAM) return 0xFF;
-            return this->cartRAM[(addr & 0x1FFF) + this->RAM_bank_offset];
+            return ((u8 *)this->cart->SRAM->data)[(addr & 0x1FFF) + this->RAM_bank_offset];
         }
         if ((this->regs.RAM_bank >= 8) && (this->regs.RAM_bank <= 0x0C) && this->cart->header.timer_present)
             return this->regs.RTC_latched[this->regs.RAM_bank - 8];
@@ -156,8 +150,10 @@ void GBMBC3_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
     }
 
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
-        if ((this->has_RAM) && (this->regs.RAM_bank < 4))
-            this->cartRAM[(addr & 0x1FFF) + this->RAM_bank_offset] = val;
+        if ((this->has_RAM) && (this->regs.RAM_bank < 4)) {
+            ((u8 *)this->cart->SRAM->data)[(addr & 0x1FFF) + this->RAM_bank_offset] = val;
+            this->cart->SRAM->dirty = 1;
+        }
         return;
     }
 }
@@ -173,11 +169,6 @@ void GBMBC3_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
     this->ROM = malloc(cart->header.ROM_size);
     memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
 
-    if (this->cartRAM != NULL) {
-        free(this->cartRAM);
-        this->cartRAM = NULL;
-    }
-    this->cartRAM = malloc(this->cart->header.RAM_size);
     this->has_RAM = this->cart->header.RAM_size > 0;
 
     this->num_RAM_banks = this->cart->header.RAM_size / 8192;

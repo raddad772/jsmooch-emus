@@ -370,6 +370,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
     pio->cartridge_port.SRAM.dirty = this->RAM_size > 0;
     this->SRAM = &pio->cartridge_port.SRAM;
     if ((this->SRAM->requested_size > 0) && (this->ROM.size <= 0x200000)) *SRAM_enable = 1;
+    this->SRAM->persistent = 1;
     tptr += 52; // skip modem, padding
     u32 num_regions = 0;
     for (u32 i = 0; i < 3; i++) {

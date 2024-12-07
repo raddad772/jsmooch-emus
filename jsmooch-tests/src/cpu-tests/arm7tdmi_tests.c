@@ -184,6 +184,7 @@ static u8* load_opcodes(struct arm7_test *ts, u8 *ptr)
 
     for (u32 i = 0; i < 5; i++) {
         ts->opcodes[i] = R32;
+        printf("\nOPCODE %d %08x", i, ts->opcodes[i]);
     }
 
     ts->base_addr = R32;
@@ -326,7 +327,13 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
     fclose(f);
 
     u8 *ptr = (u8*)filebuf;
-    for (u32 i = 0; i < NUMTESTS; i++) {
+    u32 mn, numtests;
+    mn = R32;
+    numtests = R32;
+    assert(mn == 0xD33DBAE0);
+
+    for (u32 i = 0; i < numtests; i++) {
+        printf("\nTEST NUM %d", i);
         ptr = decode_test(&ts->test, ptr);
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
@@ -339,8 +346,7 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
             fflush(stdout);
         }
 
-        ARM7TDMI_cycle(&ts->cpu, 2);
-
+        ARM7TDMI_cycle(&ts->cpu, 1);
     }
 
     return 1;

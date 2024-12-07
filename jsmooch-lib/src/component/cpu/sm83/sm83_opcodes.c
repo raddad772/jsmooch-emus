@@ -2269,7 +2269,7 @@ void SM83_ins_76_HALT(struct SM83_regs *regs, struct SM83_pins *pins)
 {
     switch(regs->TCU) {
         case 1: {
-            if ((!regs->IME) && (regs->interrupt_latch != 0)) regs->halt_bug = 1; 
+            if ((!regs->IME) && (regs->interrupt_latch != 0)) regs->halt_bug = 1;
             regs->HLT = 1;
             if (regs->HLT) { regs->poll_IRQ = TRUE; regs->TCU--; }
             pins->RD = 0; pins->MRQ = 0;

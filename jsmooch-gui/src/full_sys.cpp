@@ -478,29 +478,31 @@ void full_system::setup_bios()
 void full_system::setup_persistent_store(struct persistent_store *ps, struct multi_file_set *mfs)
 {
     struct read_file_buf *rfb = &mfs->files[0];
-    //printf("\nPATH: %s", rfb->path); // path of file
-    //printf("\nNAME: %s", rfb->name); // file name
-    snprintf(ps->filename, sizeof(ps->filename), "%s/%s.sram", rfb->path, rfb->name);
-    ps->kind = PSK_SIMPLE_FILE;
-    // get file size
-    printf("\nFILENAME:%s", ps->filename);
-    ps->fno = fopen(ps->filename, "rb+");
-    u32 fsize;
-    if (!ps->fno) {
-        ps->fno = fopen(ps->filename, "wb");
-        printf("\nWriting soem zeroes!");
-        u8 *a = (u8 *)malloc( ps->requested_size);
-        memset(a, 0xFF,  ps->requested_size);
-        fwrite(a, 1,  ps->requested_size, ps->fno);
-        free(a);
-        fflush(ps->fno);
-        fclose(ps->fno);
-        fopen(ps->filename, "rb+");
-    }
+    if (ps->persistent) {
+        snprintf(ps->filename, sizeof(ps->filename), "%s/%s.sram", rfb->path, rfb->name);
+        ps->kind = PSK_SIMPLE_FILE;
+        // get file size
+        printf("\nFILENAME:%s", ps->filename);
+        ps->fno = fopen(ps->filename, "rb+");
+        if (!ps->fno) {
+            ps->fno = fopen(ps->filename, "wb");
+            printf("\nWriting soem zeroes!");
+            u8 *a = (u8 *) malloc(ps->requested_size);
+            memset(a, 0xFF, ps->requested_size);
+            fwrite(a, 1, ps->requested_size, ps->fno);
+            free(a);
+            fflush(ps->fno);
+            fclose(ps->fno);
+            fopen(ps->filename, "rb+");
+        }
 
-    fseek(ps->fno, 0, SEEK_SET);
-    ps->data = malloc(ps->requested_size);
-    fread(ps->data, 1, ps->requested_size, ps->fno);
+        fseek(ps->fno, 0, SEEK_SET);
+        ps->data = malloc(ps->requested_size);
+        fread(ps->data, 1, ps->requested_size, ps->fno);
+    }
+    else {
+        ps->data = malloc(ps->requested_size);
+    }
 
     ps->actual_size = ps->requested_size;
     ps->ready_to_use = 1;
@@ -510,7 +512,7 @@ void full_system::setup_persistent_store(struct persistent_store *ps, struct mul
 void full_system::sync_persistent_storage()
 {
     if (my_ps) {
-        if (my_ps->dirty) {
+        if (my_ps->dirty && my_ps->persistent) {
             printf("\nWriting save data..,");
             fseek(my_ps->fno, 0, SEEK_SET);
             fwrite(my_ps->data, 1, my_ps->actual_size, my_ps->fno);
@@ -614,7 +616,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
-            //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);

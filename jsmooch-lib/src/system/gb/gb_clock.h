@@ -29,7 +29,6 @@ struct GB_clock {
     u32 wly;
 
     u32 cpu_frame_cycle;
-    u32 ppu_frame_cycle;
     u32 CPU_can_VRAM; // = 1
     u32 old_OAM_can;
     u32 CPU_can_OAM;

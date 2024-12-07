@@ -27,7 +27,6 @@ void GB_mapper_MBC5_new(struct GB_mapper *parent, struct GB_clock *clock, struct
     this->bus = bus;
     this->clock = clock;
     this->ROM_bank_offset = 16384;
-    this->cartRAM = NULL;
     this->RAM_mask = 0;
     this->cart = NULL;
 
@@ -56,11 +55,6 @@ void GB_mapper_MBC5_delete(struct GB_mapper *parent)
     if(this->ROM != NULL) {
         free(this->ROM);
         this->ROM = NULL;
-    }
-
-    if (this->cartRAM != NULL) {
-        free(this->cartRAM);
-        this->cartRAM = NULL;
     }
 
     free(parent->ptr);
@@ -96,7 +90,7 @@ u32 GBMBC5_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM if it's there
         if ((!this->has_RAM) || (!this->regs.ext_RAM_enable))
             return 0xFF;
-        return this->cartRAM[((addr - 0xA000) & this->RAM_mask) + this->cartRAM_offset];
+        return ((u8 *)this->cart->SRAM->data)[((addr - 0xA000) & this->RAM_mask) + this->cartRAM_offset];
     }
     assert(1!=0);
     return 0xFF;
@@ -131,7 +125,8 @@ void GBMBC5_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
     }
     if ((addr >= 0xA000) && (addr < 0xC000)) { // cart RAM
         if ((!this->has_RAM) || (!this->regs.ext_RAM_enable)) return;
-        this->cartRAM[((addr - 0xA000) & this->RAM_mask) + this->cartRAM_offset] = val;
+        ((u8 *)this->cart->SRAM->data)[((addr - 0xA000) & this->RAM_mask) + this->cartRAM_offset] = val;
+        this->cart->SRAM->dirty = 1;
     }
 }
 
@@ -144,12 +139,6 @@ void GBMBC5_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
     if (this->ROM != NULL) free(this->ROM);
     this->ROM = malloc(cart->header.ROM_size);
     memcpy(this->ROM, cart->ROM, cart->header.ROM_size);
-
-    if (this->cartRAM != NULL) {
-        free(this->cartRAM);
-        this->cartRAM = NULL;
-    }
-    this->cartRAM = malloc(this->cart->header.RAM_size);
 
     this->num_RAM_banks = this->cart->header.RAM_size / 8192;
 

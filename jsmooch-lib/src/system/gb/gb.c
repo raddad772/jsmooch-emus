@@ -431,7 +431,7 @@ void GBJ_stop(JSM)
 static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
-    GB_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
+    GB_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, pio);
     GBJ_reset(jsm);
 }
 

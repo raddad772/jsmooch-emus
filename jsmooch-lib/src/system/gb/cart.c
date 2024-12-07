@@ -86,8 +86,12 @@ void GBC_setup_mapper(struct GB_cart* this)
     this->mapper->set_cart(this->mapper, this);
 }
 
-void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, u64 size)
+void GB_cart_load_ROM_from_RAM(struct GB_cart*this, void* ibuf, u64 size, struct physical_io_device *pio)
 {
+    this->SRAM = &pio->cartridge_port.SRAM;
+    this->SRAM->ready_to_use = 0;
+    this->SRAM->requested_size = 0;
+
     u8* inp = (u8*)ibuf;
     if ((inp[0x104] != 0xCE) || (inp[0x105] != 0xED)) {
         assert(1 != 0);
@@ -282,6 +286,10 @@ void GB_cart_load_ROM_from_RAM(struct GB_cart* this, void* ibuf, u64 size)
         this->header.battery_present = 1;
         break;
     }
+    this->SRAM->persistent = this->header.battery_present;
+    this->SRAM->dirty = this->header.RAM_size > 0;
+    this->SRAM->requested_size = this->header.RAM_size;
+    this->SRAM->ready_to_use = 0;
 
     GBC_read_ROM(this, inp, size);
     GBC_setup_mapper(this);

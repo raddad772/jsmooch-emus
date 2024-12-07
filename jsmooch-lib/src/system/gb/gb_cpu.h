@@ -23,8 +23,6 @@ struct GB_timer {
 
     struct GB_CPU *raise_IRQ_cpu;
     void (*raise_IRQ)(struct GB_CPU *);
-
-    struct SM83_regs* cpu_regs;
 };
 
 void GB_timer_write_IO(struct GB_timer*, u32 addr, u32 val);
