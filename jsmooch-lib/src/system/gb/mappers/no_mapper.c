@@ -1,14 +1,33 @@
 #include <string.h>
-#include "stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "helpers/serialize/serialize.h"
 
 #include "system/gb/mappers/mapper.h"
 #include "system/gb/mappers/no_mapper.h"
 #include "../gb_clock.h"
 #include "../gb_bus.h"
 #include "../cart.h"
-#include <stdio.h>
 
 #define THIS struct GB_mapper_none* this = (struct GB_mapper_none*)parent->ptr
+
+static void serialize(struct GB_mapper *parent, struct serialized_state *state)
+{
+    THIS;
+#define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
+    S(ROM_bank_offset);
+#undef S
+}
+
+static void deserialize(struct GB_mapper *parent, struct serialized_state *state)
+{
+    THIS;
+#define L(x) Sload(state, &(this-> x), sizeof(this-> x))
+    L(ROM_bank_offset);
+#undef L
+}
+
 
 void GB_mapper_none_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus)
 {
@@ -26,6 +45,8 @@ void GB_mapper_none_new(struct GB_mapper *parent, struct GB_clock *clock, struct
     parent->CPU_write = &GBMN_CPU_write;
     parent->reset = &GBMN_reset;
     parent->set_cart = &GBMN_set_cart;
+    parent->serialize = &serialize;
+    parent->deserialize = &deserialize;
 }
 
 void GB_mapper_none_delete(struct GB_mapper *parent)

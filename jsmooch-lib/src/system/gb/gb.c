@@ -15,6 +15,7 @@
 #include "gb_bus.h"
 #include "gb_enums.h"
 #include "gb_debugger.h"
+#include "gb_serialize.h"
 
 #define JTHIS struct GB* this = (struct GB*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -115,6 +116,8 @@ void GB_new(JSM, enum GB_variants variant)
 	jsm->load_BIOS = &GBJ_load_BIOS;
 	jsm->get_framevars = &GBJ_get_framevars;
     jsm->describe_io = &GBJ_describe_io;
+    jsm->save_state = &GBJ_save_state;
+    jsm->load_state = &GBJ_load_state;
 
 	jsm->play = &GBJ_play;
 	jsm->pause = &GBJ_pause;

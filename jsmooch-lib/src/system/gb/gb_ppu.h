@@ -69,7 +69,6 @@ struct GB_pixel_slice_fetcher {
 
     u32 bg_request_x;
     u32 sp_request;
-    u32 sp_min;
     struct GB_FIFO sprites_queue;
     //struct GB_queue sprites_queue;
     struct GB_px out_px;
@@ -92,7 +91,6 @@ struct GB_PPU {
     i32 cycles_til_vblank;
 
     u32 enabled;
-    u32 display_update;
 
     u16 bg_palette[4];
     u16 sp_palette[2][4];
@@ -134,13 +132,10 @@ struct GB_PPU {
 
 
     struct GB_PPU_sprites sprites;
-    u16 *out_buffer[2];
 
-    u32 first_reset; // true
     u32 is_window_line;
     u32 window_triggered_on_line;
 
-    u32 update_display;
     u32 last_used_buffer;
     u16* cur_output;
     u16* cur_output_debug_metadata;

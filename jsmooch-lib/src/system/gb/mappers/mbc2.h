@@ -15,13 +15,10 @@ struct GB_mapper_MBC2 {
     struct GB_clock *clock;
 
     u8 *ROM;
-    u32 ROM_bank_offset;
     u32 RAM_mask;
     u32 has_RAM;
     struct GB_cart* cart;
 
-    //
-    u32 ROM_bank_lo_offset;// = 0;
     u32 ROM_bank_hi_offset;// = 16384;
 
     u32 num_ROM_banks;

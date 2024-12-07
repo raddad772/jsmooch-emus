@@ -7,7 +7,6 @@
 
 enum GBSS_kinds {
     GBSS_console,
-    GBSS_debug,
     GBSS_ppu,
     GBSS_apu,
     GBSS_sm83,

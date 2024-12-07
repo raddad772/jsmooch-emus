@@ -7,12 +7,43 @@
 #include "stdio.h"
 #include "string.h"
 
+#include "helpers/serialize/serialize.h"
 #include "mbc1.h"
 
 
 #define THIS struct GB_mapper_MBC1* this = (struct GB_mapper_MBC1*)parent->ptr
 
 static void GBMBC1_update_banks(struct GB_mapper_MBC1 *this);
+
+static void serialize(struct GB_mapper *parent, struct serialized_state *state)
+{
+    THIS;
+#define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
+    S(ROM_bank_lo_offset);
+    S(ROM_bank_hi_offset);
+    S(regs.banking_mode);
+    S(regs.BANK1);
+    S(regs.BANK2);
+    S(regs.ext_RAM_enable);
+    S(cartRAM_offset);
+#undef S
+}
+
+static void deserialize(struct GB_mapper *parent, struct serialized_state *state)
+{
+    THIS;
+#define L(x) Sload(state, &(this-> x), sizeof(this-> x))
+    L(ROM_bank_lo_offset);
+    L(ROM_bank_hi_offset);
+    L(regs.banking_mode);
+    L(regs.BANK1);
+    L(regs.BANK2);
+    L(regs.ext_RAM_enable);
+    L(cartRAM_offset);
+#undef L
+}
+
+
 
 void GB_mapper_MBC1_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus)
 {
@@ -22,7 +53,6 @@ void GB_mapper_MBC1_new(struct GB_mapper *parent, struct GB_clock *clock, struct
     this->ROM = NULL;
     this->bus = bus;
     this->clock = clock;
-    this->ROM_bank_offset = 16384;
     this->RAM_mask = 0;
     this->has_RAM = false;
     this->cart = NULL;
@@ -31,6 +61,8 @@ void GB_mapper_MBC1_new(struct GB_mapper *parent, struct GB_clock *clock, struct
     parent->CPU_write = &GBMBC1_CPU_write;
     parent->reset = &GBMBC1_reset;
     parent->set_cart = &GBMBC1_set_cart;
+    parent->serialize = &serialize;
+    parent->deserialize = &deserialize;
 
     this->ROM_bank_lo_offset = 0;
     this->ROM_bank_hi_offset = 16384;

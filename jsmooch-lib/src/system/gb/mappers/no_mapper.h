@@ -15,7 +15,6 @@ struct GB_mapper_none {
     u32 RAM_mask;
     u32 has_RAM;
     struct GB_cart* cart;
-
 };
 
 void GB_mapper_none_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus);

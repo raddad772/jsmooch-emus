@@ -371,7 +371,6 @@ static void tick_length_timer(struct GB_APU *this, u32 cnum)
 {
     struct GBSNDCHAN *chan = &this->channels[cnum];
     if (chan->length_enable) {
-        if (chan->number == 3) printf("\nLENGTH! %d", chan->length_counter);
         chan->length_counter = chan->length_counter - 1;
         if (chan->length_counter <= 0) {
             chan->on = 0;

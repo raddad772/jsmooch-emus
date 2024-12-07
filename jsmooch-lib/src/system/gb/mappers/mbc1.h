@@ -11,7 +11,6 @@ struct GB_mapper_MBC1 {
     struct GB_clock *clock;
 
     u8 *ROM;
-    u32 ROM_bank_offset;
     u32 RAM_mask;
     u32 has_RAM;
     struct GB_cart* cart;

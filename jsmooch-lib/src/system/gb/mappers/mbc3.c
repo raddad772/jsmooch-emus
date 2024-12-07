@@ -11,12 +11,52 @@
 #include "string.h"
 #include "time.h"
 
+#include "helpers/serialize/serialize.h"
 
 #include "mbc3.h"
 
 #define THIS struct GB_mapper_MBC3* this = (struct GB_mapper_MBC3*)parent->ptr
 
-static void GBMBC3_update_banks(struct GB_mapper_MBC3 *this);
+static void serialize(struct GB_mapper *parent, struct serialized_state *state)
+{
+    THIS;
+#define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
+    S(regs.ext_RAM_enable);
+    S(regs.ROM_bank_lo);
+    S(regs.ROM_bank_hi);
+    S(regs.RAM_bank);
+    S(regs.last_RTC_latch_write);
+    S(regs.RTC_latched[0]);
+    S(regs.RTC_latched[1]);
+    S(regs.RTC_latched[2]);
+    S(regs.RTC_latched[3]);
+    S(regs.RTC_latched[4]);
+    S(regs.RTC_start);
+    S(ROM_bank_offset_hi);
+    S(RAM_bank_offset);
+#undef S
+}
+
+static void deserialize(struct GB_mapper *parent, struct serialized_state *state)
+{
+    THIS;
+#define L(x) Sload(state, &(this-> x), sizeof(this-> x))
+    L(regs.ext_RAM_enable);
+    L(regs.ROM_bank_lo);
+    L(regs.ROM_bank_hi);
+    L(regs.RAM_bank);
+    L(regs.last_RTC_latch_write);
+    L(regs.RTC_latched[0]);
+    L(regs.RTC_latched[1]);
+    L(regs.RTC_latched[2]);
+    L(regs.RTC_latched[3]);
+    L(regs.RTC_latched[4]);
+    L(regs.RTC_start);
+    L(ROM_bank_offset_hi);
+    L(RAM_bank_offset);
+#undef L
+}
+
 
 void GB_mapper_MBC3_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus)
 {
@@ -26,13 +66,14 @@ void GB_mapper_MBC3_new(struct GB_mapper *parent, struct GB_clock *clock, struct
     this->ROM = NULL;
     this->bus = bus;
     this->clock = clock;
-    this->ROM_bank_offset = 16384;
     this->cart = NULL;
 
     parent->CPU_read = &GBMBC3_CPU_read;
     parent->CPU_write = &GBMBC3_CPU_write;
     parent->reset = &GBMBC3_reset;
     parent->set_cart = &GBMBC3_set_cart;
+    parent->serialize = &serialize;
+    parent->deserialize = &deserialize;
 
     this->num_ROM_banks = 0;
     this->num_RAM_banks = 0;

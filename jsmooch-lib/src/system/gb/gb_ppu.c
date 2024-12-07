@@ -45,6 +45,10 @@ u32 GB_PPU_read_OAM(struct GB_PPU* this, u32 addr);
 u32 GBC_resolve_priority(u32 LCDC0, u32 OAM7, u32 BG7, u32 bg_color, u32 sp_color);
 u32 GB_sp_tile_addr(u32 tn, u32 y, u32 big_sprites, u32 attr, u32 cgb);
 
+static u32 GB_PPU_in_window(struct GB_PPU* this) {
+    return this->io.window_enable && this->is_window_line && (this->clock->lx >= this->io.wx);
+}
+
 inline u32 GBC_resolve_priority(u32 LCDC0, u32 OAM7, u32 BG7, u32 bg_color, u32 sp_color) {
 // 1 = BG
 // 2 = OBJ
@@ -198,7 +202,7 @@ static void GB_pixel_slice_fetcher_init(struct GB_pixel_slice_fetcher* this, enu
     this->clock = clock;
     this->bus = bus;
     this->variant = variant;
-    this->fetch_cycle = this->fetch_addr = this->fetch_bp0 = this->fetch_bp1 = this->fetch_cgb_attr = this->bg_request_x = this->sp_request = this->sp_min = 0;
+    this->fetch_cycle = this->fetch_addr = this->fetch_bp0 = this->fetch_bp1 = this->fetch_cgb_attr = this->bg_request_x = this->sp_request = 0;
 
     this->ppu = NULL;
     this->fetch_obj = NULL;
@@ -216,7 +220,6 @@ static void GB_pixel_slice_fetcher_advance_line(struct GB_pixel_slice_fetcher* t
     GB_FIFO_clear(&this->sprites_queue);
     this->bg_request_x = this->ppu->io.SCX;
     this->sp_request = 0;
-    this->sp_min = 0;
 }
 
 static void GB_pixel_slice_fetcher_trigger_window(struct GB_pixel_slice_fetcher* this) {
@@ -423,7 +426,6 @@ void GB_PPU_reset(struct GB_PPU* this)
     this->clock->ly = 0;
     this->display->scan_x = this->display->scan_y = 0;
     this->line_cycle = 0;
-    this->display_update = false;
     this->cycles_til_vblank = 0;
 
     // Reset IRQs
@@ -435,7 +437,6 @@ void GB_PPU_reset(struct GB_PPU* this)
 
     // Set mode to OAM search
     GB_PPU_set_mode(this, OAM_search);
-    this->first_reset = false;
 }
 
 u32 GB_PPU_bus_read_OAM(struct GB_bus* bus, u32 addr) {
@@ -460,7 +461,7 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
     GB_pixel_slice_fetcher_init(&this->slice_fetcher, variant, clock, bus);
 
     this->line_cycle = 0;
-    this->enabled = this->display_update = FALSE;
+    this->enabled = FALSE;
     this->cycles_til_vblank = 0;
 
     this->bg_palette[0] = this->bg_palette[1] = this->bg_palette[2] = this->bg_palette[3] = 0;
@@ -480,8 +481,7 @@ void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock*
 
     GB_PPU_sprites_init(&this->sprites);
 
-    this->first_reset = TRUE;
-    this->is_window_line = this->window_triggered_on_line = this->display_update = FALSE;
+    this->is_window_line = this->window_triggered_on_line = FALSE;
 
     bus->ppu = this;
     this->slice_fetcher.ppu = this;
@@ -533,10 +533,6 @@ static void GB_PPU_eval_STAT(struct GB_PPU* this) {
     //    assert(1 == 0);
     //}
     this->io.old_mask = mask;
-}
-
-static u32 GB_PPU_in_window(struct GB_PPU* this) {
-    return this->io.window_enable && this->is_window_line && (this->clock->lx >= this->io.wx);
 }
 
 static u32 GB_PPU_bg_tilemap_addr_window(struct GB_PPU* this, u32 wlx) {
@@ -852,7 +848,6 @@ static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
     this->is_window_line = this->clock->ly == this->io.wy;
     if (this->enabled) {
         GB_PPU_eval_lyc(this);
-        this->display_update = true;
     }
     this->clock->frames_since_restart++;
     this->clock->master_frame++;
