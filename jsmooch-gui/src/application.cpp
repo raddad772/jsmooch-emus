@@ -461,9 +461,9 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_GBC;
     //which = SYS_APPLEIIe;
     //which = SYS_GENESIS_USA;
-    which = SYS_DMG;
+    //which = SYS_DMG;
     //which = SYS_NES;
-    //which = SYS_SMS2;
+    which = SYS_SMS2;
     //which = SYS_GG;
     //which = SYS_SG1000;
     //which = SYS_MAC512K;

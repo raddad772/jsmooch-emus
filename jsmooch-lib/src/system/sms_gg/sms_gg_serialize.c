@@ -99,6 +99,9 @@ static void serialize_mapper(struct SMSGG *this, struct serialized_state *state)
     S(io.bank_shift);
     S(io.bios_enabled);
     S(io.cart_enabled);
+
+    Sadd(state, this->mapper.RAM.ptr, this->mapper.RAM.sz);
+    Sadd(state, this->mapper.cart_RAM.ptr, this->mapper.cart_RAM.sz);
 #undef S
 }
 
@@ -163,8 +166,8 @@ static void serialize_vdp(struct SMSGG *this, struct serialized_state *state)
     S(bg_gfx_mode);
     S(doi);
 
-    // Now serialize the currently-being-rendered frame...
-    Sadd(state, &this->vdp.cur_output, SMSGG_DISPLAY_DRAW_SZ);
+    //// Now serialize the currently-being-rendered frame...
+    //Sadd(state, &this->vdp.cur_output, SMSGG_DISPLAY_DRAW_SZ);
 #undef S
 }
 
@@ -292,8 +295,8 @@ static void deserialize_vdp(struct SMSGG* this, struct serialized_state *state)
     L(bg_gfx_mode);
     L(doi);
 
-    // Now serialize the currently-being-rendered frame...
-    Sload(state, &this->vdp.cur_output, SMSGG_DISPLAY_DRAW_SZ);
+    //// Now serialize the currently-being-rendered frame...
+    //Sload(state, &this->vdp.cur_output, SMSGG_DISPLAY_DRAW_SZ);
 
     SMSGG_VDP_update_videomode(&this->vdp);
 #undef L
@@ -353,6 +356,10 @@ static void deserialize_mapper(struct SMSGG* this, struct serialized_state *stat
     L(io.bank_shift);
     L(io.bios_enabled);
     L(io.cart_enabled);
+
+    Sload(state, this->mapper.RAM.ptr, this->mapper.RAM.sz);
+    Sload(state, this->mapper.cart_RAM.ptr, this->mapper.cart_RAM.sz);
+
 #undef L
     SMSGG_mapper_refresh_mapping(&this->mapper);
 }
@@ -367,6 +374,7 @@ void SMSGGJ_load_state(struct jsm_system *jsm, struct serialized_state *state, s
     u32 set_done = 0;
 
     struct SMSGG* this = (struct SMSGG*)jsm->ptr;
+    u32 num_loaded = 0;
     for (u32 i = 0; i < cvec_len(&state->sections); i++) {
         struct serialized_state_section *sec = cvec_get(&state->sections, i);
         state->iter.offset = sec->offset;
