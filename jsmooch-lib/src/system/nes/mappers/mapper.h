@@ -9,7 +9,7 @@
 #include "helpers/sys_interface.h"
 #include "helpers/simplebuf.h"
 #include "../nes_cart.h"
-
+#include "helpers/sram.h"
 #include "nes_memmap.h"
 
 // NES_bus takes care of mappers!
@@ -63,6 +63,9 @@ struct NES_bus {
     void (*a12_watch)(struct NES_bus*, u32 addr);
     void (*cpu_cycle)(struct NES_bus*);
 
+    void (*serialize)(struct NES_bus*, struct serialized_state *state);
+    void (*deserialize)(struct NES_bus*, struct serialized_state *state);
+
     float (*sample_audio)(struct NES_bus*);
 
     u32 (*PPU_read_override)(struct NES_bus*, u32 addr, u32 has_effect);
@@ -80,7 +83,8 @@ struct NES_bus {
     struct NES_memmap CPU_map[65536 / 0x2000];
     struct NES_memmap PPU_map[0x4000 / 0x400];
 
-    struct simplebuf8 PRG_RAM;
+    struct persistent_store *SRAM;
+    struct simplebuf8 fake_PRG_RAM;
     struct simplebuf8 PRG_ROM;
     struct simplebuf8 CHR_ROM;
     struct simplebuf8 CHR_RAM;
@@ -110,7 +114,8 @@ u32 NES_PPU_read_effect(struct NES*, u32 addr);
 u32 NES_PPU_read_noeffect(struct NES*, u32 addr);
 void NES_PPU_write(struct NES*, u32 addr, u32 val);
 void NES_bus_reset(struct NES*);
-void NES_bus_set_cart(struct NES*, struct NES_cart* cart);
+struct physical_io_device;
+void NES_bus_set_cart(struct NES*, struct NES_cart* cart, struct physical_io_device *pio);
 void NES_bus_a12_watch(struct NES*, u32 addr);
 
 

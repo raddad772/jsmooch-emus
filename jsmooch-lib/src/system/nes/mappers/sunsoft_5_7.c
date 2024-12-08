@@ -65,7 +65,7 @@ static void remap(struct NES_bus *bus, u32 boot)
     }
 
     if (this->io.wram_mapped && this->io.wram_enabled)
-        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_RAM, 0, READWRITE);
+        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
     else
         NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_ROM, this->io.cpu.banks[0], READONLY);
 
@@ -83,6 +83,24 @@ static void remap(struct NES_bus *bus, u32 boot)
     NES_bus_map_CHR1K(bus, 0x1C00, 0x1FFF, &bus->CHR_ROM, this->io.ppu.banks[7], READONLY);
 }
 
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+    S(irq);
+    S(io);
+#undef S
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+    L(irq);
+    L(io);
+#undef L
+    remap(bus, 0);
+}
 
 static void sunsoft_5_7_destruct(struct NES_bus *bus)
 {
@@ -111,7 +129,7 @@ static void write_reg(struct NES_bus* bus, u32 val)
             this->io.wram_mapped = (val >> 6) & 1;
             this->io.wram_enabled = (val >> 7) & 1;
             if (this->io.wram_mapped && this->io.wram_enabled)
-                NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_RAM, 0, READWRITE);
+                NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
             else
                 NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_ROM, this->io.cpu.banks[0], READONLY);
             break;
@@ -242,4 +260,6 @@ void sunsoft_5_7_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kin
     bus->setcart = &sunsoft_5_7_setcart;
     bus->cpu_cycle = &sunsoft_5_7_cpucycle;
     bus->a12_watch = NULL;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
 }

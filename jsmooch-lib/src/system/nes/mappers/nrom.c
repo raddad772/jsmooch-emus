@@ -30,6 +30,15 @@ static void remap(struct NES_bus *bus)
     NES_bus_PPU_mirror_set(bus);
 }
 
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+
+}
 
 static void NROM_destruct(struct NES_bus *bus)
 {
@@ -73,4 +82,6 @@ void NROM_init(struct NES_bus *bus, struct NES *nes)
     bus->setcart = &NROM_setcart;
     bus->cpu_cycle = NULL;
     bus->a12_watch = NULL;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
 }

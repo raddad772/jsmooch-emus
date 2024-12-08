@@ -46,6 +46,7 @@ static inline void add_sz(struct serialized_state *this, u64 howmuch)
 
 void Sload(struct serialized_state *this, void *ptr, u64 howmuch)
 {
+    if (howmuch == 0) return;
     memcpy(ptr, ((u8 *)this->buf.data) + this->iter.offset, howmuch);
     this->iter.offset += howmuch;
 }
@@ -122,6 +123,7 @@ int serialized_state_read_from_file(struct serialized_state *state, FILE *f, siz
 
 void Sadd(struct serialized_state *this, void *ptr, u64 howmuch)
 {
+    if (howmuch == 0) return;
     add_sz(this, howmuch);
     memcpy(((u8 *)this->buf.data) + this->buf.len, ptr, howmuch);
     this->buf.len += howmuch;

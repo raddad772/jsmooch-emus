@@ -7,6 +7,7 @@
 #include "m6502.h"
 #include "m6502_disassembler.h"
 #include "helpers/debug.h"
+#include "helpers/serialize/serialize.h"
 
 #define M6502_OP_RESET 0x100
 #define M6502_OP_NMI 0x101
@@ -170,3 +171,97 @@ void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins)
 
     regs->do_IRQ = pins->IRQ && !regs->P.I;
 }
+
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+static void serialize_regs(struct M6502_regs *this, struct serialized_state *state) {
+    S(A);
+    S(X);
+    S(Y);
+    S(PC);
+    S(S);
+    S(P.C);
+    S(P.Z);
+    S(P.I);
+    S(P.D);
+    S(P.B);
+    S(P.V);
+    S(P.N);
+    S(TCU);
+    S(IR);
+    S(TA);
+    S(TR);
+    S(HLT);
+    S(do_IRQ);
+    S(WAI);
+    S(STP);
+    S(NMI_old);
+    S(NMI_level_detected);
+    S(do_NMI);
+}
+
+static void serialize_pins(struct M6502_pins *this, struct serialized_state *state) {
+    S(Addr);
+    S(D);
+    S(RW);
+    S(IRQ);
+    S(NMI);
+    S(RST);
+    S(RDY);
+}
+
+void M6502_serialize(struct M6502 *this, struct serialized_state *state)
+{
+    serialize_regs(&this->regs, state);
+    serialize_pins(&this->pins, state);
+    S(PCO);
+    S(first_reset);
+}
+#undef S
+
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+
+static void deserialize_regs(struct M6502_regs *this, struct serialized_state *state) {
+    L(A);
+    L(X);
+    L(Y);
+    L(PC);
+    L(S);
+    L(P.C);
+    L(P.Z);
+    L(P.I);
+    L(P.D);
+    L(P.B);
+    L(P.V);
+    L(P.N);
+    L(TCU);
+    L(IR);
+    L(TA);
+    L(TR);
+    L(HLT);
+    L(do_IRQ);
+    L(WAI);
+    L(STP);
+    L(NMI_old);
+    L(NMI_level_detected);
+    L(do_NMI);
+}
+
+static void deserialize_pins(struct M6502_pins *this, struct serialized_state *state) {
+    L(Addr);
+    L(D);
+    L(RW);
+    L(IRQ);
+    L(NMI);
+    L(RST);
+    L(RDY);
+}
+
+void M6502_deserialize(struct M6502 *this, struct serialized_state *state)
+{
+    deserialize_regs(&this->regs, state);
+    deserialize_pins(&this->pins, state);
+    L(PCO);
+    L(first_reset);
+    this->current_instruction = this->opcode_table[this->regs.IR];
+}
+

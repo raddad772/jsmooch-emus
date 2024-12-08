@@ -41,7 +41,7 @@ static void remap(struct NES_bus *bus, u32 boot, u32 may_contain_PRG)
 {
     THISM;
     if (boot) {
-        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_RAM, 0, READWRITE);
+        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
 
         NES_bus_map_PRG32K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, 0, READONLY);
         if (bus->CHR_RAM.sz > 0) {
@@ -81,6 +81,25 @@ static void remap(struct NES_bus *bus, u32 boot, u32 may_contain_PRG)
         }
     }
 
+}
+
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+    S(last_cycle_write);
+    S(io);
+#undef S
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+    L(last_cycle_write);
+    L(io);
+#undef L
+    remap(bus, 0, 1);
 }
 
 
@@ -194,4 +213,6 @@ void SXROM_init(struct NES_bus *bus, struct NES *nes)
     bus->setcart = &SXROM_setcart;
     bus->cpu_cycle = NULL;
     bus->a12_watch = NULL;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
 }

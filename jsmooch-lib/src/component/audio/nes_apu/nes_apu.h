@@ -105,4 +105,8 @@ float NES_APU_mix_sample(struct NES_APU* this, u32 is_debug);
 float NES_APU_sample_channel(struct NES_APU* this, int cnum);
 void NES_APU_reset(struct NES_APU* this);
 
+struct serialized_state;
+void NES_APU_serialize(struct NES_APU*, struct serialized_state *state);
+void NES_APU_deserialize(struct NES_APU*, struct serialized_state *state);
+
 #endif //JSMOOCH_EMUS_NES_APU_H

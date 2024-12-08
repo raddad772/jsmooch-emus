@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "nes_apu.h"
+#include "helpers/serialize/serialize.h"
 
 #define PULSE0 0
 #define PULSE1 1
@@ -524,4 +525,34 @@ float NES_APU_sample_channel(struct NES_APU* this, int cnum)
             return (float)get_noise_channel_output(this, 1) * div15;
     }
     return 0.0f;
+}
+
+void NES_APU_serialize(struct NES_APU *this, struct serialized_state *state)
+{
+#define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
+    S(channels[0]);
+    S(channels[1]);
+    S(channels[2]);
+    S(channels[3]);
+    S(dmc);
+    S(io);
+    S(frame_counter);
+    S(clocks);
+    S(IRQ_pin.just_set);
+#undef S
+}
+
+void NES_APU_deserialize(struct NES_APU *this, struct serialized_state *state)
+{
+#define L(x) Sload(state, &(this-> x), sizeof(this-> x))
+    L(channels[0]);
+    L(channels[1]);
+    L(channels[2]);
+    L(channels[3]);
+    L(dmc);
+    L(io);
+    L(frame_counter);
+    L(clocks);
+    L(IRQ_pin.just_set);
+#undef L
 }

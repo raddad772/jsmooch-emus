@@ -19,7 +19,6 @@ void NES_bus_init(struct NES_bus *this, struct NES* nes)
 {
     memset(this, 0, sizeof(struct NES_bus));
     this->nes = nes;
-    simplebuf8_init(&this->PRG_RAM);
     simplebuf8_init(&this->PRG_ROM);
     simplebuf8_init(&this->CHR_ROM);
     simplebuf8_init(&this->CHR_RAM);
@@ -43,6 +42,8 @@ void NES_bus_init(struct NES_bus *this, struct NES* nes)
         m->read_only = 0;
         m->addr = addr;
         m->mask = 0x3FF;
+        m->is_SRAM = 0;
+        m->SRAM = NULL;
     }
 }
 
@@ -58,7 +59,6 @@ void NES_bus_delete(struct NES_bus *this)
     this->writecart = NULL;
     this->ptr = NULL;
 
-    simplebuf8_delete(&this->PRG_RAM);
     simplebuf8_delete(&this->PRG_ROM);
     simplebuf8_delete(&this->CHR_ROM);
     simplebuf8_delete(&this->CHR_RAM);
@@ -258,10 +258,12 @@ void NES_PPU_write(struct NES *nes, u32 addr, u32 val)
 
 void NES_bus_reset(struct NES *nes)
 {
+    if (nes->bus.fake_PRG_RAM.ptr == NULL)
+        nes->bus.fake_PRG_RAM.ptr = nes->bus.SRAM->data;
     if (nes->bus.reset) nes->bus.reset(&nes->bus);
 }
 
-void NES_bus_set_cart(struct NES *nes, struct NES_cart* cart)
+void NES_bus_set_cart(struct NES *nes, struct NES_cart* cart, struct physical_io_device *pio)
 {
     assert(nes->bus.setcart);
     struct NES_bus *this = &nes->bus;
@@ -293,11 +295,13 @@ void NES_bus_set_cart(struct NES *nes, struct NES_cart* cart)
         printf("\nCHR RAM: %lld bytes", this->CHR_RAM.sz);
         this->num_CHR_RAM_banks = this->CHR_RAM.sz >> 10;
     }
-    if (cart->header.prg_ram_size > 0) {
-        simplebuf8_allocate(&this->PRG_RAM, cart->header.prg_ram_size);
-        //printf("\nPRG RAM: %lld bytes", this->PRG_RAM.sz);
-        this->num_PRG_RAM_banks = this->PRG_RAM.sz >> 13;
-    }
+    this->SRAM = &pio->cartridge_port.SRAM;
+    this->SRAM->requested_size = cart->header.prg_ram_size;
+    this->SRAM->persistent = cart->header.battery_present;
+    this->fake_PRG_RAM.sz = cart->header.prg_ram_size;
+    this->fake_PRG_RAM.ptr = NULL;
+    this->SRAM->dirty = 1;
+    this->SRAM->ready_to_use = 0;
 
     this->setcart(&nes->bus, cart);
 }
@@ -310,37 +314,37 @@ void NES_bus_a12_watch(struct NES *nes, u32 addr)
 
 void NES_bus_map_PRG32K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly, bus->nes->dbg.interface, 0);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
 }
 
 void NES_bus_map_PRG16K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly, bus->nes->dbg.interface, 0);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
 }
 
 void NES_bus_map_PRG8K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly, bus->nes->dbg.interface, 0);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
 }
 
 void NES_bus_map_CHR1K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 10, is_readonly, NULL, 1);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 10, is_readonly, NULL, 1, bus->SRAM);
 }
 
 void NES_bus_map_CHR2K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 11, is_readonly, NULL, 1);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 11, is_readonly, NULL, 1, bus->SRAM);
 }
 
 void NES_bus_map_CHR4K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 12, is_readonly, NULL, 1);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 12, is_readonly, NULL, 1, bus->SRAM);
 }
 
 void NES_bus_map_CHR8K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 13, is_readonly, NULL, 1);
+    NES_memmap_map(bus->PPU_map, 10, range_start, range_end, buf, bank << 13, is_readonly, NULL, 1, bus->SRAM);
 }
 
 

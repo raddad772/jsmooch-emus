@@ -288,6 +288,8 @@ add_library(jsmooch-lib
         src/component/cpu/arm7tdmi/arm7tdmi_instructions.h
         src/system/gb/gb_serialize.c
         src/system/gb/gb_serialize.h
+        src/system/nes/nes_serialize.c
+        src/system/nes/nes_serialize.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

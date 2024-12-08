@@ -100,5 +100,8 @@ struct NES_PPU {
     u32 new_rendering_enabled;
 };
 
+void PPU_scanline_visible(struct NES_PPU*);
+void PPU_scanline_postrender(struct NES_PPU *);
+void PPU_scanline_prerender(struct NES_PPU *);
 
 #endif //JSMOOCH_EMUS_NES_PPU_H

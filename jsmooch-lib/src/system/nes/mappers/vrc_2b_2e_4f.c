@@ -59,7 +59,7 @@ static void remap(struct NES_bus *bus, u32 boot)
         NES_bus_map_PRG8K(bus, 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
     }
 
-    NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, this->io.wram_enabled ? &bus->PRG_RAM : NULL, 0, READWRITE);
+    NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, this->io.wram_enabled ? &bus->fake_PRG_RAM : NULL, 0, READWRITE);
 
     if (this->is_vrc4 && this->io.vrc4.banks_swapped) {
         NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 2, READONLY);
@@ -80,6 +80,25 @@ static void remap(struct NES_bus *bus, u32 boot)
     NES_bus_map_CHR1K(bus, 0x1400, 0x17FF, &bus->CHR_ROM, this->io.ppu.banks[5], READONLY);
     NES_bus_map_CHR1K(bus, 0x1800, 0x1BFF, &bus->CHR_ROM, this->io.ppu.banks[6], READONLY);
     NES_bus_map_CHR1K(bus, 0x1C00, 0x1FFF, &bus->CHR_ROM, this->io.ppu.banks[7], READONLY);
+}
+
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+    S(irq);
+    S(io);
+#undef S
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+    L(irq);
+    L(io);
+#undef L
+    remap(bus, 0);
 }
 
 static void set_ppu_lo(struct NES_bus *bus, u32 bank, u32 val)
@@ -184,7 +203,7 @@ static void VRC24_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
                 u32 oe = this->io.wram_enabled;
                 this->io.wram_enabled = (val & 1);
                 if (oe != this->io.wram_enabled) {
-                    NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, this->io.wram_enabled ? &bus->PRG_RAM : NULL, 0, READWRITE);
+                    NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, this->io.wram_enabled ? &bus->fake_PRG_RAM : NULL, 0, READWRITE);
                 }
 
 
@@ -266,7 +285,7 @@ static void VRC24_setcart(struct NES_bus *bus, struct NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
     THISM;
-    this->io.wram_enabled = bus->PRG_RAM.sz > 0;
+    this->io.wram_enabled = bus->nes->cart.header.prg_ram_size > 0;
 }
 
 static void VRC24_cpucycle(struct NES_bus *bus)
@@ -325,4 +344,6 @@ void VRC2B_4E_4F_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kin
     bus->readcart = &VRC24_readcart;
     bus->setcart = &VRC24_setcart;
     bus->a12_watch = NULL;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
 }

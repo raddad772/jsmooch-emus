@@ -35,6 +35,24 @@ static void remap(struct NES_bus *bus)
     NES_bus_map_CHR8K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, this->io.CHR_bank_num, READONLY);
 }
 
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+    S(io.CHR_bank_num);
+    S(io.PRG_bank_num);
+#undef S
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+    L(io.CHR_bank_num);
+    L(io.PRG_bank_num);
+#undef L
+    remap(bus);
+}
 
 static void GNROM_destruct(struct NES_bus *bus)
 {
@@ -121,4 +139,7 @@ void GNROM_JF11_JF14_color_dreams_init(struct NES_bus *bus, struct NES *nes, enu
     bus->setcart = &GNROM_setcart;
     bus->cpu_cycle = NULL;
     bus->a12_watch = NULL;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
+
 }

@@ -11,9 +11,13 @@
 #include "helpers/simplebuf.h"
 #include "nes_memmap.h"
 
-void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num)
+void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num, struct persistent_store *SRAM)
 {
     u32 range_size = 1 << shift;
+    u32 is_SRAM = 0;
+    if (buf != NULL) {
+        is_SRAM = buf->ptr == SRAM->data;
+    }
     for (u32 addr = range_start; addr < range_end; addr += range_size) {
         struct NES_memmap *m = mmap + (addr >> shift);
         if (iface && ((m->offset != offset) || (m->buf != buf))) {
@@ -25,6 +29,8 @@ void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 ran
         m->empty = buf == NULL;
         m->read_only = is_readonly;
         m->addr = addr;
+        m->is_SRAM = is_SRAM;
+        m->SRAM = SRAM;
         m->mask = range_size - 1;
 
         offset = (offset + range_size) % buf->sz;
@@ -39,6 +45,7 @@ void NES_memmap_init_empty(struct NES_memmap *map, u32 addr_start, u32 addr_end,
         m->addr = i;
         m->offset = 0;
         m->read_only = 1;
+        m->is_SRAM = 0;
         m->buf = NULL;
     }
 }
@@ -61,4 +68,5 @@ void NES_mmap_write(struct NES_memmap *this, u32 addr, u32 val)
     assert(this->buf);
     assert(this->buf->ptr);
     this->buf->ptr[((addr & this->mask) + this->offset) % this->buf->sz] = val;
+    if (this->is_SRAM && this->SRAM) this->SRAM->dirty = 1;
 }

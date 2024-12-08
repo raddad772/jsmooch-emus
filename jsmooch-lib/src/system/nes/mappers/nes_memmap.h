@@ -6,6 +6,7 @@
 #define JSMOOCH_EMUS_NES_MEMMAP_H
 
 #include "helpers/int.h"
+#include "helpers/sram.h"
 
 struct NES_memmap {
     u32 addr;                       // Addr at which this chunk starts
@@ -13,11 +14,13 @@ struct NES_memmap {
     u32 read_only, empty;
     u32 mask;
     u32 bank;
+    u32 is_SRAM;
+    struct persistent_store *SRAM;
     struct simplebuf8 *buf;         // Pointer to data
 };
 
 struct NES_bus;
-void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num);
+void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num, struct persistent_store *SRAM);
 void NES_memmap_init_empty(struct NES_memmap *map, u32 addr_start, u32 addr_end, u32 shift);
 
 

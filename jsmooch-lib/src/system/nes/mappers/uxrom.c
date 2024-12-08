@@ -36,6 +36,22 @@ static void remap(struct NES_bus *bus, u32 is_boot)
     }
 }
 
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+    S(io.bank_num);
+#undef S
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+    L(io.bank_num);
+#undef L
+    remap(bus, 0);
+}
 
 static void UXROM_destruct(struct NES_bus *bus)
 {
@@ -88,4 +104,7 @@ void UXROM_init(struct NES_bus *bus, struct NES *nes)
     bus->setcart = &UXROM_setcart;
     bus->cpu_cycle = NULL;
     bus->a12_watch = NULL;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
+
 }

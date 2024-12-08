@@ -40,6 +40,24 @@ static void remap(struct NES_bus *bus)
     NES_bus_PPU_mirror_set(bus);
 }
 
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+    S(io.PRG_bank);
+    S(io.nametable);
+#undef S
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+    L(io.PRG_bank);
+    L(io.nametable);
+#undef L
+    remap(bus);
+}
 
 static void AXROM_destruct(struct NES_bus *bus)
 {
@@ -95,4 +113,6 @@ void AXROM_init(struct NES_bus *bus, struct NES *nes)
     bus->setcart = &AXROM_setcart;
     bus->cpu_cycle = NULL;
     bus->a12_watch = NULL;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
 }

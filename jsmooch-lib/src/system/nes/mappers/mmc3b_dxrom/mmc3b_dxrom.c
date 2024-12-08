@@ -51,7 +51,7 @@ static void remap(struct NES_bus *bus, u32 is_boot)
 
     if (is_boot) {
         // PRG RAM
-        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_RAM, 0, READWRITE);
+        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
 
         NES_bus_map_PRG8K(bus, 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
 
@@ -96,6 +96,40 @@ static void remap(struct NES_bus *bus, u32 is_boot)
 static void remap_PPU(struct NES_bus *bus)
 {
     NES_bus_PPU_mirror_set(bus);
+}
+
+static void serialize(struct NES_bus *bus, struct serialized_state *state)
+{
+     THISM;
+#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+     S(a12_watcher.last_cycle);
+     S(a12_watcher.delay);
+     S(a12_watcher.cycles_down);
+     S(has_IRQ);
+     S(has_mirroring_control);
+     S(fourway);
+     S(regs);
+     S(status);
+     S(irq);
+#undef S
+}
+
+static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+{
+    THISM;
+#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+    L(a12_watcher.last_cycle);
+    L(a12_watcher.delay);
+    L(a12_watcher.cycles_down);
+    L(has_IRQ);
+    L(has_mirroring_control);
+    L(fourway);
+    L(regs);
+    L(status);
+    L(irq);
+#undef L
+    remap(bus, 0);
+    remap_PPU(bus);
 }
 
 static void MMC3b_destruct(struct NES_bus *bus)
@@ -225,6 +259,8 @@ void MMC3b_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kind)
     bus->setcart = &MMC3b_setcart;
     bus->cpu_cycle = NULL;
     bus->a12_watch = &MMC3b_a12_watch;
+    bus->serialize = &serialize;
+    bus->deserialize = &deserialize;
 
     a12_watcher_init(&this->a12_watcher, &nes->clock);
 

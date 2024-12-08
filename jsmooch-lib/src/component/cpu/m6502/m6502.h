@@ -86,5 +86,8 @@ void M6502_reset(struct M6502*);
 void M6502_setup_tracing(struct M6502*, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycles);
 void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins);
 void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins);
+struct serialized_state;
+void M6502_serialize(struct M6502*, struct serialized_state *state);
+void M6502_deserialize(struct M6502*, struct serialized_state *state);
 
 #endif //JSMOOCH_EMUS_M6502_H

@@ -146,7 +146,7 @@ static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_
     struct buf* b = &mfs->files[0].buf;
     NES_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
     NES_bus_set_which_mapper(&this->bus, this->cart.header.mapper_number);
-    NES_bus_set_cart(this, &this->cart);
+    NES_bus_set_cart(this, &this->cart, pio);
     //NESJ_reset(jsm);
 }
 
@@ -336,6 +336,8 @@ static void sample_audio(struct NES* this)
 u32 NESJ_finish_frame(JSM)
 {
     JTHIS;
+    if (this->bus.fake_PRG_RAM.ptr == NULL)
+        this->bus.fake_PRG_RAM.ptr = this->bus.SRAM->data;
     u32 current_frame = this->clock.master_frame;
     while (this->clock.master_frame == current_frame) {
         NESJ_finish_scanline(jsm);
