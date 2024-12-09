@@ -227,6 +227,7 @@ static u32 RRX(struct ARM7TDMI *this, u32 v)
 
 void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
 {
+    printf("\nexec data_proc_immediate_shift");
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
     u32 Rnd = (opcode >> 16) & 15; // first operand
@@ -235,6 +236,7 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     u32 shift_type = (opcode >> 5) & 3; // 0=LSL, 1=LSR, 2=ASR, 3=ROR
     // R(bit4) = 0 for this
     u32 Rmd = opcode & 15;
+    printf("\nS! %d", S);
 
     u32 Rn = *getR(this, Rnd);
     u32 Rm = *getR(this, Rmd);
@@ -256,6 +258,8 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     }
 
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
+
+    this->regs.R[15] += 4;
 }
 
 void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)

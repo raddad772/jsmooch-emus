@@ -78,7 +78,7 @@ struct arm7_test_state {
     u32 R_irq[2];
     u32 R_und[2];
 
-    u32 SPSR, SPSR_fiq, SPSR_svc, SPSR_abt, SPSR_irq, SPSR_und;
+    u32 SPSR_fiq, SPSR_svc, SPSR_abt, SPSR_irq, SPSR_und;
     u32 CPSR;
     u32 pipeline[2];
 };
@@ -137,8 +137,7 @@ static u8* load_state(struct arm7_test_state *state, u8 *ptr, u32 initial)
     }
 
     state->CPSR = R32;
-    state->SPSR = R32;
-    //  regular, fiq, svc, abt, irq, und
+    //  fiq, svc, abt, irq, und
     state->SPSR_fiq = R32;
     state->SPSR_svc = R32;
     state->SPSR_abt = R32;
@@ -184,7 +183,6 @@ static u8* load_opcodes(struct arm7_test *ts, u8 *ptr)
 
     for (u32 i = 0; i < 5; i++) {
         ts->opcodes[i] = R32;
-        printf("\nOPCODE %d %08x", i, ts->opcodes[i]);
     }
 
     ts->base_addr = R32;
@@ -209,24 +207,41 @@ static u8* decode_test(struct arm7_test *test, u8 *ptr)
 static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
 {
     struct arm7_test_struct *ts = (struct arm7_test_struct *)ptr;
-    printf("\nFETCH INSTRUCTION ADDR:%08x", addr);
     i64 v = -1;
     if (addr >= ts->test.base_addr) {
         if ((addr - ts->test.base_addr) <= 12) {
-            u32 diff = ts->test.base_addr - addr;
-            v = ts->test.opcodes[diff >> 2];
+            u32 diff =  addr - ts->test.base_addr;
+            if (sz == 4)
+                v = ts->test.opcodes[diff >> 2];
+            else
+                v = ts->test.opcodes[diff >> 1];
         }
     }
     if (v == -1) v = ts->test.opcodes[3];
 
-    struct transaction *t = &ts->my_transactions.items[ts->my_transactions.num++];
-    t->kind = 0;
-    t->cycle = ts->trace_cycles;
-    t->addr = addr;
-    t->data = (u32)v;
-    t->size = sz;
-    t->access = access;
-    t->visited = 0;
+    struct transaction *myt = &ts->my_transactions.items[ts->my_transactions.num++];
+    myt->kind = 0;
+    myt->cycle = ts->trace_cycles;
+    myt->addr = addr;
+    myt->data = (u32)v;
+    myt->size = sz;
+    myt->access = access;
+    myt->visited = 0;
+
+    struct transaction *theirt = NULL;
+    for (u32 i = 0; i < ts->test.transactions.num; i++) {
+        struct transaction *t = &ts->test.transactions.items[i];
+        if (t->addr == addr) {
+            theirt = t;
+        }
+    }
+    /*if (theirt == NULL) {
+        ts->test.failed = 1;
+        printf("\nUH OH! CANT FIND TRANSACTION TO READ FROM!");
+        return 0;
+    }*/
+    if (theirt) theirt->visited = 1;
+
     return (u32)v;
 }
 
@@ -298,7 +313,6 @@ static void copy_state_to_cpu(struct ARM7TDMI* cpu, struct arm7_test_state *ts)
             cpu->regs.R_und[i] = ts->R_und[i];
             cpu->pipeline.opcode[i] = ts->pipeline[i];
         }
-        cpu->regs.SPSR.u = ts->SPSR;
         cpu->regs.SPSR_abt = ts->SPSR_abt;
         cpu->regs.SPSR_fiq = ts->SPSR_fiq;
         cpu->regs.SPSR_irq = ts->SPSR_irq;
@@ -306,6 +320,66 @@ static void copy_state_to_cpu(struct ARM7TDMI* cpu, struct arm7_test_state *ts)
         cpu->regs.SPSR_und = ts->SPSR_und;
         cpu->regs.CPSR.u = ts->CPSR;
     }
+}
+
+
+static u32 cval(u64 mine, u64 theirs, u64 initial, const char* display_str, const char *name) {
+    if (mine == theirs) return 1;
+    printf("\n%s mine:", name);
+    printf(display_str, mine);
+    printf(" theirs:");
+    printf(display_str, theirs);
+    printf(" initial:");
+    printf(display_str, initial);
+
+    return 0;
+}
+
+static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_state *final, struct arm7_test_state *initial)
+{
+    u32 all_passed = 1;
+#define CP(rn, rn2, rname) all_passed &= cval(ts->cpu.regs. rn, final-> rn2, initial-> rn2, "%08llx", rname);
+    CP(R[0], R[0], "r0");
+    CP(R[1], R[1], "r1");
+    CP(R[2], R[2], "r2");
+    CP(R[3], R[3], "r3");
+    CP(R[4], R[4], "r4");
+    CP(R[5], R[5], "r5");
+    CP(R[6], R[6], "r6");
+    CP(R[7], R[7], "r7");
+    CP(R[8], R[8], "r8");
+    CP(R[9], R[9], "r9");
+    CP(R[10], R[10], "r10");
+    CP(R[11], R[11], "r11");
+    CP(R[12], R[12], "r12");
+    CP(R[13], R[13], "r13");
+    CP(R[14], R[14], "r14");
+    CP(R[15], R[15], "r15");
+    CP(R_fiq[0], R_fiq[0], "r_fiq0");
+    CP(R_fiq[1], R_fiq[1], "r_fiq1");
+    CP(R_fiq[2], R_fiq[2], "r_fiq2");
+    CP(R_fiq[3], R_fiq[3], "r_fiq3");
+    CP(R_fiq[4], R_fiq[4], "r_fiq4");
+    CP(R_fiq[5], R_fiq[5], "r_fiq5");
+    CP(R_fiq[6], R_fiq[6], "r_fiq6");
+    CP(R_svc[0], R_svc[0], "r_svc0");
+    CP(R_svc[1], R_svc[1], "r_svc1");
+    CP(R_abt[0], R_abt[0], "r_abt0");
+    CP(R_abt[1], R_abt[1], "r_abt1");
+    CP(R_irq[0], R_irq[0], "r_irq0");
+    CP(R_irq[1], R_irq[1], "r_irq1");
+    CP(R_und[0], R_und[0], "r_und0");
+    CP(R_und[1], R_und[1], "r_und1");
+    CP(CPSR.u, CPSR, "CPSR");
+    CP(SPSR_fiq, SPSR_fiq, "SPSR_fiq");
+    CP(SPSR_svc, SPSR_svc, "SPSR_svc");
+    CP(SPSR_abt, SPSR_abt, "SPSR_abt");
+    CP(SPSR_irq, SPSR_irq, "SPSR_irq");
+    CP(SPSR_und, SPSR_und, "SPSR_und");
+    all_passed &= cval(ts->cpu.pipeline.opcode[0], final->pipeline[0], initial->pipeline[0], "%08llx", "pipeline0");
+    all_passed &= cval(ts->cpu.pipeline.opcode[1], final->pipeline[1], initial->pipeline[1], "%08llx", "pipeline1");
+#undef CP
+    return all_passed;
 }
 
 static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fname) {
@@ -333,10 +407,10 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
     assert(mn == 0xD33DBAE0);
 
     for (u32 i = 0; i < numtests; i++) {
-        printf("\nTEST NUM %d", i);
         ptr = decode_test(&ts->test, ptr);
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
+        printf("\n\nTEST NUM %d BASE ADDR:%08x", i, ts->test.base_addr);
         ts->test.failed = 0;
         ts->trace_cycles = 0;
         ts->cpu.testing = 1;
@@ -347,6 +421,19 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         }
 
         ARM7TDMI_cycle(&ts->cpu, 1);
+
+        for (u32 j = 0; j < ts->test.transactions.num; j++) {
+            struct transaction *t = &ts->test.transactions.items[j];
+            if ((t->visited == 0)) {
+                printf("\nWARNING UNVISITED TRANSACTION kind:%c addr:%08x sz:%d val:%08x", t->kind == 0 ? 'i' : (t->kind == 1 ? 'r' : 'w'), t->addr, t->size, t->data);
+                ts->test.failed = 4;
+            }
+        }
+
+        if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial))) {//|| (!compare_state_to_ram(ts)) || ts->test.failed) {
+            printf("\nTest failed...");
+            return 0;
+        }
     }
 
     return 1;
@@ -401,7 +488,7 @@ void test_arm7tdmi()
 
     u32 completed_tests = 0;
     u32 nn = 20;
-    u32 test_start = 3;
+    u32 test_start = 15;
     filebuf = malloc(FILE_BUF_SIZE);
     for (u32 i = test_start; i < num_files; i++) {
         u32 skip = 0;

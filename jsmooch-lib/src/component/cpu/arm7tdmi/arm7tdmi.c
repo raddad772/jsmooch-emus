@@ -138,6 +138,7 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
                 decode_and_exec_arm(this, opcode);
             }
             else {
+                printf("\nCondition fail!");
                 this->pipeline.access = ARM7P_code | ARM7P_sequential;
                 this->regs.PC += 4;
             }
