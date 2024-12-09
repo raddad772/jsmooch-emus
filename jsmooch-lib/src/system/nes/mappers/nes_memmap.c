@@ -15,7 +15,7 @@ void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 ran
 {
     u32 range_size = 1 << shift;
     u32 is_SRAM = 0;
-    if (buf != NULL) {
+    if (buf && SRAM) {
         is_SRAM = buf->ptr == SRAM->data;
     }
     for (u32 addr = range_start; addr < range_end; addr += range_size) {

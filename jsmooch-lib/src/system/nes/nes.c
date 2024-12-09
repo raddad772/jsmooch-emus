@@ -15,6 +15,7 @@
 #include "nes_ppu.h"
 #include "nes_cpu.h"
 #include "nes_debugger.h"
+#include "nes_serialize.h"
 
 #define JTHIS struct NES* this = (struct NES*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -112,6 +113,8 @@ void NES_new(JSM)
     jsm->describe_io = &NESJ_describe_io;
     jsm->sideload = NULL;
     jsm->setup_debugger_interface = &NESJ_setup_debugger_interface;
+    jsm->save_state = &NESJ_save_state;
+    jsm->load_state = &NESJ_load_state;
 }
 
 

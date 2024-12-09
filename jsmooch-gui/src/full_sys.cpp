@@ -551,11 +551,11 @@ void full_system::load_default_ROM()
         case SYS_NES:
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //NROM
-            worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
 
             // MMC3
-            //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "gauntlet.nes", nullptr);
 
@@ -573,6 +573,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doraemon.nes", nullptr);
 
             //MMC1
+            //worked = grab_ROM(&ROMs, which, "zelda.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
