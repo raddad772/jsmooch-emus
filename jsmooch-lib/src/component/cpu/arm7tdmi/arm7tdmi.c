@@ -63,7 +63,6 @@ static void do_IRQ(struct ARM7TDMI* this)
 
 static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
     this->cycles_executed++;
-
     return this->fetch_ins(this->fetch_ptr, this->regs.PC, sz, this->pipeline.access);
 }
 
@@ -84,7 +83,7 @@ static int condition_passes(struct ARM7TDMI_regs *this, int which) {
         case ARM7CC_LS:    return (flag(C) == 0) || (flag(Z) == 1);
         case ARM7CC_GE:    return flag(N) == flag(V);
         case ARM7CC_LT:    return flag(N) != flag(V);
-        case ARM7CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(N));
+        case ARM7CC_GT:    return (flag(Z) == 0) && (flag(N) == flag(V));
         case ARM7CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
         default:
             NOGOHERE;
@@ -119,7 +118,7 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
     printf("\nCALL CYCLE! %d", this->cycles_executed);
     while(this->cycles_executed < 0) {*/
     for (u32 i = 0; i < num; i++) {
-        printf("\nCYCLE!");
+        if (dbg.trace_on) printf("\nCYCLE!");
         if (this->regs.IRQ_line) {
             do_IRQ(this);
         }
@@ -143,5 +142,20 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
                 this->regs.PC += 4;
             }
         }
+    }
+}
+
+void ARM7TDMI_flush_pipeline(struct ARM7TDMI *this)
+{
+    //assert(1==2);
+    printf("\nFLUSH THE PIPE!@");
+    if (this->regs.CPSR.T) {
+        assert(1==2);
+    }
+    else {
+        this->pipeline.opcode[0] = fetch_ins(this, 4);
+        this->regs.PC += 4;
+        this->pipeline.opcode[1] = fetch_ins(this, 4);
+        this->regs.PC += 4;
     }
 }

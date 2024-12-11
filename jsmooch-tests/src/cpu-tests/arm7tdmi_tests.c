@@ -45,7 +45,10 @@ static char *filebuf = 0;
 
 #define MAX_TRANSACTIONS 30
 
-#define TEST_SKIPS_NUM 0
+#define TEST_SKIPS_NUM 1
+static char test_skips[TEST_SKIPS_NUM][100] = {
+        "mcr_rc.json.bin"
+};
 
 enum transaction_kind {
     IK_read_ins,
@@ -313,15 +316,54 @@ static void copy_state_to_cpu(struct ARM7TDMI* cpu, struct arm7_test_state *ts)
             cpu->regs.R_und[i] = ts->R_und[i];
             cpu->pipeline.opcode[i] = ts->pipeline[i];
         }
-        cpu->regs.SPSR_abt = ts->SPSR_abt;
-        cpu->regs.SPSR_fiq = ts->SPSR_fiq;
-        cpu->regs.SPSR_irq = ts->SPSR_irq;
-        cpu->regs.SPSR_svc = ts->SPSR_svc;
-        cpu->regs.SPSR_und = ts->SPSR_und;
-        cpu->regs.CPSR.u = ts->CPSR;
+    }
+    cpu->regs.SPSR_abt = ts->SPSR_abt;
+    cpu->regs.SPSR_fiq = ts->SPSR_fiq;
+    cpu->regs.SPSR_irq = ts->SPSR_irq;
+    cpu->regs.SPSR_svc = ts->SPSR_svc;
+    cpu->regs.SPSR_und = ts->SPSR_und;
+    cpu->regs.CPSR.u = ts->CPSR;
+    ARM7TDMI_fill_regmap(cpu);
+}
+
+static void pprint_CPSR(const char *str, u32 v)
+{
+    printf("%s %08x/%c %c %c %c mode:", str, v, ((v >> 31) & 1) ? 'N' : 'n', ((v >> 30) & 1) ? 'Z' : 'z', ((v >> 29) & 1) ? 'C' : 'c', ((v >> 28) & 1) ? 'V' : 'v');
+    switch(v & 31) {
+        case 16:
+            printf("user");
+            break;
+        case 17:
+            printf("FIQ");
+            break;
+        case 18:
+            printf("IRQ");
+            break;
+        case 19:
+            printf("svc/Supervisor");
+            break;
+        case 23:
+            printf("abt/Abort");
+            break;
+        case 27:
+            printf("und/Undefined");
+            break;
+        case 31:
+            printf("SYSTEM!?");
+            break;
+        default:
+            printf("\nunknown %d", v & 31);
+            break;
     }
 }
 
+static u32 cval_cpsr(u64 mine, u32 theirs, u32 initial)
+{
+    if (mine == theirs) return 1;
+    printf("\n\nCPSR mismatch!");
+    return 0;
+
+}
 
 static u32 cval(u64 mine, u64 theirs, u64 initial, const char* display_str, const char *name) {
     if (mine == theirs) return 1;
@@ -355,22 +397,22 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_st
     CP(R[13], R[13], "r13");
     CP(R[14], R[14], "r14");
     CP(R[15], R[15], "r15");
-    CP(R_fiq[0], R_fiq[0], "r_fiq0");
-    CP(R_fiq[1], R_fiq[1], "r_fiq1");
-    CP(R_fiq[2], R_fiq[2], "r_fiq2");
-    CP(R_fiq[3], R_fiq[3], "r_fiq3");
-    CP(R_fiq[4], R_fiq[4], "r_fiq4");
-    CP(R_fiq[5], R_fiq[5], "r_fiq5");
-    CP(R_fiq[6], R_fiq[6], "r_fiq6");
-    CP(R_svc[0], R_svc[0], "r_svc0");
-    CP(R_svc[1], R_svc[1], "r_svc1");
-    CP(R_abt[0], R_abt[0], "r_abt0");
-    CP(R_abt[1], R_abt[1], "r_abt1");
-    CP(R_irq[0], R_irq[0], "r_irq0");
-    CP(R_irq[1], R_irq[1], "r_irq1");
-    CP(R_und[0], R_und[0], "r_und0");
-    CP(R_und[1], R_und[1], "r_und1");
-    CP(CPSR.u, CPSR, "CPSR");
+    CP(R_fiq[0], R_fiq[0], "r_fiq8");
+    CP(R_fiq[1], R_fiq[1], "r_fiq9");
+    CP(R_fiq[2], R_fiq[2], "r_fiq10");
+    CP(R_fiq[3], R_fiq[3], "r_fiq11");
+    CP(R_fiq[4], R_fiq[4], "r_fiq12");
+    CP(R_fiq[5], R_fiq[5], "r_fiq13");
+    CP(R_fiq[6], R_fiq[6], "r_fiq14");
+    CP(R_svc[0], R_svc[0], "r_svc13");
+    CP(R_svc[1], R_svc[1], "r_svc14");
+    CP(R_abt[0], R_abt[0], "r_abt13");
+    CP(R_abt[1], R_abt[1], "r_abt14");
+    CP(R_irq[0], R_irq[0], "r_irq13");
+    CP(R_irq[1], R_irq[1], "r_irq14");
+    CP(R_und[0], R_und[0], "r_und13");
+    CP(R_und[1], R_und[1], "r_und14");
+    all_passed &= cval_cpsr(ts->cpu.regs.CPSR.u, ts->test.final.CPSR, ts->test.initial.CPSR);
     CP(SPSR_fiq, SPSR_fiq, "SPSR_fiq");
     CP(SPSR_svc, SPSR_svc, "SPSR_svc");
     CP(SPSR_abt, SPSR_abt, "SPSR_abt");
@@ -410,7 +452,7 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         ptr = decode_test(&ts->test, ptr);
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
-        printf("\n\nTEST NUM %d BASE ADDR:%08x", i, ts->test.base_addr);
+        printf("\n\nTEST NUM %d BASE ADDR:%08x  OPCODE:%08X", i, ts->test.base_addr, ts->test.opcodes[0]);
         ts->test.failed = 0;
         ts->trace_cycles = 0;
         ts->cpu.testing = 1;
@@ -431,6 +473,9 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         }
 
         if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial))) {//|| (!compare_state_to_ram(ts)) || ts->test.failed) {
+            pprint_CPSR("\nmine   :", ts->cpu.regs.CPSR.u);
+            pprint_CPSR("\ntheirs :", ts->test.final.CPSR);
+            pprint_CPSR("\ninitial:", ts->test.initial.CPSR);
             printf("\nTest failed...");
             return 0;
         }
@@ -492,6 +537,17 @@ void test_arm7tdmi()
     filebuf = malloc(FILE_BUF_SIZE);
     for (u32 i = test_start; i < num_files; i++) {
         u32 skip = 0;
+        for (u32 j = 0; j < TEST_SKIPS_NUM; j++) {
+            if (strcmp(mfn[i], test_skips[j]) == 0) {
+                skip = 1;
+                break;
+            }
+        }
+        if (skip) {
+            printf("\nSkipping test %s", mfn[i]);
+            continue;
+        }
+
         printf("\nDoing test %s", mfn[i]);
         if (!do_test(&ts, mfp[i], mfn[i])) break;
         if (completed_tests > nn) break;

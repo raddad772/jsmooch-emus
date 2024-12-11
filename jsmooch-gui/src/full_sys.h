@@ -177,6 +177,7 @@ public:
     struct framevars get_framevars() const;
     void present();
     void events_view_present();
+    void pre_events_view_present();
     void waveform_view_present(struct WVIEW &wv);
     void image_view_present(struct debugger_view *dview, struct my_texture &tex);
     void setup_wgpu();
@@ -184,6 +185,7 @@ public:
     void step_seconds(int num);
     void step_scanlines(int num);
     void step_cycles(int num);
+    void step_frames(int num);
 private:
     void debugger_pre_frame();
     void debugger_pre_frame_waveforms(struct waveform_view *wv);

@@ -1074,6 +1074,11 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
     struct debugger_view *dview = cpg(this->dbg.events.view);
     struct events_view *ev = &dview->events;
 
+    ev->timing = ev_timing_master_clock;
+    ev->master_clocks.per_line = 3420;
+    ev->master_clocks.height = 262;
+    ev->master_clocks.ptr = &this->clock.master_cycle_count;
+
     for (u32 i = 0; i < 2; i++) {
         ev->display[i].width = 424; // 320 pixels + 104 hblank
         ev->display[i].height = 262; // 262 pixels high
@@ -1081,11 +1086,14 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
         ev->display[i].buf = NULL;
         ev->display[i].frame_num = 0;
     }
+
     ev->associated_display = this->vdp.display_ptr;
 
     DEBUG_REGISTER_EVENT_CATEGORY("VDP events", DBG_GEN_CATEGORY_VDP);
+    DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_GEN_CATEGORY_CPU);
 
     cvec_grow_by(&ev->events, DBG_GEN_EVENT_MAX);
+    cvec_lock_reallocs(&ev->events);
     DEBUG_REGISTER_EVENT("VRAM write", 0x0000FF, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_WRITE_VRAM);
     DEBUG_REGISTER_EVENT("VSRAM write", 0x00FF00, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_WRITE_VSRAM);
     DEBUG_REGISTER_EVENT("CRAM write", 0x802060, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_WRITE_CRAM);
@@ -1095,8 +1103,8 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
     DEBUG_REGISTER_EVENT("DMA start: copy", 0x004090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_COPY_START);
     DEBUG_REGISTER_EVENT("DMA start: load", 0xFF4090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_LOAD_START);
 
-    SET_EVENT_VIEW(this->m68k);
     SET_EVENT_VIEW(this->z80);
+    SET_EVENT_VIEW(this->m68k);
     SET_EVENT_VIEW(this->ym2612);
     SET_EVENT_VIEW(this->psg);
 
@@ -1111,13 +1119,11 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 2;
-
     setup_m68k_disassembly(dbgr, this);
     setup_z80_disassembly(dbgr, this);
-    //setup_events_view(this, dbgr);
-    cvec_ptr_init(&this->dbg.events.view);
     setup_waveforms_psg(this, dbgr);
     setup_waveforms_ym2612(this, dbgr);
+    setup_events_view(this, dbgr);
     setup_image_view_tilemap(this, dbgr);
     setup_image_view_palette(this, dbgr);
     setup_image_view_plane(this, dbgr, 0);

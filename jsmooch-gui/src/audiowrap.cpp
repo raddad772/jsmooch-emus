@@ -191,6 +191,7 @@ struct audiobuf *audiowrap::get_buf_for_emu()
         return nullptr;
     }
     u32 pos = (bufs.emu.head + bufs.emu.len) % MAX_AUDIO_BUFS;
+    assert(pos < MAX_AUDIO_BUFS);
     bufs.items[pos].fpos = 0;
     bufs.items[pos].upos = 0;
     bufs.emu.current = (i32)pos;
@@ -234,6 +235,7 @@ struct audiobuf *audiowrap::get_buf_for_playback()
     }
     if (bufs.playback.current != -1) {
         //printf("\nRETURN BUFFER %d FOR PLAYBACK:", bufs.playback.current);
+        assert((bufs.playback.current >= 0) && (bufs.playback.current < MAX_AUDIO_BUFS));
         return &bufs.items[bufs.playback.current];
     }
     if (bufs.emu.len < 1)
@@ -247,6 +249,10 @@ struct audiobuf *audiowrap::get_buf_for_playback()
     //printf("\nRETURN BUFFER %d FOR PLAYBACK:", pos);
     bufs.emu.head = (bufs.emu.head + 1) % MAX_AUDIO_BUFS;
     bufs.emu.len--;
+    assert(bufs.emu.len < 500);
+    assert(bufs.emu.head < 500);
+    assert(pos<MAX_AUDIO_BUFS);
+    assert(pos>=0);
     bufs.items[pos].finished = 0;
     bufs.items[pos].fpos = 0;
     bufs.items[pos].upos = 0;

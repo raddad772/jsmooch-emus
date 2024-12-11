@@ -8,7 +8,8 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
 
-#define DBG_GEN_CATEGORY_VDP 00
+#define DBG_GEN_CATEGORY_VDP 0
+#define DBG_GEN_CATEGORY_CPU 1
 
 #define DBG_GEN_EVENT_WRITE_VRAM   0
 #define DBG_GEN_EVENT_WRITE_VSRAM  1

@@ -710,6 +710,30 @@ void full_system::load_default_ROM()
             // worked = grab_ROM(&ROMs, which, "battletoads.md", nullptr); // fine!
             //worked = grab_ROM(&ROMs, which, "comix_zone.md", nullptr); // works!
 
+
+            //worked = grab_ROM(&ROMs, which, "megaturrican.md", nullptr); // title screen bottom row funky. turrican fly-in oddly slow? plays fine
+            //worked = grab_ROM(&ROMs, which, "mortalkombat3.md", nullptr); // works fine
+            //worked = grab_ROM(&ROMs, which, "gauntlet4.md", nullptr); // runs unsteadily?
+            //worked = grab_ROM(&ROMs, which, "tmnt_hyperstone.md", nullptr); // works fine
+            //worked = grab_ROM(&ROMs, which, "zero_squirrel.md", nullptr); // slightly glitchy background in first stage
+            //worked = grab_ROM(&ROMs, which, "zero_tolerance.md", nullptr); // same as 2
+            //worked = grab_ROM(&ROMs, which, "zero_tolerance_2.md", nullptr); // some sprite priority issues with hands needs cleaning up
+            //worked = grab_ROM(&ROMs, which, "devilish.md", nullptr); // slight gfx corruption, seems ifne to play
+            //worked = grab_ROM(&ROMs, which, "toy_story.md", nullptr); // works great, weird colors on title
+            //worked = grab_ROM(&ROMs, which, "rbi_baseball_3.md", nullptr); // works fine
+            //worked = grab_ROM(&ROMs, which, "rampart.md", nullptr); // no display
+            //worked = grab_ROM(&ROMs, which, "ranger_x.md", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "red_zone.md", nullptr); // works great
+
+
+            //worked = grab_ROM(&ROMs, which, "wonder_boy4.md", nullptr); // seems fine
+            //worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // seems fine
+            //worked = grab_ROM(&ROMs, which, "star_cruiser.bin", nullptr); // seems fine? hard to say
+            //worked = grab_ROM(&ROMs, which, "sonic_spinball.md", nullptr); // same sprite priority issue
+            //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // glitchy sega window then freeze
+            //worked = grab_ROM(&ROMs, which, "blockout.md", nullptr); // works well
+            //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works but a little odd gfx corruption?
+
             break;
         default:
             printf("\nSYS NOT IMPLEMENTED!");
@@ -984,22 +1008,34 @@ void full_system::present()
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
 
-void full_system::events_view_present()
+void full_system::pre_events_view_present()
 {
+    return;
     if (events.view) {
-        struct events_view::DVDP *evd = &events.view->display[events.view->index_in_use];
         if (!events.texture.is_good) {
+            printf("\nGET TEXTURE!");
             u32 szpo2 = get_closest_pow2(MAX(events.view->display[0].width, events.view->display[0].height));
             TS(events.texture, "Events View texture", szpo2, szpo2);
             events.texture.uv0 = ImVec2(0, 0);
-            events.texture.uv1 = ImVec2((float)((double)events.view->display[0].width / (double)events.texture.width),
-                                              (float)((double)events.view->display[0].height / (double)events.texture.height));
-
-            events.texture.sz_for_display = ImVec2((float)events.view->display[0].width, (float)events.view->display[0].height);
-            events.view->display[0].buf = (u32 *)malloc(szpo2*szpo2*4);
-            events.view->display[1].buf = (u32 *)malloc(szpo2*szpo2*4);
+            events.texture.uv1 = ImVec2(
+                    (float) ((double) events.view->display[0].width / (double) events.texture.width),
+                    (float) ((double) events.view->display[0].height / (double) events.texture.height));
+            printf("\nDISPLAY W: %d", events.view->display[0].width);
+            events.texture.sz_for_display = ImVec2((float) events.view->display[0].width,
+                                                   (float) events.view->display[0].height);
+            events.view->display[0].buf = (u32 *) malloc(szpo2 * szpo2 * 4);
+            events.view->display[1].buf = (u32 *) malloc(szpo2 * szpo2 * 4);
             // Setup UVs based off it
         }
+    }
+}
+
+void full_system::events_view_present()
+{
+    if (events.view) {
+        pre_events_view_present();
+        assert(events.view->index_in_use<2);
+        struct events_view::DVDP *evd = &events.view->display[events.view->index_in_use];
 
         struct framevars fv = {};
         sys->get_framevars(sys, &fv);
@@ -1102,6 +1138,14 @@ void full_system::image_view_present(struct debugger_view *dview, struct my_text
     tex.upload_data(buf, tex.width*tex.height*4, tex.width, tex.height);
 }
 
+void full_system::step_frames(int num)
+{
+    for (u32 i = 0; i < num; i++) {
+        sys->finish_frame(sys);
+        if (dbg.do_break) break;
+    }
+}
+
 void full_system::step_seconds(int num)
 {
     printf("\nNOT SUPPORT YET");
@@ -1169,6 +1213,8 @@ void full_system::debugger_pre_frame() {
                 case dwk_channel:
                     dw->samples_requested = 200;
                     break;
+                default:
+                    NOGOHERE;
             }
         }
     }

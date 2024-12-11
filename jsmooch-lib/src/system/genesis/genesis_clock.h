@@ -13,6 +13,8 @@ struct genesis_clock {
     u64 master_frame;
     u64 frames_since_reset;
 
+    u64 delta;
+
     enum jsm_systems kind;
 
     u32 mem_break;

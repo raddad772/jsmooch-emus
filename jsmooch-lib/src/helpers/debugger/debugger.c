@@ -27,8 +27,22 @@ static void debugger_view_do_update(struct debugger_interface *dbgr, struct debu
 
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num)
 {
+    assert(line_num>=0);
     for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
         struct debugger_view *dview = cvec_get(&dbgr->views, i);
+        if (dview->kind == dview_events) {
+            struct events_view *ev = &dview->events;
+            switch(ev->timing) {
+                case ev_timing_master_clock:
+                    ev->master_clocks.lines[line_num] = *ev->master_clocks.ptr;
+                    ev->master_clocks.cur_line = line_num;
+                    break;
+                case ev_timing_scanxy:
+                    break;
+                default:
+                    NOGOHERE;
+            }
+        }
         if ((dview->update.on_line.enabled) && (dview->update.on_line.line_num == line_num))
             debugger_view_do_update(dbgr, dview, dvur_on_line);
     }
@@ -198,7 +212,7 @@ void debugger_view_delete(struct debugger_view *this)
 void debugger_interface_init(struct debugger_interface *this)
 {
     CTOR_ZERO_SELF;
-    cvec_init(&this->views, sizeof(struct debugger_view), 5);
+    cvec_init(&this->views, sizeof(struct debugger_view), 10);
 }
 
 void debugger_interface_delete(struct debugger_interface *this)

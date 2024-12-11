@@ -42,7 +42,7 @@ void genesis_z80_reset_line(struct genesis* this, u32 enabled)
         ym2612_reset(&this->ym2612);
     }
     this->io.z80.reset_line = enabled;
-    printf("\nZ80 RESET LINE SET TO %d cyc:%lld", this->io.z80.reset_line, this->clock.master_cycle_count);
+    //printf("\nZ80 RESET LINE SET TO %d cyc:%lld", this->io.z80.reset_line, this->clock.master_cycle_count);
     //if (!this->io.z80.reset_line) dbg_break();
 }
 
@@ -96,7 +96,7 @@ void genesis_mainbus_write_a1k(struct genesis* this, u32 addr, u16 val, u16 mask
             printf("\nTMSS ENABLE? %d", (val & 1) ^ 1);
             return;
     }
-    gen_test_dbg_break(this, "write_a1k");
+    //gen_test_dbg_break(this, "write_a1k");
     printf("\nWrote unknown A1K address %06x val %04x", addr, val);
 }
 

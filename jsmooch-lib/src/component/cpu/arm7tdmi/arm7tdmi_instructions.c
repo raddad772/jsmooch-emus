@@ -43,6 +43,7 @@ static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
                 case ARM7_undefined:
                     return &this->regs.R_und[num - 13];
                 case ARM7_user:
+                case ARM7_system:
                     return &this->regs.R[num];
                 default:
                     assert(1==2);
@@ -67,21 +68,20 @@ void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
     }
 }
 
-static inline void flush_pipeline(struct ARM7TDMI *this)
-{
-    //assert(1==2);
-    printf("\nFLUSH THE PIPE!@");
-}
 
 static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
     *r = v;
     if (r == &this->regs.PC) {
-        flush_pipeline(this);
+        ARM7TDMI_flush_pipeline(this);
+        printf("\nNEW PC: %08x", v);
     }
 }
 
 void ARM7TDMI_ins_MUL_MLA(struct ARM7TDMI *this, u32 opcode)
 {
+//   if(accumulate) idle();
+//  r(d) = MUL(accumulate ? r(n) : 0, r(m), r(s));
+
     UNIMPLEMENTED;
 }
 
@@ -129,6 +129,7 @@ void ARM7TDMI_ins_BX(struct ARM7TDMI *this, u32 opcode)
 static u32 TEST(struct ARM7TDMI *this, u32 v, u32 S)
 {
     if (this->regs.CPSR.T || S) {
+        printf("\nTEST FLAGS BY %08x (S:%d)", v, S);
         this->regs.CPSR.N = (v >> 31) & 1;
         this->regs.CPSR.Z = v == 0;
         this->regs.CPSR.C = this->carry;
@@ -140,8 +141,11 @@ static u32 ADD(struct ARM7TDMI *this, u32 Rnd, u32 Rmd, u32 carry, u32 S)
 {
     u32 result = Rnd + Rmd + carry;
     if (this->regs.CPSR.T || S) {
-        u32 overflow = ~(Rnd ^ Rmd) & (Rnd ^ Rmd);
+        printf("\ndoing ADD..Rnd:%08x Rmd:%08x", Rnd, Rmd);
+        u32 overflow = ~(Rnd ^ Rmd) & (Rnd ^ result);
         this->regs.CPSR.V = (overflow >> 31) & 1;
+        // cpsr().c = 1 << 31 & (overflow ^ source ^ modify ^ result);
+        // printf("\nINTERMEIDATE %08x", overflow ^ Rnd ^ Rmd ^ result);
         this->regs.CPSR.C = ((overflow ^ Rnd ^ Rmd ^ result) >> 31) & 1;
         this->regs.CPSR.Z = result == 0;
         this->regs.CPSR.N = (result >> 31) & 1;
@@ -157,6 +161,7 @@ static u32 SUB(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 carry, u32 S)
 }
 
 static u32 ALU(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32 *out) {
+    printf("\nALU OPCODE:%d Rn:%08x Rm:%08x", alu_opcode, Rn, Rm);
     switch(alu_opcode) {
         case 0: write_reg(this, out, TEST(this, Rn & Rm, S)); break;
         case 1: write_reg(this, out, TEST(this, Rn ^ Rm, S)); break;
@@ -182,9 +187,12 @@ static u32 ALU(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32
 
 static u32 LSL(struct ARM7TDMI *this, u32 v, u32 amount) {
     this->carry = this->regs.CPSR.C;
+    printf("\nLSL input %08x : %d", v, amount);
     if (amount == 0) return v;
-    this->carry = amount > 32 ? 0 : (v & 1 << (32 - amount));
+    this->carry = amount > 32 ? 0 : !!(v & 1 << (32 - amount));
+    printf("\nSET CARRY %d", this->carry);
     v = (amount > 31) ? 0 : (v << amount);
+    printf("\nLSL output %08x", v);
     return v;
 }
 
@@ -193,7 +201,8 @@ static u32 LSR(struct ARM7TDMI *this, u32 v, u32 amount)
 {
     this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
-    this->carry = (amount > 32) ? 0 : (v & 1 << (amount - 1));
+    this->carry = (amount > 32) ? 0 : !!(v & 1 << (amount - 1));
+    printf("\nSET IT TO %d", this->carry);
     v = (amount > 31) ? 0 : (v >> amount);
     return v;
 }
@@ -201,20 +210,31 @@ static u32 LSR(struct ARM7TDMI *this, u32 v, u32 amount)
 // Arithemtic (sign-extend) shift right
 static u32 ASR(struct ARM7TDMI *this, u32 v, u32 amount)
 {
+ //   carry = cpsr().c;
     this->carry = this->regs.CPSR.C;
+
+    //   if(shift == 0) return source;
     if (amount == 0) return v;
-    this->carry = (amount > 32) ? ((v & 1) << 31) : (v & 1 << (amount - 1));
+
+    //   carry = shift > 32 ? source & 1 << 31 : source & 1 << shift - 1;
+    this->carry = (amount > 32) ? ((v & 1) << 31) : !!(v & 1 << (amount - 1));
+
+    //   source = shift > 31 ? (i32)source >> 31 : (i32)source >> shift;
     v = (amount > 31) ? (i32)v >> 31 : (i32)v >> amount;
+
+//    return source;
     return v;
 }
 
 static u32 ROR(struct ARM7TDMI *this, u32 v, u32 amount)
 {
+    printf("\nROR INPUT: %08x", v);
     this->carry = this->regs.CPSR.C;
     if (amount == 0) return v;
     amount &= 31;
-    if (amount) v = v << (32 - amount) | v >> amount; // ?correct
-    this->carry = v & 1 << 31;
+    if (amount) v = (v << (32 - amount)) | (v >> amount); // ?correct
+    this->carry = !!(v & 1 << 31);
+    printf("\nROR OUTPUT: %08x", v);
     return v;
 }
 
@@ -225,9 +245,31 @@ static u32 RRX(struct ARM7TDMI *this, u32 v)
     return (v >> 1) | (this->regs.CPSR.C << 31);
 }
 
+static u32 get_SPSR_by_mode(struct ARM7TDMI *this){
+    switch(this->regs.CPSR.mode) {
+        case ARM7_system:
+        case ARM7_user:
+            printf("\nINVALID!!!!!!");
+            return this->regs.CPSR.u;
+        case ARM7_fiq:
+            return this->regs.SPSR_fiq;
+        case ARM7_irq:
+            return this->regs.SPSR_irq;
+        case ARM7_supervisor:
+            return this->regs.SPSR_svc;
+        case ARM7_abort:
+            return this->regs.SPSR_abt;
+        case ARM7_undefined:
+            return this->regs.SPSR_und;
+        default:
+            printf("\nINVALID2!!!");
+            return this->regs.CPSR.u;
+    }
+}
+
 void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
 {
-    printf("\nexec data_proc_immediate_shift");
+    if (dbg.trace_on) printf("\nexec data_proc_immediate_shift");
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
     u32 Rnd = (opcode >> 16) & 15; // first operand
@@ -242,6 +284,11 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     u32 Rm = *getR(this, Rmd);
     u32 *Rd = getR(this, Rdd);
     this->carry = this->regs.CPSR.C;
+    this->regs.PC += 4;
+    printf("\nRn%d: %08x", Rnd, Rn);
+    printf("\nRm%d: %08x", Rmd, Rm);
+    printf("\nRd%d: %08x", Rdd, *Rd);
+    printf("\nSET CARRY:%d SHIFT TYPE:%d AMOUNT:%d", this->carry, shift_type, Is);
     switch(shift_type) {
         case 0: //
             Rm = LSL(this, Rm, Is);
@@ -257,9 +304,18 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
             break;
     }
 
-    ALU(this, Rn, Rm, alu_opcode, S, Rd);
+//        ALU(this, Rn, Rm, alu_opcode, S, Rd);
+//    }
+//    else {
+        ALU(this, Rn, Rm, alu_opcode, S, Rd);
+//    }
 
-    this->regs.R[15] += 4;
+    if ((S==1) && (Rdd == 15)) {
+        this->regs.CPSR.u = get_SPSR_by_mode(this);
+        ARM7TDMI_fill_regmap(this);
+        //S = 0;
+    }
+
 }
 
 void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)

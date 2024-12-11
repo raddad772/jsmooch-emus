@@ -187,6 +187,7 @@ struct genesis_vdp {
             u32 has;
             u32 color;
             u32 priority;
+            u32 ax, ay;
         } buf[32];
         u32 head;
         u32 tail;
@@ -210,7 +211,7 @@ struct genesis_vdp {
         u32 top_row, bottom_row;
         u32 nt_base;
     } window;
-} vdp;
+};
 
 struct genesis;
 void genesis_VDP_init(struct genesis*);

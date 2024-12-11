@@ -70,6 +70,7 @@ static int math_done = 0;
 void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count)
 {
     memset(this, 0, sizeof(*this));
+    DBG_EVENT_VIEW_INIT;
 }
 
 void ym2612_delete(struct ym2612*this)

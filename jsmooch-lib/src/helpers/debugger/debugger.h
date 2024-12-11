@@ -144,7 +144,7 @@ enum debugger_event_kind {
 };
 
 struct debugger_event_update {
-    u64 frame_num;
+    u64 frame_num, mclks;
     u32 scan_x, scan_y;
 };
 
@@ -171,8 +171,15 @@ struct debugger_event {
     } display;
 };
 
+enum ev_timing_kind {
+    ev_timing_scanxy,
+    ev_timing_master_clock
+};
+
 struct events_view {
     struct cvec events;
+
+    enum ev_timing_kind timing;
 
     struct cvec categories;
     u64 current_frame;
@@ -182,6 +189,14 @@ struct events_view {
     u64 last_frame;
     u32 keep_last_frame;
     struct cvec_ptr associated_display;
+
+    struct {
+        u64 per_line;
+        u64 lines[1024];
+        u32 height;
+        i32 cur_line;
+        u64 *ptr;
+    } master_clocks;
 
 
     struct DVDP {
@@ -323,8 +338,12 @@ void cpu_reg_context_render(struct cpu_reg_context*, char* outbuf, size_t outbuf
 void events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id);
 void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
 void event_view_begin_frame(struct cvec_ptr event_view);
-void debugger_report_event(struct cvec_ptr viewptr, u32 event_id);
+
+void debugger_report_event(struct cvec_ptr viewptr, i32 event_id);
+
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
+void debugger_report_line_mclks(struct cvec_ptr event_view, u64 mclks, u32 line_num);
+
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
 void debug_waveform_init(struct debug_waveform *);
 

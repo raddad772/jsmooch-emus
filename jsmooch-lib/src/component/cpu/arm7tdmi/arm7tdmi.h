@@ -137,4 +137,6 @@ void ARM7TDMI_reset(struct ARM7TDMI *);
 void ARM7TDMI_disassemble_entry(struct ARM7TDMI*, struct disassembly_entry* entry);
 void ARM7TDMI_setup_tracing(struct ARM7TDMI*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
 void ARM7TDMI_cycle(struct ARM7TDMI*, i32 num);
+void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);
+void ARM7TDMI_fill_regmap(struct ARM7TDMI *);
 #endif //JSMOOCH_EMUS_ARM7TDMI_H

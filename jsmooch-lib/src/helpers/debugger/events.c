@@ -3,6 +3,8 @@
 //
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "helpers/cvec.h"
 #include "helpers/ooc.h"
 #include "helpers/physical_io.h"
@@ -63,7 +65,6 @@ void events_view_add_event(struct debugger_interface *dbgr, struct events_view *
 
 void event_view_begin_frame(struct cvec_ptr event_view)
 {
-
     struct events_view *eview = &((struct debugger_view *)cpg(event_view))->events;
     eview->last_frame = eview->current_frame;
     eview->current_frame++;
@@ -73,6 +74,7 @@ void event_view_begin_frame(struct cvec_ptr event_view)
         ev->updates_index ^= 1;
         cvec_clear(&ev->updates[ev->updates_index]);
     }
+    eview->master_clocks.cur_line = 0;
 }
 
 void events_view_init(struct events_view *this)
@@ -98,7 +100,7 @@ void events_view_delete(struct events_view *this)
     DTOR_child(associated_display, cvec_ptr);
 }
 
-void debugger_report_event(struct cvec_ptr viewptr, u32 event_id)
+void debugger_report_event(struct cvec_ptr viewptr, i32 event_id)
 {
     if (viewptr.vec == NULL) {
         return;
@@ -111,9 +113,18 @@ void debugger_report_event(struct cvec_ptr viewptr, u32 event_id)
     struct JSM_DISPLAY *d = &((struct physical_io_device *)cpg(this->associated_display))->display;
     struct debugger_event_update *upd = cvec_push_back(&ev->updates[ev->updates_index]);
     upd->frame_num = this->current_frame;
-    upd->scan_x = d->scan_x;
-    upd->scan_y = d->scan_y;
-    //upd->
+    switch(this->timing) {
+        case ev_timing_scanxy:
+            upd->scan_x = d->scan_x;
+            upd->scan_y = d->scan_y;
+            return;
+        case ev_timing_master_clock:
+            upd->mclks = *this->master_clocks.ptr;
+            upd->scan_y = this->master_clocks.cur_line;
+            return;
+        default:
+            NOGOHERE;
+    }
 }
 
 static void draw_box_3x3(u32 *buf, u32 x_center, u32 y_center, u32 out_width, u32 out_height, u32 color)

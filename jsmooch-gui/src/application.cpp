@@ -126,6 +126,7 @@ static void render_event_view(struct full_system &fsys)
         if (ImGui::Begin("Event Viewer")) {
             static bool ozoom = true;
             ImGui::Checkbox("2x Zoom", &ozoom);
+            //fsys.pre_events_view_present();
             fsys.events_view_present();
             ImGui::Image(fsys.events.texture.for_image(), fsys.events.texture.zoom_sz_for_display(ozoom ? 2 : 1),
                          fsys.events.texture.uv0, fsys.events.texture.uv1, {1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0});
@@ -460,9 +461,9 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_ATARI2600;
     //which = SYS_GBC;
     //which = SYS_APPLEIIe;
-    //which = SYS_GENESIS_USA;
+    which = SYS_GENESIS_USA;
     //which = SYS_DMG;
-    which = SYS_NES;
+    //which = SYS_NES;
     //which = SYS_SMS2;
     //which = SYS_GG;
     //which = SYS_SG1000;
@@ -502,7 +503,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     if (fsys.state == FSS_play) {
         fsys.do_frame();
         last_frame_was_whole = true;
-        fsys.events_view_present();
+        //fsys.events_view_present();
         fsys.has_played_once = true;
     }
     fsys.present();
@@ -511,9 +512,9 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
 
     // debug controls window
     if (ImGui::Begin("Play")){
-        static int steps[3] = { 10, 1, 1 };
+        static int steps[4] = { 10, 1, 1, 1 };
         bool play_pause = false;
-        bool step_clocks = false, step_scanlines = false, step_seconds = false;
+        bool step_clocks = false, step_scanlines = false, step_seconds = false, step_frames = false;
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
         if (ImGui::BeginChild("Playback Controls", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
@@ -532,12 +533,16 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
             ImGui::InputInt("lines", &steps[1]);
 
             ImGui::PushID(3);
-            step_seconds = ImGui::Button("Step");
+            step_frames = ImGui::Button("Step");
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::InputInt("frames", &steps[2]);
 
-
+            ImGui::PushID(4);
+            step_seconds = ImGui::Button("Step");
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::InputInt("seconds", &steps[3]);
         }
         ImGui::EndChild(); // end sub-window
         ImGui::PopStyleVar();
@@ -564,9 +569,14 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
             fsys.step_cycles(steps[0]);
             last_frame_was_whole = false;
         }
+        if (step_frames) {
+            dbg_unbreak();
+            fsys.step_frames(steps[2]);
+            last_frame_was_whole = true;
+        }
         if (step_seconds) {
             dbg_unbreak();
-            fsys.step_seconds(steps[2]);
+            fsys.step_seconds(steps[3]);
             last_frame_was_whole = false;
         }
 
