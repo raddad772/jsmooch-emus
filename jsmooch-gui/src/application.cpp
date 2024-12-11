@@ -122,7 +122,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
 
 static void render_event_view(struct full_system &fsys)
 {
-    if (fsys.events.view) {
+    if (fsys.events.view && fsys.has_played_once) {
         if (ImGui::Begin("Event Viewer")) {
             static bool ozoom = true;
             ImGui::Checkbox("2x Zoom", &ozoom);

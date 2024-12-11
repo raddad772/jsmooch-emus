@@ -1010,17 +1010,14 @@ void full_system::present()
 
 void full_system::pre_events_view_present()
 {
-    return;
     if (events.view) {
         if (!events.texture.is_good) {
-            printf("\nGET TEXTURE!");
             u32 szpo2 = get_closest_pow2(MAX(events.view->display[0].width, events.view->display[0].height));
             TS(events.texture, "Events View texture", szpo2, szpo2);
             events.texture.uv0 = ImVec2(0, 0);
             events.texture.uv1 = ImVec2(
                     (float) ((double) events.view->display[0].width / (double) events.texture.width),
                     (float) ((double) events.view->display[0].height / (double) events.texture.height));
-            printf("\nDISPLAY W: %d", events.view->display[0].width);
             events.texture.sz_for_display = ImVec2((float) events.view->display[0].width,
                                                    (float) events.view->display[0].height);
             events.view->display[0].buf = (u32 *) malloc(szpo2 * szpo2 * 4);
