@@ -426,7 +426,7 @@ static void setup_events_view(struct SMSGG* this, struct debugger_interface *dbg
     SET_CPU_EVENT_ID(DBG_SMSGG_EVENT_IRQ, IRQ);
     SET_CPU_EVENT_ID(DBG_SMSGG_EVENT_NMI, NMI);
 
-    event_view_begin_frame(this->dbg.events.view);
+    debugger_report_frame(this->dbg.interface);
 }
 
 static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)

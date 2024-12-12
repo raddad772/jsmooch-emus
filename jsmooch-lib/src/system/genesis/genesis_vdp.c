@@ -18,7 +18,7 @@
 #include "helpers/debugger/debugger.h"
 #include "genesis_bus.h"
 #include "genesis_vdp.h"
-
+#include "genesis_debugger.h"
 
 #define PLANE_A 0
 #define PLANE_B 1
@@ -60,7 +60,7 @@ struct slice {
 static inline u16 VRAM_read(struct genesis* this, u32 addr, int report)
 {
     u16 a = this->vdp.VRAM[addr & 0x7FFF];
-    if (dbg.traces.vdp4 && report) DFT("\nVRAM READ %04x: %04x", addr, a);
+    //if (dbg.traces.vdp4 && report) DFT("\nVRAM READ %04x: %04x", addr, a);
     return a;
 }
 
@@ -74,9 +74,10 @@ static void set_m68k_dtack(struct genesis* this)
 
 static void VRAM_write(struct genesis* this, u16 addr, u16 val)
 {
-    assert(this->vdp.io.vram_mode == 0);
+    /*assert(this->vdp.io.vram_mode == 0);
     if (dbg.traces.vdp) printf("\nVRAM write %04x: %04x, cyc:%lld", addr & 0x7FFF, val, this->clock.master_cycle_count);
-    if (dbg.traces.vdp4) DFT("\nVRAM write %04x: %04x", addr & 0x7FFF, val);
+    if (dbg.traces.vdp4) DFT("\nVRAM write %04x: %04x", addr & 0x7FFF, val);*/
+    DBG_EVENT(DBG_GEN_EVENT_WRITE_VRAM);
     this->vdp.VRAM[addr & 0x7FFF] = val;
 }
 
@@ -94,9 +95,9 @@ static u16 VRAM_read_byte(struct genesis* this, u16 addr)
 static void VRAM_write_byte(struct genesis* this, u16 addr, u16 val)
 {
     u16 v = VRAM_read(this, addr >> 1, 1);
-    if (dbg.traces.vdp4) DFT("\nVRAM writebyte_r %04x: %04x", addr, v);
+    //if (dbg.traces.vdp4) DFT("\nVRAM writebyte_r %04x: %04x", addr, v);
     WSWAP;
-    if (dbg.traces.vdp4) DFT("\nVRAM writebyte %04x: %04x", addr, v);
+    //if (dbg.traces.vdp4) DFT("\nVRAM writebyte %04x: %04x", addr, v);
     VRAM_write(this, addr >> 1, v);
 }
 
@@ -124,7 +125,7 @@ static u16 CRAM_read(struct genesis* this, u16 addr)
 
 static void CRAM_write(struct genesis* this, u16 addr, u16 val)
 {
-    if (dbg.traces.vdp4) DFT("\nCRAM WRITE %04x: %04x", addr & 0x3F, val & 0x1FF);
+    //if (dbg.traces.vdp4) DFT("\nCRAM WRITE %04x: %04x", addr & 0x3F, val & 0x1FF);
     this->vdp.CRAM[addr & 0x3F] = val & 0x1FF;
 }
 
@@ -315,17 +316,9 @@ static void vblank(struct genesis* this, u32 new_value)
 
 static void new_frame(struct genesis* this)
 {
-    if (this->dbg.events.view.vec) event_view_begin_frame(this->dbg.events.view);
+    debugger_report_frame(this->dbg.interface);
     this->vdp.cur_output = ((u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1]);
     this->clock.master_frame++;
-
-    //u64 diff = this->clock.master_cycle_count - this->clock.delta;
-    //this->clock.delta = this->clock.master_cycle_count;
-    //this->vdp.hscroll_debug = (this->vdp.hscroll_debug + 1) & 511;
-    //printf("\nNEW GENESIS FRAME! %lld", this->clock.master_frame);
-
-
-
 
     this->clock.vdp.field ^= 1;
     this->clock.vdp.vcount = 0;
@@ -333,6 +326,12 @@ static void new_frame(struct genesis* this)
     this->vdp.cur_output = this->vdp.display->output[this->vdp.display->last_written];
     memset(this->vdp.cur_output, 0, 1280*240*2);
     this->vdp.display->last_written ^= 1;
+    this->clock.current_back_buffer ^= 1;
+    this->clock.current_front_buffer ^= 1;
+    for (u32 i = 0; i < 2; i++) {
+        memset(this->vdp.debug.px_displayed[this->clock.current_back_buffer][i], 0, sizeof(this->vdp.debug.px_displayed[this->clock.current_back_buffer][i]));
+    }
+
     this->vdp.display->scan_y = 0;
     this->vdp.display->scan_x = 0;
 
@@ -349,12 +348,15 @@ static void print_scroll_info(struct genesis* this)
 static void new_scanline(struct genesis* this)
 {
     //printf("\nL:%d SC_DMAS:%d", this->clock.vdp.vcount, this->vdp.io.sc_dmas);
-    this->vdp.io.sc_dmas = 0;
+    //this->vdp.io.sc_dmas = 0;
     this->clock.vdp.vcount++;
     if (this->clock.vdp.vcount == 262) {
         new_frame(this);
     }
-    if (this->dbg.events.view.vec) debugger_report_line(this->dbg.interface, this->clock.vdp.vcount);
+    if (this->dbg.events.view.vec) {
+        debugger_report_line(this->dbg.interface, this->clock.vdp.vcount);
+        //this->vdp.line_start_clock = this->clock.master_cycle_count;
+    }
     this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;
     this->vdp.display->scan_y++;
@@ -384,7 +386,7 @@ static void new_scanline(struct genesis* this)
         }
 
         // DEBUG STUFF NOW
-        struct genesis_vdp_debug_row *r = &this->vdp.debug_info[this->clock.vdp.vcount];
+        struct genesis_vdp_debug_row *r = &this->vdp.debug.output_rows[this->clock.vdp.vcount];
         r->h40 = this->vdp.io.h40;
         r->hscroll_mode = this->vdp.io.hscroll_mode;
         r->vscroll_mode = this->vdp.io.vscroll_mode;
@@ -393,7 +395,7 @@ static void new_scanline(struct genesis* this)
         r->hscroll[1] = this->vdp.fetcher.hscroll[1];
 
         if (this->clock.vdp.vcount == 0) {
-            struct genesis_vdp_debug_row *b = &this->vdp.debug_info[223];
+            struct genesis_vdp_debug_row *b = &this->vdp.debug.output_rows[223];
             i32 col = -1;
             for (u32 i = 0; i < 21; i++) {
                 u32 vscrolls[2];
@@ -606,6 +608,8 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             }
             vdp->io.foreground_width_mask = vdp->io.foreground_width - 1;
             vdp->io.foreground_height_mask = vdp->io.foreground_height - 1;
+            vdp->io.foreground_width_mask_pixels = (vdp->io.foreground_width * 8) - 1;
+            vdp->io.foreground_height_mask_pixels = (vdp->io.foreground_height * 8) - 1;
 
             // 64x128, 128x64, and 128x128 are invalid
             u32 total = vdp->io.foreground_width * vdp->io.foreground_height;
@@ -634,18 +638,18 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
         case 21:
             // source be 22 bits
             vdp->dma.source_address = (vdp->dma.source_address & 0xFFFF00) | (val & 0xFF);
-            if (dbg.traces.vdp2) DFT("\nWR DMA ADDR(15) %06x", vdp->dma.source_address);
+            //if (dbg.traces.vdp2) DFT("\nWR DMA ADDR(15) %06x", vdp->dma.source_address);
             return;
         case 22:
             vdp->dma.source_address = (vdp->dma.source_address & 0xFF00FF) | ((val << 8) & 0xFF00);
-            if (dbg.traces.vdp2) DFT("\nWR DMA ADDR(16) %06x", vdp->dma.source_address);
+            //if (dbg.traces.vdp2) DFT("\nWR DMA ADDR(16) %06x", vdp->dma.source_address);
             return;
         case 23:
             vdp->dma.source_address = (vdp->dma.source_address & 0xFFFF) | (((val & 0x3F) << 16) & 0x7F0000);
             vdp->dma.mode = (val >> 6) & 3;
             vdp->dma.fill_pending = (val >> 7) & 1;
-            if (dbg.traces.vdp) printf("\nMODE! %d FILL PENDING! %d", this->vdp.dma.mode, this->vdp.dma.fill_pending);
-            if (dbg.traces.vdp2) DFT("\nWR DMA ADDR(17) %06x MODE:%d PEND:%d WAIT:%d", vdp->dma.source_address, vdp->dma.mode, vdp->command.pending, vdp->dma.fill_pending);
+            //if (dbg.traces.vdp) printf("\nMODE! %d FILL PENDING! %d", this->vdp.dma.mode, this->vdp.dma.fill_pending);
+            //if (dbg.traces.vdp2) DFT("\nWR DMA ADDR(17) %06x MODE:%d PEND:%d WAIT:%d", vdp->dma.source_address, vdp->dma.mode, vdp->command.pending, vdp->dma.fill_pending);
             dma_run_if_ready(this);
             return;
         case 29: // KGEN debug register, enable debugger
@@ -710,14 +714,14 @@ static void dma_fill(struct genesis* this)
             VRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         case 3:
-            if (dbg.traces.vdp2) DFT("\nVDP DMA FILL CRAM ADDR:%04x DATA:%02x", this->vdp.command.address, this->vdp.dma.fill_value);
+            //if (dbg.traces.vdp2) DFT("\nVDP DMA FILL CRAM ADDR:%04x DATA:%02x", this->vdp.command.address, this->vdp.dma.fill_value);
             CRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         case 5:
             VSRAM_write_byte(this, this->vdp.command.address, this->vdp.dma.fill_value);
             break;
         default:
-            if (dbg.traces.vdp) printf("\nDMA FILL UNKNOWN!? target:%d value:%02x addr:%04x cyc:%lld", this->vdp.command.target, this->vdp.dma.fill_value, this->vdp.command.target, this->clock.master_cycle_count);
+            //if (dbg.traces.vdp) printf("\nDMA FILL UNKNOWN!? target:%d value:%02x addr:%04x cyc:%lld", this->vdp.command.target, this->vdp.dma.fill_value, this->vdp.command.target, this->clock.master_cycle_count);
             break;
     }
     //tracer.dma->notify({"fill(", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
@@ -735,7 +739,7 @@ static void dma_copy(struct genesis* this)
     this->vdp.dma.active = 1;
 
     u32 data = VRAM_read_byte(this, this->vdp.dma.source_address);
-    if (dbg.traces.vdp4) DFT("\nVDP DMA COPY VRAM SRC:%04x DEST:%04x DATA:%04x", (u32)this->vdp.dma.source_address, (u32)this->vdp.command.address, (u32)data);
+    //if (dbg.traces.vdp4) DFT("\nVDP DMA COPY VRAM SRC:%04x DEST:%04x DATA:%04x", (u32)this->vdp.dma.source_address, (u32)this->vdp.command.address, (u32)data);
 
     VRAM_write_byte(this, this->vdp.command.address, data);
     //tracer.dma->notify({"copy(", hex(source, 6L), ", ", hex(target, 1L), ":", hex(address, 5L), ", ", hex(data, 4L), ")"});
@@ -769,16 +773,6 @@ static void dma_run_if_ready(struct genesis* this)
 
 static void write_control_port(struct genesis* this, u16 val, u16 mask)
 {
-    //printf("\nWRITE VDP CTRL PORT val:%04x PC:%06x cyc:%lld", val, this->m68k.regs.PC, this->clock.master_cycle_count);
-    //if (dbg.traces.vdp3) DFT("\nWR VDP CTRL: %04x", val);
-    //printf("\nIT HAPPENED!");
-    //dbg_break("yes", this->clock.master_cycle_count);
-    /*if (val == 0x8F02) {
-        dbg.var++;
-        if (dbg.var > 1) {
-            dbg_break("Broke on weird control port write", this->clock.master_cycle_count);
-        }
-    }*/
     if (this->vdp.command.latch == 1) { // Finish latching a DMA transfer command
         this->vdp.command.latch = 0;
         this->vdp.command.address = (this->vdp.command.address & 0b11111111111111) | ((val & 7) << 14);
@@ -788,8 +782,7 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
 
         this->vdp.dma.fill_pending = this->vdp.dma.mode == 2; // Wait for fill
 
-        if (dbg.traces.vdp2) DFT("\nSECOND WRITE. VAL:%04x ADDR:%06x DMA_ENABLE:%d TARGET:%d PENDING:%d WAIT:%d", val, this->vdp.command.address, this->vdp.dma.enable, this->vdp.command.target, this->vdp.command.pending, this->vdp.dma.fill_pending);
-        //printf("\nLATCHED. MODE! %d FILL PENDING! %d DMA_ENABLE:%d LEN:%d", this->vdp.dma.mode, this->vdp.dma.fill_pending, this->vdp.dma.enable, this->vdp.dma.len);
+        //if (dbg.traces.vdp2) DFT("\nSECOND WRITE. VAL:%04x ADDR:%06x DMA_ENABLE:%d TARGET:%d PENDING:%d WAIT:%d", val, this->vdp.command.address, this->vdp.dma.enable, this->vdp.command.target, this->vdp.command.pending, this->vdp.dma.fill_pending);
         dma_run_if_ready(this);
         return;
     }
@@ -873,21 +866,21 @@ static u16 read_data_port(struct genesis* this, u16 old, u16 mask)
             return ((data & 7) << 1) | (((data >> 3) & 7) << 5) | (((data >> 6) & 7) << 9);
     }
 
-    if (dbg.traces.vdp) printf("\nUnknown read port target %d", this->vdp.command.target);
+    //if (dbg.traces.vdp) printf("\nUnknown read port target %d", this->vdp.command.target);
     return 0;
 }
 
 static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
 {
-    if (dbg.traces.vdp && is_cpu) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
+    //if (dbg.traces.vdp && is_cpu) dbg_printf("\nVDP data port write val:%04x is_cpu:%d target:%d", val, is_cpu, this->vdp.command.target);
 
     this->vdp.command.latch = 0;
-    if (dbg.traces.vdp) printf("\nWRITE VDP DATA PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
+    //if (dbg.traces.vdp) printf("\nWRITE VDP DATA PORT %04x cyc:%lld", val, this->clock.master_cycle_count);
 
     if(this->vdp.dma.fill_pending) {
         this->vdp.dma.fill_pending = 0;
         this->vdp.dma.fill_value = val >> 8;
-        if (dbg.traces.vdp3) DFT("\nWR VDP DATA, FILL START");
+        //if (dbg.traces.vdp3) DFT("\nWR VDP DATA, FILL START");
         /*if (this->clock.master_cycle_count == 53021297) {
             printf("\nPC: %06x", this->m68k.regs.PC);
             //dbg_break("Last good fill?", this->clock.master_cycle_count);
@@ -901,7 +894,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         //addr = (this->vdp.command.address << 1) & 0x1FFFE;
         addr = (this->vdp.command.address & 0x1FFFE) >> 1;
         if (this->vdp.command.address & 1) val = (val >> 8) | (val << 8);
-        if (dbg.traces.vdp3) DFT("\nWR VDP DP VRAM DEST:%04x DATA:%04x", addr, val);
+        //if (dbg.traces.vdp3) DFT("\nWR VDP DP VRAM DEST:%04x DATA:%04x", addr, val);
         VRAM_write(this, addr, val);
         this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
         dma_run_if_ready(this);
@@ -912,7 +905,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
         addr = (this->vdp.command.address >> 1) & 0x3F;
         //data format: ---- --yy yyyy yyyy
         addr = (addr % 40);
-        if (dbg.traces.vdp3) DFT("\nWR VDP DP VSRAM DEST:%04x DATA:%04x", addr, val);
+        //if (dbg.traces.vdp3) DFT("\nWR VDP DP VSRAM DEST:%04x DATA:%04x", addr, val);
         this->vdp.VSRAM[addr] = val & 0x3FF;
         this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
         return;
@@ -920,7 +913,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
 
     if (this->vdp.command.target == 3) { // CRAM write
         addr = (this->vdp.command.address >> 1) & 0x3F;
-        if (dbg.traces.vdp3) DFT("\nWR VDP DP CRAM DEST:%04x DATA:%04x", addr, val);
+        //if (dbg.traces.vdp3) DFT("\nWR VDP DP CRAM DEST:%04x DATA:%04x", addr, val);
         u32 v = (((val >> 1) & 7) << 0) | (((val >> 5) & 7) << 3) | (((val >> 9) & 7) << 6);
         CRAM_write(this, addr, v);
         this->vdp.command.address = (this->vdp.command.address + this->vdp.command.increment) & 0x1FFFF;
@@ -1029,8 +1022,10 @@ void genesis_VDP_reset(struct genesis* this)
     this->vdp.io.h32 = 0;
     this->vdp.io.h40 = 1; // H40 mode to start
     this->clock.vdp.hblank_active = this->clock.vdp.vblank_active = 0;
-    this->clock.vdp.vcount = this->clock.vdp.vcount = 0;
+    this->clock.vdp.hcount = this->clock.vdp.vcount = 0;
     this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1];
+    this->clock.current_back_buffer = this->vdp.display->last_written ^ 1;
+    this->clock.current_front_buffer = this->vdp.display->last_written;
     this->vdp.io.enable_display = 0;
     this->vdp.display->scan_x = this->vdp.display->scan_y = 0;
     set_clock_divisor(this);
@@ -1080,7 +1075,8 @@ static void get_vscrolls(struct genesis* this, int column, u32 *planes)
             return;
         }
     }
-    u32 col = (u32)column << 1;
+    //u32 col = (u32)column << 1;
+    u32 col = (u32)column;
     assert(col<20);
     planes[0] = this->vdp.VSRAM[col];
     planes[1] = this->vdp.VSRAM[col+1];
@@ -1097,8 +1093,8 @@ static void render_to_ringbuffer(struct genesis* this, u32 plane, struct slice *
         struct genesis_vdp_pixel_buf *b = &this->vdp.ringbuf[plane].buf[*tail];
         u32 c = slice->pattern[pattern_pos] & 63;
         u32 priority = (slice->pattern[pattern_pos] >> 7) & 1;
-        b->ay = slice->v;
-        b->ax = slice->h + pattern_pos;
+        b->bg_table_y = slice->v;
+        b->bg_table_x = slice->h + pattern_pos;
         if (c != 0) {
             b->has = 1;
             b->color = c;
@@ -1148,8 +1144,6 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
     // Fetch a 16-pixel slice of a nametable to a provided struct
     u32 tile_row = (row >> 3) & this->vdp.io.foreground_height_mask;
     u32 tile_col = (col >> 3) & this->vdp.io.foreground_width_mask;
-    slice->h = tile_col << 3;
-    slice->v = tile_row << 3;
     u32 fine_row = row & 7;
     u32 foreground_width = this->vdp.io.foreground_width;
     if ((plane_num == 0) && in_window(this)) {
@@ -1162,6 +1156,8 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
         foreground_width = this->vdp.io.h40 ? 64 : 32;
     }
     else slice->plane = plane_num;
+    slice->v = row & this->vdp.io.foreground_height_mask_pixels;
+    slice->h = (tile_col << 3) & this->vdp.io.foreground_width_mask_pixels;
     u32 foreground_width_mask = foreground_width - 1;
     u32 tile_data = VRAM_read(this, nt_base_addr + (tile_row * foreground_width) + tile_col, 0);
     u32 vflip = (tile_data >> 12) & 1;
@@ -1321,7 +1317,7 @@ static void render_sprites(struct genesis *this)
     }
 }
 
-static void render_16(struct genesis* this)
+static void output_16(struct genesis* this)
 {
     // Point of this function is to render 16 pixels outta the ringbuffer, to the pixelbuffer. Also combine with sprites and priority.
     // At this point, there will be 16-31 pixels in the ring buffer.
@@ -1334,6 +1330,9 @@ static void render_16(struct genesis* this)
         this->vdp.ringbuf[PLANE_B].head = (this->vdp.ringbuf[PLANE_B].head + 1) & 31;
         this->vdp.ringbuf[PLANE_A].num--;
         this->vdp.ringbuf[PLANE_B].num--;
+        this->vdp.debug.px_displayed[this->clock.current_back_buffer][0][(ring0->bg_table_y * 32) + (ring0->bg_table_x >> 5)] |= 1 << (ring0->bg_table_x & 31);
+        this->vdp.debug.px_displayed[this->clock.current_back_buffer][1][(ring1->bg_table_y * 32) + (ring1->bg_table_x >> 5)] |= 1 << (ring1->bg_table_x & 31);
+        //printf("BACKBUFFER %d", this->clock.current_back_buffer);
         if (this->vdp.line.screen_x >= xmax) continue;
 
         // We've got out ringbuffer. Now get our sprite pixel...
@@ -1348,6 +1347,7 @@ static void render_16(struct genesis* this)
         if (!this->opts.vdp.enable_sprites) {
             sprite->has_px = sprite->color = sprite->priority = 0;
         }
+
 
 
 #define PX_NONE 0
@@ -1367,7 +1367,7 @@ static void render_16(struct genesis* this)
 
         u32 bg = PX_NONE;
         u32 fg = PX_NONE;
-        if (above(0) || solid(0) && !above(1)) {
+        if (above(0) || solid(0) && (!above(1))) {
             bg = PX_A;
         }
         else {
@@ -1379,7 +1379,7 @@ static void render_16(struct genesis* this)
                 bg = PX_BG;
             }
         }
-        if (above_sprite || (solid_sprite && !above(1) && !above(0)))
+        if (above_sprite || (solid_sprite && (!above(1)) && (!above(0))))
             fg = PX_SP;
         else
             fg = bg;
@@ -1437,13 +1437,11 @@ static void render_16_more(struct genesis* this)
     // Fetch a slice
     u32 vscrolls[2];
     get_vscrolls(this, this->vdp.fetcher.column, vscrolls);
-    u32 plane_wrap = (this->vdp.io.foreground_width * 8) - 1;
+    u32 plane_wrap = this->vdp.io.foreground_width_mask_pixels;
     //printf("\nRENDER 16 line:%d col:%d screen_x:%d sc_slot:%d", this->clock.vdp.vcount, this->vdp.fetcher.column, this->vdp.line.screen_x, this->vdp.sc_slot);
 
     // Dump to ringbuffer
     struct slice slice;
-    //u8 pattern[16];
-    struct slice;
     for (u32 plane = 0; plane < 2; plane++) {
         if ((plane == 0) && window_transitions_on(this) && (this->vdp.fetcher.fine_x[0] != 0)) {
             u32 head = this->vdp.ringbuf[0].head;
@@ -1464,7 +1462,7 @@ static void render_16_more(struct genesis* this)
     this->vdp.fetcher.column++;
 
     // Render 16 pixels from ringbuffer
-    render_16(this);
+    output_16(this);
 }
 
 
@@ -1531,7 +1529,7 @@ void genesis_VDP_cycle(struct genesis* this)
     run_dma |= (this->vdp.io.enable_display ^ 1);
     if (run_dma) {
         dma_run_if_ready(this);
-        this->vdp.io.sc_dmas++;
+        //this->vdp.io.sc_dmas++;
     }
 
     if (sc_clock == SC_HSYNC_GOES_OFF) {

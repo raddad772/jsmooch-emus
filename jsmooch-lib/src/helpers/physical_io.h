@@ -229,7 +229,7 @@ struct JSM_DISPLAY {
     void *output[2];
     void *output_debug_metadata[2];
     u32 last_written;
-    u32 last_displayed;
+    //u32 last_displayed;
     u16 *cur_output;
 
     // geometry, used mostly for event viewer really

@@ -215,7 +215,7 @@ static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
     SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_IRQ_SERIAL, IRQ_serial);
     SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_HALT_END, HALT_end);
 
-    event_view_begin_frame(this->dbg.events.view);
+    debugger_report_frame(this->dbg.interface);
 }
 
 static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)

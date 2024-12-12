@@ -505,7 +505,7 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
     this->holly.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->holly.cur_output = (u32 *)d->display.output[0];
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    //d->display.last_displayed = 1;
 
     this->c1.devices = IOs;
     this->c1.device_index = 0;

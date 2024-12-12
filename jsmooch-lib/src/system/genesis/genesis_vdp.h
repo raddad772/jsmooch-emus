@@ -92,6 +92,7 @@ struct genesis_vdp {
 
         u32 foreground_width, foreground_height;
         u32 foreground_width_mask, foreground_height_mask;
+        u32 foreground_width_mask_pixels, foreground_height_mask_pixels;
 
         u32 enable_th_interrupts;
 
@@ -100,7 +101,7 @@ struct genesis_vdp {
         u32 window_RIGHT;
         u32 window_DOWN;
 
-        u32 sc_dmas;
+        //u32 sc_dmas;
     } io;
 
     struct {
@@ -187,22 +188,28 @@ struct genesis_vdp {
             u32 has;
             u32 color;
             u32 priority;
-            u32 ax, ay;
+            u32 bg_table_x, bg_table_y; // absolute X & Y output, as seen in the background table
         } buf[32];
         u32 head;
         u32 tail;
         i32 num;
     } ringbuf[2];
 
-    struct genesis_vdp_debug_row {
-        u32 h40;
-        u32 hscroll[2];
-        u32 vscroll[2][21];
-        u32 hscroll_mode, vscroll_mode;
-        u32 video_mode;
-        u32 pixel_timing[320];
-    } debug_info[240];
+    struct {
+        struct genesis_vdp_debug_row {
+            u32 h40;
+            u32 hscroll[2];
+            u32 vscroll[2][21];
+            u32 hscroll_mode, vscroll_mode;
+            u32 video_mode;
+            u32 pixel_timing[320];
+        } output_rows[240];
+
+        u32 px_displayed[2][3][32768];
+    } debug;
+
     i32 last_r;
+    u64 line_start_clock;
 
     u32 hscroll_debug;
 

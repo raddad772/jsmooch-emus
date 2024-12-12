@@ -511,18 +511,16 @@ static inline u32 gen_to_rgb(u32 color, int use_palette)
 static inline u32 shade_boundary_func(u32 kind, u32 incolor)
 {
     switch(kind) {
-        case 0:
-            return incolor;
-        case 1: {// Shaded
+        case 0: {// Shaded
             u32 c = (incolor & 0xFFFFFF00) | 0xFF000000;
             u32 v = incolor & 0xFF;
-            v += 0xA0;
+            v += 0xFF;
             v >>= 1;
             if (v > 255) v = 255;
             return c | v; }
-        case 2:
+        case 1: // black
             return 0xFF000000;
-        case 3:
+        case 2: // white
             return 0xFFFFFFFF;
     }
     NOGOHERE;
@@ -539,6 +537,14 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
     struct image_view *iv = &dview->image;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * 4 * 1024);
+    u32 fw = this->vdp.io.foreground_width * 8;
+    u32 fh = this->vdp.io.foreground_height * 8;
+    for (u32 y = 0; y < fh; y++) {
+        u32 *rowptr = outbuf + (y * out_width);
+        for (u32 x = 0; x < fh; x++) {
+            rowptr[x] = 0xFF000000;
+        }
+    }
 
     // Render tilemap
     u32 num_tiles_x = this->vdp.io.foreground_width;
@@ -547,14 +553,28 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
     u32 nametable_addr;
 
     struct debugger_widget_checkbox *draw_box_cb = NULL;
-    struct debugger_widget_radiogroup *shade_boundary_rg = NULL;
-    u32 draw_box = 0;
-    u32 shade_boundary = 0;
+    struct debugger_widget_radiogroup *shade_by_rg = NULL;
+    struct debugger_widget_radiogroup *shade_kind_rg = NULL;
+    enum shade_by_e {
+        SB_NONE = 0,
+        SB_INSIDE = 1,
+        SB_OUTSIDE = 2
+    } shade_by;
+    enum shade_kind_e {
+        SHADE_RED = 0,
+        SHADE_BLACK = 1,
+        SHADE_WHITE = 2
+    } shade_kind;
+    u32 draw_bounding_box = 0;
+    shade_by = SB_NONE;
+    shade_kind = SHADE_RED;
     if (plane_num < 2) {
         draw_box_cb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
-        shade_boundary_rg = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
-        draw_box = draw_box_cb->value;
-        shade_boundary = shade_boundary_rg->value;
+        shade_by_rg = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
+        shade_kind_rg = &((struct debugger_widget *)cvec_get(&dview->options, 2))->radiogroup;
+        draw_bounding_box = draw_box_cb->value;
+        shade_by = shade_by_rg->value;
+        shade_kind = shade_kind_rg->value;
     }
     switch(plane_num) {
         case 0:
@@ -621,7 +641,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
         }
     }
 
-    if (draw_box || shade_boundary) {
+    if (draw_bounding_box) {
         // Now, we must draw the scroll frames.
         u32 col_left = 0xFF00FF00;
         u32 col_right = 0xFFFF0000;
@@ -632,84 +652,60 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
         // First, we use row #0. We use its hscroll, and then use the individual column v-scrolls to settle stuff
         // But remember, the scrolls may have 0-15 pixels off the left.
 
-        struct genesis_vdp_debug_row *top = &this->vdp.debug_info[0];
-        struct genesis_vdp_debug_row *bottom = &this->vdp.debug_info[0];
+        struct genesis_vdp_debug_row *top = &this->vdp.debug.output_rows[0];
+        struct genesis_vdp_debug_row *bottom = &this->vdp.debug.output_rows[0];
 
         u32 h_mask = (this->vdp.io.foreground_width * 8) - 1;
         u32 v_mask = (this->vdp.io.foreground_height * 8) - 1;
         u32 top_left = top->hscroll[plane_num] & h_mask;
         u32 mx = top_left;
 
-        if (draw_box) {
-            for (u32 sec = 1; sec < 21; sec++) {
-                u32 my = (top->vscroll[plane_num][sec]) & v_mask;
-                u32 bottom_my = (my + 223) & v_mask;
-                u32 *top_y_pointer = outbuf + (my * out_width);
-                u32 *bottom_y_pointer = outbuf + (bottom_my * out_width);
-                for (u32 i = 0; i < 16; i++) {
-                    top_y_pointer[mx] = col_top;
-                    bottom_y_pointer[mx] = col_bottom;
-                    mx = (mx + 1) & h_mask;
-                }
-            }
-
-            u32 vscroll = top->vscroll[plane_num][1];
-
-            // Now we do left and right lines!
-            for (u32 mline = 1; mline < 223; mline++) {
-                u32 y = (mline + vscroll) & v_mask;
-                u32 *line_ptr = outbuf + (y * out_width);
-                struct genesis_vdp_debug_row *row = &this->vdp.debug_info[mline];
-                u32 left_x = row->hscroll[plane_num] & h_mask;
-                u32 right_x = (left_x + (row->h40 ? 320 : 256)) & h_mask;
-                line_ptr[left_x] = col_left;
-                line_ptr[right_x] = col_right;
+        for (u32 sec = 1; sec < 21; sec++) {
+            u32 my = (top->vscroll[plane_num][sec]) & v_mask;
+            u32 bottom_my = (my + 223) & v_mask;
+            u32 *top_y_pointer = outbuf + (my * out_width);
+            u32 *bottom_y_pointer = outbuf + (bottom_my * out_width);
+            for (u32 i = 0; i < 16; i++) {
+                top_y_pointer[mx] = col_top;
+                bottom_y_pointer[mx] = col_bottom;
+                mx = (mx + 1) & h_mask;
             }
         }
 
-        if (shade_boundary) {
-            u32 line_is_leftright[1024];
-            memset(&line_is_leftright, 0, sizeof(line_is_leftright));
-            for (u32 i = 0; i < 224; i++) {
-                u32 l = (i + top->vscroll[plane_num][1]) & v_mask;
-                line_is_leftright[l] = i + 1;
-            }
-            for (u32 line = 0; line <= v_mask; line++) {
-                u32 *out_line_ptr = outbuf + (line * out_width);
-                if (line_is_leftright[line]) { // Shade left-right
-                    // Check if we are left-right or middle
-                    u32 screen_line = line_is_leftright[line] - 1;
-                    assert(screen_line < 224);
-                    struct genesis_vdp_debug_row *row = &this->vdp.debug_info[screen_line];
-                    u32 hscroll_left = row->hscroll[plane_num] & h_mask;
-                    u32 hscroll_right = (hscroll_left + (row->h40 ? 320 : 256)) & h_mask;
-                    assert(hscroll_left < 1023);
-                    assert(hscroll_right < 1023);
-                    if (hscroll_right < hscroll_left) {
-                        for (u32 i = hscroll_right+1; i <= hscroll_left-1; i++) {
-                            if (i >= 1024) break;
-                            out_line_ptr[i] = shade_boundary_func(shade_boundary, out_line_ptr[i]);
-                        }
-                        // Shade from hscroll_left to hscroll_right
-                    }
-                    else {
-                        // Shade from 0...hscroll_left and hscroll_right...end
-                        for (u32 i = 0; i < hscroll_left; i++) {
-                            if (i >= 1024) break;
-                            out_line_ptr[i] = shade_boundary_func(shade_boundary, out_line_ptr[i]);
-                        }
-                        for (u32 i = hscroll_right+1; i <= h_mask; i++) {
-                            if (i >= 1024) break;
-                            out_line_ptr[i] = shade_boundary_func(shade_boundary, out_line_ptr[i]);
-                        }
-                    }
-                }
-                else { // Shade whole line
-                    for (u32 x = 0; x <= h_mask; x++) {
-                        out_line_ptr[x] = shade_boundary_func(shade_boundary, out_line_ptr[x]);
-                    }
+        u32 vscroll = top->vscroll[plane_num][1];
+
+        // Now we do left and right lines!
+        for (u32 mline = 1; mline < 223; mline++) {
+            u32 y = (mline + vscroll) & v_mask;
+            u32 *line_ptr = outbuf + (y * out_width);
+            struct genesis_vdp_debug_row *row = &this->vdp.debug.output_rows[mline];
+            u32 left_x = row->hscroll[plane_num] & h_mask;
+            u32 right_x = (left_x + (row->h40 ? 319 : 255)) & h_mask;
+            line_ptr[left_x] = col_left;
+            line_ptr[right_x] = col_right;
+        }
+    }
+
+    u32 front_buffer = this->clock.current_front_buffer;
+    //printf("\nUSING FRONT BUFFER: %d", this->clock.current_front_buffer);
+    if (shade_by != SB_NONE) {
+        assert(plane_num<2);
+        u32 sflip = shade_by == SB_INSIDE ? 0 : 1;
+        for (u32 y = 0; y < fh; y++) {
+            u32 fetched = 0;
+            u32 *px_line = outbuf + (y * out_width);
+            u32 *shaded_ptr_line = this->vdp.debug.px_displayed[front_buffer][plane_num] + (y * 32);
+            for (u32 x = 0; x < fw; x++) {
+                if ((x & 31) == 0) fetched = shaded_ptr_line[x >> 5];
+                u32 shift = x & 31;
+                u32 do_shade = ((fetched >> shift) & 1) ^ sflip;
+                if (do_shade) {
+                    //px_line[x] = 0xFF000000;
+                    px_line[x] = shade_boundary_func(shade_kind, px_line[x]);
                 }
             }
+            //px_line += out_width;
+            //shaded_ptr_line += 32;
         }
     }
 }
@@ -870,7 +866,7 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
-    memset(outbuf, 0, out_width*(4*PAL_BOX_SIZE_W_BORDER)*4); // Clear out at least 4 rows worth
+    //memset(outbuf, 0, out_width*(4*PAL_BOX_SIZE_W_BORDER)*4); // Clear out at least 4 rows worth
 
     u32 line_stride = calc_stride(out_width, iv->width);
     for (u32 palette = 0; palette < 4; palette++) {
@@ -953,15 +949,19 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
             iv->height = 1024;
             iv->viewport.p[0] = (struct ivec2){ 0, 0 };
             iv->viewport.p[1] = (struct ivec2){ 1024, 1024 };
-            debugger_widgets_add_checkbox(&dview->options, "Draw scroll boundary box", 1, 1, 0);
-            struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade outside visible region", 1, 0, 1);
+            debugger_widgets_add_checkbox(&dview->options, "Draw scroll boundary", 1, 0, 1);
+            struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
             debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
-            debugger_widget_radiogroup_add_button(rg, "Shaded", 1, 1);
-            debugger_widget_radiogroup_add_button(rg, "Black", 2, 1);
-            debugger_widget_radiogroup_add_button(rg, "White", 3, 1);
-            for (u32 i = 0; i < cvec_len(&rg->radiogroup.buttons); i++) {
+            debugger_widget_radiogroup_add_button(rg, "Inside", 1, 1);
+            debugger_widget_radiogroup_add_button(rg, "Outside", 2, 1);
+            rg = debugger_widgets_add_radiogroup(&dview->options, "Shading method", 1, 0, 1);
+            debugger_widget_radiogroup_add_button(rg, "Shaded", 0, 1);
+            debugger_widget_radiogroup_add_button(rg, "Black", 1, 1);
+            debugger_widget_radiogroup_add_button(rg, "White", 2, 1);
+            /*for (u32 i = 0; i < cvec_len(&rg->radiogroup.buttons); i++) {
                 struct debugger_widget *cb = cvec_get(&rg->radiogroup.buttons, i);
             }
+            break;*/
             break;
         case 2:
             iv->width = 320;
@@ -1108,7 +1108,7 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
     SET_EVENT_VIEW(this->ym2612);
     SET_EVENT_VIEW(this->psg);
 
-    event_view_begin_frame(this->dbg.events.view);
+    debugger_report_frame(this->dbg.interface);
 }
 
 

@@ -279,7 +279,7 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs)
     setup_lcd(&d->display);
     this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    //d->display.last_displayed = 1;
     this->ppu.cur_output = (u16 *)(d->display.output[0]);
     this->ppu.cur_pixel = 0;
 

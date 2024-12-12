@@ -622,7 +622,7 @@ void PPU_scanline_postrender(THIS) {
 
 void new_frame(THIS) {
     //this->nes->clock.lclock = this->nes->clock.cpu_master_clock;
-    event_view_begin_frame(this->nes->dbg.events.view);
+    debugger_report_frame(this->nes->dbg.interface);
 
     this->display->scan_y = 0;
     this->nes->clock.ppu_y = 0;

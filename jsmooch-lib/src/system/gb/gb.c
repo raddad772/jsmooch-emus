@@ -271,7 +271,7 @@ void GBJ_describe_io(JSM, struct cvec *IOs)
     this->ppu.cur_output = (u16 *)d->display.output[0];
     this->ppu.cur_output_debug_metadata = (u16 *)d->display.output_debug_metadata[0];
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    //d->display.last_displayed = 1;
 
     setup_audio(IOs);
 

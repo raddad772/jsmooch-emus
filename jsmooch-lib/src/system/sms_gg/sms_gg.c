@@ -304,7 +304,7 @@ void SMSGGJ_describe_io(JSM, struct cvec *IOs)
     this->vdp.display = NULL;
     this->vdp.cur_output = (u16 *)d->display.output[0];
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    //d->display.last_displayed = 1;
 
     // Audio
     setup_audio(IOs);

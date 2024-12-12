@@ -425,7 +425,7 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems 
 
 static void new_frame(struct SMSGG_VDP* this)
 {
-    event_view_begin_frame(this->bus->dbg.events.view);
+    debugger_report_frame(this->bus->dbg.interface);
     this->display->scan_x = this->display->scan_y = 0;
     this->bus->clock.frames_since_restart++;
     this->bus->clock.vpos = 0;

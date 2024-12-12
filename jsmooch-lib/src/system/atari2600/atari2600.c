@@ -228,7 +228,7 @@ void atari2600J_describe_io(JSM, struct cvec *IOs)
     this->tia.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     this->tia.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    //d->display.last_displayed = 1;
 
     this->tia.display = &((struct physical_io_device *)cpg(this->tia.display_ptr))->display;
 }

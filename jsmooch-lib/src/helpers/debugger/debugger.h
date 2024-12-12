@@ -192,10 +192,12 @@ struct events_view {
 
     struct {
         u64 per_line;
-        u64 lines[1024];
+        u64 lines[2][1024];
         u32 height;
         i32 cur_line;
         u64 *ptr;
+        u32 back_buffer;
+        u32 front_buffer;
     } master_clocks;
 
 
@@ -337,8 +339,8 @@ void cpu_reg_context_render(struct cpu_reg_context*, char* outbuf, size_t outbuf
 // Event view functions
 void events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id);
 void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
-void event_view_begin_frame(struct cvec_ptr event_view);
 
+void debugger_report_frame(struct debugger_interface *dbgr);
 void debugger_report_event(struct cvec_ptr viewptr, i32 event_id);
 
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);

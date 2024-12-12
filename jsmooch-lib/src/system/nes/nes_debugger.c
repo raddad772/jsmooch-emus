@@ -380,7 +380,7 @@ static void setup_events_view(struct NES* this, struct debugger_interface *dbgr)
     SET_CPU_CPU_EVENT_ID(DBG_NES_EVENT_IRQ, IRQ);
     SET_CPU_CPU_EVENT_ID(DBG_NES_EVENT_NMI, NMI);
 
-    event_view_begin_frame(this->dbg.events.view);
+    debugger_report_frame(this->dbg.interface);
 }
 
 void NESJ_setup_debugger_interface(struct jsm_system *jsm, struct debugger_interface *dbgr)

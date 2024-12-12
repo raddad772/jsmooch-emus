@@ -63,18 +63,19 @@ void events_view_add_event(struct debugger_interface *dbgr, struct events_view *
     event->category_id = category_id;
 }
 
-void event_view_begin_frame(struct cvec_ptr event_view)
+void events_view_report_frame(struct events_view *this)
 {
-    struct events_view *eview = &((struct debugger_view *)cpg(event_view))->events;
-    eview->last_frame = eview->current_frame;
-    eview->current_frame++;
-    eview->index_in_use ^= 1;
-    for (u32 i = 0; i < cvec_len(&eview->events); i++) {
-        struct debugger_event *ev = cvec_get(&eview->events, i);
+    this->last_frame = this->current_frame;
+    this->current_frame++;
+    this->index_in_use ^= 1;
+    for (u32 i = 0; i < cvec_len(&this->events); i++) {
+        struct debugger_event *ev = cvec_get(&this->events, i);
         ev->updates_index ^= 1;
         cvec_clear(&ev->updates[ev->updates_index]);
     }
-    eview->master_clocks.cur_line = 0;
+    this->master_clocks.cur_line = 0;
+    this->master_clocks.back_buffer ^= 1;
+    this->master_clocks.front_buffer ^= 1;
 }
 
 void events_view_init(struct events_view *this)
@@ -91,6 +92,9 @@ void events_view_init(struct events_view *this)
 
     cvec_init(&this->events, sizeof(struct debugger_event), 1000);
     cvec_init(&this->categories, sizeof(struct event_category), 100);
+
+    this->master_clocks.back_buffer = 1;
+    this->master_clocks.front_buffer = 0;
 }
 
 void events_view_delete(struct events_view *this)
@@ -135,26 +139,64 @@ static void draw_box_3x3(u32 *buf, u32 x_center, u32 y_center, u32 out_width, u3
     u32 buf_ptr = ((y_center - 1) * out_width) + (x_center - 1);
     for (u32 y = 0; y < 3; y++) {
         for (u32 x = 0; x < 3; x++) {
-            buf[buf_ptr] = 0xFF000000 | color;
+            if (buf_ptr<max_ptr)
+                buf[buf_ptr] = 0xFF000000 | color;
             buf_ptr++;
         }
         buf_ptr = (buf_ptr + out_width) - 3;
-        assert(buf_ptr<max_ptr);
-        assert((y+y_center) < (out_height - 1));
+        //assert(buf_ptr<max_ptr);
+        //assert((y+y_center) < (out_height - 1));
     }
 }
 
+
+void events_view_report_line(struct events_view *this, i32 line_num)
+{
+    switch(this->timing) {
+        case ev_timing_master_clock:
+            this->master_clocks.lines[this->master_clocks.back_buffer][line_num] = *this->master_clocks.ptr;
+            this->master_clocks.cur_line = line_num;
+            break;
+        case ev_timing_scanxy:
+            break;
+        default:
+        NOGOHERE;
+    }
+}
 
 void events_view_render(struct debugger_interface *dbgr, struct events_view *this, u32 *buf, u32 out_width, u32 out_height)
 {
     // Render our current events to buf
     u32 frame_to_use = this->current_frame - 1;
-
     for (u32 i = 0; i < cvec_len(&this->events); i++) {
         struct debugger_event *ev = cvec_get(&this->events, i);
         for (u32 j = 0; j < cvec_len(&ev->updates[ev->updates_index ^ 1]); j++) {
             struct debugger_event_update *upd = cvec_get(&ev->updates[ev->updates_index ^ 1], j);
-            draw_box_3x3(buf, upd->scan_x, upd->scan_y, out_width, out_height, ev->color);
+            assert(upd->scan_y < this->display[0].height);
+            switch(this->timing) {
+                case ev_timing_scanxy:
+                    draw_box_3x3(buf, upd->scan_x, upd->scan_y, out_width, out_height, ev->color);
+                    break;
+                case ev_timing_master_clock: {
+                    float clk = (float)(upd->mclks - this->master_clocks.lines[this->master_clocks.front_buffer][upd->scan_y]);
+                    u32 sx;
+                    u64 mcpl = this->master_clocks.per_line;
+                    if (clk > mcpl) {
+                        mcpl -= (this->master_clocks.per_line * this->display[0].height);
+                    }
+                    // TODO: double buffer more debug stuff
+                    float perc = clk / ((float)mcpl);
+                    if (clk > mcpl) {
+                        printf("\nUH OH LINE %d  mclk:%lld   line_clock:%lld", upd->scan_y, upd->mclks, this->master_clocks.lines[this->master_clocks.front_buffer][upd->scan_y]);
+                        sx = this->display[0].width - 2;
+                    }
+                    else sx = (u32)(perc * ((float)this->display[0].width));
+                    draw_box_3x3(buf, sx, upd->scan_y, out_width, out_height, ev->color);
+                    break; }
+                default:
+                    NOGOHERE;
+
+            }
         }
     }
 }

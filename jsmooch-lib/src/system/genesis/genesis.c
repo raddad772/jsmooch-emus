@@ -318,7 +318,8 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     setup_crt(&d->display);
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    this->clock.current_back_buffer = 0;
+    this->clock.current_front_buffer = 1;
     this->vdp.cur_output = (u16 *)(d->display.output[0]);
 
     setup_audio(IOs);
@@ -366,11 +367,11 @@ void genesisJ_reset(JSM)
     printf("\nGenesis reset!");
 }
 
-
 u32 genesisJ_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
+
     u32 current_frame = this->clock.master_frame;
     while (this->clock.master_frame == current_frame) {
         genesisJ_finish_scanline(jsm);
@@ -379,33 +380,7 @@ u32 genesisJ_finish_frame(JSM)
     return this->vdp.display->last_written;
 }
 
-u32 genesisJ_finish_scanline(JSM)
-{
-    JTHIS;
-    genesisJ_step_master(jsm, MASTER_CYCLES_PER_SCANLINE);
-    /*i32 cpu_step = (i32)this->clock.timing.cpu_divisor;
-    i64 ppu_step = (i64)this->clock.timing.ppu_divisor;
-    i32 done = 0;
-    i32 start_y = this->clock.ppu_y;
-    while (this->clock.ppu_y == start_y) {
-        this->clock.master_clock += cpu_step;
-        //this->apu.cycle(this->clock.master_clock);
-        r2A03_run_cycle(&this->cpu);
-        this->bus.cycle(this);
-        this->clock.cpu_frame_cycle++;
-        this->clock.cpu_master_clock += cpu_step;
-        i64 ppu_left = (i64)this->clock.master_clock - (i64)this->clock.ppu_master_clock;
-        done = 0;
-        while (ppu_left >= ppu_step) {
-            ppu_left -= ppu_step;
-            done++;
-        }
-        genesis_PPU_cycle(&this->ppu, done);
-        this->cycles_left -= cpu_step;
-        if (dbg.do_break) break;
-    }*/
-    return 0;
-}
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static float i16_to_float(i16 val)
 {
@@ -477,7 +452,49 @@ static void debug_audio(struct genesis* this)
 
 }
 
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
+static void genesis_step_loop(struct genesis* this)
+{
+
+    i32 biggest_step = MIN(MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock), this->clock.psg.cycles_til_clock);
+    this->jsm.cycles_left -= biggest_step;
+    this->clock.master_cycle_count += biggest_step;
+    this->clock.m68k.cycles_til_clock -= biggest_step;
+    this->clock.z80.cycles_til_clock -= biggest_step;
+    this->clock.vdp.cycles_til_clock -= biggest_step;
+    this->clock.psg.cycles_til_clock -= biggest_step;
+    if (this->clock.m68k.cycles_til_clock <= 0) {
+        this->clock.m68k.cycles_til_clock += this->clock.m68k.clock_divisor;
+        genesis_cycle_m68k(this);
+        ym2612_cycle(&this->ym2612);
+    }
+    if (this->clock.z80.cycles_til_clock <= 0) {
+        this->clock.z80.cycles_til_clock += this->clock.z80.clock_divisor;
+        genesis_cycle_z80(this);
+    }
+    if (this->clock.vdp.cycles_til_clock <= 0) {
+        genesis_VDP_cycle(this);
+        this->clock.vdp.cycles_til_clock += this->clock.vdp.clock_divisor;
+    }
+    if (this->clock.psg.cycles_til_clock <= 0) {
+        SN76489_cycle(&this->psg);
+        this->clock.psg.cycles_til_clock += this->clock.psg.clock_divisor;
+    }
+    sample_audio(this);
+    debug_audio(this);
+}
+
+
+u32 genesisJ_finish_scanline(JSM)
+{
+    JTHIS;
+    u32 current_line = this->clock.vdp.vcount;
+    while (this->clock.vdp.vcount == current_line) {
+        genesis_step_loop(this);
+        if (dbg.do_break) break;
+    }
+    return this->vdp.display->last_written;
+}
+
 
 u32 genesisJ_step_master(JSM, u32 howmany)
 {
@@ -486,33 +503,7 @@ u32 genesisJ_step_master(JSM, u32 howmany)
     //this->jsm.cycles_left += howmany;
     this->jsm.cycles_left = howmany;
     while (this->jsm.cycles_left >= 0) {
-        i32 biggest_step = MIN(MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock), this->clock.psg.cycles_til_clock);
-        this->jsm.cycles_left -= biggest_step;
-        this->clock.master_cycle_count += biggest_step;
-        this->clock.m68k.cycles_til_clock -= biggest_step;
-        this->clock.z80.cycles_til_clock -= biggest_step;
-        this->clock.vdp.cycles_til_clock -= biggest_step;
-        this->clock.psg.cycles_til_clock -= biggest_step;
-        if (this->clock.m68k.cycles_til_clock <= 0) {
-            this->clock.m68k.cycles_til_clock += this->clock.m68k.clock_divisor;
-            genesis_cycle_m68k(this);
-            ym2612_cycle(&this->ym2612);
-        }
-        if (this->clock.z80.cycles_til_clock <= 0) {
-            this->clock.z80.cycles_til_clock += this->clock.z80.clock_divisor;
-            genesis_cycle_z80(this);
-        }
-        if (this->clock.vdp.cycles_til_clock <= 0) {
-            genesis_VDP_cycle(this);
-            this->clock.vdp.cycles_til_clock += this->clock.vdp.clock_divisor;
-        }
-        if (this->clock.psg.cycles_til_clock <= 0) {
-            SN76489_cycle(&this->psg);
-            this->clock.psg.cycles_til_clock += this->clock.psg.clock_divisor;
-        }
-        sample_audio(this);
-        debug_audio(this);
-
+        genesis_step_loop(this);
         if (dbg.do_break) break;
     }
     return 0;

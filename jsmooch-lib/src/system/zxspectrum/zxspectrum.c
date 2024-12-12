@@ -514,7 +514,6 @@ static void setup_crt128(struct JSM_DISPLAY *d)
     }
     this->ula.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
 
     this->ula.display = &((struct physical_io_device *)cpg(this->ula.display_ptr))->display;
 }

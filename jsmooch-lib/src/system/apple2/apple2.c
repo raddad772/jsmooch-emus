@@ -181,7 +181,7 @@ void apple2J_describe_io(JSM, struct cvec *IOs)
     d->display.output_debug_metadata[1] = NULL;
     this->iou.cur_output = (u8 *)d->display.output[0];
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    //d->display.last_displayed = 1;
     setup_crt(&d->display);
 
     this->iou.display = &((struct physical_io_device *)cpg(this->iou.display_ptr))->display;

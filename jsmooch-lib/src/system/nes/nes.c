@@ -239,7 +239,7 @@ void NESJ_describe_io(JSM, struct cvec *IOs)
     this->ppu.cur_output = (u16 *)d->display.output[0];
     setup_crt(&d->display);
     d->display.last_written = 1;
-    d->display.last_displayed = 1;
+    //d->display.last_displayed = 1;
 
     setup_audio(IOs);
 

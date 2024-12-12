@@ -337,9 +337,9 @@ static void render_radiogroup(struct debugger_widget *widget)
     ImGuiWindowFlags window_flags = ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX;
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
     static int draw_lines = 2;
-    static int max_height_in_lines = 2;
+    static int max_height_in_lines = 4;
 
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 1), ImVec2(FLT_MAX, ImGui::GetTextLineHeightWithSpacing() * max_height_in_lines));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 2), ImVec2(270, ImGui::GetTextLineHeightWithSpacing() * max_height_in_lines));
     ImGui::BeginChild(widget->radiogroup.title, ImVec2(-FLT_MIN, 0.0f), window_flags);
     /*if (ImGui::BeginMenuBar())
     {
