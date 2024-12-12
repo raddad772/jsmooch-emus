@@ -569,10 +569,9 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
     shade_by = SB_NONE;
     shade_kind = SHADE_RED;
     if (plane_num < 2) {
-        draw_box_cb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
-        shade_by_rg = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
-        shade_kind_rg = &((struct debugger_widget *)cvec_get(&dview->options, 2))->radiogroup;
-        draw_bounding_box = draw_box_cb->value;
+        //draw_box_cb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
+        shade_by_rg = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
+        shade_kind_rg = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
         shade_by = shade_by_rg->value;
         shade_kind = shade_kind_rg->value;
     }
@@ -866,7 +865,7 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
-    //memset(outbuf, 0, out_width*(4*PAL_BOX_SIZE_W_BORDER)*4); // Clear out at least 4 rows worth
+    memset(outbuf, 0, out_width*(4*PAL_BOX_SIZE_W_BORDER)*4); // Clear out at least 4 rows worth
 
     u32 line_stride = calc_stride(out_width, iv->width);
     for (u32 palette = 0; palette < 4; palette++) {
@@ -949,7 +948,7 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
             iv->height = 1024;
             iv->viewport.p[0] = (struct ivec2){ 0, 0 };
             iv->viewport.p[1] = (struct ivec2){ 1024, 1024 };
-            debugger_widgets_add_checkbox(&dview->options, "Draw scroll boundary", 1, 0, 1);
+            //debugger_widgets_add_checkbox(&dview->options, "Draw scroll boundary", 1, 0, 1);
             struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
             debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
             debugger_widget_radiogroup_add_button(rg, "Inside", 1, 1);

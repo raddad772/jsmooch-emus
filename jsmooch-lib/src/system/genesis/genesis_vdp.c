@@ -108,6 +108,7 @@ static u16 VSRAM_read(struct genesis* this, u16 addr)
 
 static void VSRAM_write(struct genesis* this, u16 addr, u16 val)
 {
+    DBG_EVENT(DBG_GEN_EVENT_WRITE_VSRAM);
     if (addr < 40) this->vdp.VSRAM[addr] = val & 0x3FF;
 }
 
@@ -126,6 +127,7 @@ static u16 CRAM_read(struct genesis* this, u16 addr)
 static void CRAM_write(struct genesis* this, u16 addr, u16 val)
 {
     //if (dbg.traces.vdp4) DFT("\nCRAM WRITE %04x: %04x", addr & 0x3F, val & 0x1FF);
+    DBG_EVENT(DBG_GEN_EVENT_WRITE_CRAM);
     this->vdp.CRAM[addr & 0x3F] = val & 0x1FF;
 }
 
@@ -153,7 +155,7 @@ void init_slot_tables(struct genesis* this)
 {
     // scanline h32
 #define SR(start,end,value) for (u32 i = (start); i < (end); i++) { s[i] = value; }
-    enum slot_kinds *s = this->vdp.slot_array[SC_ARRAY_H32];
+    enum slot_kinds *s = &this->vdp.slot_array[SC_ARRAY_H32][0];
     s[0] = slot_hscroll_data;
     SR(1,5,slot_sprite_pattern);
     s[5] = slot_layer_a_mapping;
@@ -185,7 +187,7 @@ void init_slot_tables(struct genesis* this)
     s[170] = slot_external_access;
 
     // Now do h40
-    s = this->vdp.slot_array[SC_ARRAY_H40];
+    s = &this->vdp.slot_array[SC_ARRAY_H40][0];
     s[0] = slot_hscroll_data;
     SR(1,5,slot_sprite_pattern);
     s[5] = slot_layer_a_mapping;
@@ -196,6 +198,8 @@ void init_slot_tables(struct genesis* this)
     s[11] = s[12] = slot_layer_b_pattern;
 
     sn = 13;
+    printf("\nS1! %d", sn);
+
     for (u32 j = 0; j < 5; j++) {
         for (u32 x = 0; x < 4; x++) {
             S(slot_layer_a_mapping);
@@ -209,23 +213,24 @@ void init_slot_tables(struct genesis* this)
             S(slot_layer_b_pattern);
         }
     }
-
     SR(173,175, slot_external_access);
     SR(175,198, slot_sprite_pattern);
     s[198] = slot_external_access;
     SR(199, 209, slot_sprite_pattern);
 
     // Now do rendering disabled
-    s = this->vdp.slot_array[SC_ARRAY_DISABLED];
+    s = &this->vdp.slot_array[SC_ARRAY_DISABLED][0];
     //TODO: fill this
     // FOR NOW just put in 1 refersh slot every 16
+    sn = 0;
     for (u32 i = 0; i < 171; i++) {
-        if ((i & 7) == 0) { S(slot_external_access); }
-        else { S(slot_refresh_cycle); }
+        if ((i & 7) == 0) { S(slot_refresh_cycle); }
+        else { S(slot_external_access); }
     }
 
     // Now do vblank H40
-    s = this->vdp.slot_array[SC_ARRAY_H40];
+    s = this->vdp.slot_array[SC_ARRAY_DISABLED+SC_ARRAY_H40];
+    sn = 0;
     for (u32 i = 0; i < 211; i++) {
         if ((i & 7) == 0) { S(slot_refresh_cycle); }
         else { S(slot_external_access); }
@@ -258,8 +263,9 @@ void genesis_VDP_delete(struct genesis *this)
 
 static void set_clock_divisor(struct genesis* this)
 {
-    u32 clk = 5;
+    u32 clk = 5; // 5 for h32, it's slow!
 
+    // IF H40. and IF we're not in hsync. and IF we're not at the slow mclocks start
     if (this->vdp.io.h40 && (this->clock.vdp.line_mclock >= HSYNC_GOES_OFF) && (
             this->clock.vdp.line_mclock < SLOW_MCLOCKS_START))
         clk = 4;
@@ -689,17 +695,16 @@ static void dma_source_inc(struct genesis* this)
 
 static void dma_load(struct genesis* this)
 {
-    this->vdp.dma.active = 1;
     this->vdp.io.bus_locked = 1;
     u32 addr = ((this->vdp.dma.mode & 1) << 23) | (this->vdp.dma.source_address << 1);
     u16 data = genesis_mainbus_read(this, addr & 0xFFFFFF, 1, 1, 0, 1);
     //printf("\nVDP DMA LOAD ADDR:%04x DATA:%04x LEN:%04x VBLANK:%d DIS_ENABLE:%d LINE:%d cyc:%lld", (u32)addr, (u32)data, (u32)this->vdp.dma.len, this->clock.vdp.vblank_active, this->vdp.io.enable_display, this->clock.vdp.vcount, this->clock.master_cycle_count);
     write_data_port(this, data, 0);
+    DBG_EVENT(DBG_GEN_EVENT_DMA_LOAD_START);
 
     dma_source_inc(this);
     if (--this->vdp.dma.len == 0) {
         this->vdp.command.pending = 0;
-        this->vdp.dma.active = 0;
         this->vdp.io.bus_locked = 0;
     }
     this->vdp.sc_skip = 1; // every-other
@@ -707,6 +712,7 @@ static void dma_load(struct genesis* this)
 
 static void dma_fill(struct genesis* this)
 {
+    DBG_EVENT(DBG_GEN_EVENT_DMA_FILL_START);
     this->vdp.dma.active = 1;
     switch(this->vdp.command.target) {
         case 1:
@@ -737,6 +743,7 @@ static void dma_fill(struct genesis* this)
 static void dma_copy(struct genesis* this)
 {
     this->vdp.dma.active = 1;
+    DBG_EVENT(DBG_GEN_EVENT_DMA_COPY_START);
 
     u32 data = VRAM_read_byte(this, this->vdp.dma.source_address);
     //if (dbg.traces.vdp4) DFT("\nVDP DMA COPY VRAM SRC:%04x DEST:%04x DATA:%04x", (u32)this->vdp.dma.source_address, (u32)this->vdp.command.address, (u32)data);
@@ -782,6 +789,20 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
 
         this->vdp.dma.fill_pending = this->vdp.dma.mode == 2; // Wait for fill
 
+        if (this->vdp.command.pending && !this->vdp.dma.fill_pending) {
+            switch(this->vdp.dma.mode) {
+                case 0:
+                case 1:
+                    DBG_EVENT(DBG_GEN_EVENT_DMA_LOAD_START);
+                    break;
+                case 2:
+                    break;
+                case 3:
+                    DBG_EVENT(DBG_GEN_EVENT_DMA_COPY_START);
+                    break;
+            }
+        }
+
         //if (dbg.traces.vdp2) DFT("\nSECOND WRITE. VAL:%04x ADDR:%06x DMA_ENABLE:%d TARGET:%d PENDING:%d WAIT:%d", val, this->vdp.command.address, this->vdp.dma.enable, this->vdp.command.target, this->vdp.command.pending, this->vdp.dma.fill_pending);
         dma_run_if_ready(this);
         return;
@@ -815,7 +836,7 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
     // Me   3688  1010001000
 
     u16 v = 0; // NTSC only for now
-    v |= this->vdp.dma.active << 1; // no DMA yet
+    v |= this->vdp.command.pending << 1; // no DMA yet
     v |= this->clock.vdp.hblank_active << 2;
     v |= (this->clock.vdp.vblank_active || (1 ^ this->vdp.io.enable_display)) << 3;
     v |= (this->clock.vdp.field && this->vdp.io.interlace_field) << 4;
@@ -880,6 +901,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
     if(this->vdp.dma.fill_pending) {
         this->vdp.dma.fill_pending = 0;
         this->vdp.dma.fill_value = val >> 8;
+        DBG_EVENT(DBG_GEN_EVENT_DMA_FILL_START);
         //if (dbg.traces.vdp3) DFT("\nWR VDP DATA, FILL START");
         /*if (this->clock.master_cycle_count == 53021297) {
             printf("\nPC: %06x", this->m68k.regs.PC);
@@ -1515,10 +1537,12 @@ void genesis_VDP_cycle(struct genesis* this)
     this->vdp.sc_count = (this->vdp.sc_count + 1) & 3;
     if ((this->vdp.sc_count & 1) == 0) {
         this->vdp.display->scan_x++;
+        this->clock.vdp.hcount++;
     }
     if (this->vdp.sc_count == 0) {
         this->vdp.sc_slot++;
         // Do FIFO if this is an external slot
+        //if(this->clock.vdp.vcount == 258) printf("\nSC ARRAY:%d SLOT:%d VAL:%d HCOUNT:%d", this->vdp.sc_array, this->vdp.sc_slot, this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot], this->clock.vdp.hcount);
         if (this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot] == slot_external_access) {
             if (this->vdp.sc_skip) {
                 this->vdp.sc_skip--;
@@ -1561,8 +1585,9 @@ void genesis_VDP_cycle(struct genesis* this)
         }
     }
 
-    this->clock.vdp.hcount++;
-    if (this->clock.vdp.hcount >= 0xE9) this->clock.vdp.hcount = 0xE9;
-    if (this->clock.vdp.line_mclock >= MCLOCKS_PER_LINE)
+    //if (this->clock.vdp.hcount >= 0xE9) this->clock.vdp.hcount = 0xE9;
+    if (this->clock.vdp.line_mclock >= MCLOCKS_PER_LINE) {
+        //printf("\nLINE:%d SC_ARRAY:%d SC SLOT NUM:%d HCOUNT:%d SCANX:%d VBLANK:%d", this->clock.vdp.vcount, this->vdp.sc_array, this->vdp.sc_slot, this->clock.vdp.hcount, this->vdp.display->scan_x, this->clock.vdp.vblank_active);
         new_scanline(this);
+    }
 }

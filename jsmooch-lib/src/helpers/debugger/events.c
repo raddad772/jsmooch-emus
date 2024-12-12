@@ -178,19 +178,21 @@ void events_view_render(struct debugger_interface *dbgr, struct events_view *thi
                     draw_box_3x3(buf, upd->scan_x, upd->scan_y, out_width, out_height, ev->color);
                     break;
                 case ev_timing_master_clock: {
-                    float clk = (float)(upd->mclks - this->master_clocks.lines[this->master_clocks.front_buffer][upd->scan_y]);
+                    i64 mc_per_line = this->master_clocks.per_line;
+                    i64 mc_cur = this->master_clocks.lines[this->master_clocks.front_buffer][upd->scan_y];
+                    i64 clk = (i64)upd->mclks - mc_cur;
                     u32 sx;
-                    u64 mcpl = this->master_clocks.per_line;
-                    if (clk > mcpl) {
-                        mcpl -= (this->master_clocks.per_line * this->display[0].height);
+                    float perc = (float)clk / ((float)mc_per_line);
+                    if (clk < 0) {
+                        //printf("\nOH NO ITS OFF THE LEFT");
+                        sx = 1;
                     }
-                    // TODO: double buffer more debug stuff
-                    float perc = clk / ((float)mcpl);
-                    if (clk > mcpl) {
-                        printf("\nUH OH LINE %d  mclk:%lld   line_clock:%lld", upd->scan_y, upd->mclks, this->master_clocks.lines[this->master_clocks.front_buffer][upd->scan_y]);
-                        sx = this->display[0].width - 2;
+                    else if (clk > mc_per_line) {
+                        sx = this->display[0].width - 1;
                     }
-                    else sx = (u32)(perc * ((float)this->display[0].width));
+                    else {
+                        sx = (u32)(perc * ((float)this->display[0].width));
+                    }
                     draw_box_3x3(buf, sx, upd->scan_y, out_width, out_height, ev->color);
                     break; }
                 default:

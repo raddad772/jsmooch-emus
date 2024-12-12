@@ -82,7 +82,7 @@ void genesis_mainbus_write_a1k(struct genesis* this, u32 addr, u16 val, u16 mask
             return;
         case 0xA11100: // Z80 BUSREQ
             this->io.z80.bus_request = ((val >> 8) & 1);
-            //if (this->io.z80.bus_request) if (this->io.z80.reset_line) this->io.z80.bus_ack = 1;
+            //if (this->io.z80.bus_request && this->io.z80.reset_line) this->io.z80.bus_ack = 1;
             //printf("\nZ80 BUSREQ:%d cycle:%lld", this->io.z80.bus_request, this->clock.master_cycle_count);
             return;
         case 0xA11200: // Z80 reset line
