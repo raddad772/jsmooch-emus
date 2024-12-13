@@ -27,6 +27,7 @@ static void debugger_view_do_update(struct debugger_interface *dbgr, struct debu
 
 void debugger_report_frame(struct debugger_interface *dbgr)
 {
+    if (dbgr == NULL) return;
     for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
         struct debugger_view *dview = cvec_get(&dbgr->views, i);
         if (dview->kind == dview_events) {

@@ -493,7 +493,7 @@ static u32 calc_stride(u32 out_width, u32 in_width)
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
-static inline u32 gen_to_rgb(u32 color, int use_palette)
+static inline u32 gen_to_rgb(u32 color, int use_palette, u32 priority, u32 shade_priorities)
 {
     u32 o = 0xFF000000;
     u32 r, g, b;
@@ -505,6 +505,7 @@ static inline u32 gen_to_rgb(u32 color, int use_palette)
     else {
         b = g = r = (color & 15) * 16;
     }
+    if (shade_priorities && priority) b = g = r = 0xFFFFFF;
     return o | b | (g << 8) | (r << 16);
 }
 
@@ -552,6 +553,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
 
     u32 nametable_addr;
 
+    struct debugger_widget_checkbox *shade_priorities_cb = NULL;
     struct debugger_widget_checkbox *draw_box_cb = NULL;
     struct debugger_widget_radiogroup *shade_by_rg = NULL;
     struct debugger_widget_radiogroup *shade_kind_rg = NULL;
@@ -566,14 +568,17 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
         SHADE_WHITE = 2
     } shade_kind;
     u32 draw_bounding_box = 0;
+    u32 shade_priorities = 0;
     shade_by = SB_NONE;
     shade_kind = SHADE_RED;
     if (plane_num < 2) {
         //draw_box_cb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
-        shade_by_rg = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
-        shade_kind_rg = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
+        shade_priorities_cb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
+        shade_by_rg = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
+        shade_kind_rg = &((struct debugger_widget *)cvec_get(&dview->options, 2))->radiogroup;
         shade_by = shade_by_rg->value;
         shade_kind = shade_kind_rg->value;
+        shade_priorities = shade_priorities_cb->value;
     }
     switch(plane_num) {
         case 0:
@@ -609,6 +614,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
             u32 vflip = (tile_data >> 12) & 1;
             u32 palette = ((tile_data >> 13) & 3) << 4;
             u8 *pattern_start_ptr = (u8*)this->vdp.VRAM + ((tile_data & 0x7FF) << 5);
+            u32 priority = (tile_data >> 15) & 1;
 
             u32 *screen_tx_ptr = screen_ty_ptr + (screen_tx * 8); // however many x in
 
@@ -627,13 +633,13 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
                     v = hflip ? px2 & 15 : px2 >> 4;
                     if ((v == 0) && use_bg) v = bg_color;
                     else v = (v == 0) ? 0 : this->vdp.CRAM[palette + v];
-                    *outptr = gen_to_rgb(v, use_screen_palette);
+                    *outptr = gen_to_rgb(v, use_screen_palette, priority, shade_priorities);
                     outptr++;
 
                     v = hflip ? px2 >> 4 : px2 & 15;
                     if ((v == 0) && use_bg) v = bg_color;
                     else v = (v == 0) ? 0 : this->vdp.CRAM[palette + v];
-                    *outptr = gen_to_rgb(v, use_screen_palette);
+                    *outptr = gen_to_rgb(v, use_screen_palette, priority, shade_priorities);
                     outptr++;
                 }
             }
@@ -737,8 +743,11 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width*(4*512)); // Clear out 512 lines
 
-    struct debugger_widget *draw_boxes_only_w =(struct debugger_widget *)cvec_get(&dview->options, 0);
-    struct debugger_widget *use_palette_w = (struct debugger_widget *)cvec_get(&dview->options, 1);
+
+    struct debugger_widget *shade_priorities_w =(struct debugger_widget *)cvec_get(&dview->options, 0);
+    struct debugger_widget *draw_boxes_only_w =(struct debugger_widget *)cvec_get(&dview->options, 1);
+    struct debugger_widget *use_palette_w = (struct debugger_widget *)cvec_get(&dview->options, 2);
+    u32 shade_priorities = shade_priorities_w->checkbox.value;
     u32 use_palette = use_palette_w->checkbox.value;
     u32 draw_boxes_only = draw_boxes_only_w->checkbox.value;
     if (draw_boxes_only) {
@@ -767,12 +776,13 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
     for (u32 spr_index = 0; spr_index < num_sprites; spr_index++) {
         u32 spr_num = sprite_order[(num_sprites-1) - spr_index];
         u16 *sp = sprite_table_ptr + (4 * spr_num);
-        u32 hflip, vflip, hpos, vpos, hsize, vsize, palette, gfx;
+        u32 hflip, vflip, hpos, vpos, hsize, vsize, palette, gfx, priority;
         vpos = sp[0] & 0x1FF;
         hsize = ((sp[1] >> 10) & 3) + 1;
         vsize = ((sp[1] >> 8) & 3) + 1;
         hflip = (sp[2] >> 11) & 1;
         vflip = (sp[2] >> 12) & 1;
+        priority = (sp[2] >> 15) & 1;
         palette = ((sp[2] >> 13) & 3) << 4;
         hpos = sp[3] & 0x1FF;
         gfx = sp[2] & 0x7FF;
@@ -820,7 +830,7 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
                                     if (screenx < 511) {
                                         if (v[i] != 0) {
                                             u32 n = use_palette ? this->vdp.CRAM[palette | v[i]] : v[i];
-                                            u32 c = gen_to_rgb(n, use_palette);
+                                            u32 c = gen_to_rgb(n, use_palette, priority, shade_priorities);
                                             *outptr = c;
                                         }
                                     }
@@ -949,6 +959,7 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
             iv->viewport.p[0] = (struct ivec2){ 0, 0 };
             iv->viewport.p[1] = (struct ivec2){ 1024, 1024 };
             //debugger_widgets_add_checkbox(&dview->options, "Draw scroll boundary", 1, 0, 1);
+            debugger_widgets_add_checkbox(&dview->options, "Shade priorities", 1, 0, 1);
             struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
             debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
             debugger_widget_radiogroup_add_button(rg, "Inside", 1, 1);
@@ -1040,7 +1051,8 @@ static void setup_image_view_sprites(struct genesis* this, struct debugger_inter
 
     snprintf(iv->label, sizeof(iv->label), "Sprites Debug");
 
-    debugger_widgets_add_checkbox(&dview->options, "Draw boxes only", 1, 0, 0);
+    debugger_widgets_add_checkbox(&dview->options, "Shade priorities", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Draw boxes only", 1, 0, 1);
     debugger_widgets_add_checkbox(&dview->options, "Use palette", 1, 1, 1);
 }
 
@@ -1098,9 +1110,9 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
     DEBUG_REGISTER_EVENT("CRAM write", 0x802060, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_WRITE_CRAM);
     DEBUG_REGISTER_EVENT("IRQ: HBlank", 0xFF0000, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_HBLANK_IRQ);
     DEBUG_REGISTER_EVENT("IRQ: VBlank", 0x00FFFF, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_VBLANK_IRQ);
-    DEBUG_REGISTER_EVENT("DMA start: fill", 0xFF00FF, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_FILL_START);
-    DEBUG_REGISTER_EVENT("DMA start: copy", 0x004090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_COPY_START);
-    DEBUG_REGISTER_EVENT("DMA start: load", 0xFF4090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_LOAD_START);
+    DEBUG_REGISTER_EVENT("DMA fill", 0xFF00FF, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_FILL);
+    DEBUG_REGISTER_EVENT("DMA copy", 0x004090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_COPY);
+    DEBUG_REGISTER_EVENT("DMA load", 0xFF4090, DBG_GEN_CATEGORY_VDP, DBG_GEN_EVENT_DMA_LOAD);
 
     SET_EVENT_VIEW(this->z80);
     SET_EVENT_VIEW(this->m68k);

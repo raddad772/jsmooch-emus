@@ -31,14 +31,16 @@ enum interlace_modes{
 
 enum slot_kinds {
     slot_hscroll_data=1,
-    slot_layer_a_mapping=2,
-    slot_layer_a_pattern=3,
-    slot_layer_b_mapping=4,
-    slot_layer_b_pattern=5,
-    slot_sprite_mapping=6,
-    slot_sprite_pattern=7,
-    slot_external_access=8,
-    slot_refresh_cycle=9
+    slot_layer_a_mapping,
+    slot_layer_a_pattern,
+    slot_layer_b_mapping,
+    slot_layer_b_pattern,
+    slot_layer_b_pattern_first_trigger,
+    slot_layer_b_pattern_trigger,
+    slot_sprite_mapping,
+    slot_sprite_pattern,
+    slot_external_access,
+    slot_refresh_cycle
 };
 
 enum FIFO_target {
@@ -64,7 +66,7 @@ struct genesis_vdp {
         u32 bus_locked;
         u32 interlace_field;
         u32 vblank;
-        u32 h32, h40;
+        u32 h40;
         u32 fast_h40;
 
         u32 x_scan_stride;
@@ -171,6 +173,9 @@ struct genesis_vdp {
     struct {
         u32 screen_x;
         u32 screen_y;
+        u32 sprite_mappings;
+        u32 sprite_patterns;
+        u32 dot_overflow;
     } line;
 
     char term_out[16384]; // YES This is memory unsafe.
@@ -208,10 +213,9 @@ struct genesis_vdp {
         u32 px_displayed[2][3][32768];
     } debug;
 
-    i32 last_r;
-    u64 line_start_clock;
-
-    u32 hscroll_debug;
+    struct {
+        u32 h40;
+    } latch;
 
     struct {
         u32 left_col, right_col;

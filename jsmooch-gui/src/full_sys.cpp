@@ -613,11 +613,11 @@ void full_system::load_default_ROM()
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
-            //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
@@ -656,7 +656,7 @@ void full_system::load_default_ROM()
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
             //dbg_enable_trace();
-            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
@@ -672,7 +672,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
             //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "battletech.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "test1536.bin", nullptr); // works!
@@ -715,9 +715,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mortalkombat3.md", nullptr); // works fine
             //worked = grab_ROM(&ROMs, which, "gauntlet4.md", nullptr); // runs unsteadily?
             //worked = grab_ROM(&ROMs, which, "tmnt_hyperstone.md", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "zero_squirrel.md", nullptr); // slightly glitchy background in first stage
-            //worked = grab_ROM(&ROMs, which, "zero_tolerance.md", nullptr); // same as 2
-            //worked = grab_ROM(&ROMs, which, "zero_tolerance_2.md", nullptr); // some sprite priority issues with hands needs cleaning up
+            //worked = grab_ROM(&ROMs, which, "zero_squirrel.md", nullptr); // works fine
+            //worked = grab_ROM(&ROMs, which, "zero_tolerance.md", nullptr); // works fine
+            //worked = grab_ROM(&ROMs, which, "zero_tolerance_2.md", nullptr); // works fine
             //worked = grab_ROM(&ROMs, which, "devilish.md", nullptr); // slight gfx corruption, seems ifne to play
             //worked = grab_ROM(&ROMs, which, "toy_story.md", nullptr); // works great, weird colors on title
             //worked = grab_ROM(&ROMs, which, "rbi_baseball_3.md", nullptr); // works fine
@@ -730,9 +730,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // seems fine
             //worked = grab_ROM(&ROMs, which, "star_cruiser.bin", nullptr); // seems fine? hard to say
             //worked = grab_ROM(&ROMs, which, "sonic_spinball.md", nullptr); // same sprite priority issue
-            //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // glitchy sega window then freeze
+            //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well
             //worked = grab_ROM(&ROMs, which, "blockout.md", nullptr); // works well
-            //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works but a little odd gfx corruption?
+            //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
 
             break;
         default:

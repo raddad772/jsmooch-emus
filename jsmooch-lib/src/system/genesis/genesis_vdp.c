@@ -6,7 +6,7 @@
  * NOTE: parts of the DMA subsystem are almost directly from Ares.
  * I wanted to get it right and write a good article about it. Finding accurate
  *  info was VERY difficult, so I kept very close to the best source of
- *  info I could find - Ares.
+ *  info I could find - Ares
  */
 
 #include <stdlib.h>
@@ -34,14 +34,18 @@
 #define DEBUG_PIXELS_PER_LINE 440
 #define DEBUG_MCLOCK_DIVISOR (MCLOCKS_PER_LINE / DEBUG_PIXELS_PER_LINE)
 //#define MCLOCKS_PER_LINE 3400
-#define SC_HSYNC_GOES_OFF 5
-#define SC_HSYNC_GOES_ON 658
 
-#define SC_SLOW_SLOTS 662
+#define SC_HSYNC_GOES_OFF_H32 24
+#define SC_HSYNC_GOES_OFF_H40 12
+#define SC_HSYNC_GOES_ON_H32 658
+#define SC_HSYNC_GOES_ON_H40 788
+
+/*#define SC_SLOW_SLOTS 662
 #define HSYNC_GOES_OFF (SC_HSYNC_GOES_OFF * 5)
 #define HSYNC_GOES_ON (SC_HSYNC_GOES_ON*5)
 #define SLOW_MCLOCKS_START (SC_SLOW_SLOTS*5)
-#define HBLANK_START 1280
+#define HBLANK_START 1280*/
+
 
 //    UDS<<2 + LDS           neither   just LDS   just UDS    UDS+LDS
 static u32 write_maskmem[4] = { 0,     0xFF00,    0x00FF,      0 };
@@ -154,10 +158,20 @@ static u16 read_counter(struct genesis* this)
 void init_slot_tables(struct genesis* this)
 {
     // scanline h32
+    // !HSYNC low
+    //7X Sprite Tile Row (previous line)
+    //68K Access Slot
+    //Horizontal Scroll Data
+    //4X Sprite Tile Row (previous line)
+    //!HSYNC high
+    // the hsync goes low in same place here...
+
 #define SR(start,end,value) for (u32 i = (start); i < (end); i++) { s[i] = value; }
     enum slot_kinds *s = &this->vdp.slot_array[SC_ARRAY_H32][0];
+    // still slow-clock here
     s[0] = slot_hscroll_data;
     SR(1,5,slot_sprite_pattern);
+    // HSYNC HI here, and fast-clock
     s[5] = slot_layer_a_mapping;
     s[6] = slot_sprite_pattern;
     SR(7,9,slot_layer_a_pattern);
@@ -166,6 +180,7 @@ void init_slot_tables(struct genesis* this)
     SR(12,14,slot_layer_b_pattern);
 
     u32 sn = 13;
+    u32 first = 1;
     for (u32 j = 0; j < 5; j++) { // repeat 5 times
          for (u32 x = 0; x < 4; x++) { // repeat 4 times with minor change
 #define S(x) s[sn] = x; sn++
@@ -177,29 +192,55 @@ void init_slot_tables(struct genesis* this)
              S(slot_layer_b_mapping);
              S(slot_sprite_mapping);
              S(slot_layer_b_pattern);
-             S(slot_layer_b_pattern);
+             if (first) {
+                 first = 0;
+                 S(slot_layer_b_pattern_first_trigger);
+             }
+             else {
+                 S(slot_layer_b_pattern_trigger);
+             }
         }
     }
     SR(141, 143, slot_external_access);
     SR(143, 156, slot_sprite_pattern);
     s[156] = slot_external_access;
-    SR(157, 170, slot_sprite_pattern);
+    SR(157, 159, slot_sprite_pattern);
+    SR(159, 164, slot_sprite_pattern);
+    // HSYNC LOW
+    SR(164, 170, slot_sprite_pattern);
     s[170] = slot_external_access;
 
     // Now do h40
     s = &this->vdp.slot_array[SC_ARRAY_H40][0];
+    // slow-clock first 6 clocks
     s[0] = slot_hscroll_data;
     SR(1,5,slot_sprite_pattern);
+    // now fast-clock
     s[5] = slot_layer_a_mapping;
     s[6] = slot_sprite_pattern;
     s[7] = s[8] = slot_layer_a_pattern;
     s[9] = slot_layer_b_mapping;
     s[10] = slot_sprite_pattern;
     s[11] = s[12] = slot_layer_b_pattern;
+    // -1 fetch finish @ 12
+    // then every 8 cycles @0 20 times
+    // -1=12,
+    // 0=20
+    // 1=28
+    // 2=36
+    // 3=44
+    // 4=52
+    // 12 + (n+1)*8
+    // so for n=19, sc 172 should be the last draw time
+    // according to this we are 8 early
 
+
+    // measured:
+    // COL:0 MCLOCK:215 SC:13 H40:1
+    // COL:19 MCLOCK:2648 SC:165 H40:1
+    // HSYNC ON M:2635 SC:164 H40:1
     sn = 13;
-    printf("\nS1! %d", sn);
-
+    first = 1;
     for (u32 j = 0; j < 5; j++) {
         for (u32 x = 0; x < 4; x++) {
             S(slot_layer_a_mapping);
@@ -210,13 +251,25 @@ void init_slot_tables(struct genesis* this)
             S(slot_layer_b_mapping);
             S(slot_sprite_mapping);
             S(slot_layer_b_pattern);
-            S(slot_layer_b_pattern);
+            if (first) {
+                S(slot_layer_b_pattern_first_trigger);
+                first = 0;
+            }
+            else {
+                S(slot_layer_b_pattern_trigger);
+            }
         }
     }
     SR(173,175, slot_external_access);
-    SR(175,198, slot_sprite_pattern);
+    SR(175,197, slot_sprite_pattern); // 22
+    // SLO CLOCK here
+    s[197] = slot_sprite_pattern; // +1
     s[198] = slot_external_access;
-    SR(199, 209, slot_sprite_pattern);
+    SR(199, 210, slot_sprite_pattern); // 199...209 = 11 slots
+
+    // first 6 clocks slow.
+    // next 191 fast
+    // then starting at 197? slow again
 
     // Now do rendering disabled
     s = &this->vdp.slot_array[SC_ARRAY_DISABLED][0];
@@ -253,7 +306,6 @@ void genesis_VDP_init(struct genesis* this)
     this->vdp.term_out_ptr = &this->vdp.term_out[0];
     init_slot_tables(this);
     M68k_register_iack_handler(&this->m68k, (void*)this, &genesis_VDP_handle_iack);
-    this->vdp.last_r = 50000;
 }
 
 void genesis_VDP_delete(struct genesis *this)
@@ -263,12 +315,16 @@ void genesis_VDP_delete(struct genesis *this)
 
 static void set_clock_divisor(struct genesis* this)
 {
-    u32 clk = 5; // 5 for h32, it's slow!
+    u32 clk = 10; // 5 for h32, it's slow! *2
 
     // IF H40. and IF we're not in hsync. and IF we're not at the slow mclocks start
-    if (this->vdp.io.h40 && (this->clock.vdp.line_mclock >= HSYNC_GOES_OFF) && (
-            this->clock.vdp.line_mclock < SLOW_MCLOCKS_START))
-        clk = 4;
+    if (this->vdp.latch.h40) {
+        // If we're in H40 mode, hsync is 197 through 210 around to 2.
+        // that's 17 sc cocks. 8 of those should be /4, 9 are /5
+        // in this case, our SC clock will be /5 from 199-210
+        if (this->vdp.sc_slot < 199)
+            clk = 8;
+    }
 
     this->clock.vdp.clock_divisor = (i32)clk;
 }
@@ -299,10 +355,10 @@ static void hblank(struct genesis* this, u32 new_value)
 
 static void set_sc_array(struct genesis* this)
 {
-    if ((this->clock.vdp.vblank_active) || (!this->vdp.io.enable_display)) {
-        this->vdp.sc_array = SC_ARRAY_DISABLED + this->vdp.io.h40;
+    if (((this->clock.vdp.vblank_active) && (this->clock.vdp.vcount != 261)) || (!this->vdp.io.enable_display)) {
+        this->vdp.sc_array = SC_ARRAY_DISABLED + this->vdp.latch.h40;
     }
-    else this->vdp.sc_array = this->vdp.io.h40;
+    else this->vdp.sc_array = this->vdp.latch.h40;
 }
 
 static void vblank(struct genesis* this, u32 new_value)
@@ -353,15 +409,18 @@ static void print_scroll_info(struct genesis* this)
 
 static void new_scanline(struct genesis* this)
 {
-    //printf("\nL:%d SC_DMAS:%d", this->clock.vdp.vcount, this->vdp.io.sc_dmas);
-    //this->vdp.io.sc_dmas = 0;
+    // We use info from last line to render this one, before we reset it!
+    render_sprites(this);
     this->clock.vdp.vcount++;
+    this->vdp.line.sprite_mappings = 0;
+    this->vdp.line.sprite_patterns = 0;
+    this->vdp.line.dot_overflow = 0;
+    this->vdp.latch.h40 = this->vdp.io.h40;
     if (this->clock.vdp.vcount == 262) {
         new_frame(this);
     }
     if (this->dbg.events.view.vec) {
         debugger_report_line(this->dbg.interface, this->clock.vdp.vcount);
-        //this->vdp.line_start_clock = this->clock.master_cycle_count;
     }
     this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;
@@ -410,9 +469,6 @@ static void new_scanline(struct genesis* this)
                 r->vscroll[1][i] = vscrolls[1];
             }
         }
-
-        // Render out sprites...
-        render_sprites(this);
 
         // So, fetches happen in 16-pixel (2-word) groups.
         // There's an extra 16-pixel fetch off the left side of the screen, for fine hscroll &15
@@ -469,7 +525,7 @@ static void recalc_window(struct genesis* this)
     //this->vdp.window.left_col =
     if (this->vdp.io.window_RIGHT) {
         this->vdp.window.left_col = this->vdp.io.window_h_pos;
-        this->vdp.window.right_col = this->vdp.io.h40 ? 40 : 32;
+        this->vdp.window.right_col = this->vdp.latch.h40 ? 40 : 32;
     }
     else {
         this->vdp.window.left_col = 0;
@@ -484,7 +540,7 @@ static void recalc_window(struct genesis* this)
         this->vdp.window.bottom_row = this->vdp.io.window_v_pos;
     }
     this->vdp.window.nt_base = this->vdp.io.window_table_addr;
-    if (this->vdp.io.h40)
+    if (this->vdp.latch.h40)
         this->vdp.window.nt_base &= 0b111110; // Ignore lowest bit in h40
     this->vdp.window.nt_base <<= 10;
     //printf("\nWINDOW LEFT:%d RIGHT:%d TOP:%d BOTTOM:%d", this->vdp.window.left_col, this->vdp.window.right_col, this->vdp.window.top_row, this->vdp.window.bottom_row);
@@ -507,7 +563,6 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
                 vdp->io.counter_latch_value = read_counter(this);
             vdp->io.counter_latch = (val >> 1) & 1;
             vdp->io.enable_overlay = (val & 1) ^ 1;
-            //printf("\nDISPLAY ENABLED: %d", vdp->io.enable_display);
             genesis_bus_update_irqs(this);
             // TODO: handle more bits
             return;
@@ -563,11 +618,8 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             return;
         case 12: // Mode register 4
             // TODO: handle more of these
-            vdp->io.h32 = (val & 1) == 0;
             vdp->io.h40 = (val & 1) != 0;
             set_sc_array(this);
-            //if (vdp->io.h32) printf("\n32-cell 256 pixel mode selected");
-            //if (vdp->io.h40) printf("\n40-cell 320 pixel mode selected");
             set_clock_divisor(this);
             recalc_window(this);
             vdp->io.enable_shadow_highlight = (val >> 3) & 1;
@@ -700,7 +752,7 @@ static void dma_load(struct genesis* this)
     u16 data = genesis_mainbus_read(this, addr & 0xFFFFFF, 1, 1, 0, 1);
     //printf("\nVDP DMA LOAD ADDR:%04x DATA:%04x LEN:%04x VBLANK:%d DIS_ENABLE:%d LINE:%d cyc:%lld", (u32)addr, (u32)data, (u32)this->vdp.dma.len, this->clock.vdp.vblank_active, this->vdp.io.enable_display, this->clock.vdp.vcount, this->clock.master_cycle_count);
     write_data_port(this, data, 0);
-    DBG_EVENT(DBG_GEN_EVENT_DMA_LOAD_START);
+    DBG_EVENT(DBG_GEN_EVENT_DMA_LOAD);
 
     dma_source_inc(this);
     if (--this->vdp.dma.len == 0) {
@@ -712,7 +764,7 @@ static void dma_load(struct genesis* this)
 
 static void dma_fill(struct genesis* this)
 {
-    DBG_EVENT(DBG_GEN_EVENT_DMA_FILL_START);
+    DBG_EVENT(DBG_GEN_EVENT_DMA_FILL);
     this->vdp.dma.active = 1;
     switch(this->vdp.command.target) {
         case 1:
@@ -743,7 +795,7 @@ static void dma_fill(struct genesis* this)
 static void dma_copy(struct genesis* this)
 {
     this->vdp.dma.active = 1;
-    DBG_EVENT(DBG_GEN_EVENT_DMA_COPY_START);
+    DBG_EVENT(DBG_GEN_EVENT_DMA_COPY);
 
     u32 data = VRAM_read_byte(this, this->vdp.dma.source_address);
     //if (dbg.traces.vdp4) DFT("\nVDP DMA COPY VRAM SRC:%04x DEST:%04x DATA:%04x", (u32)this->vdp.dma.source_address, (u32)this->vdp.command.address, (u32)data);
@@ -793,12 +845,12 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
             switch(this->vdp.dma.mode) {
                 case 0:
                 case 1:
-                    DBG_EVENT(DBG_GEN_EVENT_DMA_LOAD_START);
+                    DBG_EVENT(DBG_GEN_EVENT_DMA_LOAD);
                     break;
                 case 2:
                     break;
                 case 3:
-                    DBG_EVENT(DBG_GEN_EVENT_DMA_COPY_START);
+                    DBG_EVENT(DBG_GEN_EVENT_DMA_COPY);
                     break;
             }
         }
@@ -901,7 +953,7 @@ static void write_data_port(struct genesis* this, u16 val, u32 is_cpu)
     if(this->vdp.dma.fill_pending) {
         this->vdp.dma.fill_pending = 0;
         this->vdp.dma.fill_value = val >> 8;
-        DBG_EVENT(DBG_GEN_EVENT_DMA_FILL_START);
+        DBG_EVENT(DBG_GEN_EVENT_DMA_FILL);
         //if (dbg.traces.vdp3) DFT("\nWR VDP DATA, FILL START");
         /*if (this->clock.master_cycle_count == 53021297) {
             printf("\nPC: %06x", this->m68k.regs.PC);
@@ -1041,7 +1093,6 @@ void genesis_VDP_mainbus_write(struct genesis* this, u32 addr, u16 val, u16 mask
 
 void genesis_VDP_reset(struct genesis* this)
 {
-    this->vdp.io.h32 = 0;
     this->vdp.io.h40 = 1; // H40 mode to start
     this->clock.vdp.hblank_active = this->clock.vdp.vblank_active = 0;
     this->clock.vdp.hcount = this->clock.vdp.vcount = 0;
@@ -1085,7 +1136,7 @@ static void get_vscrolls(struct genesis* this, int column, u32 *planes)
         return;
     }
     if (column == -1) { // TODO: correctly simulate this
-        if (this->vdp.io.h40) {
+        if (this->vdp.latch.h40) {
             u32 v = this->vdp.VSRAM[19] & this->vdp.VSRAM[39];
             planes[0] = v;
             planes[1] = v;
@@ -1098,7 +1149,7 @@ static void get_vscrolls(struct genesis* this, int column, u32 *planes)
         }
     }
     //u32 col = (u32)column << 1;
-    u32 col = (u32)column;
+    u32 col = (u32)column << 1;
     assert(col<20);
     planes[0] = this->vdp.VSRAM[col];
     planes[1] = this->vdp.VSRAM[col+1];
@@ -1175,7 +1226,7 @@ static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row
         tile_row = this->clock.vdp.vcount >> 3;
         tile_col = this->vdp.fetcher.column << 1;
         fine_row = this->clock.vdp.vcount & 7;
-        foreground_width = this->vdp.io.h40 ? 64 : 32;
+        foreground_width = this->vdp.latch.h40 ? 64 : 32;
     }
     else slice->plane = plane_num;
     slice->v = row & this->vdp.io.foreground_height_mask_pixels;
@@ -1233,15 +1284,14 @@ struct spr_out {
     u32 gfx; // tile # in VRAM
 };
 
-static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
+static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites, u32 vcount, u32 sprites_max_on_line)
 {
-    u32 compare_y = this->clock.vdp.vcount + 128;
+    u32 compare_y = vcount + 128;
     u16 *sprite_table_ptr = this->vdp.VRAM + this->vdp.io.sprite_table_addr;
     u32 num = 0;
     u16 next_sprite = 0;
     u32 tiles_on_line = 0;
-    u32 sprites_total_max = this->vdp.io.h40 ? 80 : 64;
-    u32 sprites_max_on_line = this->vdp.io.h40 ? 20 : 16;
+    u32 sprites_total_max = this->vdp.latch.h40 ? 80 : 64;
     for (u32 i = 0; i < sprites_total_max; i++) {
         u16 *sp = sprite_table_ptr + (4 * next_sprite);
         next_sprite = sp[1] & 127;
@@ -1251,12 +1301,15 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
 
         u32 sprite_max = sprites->vpos + (sprites->vsize * 8);
         if ((compare_y >= sprites->vpos) && (compare_y < sprite_max)) {
+            sprites->hpos = sp[3] & 0x1FF;
+            if (sprites->hpos == 0) {
+                if (num==0) continue;
+                return num;
+            }
             sprites->hsize = ((sp[1] >> 10) & 3) + 1;
             sprites->hflip = (sp[2] >> 11) & 1;
             sprites->vflip = (sp[2] >> 12) & 1;
             sprites->palette = ((sp[2] >> 13) & 3) << 4;
-            sprites->hpos = sp[3] & 0x1FF;
-            // TODO: exit when x = 0?
             sprites->gfx = sp[2] & 0x7FF;
             sprites->priority = (sp[2] >> 15) & 1;
 
@@ -1265,7 +1318,7 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites)
             sprites++;
             num++;
         }
-        if ((tiles_on_line >= 40) || (num >= sprites_max_on_line)) break;
+        if ((tiles_on_line >= this->vdp.line.sprite_patterns) || (num >= sprites_max_on_line)) break;
     }
 
     return num;
@@ -1281,23 +1334,27 @@ static inline u32 sprite_tile_index(u32 tile_x, u32 tile_y, u32 hsize, u32 vsize
 
 static void render_sprites(struct genesis *this)
 {
-    // Render sprites for a whole line!
+    // Render sprites for the next line!
+    u32 vc = (this->clock.vdp.vcount == 261) ? 0 : this->clock.vdp.vcount + 1;
+    if (vc >= 224) return;
+
     memset(&this->vdp.sprite_line_buf[0], 0, sizeof(this->vdp.sprite_line_buf));
 
-    // So. 80 hardware sprites, 8 bytes each
-    struct spr_out sprites[20];
+    struct spr_out sprites[20]; // Up to 20 can be visible on a line!
 
-    u32 num_sprites = fetch_sprites(this, &sprites[0]);
+    u32 num_sprites = fetch_sprites(this, &sprites[0], vc, this->vdp.line.sprite_mappings);
 
-    i32 xmax = this->vdp.io.h40 ? 320 : 256;
+    i32 xmax = this->vdp.latch.h40 ? 320 : 256;
 
-    u32 cur_y = this->clock.vdp.vcount + 128;
+    u32 cur_y = vc + 128;
+    u32 total_tiles = 0;
+    u32 max_tiles = this->vdp.latch.h40 ? 40 : 32;
 
     for (u32 spr=0; spr < num_sprites; spr++) {
         // Render sprite from left to right
         struct spr_out *sp = &sprites[spr];
-        u32 x_right = 128 + (this->vdp.io.h40 ? 320 : 256);
-        u32 tile_stride = sp->vsize;
+        //u32 x_right = 128 + (this->vdp.latch.h40 ? 320 : 256);
+        //u32 tile_stride = sp->vsize;
 
         u32 y_min = sp->vpos;
         u32 sp_line = cur_y - y_min;
@@ -1335,6 +1392,9 @@ static void render_sprites(struct genesis *this)
                     x++;
                 }
             }
+            total_tiles++;
+            if (total_tiles == 40) this->vdp.line.dot_overflow = 1;
+            if (total_tiles >= this->vdp.line.sprite_patterns) return;
         }
     }
 }
@@ -1343,8 +1403,8 @@ static void output_16(struct genesis* this)
 {
     // Point of this function is to render 16 pixels outta the ringbuffer, to the pixelbuffer. Also combine with sprites and priority.
     // At this point, there will be 16-31 pixels in the ring buffer.
-    u32 wide = this->vdp.io.h40 ? 4 : 5;
-    u32 xmax = this->vdp.io.h40 ? 320 : 256;
+    u32 wide = this->vdp.latch.h40 ? 4 : 5;
+    u32 xmax = this->vdp.latch.h40 ? 320 : 256;
     for (u32 num = 0; num < 16; num++) {
         struct genesis_vdp_pixel_buf *ring0 = this->vdp.ringbuf[PLANE_A].buf + this->vdp.ringbuf[PLANE_A].head;
         struct genesis_vdp_pixel_buf *ring1 = this->vdp.ringbuf[PLANE_B].buf + this->vdp.ringbuf[PLANE_B].head;
@@ -1382,8 +1442,8 @@ static void output_16(struct genesis* this)
         // I couldn't get it to work. Then I tried making my own and realized I was just reproducing Ares but
         //  understanding it, so gave in.
 
-#define solid_sprite (sprite->color & 15)
-#define above_sprite (sprite->has_px && solid_sprite && sprite->priority)
+#define solid_sprite (sprite->has_px && (sprite->color & 15))
+#define above_sprite (solid_sprite && sprite->priority)
 #define solid(plane) (ring##plane->has && (ring##plane->color & 15))
 #define above(plane) (solid(plane) && ring##plane->priority)
 
@@ -1456,6 +1516,7 @@ static void output_16(struct genesis* this)
 
 static void render_16_more(struct genesis* this)
 {
+    if (this->clock.vdp.vcount >= 224) return;
     // Fetch a slice
     u32 vscrolls[2];
     get_vscrolls(this, this->vdp.fetcher.column, vscrolls);
@@ -1471,6 +1532,7 @@ static void render_16_more(struct genesis* this)
         }
 
         fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, &slice, plane);
+        u32 col = this->vdp.fetcher.column;
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + 16) & plane_wrap;
 
         // If we just went from window to regular and (xscroll % 15) != 0, glitch time!
@@ -1492,11 +1554,11 @@ static void render_left_column(struct genesis* this)
 {
     // Fetch left column. Discard xscroll pixels, render the rest.
     //printf("\nRENDER LEFT COLUMN line:%d", this->clock.vdp.vcount);
+    if (this->clock.vdp.vcount >= 224) return;
     u32 plane_wrap = (8 * this->vdp.io.foreground_width) - 1;
 
     u32 vscrolls[2];
     get_vscrolls(this, -1, vscrolls);
-
     // Now draw 0-15 pixels of each one out to the ringbuffer...
     struct slice slice;
     for (u32 pl = 0; pl < 2; pl++) {
@@ -1527,67 +1589,69 @@ void genesis_VDP_cycle(struct genesis* this)
 
     // Add our clock divisor
     this->clock.vdp.line_mclock += this->clock.vdp.clock_divisor;
-    u32 sc_clock = this->clock.vdp.line_mclock >> 2;
 
     // Set up next clock divisor
     set_clock_divisor(this);
 
-    // 4 of our cycles per SC transfer
-    u32 run_dma = 0, run_pixels = 0;
-    this->vdp.sc_count = (this->vdp.sc_count + 1) & 3;
-    if ((this->vdp.sc_count & 1) == 0) {
-        this->vdp.display->scan_x++;
-        this->clock.vdp.hcount++;
-    }
-    if (this->vdp.sc_count == 0) {
+    // 2 of our cycles per SC transfer
+    u32 run_dma = 0;
+
+    this->vdp.display->scan_x++;
+    this->clock.vdp.hcount++;
+
+    this->vdp.sc_count++;
+    if ((this->vdp.sc_count & 1) == 0) { // 1 SC clock per 2 of our cycles
         this->vdp.sc_slot++;
         // Do FIFO if this is an external slot
-        //if(this->clock.vdp.vcount == 258) printf("\nSC ARRAY:%d SLOT:%d VAL:%d HCOUNT:%d", this->vdp.sc_array, this->vdp.sc_slot, this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot], this->clock.vdp.hcount);
-        if (this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot] == slot_external_access) {
-            if (this->vdp.sc_skip) {
-                this->vdp.sc_skip--;
-            }
-            else run_dma = 1;
+        enum slot_kinds sk = this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot];
+        switch(sk) {
+            case slot_sprite_pattern:
+                this->vdp.line.sprite_patterns += this->vdp.io.enable_display;
+                break;
+            case slot_sprite_mapping:
+                this->vdp.line.sprite_mappings += this->vdp.io.enable_display;
+                break;
+            case slot_external_access:
+                if (this->vdp.sc_skip) { // because our load uses 16 bit transfers, we only do every other opportunity to mimic 8-bit transfers
+                    this->vdp.sc_skip--;
+                }
+                else run_dma = 1;
+                break;
+            case slot_layer_b_pattern_first_trigger:
+                render_left_column(this);
+                break;
+            case slot_layer_b_pattern_trigger:
+                render_16_more(this);
+                break;
         }
+
+        if (!this->vdp.latch.h40) { // h32
+            switch(this->vdp.sc_slot) {
+                case 6:
+                    hblank(this, 0);
+                    break;
+                case 164:
+                    hblank(this, 1);
+                    break;
+            }
+        }
+        else {
+            switch(this->vdp.sc_slot) {
+                case 3:
+                    hblank(this, 0);
+                    break;
+                case 197:
+                    hblank(this, 1);
+                    break;
+            }
+        };
     }
     run_dma |= (this->vdp.io.enable_display ^ 1);
     if (run_dma) {
         dma_run_if_ready(this);
-        //this->vdp.io.sc_dmas++;
     }
 
-    if (sc_clock == SC_HSYNC_GOES_OFF) {
-        //printf("\nHBLANK OFF %d x:%d", this->clock.vdp.vcount, this->vdp.line.screen_x);
-        hblank(this, 0);
-    }
-    if (sc_clock == SC_HSYNC_GOES_ON) {
-        hblank(this, 1);
-    }
-
-    if (this->vdp.io.enable_display && (this->clock.vdp.vcount < 224)) {
-        if (this->vdp.io.h32) {
-            // 1 sc count = 4 serial clocks. 2 serial clocks per pixel. so
-            // 1 sc count = 2 pixels
-            // we want to do 8 pixels every 4 SC count
-            i32 r = ((i32) this->vdp.sc_slot - 13) >> 1;
-            if ((r >= 0) && (this->vdp.last_r != r)) {
-                this->vdp.last_r = r;
-                if (r == 0) render_left_column(this);
-                else if (((r & 3) == 0) && (this->vdp.sc_slot < 142)) render_16_more(this);
-            }
-        } else {
-            i32 r = ((i32) this->vdp.sc_slot - 13) >> 1;
-            if ((r >= 0) && (this->vdp.last_r != r)) {
-                this->vdp.last_r = r;
-                if (r == 0) render_left_column(this);
-                else if (((r & 3) == 0) && (this->vdp.sc_slot < 173)) render_16_more(this);
-            }
-        }
-    }
-
-    //if (this->clock.vdp.hcount >= 0xE9) this->clock.vdp.hcount = 0xE9;
     if (this->clock.vdp.line_mclock >= MCLOCKS_PER_LINE) {
-        //printf("\nLINE:%d SC_ARRAY:%d SC SLOT NUM:%d HCOUNT:%d SCANX:%d VBLANK:%d", this->clock.vdp.vcount, this->vdp.sc_array, this->vdp.sc_slot, this->clock.vdp.hcount, this->vdp.display->scan_x, this->clock.vdp.vblank_active);
         new_scanline(this);
     }
 }
