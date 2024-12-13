@@ -120,6 +120,7 @@ static void serialize_vdp(struct genesis *this, struct serialized_state *state) 
     S(fetcher);
     S(ringbuf);
     S(debug);
+    S(latch);
     S(window);
 #undef S
 }
@@ -281,6 +282,7 @@ static void deserialize_vdp(struct genesis* this, struct serialized_state *state
     L(fetcher);
     L(ringbuf);
     L(debug);
+    L(latch);
     L(window);
 #undef L
 }

@@ -49,9 +49,6 @@ enum FIFO_target {
     ft_CRAM
 };
 
-
-
-
 struct genesis_vdp {
     struct genesis_vdp_sprite_pixel {
         u32 has_px, color, priority;
@@ -102,8 +99,6 @@ struct genesis_vdp {
         u32 window_v_pos;
         u32 window_RIGHT;
         u32 window_DOWN;
-
-        //u32 sc_dmas;
     } io;
 
     struct {
