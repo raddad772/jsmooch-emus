@@ -288,12 +288,14 @@ void GBA_present(struct physical_io_device *device, void *out_buf, u32 out_width
     assert(1==2);
 }
 
+// Thanks to Ares for this table
 static u32 genesis_color_lookup[4][8] =  {
         {  0,  29,  52,  70,  87, 101, 116, 130},  //shadow
         {  0,  52,  87, 116, 144, 172, 206, 255},  //normal
         {130, 144, 158, 172, 187, 206, 228, 255},  //highlight
         {0,0,0,0,0,0,0,0}
 };
+
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *geno = (u16 *)device->display.output[device->display.last_written];

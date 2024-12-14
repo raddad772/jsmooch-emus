@@ -1380,9 +1380,9 @@ static void render_sprites(struct genesis *this)
                 for (u32 ps = 0; ps < 2; ps++) {
                     if ((x >= 0) && (x < xmax)) {
                         u32 v = px[ps];
-                        if (v != 0) { // If there's not already a sprite pixel here, and ours HAS something other than transparent...
+                        //if (v != 0) { // If there's not already a sprite pixel here, and ours HAS something other than transparent...
                             struct genesis_vdp_sprite_pixel *p = &this->vdp.sprite_line_buf[x];
-                            if (p->has_px) {
+                            if ((p->has_px) && ((p->color & 15) != 0)) {
                                 this->vdp.sprite_collision = 1;
                             }
                             else {
@@ -1390,7 +1390,7 @@ static void render_sprites(struct genesis *this)
                                 p->priority = sp->priority;
                                 p->color = sp->palette | v;
                             }
-                        }
+                        //}
                     }
                     x++;
                 }
@@ -1577,7 +1577,7 @@ static void render_left_column(struct genesis* this)
         fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, hs & 0x3F0, vscrolls[plane]+this->clock.vdp.vcount, &slice, plane);
         u32 fine_x = this->vdp.fetcher.fine_x[plane];
         if ((((plane == 0) && (!in_window(this))) || (plane == 1)) && (fine_x > 0)) {
-            render_to_ringbuffer(this, plane, &slice, 15 - fine_x, 15);
+            render_to_ringbuffer(this, plane, &slice, 16 - fine_x, 15);
         }
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + fine_x) & plane_wrap;
     }
