@@ -656,7 +656,7 @@ void full_system::load_default_ROM()
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
             //dbg_enable_trace();
-            worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
@@ -733,7 +733,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well
             //worked = grab_ROM(&ROMs, which, "blockout.md", nullptr); // works well
             //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
+            worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
 
             break;
         default:

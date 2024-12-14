@@ -414,7 +414,6 @@ static void new_scanline(struct genesis* this)
     this->clock.vdp.vcount++;
     this->vdp.line.sprite_mappings = 0;
     this->vdp.line.sprite_patterns = 0;
-    this->vdp.line.dot_overflow = 0;
     this->vdp.latch.h40 = this->vdp.io.h40;
     if (this->clock.vdp.vcount == 262) {
         new_frame(this);
@@ -1303,7 +1302,8 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites, u32 vcou
         if ((compare_y >= sprites->vpos) && (compare_y < sprite_max)) {
             sprites->hpos = sp[3] & 0x1FF;
             if (sprites->hpos == 0) {
-                if (num==0) continue;
+                if (num==0) continue; // Masking not effective if first sprite
+                //if (this->vdp.line.dot_overflow) continue; // Except it IS effective if dot overflow happened
                 return num;
             }
             sprites->hsize = ((sp[1] >> 10) & 3) + 1;
@@ -1319,6 +1319,7 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites, u32 vcou
             num++;
         }
         if ((tiles_on_line >= this->vdp.line.sprite_patterns) || (num >= sprites_max_on_line)) break;
+        if ((next_sprite == 0) || (next_sprite >= sprites_total_max)) break;
     }
 
     return num;
@@ -1330,7 +1331,6 @@ static inline u32 sprite_tile_index(u32 tile_x, u32 tile_y, u32 hsize, u32 vsize
     u32 tx = hflip ? (hsize-1) - tile_x : tile_x;
     return (vsize * tx) + ty;
 }
-
 
 static void render_sprites(struct genesis *this)
 {
@@ -1349,6 +1349,8 @@ static void render_sprites(struct genesis *this)
     u32 cur_y = vc + 128;
     u32 total_tiles = 0;
     u32 max_tiles = this->vdp.latch.h40 ? 40 : 32;
+    u32 dot_overflow_amount = this->vdp.latch.h40 ? 40 : 32;
+    u32 dot_overflow_triggered = 0;
 
     for (u32 spr=0; spr < num_sprites; spr++) {
         // Render sprite from left to right
@@ -1393,10 +1395,16 @@ static void render_sprites(struct genesis *this)
                 }
             }
             total_tiles++;
-            if (total_tiles == 40) this->vdp.line.dot_overflow = 1;
-            if (total_tiles >= this->vdp.line.sprite_patterns) return;
+            if (total_tiles >= dot_overflow_amount) {
+                dot_overflow_triggered = 1;
+            }
+            if (total_tiles >= this->vdp.line.sprite_patterns) {
+                this->vdp.line.dot_overflow = dot_overflow_triggered;
+                return;
+            }
         }
     }
+    this->vdp.line.dot_overflow = dot_overflow_triggered;
 }
 
 static void output_16(struct genesis* this)
