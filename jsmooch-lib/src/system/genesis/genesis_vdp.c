@@ -1321,6 +1321,7 @@ static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites, u32 vcou
         if ((tiles_on_line >= this->vdp.line.sprite_patterns) || (num >= sprites_max_on_line)) break;
         if ((next_sprite == 0) || (next_sprite >= sprites_total_max)) break;
     }
+    //u32 delay = sprites_max_on_line - num
 
     return num;
 }
@@ -1387,7 +1388,7 @@ static void render_sprites(struct genesis *this)
                             else {
                                 p->has_px = 1;
                                 p->priority = sp->priority;
-                                p->color = sp->palette + v;
+                                p->color = sp->palette | v;
                             }
                         }
                     }
@@ -1439,7 +1440,6 @@ static void output_16(struct genesis* this)
         }
 
 
-
 #define PX_NONE 0
 #define PX_A 1
 #define PX_B 2
@@ -1475,7 +1475,7 @@ static void output_16(struct genesis* this)
             fg = bg;
 
         u32 pixel = fg; // Output pixel will now be sprite or backgorund color or A or B
-        u32 mode = 1;
+        u32 mode = 1; // 0 = shadow, 1 = normal, 2 = hightlight
 
 
         if(this->vdp.io.enable_shadow_highlight) {
@@ -1486,10 +1486,10 @@ static void output_16(struct genesis* this)
                     case 0x2E: mode  = 1; break;
                     case 0x3E: mode += 1; pixel = bg; break;
                     case 0x3F: mode  = 0; pixel = bg; break;
-                    default:  if (sprite->has_px) mode |= sprite->priority; break;
+                    default:  mode |= sprite->priority; break;
                 }
         }
-
+        u32 src = 0;
         u32 final_color = 0;
         switch(pixel) {
             case PX_A:
@@ -1497,12 +1497,15 @@ static void output_16(struct genesis* this)
                 break;
             case PX_B:
                 final_color = ring1->color;
+                src = 1;
                 break;
             case PX_SP:
                 final_color = sprite->color;
+                src = 2;
                 break;
             case PX_BG:
                 final_color = this->vdp.io.bg_color;
+                src = 3;
                 break;
             default:
                 assert(1==2);
@@ -1510,9 +1513,8 @@ static void output_16(struct genesis* this)
         }
 
         assert(final_color < 64);
-        final_color = this->vdp.CRAM[final_color] | (mode << 10);
+        final_color = this->vdp.CRAM[final_color] | (mode << 10) | (src << 12);
         for (u32 i = 0; i < wide; i++) {
-            assert(this->vdp.cur_pixel < (1280*240));
             this->vdp.cur_output[this->vdp.cur_pixel] = final_color;
 
             this->vdp.cur_pixel++;

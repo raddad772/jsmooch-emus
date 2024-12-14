@@ -288,6 +288,12 @@ void GBA_present(struct physical_io_device *device, void *out_buf, u32 out_width
     assert(1==2);
 }
 
+static u32 genesis_color_lookup[4][8] =  {
+        {  0,  29,  52,  70,  87, 101, 116, 130},  //shadow
+        {  0,  52,  87, 116, 144, 172, 206, 255},  //normal
+        {130, 144, 158, 172, 187, 206, 228, 255},  //highlight
+        {0,0,0,0,0,0,0,0}
+};
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *geno = (u16 *)device->display.output[device->display.last_written];
@@ -309,24 +315,12 @@ void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_w
             u32 color = geno[di];
             u32 mode = (color >> 10) & 3;
             color &= 0x1FF;
-            u32 r, g, b;
-            b = ((color >> 0) & 7) * 0x24;
-            g = ((color >> 3) & 7) * 0x24;
-            r = ((color >> 6) & 7) * 0x24;
-            if (mode != 1) { // Shadow...
-                b >>= 1; // Highlight!
-                g >>= 1;
-                r >>= 1;
-                if (mode == 2)
-                {
-                    r += 0x7F;
-                    g += 0x7F;
-                    b += 0x7F;
-                }
-            }
-            img8[b_out] = b;
+            u32 b = genesis_color_lookup[mode][((color >> 6) & 7)];
+            u32 g = genesis_color_lookup[mode][((color >> 3) & 7)];
+            u32 r = genesis_color_lookup[mode][((color >> 0) & 7)];
+            img8[b_out] = r;
             img8[b_out+1] = g;
-            img8[b_out+2] = r;
+            img8[b_out+2] = b;
             img8[b_out+3] = 255;
             if (is_event_view_present) {
                 rx += 3;

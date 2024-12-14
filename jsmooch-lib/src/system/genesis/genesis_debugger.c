@@ -735,6 +735,119 @@ static u32 sprite_tile_index(u32 tile_x, u32 tile_y, u32 hsize, u32 vsize, u32 h
     return (vsize * tx) + ty;
 }
 
+static u32 genesis_color_lookup[4][8] =  {
+        {  0,  29,  52,  70,  87, 101, 116, 130},  //shadow
+        {  0,  52,  87, 116, 144, 172, 206, 255},  //normal
+        {130, 144, 158, 172, 187, 206, 228, 255},  //highlight
+        {0,0,0,0,0,0,0,0}
+};
+
+static void render_image_view_output(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct genesis *this = (struct genesis *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width*(4*224)); // Clear out 224 lines
+
+    struct debugger_widget *shade_normal_b_w = (struct debugger_widget *)cvec_get(&dview->options, 0);
+    struct debugger_widget *shade_shadow_r_w =(struct debugger_widget *)cvec_get(&dview->options, 1);
+    struct debugger_widget *shade_highlight_g_w = (struct debugger_widget *)cvec_get(&dview->options, 2);
+    struct debugger_widget *draw_normal_w = (struct debugger_widget *)cvec_get(&dview->options, 3);
+    struct debugger_widget *draw_shadow_w = (struct debugger_widget *)cvec_get(&dview->options, 4);
+    struct debugger_widget *draw_highlight_w = (struct debugger_widget *)cvec_get(&dview->options, 5);
+    struct debugger_widget *apply_shadow_w = (struct debugger_widget *)cvec_get(&dview->options, 6);
+    struct debugger_widget *apply_highlight_w = (struct debugger_widget *)cvec_get(&dview->options, 7);
+    struct debugger_widget *highlight_a_w = (struct debugger_widget *)cvec_get(&dview->options, 8);
+    struct debugger_widget *highlight_b_w = (struct debugger_widget *)cvec_get(&dview->options, 9);
+    struct debugger_widget *highlight_sp_w = (struct debugger_widget *)cvec_get(&dview->options, 10);
+    struct debugger_widget *highlight_bg_w = (struct debugger_widget *)cvec_get(&dview->options, 11);
+    u32 shade_shadow_r = shade_shadow_r_w->checkbox.value;
+    u32 shade_highlight_g = shade_highlight_g_w->checkbox.value;
+    u32 shade_normal_b = shade_normal_b_w->checkbox.value;
+    u32 apply_shadow = apply_shadow_w->checkbox.value;
+    u32 apply_highlight = apply_highlight_w->checkbox.value;
+    u32 draw_normal = draw_normal_w->checkbox.value;
+    u32 draw_shadow = draw_shadow_w->checkbox.value;
+    u32 draw_highlight = draw_highlight_w->checkbox.value;
+    u32 highlight_a = highlight_a_w->checkbox.value;
+    u32 highlight_b = highlight_b_w->checkbox.value;
+    u32 highlight_sp = highlight_sp_w->checkbox.value;
+    u32 highlight_bg = highlight_bg_w->checkbox.value;
+    u16 *geno = (u16 *)this->vdp.display->output[this->vdp.display->last_written];
+
+    for (u32 sy = 0; sy < 224; sy++) {
+        u32 h40 = this->vdp.debug.output_rows[sy].h40;
+        u32 sx_max = h40 ? 320 : 256;
+        u16 *geno_row_ptr = geno + (sy * 1280);
+        u32 *output_row_ptr = outbuf + (sy * out_width);
+        u32 mul = h40 ? 4 : 5;
+        for (u32 sx = 0; sx < sx_max; sx++) {
+            u32 f = geno_row_ptr[sx * mul];
+            u32 mode = (f >> 10) & 3;
+            u32 lmode = mode;
+            if ((mode == 0) && (!apply_shadow)) lmode = 1;
+            if ((mode == 2) && (!apply_highlight)) lmode = 1;
+            u32 src = (f >> 12) & 3;
+            // 0 = plane a. 1 = plane b. 2 = sprite, 3 = background
+            u32 b = genesis_color_lookup[lmode][((f >> 6) & 7)];
+            u32 g = genesis_color_lookup[lmode][((f >> 3) & 7)];
+            u32 r = genesis_color_lookup[lmode][((f >> 0) & 7)];
+            if ((src == 0) && highlight_a) {
+                r = 255;
+                b = g = 0;
+            }
+            else if ((src == 1) && highlight_b) {
+                r = b = 0;
+                g = 255;
+            }
+            else if ((src == 2) && highlight_sp) {
+                r = g = 0;
+                b = 255;
+            }
+            else if ((src == 3) && highlight_bg) {
+                r = b = 255;
+                g = 0;
+            }
+            else {
+                switch (mode) {
+                    case 0: // shadow
+                        if (draw_shadow) {
+                            if (shade_shadow_r) {
+                                r = 255;
+                                g = b = 0;
+                            }
+                        } else {
+                            r = g = b = 0;
+                        }
+                        break;
+                    case 1: // normal
+                        if (draw_normal) {
+                            if (shade_normal_b) {
+                                r = g = 0;
+                                b = 255;
+                            }
+                        } else {
+                            r = g = b = 0;
+                        }
+                        break;
+                    case 2: // highlight
+                        if (draw_highlight) {
+                            if (shade_highlight_g) {
+                                r = b = 0;
+                                g = 255;
+                            }
+                        } else {
+                            r = g = b = 0;
+                        }
+                }
+            }
+            output_row_ptr[sx] = 0xFF000000 | (b << 16) | (g << 8) | r;
+        }
+    }
+
+}
+
 static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *this = (struct genesis *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -747,9 +860,15 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
     struct debugger_widget *shade_priorities_w =(struct debugger_widget *)cvec_get(&dview->options, 0);
     struct debugger_widget *draw_boxes_only_w =(struct debugger_widget *)cvec_get(&dview->options, 1);
     struct debugger_widget *use_palette_w = (struct debugger_widget *)cvec_get(&dview->options, 2);
+    struct debugger_widget *highlight_shadow_w = (struct debugger_widget *)cvec_get(&dview->options, 3);
+    struct debugger_widget *highlight_highlight_w = (struct debugger_widget *)cvec_get(&dview->options, 4);
+    struct debugger_widget *highlight_force_normal_w = (struct debugger_widget *)cvec_get(&dview->options, 5);
     u32 shade_priorities = shade_priorities_w->checkbox.value;
     u32 use_palette = use_palette_w->checkbox.value;
     u32 draw_boxes_only = draw_boxes_only_w->checkbox.value;
+    u32 highlight_shadow = highlight_shadow_w->checkbox.value;
+    u32 highlight_highlight = highlight_highlight_w->checkbox.value;
+    u32 highlight_force_normal = highlight_force_normal_w->checkbox.value;
     if (draw_boxes_only) {
         use_palette = 0;
         use_palette_w->enabled = 0;
@@ -771,6 +890,7 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
         sprite_order[num_sprites++] = next_sprite;
         next_sprite = sp[1] & 127;
         if (next_sprite == 0) break;
+        if (next_sprite > sprites_total_max) break;
     }
 
     for (u32 spr_index = 0; spr_index < num_sprites; spr_index++) {
@@ -829,8 +949,21 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
                                 for (u32 i = 0; i < 2; i++) {
                                     if (screenx < 511) {
                                         if (v[i] != 0) {
-                                            u32 n = use_palette ? this->vdp.CRAM[palette | v[i]] : v[i];
-                                            u32 c = gen_to_rgb(n, use_palette, priority, shade_priorities);
+                                            u32 colo = palette | v[i];
+                                            u32 c = 0;
+                                            if ((highlight_shadow) && (colo == 0x3F)) {
+                                                c = 0xFFFFFFFF;
+                                            }
+                                            else if ((highlight_highlight) && (colo == 0x3E)) {
+                                                c = 0xFFFFFFFF;
+                                            }
+                                            else if ((highlight_force_normal_w) && ((colo == 0x0E) || (colo == 0x1E) || (colo == 0x2E))) {
+                                                c = 0xFFFFFFFF;
+                                            }
+                                            else {
+                                                u32 n = use_palette ? this->vdp.CRAM[colo] : v[i];
+                                                c = gen_to_rgb(n, use_palette, priority, shade_priorities);
+                                            }
                                             *outptr = c;
                                         }
                                     }
@@ -1033,6 +1166,40 @@ static void setup_image_view_tilemap(struct genesis* this, struct debugger_inter
     snprintf(iv->label, sizeof(iv->label), "Pattern Table Viewer");
 }
 
+static void setup_image_view_output(struct genesis* this, struct debugger_interface *dbgr)
+{
+    this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 1280;
+    iv->height = 224;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_output;
+
+    snprintf(iv->label, sizeof(iv->label), "Output Debug");
+
+    debugger_widgets_add_checkbox(&dview->options, "Shade normal B", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Shade shadow R", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Shade highlights G", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Draw normal", 1, 1, 0);
+    debugger_widgets_add_checkbox(&dview->options, "Draw shadowed", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Draw highlighted", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Apply shadows", 1, 1, 0);
+    debugger_widgets_add_checkbox(&dview->options, "Apply highlights", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight Plane A px R", 1, 0, 0);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight Plane B px G", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight Sprite px B", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight BG px Purple", 1, 0, 1);
+
+
+}
+
 static void setup_image_view_sprites(struct genesis* this, struct debugger_interface *dbgr)
 {
     this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
@@ -1054,6 +1221,9 @@ static void setup_image_view_sprites(struct genesis* this, struct debugger_inter
     debugger_widgets_add_checkbox(&dview->options, "Shade priorities", 1, 0, 1);
     debugger_widgets_add_checkbox(&dview->options, "Draw boxes only", 1, 0, 1);
     debugger_widgets_add_checkbox(&dview->options, "Use palette", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight shadow color", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight highlight color", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight force-normal color", 1, 0, 1);
 }
 
 
@@ -1141,4 +1311,5 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_plane(this, dbgr, 1);
     setup_image_view_plane(this, dbgr, 2);
     setup_image_view_sprites(this, dbgr);
+    setup_image_view_output(this, dbgr);
 }

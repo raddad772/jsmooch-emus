@@ -719,7 +719,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "zero_tolerance.md", nullptr); // works fine
             //worked = grab_ROM(&ROMs, which, "zero_tolerance_2.md", nullptr); // works fine
             //worked = grab_ROM(&ROMs, which, "devilish.md", nullptr); // slight gfx corruption, seems ifne to play
-            //worked = grab_ROM(&ROMs, which, "toy_story.md", nullptr); // works great, weird colors on title
+            worked = grab_ROM(&ROMs, which, "toy_story.md", nullptr); // works great, weird colors on title
             //worked = grab_ROM(&ROMs, which, "rbi_baseball_3.md", nullptr); // works fine
             //worked = grab_ROM(&ROMs, which, "rampart.md", nullptr); // no display
             //worked = grab_ROM(&ROMs, which, "ranger_x.md", nullptr); // works great
@@ -733,7 +733,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well
             //worked = grab_ROM(&ROMs, which, "blockout.md", nullptr); // works well
             //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
 
             break;
         default:

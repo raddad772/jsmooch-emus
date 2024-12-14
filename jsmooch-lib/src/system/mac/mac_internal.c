@@ -677,7 +677,6 @@ void mac_mainbus_write_scc(struct mac* this, u32 addr, u16 mask, u16 val)
             return;
     }
 
-
     printf("\nUnhandled SCC write addr:%06x val:%04x cyc:%lld", oaddr, val & mask, this->clock.master_cycles);
 }
 
