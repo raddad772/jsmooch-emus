@@ -1246,7 +1246,7 @@ static void setup_image_view_palette(struct genesis* this, struct debugger_inter
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_palette;
 
-    snprintf(iv->label, sizeof(iv->label), "Palette Table Viewer");
+    snprintf(iv->label, sizeof(iv->label), "Palette Viewer");
 }
 
 static void setup_events_view(struct genesis* this, struct debugger_interface *dbgr)

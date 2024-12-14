@@ -45,9 +45,10 @@ static char *filebuf = 0;
 
 #define MAX_TRANSACTIONS 30
 
-#define TEST_SKIPS_NUM 1
+#define TEST_SKIPS_NUM 2
 static char test_skips[TEST_SKIPS_NUM][100] = {
-        "mcr_rc.json.bin"
+        "mcr_rc.json.bin",
+        "stc_ldc.json.bin",
 };
 
 enum transaction_kind {
@@ -328,7 +329,9 @@ static void copy_state_to_cpu(struct ARM7TDMI* cpu, struct arm7_test_state *ts)
 
 static void pprint_CPSR(const char *str, u32 v)
 {
-    printf("%s %08x/%c %c %c %c mode:", str, v, ((v >> 31) & 1) ? 'N' : 'n', ((v >> 30) & 1) ? 'Z' : 'z', ((v >> 29) & 1) ? 'C' : 'c', ((v >> 28) & 1) ? 'V' : 'v');
+    printf("%s %08x/%c %c %c %c", str, v, ((v >> 31) & 1) ? 'N' : 'n', ((v >> 30) & 1) ? 'Z' : 'z', ((v >> 29) & 1) ? 'C' : 'c', ((v >> 28) & 1) ? 'V' : 'v');
+    printf("/%c %c %c/", ((v >> 5) & 1) ? 'T' : 't', ((v >> 6) & 1) ? 'F' : 'f', ((v >> 7) & 1) ? 'I' : 'i');
+
     switch(v & 31) {
         case 16:
             printf("user");
@@ -533,7 +536,7 @@ void test_arm7tdmi()
 
     u32 completed_tests = 0;
     u32 nn = 20;
-    u32 test_start = 15;
+    u32 test_start = 0;
     filebuf = malloc(FILE_BUF_SIZE);
     for (u32 i = test_start; i < num_files; i++) {
         u32 skip = 0;

@@ -107,7 +107,10 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    u32 Rdd = (opcode >> 12) & 15;
+    u32 *Rd = getR(this, Rdd);
+    *Rd = this->regs.CPSR.u;
+    this->regs.PC += 4;
 }
 
 void ARM7TDMI_ins_MSR_reg(struct ARM7TDMI *this, u32 opcode)
@@ -457,7 +460,13 @@ void ARM7TDMI_ins_MCR_MRC(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_SWI(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    this->regs.R_svc[1] = this->regs.PC - 4;
+    this->regs.SPSR_svc = this->regs.CPSR.u;
+    this->regs.CPSR.mode = ARM7_supervisor;
+    ARM7TDMI_fill_regmap(this);
+    this->regs.CPSR.I = 1;
+    this->regs.PC = 0x00000008;
+    ARM7TDMI_flush_pipeline(this);
 }
 
 void ARM7TDMI_ins_INVALID(struct ARM7TDMI *this, u32 opcode)

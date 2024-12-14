@@ -4,12 +4,45 @@
 #include "helpers/int.h"
 #include "helpers/inifile.h"
 
+enum managed_window_kind {
+    mwk_main,
+    mwk_playback,
+    mwk_opts,
+    mwk_other,
+    mwk_debug_sound,
+    mwk_debug_image,
+    mwk_debug_disassembly,
+    mwk_debug_events
+};
+
+struct managed_window {
+    u32 enabled{};
+    u32 id{};
+    enum managed_window_kind kind{};
+    char name[200]{};
+};
+
+#define MAX_MANAGED_WINDOWS 100
+struct managed_windows {
+    struct managed_window items[MAX_MANAGED_WINDOWS]{};
+    u32 num=0;
+};
+
 struct imgui_jsmooch_app {
+    struct managed_windows windows{};
+    struct managed_window *register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled);
     void do_setup_onstart();
     int do_setup_before_mainloop();
     void mainloop(ImGuiIO& io);
     void at_end();
+    void render_debug_views(ImGuiIO& io, bool update_dasm_scroll);
+    void render_event_view();
+    void render_image_views();
 
+    void render_waveform_view(struct WVIEW &wview, u32 num);
+    void render_disassembly_views(bool update_dasm_scroll);
+    void render_disassembly_view(struct DVIEW &dview, bool update_dasm_scroll, u32 num);
+    void render_window_manager();
 #ifdef JSM_SDLR3
     SDL_Renderer *renderer;
     void platform_setup(SDL_Renderer *mrenderer) {renderer = mrenderer; fsys.platform_setup(renderer); };

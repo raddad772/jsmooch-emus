@@ -120,9 +120,15 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
     ImGui::End();
 }
 
-static void render_event_view(struct full_system &fsys)
+#define EVENT_VIEWER_DEFAULT_ENABLE 0
+#define DISASM_VIEW_DEFAULT_ENABLE 0
+#define IMAGE_VIEW_DEFAULT_ENABLE 0
+#define SOUND_VIEW_DEFAULT_ENABLE 0
+
+void imgui_jsmooch_app::render_event_view()
 {
-    if (fsys.events.view && fsys.has_played_once) {
+    struct managed_window *mw = register_managed_window(100, mwk_debug_events, "Event Viewer", EVENT_VIEWER_DEFAULT_ENABLE);
+    if (mw->enabled && fsys.events.view && fsys.has_played_once) {
         if (ImGui::Begin("Event Viewer")) {
             static bool ozoom = true;
             ImGui::Checkbox("2x Zoom", &ozoom);
@@ -155,13 +161,14 @@ static void render_event_view(struct full_system &fsys)
     }
 }
 
-static void render_disassembly_view(struct full_system &fsys, struct DVIEW &dview, bool update_dasm_scroll)
+void imgui_jsmooch_app::render_disassembly_view(struct DVIEW &dview, bool update_dasm_scroll, u32 num)
 {
     struct disassembly_view *dasm = &dview.view->disassembly;
     struct cvec *dasm_rows = &dview.dasm_rows;
-    if (fsys.enable_debugger) {
-        char wname[100];
-        snprintf(wname, sizeof(wname), "%s Disassembly View", dasm->processor_name.ptr);
+    char wname[100];
+    snprintf(wname, sizeof(wname), "%s Disassembly View", dasm->processor_name.ptr);
+    struct managed_window *mw = register_managed_window(0x400 + num, mwk_debug_disassembly, wname, DISASM_VIEW_DEFAULT_ENABLE);
+    if (mw->enabled && fsys.enable_debugger) {
         if (ImGui::Begin(wname)) {
             static ImGuiTableFlags flags =
                     ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
@@ -254,80 +261,85 @@ static void render_disassembly_view(struct full_system &fsys, struct DVIEW &dvie
 
 }
 
-static void render_disassembly_views(struct full_system &fsys, bool update_dasm_scroll) {
+void imgui_jsmooch_app::render_disassembly_views(bool update_dasm_scroll) {
+    u32 i = 0;
     for (auto &dv : fsys.dasm_views) {
-        render_disassembly_view(fsys, dv, update_dasm_scroll);
+        render_disassembly_view(dv, update_dasm_scroll, i++);
     }
 }
 
-static void render_waveform_view(struct full_system &fsys, struct WVIEW &wview)
+void imgui_jsmooch_app::render_waveform_view(struct WVIEW &wview, u32 num)
 {
-    fsys.waveform_view_present(wview);
-    if (ImGui::Begin(wview.view->name)) {
-        if (wview.waveforms[0].wf->default_clock_divider != 0) {
-            if (wview.waveforms[0].wf->clock_divider == 0) wview.waveforms[0].wf->clock_divider = wview.waveforms[0].wf->default_clock_divider;
-            static int a;
-            static bool rv = false;
-            a = wview.waveforms[0].wf->clock_divider;
-            ImGui::DragInt("Clock divider", &a, 0.5f, 10, 500, "%d");
-            /*
-            ImGui::Checkbox("Randomly vary divider", &rv);
-            static int b = 10;
-            ImGui::DragInt("Vary by +/-", &b, 0.5f, 1, 100, "%d");
-            if (rv) {
-                int rn = ((int)(arc4random() % (b * 2))) - b;
-                float perc = (float)rn / 100.0f;
-                float vary = perc * (float)wview.waveforms[0].wf->default_clock_divider;
-                wview.waveforms[0].wf->clock_divider = wview.waveforms[0].wf->default_clock_divider + vary;
-            }
-            else {*/
+    struct managed_window *mw = register_managed_window(0x600 + num, mwk_debug_sound, wview.view->name, SOUND_VIEW_DEFAULT_ENABLE);
+    if (mw->enabled) {
+        fsys.waveform_view_present(wview);
+        if (ImGui::Begin(wview.view->name)) {
+            if (wview.waveforms[0].wf->default_clock_divider != 0) {
+                if (wview.waveforms[0].wf->clock_divider == 0)
+                    wview.waveforms[0].wf->clock_divider = wview.waveforms[0].wf->default_clock_divider;
+                static int a;
+                static bool rv = false;
+                a = wview.waveforms[0].wf->clock_divider;
+                ImGui::DragInt("Clock divider", &a, 0.5f, 10, 500, "%d");
+                /*
+                ImGui::Checkbox("Randomly vary divider", &rv);
+                static int b = 10;
+                ImGui::DragInt("Vary by +/-", &b, 0.5f, 1, 100, "%d");
+                if (rv) {
+                    int rn = ((int)(arc4random() % (b * 2))) - b;
+                    float perc = (float)rn / 100.0f;
+                    float vary = perc * (float)wview.waveforms[0].wf->default_clock_divider;
+                    wview.waveforms[0].wf->clock_divider = wview.waveforms[0].wf->default_clock_divider + vary;
+                }
+                else {*/
                 wview.waveforms[0].wf->clock_divider = a;
-            //}
+                //}
+            }
+            u32 on_line = 0;
+            u32 last_kind = 0;
+            for (auto &wf: wview.waveforms) {
+                u32 old_on_line = on_line;
+                bool make_new_line = false;
+                switch (wf.wf->kind) {
+                    case dwk_main:
+                        on_line += 2;
+                        break;
+                    case dwk_channel:
+                        on_line++;
+                        break;
+                    default:
+                        assert(1 == 2);
+                }
+                switch (on_line) {
+                    case 1:
+                        break;
+                    case 3:
+                        make_new_line = true;
+                        break;
+                    case 2:
+                        //if (old_on_line == 0) break;
+                        make_new_line = true;
+                        break;
+                    default:
+                        assert(1 == 2);
+                }
+                if (last_kind == dwk_main) {
+                    on_line = 0;
+                } else if (!make_new_line) ImGui::SameLine();
+                if (on_line >= 2) on_line = 0;
+                last_kind = wf.wf->kind;
+                ImGui::SetNextWindowSizeConstraints(ImVec2(wf.wf->samples_requested, wf.height),
+                                                    ImVec2(wf.wf->samples_requested + 20, wf.height + 30));
+                if (ImGui::BeginChild(wf.wf->name, ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_None)) {
+                    ImGui::Checkbox(wf.wf->name, &wf.output_enabled);
+                    wf.wf->ch_output_enabled = wf.output_enabled;
+                    ImGui::Image(wf.tex.for_image(), wf.tex.sz_for_display, wf.tex.uv0, wf.tex.uv1);
+                }
+                ImGui::EndChild();
+            }
         }
-        u32 on_line = 0;
-        u32 last_kind = 0;
-        for (auto& wf : wview.waveforms) {
-            u32 old_on_line = on_line;
-            bool make_new_line = false;
-            switch(wf.wf->kind) {
-                case dwk_main:
-                    on_line += 2;
-                    break;
-                case dwk_channel:
-                    on_line++;
-                    break;
-                default:
-                    assert(1==2);
-            }
-            switch(on_line) {
-                case 1:
-                    break;
-                case 3:
-                    make_new_line = true;
-                    break;
-                case 2:
-                    //if (old_on_line == 0) break;
-                    make_new_line = true;
-                    break;
-                default:
-                    assert(1==2);
-            }
-            if (last_kind == dwk_main) {
-                on_line = 0;
-            }
-            else if (!make_new_line) ImGui::SameLine();
-            if (on_line >= 2) on_line = 0;
-            last_kind = wf.wf->kind;
-            ImGui::SetNextWindowSizeConstraints(ImVec2(wf.wf->samples_requested, wf.height), ImVec2(wf.wf->samples_requested+20, wf.height+30));
-            if (ImGui::BeginChild(wf.wf->name, ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_None)) {
-                ImGui::Checkbox(wf.wf->name, &wf.output_enabled);
-                wf.wf->ch_output_enabled = wf.output_enabled;
-                ImGui::Image(wf.tex.for_image(), wf.tex.sz_for_display, wf.tex.uv0, wf.tex.uv1);
-            }
-            ImGui::EndChild();
-        }
+        ImGui::End();
     }
-    ImGui::End();
 }
 
 static void render_radiogroup(struct debugger_widget *widget)
@@ -400,15 +412,19 @@ static void render_debugger_widgets(struct cvec *options)
     }
 }
 
-static void render_image_views(struct full_system &fsys)
+void imgui_jsmooch_app::render_image_views()
 {
+    u32 i=0;
     for (auto &myv: fsys.images) {
-        if (ImGui::Begin(myv.view->image.label)) {
-            render_debugger_widgets(&myv.view->options);
-            fsys.image_view_present(myv.view, myv.texture);
-            ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
+        struct managed_window *mw = register_managed_window(0x500 + (i++), mwk_debug_image, myv.view->image.label, IMAGE_VIEW_DEFAULT_ENABLE);
+        if (mw->enabled) {
+            if (ImGui::Begin(myv.view->image.label)) {
+                render_debugger_widgets(&myv.view->options);
+                fsys.image_view_present(myv.view, myv.texture);
+                ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
+            }
+            ImGui::End();
         }
-        ImGui::End();
     }
 }
 
@@ -426,14 +442,35 @@ static void render_opt_view(struct full_system &fsys)
     }
 }
 
-static void render_debug_views(struct full_system &fsys, ImGuiIO& io, bool update_dasm_scroll)
+void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll)
 {
-    render_event_view(fsys);
-    render_disassembly_views(fsys, update_dasm_scroll);
-    render_image_views(fsys);
+    render_event_view();
+    render_disassembly_views(update_dasm_scroll);
+    render_image_views();
+    u32 i = 0;
     for (auto &wv : fsys.waveform_views) {
-        render_waveform_view(fsys, wv);
+        render_waveform_view(wv, i++);
     }
+    render_window_manager();
+}
+
+void imgui_jsmooch_app::render_window_manager()
+{
+    if (windows.num == 0) return;
+    enum managed_window_kind old_mwk = mwk_debug_events;
+    if (ImGui::Begin("Window Manager")) {
+        for (u32 i = 0; i < windows.num; i++) {
+            struct managed_window *mw = &windows.items[i];
+            if (mw->kind != old_mwk) {
+                old_mwk = mw->kind;
+                ImGui::Separator();
+            }
+            bool mval = mw->enabled ? true : false;
+            ImGui::Checkbox(mw->name, &mval);
+            mw->enabled = mval ? 1 : 0;
+        }
+    }
+    ImGui::End();
 }
 
 void imgui_jsmooch_app::do_setup_onstart()
@@ -481,6 +518,25 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     return 0;
 }
 
+struct managed_window *imgui_jsmooch_app::register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled)
+{
+    if (windows.num > 0) {
+        for (u32 i = 0; i < windows.num; i++) {
+            struct managed_window *mw = &windows.items[i];
+            if (mw->id == id) {
+                return mw;
+            }
+        }
+    }
+    struct managed_window *out = &windows.items[windows.num];
+    windows.num++;
+    out->id = id;
+    out->kind = kind;
+    snprintf(out->name, sizeof(out->name), "%s", name);
+    out->enabled = default_enabled;
+    return out;
+}
+
 void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     framevars start_fv = fsys.get_framevars();
 
@@ -509,7 +565,6 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     fsys.present();
 
     render_emu_window(fsys, io);
-
     // debug controls window
     if (ImGui::Begin("Play")){
         static int steps[4] = { 10, 1, 1, 1 };
@@ -596,7 +651,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
 
     // disassembly+ view
     render_opt_view(fsys);
-    render_debug_views(fsys, io, update_dasm_scroll);
+    render_debug_views(io, update_dasm_scroll);
 }
 
 void imgui_jsmooch_app::at_end()
