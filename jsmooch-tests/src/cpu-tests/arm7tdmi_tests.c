@@ -240,7 +240,7 @@ static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
     struct transaction *theirt = NULL;
     for (u32 i = 0; i < ts->test.transactions.num; i++) {
         struct transaction *t = &ts->test.transactions.items[i];
-        if (t->addr == addr) {
+        if ((t->addr == addr) && (t->kind == 0)) {
             theirt = t;
         }
     }
@@ -270,7 +270,7 @@ static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect
 
         for (u32 i = 0; i < ts->test.transactions.num; i++) {
             struct transaction *t = &ts->test.transactions.items[i];
-            if (t->addr == addr) {
+            if ((t->addr == addr) && (t->kind == myt->kind)) {
                 if (theirt) printf("\nOOPS2 MULTIPLE TRANSACTIONS FOUND!");
                 theirt = t;
             }
@@ -433,6 +433,64 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_st
     return all_passed;
 }
 
+static char kkttr[3] = {'I', 'R', 'W'};
+static u32 dopppt(char *ptr, struct transaction *t)
+{
+    char *m = ptr;
+
+    m += sprintf(ptr, "(%02d) %c.%c %06x:%08x  ", t->cycle, kkttr[t->kind], t->size == 1 ? '1' : t->size == 2 ? '2' : '4', t->addr, t->data);
+    return m - ptr;
+}
+
+static void pprint_transactions(struct arm7_test_transactions *ts, struct arm7_test_transactions *mts, struct arm7_test_struct *test)
+{
+    char buf[500];
+    printf("\n---Transactions");
+    //u32 bigger = MAX(ts->num, mts->num);
+    i32 tsi = 0, mtsi = 0;
+    while(1) {
+        // Search for next tk_read or tk_write
+        struct transaction *t1 = NULL, *t2 = NULL;
+        for (i32 i = tsi; i < ts->num; i++) {
+            struct transaction *t = &ts->items[i];
+            if ((t->kind == IK_write) || (t->kind == IK_read) || (t->kind == IK_read_ins)) {
+                t1 = t;
+                tsi = i+1;
+                break;
+            }
+        }
+        for (i32 i = mtsi; i < mts->num; i++) {
+            struct transaction *t = &mts->items[i];
+            if ((t->kind == IK_write) || (t->kind == IK_read) || (t->kind == IK_read_ins)) {
+                t2 = t;
+                mtsi = i+1;
+                break;
+            }
+        }
+        char *ptr = buf;
+        memset(ptr, 0, 100);
+        if ((t1 != NULL) && (t2 != NULL)) {
+            u32 c = t2->data;
+            if (t1->data != t2->data) ptr += sprintf(ptr, "!");
+            else ptr += sprintf(ptr, " ");
+            if (t1->addr != t2->addr) ptr += sprintf(ptr, "-");
+            else ptr += sprintf(ptr, " ");
+        }
+        else ptr += sprintf(ptr, "  ");
+        if (t1 == NULL) {
+            ptr += sprintf(ptr, "                            ");
+        }
+        else {
+            ptr += dopppt(ptr, t1);
+        }
+        if (t2 != NULL) {
+            ptr += dopppt(ptr, t2);
+        }
+        printf("\n%s", buf);
+        if ((t1 == NULL) && (t2 == NULL)) break;
+    }
+}
+
 static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fname, u32 c_skip) {
     FILE *f = fopen(file, "rb");
     if (f == NULL) {
@@ -482,6 +540,7 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         }
 
         if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial, c_skip))) {//|| (!compare_state_to_ram(ts)) || ts->test.failed) {
+            pprint_transactions(&ts->test.transactions, &ts->my_transactions, ts);
             pprint_CPSR("\nmine   :", ts->cpu.regs.CPSR.u);
             pprint_CPSR("\ntheirs :", ts->test.final.CPSR);
             pprint_CPSR("\ninitial:", ts->test.initial.CPSR);

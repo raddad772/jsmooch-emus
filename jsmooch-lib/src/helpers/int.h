@@ -63,6 +63,7 @@ typedef double f64;
 #define SIGNe11to32(x) (((((x) >> 10) & 1) * 0xFFFFF800) | ((x) & 0xFFF))
 #define SIGNe12to32(x) (((((x) >> 11) & 1) * 0xFFFFF000) | ((x) & 0xFFF))
 #define SIGNe16to32(x) (((((x) >> 15) & 1) * 0xFFFF0000) | ((x) & 0xFFFF))
+#define SIGNe24to32(x) (((((x) >> 23) & 1) * 0xFF000000) | ((x) & 0xFFFFFF))
 
 #if defined(__APPLE__)
 // Mac os X

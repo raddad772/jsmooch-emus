@@ -11,6 +11,13 @@
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 
+
+#define ARM7P_nonsequential 0
+#define ARM7P_sequential 1
+#define ARM7P_code 2
+#define ARM7P_dma 4
+#define ARM7P_lock 8
+
 enum ARM7TDMI_modes {
     ARM7M_old_user = 0,
     ARM7M_old_fiq = 1,

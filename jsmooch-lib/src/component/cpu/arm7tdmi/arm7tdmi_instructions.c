@@ -129,7 +129,42 @@ void ARM7TDMI_ins_LDRH_STRH(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    u32 P = OBIT(24); // pre or post. 0=post
+    u32 U = OBIT(23); // up/down, 0=down
+    u32 I = OBIT(22); //
+    u32 W = 1;
+    if (P) W = OBIT(21);
+    u32 Rnd = (opcode >> 16) & 15;
+    u32 Rdd = (opcode >> 12) & 15;
+    u32 imm_off = 0;
+    imm_off = ((opcode >> 8) & 15) << 4;
+    imm_off |= (opcode & 15);
+    u32 Rmd = opcode & 15; // Offset register
+    u32 *Rn = getR(this, Rnd);
+    u32 *Rd = getR(this, Rdd);
+    u32 Rm = I ? imm_off : *getR(this, Rmd);
+    u32 addr = *Rn;
+    if (P) addr = U ? (addr + Rm) : (addr - Rm);
+    u32 H = OBIT(5);
+
+    u32 sz = H ? 2 : 1;
+
+    u32 val = this->read(this->read_ptr, addr, sz, ARM7P_nonsequential, 1);
+    if (H && !(addr & 1)) { // read of a halfword to a unaligned address produces a byte-extend
+        val = SIGNe16to32(val);
+    }
+    else {
+        val = SIGNe8to32(val);
+    }
+    this->regs.PC += 4;
+    if (!P) addr = U ? (addr + Rm) : (addr - Rm);
+    if (W) {
+        if (Rnd == 15) // writeback fails. technically invalid here
+            write_reg(this, Rn, addr + 4);
+        else
+            write_reg(this, Rn, addr);
+    }
+    write_reg(this, Rd, val);
 }
 
 void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
@@ -152,7 +187,12 @@ void ARM7TDMI_ins_MSR_imm(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_BX(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    u32 Rnd = opcode & 15;
+    u32 addr = *getR(this, Rnd);
+    this->regs.CPSR.T = addr & 1;
+    addr &= 0xFFFFFFFE;
+    this->regs.PC = addr;
+    ARM7TDMI_flush_pipeline(this);
 }
 
 
@@ -308,17 +348,12 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     u32 shift_type = (opcode >> 5) & 3; // 0=LSL, 1=LSR, 2=ASR, 3=ROR
     // R(bit4) = 0 for this
     u32 Rmd = opcode & 15;
-    printf("\nS! %d", S);
 
     u32 Rn = *getR(this, Rnd);
     u32 Rm = *getR(this, Rmd);
     u32 *Rd = getR(this, Rdd);
     this->carry = this->regs.CPSR.C;
     this->regs.PC += 4;
-    printf("\nRn%d: %08x", Rnd, Rn);
-    printf("\nRm%d: %08x", Rmd, Rm);
-    printf("\nRd%d: %08x", Rdd, *Rd);
-    printf("\nSET CARRY:%d SHIFT TYPE:%d AMOUNT:%d", this->carry, shift_type, Is);
     switch(shift_type) {
         case 0: //
             Rm = LSL(this, Rm, Is);
@@ -365,15 +400,14 @@ void ARM7TDMI_ins_data_processing_immediate(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
 {
-    printf("\nYAY TIS INSTRUTION!");
     u32 P = OBIT(24); // Pre/post. 0 = after-transfer, post
     u32 U = OBIT(23); // 0 = down, 1 = up
     u32 B = OBIT(22); // byte/word, 0 = 32bit, 1 = 8bit
     // when P=0, bit 21 is T, 0= normal, 1= force nonpriviledged, and W=1
     // when P=1, bit 21 is write-back bit, 0 = normal, 1 = write into base
     u32 T = 0; // 0 = normal, 1 = force unprivileged
-    u32 W = 0; // writeback. 0 = no, 1 = write into base
-    if (P == 0) { T = OBIT(21); W = 1; }
+    u32 W = 1; // writeback. 0 = no, 1 = write into base
+    if (P == 0) { T = OBIT(21); }
     else W = OBIT(21);
 
     u32 L = OBIT(20); // store = 0, load = 1
@@ -387,12 +421,6 @@ void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
     u32 addr = *Rn;
     if (Rnd == 15) addr += 4;
     if (P) addr = U ? (addr + offset) : (addr - offset);
-    //   [Rn], <#{+/-}expression>
-    // when read byte, upper 24 bits 0-extend
-    // T unchanged on ARM4. on 5, it can change it
-    // When reading a word from a halfword-aligned address (which is located in the middle between two word-aligned addresses), the lower 16bit of Rd will contain [address] ie. the addressed halfword, and the upper 16bit of Rd will contain [Rd-2] ie. more or less unwanted garbage. However, by isolating lower bits this may be used to read a halfword from memory. (Above applies to little endian mode, as used in GBA.)
-    // CPSR not affected
-    // Execution Time: For normal LDR: 1S+1N+1I. For LDR PC: 2S+2N+1I. For STR: 2N.
     u32 sz = B ? 1 : 4;
     u32 mask = B ? 0xFF : 0xFFFFFFFF;
     if (L == 0) {// store to RAM
@@ -466,7 +494,12 @@ void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_B_BL(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    u32 link = OBIT(24);
+    i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
+    offset <<= 2;
+    if (link) *getR(this, 14) = this->regs.PC - 4;
+    this->regs.PC += (u32)offset;
+    ARM7TDMI_flush_pipeline(this);
 }
 
 void ARM7TDMI_ins_STC_LDC(struct ARM7TDMI *this, u32 opcode)

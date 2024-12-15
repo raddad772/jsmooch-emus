@@ -92,11 +92,6 @@ static int condition_passes(struct ARM7TDMI_regs *this, int which) {
 }
 
 
-#define ARM7P_nonsequential 0
-#define ARM7P_sequential 1
-#define ARM7P_code 2
-#define ARM7P_dma 4
-#define ARM7P_lock 8
 
 static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode)
 {
@@ -150,11 +145,19 @@ void ARM7TDMI_flush_pipeline(struct ARM7TDMI *this)
     //assert(1==2);
     printf("\nFLUSH THE PIPE!@");
     if (this->regs.CPSR.T) {
-        assert(1==2);
+        printf("\nTHUMBFLUSH!");
+        this->pipeline.access = ARM7P_code | ARM7P_nonsequential;
+        this->pipeline.opcode[0] = fetch_ins(this, 2) & 0xFFFF;
+        this->regs.PC += 2;
+        this->pipeline.access = ARM7P_code | ARM7P_sequential;
+        this->pipeline.opcode[1] = fetch_ins(this, 2) & 0xFFFF;
+        this->regs.PC += 2;
     }
     else {
+        this->pipeline.access = ARM7P_code | ARM7P_nonsequential;
         this->pipeline.opcode[0] = fetch_ins(this, 4);
         this->regs.PC += 4;
+        this->pipeline.access = ARM7P_code | ARM7P_sequential;
         this->pipeline.opcode[1] = fetch_ins(this, 4);
         this->regs.PC += 4;
     }
