@@ -12,6 +12,8 @@
 #define AREAD(addr, sz) this->read(this->read_ptr, (addr), (sz), this->pipeline.access, 1)
 #define AWRITE(addr, sz, val) this->write(this->write_ptr, (addr), (sz), this->pipeline.access, (val) & mask)
 
+#define OBIT(x) ((opcode >> (x)) & 1)
+
 static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
     switch(num) {
         case 0:
@@ -77,12 +79,37 @@ static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
     }
 }
 
+static u32 MUL(struct ARM7TDMI *this, u32 product, u32 multiplicand, u32 multiplier, u32 S)
+{
+    this->cycles_executed++;
+    if((multiplier >> 8) && (multiplier >>  8 != 0xFFFFFF)) this->cycles_executed++;
+    if((multiplier >> 16) && (multiplier >> 16 != 0xFFFF)) this->cycles_executed++;
+    if((multiplier >> 24) && (multiplier >> 24 != 0xFF)) this->cycles_executed++;
+    product += multiplicand * multiplier;
+    if(this->regs.CPSR.T || S) {
+        this->regs.CPSR.Z = product == 0;
+        this->regs.CPSR.N = (product >> 31) & 1;
+    }
+    return product;
+}
+
 void ARM7TDMI_ins_MUL_MLA(struct ARM7TDMI *this, u32 opcode)
 {
 //   if(accumulate) idle();
 //  r(d) = MUL(accumulate ? r(n) : 0, r(m), r(s));
-
-    UNIMPLEMENTED;
+    u32 accumulate = OBIT(21);
+    if (accumulate) this->cycles_executed++;
+    u32 S = OBIT(20);
+    u32 Rdd = (opcode >> 16) & 15;
+    u32 Rnd = (opcode >> 12) & 15;
+    u32 Rsd = (opcode >> 8) & 15;
+    u32 Rmd = opcode & 15;
+    this->regs.PC += 4;
+    u32 Rn = *getR(this, Rnd);
+    u32 Rm = *getR(this, Rmd);
+    u32 Rs = *getR(this, Rsd);
+    u32 *Rd = getR(this, Rdd);
+    write_reg(this, Rd, MUL(this, accumulate ? Rn : 0, Rm, Rs, S));
 }
 
 void ARM7TDMI_ins_MULL_MLAL(struct ARM7TDMI *this, u32 opcode)
@@ -336,7 +363,6 @@ void ARM7TDMI_ins_data_processing_immediate(struct ARM7TDMI *this, u32 opcode)
     UNIMPLEMENTED;
 }
 
-#define OBIT(x) ((opcode >> (x)) & 1)
 void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
 {
     printf("\nYAY TIS INSTRUTION!");

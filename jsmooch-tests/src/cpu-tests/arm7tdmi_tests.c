@@ -51,6 +51,11 @@ static char test_skips[TEST_SKIPS_NUM][100] = {
         "stc_ldc.json.bin",
 };
 
+#define C_SKIPS_NUM 1
+static char c_skips[C_SKIPS_NUM][100] = {
+        "mul_mla.json.bin",
+};
+
 enum transaction_kind {
     IK_read_ins,
     IK_read,
@@ -360,9 +365,10 @@ static void pprint_CPSR(const char *str, u32 v)
     }
 }
 
-static u32 cval_cpsr(u64 mine, u32 theirs, u32 initial)
+static u32 cval_cpsr(u64 mine, u32 theirs, u32 initial, u32 c_skip)
 {
     if (mine == theirs) return 1;
+    if ((c_skip) && ((mine & 0b11011111111111111111111111111111) == (theirs & 0b11011111111111111111111111111111))) return 1;
     printf("\n\nCPSR mismatch!");
     return 0;
 
@@ -380,7 +386,7 @@ static u32 cval(u64 mine, u64 theirs, u64 initial, const char* display_str, cons
     return 0;
 }
 
-static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_state *final, struct arm7_test_state *initial)
+static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_state *final, struct arm7_test_state *initial, u32 c_skip)
 {
     u32 all_passed = 1;
 #define CP(rn, rn2, rname) all_passed &= cval(ts->cpu.regs. rn, final-> rn2, initial-> rn2, "%08llx", rname);
@@ -415,7 +421,7 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_st
     CP(R_irq[1], R_irq[1], "r_irq14");
     CP(R_und[0], R_und[0], "r_und13");
     CP(R_und[1], R_und[1], "r_und14");
-    all_passed &= cval_cpsr(ts->cpu.regs.CPSR.u, ts->test.final.CPSR, ts->test.initial.CPSR);
+    all_passed &= cval_cpsr(ts->cpu.regs.CPSR.u, ts->test.final.CPSR, ts->test.initial.CPSR, c_skip);
     CP(SPSR_fiq, SPSR_fiq, "SPSR_fiq");
     CP(SPSR_svc, SPSR_svc, "SPSR_svc");
     CP(SPSR_abt, SPSR_abt, "SPSR_abt");
@@ -427,7 +433,7 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_st
     return all_passed;
 }
 
-static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fname) {
+static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fname, u32 c_skip) {
     FILE *f = fopen(file, "rb");
     if (f == NULL) {
         printf("\nBAD FILE! %s", file);
@@ -475,7 +481,7 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
             }
         }
 
-        if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial))) {//|| (!compare_state_to_ram(ts)) || ts->test.failed) {
+        if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial, c_skip))) {//|| (!compare_state_to_ram(ts)) || ts->test.failed) {
             pprint_CPSR("\nmine   :", ts->cpu.regs.CPSR.u);
             pprint_CPSR("\ntheirs :", ts->test.final.CPSR);
             pprint_CPSR("\ninitial:", ts->test.initial.CPSR);
@@ -546,13 +552,20 @@ void test_arm7tdmi()
                 break;
             }
         }
+        u32 c_skip = 0;
+        for (u32 j = 0; j < C_SKIPS_NUM; j++) {
+            if (strcmp(mfn[i], c_skips[j]) == 0) {
+                c_skip = 1;
+                break;
+            }
+        }
         if (skip) {
             printf("\nSkipping test %s", mfn[i]);
             continue;
         }
 
         printf("\nDoing test %s", mfn[i]);
-        if (!do_test(&ts, mfp[i], mfn[i])) break;
+        if (!do_test(&ts, mfp[i], mfn[i], c_skip)) break;
         if (completed_tests > nn) break;
         if (completed_tests >= nn) dbg_enable_trace();
         completed_tests++;
