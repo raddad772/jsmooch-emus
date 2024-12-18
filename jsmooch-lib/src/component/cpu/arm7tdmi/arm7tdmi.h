@@ -63,6 +63,8 @@ struct ARM7TDMI_regs {
     u32 R_irq[2];
     u32 R_und[2];
 
+    u32 R_invalid[16];
+
     u32 SPSR_fiq;
     u32 SPSR_svc;
     u32 SPSR_abt;
@@ -106,6 +108,7 @@ struct ARM7TDMI {
     struct {
         u32 opcode[2];
         int access;
+        u32 flushed;
     } pipeline;
 
     u32 *regmap[16];

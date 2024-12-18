@@ -107,6 +107,28 @@ static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode)
     this->arm7_ins->exec(this, opcode);
 }
 
+static void reload_pipeline(struct ARM7TDMI* this)
+{
+    this->pipeline.flushed = 0;
+    if (this->regs.CPSR.T) {
+        printf("\nTHUMBFLUSH!");
+        this->pipeline.access = ARM7P_code | ARM7P_nonsequential;
+        this->pipeline.opcode[0] = fetch_ins(this, 2) & 0xFFFF;
+        this->regs.PC += 2;
+        this->pipeline.access = ARM7P_code | ARM7P_sequential;
+        this->pipeline.opcode[1] = fetch_ins(this, 2) & 0xFFFF;
+        this->regs.PC += 2;
+    }
+    else {
+        this->pipeline.access = ARM7P_code | ARM7P_nonsequential;
+        this->pipeline.opcode[0] = fetch_ins(this, 4);
+        this->regs.PC += 4;
+        this->pipeline.access = ARM7P_code | ARM7P_sequential;
+        this->pipeline.opcode[1] = fetch_ins(this, 4);
+        this->regs.PC += 4;
+    }
+}
+
 void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
 {
     /*this->cycles_executed -= (i32)num;
@@ -130,6 +152,8 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
             this->pipeline.opcode[1] = fetch_ins(this, 4);
             if (condition_passes(&this->regs, (int)(opcode >> 28))) {
                 decode_and_exec_arm(this, opcode);
+                if (this->pipeline.flushed)
+                    reload_pipeline(this);
             }
             else {
                 printf("\nCondition fail!");
@@ -143,22 +167,6 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *this)
 {
     //assert(1==2);
-    printf("\nFLUSH THE PIPE!@");
-    if (this->regs.CPSR.T) {
-        printf("\nTHUMBFLUSH!");
-        this->pipeline.access = ARM7P_code | ARM7P_nonsequential;
-        this->pipeline.opcode[0] = fetch_ins(this, 2) & 0xFFFF;
-        this->regs.PC += 2;
-        this->pipeline.access = ARM7P_code | ARM7P_sequential;
-        this->pipeline.opcode[1] = fetch_ins(this, 2) & 0xFFFF;
-        this->regs.PC += 2;
-    }
-    else {
-        this->pipeline.access = ARM7P_code | ARM7P_nonsequential;
-        this->pipeline.opcode[0] = fetch_ins(this, 4);
-        this->regs.PC += 4;
-        this->pipeline.access = ARM7P_code | ARM7P_sequential;
-        this->pipeline.opcode[1] = fetch_ins(this, 4);
-        this->regs.PC += 4;
-    }
+    printf("\nFLUSH THE PIPE!@ PC:%08x", this->regs.PC);
+    this->pipeline.flushed = 1;
 }

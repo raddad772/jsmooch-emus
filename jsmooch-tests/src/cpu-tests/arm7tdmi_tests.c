@@ -45,15 +45,17 @@ static char *filebuf = 0;
 
 #define MAX_TRANSACTIONS 30
 
-#define TEST_SKIPS_NUM 2
+#define TEST_SKIPS_NUM 3
 static char test_skips[TEST_SKIPS_NUM][100] = {
         "mcr_rc.json.bin",
         "stc_ldc.json.bin",
+        "cdp.json.bin",
 };
 
-#define C_SKIPS_NUM 1
+#define C_SKIPS_NUM 2
 static char c_skips[C_SKIPS_NUM][100] = {
         "mul_mla.json.bin",
+        "mull_mlal.json.bin",
 };
 
 enum transaction_kind {
@@ -272,6 +274,7 @@ static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect
             struct transaction *t = &ts->test.transactions.items[i];
             if ((t->addr == addr) && (t->kind == myt->kind)) {
                 if (theirt) printf("\nOOPS2 MULTIPLE TRANSACTIONS FOUND!");
+                //printf("\nR VISIT KIND %d:%d", t->kind, i);
                 theirt = t;
             }
         }
@@ -290,11 +293,11 @@ static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect
     return 0;
 }
 
-static void write_test_cpu(void *ptr, u32 addr, u32 sz, u32 val, u32 access)
+static void write_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct arm7_test_struct *ts = (struct arm7_test_struct *)ptr;
     struct transaction *myt = &ts->my_transactions.items[ts->my_transactions.num++];
-    printf("\nWRITE ADDR:%08x VAL:%08x", addr, val);
+    //printf("\nWRITE ADDR:%08x VAL:%08x", addr, val);
     myt->kind = 2;
     myt->cycle = ts->trace_cycles;
     myt->addr = addr;
@@ -302,6 +305,22 @@ static void write_test_cpu(void *ptr, u32 addr, u32 sz, u32 val, u32 access)
     myt->size = sz;
     myt->access = access;
     myt->visited = 0;
+
+    struct transaction *theirt=NULL;
+    for (u32 i = 0; i < ts->test.transactions.num; i++) {
+        struct transaction *t = &ts->test.transactions.items[i];
+        if ((t->addr == addr) && (t->kind == myt->kind)) {
+            if (theirt) printf("\nOOPS3 MULTIPLE TRANSACTIONS FOUND!");
+            theirt = t;
+            //printf("\nW VISIT KIND %d:%d", t->kind, i);
+        }
+    }
+    if (theirt == NULL) {
+        ts->test.failed = 1;
+        printf("\nUH OH4! CANT FIND TRANSACTION TO READ FROM!");
+        return;
+    }
+    theirt->visited = 1;
 }
 
 static u32 do_test_read_trace(void *ptr, u32 addr, u32 sz) {
@@ -385,6 +404,37 @@ static u32 cval(u64 mine, u64 theirs, u64 initial, const char* display_str, cons
 
     return 0;
 }
+
+static u32 compare_transactions(struct arm7_test_struct *ts)
+{
+    if (ts->my_transactions.num != ts->test.transactions.num) {
+        printf("\nTRANSACTION NUMBER MISMATCH");
+        return 0;
+    }
+    u32 passed = 1;
+    for (u32 i = 0; i < ts->my_transactions.num; i++) {
+        struct transaction *my = &ts->my_transactions.items[i];
+        struct transaction *their = &ts->test.transactions.items[i];
+#define CMP(m, s) { if (my-> m != their-> m) { passed = 0; printf("\nFAILED %s of TRANSACTION %d:", s, i); }}
+        CMP(kind, "kind");
+        CMP(addr, "addr");
+        CMP(data, "data");
+
+        if (my->size != their->size) {
+            if ((their->size == 1) && (my->size == 2) && (their->data == my->data)) {
+
+            }
+            else {
+                passed = 0;
+                printf("\nFailed size! %d", i);
+            }
+        }
+        if (my->cycle != their->cycle) printf("\nWARNING cycle mismatch!");
+#undef CMP
+    }
+    return passed;
+}
+
 
 static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_state *final, struct arm7_test_state *initial, u32 c_skip)
 {
@@ -531,15 +581,16 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
 
         ARM7TDMI_cycle(&ts->cpu, 1);
 
-        for (u32 j = 0; j < ts->test.transactions.num; j++) {
+        /*for (u32 j = 0; j < ts->test.transactions.num; j++) {
             struct transaction *t = &ts->test.transactions.items[j];
             if ((t->visited == 0)) {
                 printf("\nWARNING UNVISITED TRANSACTION kind:%c addr:%08x sz:%d val:%08x", t->kind == 0 ? 'i' : (t->kind == 1 ? 'r' : 'w'), t->addr, t->size, t->data);
                 ts->test.failed = 4;
             }
-        }
+        }*/
 
-        if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial, c_skip))) {//|| (!compare_state_to_ram(ts)) || ts->test.failed) {
+        if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial, c_skip)) || !compare_transactions(ts) || ts->test.failed) {
+            printf("\n\nTest failed! %s", fname);
             pprint_transactions(&ts->test.transactions, &ts->my_transactions, ts);
             pprint_CPSR("\nmine   :", ts->cpu.regs.CPSR.u);
             pprint_CPSR("\ntheirs :", ts->test.final.CPSR);

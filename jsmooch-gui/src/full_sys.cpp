@@ -665,7 +665,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
             //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
-            worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
@@ -734,6 +734,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "blockout.md", nullptr); // works well
             //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "direct_color_dma.bin", nullptr); // does nothing
+            worked = grab_ROM(&ROMs, which, "alien_soldier_jp.md", nullptr); // works well
+            //worked = grab_ROM(&ROMs, which, "alien_soldier_usa.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "beyond_oasis.md", nullptr);
+            //worked = grab_ROM(&ROMs, which, "granada.md", nullptr);
 
             break;
         default:

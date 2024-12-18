@@ -19,7 +19,7 @@ enum ARM_ins_kind {
     data_proc_immediate_shift,
     data_proc_register_shift,
     undefined_instruction,
-    data_processing_immediate,
+    data_proc_immediate,
     LDR_STR_immediate_offset,
     LDR_STR_register_offset,
     LDM_STM,
@@ -70,7 +70,7 @@ enum ARM_ins_kind decode_arm(u32 opc)
         return undefined_instruction;
     //001'..... ....  Data Processing (immediate value)
     else if ((opc & 0b111000000000) == 0b001000000000)
-        return data_processing_immediate;
+        return data_proc_immediate;
     //010'..... ....  LDR, STR (immediate offset)
     else if ((opc & 0b111000000000) == 0b010000000000)
         return LDR_STR_immediate_offset;
@@ -118,7 +118,7 @@ void ARM7TDMI_fill_arm_table(struct ARM7TDMI *this)
             I(data_proc_immediate_shift)
             I(data_proc_register_shift)
             I(undefined_instruction)
-            I(data_processing_immediate)
+            I(data_proc_immediate)
             I(LDR_STR_immediate_offset)
             I(LDR_STR_register_offset)
             I(LDM_STM)

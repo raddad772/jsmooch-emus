@@ -55,6 +55,7 @@ void GBA_PPU_start_scanline(struct GBA*this)
 
 void GBA_PPU_hblank(struct GBA*this)
 {
+    // It's cleared at cycle 0 and set at cycle 1007
     hblank(this, 1);
 }
 
