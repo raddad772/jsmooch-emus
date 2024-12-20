@@ -10,6 +10,9 @@
 #include "arm7tdmi.h"
 #include "arm7tdmi_decode.h"
 
+#define PC R[15]
+#define LR R[14]
+#define SP R[13]
 
 void ARM7TDMI_init(struct ARM7TDMI *this)
 {
@@ -17,6 +20,9 @@ void ARM7TDMI_init(struct ARM7TDMI *this)
     ARM7TDMI_fill_arm_table(this);
     for (u32 i = 0; i < 16; i++) {
         this->regmap[i] = &this->regs.R[i];
+    }
+    for (u32 i = 0; i < 65536; i++) {
+        decode_thumb(i, &this->opcode_table_thumb[i]);
     }
 }
 

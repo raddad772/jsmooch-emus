@@ -47,9 +47,9 @@ static char *filebuf = 0;
 
 #define TEST_SKIPS_NUM 3
 static char test_skips[TEST_SKIPS_NUM][100] = {
-        "mcr_rc.json.bin",
-        "stc_ldc.json.bin",
-        "cdp.json.bin",
+        "arm_mcr_mrc.json.bin",
+        "arm_stc_ldc.json.bin",
+        "arm_cdp.json.bin",
 };
 
 #define C_SKIPS_NUM 2
@@ -225,7 +225,7 @@ static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
             if (sz == 4)
                 v = ts->test.opcodes[diff >> 2];
             else
-                v = ts->test.opcodes[diff >> 1];
+                v = ts->test.opcodes[diff >> 2];
         }
     }
     if (v == -1) v = ts->test.opcodes[3];

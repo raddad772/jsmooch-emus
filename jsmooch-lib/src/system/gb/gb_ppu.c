@@ -667,7 +667,7 @@ void GB_PPU_bus_write_IO(struct GB_bus* bus, u32 addr, u32 val) {
     case 0xFF45: // LYC
         this->io.lyc = val;
         //printf("\n45: frame:%d line:%d line_cycle:%d LYC:$%02x", this->clock->master_frame, this->clock->ly, this->line_cycle, this->io.lyc);
-        if (this->enabled) GB_PPU_eval_lyc(this);
+        if (this->enabled)  GB_PPU_eval_lyc(this);
         return;
     case 0xFF4A: // window Y
         this->io.wy = val;

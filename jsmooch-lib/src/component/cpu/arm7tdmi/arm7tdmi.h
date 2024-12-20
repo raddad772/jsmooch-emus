@@ -11,7 +11,7 @@
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 
-
+#include "thumb_instructions.h"
 #define ARM7P_nonsequential 0
 #define ARM7P_sequential 1
 #define ARM7P_code 2
@@ -31,10 +31,6 @@ enum ARM7TDMI_modes {
     ARM7_undefined = 27,
     ARM7_system = 31
 };
-
-#define PC R[15]
-#define LR R[14]
-#define SP R[13]
 
 enum ARM7TDMI_condition_codes {
     ARM7CC_EQ = 0, // Z=1
@@ -136,7 +132,7 @@ struct ARM7TDMI {
     void (*write)(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
 
     struct ARM7_ins opcode_table_arm[4096];
-    struct ARM7_ins opcode_table_thumb;
+    struct thumb_instruction opcode_table_thumb[65536];
 };
 
 

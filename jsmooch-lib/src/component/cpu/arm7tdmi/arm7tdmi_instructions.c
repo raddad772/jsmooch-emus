@@ -14,6 +14,7 @@
 
 #define OBIT(x) ((opcode >> (x)) & 1)
 
+#define PC R[15]
 
 static u32 align_val(u32 addr, u32 tmp)
 {

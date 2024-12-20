@@ -1,0 +1,56 @@
+# oo = opcode
+# nnn = Rn
+# sss = Rs
+# ddd = Rd
+
+.ADD_SUB
+00011oonnnsssddd
+
+
+.LSL_LSR_ASR
+
+.MOV_CMP_ADD_SUB
+
+.data_proc
+
+.BX
+
+.ADD_CMP_MOV_hi
+
+.LDR_PC_relative
+
+.LDRH_STRH_reg_offset
+
+.LDRSH_LDRSB_reg_offset
+
+.LDR_STR_reg_offset
+
+.LDRB_STRB_reg_offset
+
+.LDR_STR_imm_offset
+
+.LDRB_STRB_imm_offset
+
+.LDRH_STRH_imm_offset
+
+.LDR_STR_SP_relative
+
+.ADD_SP_or_PC
+
+.ADD_SUB_SP
+
+.PUSH_POP
+
+.LDM_STM
+
+.SWI
+
+.UNDEFINED_BCC
+
+.BCC
+
+.B
+
+.BL_BLX_prefix
+
+.BL_suffix
