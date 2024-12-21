@@ -98,21 +98,6 @@ static int condition_passes(struct ARM7TDMI_regs *this, int which) {
 }
 
 
-
-static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode)
-{
-
-}
-
-static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode)
-{
-    // bits 27-0 and 7-4
-    u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
-    this->last_arm7_opcode = opcode;
-    this->arm7_ins = &this->opcode_table_arm[decode];
-    this->arm7_ins->exec(this, opcode);
-}
-
 static void reload_pipeline(struct ARM7TDMI* this)
 {
     this->pipeline.flushed = 0;
@@ -133,6 +118,23 @@ static void reload_pipeline(struct ARM7TDMI* this)
         this->pipeline.opcode[1] = fetch_ins(this, 4);
         this->regs.PC += 4;
     }
+}
+
+static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode)
+{
+    struct thumb_instruction *ins = &this->opcode_table_thumb[opcode];
+    ins->func(this, ins);
+    if (this->pipeline.flushed)
+        reload_pipeline(this);
+}
+
+static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode)
+{
+    // bits 27-0 and 7-4
+    u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
+    this->last_arm7_opcode = opcode;
+    this->arm7_ins = &this->opcode_table_arm[decode];
+    this->arm7_ins->exec(this, opcode);
 }
 
 void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
@@ -162,7 +164,6 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
                     reload_pipeline(this);
             }
             else {
-                printf("\nCondition fail!");
                 this->pipeline.access = ARM7P_code | ARM7P_sequential;
                 this->regs.PC += 4;
             }

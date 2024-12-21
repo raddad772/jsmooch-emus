@@ -54,8 +54,8 @@ static char test_skips[TEST_SKIPS_NUM][100] = {
 
 #define C_SKIPS_NUM 2
 static char c_skips[C_SKIPS_NUM][100] = {
-        "mul_mla.json.bin",
-        "mull_mlal.json.bin",
+        "arm_mul_mla.json.bin",
+        "arm_mull_mlal.json.bin",
 };
 
 enum transaction_kind {
@@ -225,7 +225,7 @@ static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
             if (sz == 4)
                 v = ts->test.opcodes[diff >> 2];
             else
-                v = ts->test.opcodes[diff >> 2];
+                v = ts->test.opcodes[diff >> 1];
         }
     }
     if (v == -1) v = ts->test.opcodes[3];
@@ -272,7 +272,7 @@ static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect
 
         for (u32 i = 0; i < ts->test.transactions.num; i++) {
             struct transaction *t = &ts->test.transactions.items[i];
-            if ((t->addr == addr) && (t->kind == myt->kind)) {
+            if ((t->addr == addr) && (t->kind == myt->kind) && (t->size == myt->size)) {
                 if (theirt) printf("\nOOPS2 MULTIPLE TRANSACTIONS FOUND!");
                 //printf("\nR VISIT KIND %d:%d", t->kind, i);
                 theirt = t;
@@ -384,10 +384,20 @@ static void pprint_CPSR(const char *str, u32 v)
     }
 }
 
-static u32 cval_cpsr(u64 mine, u32 theirs, u32 initial, u32 c_skip)
+static u32 cval_cpsr(u64 mine, u32 theirs, u32 initial, u32 c_skip, u32 is_thumb, u32 opcode)
 {
     if (mine == theirs) return 1;
-    if ((c_skip) && ((mine & 0b11011111111111111111111111111111) == (theirs & 0b11011111111111111111111111111111))) return 1;
+    u32 compare_no_C = (mine & 0b11011111111111111111111111111111) == (theirs & 0b11011111111111111111111111111111);
+    if ((c_skip) && (compare_no_C)) return 1;
+    if (is_thumb) {
+        if ((opcode & 0b1111110000000000) == 0b0100000000000000) {
+            if (((opcode >> 6) & 15) == 13) {
+                if (compare_no_C) {
+                    return 1;
+                }
+            }
+        }
+    }
     printf("\n\nCPSR mismatch!");
     return 0;
 
@@ -471,7 +481,7 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_st
     CP(R_irq[1], R_irq[1], "r_irq14");
     CP(R_und[0], R_und[0], "r_und13");
     CP(R_und[1], R_und[1], "r_und14");
-    all_passed &= cval_cpsr(ts->cpu.regs.CPSR.u, ts->test.final.CPSR, ts->test.initial.CPSR, c_skip);
+    all_passed &= cval_cpsr(ts->cpu.regs.CPSR.u, ts->test.final.CPSR, ts->test.initial.CPSR, c_skip, (ts->test.initial.CPSR >> 4) & 1, ts->test.opcodes[0]);
     CP(SPSR_fiq, SPSR_fiq, "SPSR_fiq");
     CP(SPSR_svc, SPSR_svc, "SPSR_svc");
     CP(SPSR_abt, SPSR_abt, "SPSR_abt");
@@ -651,7 +661,7 @@ void test_arm7tdmi()
     printf("\nFound %d tests!", num_files);
 
     u32 completed_tests = 0;
-    u32 nn = 20;
+    u32 nn = 45;
     u32 test_start = 0;
     filebuf = malloc(FILE_BUF_SIZE);
     for (u32 i = test_start; i < num_files; i++) {
@@ -682,7 +692,7 @@ void test_arm7tdmi()
     }
     dbg_flush();
     printf("\n\nCompleted %d out of %d test succesfully! %d skips", completed_tests, num_files - TEST_SKIPS_NUM, TEST_SKIPS_NUM);
-
+    printf("\nNUMBER FILES: %d", num_files);
 
    free(filebuf);
 }

@@ -57,7 +57,7 @@ struct thumb_instruction {
         u16 PC_LR;
     };
     union {
-        u16 imm;
+        u32 imm;
         u16 rlist;
         u16 comment;
     };

@@ -49,7 +49,7 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
         ins->func = &ARM7TDMI_THUMB_ins_ADD_SUB;
         ins->I = OBIT(10); // 0 = register, 1 = immediate
         ins->sub_opcode = OBIT(9); // 0= add, 1 = sub
-        if (ins->I)
+        if (!ins->I)
             ins->Rn = BITS(8,6);
         else
             ins->imm = BITS(8, 6);
@@ -94,6 +94,7 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
         ins->func = &ARM7TDMI_THUMB_ins_LDR_PC_relative;
         ins->Rd = BITS(10, 8);
         ins->imm = BITS(7, 0);
+        ins->imm <<= 2;
     }
     else if ((opc & 0b1111011000000000) == 0b0101001000000000) { // 0101.01...
         ins->func = &ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset;
@@ -104,7 +105,7 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
     }
     else if ((opc & 0b1111011000000000) == 0b0101011000000000) { // 0101.11...
         ins->func = &ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset;
-        ins->B = OBIT(10); // 0=byte, 1=halfword. oops!
+        ins->B = !OBIT(11); // 0=byte, 1=halfword. oops!
         ins->Ro = BITS(8, 6);
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
@@ -118,7 +119,7 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
     }
     else if ((opc & 0b1111011000000000) == 0b0101010000000000) { // 0101.10...
         ins->func = &ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset;
-        ins->L = OBIT(10); // 0=STR, 1=LDR
+        ins->L = OBIT(11); // 0=STR, 1=LDR
         ins->Ro = BITS(8, 6);
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
@@ -127,6 +128,7 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
         ins->func = &ARM7TDMI_THUMB_ins_LDR_STR_imm_offset;
         ins->L = OBIT(11);
         ins->imm = BITS(10, 6);
+        ins->imm <<= 2;
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
@@ -141,6 +143,7 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
         ins->func = &ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset;
         ins->L = OBIT(11);
         ins->imm = BITS(10, 6);
+        ins->imm <<= 1;
         ins->Rb = BITS(5, 3);
         ins->Rd = BITS(2, 0);
     }
@@ -149,17 +152,20 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
         ins->L = OBIT(11);
         ins->Rd = BITS(10, 8);
         ins->imm = BITS(7, 0);
+        ins->imm <<= 2;
     }
     else if ((opc & 0b1111000000000000) == 0b1010000000000000) { // 1010......
         ins->func = &ARM7TDMI_THUMB_ins_ADD_SP_or_PC;
         ins->SP = OBIT(11);
         ins->Rd = BITS(10, 8);
         ins->imm = BITS(7, 0);
+        ins->imm <<= 2;
     }
     else if ((opc & 0b1111111100000000) == 0b1011000000000000) { // 10110000..
         ins->func = &ARM7TDMI_THUMB_ins_ADD_SUB_SP;
         ins->S = OBIT(7);
         ins->imm = BITS(6, 0);
+        ins->imm <<= 2;
     }
     else if ((opc & 0b1111011000000000) == 0b1011010000000000) { // 1011.10...
         ins->func = &ARM7TDMI_THUMB_ins_PUSH_POP;
@@ -181,24 +187,32 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
         ins->func = &ARM7TDMI_THUMB_ins_UNDEFINED_BCC;
         ins->sub_opcode = BITS(11, 8);
         ins->imm = BITS(7, 0);
+        ins->imm = SIGNe8to32(ins->imm);
+        ins->imm <<= 1;
     }
     else if ((opc & 0b1111000000000000) == 0b1101000000000000) { // 1101......
         ins->func = &ARM7TDMI_THUMB_ins_BCC;
         ins->sub_opcode = BITS(11, 8);
         ins->imm = BITS(7, 0);
+        ins->imm = SIGNe8to32(ins->imm);
+        ins->imm <<= 1;
     }
     else if ((opc & 0b1111100000000000) == 0b1110000000000000) { // 11100.....
         ins->func = &ARM7TDMI_THUMB_ins_B;
         ins->imm = BITS(10, 0);
+        ins->imm = SIGNe11to32(ins->imm);
+        ins->imm <<= 1;
     }
     else if ((opc & 0b1111100000000000) == 0b1111000000000000) { // 11110.....
         ins->func = &ARM7TDMI_THUMB_ins_BL_BLX_prefix;
         ins->imm = BITS(11, 0);
-        ins->imm = (i16)(i32)SIGNe11to32(ins->imm); // now SHL 11...
+        ins->imm = (i32)SIGNe11to32(ins->imm); // now SHL 11...
+        ins->imm <<= 12;
     }
     else if ((opc & 0b1111100000000000) == 0b1111100000000000) { // 11111.....
         ins->func = &ARM7TDMI_THUMB_ins_BL_suffix;
         ins->imm = BITS(10, 0);
+        ins->imm <<= 1;
     }
 }
 
