@@ -292,6 +292,10 @@ add_library(jsmooch-lib
         src/system/nes/nes_serialize.h
         src/component/cpu/arm7tdmi/thumb_instructions.c
         src/component/cpu/arm7tdmi/thumb_instructions.h
+        src/component/cpu/arm7tdmi/thumb_disassembler.c
+        src/component/cpu/arm7tdmi/thumb_disassembler.h
+        src/component/cpu/arm7tdmi/armv4_disassembler.c
+        src/component/cpu/arm7tdmi/armv4_disassembler.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

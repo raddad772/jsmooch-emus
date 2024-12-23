@@ -293,6 +293,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
     u32 Rm = I ? imm_off : *getR(this, Rmd);
     u32 addr = *Rn;
     if (P) addr = U ? (addr + Rm) : (addr - Rm);
+
     u32 H = OBIT(5);
 
     u32 sz = H ? 2 : 1;
@@ -595,7 +596,13 @@ void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_undefined_instruction(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    this->regs.R_und[1] = this->regs.PC - 4;
+    this->regs.SPSR_und = this->regs.CPSR.u;
+    this->regs.CPSR.mode = ARM7_undefined;
+    ARM7TDMI_fill_regmap(this);
+    this->regs.CPSR.I = 1;
+    this->regs.PC = 0x00000004;
+    ARM7TDMI_flush_pipeline(this);
 }
 
 void ARM7TDMI_ins_data_proc_immediate(struct ARM7TDMI *this, u32 opcode)

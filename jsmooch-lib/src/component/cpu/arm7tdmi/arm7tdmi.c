@@ -64,7 +64,27 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry*
 
 static void do_IRQ(struct ARM7TDMI* this)
 {
+    this->regs.R_irq[1] = this->regs.PC - 4;
+    this->regs.SPSR_irq = this->regs.CPSR.u;
+    this->regs.CPSR.T = 0;
+    this->regs.CPSR.mode = ARM7_irq;
+    ARM7TDMI_fill_regmap(this);
+    this->regs.CPSR.I = 1;
+    this->regs.PC = 0x00000018;
+    ARM7TDMI_flush_pipeline(this);
+}
 
+static void do_FIQ(struct ARM7TDMI *this)
+{
+    this->regs.R_fiq[1] = this->regs.PC - 4;
+    this->regs.SPSR_fiq = this->regs.CPSR.u;
+    this->regs.CPSR.T = 0;
+    this->regs.CPSR.mode = ARM7_fiq;
+    ARM7TDMI_fill_regmap(this);
+    this->regs.CPSR.I = 1;
+    this->regs.CPSR.F = 1;
+    this->regs.PC = 0x0000001C;
+    ARM7TDMI_flush_pipeline(this);
 }
 
 static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
