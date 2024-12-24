@@ -9,20 +9,24 @@
 #include "helpers/physical_io.h"
 
 
-struct GBA_PPU_bg {
-    u32 enable;
-
-    u32 bitdepth;
-};
-
 struct GBA_PPU_window {
     u32 enable;
 
     u32 bitdepth;
 };
 
+struct GBA_PX {
+    u32 bpp8;
+    u32 color;
+    u32 palette;
+    u32 priority;
+    u32 has;
+};
+
 struct GBA_PPU_OBJ {
     u32 enable, window_enable;
+    struct GBA_PX line[240];
+    i32 drawing_cycles;
 };
 
 struct GBA_PPU {
@@ -42,7 +46,25 @@ struct GBA_PPU {
         u32 vblank_irq_enable, hblank_irq_enable, vcount_irq_enable;
         u32 vcount_at;
     } io;
-    struct GBA_PPU_bg bg[4];
+    struct GBA_PPU_bg {
+        u32 enable;
+
+        u32 bpp8;
+        u32 htiles, vtiles;
+        u32 htiles_mask, vtiles_mask;
+        u32 hpixels, vpixels;
+        u32 hpixels_mask, vpixels_mask;
+
+
+        u32 priority;
+        u32 character_base_block, screen_base_block;
+        u32 mosaic_enable, display_overflow;
+        u32 screen_size;
+
+        struct GBA_PX line[248];
+
+        u32 hscroll, vscroll;
+    } bg[4];
     struct GBA_PPU_window window[2];
     struct GBA_PPU_OBJ obj;
 };
