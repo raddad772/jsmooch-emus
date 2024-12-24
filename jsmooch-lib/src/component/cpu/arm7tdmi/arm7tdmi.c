@@ -16,6 +16,14 @@
 #define LR R[14]
 #define SP R[13]
 
+
+static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
+    u32 r = this->fetch_ins(this->fetch_ptr, this->regs.PC, sz, this->pipeline.access);
+    //bad_trace(this, r, sz);
+    return r;
+}
+
+
 void ARM7TDMI_init(struct ARM7TDMI *this)
 {
     memset(this, 0, sizeof(*this));
@@ -66,13 +74,30 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry*
 
 static void do_IRQ(struct ARM7TDMI* this)
 {
-    printf("\nIRQ!");
-    this->regs.R_irq[1] = this->regs.PC - (this->regs.CPSR.T ? 2 : 4);
+
+    if (this->regs.CPSR.T) {
+        fetch_ins(this, 2);
+    }
+    else {
+        fetch_ins(this, 4);
+    };
+
+
     this->regs.SPSR_irq = this->regs.CPSR.u;
-    this->regs.CPSR.T = 0;
+    this->regs.CPSR.mode = ARM7_irq;
+    printf("\nIRQ!");
     this->regs.CPSR.mode = ARM7_irq;
     ARM7TDMI_fill_regmap(this);
     this->regs.CPSR.I = 1;
+
+    if (this->regs.CPSR.T) {
+        this->regs.CPSR.T = 0;
+        this->regs.R_irq[1] = this->regs.PC;
+    }
+    else {
+        this->regs.R_irq[1] = this->regs.PC - 4;
+    }
+
     this->regs.PC = 0x00000018;
     ARM7TDMI_flush_pipeline(this);
 }
@@ -108,12 +133,6 @@ static void bad_trace(struct ARM7TDMI *this, u32 r, u32 sz)
         printf("\nFetch ARM opcode from %08x: %08x: %s", this->regs.PC - 8, r, arryo.ptr);
     }
 
-}
-
-static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
-    u32 r = this->fetch_ins(this->fetch_ptr, this->regs.PC, sz, this->pipeline.access);
-    //bad_trace(this, r, sz);
-    return r;
 }
 
 static int condition_passes(struct ARM7TDMI_regs *this, int which) {

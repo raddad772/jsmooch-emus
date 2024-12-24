@@ -100,6 +100,15 @@ static void draw_line4(struct GBA *this, u16 *line_output)
     }
 }
 
+static void draw_line5(struct GBA *this, u16 *line_output)
+{
+    if (this->clock.ppu.y > 127) return;
+    u32 base_addr = 0xA000 * this->ppu.io.frame;
+    u16 *line_input = (u16 *)(((u8 *)this->ppu.VRAM) + base_addr + (this->clock.ppu.y * 240));
+    memset((line_output+160), 0, 160);
+    memcpy(line_output, line_input, 320);
+}
+
 void GBA_PPU_hblank(struct GBA*this)
 {
     // It's cleared at cycle 0 and set at cycle 1007
@@ -211,14 +220,30 @@ static u32 vcount(struct GBA *this)
 
 u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    u32 v;
+    u32 v = 0;
     switch(addr) {
+        case 0x04000000: {// DISPCTRL
+            v = this->ppu.io.bg_mode;
+            v |= (this->ppu.io.frame) << 4;
+            v |= (this->ppu.io.hblank_free) << 5;
+            v |= (this->ppu.io.obj_mapping_2d) << 6;
+            v |= (this->ppu.io.force_blank) << 7;
+            v |= (this->ppu.bg[0].enable) << 8;
+            v |= (this->ppu.bg[1].enable) << 9;
+            v |= (this->ppu.bg[2].enable) << 10;
+            v |= (this->ppu.bg[3].enable) << 11;
+            v |= (this->ppu.obj.enable) << 12;
+            v |= (this->ppu.window[0].enable) << 13;
+            v |= (this->ppu.window[1].enable) << 14;
+            v |= (this->ppu.obj.window_enable) << 15;
+            return v;}
         case 0x04000004: {// DISPSTAT
             v = this->clock.ppu.vblank_active;
             v |= this->clock.ppu.hblank_active << 1;
             v |= vcount(this);
             v |= this->ppu.io.vblank_irq_enable << 3;
             v |= this->ppu.io.hblank_irq_enable << 4;
+
             v |= this->ppu.io.vcount_irq_enable << 5;
             v |= (this->clock.ppu.y << 8);
             return v; }
@@ -231,7 +256,7 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
 
 void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     struct GBA_PPU *ppu = &this->ppu;
-    printf("\nWRITE %08x", addr);
+    //printf("\nWRITE %08x", addr);
     switch(addr) {
         case 0x04000000: {// DISPCNT
             u32 new_mode = val & 7;
@@ -246,6 +271,8 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             ppu->io.bg_mode = new_mode;
 
             ppu->io.frame = (val >> 4) & 1;
+            this->ppu.io.hblank_free = (val >> 5) & 1;
+            this->ppu.io.obj_mapping_2d = (val >> 6) & 1;
             ppu->io.force_blank = (val >> 7) & 1;
             ppu->bg[0].enable = (val >> 8) & 1;
             ppu->bg[1].enable = (val >> 9) & 1;

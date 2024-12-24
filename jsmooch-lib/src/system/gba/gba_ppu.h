@@ -38,7 +38,7 @@ struct GBA_PPU {
     struct {
         u32 bg_mode;
         u32 force_blank;
-        u32 frame;
+        u32 frame, hblank_free, obj_mapping_2d;
         u32 vblank_irq_enable, hblank_irq_enable, vcount_irq_enable;
         u32 vcount_at;
     } io;
