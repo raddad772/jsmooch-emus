@@ -32,7 +32,7 @@ static char *construct_path(char* w, const char* who)
     return tp;
 }
 
-#define FILE_BUF_SIZE 12 * 1024 * 1024
+#define FILE_BUF_SIZE 25 * 1024 * 1024
 static char *filebuf = 0;
 #define M8 1
 #define M16 2
@@ -100,7 +100,7 @@ struct arm7_test {
     struct arm7_test_state final;
     struct arm7_test_transactions transactions;
     u32 num_cycles;
-    u32 opcodes[5];
+    u32 opcode;
     u32 base_addr;
 
     u32 failed;
@@ -192,11 +192,9 @@ static u8* load_opcodes(struct arm7_test *ts, u8 *ptr)
     u32 mn = R32;
     assert(mn == 4);
 
-    for (u32 i = 0; i < 5; i++) {
-        ts->opcodes[i] = R32;
-    }
-
+    ts->opcode = R32;
     ts->base_addr = R32;
+
     assert((start+full_sz)==ptr);
     return ptr;
 }
@@ -218,17 +216,21 @@ static u8* decode_test(struct arm7_test *test, u8 *ptr)
 static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
 {
     struct arm7_test_struct *ts = (struct arm7_test_struct *)ptr;
-    i64 v = -1;
-    if (addr >= ts->test.base_addr) {
-        if ((addr - ts->test.base_addr) <= 12) {
-            u32 diff =  addr - ts->test.base_addr;
-            if (sz == 4)
-                v = ts->test.opcodes[diff >> 2];
-            else
-                v = ts->test.opcodes[diff >> 1];
-        }
+    u32 v = 0;
+    u32 mask = 0;
+    switch(sz) {
+        case 1: mask = 0xFF; break;
+        case 2: mask = 0xFFFF; break;
+        case 4: mask = 0xFFFFFFFF; break;
+        default:
+            NOGOHERE;
     }
-    if (v == -1) v = ts->test.opcodes[3];
+    if (addr != ts->test.base_addr) {
+        v = addr & mask;
+    }
+    else {
+        v = ts->test.opcode;
+    }
 
     struct transaction *myt = &ts->my_transactions.items[ts->my_transactions.num++];
     myt->kind = 0;
@@ -246,13 +248,8 @@ static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
             theirt = t;
         }
     }
-    /*if (theirt == NULL) {
-        ts->test.failed = 1;
-        printf("\nUH OH! CANT FIND TRANSACTION TO READ FROM!");
-        return 0;
-    }*/
     if (theirt) theirt->visited = 1;
-
+    ts->cpu.cycles_executed++;
     return (u32)v;
 }
 
@@ -281,10 +278,12 @@ static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect
         if (theirt == NULL) {
             ts->test.failed = 1;
             printf("\nUH OH! CANT FIND TRANSACTION TO READ FROM!");
-            return 0;
+            ts->cpu.cycles_executed++;
+            return addr;
         }
         myt->data = theirt->data;
         theirt->visited = 1;
+        ts->cpu.cycles_executed++;
     }
     if (theirt != NULL) {
         return theirt->data;
@@ -318,9 +317,11 @@ static void write_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     if (theirt == NULL) {
         ts->test.failed = 1;
         printf("\nUH OH4! CANT FIND TRANSACTION TO READ FROM!");
+        ts->cpu.cycles_executed++;
         return;
     }
     theirt->visited = 1;
+    ts->cpu.cycles_executed++;
 }
 
 static u32 do_test_read_trace(void *ptr, u32 addr, u32 sz) {
@@ -439,7 +440,7 @@ static u32 compare_transactions(struct arm7_test_struct *ts)
                 printf("\nFailed size! %d", i);
             }
         }
-        if (my->cycle != their->cycle) printf("\nWARNING cycle mismatch!");
+        //if (my->cycle != their->cycle) printf("\nWARNING cycle mismatch!");
 #undef CMP
     }
     return passed;
@@ -481,7 +482,7 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_st
     CP(R_irq[1], R_irq[1], "r_irq14");
     CP(R_und[0], R_und[0], "r_und13");
     CP(R_und[1], R_und[1], "r_und14");
-    all_passed &= cval_cpsr(ts->cpu.regs.CPSR.u, ts->test.final.CPSR, ts->test.initial.CPSR, c_skip, (ts->test.initial.CPSR >> 4) & 1, ts->test.opcodes[0]);
+    all_passed &= cval_cpsr(ts->cpu.regs.CPSR.u, ts->test.final.CPSR, ts->test.initial.CPSR, c_skip, (ts->test.initial.CPSR >> 4) & 1, ts->test.opcode);
     CP(SPSR_fiq, SPSR_fiq, "SPSR_fiq");
     CP(SPSR_svc, SPSR_svc, "SPSR_svc");
     CP(SPSR_abt, SPSR_abt, "SPSR_abt");
@@ -579,15 +580,13 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         ptr = decode_test(&ts->test, ptr);
 
         copy_state_to_cpu(&ts->cpu, &ts->test.initial);
-        printf("\n\nTEST NUM %d BASE ADDR:%08x  OPCODE:%08X", i, ts->test.base_addr, ts->test.opcodes[0]);
+        //printf("\n\nTEST NUM %d BASE ADDR:%08x  OPCODE:%08X", i, ts->test.base_addr, ts->test.opcodes[0]);
         ts->test.failed = 0;
         ts->trace_cycles = 0;
         ts->cpu.testing = 1;
         ts->my_transactions.num = 0;
-        if (dbg.trace_on) {
-            printf("\nNUM CYCLES %d", ts->test.num_cycles);
-            fflush(stdout);
-        }
+        ts->cpu.cycles_to_execute = 0;
+        ts->cpu.cycles_executed = 0;
 
         ARM7TDMI_cycle(&ts->cpu, 1);
 
@@ -648,7 +647,6 @@ void test_arm7tdmi()
             if (strstr(ep->d_name, ".json.bin") != NULL) {
                 sprintf(mfp[num_files], "%s/%s", PATH, ep->d_name);
                 sprintf(mfn[num_files], "%s", ep->d_name);
-                printf("\n%s", ep->d_name);
                 num_files++;
             }
         }

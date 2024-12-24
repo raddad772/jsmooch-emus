@@ -13,6 +13,8 @@
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
+#include "helpers/multisize_memaccess.c"
+
 #define JTHIS struct GBA* this = (struct GBA*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
@@ -63,6 +65,13 @@ void GBA_new(struct jsm_system *jsm)
     struct GBA* this = (struct GBA*)malloc(sizeof(struct GBA));
     memset(this, 0, sizeof(*this));
     ARM7TDMI_init(&this->cpu);
+    this->cpu.read_ptr = this;
+    this->cpu.write_ptr = this;
+    this->cpu.read = &GBA_mainbus_read;
+    this->cpu.write = &GBA_mainbus_write;
+    this->cpu.fetch_ptr = this;
+    this->cpu.fetch_ins = &GBA_mainbus_fetchins;
+    GBA_bus_init(this);
     GBA_clock_init(&this->clock);
     GBA_cart_init(&this->cart);
     GBA_PPU_init(this);
@@ -70,7 +79,7 @@ void GBA_new(struct jsm_system *jsm)
     snprintf(jsm->label, sizeof(jsm->label), "GameBoy Advance");
     struct jsm_debug_read_trace dt;
     dt.read_trace_arm = &read_trace_cpu;
-    dt.ptr = (void*)this;
+    dt.ptr = this;
     ARM7TDMI_setup_tracing(&this->cpu, &dt, &this->clock.master_cycle_count);
 
     this->jsm.described_inputs = 0;
@@ -148,9 +157,42 @@ void GBAJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
-    out->x = this->clock.ppu.hcount;
-    out->scanline = this->clock.ppu.vcount;
+    out->x = this->clock.ppu.x;
+    out->scanline = this->clock.ppu.y;
     out->master_cycle = this->clock.master_cycle_count;
+}
+
+static void skip_BIOS(struct GBA* this)
+{
+/*
+SWI 00h (GBA/NDS7/NDS9) - SoftReset
+Clears 200h bytes of RAM (containing stacks, and BIOS IRQ vector/flags)
+*/
+    for (u32 i = 0x3007E00; i < 0x3008000; i++) {
+        cW[1](this->WRAM_fast, i - 0x3000000, 0);
+    }
+
+    // , initializes system, supervisor, and irq stack pointers,
+    // sets R0-R12, LR_svc, SPSR_svc, LR_irq, and SPSR_irq to zero, and enters system mode.
+    for (u32 i = 0; i < 13; i++) {
+        this->cpu.regs.R[i] = 0;
+    }
+    this->cpu.regs.R_svc[1] = 0;
+    this->cpu.regs.R_irq[1] = 0;
+    this->cpu.regs.SPSR_svc = 0;
+    this->cpu.regs.SPSR_irq = 0;
+    this->cpu.regs.CPSR.mode = ARM7_system;
+    ARM7TDMI_fill_regmap(&this->cpu);
+    /*
+Host  sp_svc    sp_irq    sp_svc    zerofilled area       return address
+  GBA   3007FE0h  3007FA0h  3007F00h  [3007E00h..3007FFFh]  Flag[3007FFAh] */
+
+    this->cpu.regs.R_svc[0] = 0x03007FE0;
+    this->cpu.regs.R_irq[0] = 0x03007FA0;
+    this->cpu.regs.R[13] = 0x03007F00;
+
+    this->cpu.regs.R[15] = 0x08000000;
+    ARM7TDMI_reload_pipeline(&this->cpu);
 }
 
 void GBAJ_reset(JSM)
@@ -159,6 +201,10 @@ void GBAJ_reset(JSM)
     ARM7TDMI_reset(&this->cpu);
     GBA_clock_reset(&this->clock);
     GBA_PPU_reset(this);
+
+    skip_BIOS(this);
+
+
     printf("\nGBA reset!");
 }
 
@@ -166,9 +212,13 @@ u32 GBAJ_finish_scanline(JSM)
 {
     JTHIS;
     GBA_PPU_start_scanline(this);
+    if (dbg.do_break) return 0;
     ARM7TDMI_cycle(&this->cpu, MASTER_CYCLES_BEFORE_HBLANK);
+    if (dbg.do_break) return 0;
     GBA_PPU_hblank(this);
+    if (dbg.do_break) return 0;
     ARM7TDMI_cycle(&this->cpu, HBLANK_CYCLES);
+    if (dbg.do_break) return 0;
     GBA_PPU_finish_scanline(this);
     //GBAJ_step_master(jsm, MASTER_CYCLES_PER_SCANLINE);
     return 0;
@@ -189,7 +239,6 @@ static void GBAJ_load_BIOS(JSM, struct multi_file_set* mfs)
 
 static void GBAIO_unload_cart(JSM)
 {
-    assert(1==2);
 }
 
 static void GBAIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
@@ -222,8 +271,8 @@ void setup_lcd(struct JSM_DISPLAY *d)
     d->pixelometry.rows.bottom_vblank = 68;
     d->pixelometry.offset.y = 0;
 
-    d->geometry.physical_aspect_ratio.width = 1; // 69.4mm
-    d->geometry.physical_aspect_ratio.height = 1; // 53.24mm
+    d->geometry.physical_aspect_ratio.width = 3;
+    d->geometry.physical_aspect_ratio.height = 2;
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
@@ -247,6 +296,8 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs)
     this->jsm.described_inputs = 1;
 
     this->jsm.IOs = IOs;
+
+    cvec_lock_reallocs(IOs);
 
     // controllers
     struct physical_io_device *controller = cvec_push_back(this->jsm.IOs);

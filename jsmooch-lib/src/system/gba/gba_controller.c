@@ -4,6 +4,29 @@
 
 #include "gba_controller.h"
 
+u32 GBA_get_controller_state(struct physical_io_device *d)
+{
+    struct JSM_CONTROLLER* cnt = &d->controller;
+    struct cvec* bl = &cnt->digital_buttons;
+    struct HID_digital_button *b;
+    u32 v = 0;
+#define B_GET(bit, num) { b = cvec_get(bl, num); v |= (b->state << bit); }
+    B_GET(0, 4); // A
+    B_GET(1, 5); // B
+    B_GET(2, 9); // select
+    B_GET(3, 8); // start
+    B_GET(4, 3); // right
+    B_GET(5, 2); // left
+    B_GET(6, 0); // up
+    B_GET(7, 1); // down
+    B_GET(8, 7); // R button
+    B_GET(9, 6); // L button
+#undef B_GET
+    v ^= 0b1111111111;
+    return v;
+}
+
+
 void GBA_controller_setup_pio(struct physical_io_device *d)
 {
     physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);

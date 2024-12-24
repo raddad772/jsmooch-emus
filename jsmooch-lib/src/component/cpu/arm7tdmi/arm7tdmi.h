@@ -66,18 +66,19 @@ struct ARM7TDMI_regs {
     u32 SPSR_abt;
     u32 SPSR_irq;
     u32 SPSR_und;
+    u32 SPSR_invalid;
     union ARM7TDMI_CPSR {
         struct {
             u32 mode : 5;
             u32 T: 1; // T - state bit. 0 = ARM, 1 = THUMB
             u32 F: 1; // F - FIQ disable
             u32 I: 1; // I - IRQ disable
-            //u32 A: 1; // A - abort disable
-            //u32 E: 1; // E - endian. _1 is : 14 then
+            //u32 A: 1; // A - abort disable. _2 is : 14 (or 15) if uncommented
+            //u32 E: 1; // E - endian. _2 is : 15 if uncommented
             u32 _2 : 16;
             u32 J: 1; // J - Jazelle (Java) mode
             u32 _3 : 3;
-            //u32 Q: 1; // Sticky overflow, ARmv5TE and up only. _2 is : 2 then
+            //u32 Q: 1; // Sticky overflow, ARmv5TE and up only. _3 is : 2 if uncommented
             u32 V: 1; // 0 = no overflow, 1 = overflow
             u32 C: 1; // 0 = borrow/no carry, 1 = carry/no borrow
             u32 Z: 1; // 0 = not zero, 1 = zero
@@ -113,6 +114,7 @@ struct ARM7TDMI {
     u32 last_arm7_opcode;
     struct ARM7_ins *arm7_ins;
 
+    i32 cycles_to_execute;
     i32 cycles_executed;
 
     struct {
@@ -145,4 +147,5 @@ void ARM7TDMI_setup_tracing(struct ARM7TDMI*, struct jsm_debug_read_trace *strct
 void ARM7TDMI_cycle(struct ARM7TDMI*, i32 num);
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *);
+void ARM7TDMI_reload_pipeline(struct ARM7TDMI *);
 #endif //JSMOOCH_EMUS_ARM7TDMI_H

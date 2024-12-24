@@ -650,7 +650,10 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case SYS_GBA:
-            assert(1==2);
+            //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

@@ -12,12 +12,24 @@
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
+struct GBA;
+typedef u32 (*GBA_rdfunc)(struct GBA *, u32 addr, u32 sz, u32 access, u32 has_effect);
+typedef void (*GBA_wrfunc)(struct GBA *, u32 addr, u32 sz, u32 access, u32 val);
+
 struct GBA {
     struct ARM7TDMI cpu;
     struct GBA_clock clock;
     struct GBA_cart cart;
     struct GBA_PPU ppu;
     struct GBA_controller controller;
+
+    struct { // Only bits 27-24 are needed to distinguish valid endpoints
+        GBA_rdfunc read[16];
+        GBA_wrfunc write[16];
+    } mem;
+
+    char WRAM_slow[256 * 1024];
+    char WRAM_fast[32 * 1024];
 
     struct {
         u32 has;
@@ -28,6 +40,7 @@ struct GBA {
         struct {
             u32 open_bus_data;
         } cpu;
+        u32 IE, IF, IME;
     } io;
 
     struct {
@@ -54,6 +67,14 @@ struct GBA {
 
 };
 
-u32 GBA_mainbus_read(struct GBA*, u32 addr, u32 sz,u32 open_bus, u32 has_effect);
+/*
+    u32 (*read)(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
+    void (*write)(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
+ */
+u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
+void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
+u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access);
 
+void GBA_bus_init(struct GBA *);
+void GBA_eval_irqs(struct GBA *);
 #endif //JSMOOCH_EMUS_GBA_BUS_H

@@ -9,6 +9,8 @@
 
 #include "arm7tdmi.h"
 #include "arm7tdmi_decode.h"
+#include "armv4_disassembler.h"
+#include "thumb_disassembler.h"
 
 #define PC R[15]
 #define LR R[14]
@@ -64,7 +66,8 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry*
 
 static void do_IRQ(struct ARM7TDMI* this)
 {
-    this->regs.R_irq[1] = this->regs.PC - 4;
+    printf("\nIRQ!");
+    this->regs.R_irq[1] = this->regs.PC - (this->regs.CPSR.T ? 2 : 4);
     this->regs.SPSR_irq = this->regs.CPSR.u;
     this->regs.CPSR.T = 0;
     this->regs.CPSR.mode = ARM7_irq;
@@ -87,9 +90,30 @@ static void do_FIQ(struct ARM7TDMI *this)
     ARM7TDMI_flush_pipeline(this);
 }
 
+static struct jsm_string arryo;
+static u32 did_yo = 0;
+
+static void bad_trace(struct ARM7TDMI *this, u32 r, u32 sz)
+{
+    if (!did_yo) {
+        jsm_string_init(&arryo, 250);
+        did_yo = 1;
+    }
+    if (sz == 2) {
+        ARM7TDMI_thumb_disassemble(r, &arryo, -1);
+        printf("\nFetch THUMB opcode from %08x: %04x: %s", this->regs.PC - 4, r, arryo.ptr);
+    }
+    else {
+        ARMv4_disassemble(r, &arryo, -1);
+        printf("\nFetch ARM opcode from %08x: %08x: %s", this->regs.PC - 8, r, arryo.ptr);
+    }
+
+}
+
 static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
-    this->cycles_executed++;
-    return this->fetch_ins(this->fetch_ptr, this->regs.PC, sz, this->pipeline.access);
+    u32 r = this->fetch_ins(this->fetch_ptr, this->regs.PC, sz, this->pipeline.access);
+    //bad_trace(this, r, sz);
+    return r;
 }
 
 static int condition_passes(struct ARM7TDMI_regs *this, int which) {
@@ -118,11 +142,10 @@ static int condition_passes(struct ARM7TDMI_regs *this, int which) {
 }
 
 
-static void reload_pipeline(struct ARM7TDMI* this)
+void ARM7TDMI_reload_pipeline(struct ARM7TDMI* this)
 {
     this->pipeline.flushed = 0;
     if (this->regs.CPSR.T) {
-        printf("\nTHUMBFLUSH!");
         this->pipeline.access = ARM7P_code | ARM7P_nonsequential;
         this->pipeline.opcode[0] = fetch_ins(this, 2) & 0xFFFF;
         this->regs.PC += 2;
@@ -145,7 +168,7 @@ static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode)
     struct thumb_instruction *ins = &this->opcode_table_thumb[opcode];
     ins->func(this, ins);
     if (this->pipeline.flushed)
-        reload_pipeline(this);
+        ARM7TDMI_reload_pipeline(this);
 }
 
 static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode)
@@ -162,8 +185,10 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
     /*this->cycles_executed -= (i32)num;
     printf("\nCALL CYCLE! %d", this->cycles_executed);
     while(this->cycles_executed < 0) {*/
-    for (u32 i = 0; i < num; i++) {
+    this->cycles_to_execute += num;
+    while(this->cycles_to_execute > 0) {
         if (dbg.trace_on) printf("\nCYCLE!");
+        this->cycles_executed = 0;
         if (this->regs.IRQ_line) {
             do_IRQ(this);
         }
@@ -181,19 +206,26 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
             if (condition_passes(&this->regs, (int)(opcode >> 28))) {
                 decode_and_exec_arm(this, opcode);
                 if (this->pipeline.flushed)
-                    reload_pipeline(this);
+                    ARM7TDMI_reload_pipeline(this);
             }
             else {
+                //printf("\nCONDITION FAIL!");
                 this->pipeline.access = ARM7P_code | ARM7P_sequential;
                 this->regs.PC += 4;
             }
         }
+        if (this->cycles_executed == 0) {
+            this->cycles_executed++;
+        }
+        assert(this->cycles_executed > 0);
+        this->cycles_to_execute -= this->cycles_executed;
+        if (this->trace.cycles) *this->trace.cycles += this->cycles_executed;
     }
 }
 
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *this)
 {
     //assert(1==2);
-    printf("\nFLUSH THE PIPE!@ PC:%08x", this->regs.PC);
+    //printf("\nFLUSH THE PIPE!@ PC:%08x", this->regs.PC);
     this->pipeline.flushed = 1;
 }

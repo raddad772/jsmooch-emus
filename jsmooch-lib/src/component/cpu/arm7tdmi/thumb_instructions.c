@@ -53,9 +53,6 @@ static u32 ASR(struct ARM7TDMI *this, u32 v, u32 amount, u32 set_flags)
 
 static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
     *r = v;
-    if (r == &this->regs.PC) {
-        ARM7TDMI_flush_pipeline(this);
-    }
 }
 
 static inline u32 *getR(struct ARM7TDMI *this, u32 num) {
@@ -318,10 +315,11 @@ void ARM7TDMI_THUMB_ins_ADD_CMP_MOV_hi(struct ARM7TDMI *this, struct thumb_instr
 
 void ARM7TDMI_THUMB_ins_LDR_PC_relative(struct ARM7TDMI *this, struct thumb_instruction *ins)
 {
-    u32 addr = (this->regs.PC & 0xFFFFFFFC) + ins->imm;
+    u32 addr = (this->regs.PC & (~3)) + ins->imm;
     this->regs.PC += 2;
     u32 *Rd = getR(this, ins->Rd);
-    *Rd = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
+    u32 v = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
+    *Rd = v;
 }
 
 void ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset(struct ARM7TDMI *this, struct thumb_instruction *ins)
@@ -349,6 +347,7 @@ void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM7TDMI *this, struct thu
 
     u32 v = this->read(this->read_ptr, addr, sz, ARM7P_nonsequential, 1);
     if ((ins->B) || (addr & 1)) { // halfword. I know vad naming
+        if (addr & 1) v = (v >> 8);
         v = SIGNe8to32(v);
     }
     else {
@@ -362,6 +361,10 @@ void ARM7TDMI_THUMB_ins_LDR_STR_reg_offset(struct ARM7TDMI *this, struct thumb_i
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     this->regs.PC += 2;
     u32 *Rd = getR(this, ins->Rd);
+/*
+	@ LDR Rd,[Rb,#imm]
+	@ LDR Rd,[Rb,Ro]
+ */
     if (ins->L) { // Load
         u32 v = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
         if (addr & 3) v = align_val(addr, v);
@@ -394,6 +397,11 @@ void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(struct ARM7TDMI *this, struct thumb_i
     if (ins->L) { // Load
         u32 v = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
         if (addr & 3) v = align_val(addr, v);
+        /*
+	ldr 	r1,=0x44332211
+	ldr 	r2,=0x88776655
+	ldr 	r3,=_tvar64
+         */
         *Rd = v;
     }
     else { // Store
@@ -525,6 +533,7 @@ void ARM7TDMI_THUMB_ins_LDM_STM(struct ARM7TDMI *this, struct thumb_instruction 
     u32 *r13 = getR(this, ins->Rb);
     u32 load = ins->sub_opcode;
     this->regs.PC += 2;
+    // 	stmia 	r3!,{r1,r2}
     if (ins->rlist == 0)  {
         if (load) {
             this->regs.PC = this->read(this->read_ptr, *r13, 4, ARM7P_nonsequential, 1);

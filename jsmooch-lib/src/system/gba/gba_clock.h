@@ -12,7 +12,7 @@ struct GBA_clock {
     u64 master_frame;
 
     struct {
-        u32 hcount, vcount;
+        u32 x, y;
         u64 scanline_start;
         u32 hblank_active, vblank_active;
     } ppu;

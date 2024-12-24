@@ -28,20 +28,9 @@ static u32 align_val(u32 addr, u32 tmp)
 
 }
 
-static u32 align_val16(u32 addr, u32 tmp)
-{
-    if (addr & 1) {
-        tmp = (tmp >> 16) | (tmp << 16);
-    }
-    return tmp;
-}
-
-
 static u32 *get_SPSR_by_mode(struct ARM7TDMI *this){
     switch(this->regs.CPSR.mode) {
-        case ARM7_system:
         case ARM7_user:
-            printf("\nINVALID!!!!!!");
             return &this->regs.CPSR.u;
         case ARM7_fiq:
             return &this->regs.SPSR_fiq;
@@ -54,8 +43,9 @@ static u32 *get_SPSR_by_mode(struct ARM7TDMI *this){
         case ARM7_undefined:
             return &this->regs.SPSR_und;
         default:
+        case ARM7_system:
             printf("\nINVALID2!!!");
-            return &this->regs.CPSR.u;
+            return &this->regs.SPSR_invalid;
     }
 }
 
@@ -64,7 +54,6 @@ static inline u32 *old_getR(struct ARM7TDMI *this, u32 num) {
     // 16-19, 23, 27, 31
     u32 m = this->regs.CPSR.mode;
     if ((m < 16) || ((m > 19) && (m != 23) && (m != 27) && (m != 31))) {
-        printf("\nWARNING BAD MODE!!!");
         if (num == 15) return &this->regs.R[15];
         return &this->regs.R_invalid[num];
     }
@@ -117,12 +106,40 @@ static inline u32 *getR(struct ARM7TDMI *this, u32 num) {
     return this->regmap[num];
 }
 
+/*static void pprint_mode(u32 w)
+{
+    switch(w) {
+        case ARM7_user:
+            printf("user");
+            break;
+        case ARM7_undefined:
+            printf("undefined");
+            break;
+        case ARM7_supervisor:
+            printf("supervisor");
+            break;
+        case ARM7_fiq:
+            printf("fiq");
+            break;
+        case ARM7_irq:
+            printf("irq");
+            break;
+        case ARM7_system:
+            printf("system");
+            break;
+        default:
+            printf("unknown:%d", w);
+            break;
+    }
+}*/
+
+
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
+    //pprint_mode(this->regs.CPSR.mode);
     for (u32 i = 8; i < 15; i++) {
         this->regmap[i] = old_getR(this, i);
     }
 }
-
 
 static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
     *r = v;
@@ -303,6 +320,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
         val = SIGNe16to32(val);
     }
     else {
+        if (H) val = (val >> 8);
         val = SIGNe8to32(val);
     }
     this->regs.PC += 4;
@@ -314,7 +332,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
         else
             write_reg(this, Rn, addr);
     }
-        write_reg(this, Rd, val);
+    write_reg(this, Rd, val);
 }
 
 void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
@@ -350,8 +368,10 @@ void ARM7TDMI_ins_MSR_reg(struct ARM7TDMI *this, u32 opcode)
         }
     }
     else {
-        u32 *v = get_SPSR_by_mode(this);
-        *v = (~mask & *v) | (imm & mask);
+        if ((this->regs.CPSR.mode != ARM7_user) && (this->regs.CPSR.mode != ARM7_system)) {
+            u32 *v = get_SPSR_by_mode(this);
+            *v = (~mask & *v) | (imm & mask);
+        }
     }
     this->regs.PC += 4;
 }
@@ -383,8 +403,10 @@ void ARM7TDMI_ins_MSR_imm(struct ARM7TDMI *this, u32 opcode)
         }
     }
     else {
-        u32 *v = get_SPSR_by_mode(this);
-        *v = (~mask & *v) | (imm & mask);
+        if ((this->regs.CPSR.mode != ARM7_user) && (this->regs.CPSR.mode != ARM7_system)) {
+            u32 *v = get_SPSR_by_mode(this);
+            *v = (~mask & *v) | (imm & mask);
+        }
     }
     this->regs.PC += 4;
 }
@@ -439,7 +461,7 @@ static u32 ALU(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32
         case 2: write_reg(this, out, SUB(this, Rn, Rm, 1, S)); break;
         case 3: write_reg(this, out, SUB(this, Rm, Rn, 1, S)); break;
         case 4: write_reg(this, out, ADD(this, Rn, Rm, 0, S)); break;
-        case 5: write_reg(this, out, ADD(this, Rn, Rm, this->regs.CPSR.C, S)); break; // ADDC
+        case 5: write_reg(this, out, ADD(this, Rn, Rm, this->regs.CPSR.C, S)); break; // TODO: xx HUH?
         case 6: write_reg(this, out, SUB(this, Rn, Rm, this->regs.CPSR.C, S)); break;
         case 7: write_reg(this, out, SUB(this, Rm, Rn, this->regs.CPSR.C, S)); break;
         case 8: TEST(this, Rn & Rm, S); break;
@@ -450,6 +472,8 @@ static u32 ALU(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 alu_opcode, u32 S, u32
         case 13: write_reg(this, out, TEST(this, Rm, S)); break;
         case 14: write_reg(this, out, TEST(this, Rn & ~Rm, S)); break;
         case 15: write_reg(this, out, TEST(this, Rm ^ 0xFFFFFFFF, S)); break;
+        default:
+            assert(1==2);
     }
     return *out;
 }
@@ -539,6 +563,8 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
         case 3:
             Rm = Is ? ROR(this, Rm, Is) : RRX(this, Rm);
             break;
+        default:
+            assert(1==2);
     }
 
 //        ALU(this, Rn, Rm, alu_opcode, S, Rd);
@@ -548,7 +574,8 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
 //    }
 
     if ((S==1) && (Rdd == 15)) {
-        this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        if (this->regs.CPSR.mode != ARM7_system)
+            this->regs.CPSR.u = *get_SPSR_by_mode(this);
         ARM7TDMI_fill_regmap(this);
     }
 
@@ -589,7 +616,8 @@ void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
 
     if ((S==1) && (Rdd == 15)) {
-        this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        if (this->regs.CPSR.mode != ARM7_system)
+            this->regs.CPSR.u = *get_SPSR_by_mode(this);
         ARM7TDMI_fill_regmap(this);
     }
 }
@@ -613,16 +641,17 @@ void ARM7TDMI_ins_data_proc_immediate(struct ARM7TDMI *this, u32 opcode)
     u32 Rdd = (opcode >> 12) & 15; // dest reg.
 
     u32 Rn = *getR(this, Rnd);
+    this->regs.PC += 4;
     u32 *Rd = getR(this, Rdd);
 
     u32 Rm = opcode & 0xFF;
     u32 imm_ROR_amount = (opcode >> 7) & 30;
     this->carry = this->regs.CPSR.C;
     if (imm_ROR_amount) Rm = ROR(this, Rm, imm_ROR_amount);
-    this->regs.PC += 4;
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
-        this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        if (this->regs.CPSR.mode != ARM7_system)
+            this->regs.CPSR.u = *get_SPSR_by_mode(this);
         ARM7TDMI_fill_regmap(this);
     }
 }
@@ -896,6 +925,7 @@ void ARM7TDMI_ins_SWI(struct ARM7TDMI *this, u32 opcode)
     this->regs.CPSR.I = 1;
     this->regs.PC = 0x00000008;
     ARM7TDMI_flush_pipeline(this);
+    //printf("\nWARNING SWI %d", opcode & 0xFF);
 }
 
 void ARM7TDMI_ins_INVALID(struct ARM7TDMI *this, u32 opcode)

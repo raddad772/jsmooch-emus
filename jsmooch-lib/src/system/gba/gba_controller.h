@@ -19,5 +19,6 @@ struct GBA_controller {
 };
 
 void GBA_controller_setup_pio(struct physical_io_device *d);
+u32 GBA_get_controller_state(struct physical_io_device *d);
 
 #endif //JSMOOCH_EMUS_GBA_CONTROLLER_H
