@@ -513,7 +513,7 @@ void full_system::sync_persistent_storage()
 {
     if (my_ps) {
         if (my_ps->dirty && my_ps->persistent) {
-            printf("\nWriting save data..,");
+            //printf("\nWriting save data..,");
             fseek(my_ps->fno, 0, SEEK_SET);
             fwrite(my_ps->data, 1, my_ps->actual_size, my_ps->fno);
             fflush(my_ps->fno);
@@ -558,6 +558,7 @@ void full_system::load_default_ROM()
             worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "gauntlet.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "recca.nes", nullptr);
 
             // Sunsoft 5b
             //worked = grab_ROM(&ROMs, which, "gimmick_jp.nes", nullptr);
@@ -664,7 +665,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/brin_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_reg.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/cbb_demo.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "tonc/sbb_aff.gba", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

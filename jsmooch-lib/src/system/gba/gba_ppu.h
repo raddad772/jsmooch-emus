@@ -61,6 +61,9 @@ struct GBA_PPU {
         u32 mosaic_enable, display_overflow;
         u32 screen_size;
 
+        i32 pa, pb, pc, pd;
+        i32 x, y;
+
         struct GBA_PX line[248];
 
         u32 hscroll, vscroll;

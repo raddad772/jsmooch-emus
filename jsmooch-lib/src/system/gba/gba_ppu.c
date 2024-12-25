@@ -936,6 +936,63 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
             bg->vscroll = val & 0xFFFF;
             return; }
+        case 0x04000020: // bg2 pa
+        case 0x04000030: {// bg3 pa
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->pa = SIGNe16to32(val);
+            return; }
+        case 0x04000022: // bg2 pb
+        case 0x04000032: {// bg3 pb
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->pb = SIGNe16to32(val);
+            return; }
+        case 0x04000024: // bg2 pc
+        case 0x04000034: {// bg3 pc
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->pc = SIGNe16to32(val);
+            return; }
+        case 0x04000026: // bg2 pd
+        case 0x04000036: {// bg3 pd
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->pd = SIGNe16to32(val);
+            return; }
+        case 0x04000028: // bg2 X low 16 bits
+        case 0x04000038: {// bg3 X low 16 bits
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->x = (bg->x & 0xFFFF0000) | (val & 0xFFFF);
+            if (sz < 4) return;
+            val >>= 16;
+            __attribute__ ((fallthrough)); }
+        case 0x0400002A: // X upper 12 bits
+        case 0x0400003A: {
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->x = (bg->x & 0xFFFF);
+            val = SIGNe12to32(val);
+            bg->x |= (val << 16);
+            return; }
+        case 0x0400002C:
+        case 0x0400003C: { // y lower 12
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->y = (bg->y & 0xFFFF0000) | (val & 0xFFFF);
+            if (sz < 4) return;
+            val >>= 16;
+            __attribute__ ((fallthrough)); }
+        case 0x0400002E: // y upper 12 bits
+        case 0x0400003E: {
+            u32 bgnum = (addr >> 4) & 3;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->y = (bg->y & 0xFFFF);
+            val &= 0xFFFF;
+            val = SIGNe12to32(val);
+            bg->y |= (val << 16);
+            return; }
         }
 
     GBA_PPU_write_invalid(this, addr, sz, access, val);
