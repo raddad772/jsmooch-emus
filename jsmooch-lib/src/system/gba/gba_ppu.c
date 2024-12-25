@@ -55,7 +55,7 @@ static void hblank(struct GBA *this, u32 val)
             GBA_eval_irqs(this);
         }
     }
-    if (val == 1) {
+    if ((val == 1) && (this->clock.ppu.y >= 160)) {
         this->io.IF |= 2;
         GBA_eval_irqs(this);
     }
@@ -340,11 +340,26 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
     u32 line_size = bg->bpp8 ? 8 : 4;
     u32 tile_start_addr = bg->character_base_block + (tile_num * tile_bytes);
     u32 line_addr = tile_start_addr + (line_in_tile * line_size);
-    assert(line_addr < 0x18000);
+    if (line_addr > 0x10000) return; // hardware doesn't draw from up there
     u8 *ptr = ((u8 *)this->ppu.VRAM) + line_addr;
 
     if (bg->bpp8) {
-        printf("\nBPP8!");
+        u32 mx = hflip ? 7 : 0;
+        for (u32 ex = 0; ex < 8; ex++) {
+            u8 data = ptr[mx];
+            struct GBA_PX *p = &px[ex];
+            if (data != 0) {
+                p->has = 1;
+                p->palette = 0;
+                p->color = data;
+                p->bpp8 = 1;
+                p->priority = bg->priority;
+            }
+            else
+                p->has = 0;
+            if (hflip) mx--;
+            else mx++;
+        }
     }
     else {
         u32 mx = 0;
@@ -361,7 +376,7 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
                     p->palette = palbank;
                     p->color = c;
                     p->bpp8 = 0;
-                    p->priority = 0;}
+                    p->priority = bg->priority;}
                 else
                     p->has = 0;
                 if (hflip) mx--;
@@ -375,6 +390,7 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
+    if (!bg->enable) return;
     // first do a fetch for fine scroll -1
     u32 hpos = bg->hscroll & bg->hpixels_mask;
     u32 vpos = (bg->vscroll + this->clock.ppu.y) & bg->vpixels_mask;
@@ -404,23 +420,12 @@ static void draw_line0(struct GBA *this, u16 *line_output)
 {
     ///printf("\nno line0...")
     if (this->ppu.obj.enable) draw_obj_line(this);
-    if (this->ppu.bg[0].enable) draw_bg_line_normal(this, 0);
-    if (this->ppu.bg[1].enable) draw_bg_line_normal(this, 1);
-    if (this->ppu.bg[2].enable) draw_bg_line_normal(this, 2);
-    if (this->ppu.bg[3].enable) draw_bg_line_normal(this, 3);
+    draw_bg_line_normal(this, 0);
+    draw_bg_line_normal(this, 1);
+    draw_bg_line_normal(this, 2);
+    draw_bg_line_normal(this, 3);
     for (u32 x = 0; x < 240; x++) {
         struct GBA_PX *sp = &this->ppu.obj.line[x];
-        i32 sp_c = -1;
-        if (sp->has) {
-            sp_c = sp->color;
-            if (sp->bpp8) {
-                sp_c = this->ppu.palette_RAM[0x100 + sp_c];
-            }
-            else {
-                sp_c = this->ppu.palette_RAM[0x100 + (sp_c + (sp->palette << 4))];
-            }
-            //c = 0x7FFF;
-        }
         //if (this->clock.ppu.y == 32) c = 0x001F;
         struct GBA_PX *p[4] = {
                 &this->ppu.bg[0].line[x],
@@ -428,14 +433,37 @@ static void draw_line0(struct GBA *this, u16 *line_output)
                 &this->ppu.bg[2].line[x],
                 &this->ppu.bg[3].line[x],
         };
-        if ((p[0]->has) && (sp_c == -1)) {
-            sp_c = p[0]->color;
-            if (p[0]->bpp8) sp_c = this->ppu.palette_RAM[sp_c];
-            else sp_c = this->ppu.palette_RAM[(p[0]->palette << 4) | sp_c];
+        struct GBA_PX *highest_priority_bg_px = NULL;
+        u32 bg_priority = 5;
+        for (u32 i = 0; i < 4; i++) {
+            struct GBA_PX *mp = p[i];
+            if ((mp->has) && (mp->priority < bg_priority)) {
+                highest_priority_bg_px = mp;
+                bg_priority = mp->priority;
+            }
         }
-        if (sp_c == -1) sp_c = 0;
+        struct GBA_PX *op = NULL;
+        u32 pal_offset = 0;
+        if ((sp->has) && (sp->priority <= bg_priority)) {
+            // do sprite!
+            op = sp;
+            pal_offset = 256;
+        }
+        else if (highest_priority_bg_px != NULL) {
+            // do bg!
+            op = highest_priority_bg_px;
+        }
+        u16 c;
+        if (op == NULL) {
+            c = 0;
+        }
+        else {
+            c = op->color;
+            if (op->bpp8) c = this->ppu.palette_RAM[pal_offset + c];
+            else c = this->ppu.palette_RAM[pal_offset + (op->palette << 4) + c];
+        }
 
-        line_output[x] = sp_c;
+        line_output[x] = c;
 
     }
 }
@@ -706,7 +734,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.io.hblank_irq_enable = (val >> 4) & 1;
             this->ppu.io.vcount_irq_enable = (val >> 5) & 1;
             return; }
-        case 0x04000008:
+        case 0x04000008: // BG control
         case 0x0400000A:
         case 0x0400000C:
         case 0x0400000E: {
@@ -728,7 +756,9 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             u32 bgnum = (addr >> 2) & 3;
             struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
             bg->hscroll = val & 0xFFFF;
-            return; }
+            if (sz < 4) return;
+            val >>= 16; }
+            __attribute__ ((fallthrough));
         case 0x04000012:
         case 0x04000016:
         case 0x0400001A:
