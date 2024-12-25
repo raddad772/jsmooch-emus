@@ -153,7 +153,14 @@ static void get_affine_pixel(struct GBA *this, i32 px, i32 py, u32 tile_num, u32
 
     u8 *ptr = ((u8 *)this->ppu.VRAM) + tile_start_addr;
     if (bpp8) {
-        printf("\nBPP8!!");
+        u8 data = *ptr;
+        if ((data != 0) && (!opx->has)) {
+            opx->has = 1;
+            opx->priority = priority;
+            opx->palette = 0;
+            opx->color = data;
+            opx->bpp8 = 1;
+        }
     }
     else {
         u8 data = *ptr;
@@ -399,6 +406,7 @@ static void draw_obj_line(struct GBA *this)
     this->ppu.obj.drawing_cycles = this->ppu.io.hblank_free ? 954 : 1210;
 
     memset(this->ppu.obj.line, 0, sizeof(this->ppu.obj.line));
+    if (!this->ppu.obj.enable) return;
     // Each OBJ takes:
     // n*1 cycles per pixel
     // 10 + n*2 per pixel if rotated/scaled
@@ -510,6 +518,13 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
     }
 }
 
+static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
+{
+    struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+    memset(bg->line, 0, sizeof(bg->line));
+    if (!bg->enable) return;
+
+}
 static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
@@ -540,55 +555,79 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     }
 }
 
+static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables[4], u16 *line_output)
+{
+    struct GBA_PX *sp = &this->ppu.obj.line[x];
+    //if (this->clock.ppu.y == 32) c = 0x001F;
+    struct GBA_PX *highest_priority_bg_px = NULL;
+    u32 bg_priority = 5;
+    struct GBA_PX *mp;
+    for (u32 i = 0; i < 4; i++) {
+        if (!bg_enables[i]) continue;
+        mp = &this->ppu.bg[i].line[x];
+        if ((mp->has) && (mp->priority < bg_priority)) {
+            highest_priority_bg_px = mp;
+            bg_priority = mp->priority;
+        }
+    }
+    struct GBA_PX *op = NULL;
+    u32 pal_offset = 0;
+    if ((sp->has) && (sp->priority <= bg_priority)) {
+        // do sprite!
+        op = sp;
+        pal_offset = 256;
+    }
+    else if (highest_priority_bg_px != NULL) {
+        // do bg!
+        op = highest_priority_bg_px;
+    }
+    u16 c;
+    if (op == NULL) {
+        c = 0;
+    }
+    else {
+        c = op->color;
+        if (op->bpp8) c = this->ppu.palette_RAM[pal_offset + c];
+        else c = this->ppu.palette_RAM[pal_offset + (op->palette << 4) + c];
+    }
+
+    line_output[x] = c;
+}
+
 static void draw_line0(struct GBA *this, u16 *line_output)
 {
     ///printf("\nno line0...")
-    if (this->ppu.obj.enable) draw_obj_line(this);
+    draw_obj_line(this);
     draw_bg_line_normal(this, 0);
     draw_bg_line_normal(this, 1);
     draw_bg_line_normal(this, 2);
     draw_bg_line_normal(this, 3);
+    u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
-        struct GBA_PX *sp = &this->ppu.obj.line[x];
-        //if (this->clock.ppu.y == 32) c = 0x001F;
-        struct GBA_PX *p[4] = {
-                &this->ppu.bg[0].line[x],
-                &this->ppu.bg[1].line[x],
-                &this->ppu.bg[2].line[x],
-                &this->ppu.bg[3].line[x],
-        };
-        struct GBA_PX *highest_priority_bg_px = NULL;
-        u32 bg_priority = 5;
-        for (u32 i = 0; i < 4; i++) {
-            struct GBA_PX *mp = p[i];
-            if ((mp->has) && (mp->priority < bg_priority)) {
-                highest_priority_bg_px = mp;
-                bg_priority = mp->priority;
-            }
-        }
-        struct GBA_PX *op = NULL;
-        u32 pal_offset = 0;
-        if ((sp->has) && (sp->priority <= bg_priority)) {
-            // do sprite!
-            op = sp;
-            pal_offset = 256;
-        }
-        else if (highest_priority_bg_px != NULL) {
-            // do bg!
-            op = highest_priority_bg_px;
-        }
-        u16 c;
-        if (op == NULL) {
-            c = 0;
-        }
-        else {
-            c = op->color;
-            if (op->bpp8) c = this->ppu.palette_RAM[pal_offset + c];
-            else c = this->ppu.palette_RAM[pal_offset + (op->palette << 4) + c];
-        }
+        output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
+    }
+}
 
-        line_output[x] = c;
+static void draw_line1(struct GBA *this, u16 *line_output)
+{
+    draw_obj_line(this);
+    draw_bg_line_normal(this, 0);
+    draw_bg_line_normal(this, 1);
+    draw_bg_line_affine(this, 2);
+    u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, 0};
+    for (u32 x = 0; x < 240; x++) {
+        output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
+    }
+}
 
+static void draw_line2(struct GBA *this, u16 *line_output)
+{
+    draw_obj_line(this);
+    draw_bg_line_affine(this, 2);
+    draw_bg_line_affine(this, 3);
+    u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
+    for (u32 x = 0; x < 240; x++) {
+        output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
     }
 }
 
