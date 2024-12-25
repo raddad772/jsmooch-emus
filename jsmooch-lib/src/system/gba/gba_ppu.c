@@ -75,6 +75,14 @@ void GBA_PPU_start_scanline(struct GBA*this)
     hblank(this, 0);
     this->ppu.cur_pixel = 0;
     this->clock.ppu.scanline_start = this->clock.master_cycle_count;
+    if (this->clock.ppu.y == 0) {
+        struct GBA_PPU_bg *bg;
+        for (u32 i = 2; i < 4; i++) {
+            bg = &this->ppu.bg[i];
+            bg->x_lerp = bg->x;
+            bg->y_lerp = bg->y;
+        }
+    }
 }
 
 #define OUT_WIDTH 240
@@ -568,35 +576,24 @@ static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
     if (!bg->enable) return;
-    i32 hpos = bg->x;
-    i32 vpos = bg->y + (i32)(this->clock.ppu.y << 8);
-    //vpos -= (80 << 8);
 
-    //printf("\nPPU y:%d vpos:%d shifted:%d", this->clock.ppu.y, vpos, vpos >> 8);
-
-    i32 width = bg->hpixels;
-    i32 height = bg->vpixels;
-    i32 hwidth = width >> 1;
-    i32 hheight = height >> 1;
-
-    /*
+/*
 set affine coords to BGnX/BGnY at the start of the frame
 also reset to BGnX/BGnY whenever these registers are changed (not sure how that behaves if done mid-scanline, check NBA)
 increment by BGnPB/BGnPD after every scanline
-increment by BGnPA/BGnPC after every pixel     */
-    i32 xnum = 0;
-    i32 ynum = 0;
-    i32 cx = hpos - (xnum << 8);// - (hwidth << 8);
-    i32 cy = vpos - (ynum << 8);// - (hheight << 8);
-    //printf("\npc:%d pd:%d cy:%d cy_shift:%d", bg->pc, bg->pd, cy, cy >> 8);
+increment by BGnPA/BGnPC after every pixel
+ */
+    i32 fx = bg->x_lerp;
+    i32 fy = bg->y_lerp;
     for (u32 screen_x = 0; screen_x < 240; screen_x++) {
-        i32 px = (bg->pa*cx + bg->pb*cy)>>16;    // get x texture coordinate
-        i32 py = (bg->pc*cx + bg->pd*cy)>>16;    // get y texture coordinate]
-        get_affine_bg_pixel(this, bgnum, bg, px+xnum, py, &bg->line[screen_x]);
-
-        cx += (1 << 8);
+        get_affine_bg_pixel(this, bgnum, bg, fx>>8, fy>>8, &bg->line[screen_x]);
+        fx += bg->pa;
+        fy += bg->pc;
     }
+    bg->x_lerp += bg->pb;
+    bg->y_lerp += bg->pd;
 }
+
 static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];

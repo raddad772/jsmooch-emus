@@ -63,6 +63,7 @@ struct GBA_PPU {
 
         i32 pa, pb, pc, pd;
         i32 x, y;
+        i32 x_lerp, y_lerp;
 
         struct GBA_PX line[248];
 
