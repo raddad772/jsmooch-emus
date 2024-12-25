@@ -102,8 +102,62 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
 #undef T
 }
 
+// Thanks tonc!
+static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
+    u32 n = tx + ty * 32;
+    if (tx >= 32)
+        n += 0x03E0;
+    if (ty >= 32 && (bgcnt == 3))
+        n += 0x0400;
+    return n;
+}
+
+static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, struct GBA_PPU_bg *bg, i32 px, i32 py, struct GBA_PX *opx)
+{
+    // so first deal with clipping...
+    if (bg->display_overflow) { // wraparound
+        //while (px < 0) px += bg->hpixels;
+        //while (py < 0) py += bg->vpixels;
+        px &= bg->hpixels_mask;
+        py &= bg->vpixels_mask;
+    }
+    else { // clip/transparent
+        if (px < 0) return;
+        if (py < 0) return;
+        if (px >= bg->hpixels) return;
+        if (py >= bg->vpixels) return;
+    }
+
+    // Now px and py represent a number inside 0...hpixels and 0...vpixels
+    u32 tile_x = px >> 3;
+    u32 tile_y = py >> 3;
+    u32 line_in_tile = py & 7;
+
+    u32 tile_width = bg->htiles;
+
+    u32 screenblock_addr = bg->screen_base_block;
+    screenblock_addr += tile_x + (tile_y * tile_width);
+    u32 tile_num = ((u8 *)this->ppu.VRAM)[screenblock_addr];
+
+    // so now, grab that tile...
+    u32 tile_start_addr = bg->character_base_block + (tile_num * 64);
+    u32 line_start_addr = tile_start_addr + (line_in_tile * 8);
+    u8 *ptr = ((u8 *)this->ppu.VRAM) + line_start_addr;
+    u8 color = ptr[px & 7];
+    if (color != 0) {
+        opx->has = 1;
+        opx->bpp8 = 1;
+        opx->color = color;
+        opx->priority = bg->priority;
+        opx->palette = 0;
+    }
+    else {
+        opx->has = 0;
+    }
+}
+
 // get color from (px,py)
-static void get_affine_pixel(struct GBA *this, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_2d, u32 dsize, struct GBA_PX *opx)
+static void get_affine_sprite_pixel(struct GBA *this, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_2d, u32 dsize, struct GBA_PX *opx)
 {
     i32 hpixels = htiles * 8;
     i32 vpixels = vtiles * 8;
@@ -263,7 +317,8 @@ static void draw_sprite_rotated(struct GBA *this, u16 *ptr)
         i32 px = (pa*ix + pb*iy)>>8;    // get x texture coordinate
         i32 py = (pc*ix + pd*iy)>>8;    // get y texture coordinate
         if ((screen_x >= 0) && (screen_x < 240))
-            get_affine_pixel(this, px, py, tile_num, htiles, vtiles, bpp8, palette, priority, this->ppu.io.obj_mapping_2d, dsize, &this->ppu.obj.line[screen_x]);   // get color from (px,py)
+            get_affine_sprite_pixel(this, px, py, tile_num, htiles, vtiles, bpp8, palette, priority,
+                                    this->ppu.io.obj_mapping_2d, dsize, &this->ppu.obj.line[screen_x]);   // get color from (px,py)
         screen_x++;
         this->ppu.obj.drawing_cycles -= 2;
         if (this->ppu.obj.drawing_cycles < 0) return;
@@ -418,16 +473,6 @@ static void draw_obj_line(struct GBA *this)
     }
 }
 
-// Thanks tonc!
-u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
-    u32 n = tx + ty * 32;
-    if (tx >= 32)
-        n += 0x03E0;
-    if (ty >= 32 && (bgcnt == 3))
-        n += 0x0400;
-    return n;
-}
-
 static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u32 tile_x, u32 vpos, struct GBA_PX px[8])
 {
     // First, get location in VRAM of nametable...
@@ -523,7 +568,34 @@ static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
     if (!bg->enable) return;
+    i32 hpos = bg->x;
+    i32 vpos = bg->y + (i32)(this->clock.ppu.y << 8);
+    //vpos -= (80 << 8);
 
+    //printf("\nPPU y:%d vpos:%d shifted:%d", this->clock.ppu.y, vpos, vpos >> 8);
+
+    i32 width = bg->hpixels;
+    i32 height = bg->vpixels;
+    i32 hwidth = width >> 1;
+    i32 hheight = height >> 1;
+
+    /*
+set affine coords to BGnX/BGnY at the start of the frame
+also reset to BGnX/BGnY whenever these registers are changed (not sure how that behaves if done mid-scanline, check NBA)
+increment by BGnPB/BGnPD after every scanline
+increment by BGnPA/BGnPC after every pixel     */
+    i32 xnum = 0;
+    i32 ynum = 0;
+    i32 cx = hpos - (xnum << 8);// - (hwidth << 8);
+    i32 cy = vpos - (ynum << 8);// - (hheight << 8);
+    //printf("\npc:%d pd:%d cy:%d cy_shift:%d", bg->pc, bg->pd, cy, cy >> 8);
+    for (u32 screen_x = 0; screen_x < 240; screen_x++) {
+        i32 px = (bg->pa*cx + bg->pb*cy)>>16;    // get x texture coordinate
+        i32 py = (bg->pc*cx + bg->pd*cy)>>16;    // get y texture coordinate]
+        get_affine_bg_pixel(this, bgnum, bg, px+xnum, py, &bg->line[screen_x]);
+
+        cx += (1 << 8);
+    }
 }
 static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
 {
@@ -859,7 +931,49 @@ static void calc_screen_size(struct GBA *this, u32 num, u32 mode)
     bg->vpixels_mask = bg->vpixels - 1;
 }
 
+static void update_bg_x(struct GBA *this, u32 bgnum, u32 which, u32 val)
+{
+    u32 v = this->ppu.bg[bgnum].x & 0x0FFFFFFF;
+    val &= 0xFF;
+    switch(which) {
+        case 0: v = (v & 0x0FFFFF00) | val; break;
+        case 1: v = (v & 0x0FFF00FF) | (val << 8); break;
+        case 2: v = (v & 0x0F00FFFF) | (val << 16); break;
+        case 3: v = (v & 0x00FFFFFF) | ((val & 0x0F) << 24); break;
+    }
+    if ((v >> 27) & 1) v |= 0xF0000000;
+    this->ppu.bg[bgnum].x = v;
+}
+
+static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
+{
+    u32 v = this->ppu.bg[bgnum].y & 0x0FFFFFFF;
+    val &= 0xFF;
+    switch(which) {
+        case 0: v = (v & 0x0FFFFF00) | val; break;
+        case 1: v = (v & 0x0FFF00FF) | (val << 8); break;
+        case 2: v = (v & 0x0F00FFFF) | (val << 16); break;
+        case 3: v = (v & 0x00FFFFFF) | ((val & 0x0F) << 24); break;
+    }
+    if ((v >> 27) & 1) v |= 0xF0000000;
+    this->ppu.bg[bgnum].y = v;
+}
+
 void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    if ((addr >= 0x04000010) && (addr < 0x04000040) && (sz != 1)) {
+        if (sz == 4) {
+            GBA_PPU_mainbus_write_IO(this, addr, 1, access, val & 0xFF);
+            GBA_PPU_mainbus_write_IO(this, addr + 1, 1, access, (val >> 8) & 0xFF);
+            GBA_PPU_mainbus_write_IO(this, addr + 2, 1, access, (val >> 16) & 0xFF);
+            GBA_PPU_mainbus_write_IO(this, addr + 3, 1, access, (val >> 24) & 0xFF);
+            return;
+        }
+        if (sz == 2) {
+            GBA_PPU_mainbus_write_IO(this, addr, 1, access, val & 0xFF);
+            GBA_PPU_mainbus_write_IO(this, addr + 1, 1, access, (val >> 8) & 0xFF);
+            return;
+        }
+    }
     struct GBA_PPU *ppu = &this->ppu;
     //printf("\nWRITE %08x", addr);
     switch(addr) {
@@ -918,81 +1032,60 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             bg->screen_size = (val >> 14) & 3;
             calc_screen_size(this, bgnum, this->ppu.io.bg_mode);
             return; }
-        case 0x04000010: // HOFS
-        case 0x04000014:
-        case 0x04000018:
-        case 0x0400001C: {
-            u32 bgnum = (addr >> 2) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->hscroll = val & 0xFFFF;
-            if (sz < 4) return;
-            val >>= 16; }
-            __attribute__ ((fallthrough));
-        case 0x04000012:
-        case 0x04000016:
-        case 0x0400001A:
-        case 0x0400001E: {
-            u32 bgnum = (addr >> 2) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->vscroll = val & 0xFFFF;
-            return; }
-        case 0x04000020: // bg2 pa
-        case 0x04000030: {// bg3 pa
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->pa = SIGNe16to32(val);
-            return; }
-        case 0x04000022: // bg2 pb
-        case 0x04000032: {// bg3 pb
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->pb = SIGNe16to32(val);
-            return; }
-        case 0x04000024: // bg2 pc
-        case 0x04000034: {// bg3 pc
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->pc = SIGNe16to32(val);
-            return; }
-        case 0x04000026: // bg2 pd
-        case 0x04000036: {// bg3 pd
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->pd = SIGNe16to32(val);
-            return; }
-        case 0x04000028: // bg2 X low 16 bits
-        case 0x04000038: {// bg3 X low 16 bits
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->x = (bg->x & 0xFFFF0000) | (val & 0xFFFF);
-            if (sz < 4) return;
-            val >>= 16;
-            __attribute__ ((fallthrough)); }
-        case 0x0400002A: // X upper 12 bits
-        case 0x0400003A: {
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->x = (bg->x & 0xFFFF);
-            val = SIGNe12to32(val);
-            bg->x |= (val << 16);
-            return; }
-        case 0x0400002C:
-        case 0x0400003C: { // y lower 12
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->y = (bg->y & 0xFFFF0000) | (val & 0xFFFF);
-            if (sz < 4) return;
-            val >>= 16;
-            __attribute__ ((fallthrough)); }
-        case 0x0400002E: // y upper 12 bits
-        case 0x0400003E: {
-            u32 bgnum = (addr >> 4) & 3;
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            bg->y = (bg->y & 0xFFFF);
-            val &= 0xFFFF;
-            val = SIGNe12to32(val);
-            bg->y |= (val << 16);
-            return; }
+#define BG2 2
+#define BG3 3
+        case 0x04000010: this->ppu.bg[0].hscroll = (this->ppu.bg[0].hscroll & 0xFF00) | val; return;
+        case 0x04000011: this->ppu.bg[0].hscroll = (this->ppu.bg[0].hscroll & 0x00FF) | (val << 8); return;
+        case 0x04000012: this->ppu.bg[0].vscroll = (this->ppu.bg[0].vscroll & 0xFF00) | val; return;
+        case 0x04000013: this->ppu.bg[0].vscroll = (this->ppu.bg[0].vscroll & 0x00FF) | (val << 8); return;
+        case 0x04000014: this->ppu.bg[1].hscroll = (this->ppu.bg[1].hscroll & 0xFF00) | val; return;
+        case 0x04000015: this->ppu.bg[1].hscroll = (this->ppu.bg[1].hscroll & 0x00FF) | (val << 8); return;
+        case 0x04000016: this->ppu.bg[1].vscroll = (this->ppu.bg[1].vscroll & 0xFF00) | val; return;
+        case 0x04000017: this->ppu.bg[1].vscroll = (this->ppu.bg[1].vscroll & 0x00FF) | (val << 8); return;
+        case 0x04000018: this->ppu.bg[2].hscroll = (this->ppu.bg[2].hscroll & 0xFF00) | val; return;
+        case 0x04000019: this->ppu.bg[2].hscroll = (this->ppu.bg[2].hscroll & 0x00FF) | (val << 8); return;
+        case 0x0400001A: this->ppu.bg[2].vscroll = (this->ppu.bg[2].vscroll & 0xFF00) | val; return;
+        case 0x0400001B: this->ppu.bg[2].vscroll = (this->ppu.bg[2].vscroll & 0x00FF) | (val << 8); return;
+        case 0x0400001C: this->ppu.bg[3].hscroll = (this->ppu.bg[3].hscroll & 0xFF00) | val; return;
+        case 0x0400001D: this->ppu.bg[3].hscroll = (this->ppu.bg[3].hscroll & 0x00FF) | (val << 8); return;
+        case 0x0400001E: this->ppu.bg[3].vscroll = (this->ppu.bg[3].vscroll & 0xFF00) | val; return;
+        case 0x0400001F: this->ppu.bg[3].vscroll = (this->ppu.bg[3].vscroll & 0x00FF) | (val << 8); return;
+
+        case 0x04000020: this->ppu.bg[2].pa = (this->ppu.bg[2].pa & 0xFF00) | val; return;
+        case 0x04000021: this->ppu.bg[2].pa = (this->ppu.bg[2].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000022: this->ppu.bg[2].pb = (this->ppu.bg[2].pb & 0xFF00) | val; return;
+        case 0x04000023: this->ppu.bg[2].pb = (this->ppu.bg[2].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000024: this->ppu.bg[2].pc = (this->ppu.bg[2].pc & 0xFF00) | val; return;
+        case 0x04000025: this->ppu.bg[2].pc = (this->ppu.bg[2].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000026: this->ppu.bg[2].pd = (this->ppu.bg[2].pd & 0xFF00) | val; return;
+        case 0x04000027: this->ppu.bg[2].pd = (this->ppu.bg[2].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000028: update_bg_x(this, BG2, 0, val); return;
+        case 0x04000029: update_bg_x(this, BG2, 1, val); return;
+        case 0x0400002A: update_bg_x(this, BG2, 2, val); return;
+        case 0x0400002B: update_bg_x(this, BG2, 3, val); return;
+        case 0x0400002C: update_bg_y(this, BG2, 0, val); return;
+        case 0x0400002D: update_bg_y(this, BG2, 1, val); return;
+        case 0x0400002E: update_bg_y(this, BG2, 2, val); return;
+        case 0x0400002F: update_bg_y(this, BG2, 3, val); return;
+
+        case 0x04000030: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFF00) | val; return;
+        case 0x04000031: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000032: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFF00) | val; return;
+        case 0x04000033: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000034: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFF00) | val; return;
+        case 0x04000035: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000036: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFF00) | val; return;
+        case 0x04000037: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case 0x04000038: update_bg_x(this, BG3, 0, val); return;
+        case 0x04000039: update_bg_x(this, BG3, 1, val); return;
+        case 0x0400003A: update_bg_x(this, BG3, 2, val); return;
+        case 0x0400003B: update_bg_x(this, BG3, 3, val); return;
+        case 0x0400003C: update_bg_y(this, BG3, 0, val); return;
+        case 0x0400003D: update_bg_y(this, BG3, 1, val); return;
+        case 0x0400003E: update_bg_y(this, BG3, 2, val); return;
+        case 0x0400003F: update_bg_y(this, BG3, 3, val); return;
+#undef BG2
+#undef BG3
         }
 
     GBA_PPU_write_invalid(this, addr, sz, access, val);
