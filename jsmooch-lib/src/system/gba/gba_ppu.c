@@ -79,12 +79,6 @@ void GBA_PPU_start_scanline(struct GBA*this)
 
 #define OUT_WIDTH 240
 
-
-static void draw_sprite_rotated(struct GBA *this, u16 *ptr)
-{
-    printf("\nROTO SPRITE FAIL");
-}
-
 static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
 {
 #define T(s1, s2, hn, vn) case (((s1) << 2) | (s2)): *htiles = hn; *vtiles = vn; return;
@@ -106,6 +100,75 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
     *htiles = 1;
     *vtiles = 1;
 #undef T
+}
+
+// get color from (px,py)
+static void get_affine_pixel(struct GBA *this, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_2d, u32 dsize, struct GBA_PX *opx)
+{
+    i32 hpixels = htiles * 8;
+    i32 vpixels = vtiles * 8;
+    if (dsize) {
+        //px >>= 1;
+        //py >>= 1;
+        hpixels >>= 1;
+        vpixels >>= 1;
+    }
+    px += (hpixels >> 1);
+    py += (vpixels >> 1);
+    if ((px < 0) || (py < 0)) return;
+    if ((px >= hpixels) || (py > vpixels)) return;
+    // py is line_in_sprite
+    u32 line_in_tile = py & 7;
+    // Get start of tile
+    u32 tile_offset = 32 * tile_num;
+
+    // Offset to the correct line inside the tile
+    u32 tile_bytes = bpp8 ? 64 : 32;
+    u32 tile_line_bytes = bpp8 ? 8 : 4;
+    u32 offset_in_tile_for_y = line_in_tile * tile_line_bytes;
+
+    // Add together
+    u32 tile_start_addr = tile_offset + offset_in_tile_for_y;
+
+    // Add 0x10000 where tiles start
+    tile_start_addr += 0x10000;
+
+    // Now we must offset for tile y #
+
+    u32 tile_line_stride = 0;
+    if (obj_mapping_2d) { // 2d mapping. rows are 32 tiles wide
+        tile_line_stride = 64 * tile_line_bytes;
+    }
+    else { // 1d mapping. rows are htiles wide
+        tile_line_stride = htiles * tile_line_bytes;
+    }
+    tile_start_addr += (tile_line_stride * (py >> 3));
+
+    // Now we must offset for the X inside the overall thing we are at
+    u32 x_tile = px >> 3;
+    u32 x_in_tile = px & 7;
+    u32 px_halves = bpp8 ? 2 : 1;
+    u32 x_offset = (x_tile * tile_bytes) + ((x_in_tile * px_halves) >> 1);
+    tile_start_addr += x_offset;
+
+    u8 *ptr = ((u8 *)this->ppu.VRAM) + tile_start_addr;
+    if (bpp8) {
+        printf("\nBPP8!!");
+    }
+    else {
+        u8 data = *ptr;
+        u32 half = x_in_tile & 1;
+        u16 c;
+        if (half == 0) c = data & 15;
+        else c = (data >> 4) & 15;
+        if ((c != 0) && (!opx->has)) {
+            opx->has = 1;
+            opx->priority = priority;
+            opx->palette = palette;
+            opx->color = c;
+            opx->bpp8 = 0;
+        }
+    }
 }
 
 static void get_sprite_tile_ptrs(struct GBA *this, u32 tile_num, u32 htiles, u32 tile_y_num, u32 line_in_tile, u32 bpp8, u32 d2, u8 *tile_ptrs[8])
@@ -136,6 +199,67 @@ static void get_sprite_tile_ptrs(struct GBA *this, u32 tile_num, u32 htiles, u32
     for (u32 i = 0; i < htiles; i++) {
         tile_ptrs[i] = ptr;
         ptr += tile_bytes;
+    }
+}
+
+static void draw_sprite_rotated(struct GBA *this, u16 *ptr)
+{
+    this->ppu.obj.drawing_cycles -= 1;
+    if (this->ppu.obj.drawing_cycles < 1) return;
+
+    u32 dsize = (ptr[0] >> 9) & 1;
+
+    i32 y = ptr[0] & 0xFF;
+    if (y > 160) {
+        y -= 160;
+        y = 0 - y;
+    }
+    if ((this->clock.ppu.y < y)) return;
+
+    u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
+    u32 sz = (ptr[1] >> 14) & 3;
+    u32 htiles, vtiles;
+    get_obj_tile_size(sz, shape, &htiles, &vtiles);
+    if (dsize) {
+        htiles *= 2;
+        vtiles *= 2;
+    }
+
+    i32 y_bottom = y + (i32)(vtiles * 8);
+    if (this->clock.ppu.y >= y_bottom) return;
+
+    u32 tile_num = ptr[2] & 0x3FF;
+    u32 bpp8 = (ptr[0] >> 13) & 1;
+    u32 x = ptr[1] & 0x1FF;
+    x = SIGNe9to32(x);
+    u32 pgroup = (ptr[1] >> 9) & 31;
+    u32 pbase = (pgroup * 0x20) >> 1;
+    u16 *pbase_ptr = ((u16 *)this->ppu.OAM) + pbase;
+    i32 pa = SIGNe16to32(pbase_ptr[3]);
+    i32 pb = SIGNe16to32(pbase_ptr[7]);
+    i32 pc = SIGNe16to32(pbase_ptr[11]);
+    i32 pd = SIGNe16to32(pbase_ptr[15]);
+    this->ppu.obj.drawing_cycles -= 9;
+    if (this->ppu.obj.drawing_cycles < 0) return;
+
+    u32 priority = (ptr[2] >> 10) & 3;
+    u32 palette = bpp8 ? 0 : ((ptr[2] >> 12) & 15);
+    if (bpp8) tile_num &= 0x3FE;
+
+    i32 line_in_sprite = this->clock.ppu.y - y;
+    //i32 x_origin = x - (htiles << 2);
+
+    i32 screen_x = x;
+    i32 iy = line_in_sprite - (vtiles * 4);
+    i32 hwidth = htiles * 4;
+    for (i32 ix=-hwidth; ix < hwidth; ix++) {
+        i32 px = (pa*ix + pb*iy)>>8;    // get x texture coordinate
+        i32 py = (pc*ix + pd*iy)>>8;    // get y texture coordinate
+        if ((screen_x >= 0) && (screen_x < 240))
+            get_affine_pixel(this, px, py, tile_num, htiles, vtiles, bpp8, palette, priority, this->ppu.io.obj_mapping_2d, dsize, &this->ppu.obj.line[screen_x]);   // get color from (px,py)
+        screen_x++;
+        this->ppu.obj.drawing_cycles -= 2;
+        if (this->ppu.obj.drawing_cycles < 0) return;
     }
 }
 

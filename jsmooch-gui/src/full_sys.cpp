@@ -663,7 +663,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/obj_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/brin_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_reg.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "tonc/cbb_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/cbb_demo.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
