@@ -693,6 +693,12 @@ void GBA_PPU_hblank(struct GBA*this)
             case 0:
                 draw_line0(this, line_output);
                 break;
+            case 1:
+                draw_line1(this, line_output);
+                break;
+            case 2:
+                draw_line2(this, line_output);
+                break;
             case 3:
                 draw_line3(this, line_output);
                 break;
