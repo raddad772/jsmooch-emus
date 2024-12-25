@@ -204,20 +204,105 @@ void GBAJ_reset(JSM)
 
     skip_BIOS(this);
 
-
     printf("\nGBA reset!");
+}
+
+static void raise_irq_for_dma(struct GBA *this, u32 num)
+{
+    u32 shift = 8 + num;
+    this->io.IF |= (1 << shift);
+}
+
+static u32 dma_go_ch(struct GBA *this, u32 num) {
+    struct GBA_DMA_ch *ch = &this->dma[num];
+    if ((ch->io.enable) && (ch->op.started)) {
+        this->cycles_executed += 2;
+        u32 v = GBA_mainbus_read((void *)this, ch->op.src_addr, ch->op.sz, 0, 1);
+        GBA_mainbus_write((void *)this, ch->op.dest_addr, ch->op.sz, 0, v);
+
+        switch(ch->io.src_addr_ctrl) {
+            case 0: // increment
+                ch->op.src_addr = (ch->op.src_addr + ch->op.sz) & 0x0FFFFFFF;
+                break;
+            case 1: // decrement
+                ch->op.src_addr = (ch->op.src_addr - ch->op.sz) & 0x0FFFFFFF;
+                break;
+            case 2: // constant
+                break;
+            case 3: // increment & reload on repeat
+                ch->op.src_addr = (ch->op.src_addr + ch->op.sz) & 0x0FFFFFFF;
+                break;
+        }
+
+        switch(ch->io.dest_addr_ctrl) {
+            case 0: // increment
+                ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
+                break;
+            case 1: // decrement
+                ch->op.dest_addr = (ch->op.dest_addr - ch->op.sz) & 0x0FFFFFFF;
+                break;
+            case 2: // constant
+                break;
+            case 3: // prohibited
+                printf("\nPROHIBITED!");
+                break;
+        }
+
+        ch->op.word_count = (ch->op.word_count - 1) & ch->op.word_mask;
+        if (ch->op.word_mask == 0) {
+            ch->op.started = 0; // Disable
+            if (!ch->io.repeat) {
+                ch->io.enable = 0;
+                if (ch->io.irq_on_end) {
+                    raise_irq_for_dma(this, num);
+                }
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+static u32 dma_go(struct GBA *this) {
+    for (u32 i = 0; i < 4; i++) {
+        if (dma_go_ch(this, i)) return 1;
+    }
+    return 0;
+}
+
+static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
+{
+    // add in DMA here
+    this->cycles_to_execute += num_cycles;
+    while(this->cycles_to_execute > 0) {
+        this->cycles_executed = 0;
+        if (dma_go(this)) {
+            this->cycles_to_execute -= this->cycles_executed;
+        }
+        else {
+            ARM7TDMI_cycle(&this->cpu, 1);
+            this->cycles_to_execute--;
+        }
+
+        if (dbg.do_break) {
+            this->cycles_to_execute = 0;
+            break;
+        }
+    }
+
 }
 
 u32 GBAJ_finish_scanline(JSM)
 {
     JTHIS;
+    this->cycles_to_execute = 0;
     GBA_PPU_start_scanline(this);
     if (dbg.do_break) return 0;
-    ARM7TDMI_cycle(&this->cpu, MASTER_CYCLES_BEFORE_HBLANK);
+    cycle_DMA_and_CPU(this, MASTER_CYCLES_BEFORE_HBLANK);
     if (dbg.do_break) return 0;
     GBA_PPU_hblank(this);
     if (dbg.do_break) return 0;
-    ARM7TDMI_cycle(&this->cpu, HBLANK_CYCLES);
+    cycle_DMA_and_CPU(this, HBLANK_CYCLES);
     if (dbg.do_break) return 0;
     GBA_PPU_finish_scanline(this);
     //GBAJ_step_master(jsm, MASTER_CYCLES_PER_SCANLINE);

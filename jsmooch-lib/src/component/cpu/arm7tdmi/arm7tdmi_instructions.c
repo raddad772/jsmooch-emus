@@ -9,8 +9,8 @@
 #include "arm7tdmi_instructions.h"
 
 #define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x", opcode); assert(1==2)
-#define AREAD(addr, sz) this->read(this->read_ptr, (addr), (sz), this->pipeline.access, 1)
-#define AWRITE(addr, sz, val) this->write(this->write_ptr, (addr), (sz), this->pipeline.access, (val) & mask)
+#define AREAD(addr, sz) ARM7TDMI_read(this, (addr), (sz), this->pipeline.access, 1)
+#define AWRITE(addr, sz, val) ARM7TDMI_write(this, (addr), (sz), this->pipeline.access, (val) & mask)
 
 #define OBIT(x) ((opcode >> (x)) & 1)
 
@@ -235,8 +235,8 @@ void ARM7TDMI_ins_SWP(struct ARM7TDMI *this, u32 opcode)
         mask = 0xFF;
         sz = 1;
     }
-    u32 tmp = this->read(this->read_ptr, *Rn, sz, ARM7P_nonsequential, 1) & mask;
-    this->write(this->write_ptr, *Rn, sz, ARM7P_nonsequential, (*Rm) & mask); // Rm = [Rn]
+    u32 tmp = ARM7TDMI_read(this, *Rn, sz, ARM7P_nonsequential, 1) & mask;
+    ARM7TDMI_write(this, *Rn, sz, ARM7P_nonsequential, (*Rm) & mask); // Rm = [Rn]
     if (!B) tmp = align_val(*Rn, tmp);
     write_reg(this, Rd, tmp); // Rd = [Rn]
 }
@@ -263,7 +263,7 @@ void ARM7TDMI_ins_LDRH_STRH(struct ARM7TDMI *this, u32 opcode)
     // L = 0 is store
     this->regs.PC += 4;
     if (L) {
-        u32 val = this->read(this->read_ptr, addr, 2, ARM7P_nonsequential, 1);
+        u32 val = ARM7TDMI_read(this, addr, 2, ARM7P_nonsequential, 1);
         if (addr &  1) { // read of a halfword to a unaligned address produces a weird ROR
             val = ((val >> 8) & 0xFF) | (val << 24);
         }
@@ -281,7 +281,7 @@ void ARM7TDMI_ins_LDRH_STRH(struct ARM7TDMI *this, u32 opcode)
         /*if (addr & 3) {
             val = (val << 16) | (val >> 16);
         }*/
-        this->write(this->write_ptr, addr, 2, ARM7P_nonsequential, val & 0xFFFF);
+        ARM7TDMI_write(this, addr, 2, ARM7P_nonsequential, val & 0xFFFF);
         if (!P) addr = U ? (addr + Rm) : (addr - Rm);
         if (W) {
             if (Rnd == 15) // writeback fails. technically invalid here
@@ -315,7 +315,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
 
     u32 sz = H ? 2 : 1;
 
-    u32 val = this->read(this->read_ptr, addr, sz, ARM7P_nonsequential, 1);
+    u32 val = ARM7TDMI_read(this, addr, sz, ARM7P_nonsequential, 1);
     if (H && !(addr & 1)) { // read of a halfword to a unaligned address produces a byte-extend
         val = SIGNe16to32(val);
     }
@@ -834,14 +834,14 @@ void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)
         }
 
         if (L) {
-            u32 v = this->read(this->read_ptr, cur_addr, 4, access_type, 1);
+            u32 v = ARM7TDMI_read(this, cur_addr, 4, access_type, 1);
             if (W && (i == first)) {
                 write_reg(this, getR(this, Rnd), base_addr);
             }
             write_reg(this, getR(this, i), v);
         }
         else {
-            this->write(this->write_ptr, cur_addr, 4, access_type, *getR(this, i));
+            ARM7TDMI_write(this, cur_addr, 4, access_type, *getR(this, i));
             if (W && (i == first)) {
                 write_reg(this, getR(this, Rnd), base_addr);
             }

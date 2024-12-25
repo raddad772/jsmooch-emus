@@ -43,6 +43,7 @@ static void vblank(struct GBA *this, u32 val)
     if (val == 1) {
         this->io.IF |= 1;
         GBA_eval_irqs(this);
+        GBA_check_dma_at_vblank(this);
     }
 }
 
@@ -750,6 +751,9 @@ void GBA_PPU_hblank(struct GBA*this)
 {
     // It's cleared at cycle 0 and set at cycle 1007
     hblank(this, 1);
+
+    // Check if we have any DMA transfers that need to go...
+    GBA_check_dma_at_hblank(this);
 
     // Now draw line!
     if (this->clock.ppu.y < 160) {

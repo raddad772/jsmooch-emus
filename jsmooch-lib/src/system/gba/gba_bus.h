@@ -49,6 +49,35 @@ struct GBA {
         i64 cycles_left;
     } jsm;
 
+    i32 cycles_to_execute;
+    i32 cycles_executed;
+
+    struct GBA_DMA_ch {
+        struct {
+            u32 src_addr; // 28 bits
+            u32 dest_addr; // 28 bits
+            u32 word_count; // 14 bits on ch0-2, 16bit on ch3
+
+            u32 dest_addr_ctrl;
+            u32 src_addr_ctrl;
+            u32 repeat;
+            u32 transfer_size;
+            u32 game_pak_drq; // ch3 only
+            u32 start_timing;
+            u32 irq_on_end;
+            u32 enable;
+        } io;
+
+        struct {
+            u32 started;
+            u32 word_count;
+            u32 word_mask;
+            u32 src_addr;
+            u32 dest_addr;
+            u32 sz;
+        } op;
+    } dma[4];
+
     struct {
         double master_cycles_per_audio_sample;
         double next_sample_cycle;
@@ -77,4 +106,6 @@ u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access);
 
 void GBA_bus_init(struct GBA *);
 void GBA_eval_irqs(struct GBA *);
+void GBA_check_dma_at_hblank(struct GBA *);
+void GBA_check_dma_at_vblank(struct GBA *);
 #endif //JSMOOCH_EMUS_GBA_BUS_H

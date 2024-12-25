@@ -148,4 +148,8 @@ void ARM7TDMI_cycle(struct ARM7TDMI*, i32 num);
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *);
 void ARM7TDMI_reload_pipeline(struct ARM7TDMI *);
+
+u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *, u32 addr, u32 sz, u32 access);
+u32 ARM7TDMI_read(struct ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 has_effect);
+void ARM7TDMI_write(struct ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 val);
 #endif //JSMOOCH_EMUS_ARM7TDMI_H

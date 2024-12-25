@@ -318,7 +318,7 @@ void ARM7TDMI_THUMB_ins_LDR_PC_relative(struct ARM7TDMI *this, struct thumb_inst
     u32 addr = (this->regs.PC & (~3)) + ins->imm;
     this->regs.PC += 2;
     u32 *Rd = getR(this, ins->Rd);
-    u32 v = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
+    u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
     *Rd = v;
 }
 
@@ -328,12 +328,12 @@ void ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset(struct ARM7TDMI *this, struct thumb
     u32 *Rd = getR(this, ins->Rd);
     this->regs.PC += 2;
     if (ins->L) { // load
-        u32 v = this->read(this->read_ptr, addr, 2, ARM7P_nonsequential, 1);
+        u32 v = ARM7TDMI_read(this, addr, 2, ARM7P_nonsequential, 1);
         if (addr & 1) v = (v >> 8) | (v << 24);
         write_reg(this, Rd, v);
     }
     else { // store
-        this->write(this->write_ptr, addr, 2, ARM7P_nonsequential, (*Rd) & 0xFFFF);
+        ARM7TDMI_write(this, addr, 2, ARM7P_nonsequential, (*Rd) & 0xFFFF);
     }
 }
 
@@ -345,7 +345,7 @@ void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM7TDMI *this, struct thu
     u32 sz = ins->B ? 1 : 2;
     u32 mask = ins->B ? 0xFF : 0xFFFF;
 
-    u32 v = this->read(this->read_ptr, addr, sz, ARM7P_nonsequential, 1);
+    u32 v = ARM7TDMI_read(this, addr, sz, ARM7P_nonsequential, 1);
     if ((ins->B) || (addr & 1)) { // halfword. I know vad naming
         if (addr & 1) v = (v >> 8);
         v = SIGNe8to32(v);
@@ -366,12 +366,12 @@ void ARM7TDMI_THUMB_ins_LDR_STR_reg_offset(struct ARM7TDMI *this, struct thumb_i
 	@ LDR Rd,[Rb,Ro]
  */
     if (ins->L) { // Load
-        u32 v = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
+        u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
         if (addr & 3) v = align_val(addr, v);
         *Rd = v;
     }
     else { // Store
-        this->write(this->write_ptr, addr, 4, ARM7P_nonsequential, *Rd);
+        ARM7TDMI_write(this, addr, 4, ARM7P_nonsequential, *Rd);
     }
 }
 
@@ -381,11 +381,11 @@ void ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset(struct ARM7TDMI *this, struct thumb
     this->regs.PC += 2;
     u32 *Rd = getR(this, ins->Rd);
     if (ins->L) { // Load
-        u32 v = this->read(this->read_ptr, addr, 1, ARM7P_nonsequential, 1);
+        u32 v = ARM7TDMI_read(this, addr, 1, ARM7P_nonsequential, 1);
         *Rd = v;
     }
     else { // Store
-        this->write(this->write_ptr, addr, 1, ARM7P_nonsequential, (*Rd) & 0xFF);
+        ARM7TDMI_write(this, addr, 1, ARM7P_nonsequential, (*Rd) & 0xFF);
     }
 }
 
@@ -395,7 +395,7 @@ void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(struct ARM7TDMI *this, struct thumb_i
     this->regs.PC += 2;
     u32 *Rd = getR(this, ins->Rd);
     if (ins->L) { // Load
-        u32 v = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
+        u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
         if (addr & 3) v = align_val(addr, v);
         /*
 	ldr 	r1,=0x44332211
@@ -405,7 +405,7 @@ void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(struct ARM7TDMI *this, struct thumb_i
         *Rd = v;
     }
     else { // Store
-        this->write(this->write_ptr, addr, 4, ARM7P_nonsequential, *Rd);
+        ARM7TDMI_write(this, addr, 4, ARM7P_nonsequential, *Rd);
     }
 }
 
@@ -415,12 +415,12 @@ void ARM7TDMI_THUMB_ins_LDRB_STRB_imm_offset(struct ARM7TDMI *this, struct thumb
     u32 *Rd = getR(this, ins->Rd);
     this->regs.PC += 2;
     if (ins->L) { // load
-        u32 v = this->read(this->read_ptr, addr, 1, ARM7P_nonsequential, 1);
+        u32 v = ARM7TDMI_read(this, addr, 1, ARM7P_nonsequential, 1);
         //if (addr & 1) v = (v >> 8) | (v << 24);
         write_reg(this, Rd, v);
     }
     else { // store
-        this->write(this->write_ptr, addr, 1, ARM7P_nonsequential, (*Rd) & 0xFF);
+        ARM7TDMI_write(this, addr, 1, ARM7P_nonsequential, (*Rd) & 0xFF);
     }
 }
 
@@ -430,12 +430,12 @@ void ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset(struct ARM7TDMI *this, struct thumb
     u32 *Rd = getR(this, ins->Rd);
     this->regs.PC += 2;
     if (ins->L) { // load
-        u32 v = this->read(this->read_ptr, addr, 2, ARM7P_nonsequential, 1);
+        u32 v = ARM7TDMI_read(this, addr, 2, ARM7P_nonsequential, 1);
         if (addr & 1) v = (v >> 8) | (v << 24);
         write_reg(this, Rd, v);
     }
     else { // store
-        this->write(this->write_ptr, addr, 2, ARM7P_nonsequential, (*Rd) & 0xFFFF);
+        ARM7TDMI_write(this, addr, 2, ARM7P_nonsequential, (*Rd) & 0xFFFF);
     }
 }
 
@@ -444,12 +444,12 @@ void ARM7TDMI_THUMB_ins_LDR_STR_SP_relative(struct ARM7TDMI *this, struct thumb_
     u32 addr = *getR(this, 13) + ins->imm;
     this->regs.PC += 2;
     if (ins->L) { // if Load
-        u32 v = this->read(this->read_ptr, addr, 4, ARM7P_nonsequential, 1);
+        u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
         if (addr & 3) v = align_val(addr, v);
         write_reg(this, getR(this, ins->Rd), v);
     }
     else { // Store
-        this->write(this->write_ptr, addr, 4, ARM7P_nonsequential, *getR(this, ins->Rd));
+        ARM7TDMI_write(this, addr, 4, ARM7P_nonsequential, *getR(this, ins->Rd));
     }
 }
 
@@ -478,13 +478,13 @@ void ARM7TDMI_THUMB_ins_PUSH_POP(struct ARM7TDMI *this, struct thumb_instruction
     this->regs.PC += 2;
     if ((ins->rlist == 0) && (!ins->PC_LR)) {
         if (pop) {
-            this->regs.PC = this->read(this->read_ptr, *r13, 4, ARM7P_nonsequential, 1);
+            this->regs.PC = ARM7TDMI_read(this, *r13, 4, ARM7P_nonsequential, 1);
             ARM7TDMI_flush_pipeline(this);
             *r13 += 64;
         }
         else {
             *r13 -= 64;
-            this->write(this->write_ptr, *r13, 4, ARM7P_nonsequential, this->regs.PC);
+            ARM7TDMI_write(this, *r13, 4, ARM7P_nonsequential, this->regs.PC);
         }
         return;
     }
@@ -493,13 +493,13 @@ void ARM7TDMI_THUMB_ins_PUSH_POP(struct ARM7TDMI *this, struct thumb_instruction
     if (pop) {
         for (u32 i = 0; i < 8; i++) {
             if (ins->rlist & (1 << i)) {
-                *getR(this, i) = this->read(this->read_ptr, addr, 4, atype, 1);
+                *getR(this, i) = ARM7TDMI_read(this, addr, 4, atype, 1);
                 addr += 4;
                 atype = ARM7P_sequential;
             }
         }
         if (ins->PC_LR) {
-            this->regs.PC = this->read(this->read_ptr, addr, 4, atype, 1) & 0xFFFFFFFE;
+            this->regs.PC = ARM7TDMI_read(this, addr, 4, atype, 1) & 0xFFFFFFFE;
             *r13 = addr + 4;
             this->cycles_executed++;
             ARM7TDMI_flush_pipeline(this);
@@ -517,13 +517,13 @@ void ARM7TDMI_THUMB_ins_PUSH_POP(struct ARM7TDMI *this, struct thumb_instruction
         *r13 = addr;
         for (u32 i = 0; i < 8; i++) {
             if (ins->rlist & (1 << i)) {
-                this->write(this->write_ptr, addr, 4, atype, *getR(this, i));
+                ARM7TDMI_write(this, addr, 4, atype, *getR(this, i));
                 atype = ARM7P_sequential;
                 addr += 4;
             }
         }
         if (ins->PC_LR) {
-            this->write(this->write_ptr, addr, 4, atype, *getR(this, 14));
+            ARM7TDMI_write(this, addr, 4, atype, *getR(this, 14));
         }
     }
 }
@@ -536,11 +536,11 @@ void ARM7TDMI_THUMB_ins_LDM_STM(struct ARM7TDMI *this, struct thumb_instruction 
     // 	stmia 	r3!,{r1,r2}
     if (ins->rlist == 0)  {
         if (load) {
-            this->regs.PC = this->read(this->read_ptr, *r13, 4, ARM7P_nonsequential, 1);
+            this->regs.PC = ARM7TDMI_read(this, *r13, 4, ARM7P_nonsequential, 1);
             ARM7TDMI_flush_pipeline(this);
         }
         else {
-            this->write(this->write_ptr, *r13, 4, ARM7P_nonsequential, this->regs.PC);
+            ARM7TDMI_write(this, *r13, 4, ARM7P_nonsequential, this->regs.PC);
         }
         *r13 += 0x40;
         return;
@@ -550,7 +550,7 @@ void ARM7TDMI_THUMB_ins_LDM_STM(struct ARM7TDMI *this, struct thumb_instruction 
         u32 atype = ARM7P_nonsequential;
         for (u32 i = 0; i < 8; i++) {
             if (ins->rlist & (1 << i)) {
-                write_reg(this, getR(this, i), this->read(this->read_ptr, addr, 4, atype, 1));
+                write_reg(this, getR(this, i), ARM7TDMI_read(this, addr, 4, atype, 1));
                 addr += 4;
             }
         }
@@ -573,7 +573,7 @@ void ARM7TDMI_THUMB_ins_LDM_STM(struct ARM7TDMI *this, struct thumb_instruction 
         u32 atype = ARM7P_nonsequential;
         for (int i = first; i < 8; i++) {
             if (ins->rlist & (1 << i)) {
-                this->write(this->write_ptr, addr, 4, atype, *getR(this, i));
+                ARM7TDMI_write(this, addr, 4, atype, *getR(this, i));
                 if (i == first) *r13 = addr_new;
                 addr += 4;
                 atype = ARM7P_sequential;

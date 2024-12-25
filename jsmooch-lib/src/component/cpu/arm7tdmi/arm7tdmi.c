@@ -18,7 +18,7 @@
 
 
 static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
-    u32 r = this->fetch_ins(this->fetch_ptr, this->regs.PC, sz, this->pipeline.access);
+    u32 r = ARM7TDMI_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
     //bad_trace(this, r, sz);
     return r;
 }
@@ -201,12 +201,8 @@ static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
 {
-    /*this->cycles_executed -= (i32)num;
-    printf("\nCALL CYCLE! %d", this->cycles_executed);
-    while(this->cycles_executed < 0) {*/
     this->cycles_to_execute += num;
     while(this->cycles_to_execute > 0) {
-        if (dbg.trace_on) printf("\nCYCLE!");
         this->cycles_executed = 0;
         if (this->regs.IRQ_line) {
             do_IRQ(this);
@@ -239,6 +235,8 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
         assert(this->cycles_executed > 0);
         this->cycles_to_execute -= this->cycles_executed;
         if (this->trace.cycles) *this->trace.cycles += this->cycles_executed;
+
+        if (dbg.do_break) break;
     }
 }
 
@@ -247,4 +245,24 @@ void ARM7TDMI_flush_pipeline(struct ARM7TDMI *this)
     //assert(1==2);
     //printf("\nFLUSH THE PIPE!@ PC:%08x", this->regs.PC);
     this->pipeline.flushed = 1;
+}
+
+u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access)
+{
+    u32 v = this->read(this->read_ptr, addr, sz, access, 1);
+    this->cycles_executed++;
+    return v;
+}
+
+u32 ARM7TDMI_read(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    u32 v = this->read(this->read_ptr, addr, sz, access, has_effect);
+    this->cycles_executed++;
+    return v;
+}
+
+void ARM7TDMI_write(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    this->write(this->write_ptr, addr, sz, access, val);
+    this->cycles_executed++;
 }

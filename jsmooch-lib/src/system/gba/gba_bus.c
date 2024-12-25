@@ -43,6 +43,17 @@ static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
     buswr_invalid(this, addr, sz, access, val);
 }
 
+static void dma_start(struct GBA_DMA_ch *ch, u32 i)
+{
+    ch->op.started = 1;
+    ch->op.dest_addr = ch->io.dest_addr;
+    ch->op.src_addr = ch->io.src_addr;
+    ch->op.word_count = ch->io.word_count;
+    ch->op.sz = ch->io.transfer_size ? 4 : 2;
+    ch->op.word_mask = i == 3 ? 0xFFFF : 0x3FFF;
+}
+
+
 static void buswr_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     if (addr < 0x03008000) {
         return cW[sz](this->WRAM_fast, addr - 0x03000000, val);
@@ -58,8 +69,13 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
         case 0x04000208:
             return this->io.IME;
     }
+    if ((addr >= 0x040000B0) && (addr < 0x040000E0)) {
+        return GBA_DMA_read_IO(this, addr, sz, access, has_effect);
+    }
     return busrd_invalid(this, addr, sz, access, has_effect);
 }
+
+
 
 void GBA_eval_irqs(struct GBA *this)
 {
@@ -86,7 +102,18 @@ void GBA_eval_irqs(struct GBA *this)
 
 static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     if (addr < 0x4000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
-
+    if ((addr >= 0x040000B0) && (addr < 0x040000E0)) { // DMA
+        if (sz >= 2) {
+            buswr_IO(this, addr, 1, access, (val >> 0) & 0xFF);
+            buswr_IO(this, addr+1, 1, access, (val >> 8) & 0xFF);
+        }
+        if (sz == 4) {
+            buswr_IO(this, addr+2, 1, access, (val >> 16) & 0xFF);
+            buswr_IO(this, addr+3, 1, access, (val >> 24) & 0xFF);
+        }
+        if (sz != 1) return;
+        val &= 0xFF;
+    }
     u32 mask = sz == 4 ? 0xFFFFFFFF : (sz == 2 ? 0xFFFF : 0xFF);
     switch(addr) {
         case 0x04000200: // IE
@@ -99,9 +126,84 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             this->io.IF &= val;
             GBA_eval_irqs(this);
             return;
-        case 0x04000208:
+        case 0x04000208: // IME
             this->io.IME = val & 1;
             return;
+
+        case 0x040000B0: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000B1: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000B2: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000B3: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+        case 0x040000B4: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000B5: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000B6: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000B7: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+
+        case 0x040000BC: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000BD: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000BE: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000BF: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+        case 0x040000C0: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000C1: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000C2: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000C3: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+
+        case 0x040000C8: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000C9: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000CA: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000CB: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+        case 0x040000CC: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000CD: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000CE: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000CF: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+
+        case 0x040000D4: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000D5: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000D6: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000D7: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+        case 0x040000D8: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000D9: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000DA: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000DB: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0x0FFFFFFF) | (val << 24); return; // DMA source address ch0
+
+        case 0x040000B8: this->dma[0].io.word_count = (this->dma[0].io.word_count & 0x3F00) | (val << 0); return;
+        case 0x040000B9: this->dma[0].io.word_count = (this->dma[0].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case 0x040000C4: this->dma[1].io.word_count = (this->dma[1].io.word_count & 0x3F00) | (val << 0); return;
+        case 0x040000C5: this->dma[1].io.word_count = (this->dma[1].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case 0x040000D0: this->dma[2].io.word_count = (this->dma[2].io.word_count & 0x3F00) | (val << 0); return;
+        case 0x040000D1: this->dma[2].io.word_count = (this->dma[2].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case 0x040000DC: this->dma[3].io.word_count = (this->dma[3].io.word_count & 0xFF00) | (val << 0); return;
+        case 0x040000DD: this->dma[3].io.word_count = (this->dma[3].io.word_count & 0xFF) | ((val & 0xFF) << 8); return;
+
+        // DMA enable 0->1 while start timing = 0 will start it
+        case 0x040000BA:
+        case 0x040000C6:
+        case 0x040000D2:
+        case 0x040000DE: {
+            u32 chnum = (addr >> 6) & 3;
+            struct GBA_DMA_ch *ch = &this->dma[chnum];
+            ch->io.dest_addr_ctrl = (val >> 5) & 3;
+            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 2) | ((val >> 7) & 1);
+            return;}
+        case 0x040000BB:
+        case 0x040000C7:
+        case 0x040000D3:
+        case 0x040000DF: {
+            u32 chnum = (addr >> 6) & 3;
+            struct GBA_DMA_ch *ch = &this->dma[chnum];
+            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 1) | ((val & 1) << 1);
+            ch->io.repeat = (val >> 1) & 1;
+            ch->io.transfer_size = (val >> 2) & 1;
+            if (chnum == 3) ch->io.game_pak_drq = (val >> 3) & 1;
+            ch->io.start_timing = (val >> 4) & 3;
+            ch->io.irq_on_end = (val >> 6) & 1;
+            u32 old_enable = ch->io.enable;
+            ch->io.enable = (val >> 7) & 1;
+            if ((ch->io.enable == 1) && (old_enable == 0) && (ch->io.start_timing == 0)) {
+                dma_start(ch, chnum);
+            }
+            return;}
+
     }
     buswr_invalid(this, addr, sz, access, val);
 }
@@ -153,7 +255,6 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     struct GBA *this = (struct GBA *)ptr;
-    this->cpu.cycles_executed++;
     if (addr < 0x10000000) return this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
 
     return busrd_invalid(this, addr, sz, access, has_effect);
@@ -162,7 +263,6 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
 {
     struct GBA *this = (struct GBA*)ptr;
-    this->cpu.cycles_executed++;
     return GBA_mainbus_read(ptr, addr, sz, access, 1);
 }
 
@@ -171,7 +271,6 @@ void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     struct GBA *this = (struct GBA *)ptr;
-    this->cpu.cycles_executed++;
 
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
@@ -179,4 +278,33 @@ void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     }
 
     buswr_invalid(this, addr, sz, access, val);
+}
+
+void GBA_check_dma_at_hblank(struct GBA *this)
+{
+    // Check if any DMA channels are at enabled=1, started=0, time=hblank
+    for (u32 i = 0; i < 4; i++) {
+        struct GBA_DMA_ch *ch = &this->dma[i];
+        if ((ch->io.enable) && (!ch->op.started) && ((ch->io.start_timing == 2) || ((i == 3) && (ch->io.start_timing == 3)))) {
+            if (ch->io.start_timing == 3) { // SPECIAL VIDEO MODE CH3 only goes 2-162 weirdly...
+                if ((this->clock.ppu.y < 2) || (this->clock.ppu.y > 162)) continue;
+            }
+            else { // no hblank IRQs in vblank
+                if (this->clock.ppu.y >= 160) continue;
+            }
+            dma_start(ch, i);
+        }
+    }
+    // And if it's channel 3 and "special", if we're in the correct lines.
+}
+
+void GBA_check_dma_at_vblank(struct GBA *this)
+{
+    // Check if any DMA channels are at enabled=1, started=0, time=hblank
+    for (u32 i = 0; i < 4; i++) {
+        struct GBA_DMA_ch *ch = &this->dma[i];
+        if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
+            dma_start(ch, i);
+        }
+    }
 }
