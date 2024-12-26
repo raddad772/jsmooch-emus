@@ -812,6 +812,8 @@ static u32 GBA_PPU_read_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, 
 static void GBA_PPU_write_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     printf("\nWRITE UNKNOWN PPU ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
+    //dbg.var++;
+    //if (dbg.var > 5) dbg_break("too many ppu write", this->clock.master_cycle_count);
 }
 
 u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
@@ -979,7 +981,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
     //printf("\nWRITE %08x", addr);
     switch(addr) {
         case 0x04000000: {// DISPCNT
-            printf("\nDISPCNT WRITE %04x", val);
+            //printf("\nDISPCNT WRITE %04x", val);
             u32 new_mode = val & 7;
             if (new_mode >= 6) {
                 printf("\nILLEGAL BG MODE:%d", new_mode);

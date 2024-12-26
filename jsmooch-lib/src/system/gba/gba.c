@@ -244,15 +244,18 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
             case 2: // constant
                 break;
             case 3: // prohibited
+                ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
                 printf("\nPROHIBITED!");
                 break;
         }
 
         ch->op.word_count = (ch->op.word_count - 1) & ch->op.word_mask;
-        if (ch->op.word_mask == 0) {
+        if (ch->op.word_count == 0) {
+            //printf("\nDMA END! REPEAT? %d", ch->io.repeat);
             ch->op.started = 0; // Disable
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
+                //printf("\nENABLE DISABLE!");
                 if (ch->io.irq_on_end) {
                     raise_irq_for_dma(this, num);
                 }
