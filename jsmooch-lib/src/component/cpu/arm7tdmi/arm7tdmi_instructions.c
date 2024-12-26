@@ -8,7 +8,7 @@
 #include "arm7tdmi.h"
 #include "arm7tdmi_instructions.h"
 
-#define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x", opcode); assert(1==2)
+#define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x PC:%08x", opcode, this->regs.PC); assert(1==2)
 #define AREAD(addr, sz) ARM7TDMI_read(this, (addr), (sz), this->pipeline.access, 1)
 #define AWRITE(addr, sz, val) ARM7TDMI_write(this, (addr), (sz), this->pipeline.access, (val) & mask)
 
@@ -416,6 +416,7 @@ void ARM7TDMI_ins_BX(struct ARM7TDMI *this, u32 opcode)
     u32 Rnd = opcode & 15;
     u32 addr = *getR(this, Rnd);
     this->regs.CPSR.T = addr & 1;
+    if (Rnd == 14) printf("\nRETI to addr:%08x T:%d cyc:%lld current PC:%08x", addr, this->regs.CPSR.T, *this->trace.cycles, this->regs.PC);
     addr &= 0xFFFFFFFE;
     this->regs.PC = addr;
     ARM7TDMI_flush_pipeline(this);
@@ -903,7 +904,8 @@ void ARM7TDMI_ins_B_BL(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_STC_LDC(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    printf("\nWARNING STC/LDC");
+    this->regs.PC += 4;
 }
 
 void ARM7TDMI_ins_CDP(struct ARM7TDMI *this, u32 opcode)

@@ -346,12 +346,12 @@ void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM7TDMI *this, struct thu
     u32 mask = ins->B ? 0xFF : 0xFFFF;
 
     u32 v = ARM7TDMI_read(this, addr, sz, ARM7P_nonsequential, 1);
-    if ((ins->B) || (addr & 1)) { // halfword. I know vad naming
-        if (addr & 1) v = (v >> 8);
+    if ((ins->B)) {
         v = SIGNe8to32(v);
     }
     else {
-        v = SIGNe16to32(v);
+        if (addr & 1) { v = (v >> 8); v = SIGNe8to32(v); }
+        else v = SIGNe16to32(v);
     }
     *Rd = v;
 }

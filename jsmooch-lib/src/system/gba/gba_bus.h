@@ -41,6 +41,7 @@ struct GBA {
             u32 open_bus_data;
         } cpu;
         u32 IE, IF, IME;
+        u32 halted;
     } io;
 
     struct {
@@ -75,8 +76,27 @@ struct GBA {
             u32 src_addr;
             u32 dest_addr;
             u32 sz;
+            u32 first_run;
         } op;
     } dma[4];
+
+    struct GBA_TIMER {
+        struct {
+            u32 io;
+            u32 mask;
+            u32 counter;
+        } divider;
+
+        u32 enable;
+        u32 cascade;
+        u32 irq_on_overflow;
+
+        struct {
+            u16 val;
+            u16 reload;
+        } counter;
+
+    } timer[4];
 
     struct {
         double master_cycles_per_audio_sample;

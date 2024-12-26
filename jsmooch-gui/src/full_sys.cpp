@@ -652,7 +652,7 @@ void full_system::load_default_ROM()
             break;
         case SYS_GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
 
@@ -667,8 +667,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/cbb_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_aff.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/irq_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
 
+            //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

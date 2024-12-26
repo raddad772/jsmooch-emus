@@ -230,7 +230,7 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
             case 2: // constant
                 break;
             case 3: // increment & reload on repeat
-                ch->op.src_addr = (ch->op.src_addr + ch->op.sz) & 0x0FFFFFFF;
+                printf("\nPROHIBITED!");
                 break;
         }
 
@@ -244,8 +244,7 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
             case 2: // constant
                 break;
             case 3: // prohibited
-                ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
-                printf("\nPROHIBITED!");
+                ch->op.dest_addr = (ch->op.dest_addr - ch->op.sz) & 0x0FFFFFFF;
                 break;
         }
 
@@ -253,6 +252,7 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
         if (ch->op.word_count == 0) {
             //printf("\nDMA END! REPEAT? %d", ch->io.repeat);
             ch->op.started = 0; // Disable
+            ch->op.first_run = 0;
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
                 //printf("\nENABLE DISABLE!");
@@ -273,6 +273,37 @@ static u32 dma_go(struct GBA *this) {
     return 0;
 }
 
+static void tick_timers(struct GBA *this, u32 num_ticks)
+{
+    for (u32 ticks = 0; ticks < num_ticks; ticks++) {
+        u32 last_timer_overflowed = 0;
+        for (u32 timer = 0; timer < 4; timer++) {
+            struct GBA_TIMER *t = &this->timer[timer];
+            if (t->enable) {
+                u16 ch = 0;
+                if (t->cascade) {
+                    ch = last_timer_overflowed;
+                }
+                else {
+                    t->divider.counter = (t->divider.counter + 1) & t->divider.mask;
+                    if (t->divider.counter == 0) ch = 1;
+                }
+                last_timer_overflowed = 0;
+                t->counter.val -= ch;
+                if (t->counter.val == 0xFFFF) {
+                    last_timer_overflowed = 1;
+                    if (t->irq_on_overflow) {
+                        this->io.IF |= 1 << (3 + timer);
+                    }
+                    t->counter.val = t->counter.reload;
+                }
+            } else {
+                last_timer_overflowed = 0;
+            }
+        }
+    }
+}
+
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {
     // add in DMA here
@@ -281,10 +312,18 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
         this->cycles_executed = 0;
         if (dma_go(this)) {
             this->cycles_to_execute -= this->cycles_executed;
+            tick_timers(this, this->cycles_executed);
         }
         else {
-            ARM7TDMI_cycle(&this->cpu, 1);
+            if (this->io.halted) {
+                this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
+                if (!this->io.halted) printf("\nEXIT HALT!");
+            }
+            if (!this->io.halted) {
+                ARM7TDMI_cycle(&this->cpu, 1);
+            }
             this->cycles_to_execute--;
+            tick_timers(this, 1);
         }
 
         if (dbg.do_break) {

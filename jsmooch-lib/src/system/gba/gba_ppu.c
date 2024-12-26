@@ -41,6 +41,7 @@ static void vblank(struct GBA *this, u32 val)
     //pprint_palette_ram(this);
     this->clock.ppu.vblank_active = val;
     if (val == 1) {
+        printf("\nVBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
         this->io.IF |= 1;
         GBA_eval_irqs(this);
         GBA_check_dma_at_vblank(this);
@@ -52,11 +53,13 @@ static void hblank(struct GBA *this, u32 val)
     this->clock.ppu.hblank_active = 1;
     if (val == 0) {
         if (this->ppu.io.vcount_at == this->clock.ppu.y) {
+            printf("\nVCOUNT IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
             this->io.IF |= 4;
             GBA_eval_irqs(this);
         }
     }
-    if ((val == 1) && (this->clock.ppu.y >= 160)) {
+    if ((val == 1) && (this->clock.ppu.y < 160)) {
+        printf("\nHBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
         this->io.IF |= 2;
         GBA_eval_irqs(this);
     }
@@ -166,7 +169,7 @@ static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, struct GBA_PPU_bg *
 }
 
 // get color from (px,py)
-static void get_affine_sprite_pixel(struct GBA *this, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_2d, u32 dsize, struct GBA_PX *opx)
+static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_2d, u32 dsize, i32 screen_x, struct GBA_PPU_window *w)
 {
     i32 hpixels = htiles * 8;
     i32 vpixels = vtiles * 8;
@@ -217,12 +220,23 @@ static void get_affine_sprite_pixel(struct GBA *this, i32 px, i32 py, u32 tile_n
     u8 *ptr = ((u8 *)this->ppu.VRAM) + tile_start_addr;
     if (bpp8) {
         u8 data = *ptr;
-        if ((data != 0) && (!opx->has)) {
-            opx->has = 1;
-            opx->priority = priority;
-            opx->palette = 0;
-            opx->color = data;
-            opx->bpp8 = 1;
+        if (data != 0) {
+            switch (mode) {
+                case 1:
+                case 0: {
+                    struct GBA_PX *opx = &this->ppu.obj.line[screen_x];
+                    if (!opx->has) {
+                        opx->has = 1;
+                        opx->priority = priority;
+                        opx->palette = 0;
+                        opx->color = data;
+                        opx->bpp8 = 1;
+                    }
+                    break; }
+                case 2:
+                    w->inside[screen_x] = 1;
+                    break;
+            }
         }
     }
     else {
@@ -231,12 +245,24 @@ static void get_affine_sprite_pixel(struct GBA *this, i32 px, i32 py, u32 tile_n
         u16 c;
         if (half == 0) c = data & 15;
         else c = (data >> 4) & 15;
-        if ((c != 0) && (!opx->has)) {
-            opx->has = 1;
-            opx->priority = priority;
-            opx->palette = palette;
-            opx->color = c;
-            opx->bpp8 = 0;
+
+        if (c != 0) {
+            switch(mode) {
+                case 1:
+                case 0: {
+                    struct GBA_PX *opx = &this->ppu.obj.line[screen_x];
+                    if (!opx->has) {
+                        opx->has = 1;
+                        opx->priority = priority;
+                        opx->palette = palette;
+                        opx->color = c;
+                        opx->bpp8 = 0;
+                    }
+                    break; }
+                case 2: {
+                    w->inside[screen_x] = 1;
+                break; }
+            }
         }
     }
 }
@@ -272,7 +298,7 @@ static void get_sprite_tile_ptrs(struct GBA *this, u32 tile_num, u32 htiles, u32
     }
 }
 
-static void draw_sprite_rotated(struct GBA *this, u16 *ptr)
+static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w)
 {
     this->ppu.obj.drawing_cycles -= 1;
     if (this->ppu.obj.drawing_cycles < 1) return;
@@ -286,6 +312,7 @@ static void draw_sprite_rotated(struct GBA *this, u16 *ptr)
     }
     if ((this->clock.ppu.y < y)) return;
 
+    u32 mode = (ptr[0] >> 10) & 3;
     u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
     u32 sz = (ptr[1] >> 14) & 3;
     u32 htiles, vtiles;
@@ -326,40 +353,49 @@ static void draw_sprite_rotated(struct GBA *this, u16 *ptr)
         i32 px = (pa*ix + pb*iy)>>8;    // get x texture coordinate
         i32 py = (pc*ix + pd*iy)>>8;    // get y texture coordinate
         if ((screen_x >= 0) && (screen_x < 240))
-            get_affine_sprite_pixel(this, px, py, tile_num, htiles, vtiles, bpp8, palette, priority,
-                                    this->ppu.io.obj_mapping_2d, dsize, &this->ppu.obj.line[screen_x]);   // get color from (px,py)
+            get_affine_sprite_pixel(this, mode, px, py, tile_num, htiles, vtiles, bpp8, palette, priority,
+                                    this->ppu.io.obj_mapping_2d, dsize, screen_x, w);   // get color from (px,py)
         screen_x++;
         this->ppu.obj.drawing_cycles -= 2;
         if (this->ppu.obj.drawing_cycles < 0) return;
     }
 }
 
-static void output_sprite_8bpp(struct GBA *this, u8 *tptr, i32 screen_x, u32 priority, u32 hflip)
-{
+static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, struct GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 8; tile_x++) {
         i32 sx = tile_x + screen_x;
         if ((sx >= 0) && (sx < 240)) {
             this->ppu.obj.drawing_cycles -= 1;
-            struct GBA_PX *opx = &this->ppu.obj.line[sx];
-            if (!opx->has) {
+            struct GBA_PX *opx = NULL;
+            if (mode < 2) opx = &this->ppu.obj.line[sx];
+            if ((mode > 1) || (!opx->has)) {
                 u32 rpx = hflip ? tile_x : (7 - tile_x);
                 u16 c = tptr[rpx];
                 if (c != 0) {
-                    opx->color = c;
-                    opx->bpp8 = 1;
-                    opx->priority = priority;
-                    opx->has = 1;
-                    opx->palette = 0;
+                    switch (mode) {
+                        case 1:
+                        case 0:
+                            opx->color = c;
+                            opx->bpp8 = 1;
+                            opx->priority = priority;
+                            opx->has = 1;
+                            opx->palette = 0;
+                            break;
+                        case 2: { // OBJ window
+                            w->inside[sx] = 1;
+                            break;
+                        }
+                    }
                 }
+                break;
             }
-            if (this->ppu.obj.drawing_cycles < 1) return;
         }
+        if (this->ppu.obj.drawing_cycles < 1) return;
     }
 }
 
 
-static void output_sprite_4bpp(struct GBA *this, u8 *tptr, i32 screen_x, u32 priority, u32 hflip, u32 palette)
-{
+static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, struct GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 4; tile_x++) {
         i32 sx;
         if (hflip) sx = (7 - (tile_x * 2)) + screen_x;
@@ -368,36 +404,37 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, i32 screen_x, u32 pri
         for (u32 i = 0; i < 2; i++) {
             if ((sx >= 0) && (sx < 240)) {
                 this->ppu.obj.drawing_cycles -= 1;
-                struct GBA_PX *opx = &this->ppu.obj.line[sx];
-                if (!opx->has) {
-                    u32 c;
-                    //if (hflip) {
-                        c = data & 15;
-                        data >>= 4;
-                    //}
-                    //else {*/
-                    //c = (data >> 4) & 15;
-                    //data <<= 4;
-                    //}
-
+                struct GBA_PX *opx = NULL;
+                if (mode < 2) opx = &this->ppu.obj.line[sx];
+                if ((mode > 1) || (!opx->has)) {
+                    u32 c = data & 15;
                     if (c != 0) {
-
-                        opx->color = c;
-                        opx->bpp8 = 0;
-                        opx->priority = priority;
-                        opx->has = 1;
-                        opx->palette = palette;
+                        switch (mode) {
+                            case 1:
+                            case 0: {
+                                opx->color = c;
+                                opx->bpp8 = 0;
+                                opx->priority = priority;
+                                opx->has = 1;
+                                opx->palette = palette;
+                                break;
+                            }
+                            case 2: {
+                                w->inside[sx] = 1;
+                                break;
+                            }
+                        }
                     }
+                    if (this->ppu.obj.drawing_cycles < 1) return;
                 }
-                if (this->ppu.obj.drawing_cycles < 1) return;
+                if (hflip) sx--;
+                else sx++;
             }
-            if (hflip) sx--;
-            else sx++;
         }
     }
 }
 
-static void draw_sprite_normal(struct GBA *this, u16 *ptr)
+static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w)
 {
     // 1 cycle to evaluate and 1 cycle per pixel
     this->ppu.obj.drawing_cycles -= 1;
@@ -405,7 +442,6 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr)
 
     u32 obj_disable = (ptr[0] >> 9) & 1;
     if (obj_disable) return;
-
 
     i32 y = ptr[0] & 0xFF;
     if (y > 160) {
@@ -457,8 +493,8 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr)
     for (u32 tile_xs = 0; tile_xs < htiles; tile_xs++) {
         u32 tile_x = hflip ? ((htiles - 1) - tile_xs) : tile_xs;
         u8 *tptr = tile_ptrs[tile_x];
-        if (bpp8) output_sprite_8bpp(this, tptr, screen_x, priority, hflip);
-        else output_sprite_4bpp(this, tptr, screen_x, priority, hflip, palette);
+        if (bpp8) output_sprite_8bpp(this, tptr, mode, screen_x, priority, hflip, w);
+        else output_sprite_4bpp(this, tptr, mode, screen_x, priority, hflip, palette, w);
         screen_x += 8;
         if (this->ppu.obj.drawing_cycles < 1) return;
     }
@@ -470,15 +506,18 @@ static void draw_obj_line(struct GBA *this)
     this->ppu.obj.drawing_cycles = this->ppu.io.hblank_free ? 954 : 1210;
 
     memset(this->ppu.obj.line, 0, sizeof(this->ppu.obj.line));
+    struct GBA_PPU_window *w = &this->ppu.window[GBA_WINOBJ];
+    memset(&w->inside, 0, sizeof(w->inside));
+
     if (!this->ppu.obj.enable) return;
     // Each OBJ takes:
     // n*1 cycles per pixel
     // 10 + n*2 per pixel if rotated/scaled
     for (u32 i = 0; i < 128; i++) {
         u16 *ptr = ((u16 *)this->ppu.OAM) + (i * 4);
-        u32 rotation = (ptr[0] >> 8) & 1;
-        if (rotation) draw_sprite_rotated(this, ptr);
-        else draw_sprite_normal(this, ptr);
+        u32 affine = (ptr[0] >> 8) & 1;
+        if (affine) draw_sprite_affine(this, ptr, w);
+        else draw_sprite_normal(this, ptr, w);
     }
 }
 
@@ -570,6 +609,62 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
             }
         }
     }
+}
+
+static void calculate_windows(struct GBA *this)
+{
+    if (!this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
+
+    // Calculate windows...
+    struct GBA_PPU_window *w;
+    for (u32 wn = 0; wn < 2; wn++) {
+        w = &this->ppu.window[wn];
+
+        if (!w->enable) {
+            memset(&w->inside, 1, sizeof(w->inside));
+            continue;
+        }
+
+        u32 x;
+        u32 l_morethan_r = w->left > w->right;
+        u32 in_topbottom;
+        u32 y = this->clock.ppu.y;
+
+        if (w->top > w->bottom) { // wrapping...
+            in_topbottom = ((y < w->top) || (y >= w->bottom));
+        }
+        else { // normal!
+            in_topbottom = ((y >= w->top) && (y < w->bottom));
+        }
+
+        for (x = 0; x < 240; x++) {
+            u32 inside = ((x >= w->left) && (x < w->right)) ^ l_morethan_r;
+            w->inside[x] = inside && in_topbottom;
+        }
+    }
+
+    // Now take care of the outside window
+    struct GBA_PPU_window *w0 = &this->ppu.window[0];
+    struct GBA_PPU_window *w1 = &this->ppu.window[1];
+    struct GBA_PPU_window *ws = &this->ppu.window[GBA_WINOBJ];
+    u32 w0r = w0->enable ^ 1;
+    u32 w1r = w1->enable ^ 1;
+    u32 wsr = ws->enable ^ 1;
+    w = &this->ppu.window[GBA_WINOUTSIDE];
+    memset(w->inside, 0, sizeof(w->inside));
+    for (u32 x = 0; x < 240; x++) {
+        u32 w0i = w0r | w0->inside[x];
+        u32 w1i = w1r | w1->inside[x];
+        u32 wsi = wsr | ws->inside[x];
+        w->inside[x] = !(w0i || w1i || wsi);
+    }
+}
+
+static void apply_windows(struct GBA *this, u32 sp_window, u32 bg0, u32 bg1, u32 bg2, u32 bg3)
+{
+    if (!this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
+    // Each window can be individually enable/disabled
+    //
 }
 
 static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
@@ -672,6 +767,8 @@ static void draw_line0(struct GBA *this, u16 *line_output)
     draw_bg_line_normal(this, 1);
     draw_bg_line_normal(this, 2);
     draw_bg_line_normal(this, 3);
+    calculate_windows(this);
+    apply_windows(this, 1, 1, 1, 1, 1);
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -684,6 +781,7 @@ static void draw_line1(struct GBA *this, u16 *line_output)
     draw_bg_line_normal(this, 0);
     draw_bg_line_normal(this, 1);
     draw_bg_line_affine(this, 2);
+    apply_windows(this, 1, 1, 1, 1, 0);
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, 0};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -695,6 +793,7 @@ static void draw_line2(struct GBA *this, u16 *line_output)
     draw_obj_line(this);
     draw_bg_line_affine(this, 2);
     draw_bg_line_affine(this, 3);
+    apply_windows(this, 1, 0, 0, 1, 1);
     u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -887,7 +986,7 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             v |= (this->ppu.obj.enable) << 12;
             v |= (this->ppu.window[0].enable) << 13;
             v |= (this->ppu.window[1].enable) << 14;
-            v |= (this->ppu.obj.window_enable) << 15;
+            v |= (this->ppu.window[GBA_WINOBJ].enable) << 15;
             return v;}
         case 0x04000004: {// DISPSTAT
             v = this->clock.ppu.vblank_active;
@@ -900,6 +999,7 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             v |= (this->clock.ppu.y << 8);
             return v; }
         case 0x04000006: { // VCNT
+            printf("\nREAD VCNT cyc:%lld", this->clock.master_cycle_count);
             return this->clock.ppu.y;
         }
     }
@@ -1008,7 +1108,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             ppu->obj.enable = (val >> 12) & 1;
             ppu->window[0].enable = (val >> 13) & 1;
             ppu->window[1].enable = (val >> 14) & 1;
-            ppu->obj.window_enable = (val >> 15) & 1;
+            ppu->window[GBA_WINOBJ].enable = (val >> 15) & 1;
             printf("\nBGs 0:%d 1:%d 2:%d 3:%d obj:%d window0:%d window1:%d force_hblank:%d",
                    ppu->bg[0].enable, ppu->bg[1].enable, ppu->bg[2].enable, ppu->bg[3].enable,
                    ppu->obj.enable, ppu->window[0].enable, ppu->window[1].enable, ppu->io.force_blank

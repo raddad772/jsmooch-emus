@@ -12,7 +12,8 @@
 struct GBA_PPU_window {
     u32 enable;
 
-    u32 bitdepth;
+    u32 left, right, top, bottom;
+    u8 inside[240];
 };
 
 struct GBA_PX {
@@ -24,7 +25,7 @@ struct GBA_PX {
 };
 
 struct GBA_PPU_OBJ {
-    u32 enable, window_enable;
+    u32 enable;
     struct GBA_PX line[240];
     i32 drawing_cycles;
 };
@@ -69,9 +70,14 @@ struct GBA_PPU {
 
         u32 hscroll, vscroll;
     } bg[4];
-    struct GBA_PPU_window window[2];
+    struct GBA_PPU_window window[4]; // win0, win1, win-else and win-obj
     struct GBA_PPU_OBJ obj;
 };
+
+#define GBA_WIN0 0
+#define GBA_WIN1 1
+#define GBA_WINOUTSIDE 2
+#define GBA_WINOBJ 3
 
 struct GBA;
 void GBA_PPU_init(struct GBA*);
