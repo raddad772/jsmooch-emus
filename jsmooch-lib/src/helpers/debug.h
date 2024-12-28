@@ -97,6 +97,7 @@ struct jsm_debug_struct {
         struct cpu_trace_struct arm7tdmi;
 
         u32 dma;
+        u32 ram;
         u32 vram;
         u32 fifo;
         u32 vdp;

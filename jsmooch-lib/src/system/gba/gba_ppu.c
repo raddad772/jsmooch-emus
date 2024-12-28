@@ -999,7 +999,6 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             v |= (this->clock.ppu.y << 8);
             return v; }
         case 0x04000006: { // VCNT
-            printf("\nREAD VCNT cyc:%lld", this->clock.master_cycle_count);
             return this->clock.ppu.y;
         }
     }
@@ -1102,6 +1101,12 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
                    );
             printf("\nOBJ mapping 2d:%d", ppu->io.obj_mapping_2d);
             return; }
+        case 0x04000002:
+            printf("\nGREEN SWAP? %d", val);
+            return;
+        case 0x04000003:
+            printf("\nGREEN SWAP2? %d", val);
+            return;
         case 0x04000004: {// DISPSTAT
             this->ppu.io.vblank_irq_enable = (val >> 3) & 1;
             this->ppu.io.hblank_irq_enable = (val >> 4) & 1;

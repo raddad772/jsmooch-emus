@@ -595,7 +595,7 @@ Execution SWI/BKPT:
     this->regs.SPSR_svc = this->regs.CPSR.u;
     this->regs.CPSR.mode = ARM7_supervisor;
     this->regs.CPSR.T = 0; // exit THUMB
-    this->regs.CPSR.I = 1;
+    this->regs.CPSR.I = 1; // mask IRQ
     ARM7TDMI_fill_regmap(this);
     this->regs.PC = 0x00000008;
     ARM7TDMI_flush_pipeline(this);

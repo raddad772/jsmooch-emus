@@ -256,7 +256,6 @@ struct trace_line {
 struct trace_view_col {
     char name[50];
     i32 default_size;
-    u32 color;
 };
 
 struct trace_view {
@@ -387,7 +386,7 @@ void debug_waveform_init(struct debug_waveform *);
 void waveform_view_init(struct waveform_view *);
 void waveform_view_delete(struct waveform_view *);
 
-void trace_view_add_col(struct trace_view *, const char *name, i32 default_size, u32 color);
+void trace_view_add_col(struct trace_view *, const char *name, i32 default_size);
 void trace_view_clear(struct trace_view *);
 void trace_view_printf(struct trace_view *, u32 col, char *format, ...);
 void trace_view_startline(struct trace_view *, i32 source);

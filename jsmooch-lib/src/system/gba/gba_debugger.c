@@ -191,12 +191,12 @@ static void setup_cpu_trace(struct debugger_interface *dbgr, struct GBA *this)
     struct debugger_view *dview = cpg(p);
     struct trace_view *tv = &dview->trace;
     snprintf(tv->name, sizeof(tv->name), "ARM7TDMI Trace");
-    trace_view_add_col(tv, "Arch", 5, TRACEC_DEFAULT);
-    trace_view_add_col(tv, "Cycle#", 10, TRACEC_DEFAULT);
-    trace_view_add_col(tv, "Addr", 8, TRACEC_DEFAULT);
-    trace_view_add_col(tv, "Opcode", 8, TRACEC_DEFAULT);
-    trace_view_add_col(tv, "Disassembly", 45, TRACEC_DEFAULT);
-    trace_view_add_col(tv, "Context", 32, TRACEC_DEFAULT);
+    trace_view_add_col(tv, "Arch", 5);
+    trace_view_add_col(tv, "Cycle#", 10);
+    trace_view_add_col(tv, "Addr", 8);
+    trace_view_add_col(tv, "Opcode", 8);
+    trace_view_add_col(tv, "Disassembly", 45);
+    trace_view_add_col(tv, "Context", 32);
     tv->autoscroll = 1;
     tv->display_end_top = 0;
 

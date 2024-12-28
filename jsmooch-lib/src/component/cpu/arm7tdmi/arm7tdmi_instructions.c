@@ -135,8 +135,6 @@ static inline u32 *getR(struct ARM7TDMI *this, u32 num) {
 
 
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
-    //pprint_mode(this->regs.CPSR.mode);
-    printf("\nFill reglist PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
     for (u32 i = 8; i < 15; i++) {
         this->regmap[i] = old_getR(this, i);
     }
@@ -144,6 +142,9 @@ void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
 
 static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
     *r = v;
+    if ((r == this->regmap[14]) && (v == 0x080014aa)) {
+        printf("\nSetting LR to 0x14AA! cyc:%lld", *this->trace.cycles);
+    }
     if (r == &this->regs.PC) {
         ARM7TDMI_flush_pipeline(this);
     }
@@ -338,9 +339,16 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
 {
+    u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
     u32 Rdd = (opcode >> 12) & 15;
     u32 *Rd = getR(this, Rdd);
-    *Rd = this->regs.CPSR.u;
+    if (PSR) {
+        *Rd = *get_SPSR_by_mode(this);
+    }
+    else {
+        *Rd = this->regs.CPSR.u;
+    }
+
     this->regs.PC += 4;
 }
 
@@ -417,7 +425,6 @@ void ARM7TDMI_ins_BX(struct ARM7TDMI *this, u32 opcode)
     u32 Rnd = opcode & 15;
     u32 addr = *getR(this, Rnd);
     this->regs.CPSR.T = addr & 1;
-    if (Rnd == 14) printf("\nRETI to addr:%08x T:%d cyc:%lld current PC:%08x", addr, this->regs.CPSR.T, *this->trace.cycles, this->regs.PC);
     addr &= 0xFFFFFFFE;
     this->regs.PC = addr;
     ARM7TDMI_flush_pipeline(this);
@@ -576,9 +583,11 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
 //    }
 
     if ((S==1) && (Rdd == 15)) {
-        printf("\nDOIN IT! Rn:%d Rd:%d LR14:%08x  PC:%08x", Rnd, Rdd, *this->regmap[14], this->regs.PC);
-        if (this->regs.CPSR.mode != ARM7_system)
-            this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        if (this->regs.CPSR.mode != ARM7_system) {
+            u32 v = *get_SPSR_by_mode(this);
+            this->regs.CPSR.u = v;
+
+        }
         ARM7TDMI_fill_regmap(this);
     }
     if (Rdd == 15) {

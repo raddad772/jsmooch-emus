@@ -7,7 +7,7 @@
 
 #include "trace.h"
 
-#define DEFAULT_STRING_SZ 50
+#define DEFAULT_STRING_SZ 80
 
 
 static void trace_view_line_init(struct trace_line *this)
@@ -76,13 +76,12 @@ void trace_view_delete(struct trace_view *this) {
     cvec_delete(&this->columns);
 }
 
-void trace_view_add_col(struct trace_view *this, const char *name, i32 default_size, u32 color)
+void trace_view_add_col(struct trace_view *this, const char *name, i32 default_size)
 {
     assert(cvec_len(&this->columns) < MAX_TRACE_COLS);
     struct trace_view_col *new_col = cvec_push_back(&this->columns);
     snprintf(new_col->name, sizeof(new_col->name), "%s", name);
     new_col->default_size = default_size;
-    new_col->color = color;
 }
 
 void trace_view_clear(struct trace_view *this)

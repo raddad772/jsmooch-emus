@@ -65,9 +65,10 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
             return this->io.IE;
         case 0x04000202:
             return this->io.IF;
-
         case 0x04000208:
             return this->io.IME;
+        case 0x0400010c:
+            return this->timer[3].counter.val;
     }
     if ((addr >= 0x040000B0) && (addr < 0x040000E0)) {
         assert(1==2);
@@ -147,6 +148,10 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             GBA_eval_irqs(this);
             return;
         case 0x04000209: // IME hi
+            return;
+
+        case 0x0400020A:
+        case 0x0400020B: // not used
             return;
 
         case 0x040000B0: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
@@ -312,15 +317,31 @@ static void GBA_mainbus_IO_write(struct GBA *this, u32 addr, u32 sz, u32 val)
     printf("\nUnknown IO write addr:%08x sz:%d val:%08x", addr, sz, val);
 }
 
+static void trace_read(struct GBA *this, u32 addr, u32 sz, u32 val)
+{
+    struct trace_view *tv = this->cpu.dbg.tvptr;
+    if (!tv) return;
+    trace_view_startline(tv, 2);
+    trace_view_printf(tv, 0, "BUSrd");
+    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count);
+    trace_view_printf(tv, 2, "%08x", addr);
+    trace_view_printf(tv, 3, "%08x", val);
+    trace_view_endline(tv);
+}
 
 u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     struct GBA *this = (struct GBA *)ptr;
-    if (addr < 0x10000000) return this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
 
-    return busrd_invalid(this, addr, sz, access, has_effect);
+    u32 v;
+
+    if (addr < 0x10000000) v = this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
+
+    else v = busrd_invalid(this, addr, sz, access, has_effect);
+    if (dbg.trace_on && dbg.traces.ram) trace_read(this, addr, sz, v);
+    return v;
 }
 
 u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
