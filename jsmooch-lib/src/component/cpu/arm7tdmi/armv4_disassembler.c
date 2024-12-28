@@ -20,6 +20,10 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 #define BITS(hi,lo) (doBITS(opcode, hi, lo))
 #define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
 
+static void add_context(struct ARMctxt *t, u32 rnum)
+{
+    if (t) t->regs |= (1 << rnum);
+}
 
 static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
     if (num == 13) ostr("SP");
@@ -159,7 +163,7 @@ static void out_shifted_imm(struct jsm_string *out, u32 shift_type, u32 Is) {
 }
 
 
-static void dasm_MUL_MLA(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_MUL_MLA(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 accumulate = OBIT(21);
     u32 S = OBIT(20);
@@ -177,7 +181,7 @@ static void dasm_MUL_MLA(u32 opcode, struct jsm_string *out, i64 iinstruction_ad
     }
 }
 
-static void dasm_MULL_MLAL(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_MULL_MLAL(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 S = OBIT(20);
     u32 Rdd = (opcode >> 16) & 15;
@@ -196,7 +200,7 @@ static void dasm_MULL_MLAL(u32 opcode, struct jsm_string *out, i64 iinstruction_
     }
 }
 
-static void dasm_SWP(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_SWP(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 B = OBIT(22);
     u32 Rnd = (opcode >> 16) & 15;
@@ -209,7 +213,7 @@ static void dasm_SWP(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
     orega(Rnd);
 }
 
-static void dasm_LDRH_STRH(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_LDRH_STRH(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // pre or post. 0=post
     u32 U = OBIT(23); // up/down, 0=down
@@ -235,7 +239,7 @@ static void dasm_LDRH_STRH(u32 opcode, struct jsm_string *out, i64 iinstruction_
     ostr("]");
 }
 
-static void dasm_LDRSB_LDRSH(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_LDRSB_LDRSH(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // pre or post. 0=post
     u32 U = OBIT(23); // up/down, 0=down
@@ -260,7 +264,7 @@ static void dasm_LDRSB_LDRSH(u32 opcode, struct jsm_string *out, i64 iinstructio
     ostr("]");
 }
 
-static void dasm_MRS(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_MRS(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 Rdd = (opcode >> 12) & 15;
     mn("mrs", 3);
@@ -268,7 +272,7 @@ static void dasm_MRS(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
     ostr("psr");
 }
 
-static void dasm_MSR_reg(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_MSR_reg(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
     u32 f = OBIT(19);
@@ -291,7 +295,7 @@ static void dasm_MSR_reg(u32 opcode, struct jsm_string *out, i64 iinstruction_ad
     oreg(Rmd);
 }
 
-static void dasm_MSR_imm(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_MSR_imm(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 PSR = OBIT(22); // 0 = CPSR, 1 = SPSR(current)
     u32 f = OBIT(19);
@@ -317,14 +321,15 @@ static void dasm_MSR_imm(u32 opcode, struct jsm_string *out, i64 iinstruction_ad
     ohex(imm, 8);
 }
 
-static void dasm_BX(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_BX(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 Rnd = opcode & 15;
     mn("bx", 4);
     oreg(Rnd);
+    add_context(ct, Rnd);
 }
 
-static void dasm_data_proc_immediate_shift(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_data_proc_immediate_shift(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -333,7 +338,6 @@ static void dasm_data_proc_immediate_shift(u32 opcode, struct jsm_string *out, i
     u32 Is = (opcode >> 7) & 31; // shift amount
     u32 shift_type = (opcode >> 5) & 3; // 0=LSL, 1=LSR, 2=ASR, 3=ROR
     u32 Rmd = opcode & 15;
-
     char *whichs = S ? "s" : NULL;
     char *whichp = NULL;
     switch(alu_opcode) {
@@ -358,12 +362,16 @@ static void dasm_data_proc_immediate_shift(u32 opcode, struct jsm_string *out, i
     if ((alu_opcode < 8) || (alu_opcode > 11)) {
         oregc(Rdd);
     }
-    oregc(Rnd);
+    if (alu_opcode < 13) {
+        add_context(ct, Rnd);
+        oregc(Rnd);
+    }
+    add_context(ct, Rmd);
     oreg(Rmd);
     out_shifted_imm(out, shift_type, Is);
 }
 
-static void dasm_data_proc_register_shift(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_data_proc_register_shift(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -375,6 +383,7 @@ static void dasm_data_proc_register_shift(u32 opcode, struct jsm_string *out, i6
     u32 Rmd = opcode & 15;
     char *whichs = S ? "s" : NULL;
     char *whichp = NULL;
+
     switch(alu_opcode) {
         case 0: mnp("and", 3, whichs); break;
         case 1: mnp("eor", 3, whichs); break;
@@ -416,12 +425,12 @@ static void dasm_data_proc_register_shift(u32 opcode, struct jsm_string *out, i6
     oreg(Isd);
 }
 
-static void dasm_undefined_instruction(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_undefined_instruction(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("undefined alu");
 }
 
-static void dasm_data_proc_immediate(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_data_proc_immediate(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 alu_opcode = (opcode >> 21) & 15;
     u32 S = (opcode >> 20) & 1; // set condition codes. 0=no, 1=yes. must be 1 for 8-B
@@ -430,6 +439,7 @@ static void dasm_data_proc_immediate(u32 opcode, struct jsm_string *out, i64 iin
     u32 Rm = opcode & 0xFF;
     u32 imm_ROR_amount = (opcode >> 7) & 30;
     Rm = (Rm << (32 - imm_ROR_amount)) | (Rm >> imm_ROR_amount);
+
     char *whichs = S ? "s" : NULL;
     char *whichp = NULL;
     switch(alu_opcode) {
@@ -459,7 +469,7 @@ static void dasm_data_proc_immediate(u32 opcode, struct jsm_string *out, i64 iin
     ohex(Rm, 8);
 }
 
-static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // Pre/post. 0 = after-transfer, post
     u32 U = OBIT(23); // 0 = down, 1 = up
@@ -506,7 +516,7 @@ static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i6
     if (W) ostr("!");
 }
 
-static void dasm_LDR_STR_register_offset(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_LDR_STR_register_offset(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24);
     u32 U = OBIT(23);
@@ -549,7 +559,7 @@ static void dasm_LDR_STR_register_offset(u32 opcode, struct jsm_string *out, i64
     if (W) ostr("!");
 }
 
-static void dasm_LDM_STM(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_LDM_STM(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 P = OBIT(24); // P=0 add offset after. P=1 add offset first
     u32 U = OBIT(23); // 0=subtract offset, 1 =add
@@ -564,7 +574,7 @@ static void dasm_LDM_STM(u32 opcode, struct jsm_string *out, i64 iinstruction_ad
     else if ((P == 0) && (U == 1)) w = "ia";
     else if ((P == 1) && (U == 0)) w = "db";
     else w = "da";
-    mnp("stm",1,w);
+    mnp("stm",3,w);
     oreg(Rnd);
     if (W) ostr("!,<");
     else ostr(",<");
@@ -580,7 +590,7 @@ static void dasm_LDM_STM(u32 opcode, struct jsm_string *out, i64 iinstruction_ad
     else ostr(">");
 }
 
-static void dasm_B_BL(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_B_BL(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     u32 link = OBIT(24);
     i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
@@ -590,97 +600,99 @@ static void dasm_B_BL(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
     odec(offset);
 }
 
-static void dasm_STC_LDC(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_STC_LDC(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("std/ldc unsupported");
 }
 
-static void dasm_CDP(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_CDP(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("cdp unsupported");
 }
 
-static void dasm_MCR_MRC(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_MCR_MRC(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("mcr/mrc unsupported");
 }
 
-static void dasm_SWI(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_SWI(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("swi");
 }
 
-static void dasm_INVALID(u32 opcode, struct jsm_string *out, i64 iinstruction_addr)
+static void dasm_INVALID(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
     ostr("unknown opcode %08x", opcode);
 }
 
-void ARMv4_disassemble(u32 opc, struct jsm_string *out, i64 ins_addr)
+void ARMv4_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
+    // i64 instruction_addr, struct ARMctxt *ctxt
     jsm_string_quickempty(out);
+    u32 opc = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     if ((opc & 0b111111001111) == 0b000000001001) // 000'000.. 1001  MUL, MLA
-        dasm_MUL_MLA(opc, out, ins_addr);
+        dasm_MUL_MLA(opcode, out, ins_addr, ct);
         //000'01... 1001  MULL, MLAL
     else if ((opc & 0b111110001111) == 0b000010001001)
-        dasm_MULL_MLAL(opc, out, ins_addr);
+        dasm_MULL_MLAL(opcode, out, ins_addr, ct);
         //000'10.00 1001  SWP
     else if ((opc & 0b111110111111) == 0b000100001001)
-        dasm_SWP(opc, out, ins_addr);
+        dasm_SWP(opcode, out, ins_addr, ct);
         //000'..... 1011  LDRH, STRH
     else if ((opc & 0b111000001111) == 0b000000001011)
-        dasm_LDRH_STRH(opc, out, ins_addr);
+        dasm_LDRH_STRH(opcode, out, ins_addr, ct);
         //000'....1 11.1  LDRSB, LDRSH
     else if ((opc & 0b111000011101) == 0b000000011101)
-        dasm_LDRSB_LDRSH(opc, out, ins_addr);
+        dasm_LDRSB_LDRSH(opcode, out, ins_addr, ct);
         //000'10.00 0000  MRS
     else if ((opc & 0b111110111111) == 0b000100000000)
-        dasm_MRS(opc, out, ins_addr);
+        dasm_MRS(opcode, out, ins_addr, ct);
         //000'10.10 0000  MSR (register)
     else if ((opc & 0b111110111111) == 0b000100100000)
-        dasm_MSR_reg(opc, out, ins_addr);
+        dasm_MSR_reg(opcode, out, ins_addr, ct);
         // 001'10.10 ....  MSR (immediate)
     else if ((opc & 0b111110110000) == 0b001100100000)
-        dasm_MSR_imm(opc, out, ins_addr);
+        dasm_MSR_imm(opcode, out, ins_addr, ct);
         //000'10010 0001  BX
     else if (opc == 0b000100100001)
-        dasm_BX(opc, out, ins_addr);
+        dasm_BX(opcode, out, ins_addr, ct);
         //000'..... ...0  Data Processing (immediate shift)
     else if ((opc & 0b111000000001) == 0b000000000000)
-        dasm_data_proc_immediate_shift(opc, out, ins_addr);
+        dasm_data_proc_immediate_shift(opcode, out, ins_addr, ct);
         //000'..... 0..1  Data Processing (register shift)
     else if ((opc & 0b111000001001) == 0b000000000001)
-        dasm_data_proc_register_shift(opc, out, ins_addr);
+        dasm_data_proc_register_shift(opcode, out, ins_addr, ct);
         //001'10.00 ....  Undefined instructions in Data Processing
     else if ((opc & 0b111110110000) == 0b001100000000)
-        dasm_undefined_instruction(opc, out, ins_addr);
+        dasm_undefined_instruction(opcode, out, ins_addr, ct);
         //001'..... ....  Data Processing (immediate value)
     else if ((opc & 0b111000000000) == 0b001000000000)
-        dasm_data_proc_immediate(opc, out, ins_addr);
+        dasm_data_proc_immediate(opcode, out, ins_addr, ct);
         //010'..... ....  LDR, STR (immediate offset)
     else if ((opc & 0b111000000000) == 0b010000000000)
-        dasm_LDR_STR_immediate_offset(opc, out, ins_addr);
+        dasm_LDR_STR_immediate_offset(opcode, out, ins_addr, ct);
         // 011'..... ...0  LDR, STR (register offset)
     else if ((opc & 0b111000000001) == 0b011000000000)
-        dasm_LDR_STR_register_offset(opc, out, ins_addr);
+        dasm_LDR_STR_register_offset(opcode, out, ins_addr, ct);
         //100'..... ....  LDM, STM
     else if ((opc & 0b111000000000) == 0b100000000000)
-        dasm_LDM_STM(opc, out, ins_addr);
+        dasm_LDM_STM(opcode, out, ins_addr, ct);
         //101'..... ....  B, BL
     else if ((opc & 0b111000000000) == 0b101000000000)
-        dasm_B_BL(opc, out, ins_addr);
+        dasm_B_BL(opcode, out, ins_addr, ct);
         //110'..... ....  STC, LDC
     else if ((opc & 0b111000000000) == 0b110000000000)
-        dasm_STC_LDC(opc, out, ins_addr);
+        dasm_STC_LDC(opcode, out, ins_addr, ct);
         //111'0.... ...0  CDP
     else if ((opc & 0b111100000001) == 0b111000000000)
-        dasm_CDP(opc, out, ins_addr);
+        dasm_CDP(opcode, out, ins_addr, ct);
         //111'0.... ...1  MCR, MRC
     else if ((opc & 0b111100000001) == 0b111000000001)
-        dasm_MCR_MRC(opc, out, ins_addr);
+        dasm_MCR_MRC(opcode, out, ins_addr, ct);
         //111'1.... ....  SWI
     else if ((opc & 0b111100000000) == 0b111100000000)
-        dasm_SWI(opc, out, ins_addr);
+        dasm_SWI(opcode, out, ins_addr, ct);
     else
-        dasm_INVALID(opc, out, ins_addr);
+        dasm_INVALID(opcode, out, ins_addr, ct);
 
 }

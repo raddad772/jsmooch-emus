@@ -147,6 +147,5 @@ struct cvec_ptr make_cvec_ptr(struct cvec *vec, u32 idx)
 void *cpg(struct cvec_ptr p)
 {
     assert(p.vec != NULL);
-    assert(p.index < p.vec->len);
-    return p.vec->data + (p.vec->data_sz * p.index);
+    return cvec_get(p.vec, p.index);
 }

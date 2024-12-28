@@ -8,7 +8,7 @@
 #include "arm7tdmi.h"
 #include "arm7tdmi_instructions.h"
 
-#define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x PC:%08x", opcode, this->regs.PC); assert(1==2)
+#define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x PC:%08x cyc:%lld", opcode, this->regs.PC, *this->trace.cycles); assert(1==2)
 #define AREAD(addr, sz) ARM7TDMI_read(this, (addr), (sz), this->pipeline.access, 1)
 #define AWRITE(addr, sz, val) ARM7TDMI_write(this, (addr), (sz), this->pipeline.access, (val) & mask)
 
@@ -136,6 +136,7 @@ static inline u32 *getR(struct ARM7TDMI *this, u32 num) {
 
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
     //pprint_mode(this->regs.CPSR.mode);
+    printf("\nFill reglist PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
     for (u32 i = 8; i < 15; i++) {
         this->regmap[i] = old_getR(this, i);
     }
@@ -575,11 +576,14 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
 //    }
 
     if ((S==1) && (Rdd == 15)) {
+        printf("\nDOIN IT! Rn:%d Rd:%d LR14:%08x  PC:%08x", Rnd, Rdd, *this->regmap[14], this->regs.PC);
         if (this->regs.CPSR.mode != ARM7_system)
             this->regs.CPSR.u = *get_SPSR_by_mode(this);
         ARM7TDMI_fill_regmap(this);
     }
-
+    if (Rdd == 15) {
+        ARM7TDMI_flush_pipeline(this);
+    }
 }
 
 void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
@@ -625,6 +629,8 @@ void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_undefined_instruction(struct ARM7TDMI *this, u32 opcode)
 {
+    printf("\nARM UNDEFINED INS!");
+    assert(1==2);
     this->regs.R_und[1] = this->regs.PC - 4;
     this->regs.SPSR_und = this->regs.CPSR.u;
     this->regs.CPSR.mode = ARM7_undefined;
@@ -915,7 +921,8 @@ void ARM7TDMI_ins_CDP(struct ARM7TDMI *this, u32 opcode)
 
 void ARM7TDMI_ins_MCR_MRC(struct ARM7TDMI *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    dbg_break("BAD ARM OP", *this->trace.cycles);
+    //UNIMPLEMENTED;
 }
 
 void ARM7TDMI_ins_SWI(struct ARM7TDMI *this, u32 opcode)

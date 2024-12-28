@@ -35,6 +35,15 @@ void jsm_string_seek(struct jsm_string *this, i32 pos)
     this->cur = this->ptr + pos;
 }
 
+int jsm_string_vsprintf(struct jsm_string *this, const char* format, va_list va)
+{
+    int num;
+    num = vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
+    this->cur += num;
+    assert((this->cur - this->ptr) < this->allocated_len);
+    return num;
+}
+
 int jsm_string_sprintf(struct jsm_string *this, const char* format, ...)
 {
     if (this->ptr == NULL) {
@@ -44,10 +53,8 @@ int jsm_string_sprintf(struct jsm_string *this, const char* format, ...)
     int num;
     va_list va;
     va_start(va, format);
-    num = vsnprintf(this->cur, this->allocated_len - (this->cur - this->ptr), format, va);
+    num = jsm_string_vsprintf(this, format, va);
     va_end(va);
-    this->cur += num;
-    assert((this->cur - this->ptr) < this->allocated_len);
     return num;
 }
 

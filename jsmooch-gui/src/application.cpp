@@ -124,6 +124,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
 #define SOUND_VIEW_DEFAULT_ENABLE 0
+#define TRACE_VIEW_DEFAULT_ENABLE 1
 
 void imgui_jsmooch_app::render_event_view()
 {
@@ -412,6 +413,78 @@ static void render_debugger_widgets(struct cvec *options)
     }
 }
 
+void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
+{
+    u32 wi = 0;
+    static const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+    static const float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+    for (auto &myv: fsys.trace_views) {
+        struct managed_window *mw = register_managed_window(0x800 + (wi++), mwk_debug_trace, myv.view->trace.name, TRACE_VIEW_DEFAULT_ENABLE);
+        struct trace_view *tv = &myv.view->trace;
+        if (mw->enabled) {
+            if (ImGui::Begin(myv.view->trace.name)) {
+                static ImGuiTableFlags flags =
+                        ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
+                        ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+                u32 total_sz = 0;
+                float widths[MAX_TRACE_COLS];
+                char mf[500];
+                u32 numcols = cvec_len(&tv->columns);
+                struct trace_view_col *col_ptrs[MAX_TRACE_COLS] = {};
+                for (u32 i = 0; i < numcols; i++) {
+                    struct trace_view_col *c = (struct trace_view_col *)cvec_get(&tv->columns, i);
+                    u32 sz = 0;
+                    if (c->default_size <= 0)
+                        sz = 10;
+                    else
+                        sz = c->default_size + 1;
+                    total_sz += sz;
+
+                    widths[i] = (float)sz * TEXT_BASE_WIDTH;
+                    col_ptrs[i] = c;
+                }
+                ImVec2 outer_size = ImVec2(TEXT_BASE_WIDTH * (float)(total_sz + 5), TEXT_BASE_HEIGHT * 20);
+                if (ImGui::BeginTable("tabley_table", (int)numcols, flags, outer_size)) {
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                    for (u32 c = 0; c < numcols; c++) {
+                        struct trace_view_col *mc = (struct trace_view_col *)cvec_get(&tv->columns, c);
+                        ImGui::TableSetupColumn(mc->name, ImGuiTableColumnFlags_None, widths[c]);
+                    }
+                    ImGui::TableHeadersRow();
+                    ImGuiListClipper clipper;
+
+                    if (update_dasm_scroll && tv->autoscroll) {
+                        if (tv->display_end_top) ImGui::SetScrollY(0);
+                        else {
+                            float scrl = clipper.ItemsHeight * (tv->num_trace_lines);
+                            float cur_scroll = ImGui::GetScrollY();
+                            if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
+                                ImGui::SetScrollY(scrl);
+                        }
+                    }
+                    clipper.Begin(tv->num_trace_lines);
+                    while (clipper.Step()) {
+                        for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                            ImGui::TableNextRow();
+                            auto *ln = trace_view_get_line(tv, row);
+                            for (int col_num = 0; col_num < numcols; col_num++) {
+                                struct trace_view_col *my_col = col_ptrs[col_num];
+                                ImGui::TableSetColumnIndex(col_num);
+
+                                struct jsm_string *mstr = &ln->cols[col_num];
+                                ImGui::TableSetColumnIndex(col_num);
+                                ImGui::Text("%s", mstr->ptr);
+                            }
+                        }
+                    }
+                }
+                ImGui::EndTable();
+            }
+            ImGui::End();
+        }
+    }
+}
+
 void imgui_jsmooch_app::render_image_views()
 {
     u32 i=0;
@@ -447,6 +520,7 @@ void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll)
     render_event_view();
     render_disassembly_views(update_dasm_scroll);
     render_image_views();
+    render_trace_view(update_dasm_scroll);
     u32 i = 0;
     for (auto &wv : fsys.waveform_views) {
         render_waveform_view(wv, i++);

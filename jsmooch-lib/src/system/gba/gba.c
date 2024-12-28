@@ -80,7 +80,7 @@ void GBA_new(struct jsm_system *jsm)
     struct jsm_debug_read_trace dt;
     dt.read_trace_arm = &read_trace_cpu;
     dt.ptr = this;
-    ARM7TDMI_setup_tracing(&this->cpu, &dt, &this->clock.master_cycle_count);
+    ARM7TDMI_setup_tracing(&this->cpu, &dt, &this->clock.master_cycle_count, 1);
 
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
@@ -423,8 +423,6 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs)
     this->jsm.described_inputs = 1;
 
     this->jsm.IOs = IOs;
-
-    cvec_lock_reallocs(IOs);
 
     // controllers
     struct physical_io_device *controller = cvec_push_back(this->jsm.IOs);

@@ -29,6 +29,7 @@ extern "C" {
 
 
 #define DBG_EVENT_VIEW struct { struct cvec_ptr view; } events;
+#define DBG_TRACE_VIEW struct trace_view *tvptr;
 #define DBG_IMAGE_VIEW(name) struct { struct cvec_ptr name; } image_views;
 
 #define DBG_IMAGE_VIEWS_START struct {
@@ -43,6 +44,7 @@ extern "C" {
 #define DBG_EVENT_VIEW_ONLY struct { struct { struct cvec_ptr view; } events; } dbg
 
 #define DBG_EVENT_VIEW_INIT cvec_ptr_init(&this->dbg.events.view)
+#define DBG_TRACE_VIEW_INIT this->dbg.tvptr = NULL
 
 #ifdef __cplusplus
 }

@@ -94,6 +94,7 @@ struct jsm_debug_struct {
     struct {
         struct cpu_trace_struct z80;
         struct cpu_trace_struct m68000;
+        struct cpu_trace_struct arm7tdmi;
 
         u32 dma;
         u32 vram;
@@ -152,7 +153,6 @@ enum debug_sources {
 
 void dbg_enable_cpu_trace(enum debug_sources source);
 void dbg_disable_cpu_trace(enum debug_sources source);
-
 
 void dbg_init();
 void dbg_add_msg(char *what);

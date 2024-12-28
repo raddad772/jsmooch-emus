@@ -78,6 +78,12 @@ public:
     std::vector<class WFORM> waveforms{};
 };
 
+class TVIEW {
+public:
+    bool enabled{};
+    struct debugger_view *view;
+};
+
 class IVIEW {
 public:
     bool enabled{};
@@ -109,6 +115,7 @@ public:
     struct multi_file_set ROMs;
     std::vector<WVIEW> waveform_views;
     std::vector<DVIEW> dasm_views;
+    std::vector<TVIEW> trace_views;
 
     struct system_io inputs;
     std::vector<struct JSM_AUDIO_CHANNEL *> audiochans;
@@ -195,6 +202,7 @@ private:
     void get_savestate_filename(char *pth, size_t sz);
     void setup_display();
     void setup_debugger_interface();
+    void add_trace_view(u32);
     void add_disassembly_view(u32);
     void add_image_view(u32);
     void add_waveform_view(u32 idx);

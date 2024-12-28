@@ -652,9 +652,10 @@ void full_system::load_default_ROM()
             break;
         case SYS_GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "retaddr.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "tonc/first.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m3_demo.gba", nullptr);
@@ -669,7 +670,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/irq_demo.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr);
             break;
@@ -793,6 +794,14 @@ void full_system::add_waveform_view(u32 idx)
     waveform_views.push_back(myv);
 }
 
+void full_system::add_trace_view(u32 idx)
+{
+    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    TVIEW myv;
+    myv.view = dview;
+    trace_views.push_back(myv);
+}
+
 void full_system::add_disassembly_view(u32 idx)
 {
     auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
@@ -829,6 +838,9 @@ void full_system::setup_debugger_interface()
                 break;
             case dview_events:
                 events.view = &view->events;
+                break;
+            case dview_trace:
+                add_trace_view(i);
                 break;
             case dview_image:
                 add_image_view(i);

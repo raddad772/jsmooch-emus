@@ -104,6 +104,7 @@ struct ARM7TDMI {
     struct ARM7TDMI_regs regs;
     struct {
         u32 opcode[2];
+        u32 addr[2];
         int access;
         u32 flushed;
     } pipeline;
@@ -120,9 +121,11 @@ struct ARM7TDMI {
     struct {
         struct jsm_debug_read_trace strct;
         struct jsm_string str;
+        struct jsm_string str2;
         u32 ok;
         u64 *cycles;
         u32 ins_PC;
+        i32 source_id;
     } trace;
 
 
@@ -135,6 +138,11 @@ struct ARM7TDMI {
 
     struct ARM7_ins opcode_table_arm[4096];
     struct thumb_instruction opcode_table_thumb[65536];
+
+    DBG_START
+    DBG_EVENT_VIEW
+    DBG_TRACE_VIEW
+    DBG_END
 };
 
 
@@ -143,7 +151,7 @@ void ARM7TDMI_delete(struct ARM7TDMI *);
 
 void ARM7TDMI_reset(struct ARM7TDMI *);
 void ARM7TDMI_disassemble_entry(struct ARM7TDMI*, struct disassembly_entry* entry);
-void ARM7TDMI_setup_tracing(struct ARM7TDMI*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer);
+void ARM7TDMI_setup_tracing(struct ARM7TDMI*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
 void ARM7TDMI_cycle(struct ARM7TDMI*, i32 num);
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *);

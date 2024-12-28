@@ -106,36 +106,47 @@ void GBA_eval_irqs(struct GBA *this)
 }
 
 static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
-    if (addr < 0x4000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
-    if ((addr >= 0x040000B0) && (addr < 0x04000110)) { // DMA & timers
-        /*if ((addr >= 0x040000D8) && (addr <= 0x040000DB)) {
-            printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
-        }*/
-        if (sz >= 2) {
-            buswr_IO(this, addr, 1, access, (val >> 0) & 0xFF);
-            buswr_IO(this, addr+1, 1, access, (val >> 8) & 0xFF);
-        }
-        if (sz == 4) {
-            buswr_IO(this, addr+2, 1, access, (val >> 16) & 0xFF);
-            buswr_IO(this, addr+3, 1, access, (val >> 24) & 0xFF);
-        }
-        if (sz != 1) return;
-        val &= 0xFF;
+    if (sz >= 2) {
+        buswr_IO(this, addr, 1, access, (val >> 0) & 0xFF);
+        buswr_IO(this, addr+1, 1, access, (val >> 8) & 0xFF);
     }
-    u32 mask = sz == 4 ? 0xFFFFFFFF : (sz == 2 ? 0xFFFF : 0xFF);
+    if (sz == 4) {
+        buswr_IO(this, addr+2, 1, access, (val >> 16) & 0xFF);
+        buswr_IO(this, addr+3, 1, access, (val >> 24) & 0xFF);
+    }
+    if (sz != 1) return;
+    val &= 0xFF;
+    if (addr < 0x4000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
+    u32 mask = 0xFF;
     switch(addr) {
-        case 0x04000200: // IE
-            this->io.IE = (this->io.IE & ~mask) | (val & mask);
+        case 0x04000200: // IE lo-byte
+            this->io.IE = (this->io.IE & 0xFF00) | ((this->io.IE & ~mask) | (val & mask));
             GBA_eval_irqs(this);
             return;
-        case 0x04000202: // IF
-            val &= mask;
+        case 0x04000201: // IE hi-byte
+            mask <<= 8;
+            val <<= 8;
+            this->io.IE = (this->io.IE & 0xFF) | ((this->io.IE & ~mask) | (val & mask));
+            GBA_eval_irqs(this);
+            return;
+        case 0x04000202: // IF lo-byte
             this->io.IF &= ~val;
             GBA_eval_irqs(this);
             return;
-        case 0x04000208: // IME
+        case 0x04000203: // IF hi-byte
+            this->io.IF &= ~(val << 8);
+            GBA_eval_irqs(this);
+            return;
+        case 0x04000204: // WAITcnt, ignore for now
+        case 0x04000205: // WAITcnt, ignore for now
+        case 0x04000206: // empty, ignore
+        case 0x04000207: // empty, ignore
+            return;
+        case 0x04000208: // IME lo
             this->io.IME = val & 1;
             GBA_eval_irqs(this);
+            return;
+        case 0x04000209: // IME hi
             return;
 
         case 0x040000B0: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0

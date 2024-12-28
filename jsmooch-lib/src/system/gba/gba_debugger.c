@@ -185,6 +185,24 @@ static struct disassembly_vars get_disassembly_vars_ARM7TDMI(void *macptr, struc
     return dvar;
 }
 
+static void setup_cpu_trace(struct debugger_interface *dbgr, struct GBA *this)
+{
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
+    struct debugger_view *dview = cpg(p);
+    struct trace_view *tv = &dview->trace;
+    snprintf(tv->name, sizeof(tv->name), "ARM7TDMI Trace");
+    trace_view_add_col(tv, "Arch", 5, TRACEC_DEFAULT);
+    trace_view_add_col(tv, "Cycle#", 10, TRACEC_DEFAULT);
+    trace_view_add_col(tv, "Addr", 8, TRACEC_DEFAULT);
+    trace_view_add_col(tv, "Opcode", 8, TRACEC_DEFAULT);
+    trace_view_add_col(tv, "Disassembly", 45, TRACEC_DEFAULT);
+    trace_view_add_col(tv, "Context", 32, TRACEC_DEFAULT);
+    tv->autoscroll = 1;
+    tv->display_end_top = 0;
+
+    this->cpu.dbg.tvptr = tv;
+}
+
 static void setup_ARM7TDMI_disassembly(struct debugger_interface *dbgr, struct GBA* this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
@@ -215,7 +233,8 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
 
-    setup_ARM7TDMI_disassembly(dbgr, this);
+    //setup_ARM7TDMI_disassembly(dbgr, this);
+    setup_cpu_trace(dbgr, this);
     //setup_events_view(this, dbgr);
     //cvec_ptr_init(&this->dbg.events.view);
     /*setup_waveforms_psg(this, dbgr);
@@ -226,4 +245,5 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_plane(this, dbgr, 1);
     setup_image_view_plane(this, dbgr, 2);
     setup_image_view_sprites(this, dbgr);*/
+
 }

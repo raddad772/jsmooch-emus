@@ -41,7 +41,7 @@ static void vblank(struct GBA *this, u32 val)
     //pprint_palette_ram(this);
     this->clock.ppu.vblank_active = val;
     if (val == 1) {
-        printf("\nVBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
+        if (!(this->io.IF & 1)) printf("\nVBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
         this->io.IF |= 1;
         GBA_eval_irqs(this);
         GBA_check_dma_at_vblank(this);
@@ -53,13 +53,13 @@ static void hblank(struct GBA *this, u32 val)
     this->clock.ppu.hblank_active = 1;
     if (val == 0) {
         if (this->ppu.io.vcount_at == this->clock.ppu.y) {
-            printf("\nVCOUNT IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
+            if (!(this->io.IF & 4)) printf("\nVCOUNT IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
             this->io.IF |= 4;
             GBA_eval_irqs(this);
         }
     }
     if ((val == 1) && (this->clock.ppu.y < 160)) {
-        printf("\nHBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
+        if (!(this->io.IF & 2)) printf("\nHBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
         this->io.IF |= 2;
         GBA_eval_irqs(this);
     }
@@ -1063,24 +1063,9 @@ static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
 }
 
 void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
-    if ((addr >= 0x04000010) && (addr < 0x04000040) && (sz != 1)) {
-        if (sz == 4) {
-            GBA_PPU_mainbus_write_IO(this, addr, 1, access, val & 0xFF);
-            GBA_PPU_mainbus_write_IO(this, addr + 1, 1, access, (val >> 8) & 0xFF);
-            GBA_PPU_mainbus_write_IO(this, addr + 2, 1, access, (val >> 16) & 0xFF);
-            GBA_PPU_mainbus_write_IO(this, addr + 3, 1, access, (val >> 24) & 0xFF);
-            return;
-        }
-        if (sz == 2) {
-            GBA_PPU_mainbus_write_IO(this, addr, 1, access, val & 0xFF);
-            GBA_PPU_mainbus_write_IO(this, addr + 1, 1, access, (val >> 8) & 0xFF);
-            return;
-        }
-    }
     struct GBA_PPU *ppu = &this->ppu;
-    //printf("\nWRITE %08x", addr);
     switch(addr) {
-        case 0x04000000: {// DISPCNT
+        case 0x04000000: {// DISPCNT lo
             //printf("\nDISPCNT WRITE %04x", val);
             u32 new_mode = val & 7;
             if (new_mode >= 6) {
@@ -1101,14 +1086,16 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.io.hblank_free = (val >> 5) & 1;
             this->ppu.io.obj_mapping_2d = (val >> 6) & 1;
             ppu->io.force_blank = (val >> 7) & 1;
-            ppu->bg[0].enable = (val >> 8) & 1;
-            ppu->bg[1].enable = (val >> 9) & 1;
-            ppu->bg[2].enable = (val >> 10) & 1;
-            ppu->bg[3].enable = (val >> 11) & 1;
-            ppu->obj.enable = (val >> 12) & 1;
-            ppu->window[0].enable = (val >> 13) & 1;
-            ppu->window[1].enable = (val >> 14) & 1;
-            ppu->window[GBA_WINOBJ].enable = (val >> 15) & 1;
+            return; }
+        case 0x04000001: { // DISPCNT hi
+            ppu->bg[0].enable = (val >> 0) & 1;
+            ppu->bg[1].enable = (val >> 1) & 1;
+            ppu->bg[2].enable = (val >> 2) & 1;
+            ppu->bg[3].enable = (val >> 3) & 1;
+            ppu->obj.enable = (val >> 4) & 1;
+            ppu->window[0].enable = (val >> 5) & 1;
+            ppu->window[1].enable = (val >> 6) & 1;
+            ppu->window[GBA_WINOBJ].enable = (val >> 7) & 1;
             printf("\nBGs 0:%d 1:%d 2:%d 3:%d obj:%d window0:%d window1:%d force_hblank:%d",
                    ppu->bg[0].enable, ppu->bg[1].enable, ppu->bg[2].enable, ppu->bg[3].enable,
                    ppu->obj.enable, ppu->window[0].enable, ppu->window[1].enable, ppu->io.force_blank
@@ -1120,6 +1107,8 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.io.hblank_irq_enable = (val >> 4) & 1;
             this->ppu.io.vcount_irq_enable = (val >> 5) & 1;
             return; }
+        case 0x04000005: return; // DISPSTAT hi
+
         case 0x04000008: // BG control
         case 0x0400000A:
         case 0x0400000C:
@@ -1130,9 +1119,16 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             bg->character_base_block = ((val >> 2) & 3) << 14;
             bg->mosaic_enable = (val >> 6) & 1;
             bg->bpp8 = (val >> 7) & 1;
-            bg->screen_base_block = ((val >> 8) & 31) << 11;
-            if (bgnum >= 2) bg->display_overflow = (val >> 13) & 1;
-            bg->screen_size = (val >> 14) & 3;
+            return; }
+        case 0x04000009: // BG control
+        case 0x0400000B:
+        case 0x0400000D:
+        case 0x0400000F: {
+            u32 bgnum = (addr & 0b0110) >> 1;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            bg->screen_base_block = ((val >> 0) & 31) << 11;
+            if (bgnum >= 2) bg->display_overflow = (val >> 5) & 1;
+            bg->screen_size = (val >> 6) & 3;
             calc_screen_size(this, bgnum, this->ppu.io.bg_mode);
             return; }
 #define BG2 2

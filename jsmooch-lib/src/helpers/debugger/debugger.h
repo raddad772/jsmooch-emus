@@ -17,6 +17,10 @@ extern "C" {
 #include "helpers/jsm_string.h"
 
 
+#define TRACEC_WHITE 0
+#define TRACEC_DEFAULT TRACEC_WHITE
+
+
 enum debugger_view_kinds {
     dview_null,
     dview_events,
@@ -242,6 +246,36 @@ struct debug_waveform {
     } user;
 };
 
+#define MAX_TRACE_COLS 20
+struct trace_line {
+    struct jsm_string cols[MAX_TRACE_COLS];
+    i32 source_id;
+    u32 empty;
+};
+
+struct trace_view_col {
+    char name[50];
+    i32 default_size;
+    u32 color;
+};
+
+struct trace_view {
+    struct cvec lines;
+    struct cvec columns;
+    struct trace_line *lptr;
+    u32 current_output_line;
+    u32 max_trace_lines;
+    u32 num_trace_lines;
+    u32 waiting_for_startline;
+    u32 waiting_for_endline;
+    u32 first_line;
+
+    // User-set options...
+    char name[150];
+    u32 autoscroll;
+    u32 display_end_top;
+};
+
 struct waveform_view {
     char name[50];
     struct cvec waveforms;
@@ -306,6 +340,7 @@ struct debugger_view {
         struct events_view events;
         struct image_view image;
         struct waveform_view waveform;
+        struct trace_view trace;
     };
 };
 
@@ -349,9 +384,15 @@ void debugger_report_line_mclks(struct cvec_ptr event_view, u64 mclks, u32 line_
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
 void debug_waveform_init(struct debug_waveform *);
 
-
 void waveform_view_init(struct waveform_view *);
 void waveform_view_delete(struct waveform_view *);
+
+void trace_view_add_col(struct trace_view *, const char *name, i32 default_size, u32 color);
+void trace_view_clear(struct trace_view *);
+void trace_view_printf(struct trace_view *, u32 col, char *format, ...);
+void trace_view_startline(struct trace_view *, i32 source);
+void trace_view_endline(struct trace_view *);
+struct trace_line *trace_view_get_line(struct trace_view *, int row);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)

@@ -624,7 +624,7 @@ void test_arm7tdmi()
 
     memset(&ts, 0, sizeof(ts));
     ARM7TDMI_init(&ts.cpu);
-    ARM7TDMI_setup_tracing(&ts.cpu, &rt, &ts.trace_cycles);
+    ARM7TDMI_setup_tracing(&ts.cpu, &rt, &ts.trace_cycles, 0);
     ts.cpu.read = &read_test_cpu;
     ts.cpu.write = &write_test_cpu;
     ts.cpu.fetch_ins = &fetchins_test_cpu;
