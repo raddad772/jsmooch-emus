@@ -40,8 +40,13 @@ struct GBA {
         struct {
             u32 open_bus_data;
         } cpu;
+        struct {
+            u32 a,b,up,down,left,right,start,select,l,r;
+            u32 enable, condition;
+        } button_irq;
         u32 IE, IF, IME;
         u32 halted;
+        u32 open_bus;
     } io;
 
     struct {

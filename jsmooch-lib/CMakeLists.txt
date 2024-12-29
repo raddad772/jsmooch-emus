@@ -298,6 +298,8 @@ add_library(jsmooch-lib
         src/component/cpu/arm7tdmi/armv4_disassembler.h
         src/helpers/debugger/trace.c
         src/helpers/debugger/trace.h
+        src/system/gba/gba_apu.c
+        src/system/gba/gba_apu.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

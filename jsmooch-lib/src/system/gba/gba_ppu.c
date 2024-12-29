@@ -1188,6 +1188,66 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x0400003D: update_bg_y(this, BG3, 1, val); return;
         case 0x0400003E: update_bg_y(this, BG3, 2, val); return;
         case 0x0400003F: update_bg_y(this, BG3, 3, val); return;
+
+        case 0x04000040: this->ppu.window[0].right = val + 1; return;
+        case 0x04000041: this->ppu.window[0].left = val >> 8; return;
+        case 0x04000042: this->ppu.window[1].right = val + 1; return;
+        case 0x04000043: this->ppu.window[1].left = val >> 8; return;
+        case 0x04000044: this->ppu.window[0].bottom = val + 1; return;
+        case 0x04000045: this->ppu.window[0].top = val >> 8; return;
+        case 0x04000046: this->ppu.window[1].bottom = val + 1; return;
+        case 0x04000047: this->ppu.window[1].top = val >> 8; return;
+
+        case 0x04000048:
+            this->ppu.window[0].bg[0] = (val >> 0) & 1;
+            this->ppu.window[0].bg[1] = (val >> 1) & 1;
+            this->ppu.window[0].bg[2] = (val >> 2) & 1;
+            this->ppu.window[0].bg[3] = (val >> 3) & 1;
+            this->ppu.window[0].obj = (val >> 4) & 1;
+            this->ppu.window[0].special_effect = (val >> 5) & 1;
+            return;
+        case 0x04000049:
+            this->ppu.window[1].bg[0] = (val >> 0) & 1;
+            this->ppu.window[1].bg[1] = (val >> 1) & 1;
+            this->ppu.window[1].bg[2] = (val >> 2) & 1;
+            this->ppu.window[1].bg[3] = (val >> 3) & 1;
+            this->ppu.window[1].obj = (val >> 4) & 1;
+            this->ppu.window[1].special_effect = (val >> 5) & 1;
+            return;
+        case 0x0400004A:
+            this->ppu.window[GBA_WINOUTSIDE].bg[0] = (val >> 0) & 1;
+            this->ppu.window[GBA_WINOUTSIDE].bg[1] = (val >> 1) & 1;
+            this->ppu.window[GBA_WINOUTSIDE].bg[2] = (val >> 2) & 1;
+            this->ppu.window[GBA_WINOUTSIDE].bg[3] = (val >> 3) & 1;
+            this->ppu.window[GBA_WINOUTSIDE].obj = (val >> 4) & 1;
+            this->ppu.window[GBA_WINOUTSIDE].special_effect = (val >> 5) & 1;
+            return;
+        case 0x0400004B:
+            this->ppu.window[GBA_WINOBJ].bg[0] = (val >> 0) & 1;
+            this->ppu.window[GBA_WINOBJ].bg[1] = (val >> 1) & 1;
+            this->ppu.window[GBA_WINOBJ].bg[2] = (val >> 2) & 1;
+            this->ppu.window[GBA_WINOBJ].bg[3] = (val >> 3) & 1;
+            this->ppu.window[GBA_WINOBJ].obj = (val >> 4) & 1;
+            this->ppu.window[GBA_WINOBJ].special_effect = (val >> 5) & 1;
+            return;
+        case 0x0400004C:
+            this->ppu.mosaic.bg.hsize = (val & 15) + 1;
+            this->ppu.mosaic.bg.vsize = ((val >> 4) & 15) + 1;
+            return;
+        case 0x0400004D:
+            this->ppu.mosaic.obj.hsize = (val & 15) + 1;
+            this->ppu.mosaic.obj.vsize = ((val >> 4) & 15) + 1;
+            return;
+
+        case 0x04000050:
+        case 0x04000051:
+        case 0x04000052:
+        case 0x04000053:
+        case 0x04000054:
+        case 0x04000055:
+            // TODO: support this stuff
+            return;
+
 #undef BG2
 #undef BG3
         }

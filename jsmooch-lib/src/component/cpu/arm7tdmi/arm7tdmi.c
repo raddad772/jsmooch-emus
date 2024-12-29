@@ -82,7 +82,6 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry*
 
 static void do_IRQ(struct ARM7TDMI* this)
 {
-    printf("\nDO IRQ!");
     if (this->regs.CPSR.T) {
         fetch_ins(this, 2);
     }
@@ -92,8 +91,7 @@ static void do_IRQ(struct ARM7TDMI* this)
 
 
     this->regs.SPSR_irq = this->regs.CPSR.u;
-    this->regs.CPSR.mode = ARM7_irq;
-    printf("\nIRQ! CURRENT PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
+    //printf("\nDO IRQ! CURRENT PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
     this->regs.CPSR.mode = ARM7_irq;
     ARM7TDMI_fill_regmap(this);
     this->regs.CPSR.I = 1;
@@ -299,7 +297,7 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
                     ARM7TDMI_reload_pipeline(this);
             }
             else {
-                armv4_trace_format(this, opcode, opcode_addr, 0);
+                if (dbg.trace_on && dbg.traces.arm7tdmi.instruction) armv4_trace_format(this, opcode, opcode_addr, 0);
                 this->pipeline.access = ARM7P_code | ARM7P_sequential;
                 this->regs.PC += 4;
             }

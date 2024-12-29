@@ -2,26 +2,32 @@
 // Created by . on 12/4/24.
 //
 
+#include "gba_apu.h"
 #include "gba_bus.h"
 #include "helpers/multisize_memaccess.c"
 
 static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
     dbg.var++;
-    //if (dbg.var > 6) dbg_break("too many bad reads", this->clock.master_cycle_count);
+    if (dbg.var > 15) dbg_break("too many bad reads", this->clock.master_cycle_count);
     return 0;
 }
 
 static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     printf("\nWRITE UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     dbg.var++;
-    //if (dbg.var > 6) dbg_break("too many bad reads", this->clock.master_cycle_count);
+    if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
 }
 
 static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x40000) return cR[sz](this->BIOS.data, addr);
-    return busrd_invalid(this, addr, sz, access, has_effect);
+    return this->io.open_bus;
 }
+
+static void buswr_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    printf("\nWarning write to BIOS...");
+}
+
 
 static u32 busrd_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     return cR[sz](this->WRAM_slow, addr & 0x3FFFF);
@@ -58,21 +64,84 @@ static void buswr_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
 
 static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x4000060) return GBA_PPU_mainbus_read_IO(this, addr, sz, access, has_effect);
+    u32 r = 0;
+    if (sz >= 2) {
+        r |= busrd_IO(this, addr, 1, access, has_effect) << 0;
+        r |= busrd_IO(this, addr+1, 1, access, has_effect) << 8;
+    }
+    if (sz == 4) {
+        r |= busrd_IO(this, addr+2, 1, access, has_effect) << 16;
+        r |= busrd_IO(this, addr+3, 1, access, has_effect) << 24;
+    }
+    if (sz != 1) return r;
+
     switch(addr) {
         case 0x04000130: // buttons!!!
-            return GBA_get_controller_state(this->controller.pio);
-        case 0x04000200:
-            return this->io.IE;
-        case 0x04000202:
-            return this->io.IF;
-        case 0x04000208:
-            return this->io.IME;
-        case 0x0400010c:
-            return this->timer[3].counter.val;
-    }
-    if ((addr >= 0x040000B0) && (addr < 0x040000E0)) {
-        assert(1==2);
-        //return GBA_DMA_read_IO(this, addr, sz, access, has_effect);
+            return GBA_get_controller_state(this->controller.pio) & 0xFF;
+        case 0x04000131: // buttons!!!
+            return GBA_get_controller_state(this->controller.pio) >> 8;
+        case 0x04000200: return this->io.IE & 0xFF;
+        case 0x04000201: return this->io.IE >> 8;
+        case 0x04000202: return this->io.IF & 0xFF;
+        case 0x04000203: return this->io.IF >> 8;
+        case 0x04000208: return this->io.IME;
+
+        case 0x0400010c: return this->timer[3].counter.val & 0xFF;
+        case 0x0400010d: return this->timer[3].counter.val >> 8;
+
+        case 0x040000B0: return (this->dma[0].io.src_addr >> 0) & 0xFF;
+        case 0x040000B1: return (this->dma[0].io.src_addr >> 8) & 0xFF;
+        case 0x040000B2: return (this->dma[0].io.src_addr >> 16) & 0xFF;
+        case 0x040000B3: return (this->dma[0].io.src_addr >> 24) & 0xFF;
+        case 0x040000B4: return (this->dma[0].io.dest_addr >> 0) & 0xFF;
+        case 0x040000B5: return (this->dma[0].io.dest_addr >> 8) & 0xFF;
+        case 0x040000B6: return (this->dma[0].io.dest_addr >> 16) & 0xFF;
+        case 0x040000B7: return (this->dma[0].io.dest_addr >> 24) & 0xFF;
+        case 0x040000B8: return (this->dma[0].io.word_count >> 0) & 0xFF;
+        case 0x040000B9: return (this->dma[0].io.word_count >> 8) & 0xFF;
+
+        case 0x040000BC: return (this->dma[1].io.src_addr >> 0) & 0xFF;
+        case 0x040000BD: return (this->dma[1].io.src_addr >> 8) & 0xFF;
+        case 0x040000BE: return (this->dma[1].io.src_addr >> 16) & 0xFF;
+        case 0x040000BF: return (this->dma[1].io.src_addr >> 24) & 0xFF;
+        case 0x040000C0: return (this->dma[1].io.dest_addr >> 0) & 0xFF;
+        case 0x040000C1: return (this->dma[1].io.dest_addr >> 8) & 0xFF;
+        case 0x040000C2: return (this->dma[1].io.dest_addr >> 16) & 0xFF;
+        case 0x040000C3: return (this->dma[1].io.dest_addr >> 24) & 0xFF;
+        case 0x040000C4: return (this->dma[1].io.word_count >> 0) & 0xFF;
+        case 0x040000C5: return (this->dma[1].io.word_count >> 8) & 0xFF;
+
+        case 0x040000C8: return (this->dma[2].io.src_addr >> 0) & 0xFF;
+        case 0x040000C9: return (this->dma[2].io.src_addr >> 8) & 0xFF;
+        case 0x040000CA: return (this->dma[2].io.src_addr >> 16) & 0xFF;
+        case 0x040000CB: return (this->dma[2].io.src_addr >> 24) & 0xFF;
+        case 0x040000CC: return (this->dma[2].io.dest_addr >> 0) & 0xFF;
+        case 0x040000CD: return (this->dma[2].io.dest_addr >> 8) & 0xFF;
+        case 0x040000CE: return (this->dma[2].io.dest_addr >> 16) & 0xFF;
+        case 0x040000CF: return (this->dma[2].io.dest_addr >> 24) & 0xFF;
+        case 0x040000D0: return (this->dma[2].io.word_count >> 0) & 0xFF;
+        case 0x040000D1: return (this->dma[2].io.word_count >> 8) & 0xFF;
+
+        case 0x040000D4: return (this->dma[3].io.src_addr >> 0) & 0xFF;
+        case 0x040000D5: return (this->dma[3].io.src_addr >> 8) & 0xFF;
+        case 0x040000D6: return (this->dma[3].io.src_addr >> 16) & 0xFF;
+        case 0x040000D7: return (this->dma[3].io.src_addr >> 24) & 0xFF;
+        case 0x040000D8: return (this->dma[3].io.dest_addr >> 0) & 0xFF;
+        case 0x040000D9: return (this->dma[3].io.dest_addr >> 8) & 0xFF;
+        case 0x040000DA: return (this->dma[3].io.dest_addr >> 16) & 0xFF;
+        case 0x040000DB: return (this->dma[3].io.dest_addr >> 24) & 0xFF;
+        case 0x040000DC: return (this->dma[3].io.word_count >> 0) & 0xFF;
+        case 0x040000DD: return (this->dma[3].io.word_count >> 8) & 0xFF;
+
+        case 0x04000102: return (this->timer[0].counter.val >> 0) & 0xFF;
+        case 0x04000103: return (this->timer[0].counter.val >> 8) & 0xFF;
+        case 0x04000106: return (this->timer[1].counter.val >> 0) & 0xFF;
+        case 0x04000107: return (this->timer[1].counter.val >> 8) & 0xFF;
+        case 0x0400010A: return (this->timer[2].counter.val >> 0) & 0xFF;
+        case 0x0400010B: return (this->timer[2].counter.val >> 8) & 0xFF;
+        case 0x0400010E: return (this->timer[3].counter.val >> 0) & 0xFF;
+        case 0x0400010F: return (this->timer[3].counter.val >> 8) & 0xFF;
+
     }
     return busrd_invalid(this, addr, sz, access, has_effect);
 }
@@ -106,6 +175,15 @@ void GBA_eval_irqs(struct GBA *this)
   14-15 Not used */
 }
 
+static u32 DMA_CH_NUM(u32 addr)
+{
+    addr &= 0xFF;
+    if (addr < 0xBC) return 0;
+    if (addr < 0xC8) return 1;
+    if (addr < 0xD4) return 2;
+    return 3;
+}
+
 static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     if (sz >= 2) {
         buswr_IO(this, addr, 1, access, (val >> 0) & 0xFF);
@@ -117,7 +195,8 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     }
     if (sz != 1) return;
     val &= 0xFF;
-    if (addr < 0x4000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
+    if (addr < 0x04000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
+    if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_write_IO(this, addr, sz, access, val);
     u32 mask = 0xFF;
     switch(addr) {
         case 0x04000200: // IE lo-byte
@@ -189,6 +268,7 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000D9: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
         case 0x040000DA: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
         case 0x040000DB: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+
         case 0x040000B8: this->dma[0].io.word_count = (this->dma[0].io.word_count & 0x3F00) | (val << 0); return;
         case 0x040000B9: this->dma[0].io.word_count = (this->dma[0].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
         case 0x040000C4: this->dma[1].io.word_count = (this->dma[1].io.word_count & 0x3F00) | (val << 0); return;
@@ -244,8 +324,7 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000C6:
         case 0x040000D2:
         case 0x040000DE: {
-            u32 chnum = (addr >> 6) & 3;
-            struct GBA_DMA_ch *ch = &this->dma[chnum];
+            struct GBA_DMA_ch *ch = &this->dma[DMA_CH_NUM(addr)];
             ch->io.dest_addr_ctrl = (val >> 5) & 3;
             ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 2) | ((val >> 7) & 1);
             return;}
@@ -253,7 +332,7 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000C7:
         case 0x040000D3:
         case 0x040000DF: {
-            u32 chnum = (addr >> 6) & 3;
+            u32 chnum = DMA_CH_NUM(addr);
             struct GBA_DMA_ch *ch = &this->dma[chnum];
             ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 1) | ((val & 1) << 1);
             ch->io.repeat = (val >> 1) & 1;
@@ -272,6 +351,46 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             }
             return;}
 
+            case 0x04000120:
+        case 0x04000121:
+        case 0x04000122:
+        case 0x04000123:
+        case 0x04000124:
+        case 0x04000125:
+        case 0x04000126:
+        case 0x04000127:
+        case 0x04000128:
+        case 0x04000129:
+        case 0x0400012A:
+        case 0x0400012B:
+            // TODO: support all this serial jazz!?
+            return;
+
+        case 0x04000130:
+        case 0x04000131:
+            // write to keypad? why?
+            return;
+
+        case 0x04000132:
+            this->io.button_irq.a = val & 1;
+            this->io.button_irq.b = (val >> 1) & 1;
+            this->io.button_irq.select = (val >> 2) & 1;
+            this->io.button_irq.start = (val >> 3) & 1;
+            this->io.button_irq.right = (val >> 4) & 1;
+            this->io.button_irq.left = (val >> 5) & 1;
+            this->io.button_irq.up = (val >> 6) & 1;
+            this->io.button_irq.down = (val >> 7) & 1;
+            return;
+        case 0x04000133:
+            this->io.button_irq.r = val & 1;
+            this->io.button_irq.l = (val >> 1) & 1;
+            u32 old_enable = this->io.button_irq.enable;
+            this->io.button_irq.enable = (val >> 6) & 1;
+            if ((old_enable == 0) && this->io.button_irq.enable) {
+                printf("\nWARNING BUTTON IRQ ENABLED...");
+            }
+            this->io.button_irq.condition = (val >> 7) & 1;
+            return;
     }
     buswr_invalid(this, addr, sz, access, val);
 }
@@ -297,6 +416,7 @@ void GBA_bus_init(struct GBA *this)
     this->mem.read[0xD] = &GBA_cart_read_wait2;
     this->mem.read[0xE] = &GBA_cart_read_sram;
 
+    this->mem.write[0x0] = &buswr_bios;
     this->mem.write[0x2] = &buswr_WRAM_slow;
     this->mem.write[0x3] = &buswr_WRAM_fast;
     this->mem.write[0x4] = &buswr_IO;
@@ -340,6 +460,7 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     if (addr < 0x10000000) v = this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
 
     else v = busrd_invalid(this, addr, sz, access, has_effect);
+    this->io.open_bus = v;
     if (dbg.trace_on && dbg.traces.ram) trace_read(this, addr, sz, v);
     return v;
 }

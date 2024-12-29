@@ -13,6 +13,8 @@ struct GBA_PPU_window {
     u32 enable;
 
     u32 left, right, top, bottom;
+
+    u32 bg[4], obj, special_effect;
     u8 inside[240];
 };
 
@@ -40,6 +42,14 @@ struct GBA_PPU {
     u8 VRAM[96 * 1024];
     u8 OAM[1024];
 
+    struct {
+        struct {
+            u32 hsize, vsize;
+        } bg;
+        struct {
+            u32 hsize, vsize;
+        } obj;
+    } mosaic;
     struct {
         u32 bg_mode;
         u32 force_blank;
