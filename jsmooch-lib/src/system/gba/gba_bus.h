@@ -110,6 +110,12 @@ struct GBA {
         struct audiobuf *buf;
     } audio;
 
+    struct {
+        struct GBA_DBG_line {
+            u8 window_coverage[240]; // 240 4-bit values, bit 1 = on, bit 0 = off
+        } line[160];
+    } dbg_info;
+
     DBG_START
         DBG_CPU_REG_START1
             *R[16]
@@ -117,6 +123,10 @@ struct GBA {
 
         DBG_IMAGE_VIEWS_START
             MDBG_IMAGE_VIEW(thing)
+            MDBG_IMAGE_VIEW(window0)
+            MDBG_IMAGE_VIEW(window1)
+            MDBG_IMAGE_VIEW(window2)
+            MDBG_IMAGE_VIEW(window3)
         DBG_IMAGE_VIEWS_END
     DBG_END
 

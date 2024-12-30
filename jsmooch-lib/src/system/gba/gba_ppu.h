@@ -12,7 +12,7 @@
 struct GBA_PPU_window {
     u32 enable;
 
-    u32 left, right, top, bottom;
+    i32 left, right, top, bottom;
 
     u32 bg[4], obj, special_effect;
     u8 inside[240];

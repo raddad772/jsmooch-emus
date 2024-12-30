@@ -2,6 +2,9 @@
 // Created by . on 12/4/24.
 //
 
+#include <string.h>
+#include <assert.h>
+
 #include "gba.h"
 #include "gba_bus.h"
 #include "gba_debugger.h"
@@ -169,6 +172,45 @@ static void fill_disassembly_view(void *macptr, struct debugger_interface *dbgr,
     this->dbg.dasm_m68k.IRC->int32_data = this->m68k.regs.IRC;*/
 }
 
+static void render_image_view_window(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int win_num) {
+    struct GBA *this = (struct GBA *) ptr;
+    if (this->clock.master_frame == 0) return;
+
+    struct image_view *iv = &dview->image;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 160);
+    u8 bit = 1 << win_num;
+
+    for (u32 y = 0; y < 160; y++) {
+        u32 *rowptr = outbuf + (y * out_width);
+        u8 *wptr = &this->dbg_info.line[y].window_coverage[0];
+        for (u32 x = 0; x < 240; x++) {
+            rowptr[x]= ((*wptr) & bit) ? 0xFFFFFFFF : 0xFF000000;
+            wptr++;
+        }
+    }
+}
+
+static void render_image_view_window0(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_window(dbgr, dview, ptr, out_width, 0);
+}
+
+static void render_image_view_window1(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_window(dbgr, dview, ptr, out_width, 1);
+}
+
+static void render_image_view_window2(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_window(dbgr, dview, ptr, out_width, 3);
+}
+
+static void render_image_view_window3(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_window(dbgr, dview, ptr, out_width, 2);
+}
+
 
 static void get_disassembly_ARM7TDMI(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
 {
@@ -225,6 +267,58 @@ static void setup_ARM7TDMI_disassembly(struct debugger_interface *dbgr, struct G
 }
 
 
+static void setup_image_view_window(struct GBA* this, struct debugger_interface *dbgr, u32 wnum)
+{
+    struct debugger_view *dview;
+    switch(wnum) {
+        case 0:
+            this->dbg.image_views.window0 = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.window0);
+            break;
+        case 1:
+            this->dbg.image_views.window1 = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.window1);
+            break;
+        case 2:
+            this->dbg.image_views.window2 = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.window2);
+            break;
+        case 3:
+            this->dbg.image_views.window3 = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.window3);
+            break;
+    }
+    struct image_view *iv = &dview->image;
+
+    iv->width = 240;
+    iv->height = 160;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 240, 160 };
+
+    iv->update_func.ptr = this;
+    switch(wnum) {
+        case 0:
+            iv->update_func.func = &render_image_view_window0;
+            snprintf(iv->label, sizeof(iv->label), "Window0 Viewer");
+            break;
+        case 1:
+            iv->update_func.func = &render_image_view_window1;
+            snprintf(iv->label, sizeof(iv->label), "Window1 Viewer");
+            break;
+        case 2:
+            iv->update_func.func = &render_image_view_window2;
+            snprintf(iv->label, sizeof(iv->label), "Window Sprite Viewer");
+            break;
+        case 3:
+            iv->update_func.func = &render_image_view_window3;
+            snprintf(iv->label, sizeof(iv->label), "Window Outside Viewer");
+            break;
+    }
+
+}
+
 void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
@@ -235,6 +329,15 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 
     //setup_ARM7TDMI_disassembly(dbgr, this);
     setup_cpu_trace(dbgr, this);
+    /*setup_image_view_plane(this, dbgr, 0);
+    setup_image_view_plane(this, dbgr, 1);
+    setup_image_view_plane(this, dbgr, 2);
+    setup_image_view_plane(this, dbgr, 3);
+    setup_image_view_sprites(this, dbgr);*/
+    setup_image_view_window(this, dbgr, 0);
+    setup_image_view_window(this, dbgr, 1);
+    setup_image_view_window(this, dbgr, 2);
+    setup_image_view_window(this, dbgr, 3);
     //setup_events_view(this, dbgr);
     //cvec_ptr_init(&this->dbg.events.view);
     /*setup_waveforms_psg(this, dbgr);

@@ -611,25 +611,28 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
     }
 }
 
-static void calculate_windows(struct GBA *this)
+static void calculate_windows(struct GBA *this, u32 force)
 {
-    if (!this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
+    //if (!force && !this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
 
     // Calculate windows...
+    if (this->clock.ppu.y >= 160) return;
     struct GBA_PPU_window *w;
     for (u32 wn = 0; wn < 2; wn++) {
         w = &this->ppu.window[wn];
-
         if (!w->enable) {
-            memset(&w->inside, 1, sizeof(w->inside));
+            memset(&w->inside, 0, sizeof(w->inside));
             continue;
         }
 
+        if (w->left == w->right) {
+            memset(&w->inside, 0, sizeof(w->inside));
+            continue;
+        }
         u32 x;
         u32 l_morethan_r = w->left > w->right;
         u32 in_topbottom;
         u32 y = this->clock.ppu.y;
-
         if (w->top > w->bottom) { // wrapping...
             in_topbottom = ((y < w->top) || (y >= w->bottom));
         }
@@ -647,24 +650,58 @@ static void calculate_windows(struct GBA *this)
     struct GBA_PPU_window *w0 = &this->ppu.window[0];
     struct GBA_PPU_window *w1 = &this->ppu.window[1];
     struct GBA_PPU_window *ws = &this->ppu.window[GBA_WINOBJ];
-    u32 w0r = w0->enable ^ 1;
-    u32 w1r = w1->enable ^ 1;
-    u32 wsr = ws->enable ^ 1;
+    u32 w0r = w0->enable;
+    u32 w1r = w1->enable;
+    u32 wsr = ws->enable;
     w = &this->ppu.window[GBA_WINOUTSIDE];
     memset(w->inside, 0, sizeof(w->inside));
     for (u32 x = 0; x < 240; x++) {
-        u32 w0i = w0r | w0->inside[x];
-        u32 w1i = w1r | w1->inside[x];
-        u32 wsi = wsr | ws->inside[x];
+        u32 w0i = w0r & w0->inside[x];
+        u32 w1i = w1r & w1->inside[x];
+        u32 wsi = wsr & ws->inside[x];
         w->inside[x] = !(w0i || w1i || wsi);
+    }
+
+    struct GBA_PPU_window *wo = &this->ppu.window[GBA_WINOUTSIDE];
+    struct GBA_DBG_line *l = &this->dbg_info.line[this->clock.ppu.y];
+    for (u32 x = 0; x < 240; x++) {
+        l->window_coverage[x] = w0->inside[x] | (w1->inside[x] << 1) | (ws->inside[x] << 2) | (wo->inside[x] << 3);
     }
 }
 
-static void apply_windows(struct GBA *this, u32 sp_window, u32 bg0, u32 bg1, u32 bg2, u32 bg3)
-{
+static void apply_windows(struct GBA *this, u32 sp_window, u32 bgtest[4]) {
     if (!this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
     // Each window can be individually enable/disabled
-    //
+    // Each background can be individually selected
+    static u32 priorities[4] = {GBA_WINOUTSIDE, GBA_WINOBJ, GBA_WIN1, GBA_WIN0};
+    u8 *wprio[4] = {this->ppu.window[0].inside, this->ppu.window[1].inside, this->ppu.window[2].inside,
+                    this->ppu.window[3].inside};
+    for (u32 bgnum = 0; bgnum < 3; bgnum++) {
+        struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+        if (!bg->enable || !bgtest[bgnum]) continue;
+        u32 bginclude[4] = {this->ppu.window[0].bg[bgnum], this->ppu.window[1].bg[bgnum], this->ppu.window[2].bg[bgnum],
+                            this->ppu.window[3].bg[bgnum]};
+        for (u32 x = 0; x < 240; x++) {
+            int visible[4] = {bginclude[0] && wprio[0][x], bginclude[1] && wprio[1][x], bginclude[2] && wprio[2][x],
+                              bginclude[3] && wprio[3][x]};
+            int v = visible[0] || visible[1] || visible[2] || visible[3];
+            if (!v) {
+                struct GBA_PX *p = &bg->line[x];
+                p->has = 0;
+            }
+        }
+    }
+    if (!sp_window) return;
+    u32 spinclude[4] = { this->ppu.window[0].obj, this->ppu.window[1].obj, this->ppu.window[2].obj, this->ppu.window[3].obj};
+    for (u32 x = 0; x < 240; x++) {
+        int visible[4] = {spinclude[0] && wprio[0][x], spinclude[1] && wprio[1][x], spinclude[2] && wprio[2][x], spinclude[3] && wprio[3][x]};
+        int v = visible[0] || visible[1] || visible[2] || visible[3];
+        if (!v) {
+            struct GBA_PX *p = &this->ppu.obj.line[x];
+            p->has = 0;
+        }
+    }
+
 }
 
 static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
@@ -761,14 +798,13 @@ static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables
 
 static void draw_line0(struct GBA *this, u16 *line_output)
 {
-    ///printf("\nno line0...")
     draw_obj_line(this);
     draw_bg_line_normal(this, 0);
     draw_bg_line_normal(this, 1);
     draw_bg_line_normal(this, 2);
     draw_bg_line_normal(this, 3);
-    calculate_windows(this);
-    apply_windows(this, 1, 1, 1, 1, 1);
+    calculate_windows(this, 0);
+    apply_windows(this, 1, (u32[4]){1, 1, 1, 1});
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -781,7 +817,7 @@ static void draw_line1(struct GBA *this, u16 *line_output)
     draw_bg_line_normal(this, 0);
     draw_bg_line_normal(this, 1);
     draw_bg_line_affine(this, 2);
-    apply_windows(this, 1, 1, 1, 1, 0);
+    apply_windows(this, 1, (u32[4]){1, 1, 1, 0});
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, 0};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -793,7 +829,7 @@ static void draw_line2(struct GBA *this, u16 *line_output)
     draw_obj_line(this);
     draw_bg_line_affine(this, 2);
     draw_bg_line_affine(this, 3);
-    apply_windows(this, 1, 0, 0, 1, 1);
+    apply_windows(this, 1, (u32[4]){0, 0, 1, 1});
     u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -883,6 +919,8 @@ void GBA_PPU_hblank(struct GBA*this)
             default:
                 assert(1 == 2);
         }
+        // Copy window stuff...
+
     }
 }
 
@@ -1189,14 +1227,14 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x0400003E: update_bg_y(this, BG3, 2, val); return;
         case 0x0400003F: update_bg_y(this, BG3, 3, val); return;
 
-        case 0x04000040: this->ppu.window[0].right = val + 1; return;
-        case 0x04000041: this->ppu.window[0].left = val >> 8; return;
-        case 0x04000042: this->ppu.window[1].right = val + 1; return;
-        case 0x04000043: this->ppu.window[1].left = val >> 8; return;
-        case 0x04000044: this->ppu.window[0].bottom = val + 1; return;
-        case 0x04000045: this->ppu.window[0].top = val >> 8; return;
-        case 0x04000046: this->ppu.window[1].bottom = val + 1; return;
-        case 0x04000047: this->ppu.window[1].top = val >> 8; return;
+        case 0x04000040: this->ppu.window[0].right = val; return;
+        case 0x04000041: this->ppu.window[0].left = val; return;
+        case 0x04000042: this->ppu.window[1].right = val; return;
+        case 0x04000043: this->ppu.window[1].left = val; return;
+        case 0x04000044: this->ppu.window[0].bottom = val; return;
+        case 0x04000045: this->ppu.window[0].top = val; return;
+        case 0x04000046: this->ppu.window[1].bottom = val; return;
+        case 0x04000047: this->ppu.window[1].top = val; return;
 
         case 0x04000048:
             this->ppu.window[0].bg[0] = (val >> 0) & 1;
