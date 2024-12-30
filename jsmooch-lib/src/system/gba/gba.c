@@ -273,32 +273,40 @@ static u32 dma_go(struct GBA *this) {
     return 0;
 }
 
-static void tick_timers(struct GBA *this, u32 num_ticks)
+static void sound_FIFO(struct GBA *this, u32 num)
 {
+    // TODO: this!
+}
+
+
+static void tick_timer(struct GBA *this, struct GBA_TIMER *t, u32 timernum)
+{
+    t->counter.val++;
+    if (t->counter.val == 0) {
+        if (t->irq_on_overflow) {
+            this->io.IF |= 1 << (3 + timernum);
+        }
+        t->counter.val = t->counter.reload;
+        if(this->apu.fifo[0].timer == timernum) sound_FIFO(this, 0);
+        if(this->apu.fifo[1].timer == timernum) sound_FIFO(this, 1);
+        if (timernum < 3) {
+            struct GBA_TIMER *tp1 = &this->timer[timernum+1];
+            if (tp1->cascade) {
+                tick_timer(this, tp1, timernum+1);
+            }
+        }
+    }
+}
+
+static void tick_timers(struct GBA *this, u32 num_ticks) {
     for (u32 ticks = 0; ticks < num_ticks; ticks++) {
-        u32 last_timer_overflowed = 0;
         for (u32 timer = 0; timer < 4; timer++) {
             struct GBA_TIMER *t = &this->timer[timer];
-            if (t->enable) {
-                u16 ch = 0;
-                if (t->cascade) {
-                    ch = last_timer_overflowed;
+            if (t->enable && !t->cascade) {
+                t->divider.counter = (t->divider.counter + 1) & t->divider.mask;
+                if (t->divider.counter == 0) {
+                    tick_timer(this, t, timer);
                 }
-                else {
-                    t->divider.counter = (t->divider.counter + 1) & t->divider.mask;
-                    if (t->divider.counter == 0) ch = 1;
-                }
-                last_timer_overflowed = 0;
-                t->counter.val -= ch;
-                if (t->counter.val == 0xFFFF) {
-                    last_timer_overflowed = 1;
-                    if (t->irq_on_overflow) {
-                        this->io.IF |= 1 << (3 + timer);
-                    }
-                    t->counter.val = t->counter.reload;
-                }
-            } else {
-                last_timer_overflowed = 0;
             }
         }
     }

@@ -86,9 +86,6 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
         case 0x04000203: return this->io.IF >> 8;
         case 0x04000208: return this->io.IME;
 
-        case 0x0400010c: return this->timer[3].counter.val & 0xFF;
-        case 0x0400010d: return this->timer[3].counter.val >> 8;
-
         case 0x040000B0: return (this->dma[0].io.src_addr >> 0) & 0xFF;
         case 0x040000B1: return (this->dma[0].io.src_addr >> 8) & 0xFF;
         case 0x040000B2: return (this->dma[0].io.src_addr >> 16) & 0xFF;
@@ -133,14 +130,32 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
         case 0x040000DC: return (this->dma[3].io.word_count >> 0) & 0xFF;
         case 0x040000DD: return (this->dma[3].io.word_count >> 8) & 0xFF;
 
-        case 0x04000102: return (this->timer[0].counter.val >> 0) & 0xFF;
-        case 0x04000103: return (this->timer[0].counter.val >> 8) & 0xFF;
-        case 0x04000106: return (this->timer[1].counter.val >> 0) & 0xFF;
-        case 0x04000107: return (this->timer[1].counter.val >> 8) & 0xFF;
-        case 0x0400010A: return (this->timer[2].counter.val >> 0) & 0xFF;
-        case 0x0400010B: return (this->timer[2].counter.val >> 8) & 0xFF;
-        case 0x0400010E: return (this->timer[3].counter.val >> 0) & 0xFF;
-        case 0x0400010F: return (this->timer[3].counter.val >> 8) & 0xFF;
+        case 0x04000100: return (this->timer[0].counter.val >> 0) & 0xFF;
+        case 0x04000101: return (this->timer[0].counter.val >> 8) & 0xFF;
+        case 0x04000104: return (this->timer[1].counter.val >> 0) & 0xFF;
+        case 0x04000105: return (this->timer[1].counter.val >> 8) & 0xFF;
+        case 0x04000108: return (this->timer[2].counter.val >> 0) & 0xFF;
+        case 0x04000109: return (this->timer[2].counter.val >> 8) & 0xFF;
+        case 0x0400010C: return (this->timer[3].counter.val >> 0) & 0xFF;
+        case 0x0400010D: return (this->timer[3].counter.val >> 8) & 0xFF;
+
+        case 0x04000103: // TIMERCNT upper, not used.
+        case 0x04000107:
+        case 0x0400010B:
+        case 0x0400010F:
+            return 0;
+
+        case 0x04000102:
+        case 0x04000106:
+        case 0x0400010A:
+        case 0x0400010E: {
+            u32 tn = (addr >> 2) & 3;
+            u32 v = this->timer[tn].divider.io;
+            v |= this->timer[tn].cascade << 2;
+            v |= this->timer[tn].irq_on_overflow << 6;
+            v |= this->timer[tn].enable << 7;
+            return v;
+        }
 
     }
     return busrd_invalid(this, addr, sz, access, has_effect);
@@ -282,20 +297,20 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000DC: this->dma[3].io.word_count = (this->dma[3].io.word_count & 0xFF00) | (val << 0); return;
         case 0x040000DD: this->dma[3].io.word_count = (this->dma[3].io.word_count & 0xFF) | ((val & 0xFF) << 8); return;
 
-        case 0x04000100:
-        case 0x04000104:
-        case 0x04000108:
-        case 0x0400010C:
+        case 0x04000103: // TMRxCNT upper half unused
+        case 0x04000107:
+        case 0x0400010B:
+        case 0x0400010F:
             return;
 
-        case 0x04000101:
-        case 0x04000105:
-        case 0x04000109:
-        case 0x0400010D: {
+        case 0x04000102:
+        case 0x04000106:
+        case 0x0400010A:
+        case 0x0400010E: {
             u32 tn = (addr >> 2) & 3;
             this->timer[tn].divider.io = val & 3;
             switch(val & 3) {
-                case 0: this->timer[tn].divider.mask = 1; break;
+                case 0: this->timer[tn].divider.mask = 0; break;
                 case 1: this->timer[tn].divider.mask = 63; break;
                 case 2: this->timer[tn].divider.mask = 255; break;
                 case 3: this->timer[tn].divider.mask = 1023; break;
@@ -308,17 +323,18 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
                 this->timer[tn].divider.counter = 0;
                 this->timer[tn].counter.val = this->timer[tn].counter.reload;
             }
+            printf("\nTIMER:%d ENABLE:%d CASCADE:%d IRQ:%d DMASK:%d", tn, this->timer[tn].enable, this->timer[tn].cascade, this->timer[tn].irq_on_overflow, this->timer[tn].divider.mask);
             return; }
 
-        case 0x04000102: this->timer[0].counter.reload = (this->timer[0].counter.reload & 0xFF00) | val; return;
-        case 0x04000106: this->timer[1].counter.reload = (this->timer[1].counter.reload & 0xFF00) | val; return;
-        case 0x0400010A: this->timer[2].counter.reload = (this->timer[2].counter.reload & 0xFF00) | val; return;
-        case 0x0400010E: this->timer[3].counter.reload = (this->timer[3].counter.reload & 0xFF00) | val; return;
+        case 0x04000100: this->timer[0].counter.reload = (this->timer[0].counter.reload & 0xFF00) | val; return;
+        case 0x04000104: this->timer[1].counter.reload = (this->timer[1].counter.reload & 0xFF00) | val; return;
+        case 0x04000108: this->timer[2].counter.reload = (this->timer[2].counter.reload & 0xFF00) | val; return;
+        case 0x0400010C: this->timer[3].counter.reload = (this->timer[3].counter.reload & 0xFF00) | val; return;
 
-        case 0x04000103: this->timer[0].counter.reload = (this->timer[0].counter.reload & 0xFF) | (val << 8); return;
-        case 0x04000107: this->timer[1].counter.reload = (this->timer[1].counter.reload & 0xFF) | (val << 8); return;
-        case 0x0400010B: this->timer[2].counter.reload = (this->timer[2].counter.reload & 0xFF) | (val << 8); return;
-        case 0x0400010F: this->timer[3].counter.reload = (this->timer[3].counter.reload & 0xFF) | (val << 8); return;
+        case 0x04000101: this->timer[0].counter.reload = (this->timer[0].counter.reload & 0xFF) | (val << 8); return;
+        case 0x04000105: this->timer[1].counter.reload = (this->timer[1].counter.reload & 0xFF) | (val << 8); return;
+        case 0x04000109: this->timer[2].counter.reload = (this->timer[2].counter.reload & 0xFF) | (val << 8); return;
+        case 0x0400010D: this->timer[3].counter.reload = (this->timer[3].counter.reload & 0xFF) | (val << 8); return;
 
 
         case 0x04000301: { printf("\nHALT! %d", val); this->io.halted = 1; break; }

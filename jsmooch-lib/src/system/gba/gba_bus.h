@@ -22,6 +22,7 @@ struct GBA {
     struct GBA_cart cart;
     struct GBA_PPU ppu;
     struct GBA_controller controller;
+    struct GBA_APU apu;
 
     struct { // Only bits 27-24 are needed to distinguish valid endpoints
         GBA_rdfunc read[16];
@@ -101,7 +102,6 @@ struct GBA {
             u16 val;
             u16 reload;
         } counter;
-
     } timer[4];
 
     struct {
