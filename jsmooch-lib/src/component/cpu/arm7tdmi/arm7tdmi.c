@@ -251,7 +251,7 @@ static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 
 
 static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode, u32 opcode_addr)
 {
-    if (dbg.trace_on && dbg.traces.arm7tdmi.instruction) armv4_trace_format(this, opcode, opcode_addr, 1);
+    if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 1);
     struct thumb_instruction *ins = &this->opcode_table_thumb[opcode];
     ins->func(this, ins);
     if (this->pipeline.flushed)
@@ -261,7 +261,7 @@ static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode, u32 opcode_
 static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode, u32 opcode_addr)
 {
     // bits 27-0 and 7-4
-    if (dbg.trace_on && dbg.traces.arm7tdmi.instruction) armv4_trace_format(this, opcode, opcode_addr, 0);
+    if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     this->last_arm7_opcode = opcode;
     this->arm7_ins = &this->opcode_table_arm[decode];
@@ -297,7 +297,7 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
                     ARM7TDMI_reload_pipeline(this);
             }
             else {
-                if (dbg.trace_on && dbg.traces.arm7tdmi.instruction) armv4_trace_format(this, opcode, opcode_addr, 0);
+                if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
                 this->pipeline.access = ARM7P_code | ARM7P_sequential;
                 this->regs.PC += 4;
             }

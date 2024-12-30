@@ -26,10 +26,10 @@ static void add_context(struct ARMctxt *t, u32 rnum)
 }
 
 static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
-    if (num == 13) ostr("SP");
-    else if (num == 14) ostr("LR");
-    else if (num == 15) ostr("PC");
-    else ostr("R%d",num);
+    if (num == 13) ostr("sp");
+    else if (num == 14) ostr("lr");
+    else if (num == 15) ostr("pc");
+    else ostr("r%d",num);
     if (add_comma) ostr(",");
 }
 
@@ -244,10 +244,10 @@ static void dasm_LDRH_STRH(u32 opcode, struct jsm_string *out, i64 instruction_a
     add_context(ct, Rnd);
     add_context(ct, Rmd);
     if (L) {
-        mnp("ldr", 3, "h")
+        mn("ldrh", 3)
     }
     else {
-        mnp("str", 3, "h")
+        mn("strh", 3)
     }
     oregc(Rdd);
     ostr("[");
@@ -275,16 +275,16 @@ static void dasm_LDRSB_LDRSH(u32 opcode, struct jsm_string *out, i64 instruction
     add_context(ct, Rnd);
     add_context(ct, Rmd);
     u32 H = OBIT(5);
-    if (H) mnp("ldr", 2, "sh")
-    else mnp("ldr", 2, "sb")
+    if (H) mn("ldrsh", 2)
+    else mn("ldrsb", 2)
     oregc(Rdd);
     ostr("[");
     oreg(Rnd); // base regiter
+    ostr("],");
     if (U) ostr("+");
     else ostr("-");
     if (I) odec(imm_off);
     else oreg(Rmd);
-    ostr("]");
 }
 
 static void dasm_MRS(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)

@@ -322,7 +322,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
         val = SIGNe16to32(val);
     }
     else {
-        if (H) val = (val >> 8);
+        if (H) val = (val >> 8); // what we said above...
         val = SIGNe8to32(val);
     }
     this->regs.PC += 4;
@@ -343,7 +343,8 @@ void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
     u32 Rdd = (opcode >> 12) & 15;
     u32 *Rd = getR(this, Rdd);
     if (PSR) {
-        *Rd = *get_SPSR_by_mode(this);
+        if (this->regs.CPSR.mode == ARM7_system) *Rd = this->regs.CPSR.u;
+        else *Rd = *get_SPSR_by_mode(this);
     }
     else {
         *Rd = this->regs.CPSR.u;
@@ -576,21 +577,15 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
             assert(1==2);
     }
 
-//        ALU(this, Rn, Rm, alu_opcode, S, Rd);
-//    }
-//    else {
-        ALU(this, Rn, Rm, alu_opcode, S, Rd);
-//    }
-
+    ALU(this, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
         if (this->regs.CPSR.mode != ARM7_system) {
             u32 v = *get_SPSR_by_mode(this);
             this->regs.CPSR.u = v;
-
         }
         ARM7TDMI_fill_regmap(this);
     }
-    if (Rdd == 15) {
+    if ((Rdd == 15) && ((alu_opcode < 8) || (alu_opcode > 11))) {
         ARM7TDMI_flush_pipeline(this);
     }
 }

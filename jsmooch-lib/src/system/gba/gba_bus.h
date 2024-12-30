@@ -47,6 +47,7 @@ struct GBA {
         u32 IE, IF, IME;
         u32 halted;
         u32 open_bus;
+        u32 W8;
     } io;
 
     struct {

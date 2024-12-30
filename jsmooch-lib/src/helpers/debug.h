@@ -21,7 +21,7 @@ extern "C" {
 //#define LYCODER        // lycoder-format traces for easy winmerge
 //#define REICAST_DIFF
 
-//#define TRACE_ON_BRK     // Enable tracing on break
+#define TRACE_ON_BRK     // Enable tracing on break
 #ifdef LYCODER
 #define DBG_LOG_TO_FILE // log debug to file
 #endif

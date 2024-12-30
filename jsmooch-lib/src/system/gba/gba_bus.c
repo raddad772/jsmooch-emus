@@ -218,7 +218,11 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             GBA_eval_irqs(this);
             return;
         case 0x04000204: // WAITcnt, ignore for now
+            this->io.W8 = (this->io.W8 & 0xFF00) | val;
+            return;
         case 0x04000205: // WAITcnt, ignore for now
+            this->io.W8 = (this->io.W8 & 0xFF) | (val << 8);
+            return;
         case 0x04000206: // empty, ignore
         case 0x04000207: // empty, ignore
             return;

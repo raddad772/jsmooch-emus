@@ -180,6 +180,7 @@ void dbg_break(const char *reason, u64 cycles)
 #endif
 #ifdef TRACE_ON_BRK
     dbg_enable_trace();
+    dbg.var = 0;
 #endif
 }
 

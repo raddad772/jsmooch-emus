@@ -13,6 +13,8 @@
 #include "helpers/multisize_memaccess.c"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm7tdmi/arm7tdmi_instructions.h"
+#include "component/cpu/arm7tdmi/armv4_disassembler.h"
+#include "component/cpu/arm7tdmi/thumb_disassembler.h"
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (b) : (a))
@@ -599,7 +601,17 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         }*/
 
         if ((!compare_state_to_cpu(ts, &ts->test.final, &ts->test.initial, c_skip)) || !compare_transactions(ts) || ts->test.failed) {
-            printf("\n\nTest failed! %s", fname);
+            printf("\n\nTest failed! %s opcode:%08x", fname, ts->test.opcode);
+            struct jsm_string out;
+            jsm_string_init(&out, 100);
+            if (ts->test.initial.CPSR & 0x20) {
+                ARM7TDMI_thumb_disassemble(ts->test.opcode, &out, -1);
+            }
+            else {
+                ARMv4_disassemble(ts->test.opcode, &out, -1, NULL);
+            }
+            printf("\nDISASSEMBLY: %s", out.ptr);
+            jsm_string_delete(&out);
             pprint_transactions(&ts->test.transactions, &ts->my_transactions, ts);
             pprint_CPSR("\nmine   :", ts->cpu.regs.CPSR.u);
             pprint_CPSR("\ntheirs :", ts->test.final.CPSR);
