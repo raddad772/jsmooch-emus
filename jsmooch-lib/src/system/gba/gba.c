@@ -204,6 +204,11 @@ void GBAJ_reset(JSM)
 
     skip_BIOS(this);
 
+    for (u32 i = 0; i < 4; i++) {
+        this->io.SIO.multi[i] = 0xFFFF;
+    }
+    this->io.SIO.send = 0xFFFF;
+
     printf("\nGBA reset!");
 }
 
@@ -287,8 +292,8 @@ static void tick_timer(struct GBA *this, struct GBA_TIMER *t, u32 timernum)
             this->io.IF |= 1 << (3 + timernum);
         }
         t->counter.val = t->counter.reload;
-        if(this->apu.fifo[0].timer == timernum) sound_FIFO(this, 0);
-        if(this->apu.fifo[1].timer == timernum) sound_FIFO(this, 1);
+        if(this->apu.fifo[0].timer_id == timernum) sound_FIFO(this, 0);
+        if(this->apu.fifo[1].timer_id == timernum) sound_FIFO(this, 1);
         if (timernum < 3) {
             struct GBA_TIMER *tp1 = &this->timer[timernum+1];
             if (tp1->cascade) {
@@ -325,7 +330,7 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
         else {
             if (this->io.halted) {
                 this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
-                if (!this->io.halted) printf("\nEXIT HALT!");
+                //if (!this->io.halted) printf("\nEXIT HALT!");
             }
             if (!this->io.halted) {
                 ARM7TDMI_cycle(&this->cpu, 1);

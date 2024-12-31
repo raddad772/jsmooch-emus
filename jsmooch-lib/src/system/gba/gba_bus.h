@@ -7,6 +7,7 @@
 
 #include "gba_clock.h"
 #include "gba_ppu.h"
+#include "gba_apu.h"
 #include "gba_controller.h"
 #include "gba_cart.h"
 
@@ -48,7 +49,15 @@ struct GBA {
         u32 IE, IF, IME;
         u32 halted;
         u32 open_bus;
+
+        // Unsupported-yet stub stuff
         u32 W8;
+        struct {
+            u32 general_purpose_data;
+            u32 control;
+            u32 send;
+            u32 multi[4];
+        } SIO;
     } io;
 
     struct {
@@ -127,6 +136,7 @@ struct GBA {
             MDBG_IMAGE_VIEW(window1)
             MDBG_IMAGE_VIEW(window2)
             MDBG_IMAGE_VIEW(window3)
+            MDBG_IMAGE_VIEW(tiles)
         DBG_IMAGE_VIEWS_END
     DBG_END
 

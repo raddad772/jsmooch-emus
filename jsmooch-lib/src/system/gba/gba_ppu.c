@@ -41,7 +41,7 @@ static void vblank(struct GBA *this, u32 val)
     //pprint_palette_ram(this);
     this->clock.ppu.vblank_active = val;
     if (val == 1) {
-        if (!(this->io.IF & 1)) printf("\nVBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
+        //if (!(this->io.IF & 1)) printf("\nVBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
         this->io.IF |= 1;
         GBA_eval_irqs(this);
         GBA_check_dma_at_vblank(this);
@@ -53,13 +53,13 @@ static void hblank(struct GBA *this, u32 val)
     this->clock.ppu.hblank_active = 1;
     if (val == 0) {
         if (this->ppu.io.vcount_at == this->clock.ppu.y) {
-            if (!(this->io.IF & 4)) printf("\nVCOUNT IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
+            //if (!(this->io.IF & 4)) printf("\nVCOUNT IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
             this->io.IF |= 4;
             GBA_eval_irqs(this);
         }
     }
     if ((val == 1) && (this->clock.ppu.y < 160)) {
-        if (!(this->io.IF & 2)) printf("\nHBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
+        //if (!(this->io.IF & 2)) printf("\nHBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
         this->io.IF |= 2;
         GBA_eval_irqs(this);
     }
@@ -267,35 +267,21 @@ static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, 
     }
 }
 
-static void get_sprite_tile_ptrs(struct GBA *this, u32 tile_num, u32 htiles, u32 tile_y_num, u32 line_in_tile, u32 bpp8, u32 d2, u8 *tile_ptrs[8])
+static u32 get_sprite_tile_addr(struct GBA *this, u32 tile_num, u32 htiles, u32 block_y, u32 line_in_tile, u32 bpp8, u32 d1)
 {
-    // 0:0000h
-    // 1:4000h
-    u32 tile_offset = 32 * tile_num;
-    // 32 bytes per tile in 4bpp
-    // 64 in 8bpp
-    u32 tile_bytes = bpp8 ? 64 : 32;
-    u32 tile_line_bytes = bpp8 ? 8 : 4;
-    u32 offset_in_tile = line_in_tile * tile_line_bytes;
-    u32 tile_start_addr = tile_offset + offset_in_tile;
-    tile_start_addr += 0x10000;
-    // tile stride for 1d is tile_bytes
-    // tile stride for 2d is tile_bytes*32
-    // Now account for tile Y inside overall sprite...
-    u32 tile_line_stride = 0;
-    if (d2) { // 2d mapping. rows are 32 tiles wide
-        tile_line_stride = 64 * tile_line_bytes;
+    u32 base_addr = 0x10000;
+    if (d1) {
+        tile_num += block_y * (htiles << bpp8);
+        tile_num &= 0x3FF;
+        u32 tile_addr = base_addr + ((32 * tile_num) << bpp8);
+        tile_addr += (line_in_tile * (4 << bpp8));
+        return tile_addr;
     }
-    else { // 1d mapping. rows are htiles wide
-        tile_line_stride = htiles * tile_line_bytes;
-    }
-    tile_start_addr += (tile_line_stride * tile_y_num);
-    assert(tile_start_addr < 0x18000);
-    u8 *ptr = ((u8 *)this->ppu.VRAM) + tile_start_addr;
-    for (u32 i = 0; i < htiles; i++) {
-        tile_ptrs[i] = ptr;
-        ptr += tile_bytes;
-    }
+    tile_num += block_y * (32 << bpp8);
+    tile_num &= 0x3FF;
+    u32 tile_addr = base_addr + (32 * tile_num);
+    tile_addr += (line_in_tile * (4 << bpp8));
+    return tile_addr;
 }
 
 static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w)
@@ -366,8 +352,7 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
         i32 sx = tile_x + screen_x;
         if ((sx >= 0) && (sx < 240)) {
             this->ppu.obj.drawing_cycles -= 1;
-            struct GBA_PX *opx = NULL;
-            if (mode < 2) opx = &this->ppu.obj.line[sx];
+            struct GBA_PX *opx = &this->ppu.obj.line[sx];
             if ((mode > 1) || (!opx->has)) {
                 u32 rpx = hflip ? tile_x : (7 - tile_x);
                 u16 c = tptr[rpx];
@@ -404,15 +389,16 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
         for (u32 i = 0; i < 2; i++) {
             if ((sx >= 0) && (sx < 240)) {
                 this->ppu.obj.drawing_cycles -= 1;
-                struct GBA_PX *opx = NULL;
-                if (mode < 2) opx = &this->ppu.obj.line[sx];
+                struct GBA_PX *opx = &this->ppu.obj.line[sx];
                 if ((mode > 1) || (!opx->has)) {
                     u32 c = data & 15;
+                    data >>= 4;
                     if (c != 0) {
                         switch (mode) {
                             case 1:
                             case 0: {
                                 opx->color = c;
+                                if ((sx == 0) && (tile_x == 0)) opx->color = 10;
                                 opx->bpp8 = 0;
                                 opx->priority = priority;
                                 opx->has = 1;
@@ -427,14 +413,14 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
                     }
                     if (this->ppu.obj.drawing_cycles < 1) return;
                 }
-                if (hflip) sx--;
-                else sx++;
             }
+            if (hflip) sx--;
+            else sx++;
         }
     }
 }
 
-static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w)
+static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w, u32 num)
 {
     // 1 cycle to evaluate and 1 cycle per pixel
     this->ppu.obj.drawing_cycles -= 1;
@@ -443,25 +429,25 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     u32 obj_disable = (ptr[0] >> 9) & 1;
     if (obj_disable) return;
 
-    i32 y = ptr[0] & 0xFF;
-    if (y > 160) {
-        y -= 160;
-        y = 0 - y;
-    }
-    if ((this->clock.ppu.y < y)) return;
-
-    // Clip sprite
     u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
     u32 sz = (ptr[1] >> 14) & 3;
     u32 htiles, vtiles;
     get_obj_tile_size(sz, shape, &htiles, &vtiles);
 
-    i32 y_bottom = y + (i32)(vtiles * 8);
-    if (this->clock.ppu.y >= y_bottom) return;
+    i32 y_min = ptr[0] & 0xFF;
+    i32 y_max = (y_min + ((i32)vtiles * 8)) & 255;
+    if(y_max < y_min)
+        y_min -= 256;
 
+    if((i32)this->clock.ppu.y < y_min || (i32)this->clock.ppu.y >= y_max) {
+        return;
+    }
+
+    // Clip sprite
+
+    i32 y_bottom = y_min + (i32)(vtiles * 8);
     u32 tile_num = ptr[2] & 0x3FF;
     if ((this->ppu.io.bg_mode >= 3) && (tile_num < 512)) {
-        printf("\nLOW NUMBER in BG MODE!");
         return;
     }
 
@@ -478,7 +464,7 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     if (bpp8) tile_num &= 0x3FE;
 
     // OK we got all the attributes. Let's draw it!
-    u32 line_in_sprite = this->clock.ppu.y - y;
+    i32 line_in_sprite = this->clock.ppu.y - y_min;
     //printf("\nPPU LINE %d LINE IN SPR:%d Y:%d", this->clock.ppu.y, line_in_sprite, y);
     if (vflip) line_in_sprite = (((vtiles * 8) - 1) - line_in_sprite);
     u32 tile_y_in_sprite = line_in_sprite >> 3; // /8
@@ -486,13 +472,14 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
 
     // OK so we know which line
     // We have two possibilities; 1d or 2d layout
-    u8 *tile_ptrs[8];
-    get_sprite_tile_ptrs(this, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, this->ppu.io.obj_mapping_2d, tile_ptrs);
+    u32 tile_addr = get_sprite_tile_addr(this, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, this->ppu.io.obj_mapping_2d);
+    if (hflip) tile_addr += (htiles - 1) * 32;
 
     i32 screen_x = x;
     for (u32 tile_xs = 0; tile_xs < htiles; tile_xs++) {
-        u32 tile_x = hflip ? ((htiles - 1) - tile_xs) : tile_xs;
-        u8 *tptr = tile_ptrs[tile_x];
+        u8 *tptr = ((u8 *) this->ppu.VRAM) + tile_addr;
+        if (hflip) tile_addr -= 32;
+        else tile_addr += 32;
         if (bpp8) output_sprite_8bpp(this, tptr, mode, screen_x, priority, hflip, w);
         else output_sprite_4bpp(this, tptr, mode, screen_x, priority, hflip, palette, w);
         screen_x += 8;
@@ -517,7 +504,7 @@ static void draw_obj_line(struct GBA *this)
         u16 *ptr = ((u16 *)this->ppu.OAM) + (i * 4);
         u32 affine = (ptr[0] >> 8) & 1;
         if (affine) draw_sprite_affine(this, ptr, w);
-        else draw_sprite_normal(this, ptr, w);
+        else draw_sprite_normal(this, ptr, w, i);
     }
 }
 
@@ -565,7 +552,7 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
     u32 line_size = bg->bpp8 ? 8 : 4;
     u32 tile_start_addr = bg->character_base_block + (tile_num * tile_bytes);
     u32 line_addr = tile_start_addr + (line_in_tile * line_size);
-    if (line_addr > 0x10000) return; // hardware doesn't draw from up there
+    if (line_addr >= 0x10000) return; // hardware doesn't draw from up there
     u8 *ptr = ((u8 *)this->ppu.VRAM) + line_addr;
 
     if (bg->bpp8) {
@@ -963,11 +950,11 @@ u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access,
 
 u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (addr < 0x06018000)
-        return cR[sz](this->ppu.VRAM, addr - 0x06000000);
-
-    return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
-
+    addr &= 0x1FFFF;
+    if (addr < 0x18000)
+        return cR[sz](this->ppu.VRAM, addr);
+    else
+        return cR[sz](this->ppu.VRAM, addr - 0x8000);
 }
 
 u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
@@ -988,8 +975,14 @@ void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 acces
 
 void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (addr < 0x06018000)
-        return cW[sz](this->ppu.VRAM, addr - 0x06000000, val);
+    addr &= 0x1FFFF;
+    if (addr < 0x18000)
+        return cW[sz](this->ppu.VRAM, addr, val);
+    else
+        return cW[sz](this->ppu.VRAM, addr - 0x8000, val);
+
+    /*if (addr < 0x06018000)
+        return cW[sz](this->ppu.VRAM, addr - 0x06000000, val);*/
 
     GBA_PPU_write_invalid(this, addr, sz, access, val);
 }
@@ -1011,22 +1004,24 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
 {
     u32 v = 0;
     switch(addr) {
-        case 0x04000000: {// DISPCTRL
+        case 0x04000000: // DISPCTRL lo
             v = this->ppu.io.bg_mode;
             v |= (this->ppu.io.frame) << 4;
             v |= (this->ppu.io.hblank_free) << 5;
             v |= (this->ppu.io.obj_mapping_2d) << 6;
             v |= (this->ppu.io.force_blank) << 7;
-            v |= (this->ppu.bg[0].enable) << 8;
-            v |= (this->ppu.bg[1].enable) << 9;
-            v |= (this->ppu.bg[2].enable) << 10;
-            v |= (this->ppu.bg[3].enable) << 11;
-            v |= (this->ppu.obj.enable) << 12;
-            v |= (this->ppu.window[0].enable) << 13;
-            v |= (this->ppu.window[1].enable) << 14;
-            v |= (this->ppu.window[GBA_WINOBJ].enable) << 15;
-            return v;}
-        case 0x04000004: {// DISPSTAT
+            return v;
+        case 0x04000001: // DISPCTRL hi
+            v = (this->ppu.bg[0].enable);
+            v |= (this->ppu.bg[1].enable) << 1;
+            v |= (this->ppu.bg[2].enable) << 2;
+            v |= (this->ppu.bg[3].enable) << 3;
+            v |= (this->ppu.obj.enable) << 4;
+            v |= (this->ppu.window[0].enable) << 5;
+            v |= (this->ppu.window[1].enable) << 6;
+            v |= (this->ppu.window[GBA_WINOBJ].enable) << 7;
+            return v;
+        case 0x04000004: // DISPSTAT lo
             v = this->clock.ppu.vblank_active;
             v |= this->clock.ppu.hblank_active << 1;
             v |= vcount(this);
@@ -1034,11 +1029,36 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             v |= this->ppu.io.hblank_irq_enable << 4;
 
             v |= this->ppu.io.vcount_irq_enable << 5;
-            v |= (this->clock.ppu.y << 8);
-            return v; }
-        case 0x04000006: { // VCNT
+            return v;
+        case 0x04000005: // DISPSTAT hi
+            v = this->clock.ppu.y;
+            return v;
+        case 0x04000006: // VCNT lo
             return this->clock.ppu.y;
-        }
+        case 0x04000007: // VCNT hi
+            return 0;
+        case 0x04000008: // BG control lo
+        case 0x0400000A:
+        case 0x0400000C:
+        case 0x0400000E: {
+            u32 bgnum = (addr & 0b0110) >> 1;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            v = bg->priority;
+            v |= (bg->character_base_block >> 12);
+            v |= bg->mosaic_enable << 6;
+            v |= bg->bpp8 << 7;
+            return v; }
+        case 0x04000009: // BG control
+        case 0x0400000B:
+        case 0x0400000D:
+        case 0x0400000F: {
+            u32 bgnum = (addr & 0b0110) >> 1;
+            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
+            v = bg->screen_base_block >> 11;
+            if (bgnum >= 2) v |= bg->display_overflow << 5;
+            v |= bg->screen_size << 6;
+            return v; }
+
     }
     return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
 }
@@ -1133,11 +1153,11 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             ppu->window[0].enable = (val >> 5) & 1;
             ppu->window[1].enable = (val >> 6) & 1;
             ppu->window[GBA_WINOBJ].enable = (val >> 7) & 1;
-            printf("\nBGs 0:%d 1:%d 2:%d 3:%d obj:%d window0:%d window1:%d force_hblank:%d",
+            /*printf("\nBGs 0:%d 1:%d 2:%d 3:%d obj:%d window0:%d window1:%d force_hblank:%d",
                    ppu->bg[0].enable, ppu->bg[1].enable, ppu->bg[2].enable, ppu->bg[3].enable,
                    ppu->obj.enable, ppu->window[0].enable, ppu->window[1].enable, ppu->io.force_blank
                    );
-            printf("\nOBJ mapping 2d:%d", ppu->io.obj_mapping_2d);
+            printf("\nOBJ mapping 2d:%d", ppu->io.obj_mapping_2d);*/
             return; }
         case 0x04000002:
             printf("\nGREEN SWAP? %d", val);
@@ -1151,6 +1171,8 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.io.vcount_irq_enable = (val >> 5) & 1;
             return; }
         case 0x04000005: return; // DISPSTAT hi
+        case 0x04000006: return; // not used
+        case 0x04000007: return; // not used
 
         case 0x04000008: // BG control
         case 0x0400000A:
@@ -1284,6 +1306,20 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x04000054:
         case 0x04000055:
             // TODO: support this stuff
+            return;
+        case 0x0400004e: // not used
+        case 0x0400004f: // not used
+        case 0x04000056: // not used
+        case 0x04000057: // not used
+        case 0x04000058: // not used
+        case 0x04000059: // not used
+        case 0x0400005A: // not used
+        case 0x0400005B: // not used
+        case 0x0400005C: // not used
+        case 0x0400005D: // not used
+        case 0x0400005E: // not used
+        case 0x0400005F: // not used
+
             return;
 
 #undef BG2

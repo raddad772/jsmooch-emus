@@ -172,6 +172,59 @@ static void fill_disassembly_view(void *macptr, struct debugger_interface *dbgr,
     this->dbg.dasm_m68k.IRC->int32_data = this->m68k.regs.IRC;*/
 }
 
+static u32 gba_to_screen(u32 color)
+{
+    u32 b = (color >> 10) & 0x1F;
+    u32 g = (color >> 5) & 0x1F;
+    u32 r = color & 0x1F;
+    b = ((b + 1) * 8) - 1;
+    g = ((g + 1) * 8) - 1;
+    r = ((r + 1) * 8) - 1;
+    return 0xFF000000 | (b << 16) | (g << 8) | (r << 0);
+}
+
+static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) ptr;
+    if (this->clock.master_frame == 0) return;
+
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 256);
+
+    u32 tn = 0;
+    // 32x32 8x8 tiles, so 256x256 total
+    u32 bpp8 = 0;
+    u32 pal = 0;
+    u8 *tile_ptr = this->ppu.VRAM + 0x10000;
+    for (u32 ty = 0; ty < 32; ty++) {
+        u32 tile_screen_y = (ty * 8);
+        for (u32 tx = 0; tx < 32; tx++) {
+            u32 tile_screen_x = (tx * 8);
+            for (u32 inner_y = 0; inner_y < 8; inner_y++) {
+                u32 screen_y = tile_screen_y + inner_y;
+                u32 *screen_y_ptr = outbuf + (screen_y * out_width);
+                u32 screen_x = tile_screen_x;
+                if (!bpp8) {
+                    for (u32 inner_x = 0; inner_x < 4; inner_x++) {
+                        u8 data = *tile_ptr;
+                        for (u32 i = 0; i < 2; i++) {
+                            u32 c = data & 0x15;
+                            data >>= 4;
+                            screen_y_ptr[screen_x] = gba_to_screen(this->ppu.palette_RAM[0x100 + pal + c]);
+                            screen_x++;
+                        }
+                        tile_ptr++;
+                    }
+                }
+                else {
+                    printf("\nUHOH");
+                }
+            }
+        }
+    }
+}
+
 static void render_image_view_window(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int win_num) {
     struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -203,13 +256,46 @@ static void render_image_view_window1(struct debugger_interface *dbgr, struct de
 
 static void render_image_view_window2(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
-    render_image_view_window(dbgr, dview, ptr, out_width, 3);
+    render_image_view_window(dbgr, dview, ptr, out_width, 2);
 }
 
 static void render_image_view_window3(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
-    render_image_view_window(dbgr, dview, ptr, out_width, 2);
+    render_image_view_window(dbgr, dview, ptr, out_width, 3);
 }
+
+#define PAL_BOX_SIZE 10
+#define PAL_BOX_SIZE_W_BORDER 11
+static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * (((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2)); // Clear out at least 4 rows worth
+
+    u32 offset = 0;
+    u32 y_offset = 0;
+    for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) {
+        for (u32 palette = 0; palette < 16; palette++) {
+            for (u32 color = 0; color < 16; color++) {
+                u32 y_top = y_offset + offset;
+                u32 x_left = color * PAL_BOX_SIZE_W_BORDER;
+                u32 c = gba_to_screen(this->ppu.palette_RAM[lohi + (palette << 4) + color]);
+                for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
+                    u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
+                    for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
+                        box_ptr[x] = c;
+                    }
+                }
+            }
+            y_offset += PAL_BOX_SIZE;
+        }
+        offset += 2;
+    }
+}
+
+
 
 
 static void get_disassembly_ARM7TDMI(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
@@ -266,6 +352,44 @@ static void setup_ARM7TDMI_disassembly(struct debugger_interface *dbgr, struct G
     dv->get_disassembly_vars.func = &get_disassembly_vars_ARM7TDMI;
 }
 
+static void setup_image_view_tiles(struct GBA* this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.tiles);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 256;
+    iv->height = 256;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 256 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_tiles;
+    snprintf(iv->label, sizeof(iv->label), "Tile Viewer");
+}
+
+static void setup_image_view_palettes(struct GBA* this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.tiles);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
+    iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2;
+
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_palette;
+    snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
+}
 
 static void setup_image_view_window(struct GBA* this, struct debugger_interface *dbgr, u32 wnum)
 {
@@ -338,6 +462,8 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_window(this, dbgr, 1);
     setup_image_view_window(this, dbgr, 2);
     setup_image_view_window(this, dbgr, 3);
+    setup_image_view_tiles(this, dbgr);
+    setup_image_view_palettes(this, dbgr);
     //setup_events_view(this, dbgr);
     //cvec_ptr_init(&this->dbg.events.view);
     /*setup_waveforms_psg(this, dbgr);

@@ -477,6 +477,7 @@ void full_system::setup_bios()
 
 void full_system::setup_persistent_store(struct persistent_store *ps, struct multi_file_set *mfs)
 {
+    printf("\nSETTING UP PERSISTENT STORE!");
     struct read_file_buf *rfb = &mfs->files[0];
     if (ps->persistent) {
         snprintf(ps->filename, sizeof(ps->filename), "%s/%s.sram", rfb->path, rfb->name);
@@ -513,7 +514,7 @@ void full_system::sync_persistent_storage()
 {
     if (my_ps) {
         if (my_ps->dirty && my_ps->persistent) {
-            //printf("\nWriting save data..,");
+            printf("\nWriting save data..,");
             fseek(my_ps->fno, 0, SEEK_SET);
             fwrite(my_ps->data, 1, my_ps->actual_size, my_ps->fno);
             fflush(my_ps->fno);
@@ -670,9 +671,17 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/irq_demo.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
 
-            //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
+            //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
@@ -772,6 +781,7 @@ void full_system::load_default_ROM()
     }
 
     struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
+    printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
     if (fileioport->cartridge_port.SRAM.requested_size > 0) {
         setup_persistent_store(&fileioport->cartridge_port.SRAM, &ROMs);
     }

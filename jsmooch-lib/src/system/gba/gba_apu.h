@@ -11,7 +11,13 @@
 struct GBA_APU {
     u32 ext_enable;
     struct GB_APU old;
+    struct GBA_APU_FIFO {
+        u32 timer_id;
+    } fifo[2];
 
+    struct {
+        u32 wave_ram_size, wave_ram_bank, playback, sound_len;
+    } chan[6];
 };
 
 struct GBA;
