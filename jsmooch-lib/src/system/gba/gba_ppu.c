@@ -340,7 +340,7 @@ static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window
         i32 py = (pc*ix + pd*iy)>>8;    // get y texture coordinate
         if ((screen_x >= 0) && (screen_x < 240))
             get_affine_sprite_pixel(this, mode, px, py, tile_num, htiles, vtiles, bpp8, palette, priority,
-                                    this->ppu.io.obj_mapping_2d, dsize, screen_x, w);   // get color from (px,py)
+                                    this->ppu.io.obj_mapping_1d, dsize, screen_x, w);   // get color from (px,py)
         screen_x++;
         this->ppu.obj.drawing_cycles -= 2;
         if (this->ppu.obj.drawing_cycles < 0) return;
@@ -472,7 +472,7 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
 
     // OK so we know which line
     // We have two possibilities; 1d or 2d layout
-    u32 tile_addr = get_sprite_tile_addr(this, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, this->ppu.io.obj_mapping_2d);
+    u32 tile_addr = get_sprite_tile_addr(this, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, this->ppu.io.obj_mapping_1d);
     if (hflip) tile_addr += (htiles - 1) * 32;
 
     i32 screen_x = x;
@@ -1008,7 +1008,7 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             v = this->ppu.io.bg_mode;
             v |= (this->ppu.io.frame) << 4;
             v |= (this->ppu.io.hblank_free) << 5;
-            v |= (this->ppu.io.obj_mapping_2d) << 6;
+            v |= (this->ppu.io.obj_mapping_1d) << 6;
             v |= (this->ppu.io.force_blank) << 7;
             return v;
         case 0x04000001: // DISPCTRL hi
@@ -1141,7 +1141,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
 
             ppu->io.frame = (val >> 4) & 1;
             this->ppu.io.hblank_free = (val >> 5) & 1;
-            this->ppu.io.obj_mapping_2d = (val >> 6) & 1;
+            this->ppu.io.obj_mapping_1d = (val >> 6) & 1;
             ppu->io.force_blank = (val >> 7) & 1;
             return; }
         case 0x04000001: { // DISPCNT hi

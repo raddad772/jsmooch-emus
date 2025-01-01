@@ -187,6 +187,10 @@ static void write_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             write_flash_cmd(this, (this->cart.RAM.flash.regs.r2a << 8) | val);
             return; }
+        case 0x0E002AAA: {
+            this->cart.RAM.flash.regs.r2a = val;
+            return;
+        }
     }
     if ((this->cart.RAM.flash.state == GBAFS_await_bank) && (addr == 0x0E000000)) {
         printf("\nFLASH SET BANK %d", val);

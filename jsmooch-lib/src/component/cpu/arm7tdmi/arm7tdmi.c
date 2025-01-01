@@ -24,10 +24,11 @@ static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
 }
 
 
-void ARM7TDMI_init(struct ARM7TDMI *this)
+void ARM7TDMI_init(struct ARM7TDMI *this, u32 *waitstates)
 {
     memset(this, 0, sizeof(*this));
     ARM7TDMI_fill_arm_table(this);
+    this->waitstates = waitstates;
     for (u32 i = 0; i < 16; i++) {
         this->regmap[i] = &this->regs.R[i];
     }

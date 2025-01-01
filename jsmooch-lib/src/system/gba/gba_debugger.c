@@ -183,6 +183,234 @@ static u32 gba_to_screen(u32 color)
     return 0xFF000000 | (b << 16) | (g << 8) | (r << 0);
 }
 
+static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
+{
+#define T(s1, s2, hn, vn) case (((s1) << 2) | (s2)): *htiles = hn; *vtiles = vn; return;
+    switch((sz << 2) | shape) {
+        T(0, 0, 1, 1)
+        T(0, 1, 2, 1)
+        T(0, 2, 1, 2)
+        T(1, 0, 2, 2)
+        T(1, 1, 4, 1)
+        T(1, 2, 1, 4)
+        T(2, 0, 4, 4)
+        T(2, 1, 4, 2)
+        T(2, 2, 2, 4)
+        T(3, 0, 8, 8)
+        T(3, 1, 8, 4)
+        T(3, 2, 4, 8)
+    }
+    printf("\nHEY! INVALID SHAPE %d", shape);
+    *htiles = 1;
+    *vtiles = 1;
+#undef T
+}
+
+static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *my_ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) my_ptr;
+    if (this->clock.master_frame == 0) return;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 160);
+
+    // Draw sprites!!!
+    struct debugger_widget_checkbox *cb_draw_transparency = &((struct debugger_widget *)cvec_get(&dview->options, 0))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_4bpp = &((struct debugger_widget *)cvec_get(&dview->options, 1))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_8bpp = &((struct debugger_widget *)cvec_get(&dview->options, 2))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_normal = &((struct debugger_widget *)cvec_get(&dview->options, 3))->checkbox;
+    struct debugger_widget_checkbox *cb_draw_affine = &((struct debugger_widget *)cvec_get(&dview->options, 4))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_4bpp = &((struct debugger_widget *)cvec_get(&dview->options, 5))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_8bpp = &((struct debugger_widget *)cvec_get(&dview->options, 6))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_normal = &((struct debugger_widget *)cvec_get(&dview->options, 7))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_affine = &((struct debugger_widget *)cvec_get(&dview->options, 8))->checkbox;
+    struct debugger_widget_checkbox *cb_highlight_window = &((struct debugger_widget *)cvec_get(&dview->options, 9))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_4bpp = &((struct debugger_widget *)cvec_get(&dview->options, 10))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_8bpp = &((struct debugger_widget *)cvec_get(&dview->options, 11))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_normal = &((struct debugger_widget *)cvec_get(&dview->options, 12))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_affine = &((struct debugger_widget *)cvec_get(&dview->options, 13))->checkbox;
+    struct debugger_widget_checkbox *cb_wb_window = &((struct debugger_widget *)cvec_get(&dview->options, 14))->checkbox;
+    u32 draw_transparency = cb_draw_transparency->value;
+    u32 draw_4bpp = cb_draw_4bpp->value;
+    u32 draw_8bpp = cb_draw_8bpp->value;
+    u32 draw_normal = cb_draw_normal->value;
+    u32 draw_affine = cb_draw_affine->value;
+    u32 highlight_4bpp = cb_highlight_4bpp->value;
+    u32 highlight_8bpp = cb_highlight_8bpp->value;
+    u32 highlight_normal = cb_highlight_normal->value;
+    u32 highlight_affine = cb_highlight_affine->value;
+    u32 highlight_window = cb_highlight_window->value;
+    u32 wb_4bpp = cb_wb_4bpp->value;
+    u32 wb_8bpp = cb_wb_8bpp->value;
+    u32 wb_normal = cb_wb_normal->value;
+    u32 wb_affine = cb_wb_affine->value;
+    u32 wb_window = cb_wb_window->value;
+
+    for (u32 i = 0; i < 128; i++) {
+        u32 sn = 127 - i;
+        u16 *ptr = ((u16 *)this->ppu.OAM) + (sn * 4);
+        u32 x = ptr[1] & 0x1FF;
+        x = SIGNe9to32(x);
+        u32 affine = (ptr[0] >> 8) & 1;
+        if (affine && !draw_affine) continue;
+        if (!affine && !draw_normal) continue;
+        u32 obj_disable = (ptr[0] >> 9) & 1;
+        if (obj_disable) continue;
+        u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
+        u32 sz = (ptr[1] >> 14) & 3;
+        u32 hflip = (ptr[1] >> 12) & 1;
+        u32 vflip = (ptr[1] >> 13) & 1;
+        u32 htiles, vtiles;
+        get_obj_tile_size(sz, shape, &htiles, &vtiles);
+        i32 tex_x_pixels = htiles * 8;
+        i32 tex_y_pixels = vtiles * 8;
+        if (affine && ((ptr[0] >> 9) & 1)) {
+            htiles *= 2;
+            vtiles *= 2;
+        }
+        u32 hpixels = htiles * 8;
+        u32 vpixels = vtiles * 8;
+
+        i32 y_min = ptr[0] & 0xFF;
+        i32 y_max = (y_min + (i32)vpixels) & 255;
+        if(y_max < y_min)
+            y_min -= 256;
+        if ((y_min > 160) || (y_max < 0)) continue;
+
+        u32 mode = (ptr[0] >> 10) & 3;
+        u32 mosaic = (ptr[0] >> 12) & 1;
+        u32 bpp8 = (ptr[0] >> 13) & 1;
+        if (bpp8 && !draw_8bpp) continue;
+        if (!bpp8 && !draw_4bpp) continue;
+        u32 bytes_per_line = bpp8 ? 8 : 4;
+        i32 screen_x = x;
+        i32 screen_y = y_min;
+
+        // Setup stuff for non-affine....
+        i32 pa = 1 << 8, pb = 0, pc = 0, pd = 1 << 8;
+        i32 tx = 0, ty = 0;
+
+        // Setup for affine...
+        if (affine) {
+            u32 pgroup = (ptr[1] >> 9) & 31;
+            u32 pbase = (pgroup * 0x20) >> 1;
+            u16 *pbase_ptr = ((u16 *)this->ppu.OAM) + pbase;
+            pa = SIGNe16to32(pbase_ptr[3]);
+            pb = SIGNe16to32(pbase_ptr[7]);
+            pc = SIGNe16to32(pbase_ptr[11]);
+            pd = SIGNe16to32(pbase_ptr[15]);
+        }
+        tx = (0 - (i32)(tex_x_pixels >> 1)) << 8;
+        ty = (0 - (i32)(tex_y_pixels >> 1)) << 8;
+
+        i32 screen_x_right = screen_x + (i32)hpixels;
+        i32 screen_y_bottom = screen_y + (i32)vpixels;
+
+        for (i32 draw_y = screen_y; draw_y < screen_y_bottom; draw_y++) {
+            u32 *rowptr = outbuf + (draw_y * out_width);
+            i32 fx = tx;
+            i32 fy = ty;
+            for (i32 draw_x = screen_x; draw_x < screen_x_right; draw_x++) {
+                u32 this_px_highlight = 0;
+                u32 has = 0;
+                u32 win_pixel = 0;
+                this_px_highlight = 0;
+                this_px_highlight |= bpp8 && wb_8bpp;
+                this_px_highlight |= (!bpp8) && wb_4bpp;
+                this_px_highlight |= wb_normal && !affine;
+                this_px_highlight |= wb_affine && affine;
+                this_px_highlight |= wb_window && (mode == 2);
+
+
+                // Get pixel at coord fx, fy
+                i32 tex_x = (fx >> 8) + (tex_x_pixels >> 1);
+                i32 tex_y = (fy >> 8) + (tex_y_pixels >> 1);
+
+                fx += pa;
+                fy += pc;
+
+                if ((draw_x >= 0) && (draw_x < 240) && (draw_y >= 0) && (draw_y < 140)) {
+                    u32 color;
+                    if (!this_px_highlight) {
+                        // Sample the texture
+                        if ((tex_x >= 0) && (tex_x < tex_x_pixels) && (tex_y >= 0) && (tex_y < tex_y_pixels)) {
+                            u32 block_x = tex_x >> 3;
+                            u32 block_y = tex_y >> 3;
+                            u32 tile_x = tex_x & 7;
+                            u32 tile_y = tex_y & 7;
+                            if (hflip) {
+                                block_x = htiles - block_x;
+                                tile_x = 7 - tile_x;
+                            }
+                            if (vflip) {
+                                block_y = vtiles - block_y;
+                                tile_y = 7 - tile_y;
+                            }
+
+                            // We now have a precise pixel in the block.
+                            // Now we must figure out block number based on mapping
+                            // 1d mapping=1 means its htiles*y
+                            // 1d mapping=0 means its 32 * y
+                            u32 tile_num = ptr[2] & 0x3FF; // Get tile number
+
+                            // Now advance by block y
+                            if (this->ppu.io.obj_mapping_1d) {
+                                tile_num += (htiles * block_y);
+                            }
+                            else {
+                                tile_num += ((32 << bpp8) * block_y);
+                            }
+
+                            // Advance by block x
+                            tile_num += block_x;
+
+                            tile_num &= 0x3FF;
+
+                            // Now get pointer to that tile
+                            u32 tile_base_addr = 0x10000 + (32 * tile_num);
+                            u32 tile_line_addr = tile_base_addr + (bytes_per_line * tile_y);
+
+                            // Now get data
+                            u32 tile_px_addr = bpp8 ? (tile_line_addr + tile_x) : (tile_line_addr + (tile_x >> 1));
+                            u8 data = this->ppu.VRAM[tile_px_addr];
+                            if (!bpp8) {
+                                if (tile_x & 1) data >>= 4;
+                                data &= 15;
+                            }
+                            if ((data == 0) && draw_transparency) continue;
+                            if (bpp8) {
+                                color = gba_to_screen(this->ppu.palette_RAM[0x100 + data]);
+                            }
+                            else {
+                                u32 palette = bpp8 ? 0 : ((ptr[2] >> 12) & 15);
+                                color = gba_to_screen(this->ppu.palette_RAM[0x100 + (palette << 4) + data]);
+                            }
+                            if ((mode == 2) && !highlight_window) continue;
+                            if ((mode == 2) && highlight_window) color = 0xFFFFFFFF;
+
+                            this_px_highlight |= bpp8 && highlight_8bpp;
+                            this_px_highlight |= (!bpp8) && highlight_4bpp;
+                            this_px_highlight |= highlight_normal && !affine;
+                            this_px_highlight |= highlight_affine && affine;
+                            this_px_highlight |= highlight_window && win_pixel;
+                            if (this_px_highlight) color = 0xFFFFFFFF;
+                        }
+                        else
+                            continue;
+                    }
+                    else {
+                        color = 0xFFFFFFFF;
+                    }
+                    rowptr[draw_x] = color;
+                }
+            }
+            tx += pb;
+            ty += pd;
+        }
+
+    }
+}
+
 static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -371,6 +599,42 @@ static void setup_image_view_tiles(struct GBA* this, struct debugger_interface *
     snprintf(iv->label, sizeof(iv->label), "Tile Viewer");
 }
 
+static void setup_image_view_sprites(struct GBA* this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.tiles);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 240;
+    iv->height = 160;
+
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_sprites;
+    snprintf(iv->label, sizeof(iv->label), "Sprites Viewer");
+
+    debugger_widgets_add_checkbox(&dview->options, "Draw transparencies", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Draw 4bpp", 1, 1, 0);
+    debugger_widgets_add_checkbox(&dview->options, "Draw 8bpp", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Draw normal", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Draw affine", 1, 1, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight 4bpp", 1, 0, 0);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight 8bpp", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight normal", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight affine", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "Highlight window", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "White box 4bpp", 1, 0, 0);
+    debugger_widgets_add_checkbox(&dview->options, "White box 8bpp", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "White box normal", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "White box affine", 1, 0, 1);
+    debugger_widgets_add_checkbox(&dview->options, "White box window", 1, 0, 1);
+}
+
 static void setup_image_view_palettes(struct GBA* this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
@@ -463,6 +727,7 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_window(this, dbgr, 2);
     setup_image_view_window(this, dbgr, 3);
     setup_image_view_tiles(this, dbgr);
+    setup_image_view_sprites(this, dbgr);
     setup_image_view_palettes(this, dbgr);
     //setup_events_view(this, dbgr);
     //cvec_ptr_init(&this->dbg.events.view);

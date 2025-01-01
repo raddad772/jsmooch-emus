@@ -30,6 +30,10 @@ struct GBA {
         GBA_wrfunc write[16];
     } mem;
 
+    struct {
+        u32 current_transaction;
+    } waitstates;
+
     char WRAM_slow[256 * 1024];
     char WRAM_fast[32 * 1024];
 

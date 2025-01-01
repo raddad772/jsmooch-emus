@@ -112,6 +112,8 @@ struct ARM7TDMI {
     u32 *regmap[16];
     u32 carry; // temp for instructions
 
+    u32 *waitstates;
+
     u32 last_arm7_opcode;
     struct ARM7_ins *arm7_ins;
 
@@ -146,7 +148,7 @@ struct ARM7TDMI {
 };
 
 
-void ARM7TDMI_init(struct ARM7TDMI *);
+void ARM7TDMI_init(struct ARM7TDMI *, u32 *waitstates);
 void ARM7TDMI_delete(struct ARM7TDMI *);
 
 void ARM7TDMI_reset(struct ARM7TDMI *);

@@ -8,9 +8,9 @@
 
 static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
-    dbg.var++;
-    if (dbg.var > 15) dbg_break("too many bad reads", this->clock.master_cycle_count);
-    return 0;
+    //dbg.var++;
+    //if (dbg.var > 15) dbg_break("too many bad reads", this->clock.master_cycle_count);
+    return this->io.cpu.open_bus_data;
 }
 
 static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
