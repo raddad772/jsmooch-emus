@@ -169,13 +169,11 @@ static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, struct GBA_PPU_bg *
 }
 
 // get color from (px,py)
-static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_2d, u32 dsize, i32 screen_x, struct GBA_PPU_window *w)
+static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_1d, u32 dsize, i32 screen_x, struct GBA_PPU_window *w)
 {
     i32 hpixels = htiles * 8;
     i32 vpixels = vtiles * 8;
     if (dsize) {
-        //px >>= 1;
-        //py >>= 1;
         hpixels >>= 1;
         vpixels >>= 1;
     }
@@ -183,86 +181,47 @@ static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, 
     py += (vpixels >> 1);
     if ((px < 0) || (py < 0)) return;
     if ((px >= hpixels) || (py > vpixels)) return;
-    // py is line_in_sprite
-    u32 line_in_tile = py & 7;
-    // Get start of tile
-    u32 tile_offset = 32 * tile_num;
 
-    // Offset to the correct line inside the tile
-    u32 tile_bytes = bpp8 ? 64 : 32;
-    u32 tile_line_bytes = bpp8 ? 8 : 4;
-    u32 offset_in_tile_for_y = line_in_tile * tile_line_bytes;
-
-    // Add together
-    u32 tile_start_addr = tile_offset + offset_in_tile_for_y;
-
-    // Add 0x10000 where tiles start
-    tile_start_addr += 0x10000;
-
-    // Now we must offset for tile y #
-
-    u32 tile_line_stride = 0;
-    if (obj_mapping_2d) { // 2d mapping. rows are 32 tiles wide
-        tile_line_stride = 64 * tile_line_bytes;
-    }
-    else { // 1d mapping. rows are htiles wide
-        tile_line_stride = htiles * tile_line_bytes;
-    }
-    tile_start_addr += (tile_line_stride * (py >> 3));
-
-    // Now we must offset for the X inside the overall thing we are at
-    u32 x_tile = px >> 3;
-    u32 x_in_tile = px & 7;
-    u32 px_halves = bpp8 ? 2 : 1;
-    u32 x_offset = (x_tile * tile_bytes) + ((x_in_tile * px_halves) >> 1);
-    tile_start_addr += x_offset;
-
-    u8 *ptr = ((u8 *)this->ppu.VRAM) + tile_start_addr;
-    if (bpp8) {
-        u8 data = *ptr;
-        if (data != 0) {
-            switch (mode) {
-                case 1:
-                case 0: {
-                    struct GBA_PX *opx = &this->ppu.obj.line[screen_x];
-                    if (!opx->has) {
-                        opx->has = 1;
-                        opx->priority = priority;
-                        opx->palette = 0;
-                        opx->color = data;
-                        opx->bpp8 = 1;
-                    }
-                    break; }
-                case 2:
-                    w->inside[screen_x] = 1;
-                    break;
-            }
-        }
+    u32 block_x = px >> 3;
+    u32 block_y = py >> 3;
+    u32 tile_x = px & 7;
+    u32 tile_y = py & 7;
+    if (obj_mapping_1d) {
+        tile_num += ((htiles >> dsize) * block_y);
     }
     else {
-        u8 data = *ptr;
-        u32 half = x_in_tile & 1;
-        u16 c;
-        if (half == 0) c = data & 15;
-        else c = (data >> 4) & 15;
+        tile_num += ((32 << bpp8) * block_y);
+    }
+    tile_num += block_x;
+    tile_num &= 0x3FF;
 
-        if (c != 0) {
-            switch(mode) {
-                case 1:
-                case 0: {
-                    struct GBA_PX *opx = &this->ppu.obj.line[screen_x];
-                    if (!opx->has) {
-                        opx->has = 1;
-                        opx->priority = priority;
-                        opx->palette = palette;
-                        opx->color = c;
-                        opx->bpp8 = 0;
-                    }
-                    break; }
-                case 2: {
-                    w->inside[screen_x] = 1;
+    u32 tile_base_addr = 0x10000 + (32 * tile_num);
+    u32 tile_line_addr = tile_base_addr + ((4 << bpp8) * tile_y);
+    u32 tile_px_addr = bpp8 ? (tile_line_addr + tile_x) : (tile_line_addr + (tile_x >> 1));
+    u8 c = this->ppu.VRAM[tile_px_addr];
+
+    if (!bpp8) {
+        if (tile_x & 1) c >>= 4;
+        c &= 15;
+    }
+    else palette = 0;
+
+    if (c != 0) {
+        switch(mode) {
+            case 1:
+            case 0: {
+                struct GBA_PX *opx = &this->ppu.obj.line[screen_x];
+                if (!opx->has) {
+                    opx->has = 1;
+                    opx->priority = priority;
+                    opx->palette = palette;
+                    opx->color = c;
+                    opx->bpp8 = bpp8;
+                }
                 break; }
-            }
+            case 2: {
+                w->inside[screen_x] = 1;
+            break; }
         }
     }
 }

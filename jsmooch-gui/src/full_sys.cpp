@@ -663,11 +663,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/pageflip.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/bm_modes.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/key_demo.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "tonc/obj_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/obj_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/brin_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_reg.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/cbb_demo.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/irq_demo.gba", nullptr);

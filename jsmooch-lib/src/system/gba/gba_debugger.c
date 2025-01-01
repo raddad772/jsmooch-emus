@@ -255,16 +255,18 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
         if (affine && !draw_affine) continue;
         if (!affine && !draw_normal) continue;
         u32 obj_disable = (ptr[0] >> 9) & 1;
-        if (obj_disable) continue;
+        if (!affine && obj_disable) continue;
         u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
         u32 sz = (ptr[1] >> 14) & 3;
         u32 hflip = (ptr[1] >> 12) & 1;
         u32 vflip = (ptr[1] >> 13) & 1;
         u32 htiles, vtiles;
         get_obj_tile_size(sz, shape, &htiles, &vtiles);
+        i32 tex_x_tiles = htiles;
         i32 tex_x_pixels = htiles * 8;
         i32 tex_y_pixels = vtiles * 8;
-        if (affine && ((ptr[0] >> 9) & 1)) {
+        u32 dpix = ((ptr[0] >> 9) & 1);
+        if (affine && dpix) {
             htiles *= 2;
             vtiles *= 2;
         }
@@ -275,7 +277,7 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
         i32 y_max = (y_min + (i32)vpixels) & 255;
         if(y_max < y_min)
             y_min -= 256;
-        if ((y_min > 160) || (y_max < 0)) continue;
+        //if ((y_min > 160) || (y_max < 0)) continue;
 
         u32 mode = (ptr[0] >> 10) & 3;
         u32 mosaic = (ptr[0] >> 12) & 1;
@@ -288,7 +290,10 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
 
         // Setup stuff for non-affine....
         i32 pa = 1 << 8, pb = 0, pc = 0, pd = 1 << 8;
-        i32 tx = 0, ty = 0;
+        i32 tx, ty;
+
+        i32 half_x = 0 - ((i32)hpixels >> 1);
+        i32 half_y = 0 - ((i32)vpixels >> 1);
 
         // Setup for affine...
         if (affine) {
@@ -299,10 +304,13 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
             pb = SIGNe16to32(pbase_ptr[7]);
             pc = SIGNe16to32(pbase_ptr[11]);
             pd = SIGNe16to32(pbase_ptr[15]);
+            tx = (pa*half_x + pb*half_y);
+            ty = (pc*half_x + pd*half_y);
         }
-        tx = (0 - (i32)(tex_x_pixels >> 1)) << 8;
-        ty = (0 - (i32)(tex_y_pixels >> 1)) << 8;
-
+        else {
+            tx = half_x << 8;
+            ty = half_y << 8;
+        }
         i32 screen_x_right = screen_x + (i32)hpixels;
         i32 screen_y_bottom = screen_y + (i32)vpixels;
 
@@ -321,10 +329,9 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
                 this_px_highlight |= wb_affine && affine;
                 this_px_highlight |= wb_window && (mode == 2);
 
-
                 // Get pixel at coord fx, fy
-                i32 tex_x = (fx >> 8) + (tex_x_pixels >> 1);
-                i32 tex_y = (fy >> 8) + (tex_y_pixels >> 1);
+                i32 tex_x = (fx >> 8) + ((i32)tex_x_pixels >> 1);
+                i32 tex_y = (fy >> 8) + ((i32)tex_y_pixels >> 1);
 
                 fx += pa;
                 fy += pc;
@@ -338,13 +345,15 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
                             u32 block_y = tex_y >> 3;
                             u32 tile_x = tex_x & 7;
                             u32 tile_y = tex_y & 7;
-                            if (hflip) {
-                                block_x = htiles - block_x;
-                                tile_x = 7 - tile_x;
-                            }
-                            if (vflip) {
-                                block_y = vtiles - block_y;
-                                tile_y = 7 - tile_y;
+                            if (!affine) {
+                                if (hflip) {
+                                    block_x = htiles - block_x;
+                                    tile_x = 7 - tile_x;
+                                }
+                                if (vflip) {
+                                    block_y = vtiles - block_y;
+                                    tile_y = 7 - tile_y;
+                                }
                             }
 
                             // We now have a precise pixel in the block.
@@ -355,7 +364,7 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
 
                             // Now advance by block y
                             if (this->ppu.io.obj_mapping_1d) {
-                                tile_num += (htiles * block_y);
+                                tile_num += (tex_x_tiles * block_y);
                             }
                             else {
                                 tile_num += ((32 << bpp8) * block_y);
@@ -387,16 +396,19 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
                             }
                             if ((mode == 2) && !highlight_window) continue;
                             if ((mode == 2) && highlight_window) color = 0xFFFFFFFF;
-
-                            this_px_highlight |= bpp8 && highlight_8bpp;
-                            this_px_highlight |= (!bpp8) && highlight_4bpp;
-                            this_px_highlight |= highlight_normal && !affine;
-                            this_px_highlight |= highlight_affine && affine;
-                            this_px_highlight |= highlight_window && win_pixel;
+                            else {
+                                this_px_highlight |= bpp8 && highlight_8bpp;
+                                this_px_highlight |= (!bpp8) && highlight_4bpp;
+                                this_px_highlight |= highlight_normal && !affine;
+                                this_px_highlight |= highlight_affine && affine;
+                                this_px_highlight |= highlight_window && win_pixel;
+                            }
                             if (this_px_highlight) color = 0xFFFFFFFF;
                         }
-                        else
+                        else {
+                            //color = 0xFFFF00FF;
                             continue;
+                        }
                     }
                     else {
                         color = 0xFFFFFFFF;
