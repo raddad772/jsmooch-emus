@@ -667,7 +667,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/brin_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_reg.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/cbb_demo.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/obj_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/irq_demo.gba", nullptr);
@@ -678,7 +678,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues

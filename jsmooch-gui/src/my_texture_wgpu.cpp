@@ -31,6 +31,7 @@ void my_texture::setup(WGPUDevice device, const char *label, u32 twidth, u32 the
     view.desc.mipLevelCount = 1;
     view.desc.baseArrayLayer = 0;
     view.desc.arrayLayerCount = 1;
+    view.desc.baseArrayLayer = 0;
     view.desc.aspect = WGPUTextureAspect_All;
     view.item = wgpuTextureCreateView(tex.item, &view.desc);
     is_good = 1;

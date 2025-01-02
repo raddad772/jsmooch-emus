@@ -126,6 +126,17 @@ struct GBA {
     struct {
         struct GBA_DBG_line {
             u8 window_coverage[240]; // 240 4-bit values, bit 1 = on, bit 0 = off
+            struct GBA_DBG_line_bg {
+                u32 hscroll, vscroll;
+                i32 hpos, vpos;
+                i32 pa, pb, pc, pd;
+                u32 htiles, vtiles;
+                u32 display_overflow;
+                u32 screen_base_block, character_base_block;
+                u32 priority;
+                u32 bpp8;
+            } bg[4];
+            u32 bg_mode;
         } line[160];
     } dbg_info;
 
@@ -135,11 +146,16 @@ struct GBA {
         DBG_CPU_REG_END1
 
         DBG_IMAGE_VIEWS_START
-            MDBG_IMAGE_VIEW(thing)
             MDBG_IMAGE_VIEW(window0)
             MDBG_IMAGE_VIEW(window1)
             MDBG_IMAGE_VIEW(window2)
             MDBG_IMAGE_VIEW(window3)
+            MDBG_IMAGE_VIEW(bg0)
+            MDBG_IMAGE_VIEW(bg1)
+            MDBG_IMAGE_VIEW(bg2)
+            MDBG_IMAGE_VIEW(bg3)
+            MDBG_IMAGE_VIEW(sprites)
+            MDBG_IMAGE_VIEW(palettes)
             MDBG_IMAGE_VIEW(tiles)
         DBG_IMAGE_VIEWS_END
     DBG_END

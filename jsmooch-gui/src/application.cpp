@@ -377,6 +377,11 @@ static void render_radiogroup(struct debugger_widget *widget)
     ImGui::PopStyleVar();
 }
 
+static void render_textbox(struct debugger_widget *widget)
+{
+    if (widget->same_line) ImGui::SameLine();
+    ImGui::Text("%s", widget->textbox.contents.ptr);
+}
 
 static void render_checkbox(struct debugger_widget *widget)
 {
@@ -397,6 +402,9 @@ static void render_debugger_widget(struct debugger_widget *widget)
             break; }
         case JSMD_radiogroup:
             render_radiogroup(widget);
+            break;
+        case JSMD_textbox:
+            render_textbox(widget);
             break;
         default:
             printf("\nWHAT KIND BAD %d", widget->kind);
@@ -477,8 +485,8 @@ void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
                             }
                         }
                     }
+                    ImGui::EndTable();
                 }
-                ImGui::EndTable();
             }
             ImGui::End();
         }
@@ -564,6 +572,36 @@ void imgui_jsmooch_app::do_setup_onstart()
     snprintf(BIOS_BASE_PATH, sizeof(ROM_BASE_PATH), "%s", kvp->str_value);
 }
 
+struct RenderResources
+{
+    WGPUTexture         FontTexture = nullptr;          // Font texture
+    WGPUTextureView     FontTextureView = nullptr;      // Texture view for font texture
+    WGPUSampler         Sampler = nullptr;              // Sampler for the font texture
+    WGPUBuffer          Uniforms = nullptr;             // Shader uniforms
+    WGPUBindGroup       CommonBindGroup = nullptr;      // Resources bind-group to bind the common resources to pipeline
+    ImGuiStorage        ImageBindGroups;                // Resources bind-group to bind the font/image resources to pipeline (this is a key->value map)
+    WGPUBindGroup       ImageBindGroup = nullptr;       // Default font-resource of Dear ImGui
+    WGPUBindGroupLayout ImageBindGroupLayout = nullptr; // Cache layout used for the image bind group. Avoids allocating unnecessary JS objects when working with WebASM
+};
+
+#ifdef JSM_WEBGPU
+void imgui_jsmooch_app::setup_wgpu()
+{
+    /*ImGui_ImplWGPU_RenderState *rs = (ImGui_ImplWGPU_RenderState*)ImGui::GetPlatformIO().Renderer_RenderState;
+    rs->RenderPassEncoder.
+    WGPUSamplerDescriptor sampler_desc = {};
+    sampler_desc.minFilter = WGPUFilterMode_Linear;
+    sampler_desc.magFilter = WGPUFilterMode_Linear;
+    sampler_desc.mipmapFilter = WGPUMipmapFilterMode_Linear;
+    sampler_desc.addressModeU = WGPUAddressMode_ClampToEdge;
+    sampler_desc.addressModeV = WGPUAddressMode_ClampToEdge;
+    sampler_desc.addressModeW = WGPUAddressMode_ClampToEdge;
+    sampler_desc.maxAnisotropy = 1;
+    my_sampler = wgpuDeviceCreateSampler(bd->wgpuDevice, &sampler_desc);
+    */
+}
+#endif
+
 int imgui_jsmooch_app::do_setup_before_mainloop()
 {
 #ifdef DO_DREAMCAST
@@ -589,6 +627,9 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     }
     fsys.state = FSS_pause;
     fsys.has_played_once = false;
+#ifdef JSM_WEBGPU
+    setup_wgpu();
+#endif
     fsys.setup_wgpu();
     return 0;
 }
@@ -1139,8 +1180,6 @@ int webgpu_main(imgui_jsmooch_app &app)
 
 
     // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop

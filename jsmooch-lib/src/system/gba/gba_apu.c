@@ -30,3 +30,8 @@ void GBA_APU_write_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 val)
             return;
     }
 }
+
+void GBA_APU_cycle(struct GBA*this)
+{
+    // 64 CPU clocks per sample
+}

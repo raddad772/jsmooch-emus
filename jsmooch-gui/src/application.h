@@ -29,6 +29,7 @@ struct managed_windows {
     u32 num=0;
 };
 
+struct RenderResources;
 struct imgui_jsmooch_app {
     struct managed_windows windows{};
     struct managed_window *register_managed_window(u32 id, enum managed_window_kind kind, const char *name, u32 default_enabled);
@@ -50,7 +51,12 @@ struct imgui_jsmooch_app {
     void platform_setup(SDL_Renderer *mrenderer) {renderer = mrenderer; fsys.platform_setup(renderer); };
 #endif
 #ifdef JSM_WEBGPU
+    WGPUSamplerDescriptor nearest_neighbor_sampler_desc;
+    struct RenderResources *rr = nullptr;
+    WGPUSampler        old_sampler = nullptr;
+    WGPUSampler        my_sampler = nullptr;
     void platform_setup(WGPUDevice device) {fsys.platform_setup(device);};
+    void setup_wgpu();
 #endif
 
     int done_break = 0;

@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #include "sys_present.h"
-
+#include "helpers/color.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)
 {
@@ -286,40 +286,18 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
 void GBA_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *gbao = (u16 *)device->display.output[device->display.last_written];
-    //u16 *geno = (u16 *)device->display.output[0];
-    u32 w = out_width;//256 - (overscan_left + overscan_right);
-    u8 *img8 = (u8 *) out_buf;
-    //if (is_event_view_present) memset(out_buf, 0, out_width*out_height*4);
+    u32 *img32 = (u32 *) out_buf;
 
-    for (u32 ry = 0; ry < 160; /*data.bottom_rendered_line; */ ry++) {
+    for (u32 ry = 0; ry < 160; ry++) {
         u32 y = ry;
-        u32 outyw = y * w;
+        u32 *line_out_ptr = img32 + (ry * out_width);
         for (u32 rx = 0; rx < 240; rx++) {
             u32 x = rx;
             u32 di = ((y * 240) + x);
-            u32 b_out;
-            //if (is_event_view_present) b_out = (outyw + (x >> 2)) * 4;
-            b_out = (outyw + x) * 4;
 
-            u32 color = gbao[di];
-            /*u32 mode = (color >> 10) & 3;
-            color &= 0x1FF;
-            u32 b = genesis_color_lookup[mode][((color >> 6) & 7)];
-            u32 g = genesis_color_lookup[mode][((color >> 3) & 7)];
-            u32 r = genesis_color_lookup[mode][((color >> 0) & 7)];*/
-            u32 b = (color >> 10) & 0x1F;
-            u32 g = (color >> 5) & 0x1F;
-            u32 r = color & 0x1F;
-            b = ((b + 1) * 8) - 1;
-            g = ((g + 1) * 8) - 1;
-            r = ((r + 1) * 8) - 1;
-            img8[b_out] = r;
-            img8[b_out+1] = g;
-            img8[b_out+2] = b;
-            img8[b_out+3] = 255;
-            /*if (is_event_view_present) {
-                rx += 3;
-            }*/
+            u32 color = gba_to_screen(gbao[di]);
+            *line_out_ptr = color;
+            line_out_ptr++;
         }
     }
     return;

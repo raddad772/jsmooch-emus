@@ -301,7 +301,8 @@ struct image_view {
 
 enum JSMD_widgets {
     JSMD_checkbox,
-    JSMD_radiogroup
+    JSMD_radiogroup,
+    JSMD_textbox
 };
 
 struct debugger_widget_checkbox
@@ -316,6 +317,10 @@ struct debugger_widget_radiogroup {
     struct cvec buttons; // debugger_widget_checkbox
 };
 
+struct debugger_widget_textbox {
+    struct jsm_string contents;
+};
+
 struct debugger_widget {
     enum JSMD_widgets kind;
     u32 same_line, enabled;
@@ -323,6 +328,7 @@ struct debugger_widget {
     union {
         struct debugger_widget_checkbox checkbox;
         struct debugger_widget_radiogroup radiogroup;
+        struct debugger_widget_textbox textbox;
     };
 };
 
@@ -365,6 +371,9 @@ void debugger_widget_delete(struct debugger_widget *);
 void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
 struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
 void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, const char *text, u32 value, u32 same_line);
+void debugger_widgets_textbox_clear(struct debugger_widget_textbox *tb);
+int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const char *format, ...);
+void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_line);
 
 // Disassembly view functions
 int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines);

@@ -134,6 +134,9 @@ void debugger_widget_init(struct debugger_widget *this, enum JSMD_widgets kind)
         case JSMD_radiogroup:
             cvec_init(&this->radiogroup.buttons, sizeof(struct debugger_widget), 5);
             break;
+        case JSMD_textbox:
+            jsm_string_init(&this->textbox.contents, 100);
+            break;
         default:
             NOGOHERE;
     }
@@ -148,9 +151,35 @@ void debugger_widget_delete(struct debugger_widget *this)
         case JSMD_radiogroup:
             cvec_delete(&this->radiogroup.buttons);
             break;
+        case JSMD_textbox:
+            jsm_string_delete(&this->textbox.contents);
+            break;
         default:
             NOGOHERE;
     }
+}
+
+void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_line)
+{
+    struct debugger_widget *w = cvec_push_back(widgets);
+    debugger_widget_init(w, JSMD_textbox);
+    w->same_line = same_line;
+    jsm_string_sprintf(&w->textbox.contents, "%s", text);
+    w->enabled = 1;
+}
+
+void debugger_widgets_textbox_clear(struct debugger_widget_textbox *tb)
+{
+    jsm_string_quickempty(&tb->contents);
+}
+
+int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const char *format, ...)
+{
+    va_list va;
+    va_start(va, format);
+    int num = jsm_string_vsprintf(&tb->contents, format, va);
+    va_end(va);
+    return num;
 }
 
 void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)

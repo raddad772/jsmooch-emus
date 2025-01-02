@@ -23,7 +23,10 @@ struct GBA_PX {
     u32 color;
     u32 palette;
     u32 priority;
+    u32 blended;
+    u32 window_blend; // Lowest window # to mark this as blended
     u32 has;
+    u32 blend_color; // for blending
 };
 
 struct GBA_PPU_OBJ {
@@ -50,6 +53,15 @@ struct GBA_PPU {
             u32 hsize, vsize;
         } obj;
     } mosaic;
+
+    struct {
+        u32 mode;
+        u32 targets_a[6];
+        u32 targets_b[6];
+        u32 eva_a, eva_b;
+        u32 bldy;
+    } blend;
+
     struct {
         u32 bg_mode;
         u32 force_blank;
