@@ -55,6 +55,7 @@ struct GBA_PPU {
         u32 targets_a[6];
         u32 targets_b[6];
         u32 eva_a, eva_b;
+        u32 use_eva_a, use_eva_b, use_bldy;
         u32 bldy;
     } blend;
 

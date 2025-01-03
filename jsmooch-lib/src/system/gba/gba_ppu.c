@@ -748,14 +748,14 @@ static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables
                                   this->ppu.blend.targets_b[target_b_layer])) { // backdrop is contained in active for the highest-priority window OR above is a semi-transparent sprite & below is a valid target
         if (target_a->has && target_a->translucent_sprite &&
             this->ppu.blend.targets_b[target_b_layer]) { // above is semi-transparent sprite and below is a valid target
-            output_color = gba_alpha(output_color, blend_b, this->ppu.blend.eva_a, this->ppu.blend.eva_b);
+            output_color = gba_alpha(output_color, blend_b, this->ppu.blend.use_eva_a, this->ppu.blend.use_eva_b);
         } else if (mode == 1 && this->ppu.blend.targets_a[target_a_layer] &&
                    this->ppu.blend.targets_b[target_b_layer]) { // mode == 1, both are valid
-            output_color = gba_alpha(output_color, blend_b, this->ppu.blend.eva_a, this->ppu.blend.eva_b);
+            output_color = gba_alpha(output_color, blend_b, this->ppu.blend.use_eva_a, this->ppu.blend.use_eva_b);
         } else if (mode == 2 && this->ppu.blend.targets_a[target_a_layer]) { // mode = 2, A is valid
-            output_color = gba_brighten(output_color, (i32) this->ppu.blend.bldy);
+            output_color = gba_brighten(output_color, (i32) this->ppu.blend.use_bldy);
         } else if (mode == 3 && this->ppu.blend.targets_a[target_a_layer]) { // mode = 3, B is valid
-            output_color = gba_darken(output_color, (i32) this->ppu.blend.bldy);
+            output_color = gba_darken(output_color, (i32) this->ppu.blend.use_bldy);
         }
     }
 
@@ -1338,12 +1338,18 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
 
         case 0x04000052:
             this->ppu.blend.eva_a = val & 31;
+            this->ppu.blend.use_eva_a = this->ppu.blend.eva_a;
+            if (this->ppu.blend.use_eva_a > 16) this->ppu.blend.use_eva_a = 16;
             return;
         case 0x04000053:
             this->ppu.blend.eva_b = val & 31;
+            this->ppu.blend.use_eva_b = this->ppu.blend.eva_b;
+            if (this->ppu.blend.use_eva_b > 16) this->ppu.blend.use_eva_b = 16;
             return;
         case 0x04000054:
             this->ppu.blend.bldy = val & 31;
+            this->ppu.blend.use_bldy = this->ppu.blend.bldy;
+            if (this->ppu.blend.use_bldy > 16) this->ppu.blend.use_bldy = 16;
             return;
         case 0x04000055:
             // TODO: support this stuff
