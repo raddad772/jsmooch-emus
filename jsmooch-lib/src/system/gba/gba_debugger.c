@@ -488,7 +488,7 @@ static void render_image_view_bg(struct debugger_interface *dbgr, struct debugge
 
     debugger_widgets_textbox_clear(tb);
     u32 is_affine = (((this->ppu.io.bg_mode == 2) && (bg_num == 2)) || ((this->ppu.io.bg_mode == 3) && (bg_num >= 2)));
-    debugger_widgets_textbox_sprintf(tb, "enable:%d  bpp:%c  affine:%d  mode:%d", bg->enable, bg->bpp8 ? '8' : '4', is_affine, this->ppu.io.bg_mode);
+    debugger_widgets_textbox_sprintf(tb, "enable:%d  bpp:%c  htiles:%d  vtiles:%d\naffine:%d  mode:%d  priority:%d\nsample a:%d  b:%d", bg->enable, bg->bpp8 ? '8' : '4', bg->htiles, bg->vtiles, is_affine, this->ppu.io.bg_mode, bg->priority, this->ppu.blend.targets_a[bg_num+1], this->ppu.blend.targets_b[bg_num+1]);
 
     for (i32 screen_y = 0; screen_y < 160; screen_y++) {
         struct GBA_DBG_line *dbgl = &this->dbg_info.line[screen_y];
@@ -618,6 +618,11 @@ static void render_image_view_window(struct debugger_interface *dbgr, struct deb
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * 4 * 160);
     u8 bit = 1 << win_num;
+
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    struct GBA_PPU_window *w = &this->ppu.window[win_num];
+    debugger_widgets_textbox_clear(tb);
+    debugger_widgets_textbox_sprintf(tb, "enable:%d  color_effect:%d\nbg0:%d  bg1:%d  bg2:%d  bg3:%d  obj:%d", w->enable, w->active[5], w->active[1], w->active[2], w->active[3], w->active[4], w->active[0]);
 
     for (u32 y = 0; y < 160; y++) {
         u32 *rowptr = outbuf + (y * out_width);
@@ -865,7 +870,7 @@ static void setup_image_view_bg(struct GBA* this, struct debugger_interface *dbg
 
     iv->update_func.ptr = this;
 
-    debugger_widgets_add_textbox(&dview->options, "enable:0 bpp:4", 1);
+    debugger_widgets_add_textbox(&dview->options, "num:%d enable:0 bpp:4", 1);
     debugger_widgets_add_checkbox(&dview->options, "Highlight transparent pixels", 1, 0, 0);
     debugger_widgets_add_checkbox(&dview->options, "Highlight window-shaded pixels", 1, 0, 0);
     debugger_widgets_add_checkbox(&dview->options, "Highlight window-occluded pixels", 1, 0, 0);
@@ -920,6 +925,8 @@ static void setup_image_view_window(struct GBA* this, struct debugger_interface 
     iv->viewport.enabled = 1;
     iv->viewport.p[0] = (struct ivec2){ 0, 0 };
     iv->viewport.p[1] = (struct ivec2){ 240, 160 };
+
+    debugger_widgets_add_textbox(&dview->options, "enable:%d\nbg0:0  bg1:0  bg2:0  bg3:0  obj:0", 1);
 
     iv->update_func.ptr = this;
     switch(wnum) {

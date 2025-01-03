@@ -14,19 +14,15 @@ struct GBA_PPU_window {
 
     i32 left, right, top, bottom;
 
-    u32 bg[4], obj, special_effect;
+    u32 active[6]; // In OBJ, bg0, bg1, bg2, bg3, special FX order
     u8 inside[240];
 };
 
 struct GBA_PX {
-    u32 bpp8;
     u32 color;
-    u32 palette;
     u32 priority;
-    u32 blended;
-    u32 window_blend; // Lowest window # to mark this as blended
     u32 has;
-    u32 blend_color; // for blending
+    u32 translucent_sprite;
 };
 
 struct GBA_PPU_OBJ {
@@ -98,8 +94,8 @@ struct GBA_PPU {
 
 #define GBA_WIN0 0
 #define GBA_WIN1 1
-#define GBA_WINOUTSIDE 2
-#define GBA_WINOBJ 3
+#define GBA_WINOBJ 2
+#define GBA_WINOUTSIDE 3
 
 struct GBA;
 void GBA_PPU_init(struct GBA*);
