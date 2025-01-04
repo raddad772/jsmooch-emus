@@ -19,6 +19,8 @@
 void GBA_PPU_init(struct GBA *this)
 {
     memset(&this->ppu, 0, sizeof(this->ppu));
+    this->ppu.mosaic.bg.hsize = this->ppu.mosaic.bg.vsize = 1;
+    this->ppu.mosaic.obj.hsize = this->ppu.mosaic.obj.vsize = 1;
 }
 
 void GBA_PPU_delete(struct GBA *this)
@@ -29,13 +31,6 @@ void GBA_PPU_delete(struct GBA *this)
 void GBA_PPU_reset(struct GBA *this)
 {
 
-}
-
-static void pprint_palette_ram(struct GBA *this)
-{
-    for (u32 i = 0; i < 512; i++) {
-        u16 c = this->ppu.palette_RAM[i];
-    }
 }
 
 static void vblank(struct GBA *this, u32 val)
@@ -61,7 +56,7 @@ static void hblank(struct GBA *this, u32 val)
             GBA_eval_irqs(this);
         }
     }
-    else if (this->clock.ppu.y < 160) {
+    else {
         u32 old_IF = this->io.IF;
         this->io.IF |= this->ppu.io.hblank_irq_enable << 1;
         if (old_IF != this->io.IF) {
@@ -89,6 +84,18 @@ void GBA_PPU_start_scanline(struct GBA*this)
     hblank(this, 0);
     this->clock.ppu.scanline_start = this->clock.master_cycle_count;
     struct GBA_PPU_bg *bg;
+
+    if (this->clock.ppu.y == 0) { // Reset some mosaic counter
+        for (u32 i = 0; i < 4; i++) {
+            bg = &this->ppu.bg[i];
+            bg->mosaic_y = 0;
+            bg->last_y_rendered = 159;
+        }
+        this->ppu.mosaic.bg.y_counter = 0;
+        this->ppu.mosaic.bg.y_current = 0;
+        this->ppu.mosaic.obj.y_counter = 0;
+        this->ppu.mosaic.obj.y_current = 0;
+    }
     for (u32 i = 2; i < 4; i++) {
         bg = &this->ppu.bg[i];
         if ((this->clock.ppu.y == 0) || bg->x_written) {
@@ -171,7 +178,7 @@ static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, struct GBA_PPU_bg *
     u8 color = ptr[px & 7];
     if (color != 0) {
         opx->has = 1;
-        opx->color = color;
+        opx->color = this->ppu.palette_RAM[color];
         opx->priority = bg->priority;
     }
     else {
@@ -227,7 +234,7 @@ static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, 
                 if (!opx->has) {
                     opx->has = 1;
                     opx->priority = priority;
-                    opx->color = c + palette;
+                    opx->color = this->ppu.palette_RAM[c + palette];
                     opx->translucent_sprite = blended;
                 }
                 break; }
@@ -320,7 +327,7 @@ static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     }
 }
 
-static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 blended, struct GBA_PPU_window *w) {
+static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 mosaic, struct GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 8; tile_x++) {
         i32 sx;
         if (hflip) sx = (7 - tile_x) + screen_x;
@@ -330,19 +337,20 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
             struct GBA_PX *opx = &this->ppu.obj.line[sx];
             if ((mode > 1) || (!opx->has)) {
                 u8 c = tptr[tile_x];
-                if (c != 0) {
-                    switch (mode) {
-                        case 1:
-                        case 0:
-                            opx->translucent_sprite = mode;
-                            opx->color = 0x100 + c;
-                            opx->priority = priority;
+                switch (mode) {
+                    case 1:
+                    case 0:
+                        if (c != 0) {
                             opx->has = 1;
-                            break;
-                        case 2: { // OBJ window
-                            w->inside[sx] = 1;
-                            break;
+                            opx->color = this->ppu.palette_RAM[0x100 + c];
+                            opx->translucent_sprite = mode;
                         }
+                        opx->priority = priority;
+                        opx->mosaic_sprite = mosaic;
+                        break;
+                    case 2: { // OBJ window
+                        if (c != 0) w->inside[sx] = 1;
+                        break;
                     }
                 }
             }
@@ -354,7 +362,7 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
 }
 
 
-static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, u32 blended, struct GBA_PPU_window *w) {
+static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, u32 mosaic, struct GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 4; tile_x++) {
         i32 sx;
         if (hflip) sx = (7 - (tile_x * 2)) + screen_x;
@@ -364,23 +372,24 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
             this->ppu.obj.drawing_cycles -= 1;
             if ((sx >= 0) && (sx < 240)) {
                 struct GBA_PX *opx = &this->ppu.obj.line[sx];
-                if ((mode > 1) || (!opx->has)) {
-                    u32 c = data & 15;
-                    data >>= 4;
-                    if (c != 0) {
-                        switch (mode) {
-                            case 1:
-                            case 0: {
-                                opx->translucent_sprite = mode;
-                                opx->color = c + palette;
-                                opx->priority = priority;
+                u32 c = data & 15;
+                data >>= 4;
+                if ((mode > 1) || (!opx->has) || (priority < opx->priority)) {
+                    switch (mode) {
+                        case 1:
+                        case 0: {
+                            if (c != 0) {
                                 opx->has = 1;
-                                break;
+                                opx->color = this->ppu.palette_RAM[c + palette];
+                                opx->translucent_sprite = mode;
                             }
-                            case 2: {
-                                w->inside[sx] = 1;
-                                break;
-                            }
+                            opx->priority = priority;
+                            opx->mosaic_sprite = mosaic;
+                            break;
+                        }
+                        case 2: {
+                            if (c != 0) w->inside[sx] = 1;
+                            break;
                         }
                     }
                 }
@@ -424,7 +433,6 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     }
 
     u32 mode = (ptr[0] >> 10) & 3;
-    u32 blended = mode == 1;
     u32 mosaic = (ptr[0] >> 12) & 1;
     u32 bpp8 = (ptr[0] >> 13) & 1;
     u32 x = ptr[1] & 0x1FF;
@@ -454,8 +462,8 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
         u8 *tptr = ((u8 *) this->ppu.VRAM) + tile_addr;
         if (hflip) tile_addr -= (32 << bpp8);
         else tile_addr += (32 << bpp8);
-        if (bpp8) output_sprite_8bpp(this, tptr, mode, screen_x, priority, hflip, blended, w);
-        else output_sprite_4bpp(this, tptr, mode, screen_x, priority, hflip, palette, blended, w);
+        if (bpp8) output_sprite_8bpp(this, tptr, mode, screen_x, priority, hflip, mosaic, w);
+        else output_sprite_4bpp(this, tptr, mode, screen_x, priority, hflip, palette, mosaic, w);
         screen_x += 8;
         if (this->ppu.obj.drawing_cycles < 1) return;
     }
@@ -477,6 +485,7 @@ static void draw_obj_line(struct GBA *this)
     for (u32 i = 0; i < 128; i++) {
         u16 *ptr = ((u16 *)this->ppu.OAM) + (i * 4);
         u32 affine = (ptr[0] >> 8) & 1;
+
         if (affine) draw_sprite_affine(this, ptr, w, i);
         else draw_sprite_normal(this, ptr, w, i);
     }
@@ -511,7 +520,7 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
             if ((screen_x + mx) < 240) {
                 if (data != 0) {
                     p->has = 1;
-                    p->color = data;
+                    p->color = this->ppu.palette_RAM[data];
                     p->priority = bg->priority;
                 } else
                     p->has = 0;
@@ -533,7 +542,7 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
                 if ((screen_x + mx) < 240) {
                     if (c != 0) {
                         p->has = 1;
-                        p->color = c + palbank;
+                        p->color = this->ppu.palette_RAM[c + palbank];
                         p->priority = bg->priority;
                     } else
                         p->has = 0;
@@ -542,6 +551,66 @@ static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u
                 else mx++;
             }
         }
+    }
+}
+
+static void apply_mosaic(struct GBA *this)
+{
+    // Do vertical, since this is called after every line
+    struct GBA_PPU_bg *bg;
+    if (this->ppu.mosaic.bg.y_counter == 0) {
+        this->ppu.mosaic.bg.y_current = this->clock.ppu.y;
+    }
+    for (u32 i = 0; i < 3; i++) {
+        bg = &this->ppu.bg[i];
+        if (!bg->enable) continue;
+        if (bg->mosaic_enable) bg->mosaic_y = this->ppu.mosaic.bg.y_current;
+        else bg->mosaic_y = this->clock.ppu.y;
+    }
+    this->ppu.mosaic.bg.y_counter = (this->ppu.mosaic.bg.y_counter + 1) % this->ppu.mosaic.bg.vsize;
+
+    if (this->ppu.mosaic.obj.y_counter == 0) {
+        this->ppu.mosaic.obj.y_current = this->clock.ppu.y;
+    }
+    this->ppu.mosaic.obj.y_counter = (this->ppu.mosaic.obj.y_counter + 1) % this->ppu.mosaic.obj.vsize;
+
+
+    // Now do horizontal blend
+
+    for (u32 i = 0; i < 3; i++) {
+        bg = &this->ppu.bg[i];
+        if (!bg->enable | !bg->mosaic_enable) continue;
+        u32 mosaic_counter = 0;
+        struct GBA_PX *src;
+        for (u32 x = 0; x < 240; x++) {
+            if (mosaic_counter == 0) {
+                src = &bg->line[x];
+            }
+            else {
+                bg->line[x].has = src->has;
+                bg->line[x].color = src->color;
+                bg->line[x].priority = src->priority;
+            }
+            mosaic_counter = (mosaic_counter + 1) % this->ppu.mosaic.bg.hsize;
+        }
+    }
+
+    // Now do sprites, which is a bit different
+    struct GBA_PX *src = &this->ppu.obj.line[0];
+    u32 mosaic_counter = 0;
+    for (u32 x = 0; x < 240; x++) {
+        struct GBA_PX *current = &this->ppu.obj.line[x];
+        if (!current->mosaic_sprite || !src->mosaic_sprite || (mosaic_counter == 0))  {
+            src = current;
+        }
+        else {
+            current->has = src->has;
+            current->color = src->color;
+            current->priority = src->priority;
+            current->translucent_sprite = src->translucent_sprite;
+            current->mosaic_sprite = src->mosaic_sprite;
+        }
+        mosaic_counter = (mosaic_counter + 1) % this->ppu.mosaic.obj.hsize;
     }
 }
 
@@ -622,61 +691,30 @@ static struct GBA_PPU_window *get_active_window(struct GBA *this, u32 x)
 #define GBACTIVE_BG4 4
 #define GBACTIVE_SFX 5
 
-static void apply_windows(struct GBA *this, u32 sp_window, u32 bgtest[4]) {
-    return;
-    //if (!this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
-    for (u32 x = 0; x < 240; x++) {
-        struct GBA_PPU_window *w = get_active_window(this, x);
-        if (!w) continue;
-        for (u32 bgnum = 0; bgnum < 3; bgnum++) {
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
-            if (!bg->enable || !bgtest[bgnum]) continue;
-            struct GBA_PX *p = &bg->line[x];
-            if (p->has) {
-                if (!w->active[bgnum+1]) {
-                    p->has = 0;
-                }
-            }
-        }
-        struct GBA_PX *p = &this->ppu.obj.line[x];
-        if (!sp_window) continue;
-        if (p->has & !w->active[GBACTIVE_OBJ])
-            p->has = 0;
-    }
-}
-
 static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
     if (!bg->enable) {
-        bg->x_lerp += bg->pb;
-        bg->y_lerp += bg->pd;
+        if (bg->mosaic_y != bg->last_y_rendered) {
+            bg->x_lerp += bg->pb * this->ppu.mosaic.bg.vsize;
+            bg->y_lerp += bg->pd * this->ppu.mosaic.bg.vsize;
+            bg->last_y_rendered = bg->mosaic_y;
+        }
         return;
     }
-
-/*
-set affine coords to BGnX/BGnY at the start of the frame
-also reset to BGnX/BGnY whenever these registers are changed (not sure how that behaves if done mid-scanline, check NBA)
-increment by BGnPB/BGnPD after every scanline
-increment by BGnPA/BGnPC after every pixel
- */
-    /*i64 iy = (i32)this->clock.ppu.y;
-    i64 pa = bg->pa;
-    i64 pb = bg->pb;
-    i64 pc = bg->pc;
-    i64 pd = bg->pd;*/
     i32 fx = bg->x_lerp;
     i32 fy = bg->y_lerp;
     for (i64 screen_x = 0; screen_x < 240; screen_x++) {
-        //i64 fx = (pa*screen_x + pb*iy)+bg->x;
-        //i64 fy = (pc*screen_x + pd*iy)+bg->y;
         get_affine_bg_pixel(this, bgnum, bg, fx>>8, fy>>8, &bg->line[screen_x]);
         fx += bg->pa;
         fy += bg->pc;
     }
-    bg->x_lerp += bg->pb;
-    bg->y_lerp += bg->pd;
+    if (bg->mosaic_y != bg->last_y_rendered) {
+        bg->x_lerp += bg->pb * this->ppu.mosaic.bg.vsize;
+        bg->y_lerp += bg->pd * this->ppu.mosaic.bg.vsize;
+        bg->last_y_rendered = bg->mosaic_y;
+    }
 }
 
 static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
@@ -686,7 +724,7 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     if (!bg->enable) return;
     // first do a fetch for fine scroll -1
     u32 hpos = bg->hscroll & bg->hpixels_mask;
-    u32 vpos = (bg->vscroll + this->clock.ppu.y) & bg->vpixels_mask;
+    u32 vpos = (bg->vscroll + bg->mosaic_y) & bg->vpixels_mask;
     u32 fine_x = hpos & 7;
     u32 screen_x = 0;
     struct GBA_PX bgpx[8];
@@ -767,9 +805,9 @@ static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables
     struct GBA_PX *target_a = layers[target_a_layer];
     struct GBA_PX *target_b = layers[target_b_layer];
 
-    u32 blend_b = this->ppu.palette_RAM[target_b->color];
+    u32 blend_b = target_b->color;
 
-    u32 output_color = this->ppu.palette_RAM[target_a->color];
+    u32 output_color = target_a->color;
     if (actives[GBACTIVE_SFX] || (target_a->has && target_a->translucent_sprite &&
                                   this->ppu.blend.targets_b[target_b_layer])) { // backdrop is contained in active for the highest-priority window OR above is a semi-transparent sprite & below is a valid target
         if (target_a->has && target_a->translucent_sprite &&
@@ -795,8 +833,8 @@ static void draw_line0(struct GBA *this, u16 *line_output)
     draw_bg_line_normal(this, 1);
     draw_bg_line_normal(this, 2);
     draw_bg_line_normal(this, 3);
+    apply_mosaic(this);
     calculate_windows(this, 0);
-    //apply_windows(this, 1, (u32[4]){1, 1, 1, 1});
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -809,10 +847,10 @@ static void draw_line1(struct GBA *this, u16 *line_output)
     draw_bg_line_normal(this, 0);
     draw_bg_line_normal(this, 1);
     draw_bg_line_affine(this, 2);
+    apply_mosaic(this);
     memset(&this->ppu.bg[3].line, 0, sizeof(this->ppu.bg[3].line));
 
     calculate_windows(this, 0);
-    //apply_windows(this, 1, (u32[4]){1, 1, 1, 0});
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, 0};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -827,7 +865,7 @@ static void draw_line2(struct GBA *this, u16 *line_output)
     draw_bg_line_affine(this, 2);
     draw_bg_line_affine(this, 3);
     calculate_windows(this, 0);
-    //apply_windows(this, 1, (u32[4]){0, 0, 1, 1});
+    apply_mosaic(this);
     u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -836,42 +874,86 @@ static void draw_line2(struct GBA *this, u16 *line_output)
 
 static void draw_line3(struct GBA *this, u16 *line_output)
 {
-    u16 *line_input = ((u16 *)this->ppu.VRAM) + (this->clock.ppu.y * 240);
-    if (this->ppu.obj.enable) draw_obj_line(this);
+    draw_obj_line(this);
+    calculate_windows(this, 0);
+
+    struct GBA_PPU_bg *bg = &this->ppu.bg[2];
+    memset(bg->line, 0, sizeof(bg->line));
+
+    if (bg->enable) {
+        u16 *line_input = ((u16 *) this->ppu.VRAM) + (bg->mosaic_y * 240);
+        for (u32 x = 0; x < 240; x++) {
+            bg->line[x].color = line_input[x];
+            bg->line[x].has = (*line_input) != 0;
+            bg->line[x].priority = bg->priority;
+            line_input++;
+        }
+    }
+    apply_mosaic(this);
+
+    u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, 0};
     for (u32 x = 0; x < 240; x++) {
-        struct GBA_PX *sp = &this->ppu.obj.line[x];
-        u16 c;
-        if (sp->has) {
-            c = this->ppu.palette_RAM[sp->color];
-        }
-        else {
-            c = line_input[x];
-        }
-        line_output[x] = c;
+        output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
     }
 }
 
 static void draw_line4(struct GBA *this, u16 *line_output)
 {
-    u32 base_addr = 0xA000 * this->ppu.io.frame;
-    u8 *line_input = ((u8 *)this->ppu.VRAM) + base_addr + (this->clock.ppu.y * 240);
-    if (this->ppu.obj.enable) draw_obj_line(this);
+    draw_obj_line(this);
+    calculate_windows(this, 0);
+
+    struct GBA_PPU_bg *bg = &this->ppu.bg[2];
+    memset(bg->line, 0, sizeof(bg->line));
+
+    if (bg->enable) {
+        u32 base_addr = 0xA000 * this->ppu.io.frame;
+        u8 *line_input = ((u8 *) this->ppu.VRAM) + base_addr + (bg->mosaic_y * 240);
+        struct GBA_PX *px = &bg->line[0];
+        for (u32 x = 0; x < 240; x++) {
+            u32 color = this->ppu.palette_RAM[line_input[x]];
+            px->has = color != 0;
+            px->priority = bg->priority;
+            px->color = color;
+
+            px++;
+        }
+    }
+    apply_mosaic(this);
+
+    u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, 0};
     for (u32 x = 0; x < 240; x++) {
-        u8 palcol = line_input[x];
-        line_output[x] = this->ppu.palette_RAM[palcol];
+        output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
     }
 }
 
 static void draw_line5(struct GBA *this, u16 *line_output)
 {
-    if (this->clock.ppu.y > 127) {
-      memset(line_output, 0, 480);
-      return;
+    draw_obj_line(this);
+    calculate_windows(this, 0);
+
+    struct GBA_PPU_bg *bg = &this->ppu.bg[2];
+    memset(bg->line, 0, sizeof(bg->line));
+
+    if (bg->enable && (this->clock.ppu.y < 128)) {
+        u32 base_addr = 0xA000 * this->ppu.io.frame;
+        u16 *line_input = (u16 *)(((u8 *)this->ppu.VRAM) + base_addr + (bg->mosaic_y * 320));
+        struct GBA_PX *px = &bg->line[0];
+
+        for (u32 x = 0; x < 160; x++) {
+            u32 color = this->ppu.palette_RAM[line_input[x]];
+            px->has = color != 0;
+            px->priority = bg->priority;
+            px->color = color;
+
+            px++;
+        }
     }
-    u32 base_addr = 0xA000 * this->ppu.io.frame;
-    u16 *line_input = (u16 *)(((u8 *)this->ppu.VRAM) + base_addr + (this->clock.ppu.y * 320));
-    memset((line_output+160), 0, 160);
-    memcpy(line_output, line_input, 320);
+
+    apply_mosaic(this);
+    u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, 0};
+    for (u32 x = 0; x < 240; x++) {
+        output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
+    }
 }
 
 void GBA_PPU_hblank(struct GBA*this)
@@ -939,7 +1021,6 @@ void GBA_PPU_hblank(struct GBA*this)
 
     // Check if we have any DMA transfers that need to go...
     GBA_check_dma_at_hblank(this);
-
 }
 
 void GBA_PPU_finish_scanline(struct GBA*this)
@@ -948,6 +1029,7 @@ void GBA_PPU_finish_scanline(struct GBA*this)
     this->clock.ppu.hblank_active = 0;
     this->clock.ppu.y++;
     if (this->clock.ppu.y == 160) {
+        GBA_check_dma_at_vblank(this);
         vblank(this, 1);
     }
     if (this->clock.ppu.y == 227) {
@@ -1084,7 +1166,14 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             if (bgnum >= 2) v |= bg->display_overflow << 5;
             v |= bg->screen_size << 6;
             return v; }
-
+        case 0x0400004C:
+            v = this->ppu.mosaic.bg.hsize - 1;
+            v |= (this->ppu.mosaic.bg.vsize - 1) << 4;
+            return v;
+        case 0x0400004D:
+            v = this->ppu.mosaic.obj.hsize - 1;
+            v |= (this->ppu.mosaic.obj.vsize - 1) << 4;
+            return v;
         case 0x04000050:
             return this->ppu.blend.eva_a;
         case 0x04000051:
@@ -1124,7 +1213,7 @@ static void calc_screen_size(struct GBA *this, u32 num, u32 mode)
 
 static void update_bg_x(struct GBA *this, u32 bgnum, u32 which, u32 val)
 {
-    u32 v = this->ppu.bg[bgnum].x & 0x0FFFFFFF;
+    i32 v = this->ppu.bg[bgnum].x & 0x0FFFFFFF;
     val &= 0xFF;
     switch(which) {
         case 0: v = (v & 0x0FFFFF00) | val; break;
@@ -1135,6 +1224,7 @@ static void update_bg_x(struct GBA *this, u32 bgnum, u32 which, u32 val)
     if ((v >> 27) & 1) v |= 0xF0000000;
     this->ppu.bg[bgnum].x = v;
     this->ppu.bg[bgnum].x_written = 1;
+    //printf("\nline:%d X%d update:%08x", this->clock.ppu.y, bgnum, v);
 }
 
 static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
@@ -1150,6 +1240,7 @@ static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
     if ((v >> 27) & 1) v |= 0xF0000000;
     this->ppu.bg[bgnum].y = v;
     this->ppu.bg[bgnum].y_written = 1;
+    //printf("\nline:%d Y%d update:%08x", this->clock.ppu.y, bgnum, v);
 }
 
 void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {

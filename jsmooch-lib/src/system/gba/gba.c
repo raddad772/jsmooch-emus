@@ -223,6 +223,7 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
     if ((ch->io.enable) && (ch->op.started)) {
         this->cycles_executed += 2;
         u32 v = GBA_mainbus_read((void *)this, ch->op.src_addr, ch->op.sz, 0, 1);
+        if (ch->io.start_timing == 2) printf("\nline:%d HDMA WRITE %08x", this->clock.ppu.y, ch->op.dest_addr);
         GBA_mainbus_write((void *)this, ch->op.dest_addr, ch->op.sz, 0, v);
 
         switch(ch->io.src_addr_ctrl) {
@@ -234,7 +235,7 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
                 break;
             case 2: // constant
                 break;
-            case 3: // increment & reload on repeat
+            case 3: // prohibited
                 printf("\nPROHIBITED!");
                 break;
         }
@@ -248,22 +249,22 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
                 break;
             case 2: // constant
                 break;
-            case 3: // prohibited
-                ch->op.dest_addr = (ch->op.dest_addr - ch->op.sz) & 0x0FFFFFFF;
+            case 3: // increment & reload on repeat
+                ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
                 break;
         }
 
         ch->op.word_count = (ch->op.word_count - 1) & ch->op.word_mask;
         if (ch->op.word_count == 0) {
-            //printf("\nDMA END! REPEAT? %d", ch->io.repeat);
             ch->op.started = 0; // Disable
             ch->op.first_run = 0;
+            if (ch->io.irq_on_end) {
+                raise_irq_for_dma(this, num);
+            }
+
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
                 //printf("\nENABLE DISABLE!");
-                if (ch->io.irq_on_end) {
-                    raise_irq_for_dma(this, num);
-                }
             }
         }
         return 1;

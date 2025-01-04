@@ -23,6 +23,7 @@ struct GBA_PX {
     u32 priority;
     u32 has;
     u32 translucent_sprite;
+    u32 mosaic_sprite;
 };
 
 struct GBA_PPU_OBJ {
@@ -43,9 +44,13 @@ struct GBA_PPU {
     struct {
         struct {
             u32 hsize, vsize;
+            u32 enable;
+            u32 y_counter, y_current;
         } bg;
         struct {
             u32 hsize, vsize;
+            u32 enable;
+            u32 y_counter, y_current;
         } obj;
     } mosaic;
 
@@ -73,8 +78,8 @@ struct GBA_PPU {
         u32 htiles, vtiles;
         u32 htiles_mask, vtiles_mask;
         u32 hpixels, vpixels;
+        u32 last_y_rendered;
         u32 hpixels_mask, vpixels_mask;
-
 
         u32 priority;
         u32 character_base_block, screen_base_block;
@@ -87,6 +92,8 @@ struct GBA_PPU {
         i32 x_lerp, y_lerp;
 
         struct GBA_PX line[248];
+
+        u32 mosaic_y;
 
         u32 hscroll, vscroll;
     } bg[4];

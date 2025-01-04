@@ -676,6 +676,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/m7_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m7_demo_mb.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m7_ex.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "tonc/mos_demo.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
@@ -686,9 +687,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
-            //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             break;
         case SYS_GENESIS_USA:

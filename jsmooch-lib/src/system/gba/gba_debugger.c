@@ -467,6 +467,26 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
     return n;
 }
 
+static void render_image_view_bgmap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int bg_num) {
+    struct GBA *this = (struct GBA *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct GBA_PPU_bg *bg = &this->ppu.bg[bg_num];
+
+    struct image_view *iv = &dview->image;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    u32 vsize = bg->vpixels;
+    u32 hsize = bg->hpixels;
+    memset(outbuf, 0, out_width * 4 * vsize);
+    iv->viewport.p[1].x = (i32)hsize;
+    iv->viewport.p[1].y = (i32)vsize;
+
+    for (u32 tilemap_y = 0; tilemap_y < vsize; tilemap_y++) {
+        for (u32 tilemap_x = 0; tilemap_x < hsize; tilemap_x++) {
+
+        }
+    }
+}
+
 static void render_image_view_bg(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int bg_num)
 {
     struct GBA *this = (struct GBA *) ptr;
@@ -674,6 +694,26 @@ static void render_image_view_bg3(struct debugger_interface *dbgr, struct debugg
     render_image_view_bg(dbgr, dview, ptr, out_width, 3);
 }
 
+static void render_image_view_bg0map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_bgmap(dbgr, dview, ptr, out_width, 0);
+}
+
+static void render_image_view_bg1map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_bgmap(dbgr, dview, ptr, out_width, 1);
+}
+
+static void render_image_view_bg2map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_bgmap(dbgr, dview, ptr, out_width, 2);
+}
+
+static void render_image_view_bg3map(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    render_image_view_bgmap(dbgr, dview, ptr, out_width, 3);
+}
+
 
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
@@ -838,6 +878,66 @@ static void setup_image_view_palettes(struct GBA* this, struct debugger_interfac
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
+static void setup_image_view_bgmap(struct GBA* this, struct debugger_interface *dbgr, u32 wnum) {
+    struct debugger_view *dview;
+    switch(wnum) {
+        case 0:
+            this->dbg.image_views.bg0map = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.bg0map);
+            break;
+        case 1:
+            this->dbg.image_views.bg1map = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.bg1map);
+            break;
+        case 2:
+            this->dbg.image_views.bg2map = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.bg2map);
+            break;
+        case 3:
+            this->dbg.image_views.bg3map = debugger_view_new(dbgr, dview_image);
+            dview = cpg(this->dbg.image_views.bg3map);
+            break;
+    }
+    struct image_view *iv = &dview->image;
+    iv->width = 1024;
+    iv->height = 1024;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 256 };
+
+    iv->update_func.ptr = this;
+
+    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Inside", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "Outside", 2, 1);
+    rg = debugger_widgets_add_radiogroup(&dview->options, "Shading method", 1, 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Shaded", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Black", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "White", 2, 1);
+
+    switch(wnum) {
+        case 0:
+            iv->update_func.func = &render_image_view_bg0map;
+            snprintf(iv->label, sizeof(iv->label), "Tilemap/BG0");
+            break;
+        case 1:
+            iv->update_func.func = &render_image_view_bg1map;
+            snprintf(iv->label, sizeof(iv->label), "Tilemap/BG1");
+            break;
+        case 2:
+            iv->update_func.func = &render_image_view_bg2map;
+            snprintf(iv->label, sizeof(iv->label), "Tilemap/BG2");
+            break;
+        case 3:
+            iv->update_func.func = &render_image_view_bg3map;
+            snprintf(iv->label, sizeof(iv->label), "Tilemap/BG3");
+            break;
+    }
+
+}
+
 static void setup_image_view_bg(struct GBA* this, struct debugger_interface *dbgr, u32 wnum)
 {
     struct debugger_view *dview;
@@ -893,7 +993,6 @@ static void setup_image_view_bg(struct GBA* this, struct debugger_interface *dbg
             snprintf(iv->label, sizeof(iv->label), "Layer/BG3 Viewer");
             break;
     }
-
 }
 
 static void setup_events_view(struct GBA* this, struct debugger_interface *dbgr) {
@@ -1003,6 +1102,10 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_bg(this, dbgr, 1);
     setup_image_view_bg(this, dbgr, 2);
     setup_image_view_bg(this, dbgr, 3);
+    setup_image_view_bgmap(this, dbgr, 0);
+    setup_image_view_bgmap(this, dbgr, 1);
+    setup_image_view_bgmap(this, dbgr, 2);
+    setup_image_view_bgmap(this, dbgr, 3);
     setup_image_view_sprites(this, dbgr);
     setup_image_view_tiles(this, dbgr);
     setup_image_view_palettes(this, dbgr);
