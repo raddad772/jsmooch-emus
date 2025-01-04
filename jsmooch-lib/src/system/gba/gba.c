@@ -208,7 +208,7 @@ void GBAJ_reset(JSM)
     }
     this->io.SIO.send = 0xFFFF;
 
-    skip_BIOS(this);
+    //skip_BIOS(this);
     printf("\nGBA reset!");
 }
 
@@ -223,7 +223,6 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
     if ((ch->io.enable) && (ch->op.started)) {
         this->cycles_executed += 2;
         u32 v = GBA_mainbus_read((void *)this, ch->op.src_addr, ch->op.sz, 0, 1);
-        if (ch->io.start_timing == 2) printf("\nline:%d HDMA WRITE %08x", this->clock.ppu.y, ch->op.dest_addr);
         GBA_mainbus_write((void *)this, ch->op.dest_addr, ch->op.sz, 0, v);
 
         switch(ch->io.src_addr_ctrl) {

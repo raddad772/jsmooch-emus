@@ -9,10 +9,10 @@
 
 static inline u32 gba_to_screen(u32 color)
 {
-    u32 b = (color >> 10) & 0x1F;
+    u32 r = (color >> 10) & 0x1F;
     u32 g = (color >> 5) & 0x1F;
-    u32 r = color & 0x1F;
-    return 0xFF000000 | (r << 3 | r >> 2) << 16 | (g << 3 | g >> 2) << 8 | (b << 3 | b >> 2);
+    u32 b = color & 0x1F;
+    return 0xFF000000 | ((r << 3 | r >> 2) << 16) | ((g << 3 | g >> 2) << 8) | ((b << 3 | b >> 2));
 }
 
 static inline u32 gba_coeff(u32 color, u32 co)

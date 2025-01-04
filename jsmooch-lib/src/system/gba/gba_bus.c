@@ -221,6 +221,9 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
         case 0x0400020b:
             return 0;
 
+        case 0x04076a68: // Read by Duke3D. ?
+        case 0x04076a69:
+            return this->io.open_bus & 0xFF;
     }
     return busrd_invalid(this, addr, sz, access, has_effect);
 }
