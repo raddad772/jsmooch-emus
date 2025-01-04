@@ -14,6 +14,7 @@
 #include "helpers/multisize_memaccess.c"
 
 #include "gba_ppu.h"
+#include "gba_debugger.h"
 
 void GBA_PPU_init(struct GBA *this)
 {
@@ -41,33 +42,38 @@ static void vblank(struct GBA *this, u32 val)
 {
     //pprint_palette_ram(this);
     this->clock.ppu.vblank_active = val;
-    if (val == 1) {
-        //if (!(this->io.IF & 1)) printf("\nVBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
-        this->io.IF |= 1;
+    u32 old_IF = this->io.IF;
+    this->io.IF |= this->ppu.io.vblank_irq_enable && val;
+    if (old_IF != this->io.IF) {
+        DBG_EVENT(DBG_GBA_EVENT_SET_VBLANK_IRQ);
         GBA_eval_irqs(this);
-        GBA_check_dma_at_vblank(this);
     }
 }
 
 static void hblank(struct GBA *this, u32 val)
 {
     this->clock.ppu.hblank_active = 1;
-    if (val == 0) {
-        if (this->ppu.io.vcount_at == this->clock.ppu.y) {
-            //if (!(this->io.IF & 4)) printf("\nVCOUNT IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
-            this->io.IF |= 4;
+    if (val == 0) { // beginning of scanline
+        u32 old_IF = this->io.IF;
+        this->io.IF |= ((this->ppu.io.vcount_at == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable) << 2;
+        if (old_IF != this->io.IF) {
+            DBG_EVENT(DBG_GBA_EVENT_SET_LINECOUNT_IRQ);
             GBA_eval_irqs(this);
         }
     }
-    if ((val == 1) && (this->clock.ppu.y < 160)) {
-        //if (!(this->io.IF & 2)) printf("\nHBLANK IRQ frame:%lld line:%d cyc:%lld", this->clock.master_frame, this->clock.ppu.y, this->clock.master_cycle_count);
-        this->io.IF |= 2;
-        GBA_eval_irqs(this);
+    else if (this->clock.ppu.y < 160) {
+        u32 old_IF = this->io.IF;
+        this->io.IF |= this->ppu.io.hblank_irq_enable << 1;
+        if (old_IF != this->io.IF) {
+            GBA_eval_irqs(this);
+            DBG_EVENT(DBG_GBA_EVENT_SET_LINECOUNT_IRQ);
+        }
     }
 }
 
 static void new_frame(struct GBA *this)
 {
+    debugger_report_frame(this->dbg.interface);
     this->clock.ppu.y = 0;
     this->ppu.cur_output = ((u16 *)this->ppu.display->output[this->ppu.display->last_written ^ 1]);
     this->ppu.display->last_written ^= 1;
@@ -77,16 +83,22 @@ static void new_frame(struct GBA *this)
 
 void GBA_PPU_start_scanline(struct GBA*this)
 {
+    if (this->dbg.events.view.vec) {
+        debugger_report_line(this->dbg.interface, this->clock.ppu.y);
+    }
     hblank(this, 0);
-    this->ppu.cur_pixel = 0;
     this->clock.ppu.scanline_start = this->clock.master_cycle_count;
-    if (this->clock.ppu.y == 0) {
-        struct GBA_PPU_bg *bg;
-        for (u32 i = 2; i < 4; i++) {
-            bg = &this->ppu.bg[i];
+    struct GBA_PPU_bg *bg;
+    for (u32 i = 2; i < 4; i++) {
+        bg = &this->ppu.bg[i];
+        if ((this->clock.ppu.y == 0) || bg->x_written) {
             bg->x_lerp = bg->x;
+        }
+
+        if ((this->clock.ppu.y == 0) || (bg->y_written)) {
             bg->y_lerp = bg->y;
         }
+        bg->x_written = bg->y_written = 0;
     }
 }
 
@@ -179,23 +191,25 @@ static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, 
     px += (hpixels >> 1);
     py += (vpixels >> 1);
     if ((px < 0) || (py < 0)) return;
-    if ((px >= hpixels) || (py > vpixels)) return;
+    if ((px >= hpixels) || (py >= vpixels)) return;
 
     u32 block_x = px >> 3;
     u32 block_y = py >> 3;
     u32 tile_x = px & 7;
     u32 tile_y = py & 7;
     if (obj_mapping_1d) {
-        tile_num += ((htiles >> dsize) * block_y);
+        //1D!
+        tile_num += (((htiles >> dsize) << bpp8) * block_y);
     }
     else {
-        tile_num += ((32 << bpp8) * block_y);
+        tile_num += block_y << 5;
     }
-    tile_num += block_x;
+    tile_num += block_x << bpp8;
     tile_num &= 0x3FF;
+    if (bpp8) tile_num &= 0x3FE;
 
     u32 tile_base_addr = 0x10000 + (32 * tile_num);
-    u32 tile_line_addr = tile_base_addr + ((4 << bpp8) * tile_y);
+    u32 tile_line_addr = tile_base_addr + (tile_y << (2 + bpp8));
     u32 tile_px_addr = bpp8 ? (tile_line_addr + tile_x) : (tile_line_addr + (tile_x >> 1));
     u8 c = this->ppu.VRAM[tile_px_addr];
 
@@ -226,19 +240,23 @@ static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, 
 
 static u32 get_sprite_tile_addr(struct GBA *this, u32 tile_num, u32 htiles, u32 block_y, u32 line_in_tile, u32 bpp8, u32 d1)
 {
-    u32 base_addr = 0x10000;
-    if (d1) {
-        tile_num += block_y * (htiles << bpp8);
-        tile_num &= 0x3FF;
-        u32 tile_addr = base_addr + ((32 * tile_num) << bpp8);
-        tile_addr += (line_in_tile * (4 << bpp8));
-        return tile_addr;
+    if (this->ppu.io.obj_mapping_1d) {
+        tile_num += ((htiles << bpp8) * block_y);
     }
-    tile_num += block_y * (32 << bpp8);
+    else {
+        tile_num += block_y << 5;
+    }
+
+    // Advance by block x. NOT!
+    //tile_num += block_x << bpp8;
+
+    if (bpp8) tile_num &= 0x3FE;
     tile_num &= 0x3FF;
-    u32 tile_addr = base_addr + (32 * tile_num);
-    tile_addr += (line_in_tile * (4 << bpp8));
-    return tile_addr;
+
+    // Now get pointer to that tile
+    u32 tile_base_addr = 0x10000 + (32 * tile_num);
+    u32 tile_line_addr = tile_base_addr + (line_in_tile << (2 + bpp8));
+    return tile_line_addr;
 }
 
 static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w, u32 num)
@@ -247,27 +265,25 @@ static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     if (this->ppu.obj.drawing_cycles < 1) return;
 
     u32 dsize = (ptr[0] >> 9) & 1;
-
-    i32 y = ptr[0] & 0xFF;
-    if (y > 160) {
-        y -= 160;
-        y = 0 - y;
-    }
-    if ((this->clock.ppu.y < y)) return;
-
-    u32 mode = (ptr[0] >> 10) & 3;
-    u32 blended = mode == 1;
+    u32 htiles, vtiles;
     u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
     u32 sz = (ptr[1] >> 14) & 3;
-    u32 htiles, vtiles;
     get_obj_tile_size(sz, shape, &htiles, &vtiles);
     if (dsize) {
         htiles *= 2;
         vtiles *= 2;
     }
 
-    i32 y_bottom = y + (i32)(vtiles * 8);
-    if (this->clock.ppu.y >= y_bottom) return;
+    i32 y_min = ptr[0] & 0xFF;
+    i32 y_max = (y_min + ((i32)vtiles * 8)) & 255;
+    if(y_max < y_min)
+        y_min -= 256;
+    if((i32)this->clock.ppu.y < y_min || (i32)this->clock.ppu.y >= y_max) {
+        return;
+    }
+
+    u32 mode = (ptr[0] >> 10) & 3;
+    u32 blended = mode == 1;
 
     u32 tile_num = ptr[2] & 0x3FF;
     u32 bpp8 = (ptr[0] >> 13) & 1;
@@ -285,15 +301,14 @@ static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window
 
     u32 priority = (ptr[2] >> 10) & 3;
     u32 palette = bpp8 ? 0x100 : (0x100 + (((ptr[2] >> 12) & 15) << 4));
-    if (bpp8) tile_num &= 0x3FE;
 
-    i32 line_in_sprite = (i32)this->clock.ppu.y - y;
+    i32 line_in_sprite = (i32)this->clock.ppu.y - y_min;
     //i32 x_origin = x - (htiles << 2);
 
     i32 screen_x = x;
     i32 iy = (i32)line_in_sprite - ((i32)vtiles * 4);
     i32 hwidth = (i32)htiles * 4;
-        for (i32 ix=-hwidth; ix < hwidth; ix++) {
+    for (i32 ix=-hwidth; ix < hwidth; ix++) {
         i32 px = (pa*ix + pb*iy)>>8;    // get x texture coordinate
         i32 py = (pc*ix + pd*iy)>>8;    // get y texture coordinate
         if ((screen_x >= 0) && (screen_x < 240))
@@ -307,13 +322,14 @@ static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window
 
 static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 blended, struct GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 8; tile_x++) {
-        i32 sx = tile_x + screen_x;
+        i32 sx;
+        if (hflip) sx = (7 - tile_x) + screen_x;
+        else sx = tile_x + screen_x;
         if ((sx >= 0) && (sx < 240)) {
             this->ppu.obj.drawing_cycles -= 1;
             struct GBA_PX *opx = &this->ppu.obj.line[sx];
             if ((mode > 1) || (!opx->has)) {
-                u32 rpx = hflip ? tile_x : (7 - tile_x);
-                u16 c = tptr[rpx];
+                u8 c = tptr[tile_x];
                 if (c != 0) {
                     switch (mode) {
                         case 1:
@@ -329,10 +345,11 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
                         }
                     }
                 }
-                break;
             }
         }
         if (this->ppu.obj.drawing_cycles < 1) return;
+        if (hflip) sx--;
+        else sx++;
     }
 }
 
@@ -344,10 +361,10 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
         else sx = (tile_x * 2) + screen_x;
         u8 data = tptr[tile_x];
         for (u32 i = 0; i < 2; i++) {
+            this->ppu.obj.drawing_cycles -= 1;
             if ((sx >= 0) && (sx < 240)) {
-                this->ppu.obj.drawing_cycles -= 1;
                 struct GBA_PX *opx = &this->ppu.obj.line[sx];
-                if ((mode > 2) || (!opx->has)) {
+                if ((mode > 1) || (!opx->has)) {
                     u32 c = data & 15;
                     data >>= 4;
                     if (c != 0) {
@@ -366,9 +383,9 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
                             }
                         }
                     }
-                    if (this->ppu.obj.drawing_cycles < 1) return;
                 }
             }
+            if (this->ppu.obj.drawing_cycles < 1) return;
             if (hflip) sx--;
             else sx++;
         }
@@ -429,14 +446,14 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     // OK so we know which line
     // We have two possibilities; 1d or 2d layout
     u32 tile_addr = get_sprite_tile_addr(this, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, this->ppu.io.obj_mapping_1d);
-    if (hflip) tile_addr += (htiles - 1) * 32;
+    if (hflip) tile_addr += (htiles - 1) * (32 << bpp8);
     //if (y_min != -1) printf("\nSPRITE%d y:%d PALETTE:%d", num, y_min, palette);
 
     i32 screen_x = x;
     for (u32 tile_xs = 0; tile_xs < htiles; tile_xs++) {
         u8 *tptr = ((u8 *) this->ppu.VRAM) + tile_addr;
-        if (hflip) tile_addr -= 32;
-        else tile_addr += 32;
+        if (hflip) tile_addr -= (32 << bpp8);
+        else tile_addr += (32 << bpp8);
         if (bpp8) output_sprite_8bpp(this, tptr, mode, screen_x, priority, hflip, blended, w);
         else output_sprite_4bpp(this, tptr, mode, screen_x, priority, hflip, palette, blended, w);
         screen_x += 8;
@@ -606,6 +623,7 @@ static struct GBA_PPU_window *get_active_window(struct GBA *this, u32 x)
 #define GBACTIVE_SFX 5
 
 static void apply_windows(struct GBA *this, u32 sp_window, u32 bgtest[4]) {
+    return;
     //if (!this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
     for (u32 x = 0; x < 240; x++) {
         struct GBA_PPU_window *w = get_active_window(this, x);
@@ -631,7 +649,11 @@ static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
 {
     struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
-    if (!bg->enable) return;
+    if (!bg->enable) {
+        bg->x_lerp += bg->pb;
+        bg->y_lerp += bg->pd;
+        return;
+    }
 
 /*
 set affine coords to BGnX/BGnY at the start of the frame
@@ -639,9 +661,16 @@ also reset to BGnX/BGnY whenever these registers are changed (not sure how that 
 increment by BGnPB/BGnPD after every scanline
 increment by BGnPA/BGnPC after every pixel
  */
+    /*i64 iy = (i32)this->clock.ppu.y;
+    i64 pa = bg->pa;
+    i64 pb = bg->pb;
+    i64 pc = bg->pc;
+    i64 pd = bg->pd;*/
     i32 fx = bg->x_lerp;
     i32 fy = bg->y_lerp;
-    for (u32 screen_x = 0; screen_x < 240; screen_x++) {
+    for (i64 screen_x = 0; screen_x < 240; screen_x++) {
+        //i64 fx = (pa*screen_x + pb*iy)+bg->x;
+        //i64 fy = (pc*screen_x + pd*iy)+bg->y;
         get_affine_bg_pixel(this, bgnum, bg, fx>>8, fy>>8, &bg->line[screen_x]);
         fx += bg->pa;
         fy += bg->pc;
@@ -666,7 +695,9 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     // TODO HERE
     u32 startx = fine_x;
     for (u32 i = startx; i < 8; i++) {
-        bg->line[screen_x] = bgpx[i];
+        bg->line[screen_x].color = bgpx[i].color;
+        bg->line[screen_x].has = bgpx[i].has;
+        bg->line[screen_x].priority = bgpx[i].priority;
         screen_x++;
         hpos = (hpos + 1) & bg->hpixels_mask;
     }
@@ -678,17 +709,17 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     }
 }
 
-static void find_targets_and_priorities(struct GBA *this, u32 bg_enables[6], struct GBA_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x)
+static void find_targets_and_priorities(struct GBA *this, u32 bg_enables[6], struct GBA_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x, u32 *actives)
 {
     u32 laout = 5;
     u32 lbout = 5;
 
     // Get highest priority 1st target
     for (i32 priority = 3; priority >= 0; priority--) {
-        for (i32 i = 4; i >= 0; i--) {
-            if (bg_enables[i] && layers[i]->has && (layers[i]->priority == priority)) {
+        for (i32 layer_num = 4; layer_num >= 0; layer_num--) {
+            if (actives[layer_num] && bg_enables[layer_num] && layers[layer_num]->has && (layers[layer_num]->priority == priority)) {
                 lbout = laout;
-                laout = i;
+                laout = layer_num;
             }
         }
     }
@@ -703,11 +734,6 @@ static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables
     u32 *actives = default_active;
     struct GBA_PPU_window *active_window = get_active_window(this, x);
     if (active_window) actives = active_window->active;
-
-    for (i32 j = 2; j >= 0; j--) {
-        struct GBA_PPU_window *w = &this->ppu.window[j];
-
-    }
 
     struct GBA_PX *sp_px = &this->ppu.obj.line[x];
     struct GBA_PX empty_px = {.color=0, .priority=4, .translucent_sprite=0, .has=1};
@@ -733,7 +759,7 @@ static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables
 
     /* Find targets A and B */
     u32 target_a_layer, target_b_layer;
-    find_targets_and_priorities(this, obg_enables, layers, &target_a_layer, &target_b_layer, x);
+    find_targets_and_priorities(this, obg_enables, layers, &target_a_layer, &target_b_layer, x, actives);
 
     // Blending ONLY happens if the topmost pixel is a valid A target and the next-topmost is a valid B target
     // Brighten/darken only happen if topmost pixel is a valid A target
@@ -770,7 +796,7 @@ static void draw_line0(struct GBA *this, u16 *line_output)
     draw_bg_line_normal(this, 2);
     draw_bg_line_normal(this, 3);
     calculate_windows(this, 0);
-    apply_windows(this, 1, (u32[4]){1, 1, 1, 1});
+    //apply_windows(this, 1, (u32[4]){1, 1, 1, 1});
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -786,7 +812,7 @@ static void draw_line1(struct GBA *this, u16 *line_output)
     memset(&this->ppu.bg[3].line, 0, sizeof(this->ppu.bg[3].line));
 
     calculate_windows(this, 0);
-    apply_windows(this, 1, (u32[4]){1, 1, 1, 0});
+    //apply_windows(this, 1, (u32[4]){1, 1, 1, 0});
     u32 bg_enables[4] = {this->ppu.bg[0].enable, this->ppu.bg[1].enable, this->ppu.bg[2].enable, 0};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -801,7 +827,7 @@ static void draw_line2(struct GBA *this, u16 *line_output)
     draw_bg_line_affine(this, 2);
     draw_bg_line_affine(this, 3);
     calculate_windows(this, 0);
-    apply_windows(this, 1, (u32[4]){0, 0, 1, 1});
+    //apply_windows(this, 1, (u32[4]){0, 0, 1, 1});
     u32 bg_enables[4] = {0, 0, this->ppu.bg[2].enable, this->ppu.bg[3].enable};
     for (u32 x = 0; x < 240; x++) {
         output_pixel(this, x, this->ppu.obj.enable, &bg_enables[0], line_output);
@@ -850,16 +876,8 @@ static void draw_line5(struct GBA *this, u16 *line_output)
 
 void GBA_PPU_hblank(struct GBA*this)
 {
-    // It's cleared at cycle 0 and set at cycle 1007
-    hblank(this, 1);
-
-    // Check if we have any DMA transfers that need to go...
-    GBA_check_dma_at_hblank(this);
-
-
     // Now draw line!
     if (this->clock.ppu.y < 160) {
-
         // Copy debug data
         struct GBA_DBG_line *l = &this->dbg_info.line[this->clock.ppu.y];
         l->bg_mode = this->ppu.io.bg_mode;
@@ -891,6 +909,7 @@ void GBA_PPU_hblank(struct GBA*this)
             memset(line_output, 0xFF, 480);
             return;
         }
+        memset(line_output, 0, 480);
         switch (this->ppu.io.bg_mode) {
             case 0:
                 draw_line0(this, line_output);
@@ -913,9 +932,14 @@ void GBA_PPU_hblank(struct GBA*this)
             default:
                 assert(1 == 2);
         }
-        // Copy window stuff...
-
     }
+
+    // It's cleared at cycle 0 and set at cycle 1007
+    hblank(this, 1);
+
+    // Check if we have any DMA transfers that need to go...
+    GBA_check_dma_at_hblank(this);
+
 }
 
 void GBA_PPU_finish_scanline(struct GBA*this)
@@ -982,6 +1006,7 @@ void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 acces
 
 void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+        DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
     addr &= 0x1FFFF;
     if (addr < 0x18000)
         return cW[sz](this->ppu.VRAM, addr, val);
@@ -1000,11 +1025,6 @@ void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u
         return cW[sz](this->ppu.OAM, addr & 0x3FF, val);
 
     GBA_PPU_write_invalid(this, addr, sz, access, val);
-}
-
-static u32 vcount(struct GBA *this)
-{
-    return (this->clock.ppu.y == this->ppu.io.vcount_at);
 }
 
 u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
@@ -1031,14 +1051,13 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
         case 0x04000004: // DISPSTAT lo
             v = this->clock.ppu.vblank_active;
             v |= this->clock.ppu.hblank_active << 1;
-            v |= vcount(this);
+            v |= (this->clock.ppu.y == this->ppu.io.vcount_at) << 2;
             v |= this->ppu.io.vblank_irq_enable << 3;
             v |= this->ppu.io.hblank_irq_enable << 4;
-
             v |= this->ppu.io.vcount_irq_enable << 5;
             return v;
         case 0x04000005: // DISPSTAT hi
-            v = this->clock.ppu.y;
+            v = this->ppu.io.vcount_at;
             return v;
         case 0x04000006: // VCNT lo
             return this->clock.ppu.y;
@@ -1111,10 +1130,11 @@ static void update_bg_x(struct GBA *this, u32 bgnum, u32 which, u32 val)
         case 0: v = (v & 0x0FFFFF00) | val; break;
         case 1: v = (v & 0x0FFF00FF) | (val << 8); break;
         case 2: v = (v & 0x0F00FFFF) | (val << 16); break;
-        case 3: v = (v & 0x00FFFFFF) | ((val & 0x0F) << 24); break;
+        case 3: v = (v & 0x00FFFFFF) | (val << 24); break;
     }
     if ((v >> 27) & 1) v |= 0xF0000000;
     this->ppu.bg[bgnum].x = v;
+    this->ppu.bg[bgnum].x_written = 1;
 }
 
 static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
@@ -1125,14 +1145,18 @@ static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
         case 0: v = (v & 0x0FFFFF00) | val; break;
         case 1: v = (v & 0x0FFF00FF) | (val << 8); break;
         case 2: v = (v & 0x0F00FFFF) | (val << 16); break;
-        case 3: v = (v & 0x00FFFFFF) | ((val & 0x0F) << 24); break;
+        case 3: v = (v & 0x00FFFFFF) | (val << 24); break;
     }
     if ((v >> 27) & 1) v |= 0xF0000000;
     this->ppu.bg[bgnum].y = v;
+    this->ppu.bg[bgnum].y_written = 1;
 }
 
 void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     struct GBA_PPU *ppu = &this->ppu;
+    if ((addr >= 0x04000020) && (addr < 0x04000040)) {
+        DBG_EVENT(DBG_GBA_EVENT_WRITE_AFFINE_REGS);
+    }
     switch(addr) {
         case 0x04000000: {// DISPCNT lo
             //printf("\nDISPCNT WRITE %04x", val);
@@ -1142,7 +1166,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
                 dbg_break("ILLEGAL BG MODE", this->clock.master_cycle_count);
             }
             else {
-                if (new_mode != ppu->io.bg_mode) printf("\nBG MODE:%d", val & 7);
+                if (new_mode != ppu->io.bg_mode) printf("\nBG MODE:%d LINE:%d", val & 7, this->clock.ppu.y);
             }
 
             ppu->io.bg_mode = new_mode;
@@ -1182,7 +1206,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.io.hblank_irq_enable = (val >> 4) & 1;
             this->ppu.io.vcount_irq_enable = (val >> 5) & 1;
             return; }
-        case 0x04000005: return; // DISPSTAT hi
+        case 0x04000005: this->ppu.io.vcount_at = val; return;
         case 0x04000006: return; // not used
         case 0x04000007: return; // not used
 
@@ -1227,13 +1251,13 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x0400001E: this->ppu.bg[3].vscroll = (this->ppu.bg[3].vscroll & 0xFF00) | val; return;
         case 0x0400001F: this->ppu.bg[3].vscroll = (this->ppu.bg[3].vscroll & 0x00FF) | (val << 8); return;
 
-        case 0x04000020: this->ppu.bg[2].pa = (this->ppu.bg[2].pa & 0xFF00) | val; return;
+        case 0x04000020: this->ppu.bg[2].pa = (this->ppu.bg[2].pa & 0xFFFFFF00) | val; return;
         case 0x04000021: this->ppu.bg[2].pa = (this->ppu.bg[2].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000022: this->ppu.bg[2].pb = (this->ppu.bg[2].pb & 0xFF00) | val; return;
+        case 0x04000022: this->ppu.bg[2].pb = (this->ppu.bg[2].pb & 0xFFFFFF00) | val; return;
         case 0x04000023: this->ppu.bg[2].pb = (this->ppu.bg[2].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000024: this->ppu.bg[2].pc = (this->ppu.bg[2].pc & 0xFF00) | val; return;
+        case 0x04000024: this->ppu.bg[2].pc = (this->ppu.bg[2].pc & 0xFFFFFF00) | val; return;
         case 0x04000025: this->ppu.bg[2].pc = (this->ppu.bg[2].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000026: this->ppu.bg[2].pd = (this->ppu.bg[2].pd & 0xFF00) | val; return;
+        case 0x04000026: this->ppu.bg[2].pd = (this->ppu.bg[2].pd & 0xFFFFFF00) | val; return;
         case 0x04000027: this->ppu.bg[2].pd = (this->ppu.bg[2].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
         case 0x04000028: update_bg_x(this, BG2, 0, val); return;
         case 0x04000029: update_bg_x(this, BG2, 1, val); return;
@@ -1244,13 +1268,13 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x0400002E: update_bg_y(this, BG2, 2, val); return;
         case 0x0400002F: update_bg_y(this, BG2, 3, val); return;
 
-        case 0x04000030: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFF00) | val; return;
+        case 0x04000030: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFFFFFF00) | val; return;
         case 0x04000031: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000032: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFF00) | val; return;
+        case 0x04000032: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFFFFFF00) | val; return;
         case 0x04000033: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000034: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFF00) | val; return;
+        case 0x04000034: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFFFFFF00) | val; return;
         case 0x04000035: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000036: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFF00) | val; return;
+        case 0x04000036: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFFFFFF00) | val; return;
         case 0x04000037: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
         case 0x04000038: update_bg_x(this, BG3, 0, val); return;
         case 0x04000039: update_bg_x(this, BG3, 1, val); return;

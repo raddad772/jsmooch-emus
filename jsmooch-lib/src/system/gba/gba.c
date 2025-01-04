@@ -202,13 +202,13 @@ void GBAJ_reset(JSM)
     GBA_clock_reset(&this->clock);
     GBA_PPU_reset(this);
 
-    skip_BIOS(this);
 
     for (u32 i = 0; i < 4; i++) {
         this->io.SIO.multi[i] = 0xFFFF;
     }
     this->io.SIO.send = 0xFFFF;
 
+    skip_BIOS(this);
     printf("\nGBA reset!");
 }
 
@@ -366,7 +366,8 @@ u32 GBAJ_finish_scanline(JSM)
 
 static u32 GBAJ_step_master(JSM, u32 howmany)
 {
-    printf("\nNOT YET SUPPORT!");
+    JTHIS;
+    ARM7TDMI_cycle(&this->cpu, howmany);
     return 0;
 }
 
@@ -401,7 +402,7 @@ void setup_lcd(struct JSM_DISPLAY *d)
 
     d->pixelometry.cols.left_hblank = 0;
     d->pixelometry.cols.visible = 240;
-    d->pixelometry.cols.max_visible = 160;
+    d->pixelometry.cols.max_visible = 240;
     d->pixelometry.cols.right_hblank = 68;
     d->pixelometry.offset.x = 0;
 
@@ -470,7 +471,6 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs)
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
     this->ppu.cur_output = (u16 *)(d->display.output[0]);
-    this->ppu.cur_pixel = 0;
 
     setup_audio(IOs);
 

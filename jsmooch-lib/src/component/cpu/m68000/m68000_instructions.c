@@ -2533,7 +2533,6 @@ M68KINS(MULS)
             this->regs.SR.V = 0;
             this->regs.SR.Z = (this->state.instruction.result & 0xFFFFFFFF) == 0;
             this->regs.SR.N = !!(this->state.instruction.result & 0x80000000);
-
 INS_END
 
 M68KINS(MULU)

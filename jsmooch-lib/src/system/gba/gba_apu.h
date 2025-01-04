@@ -18,6 +18,10 @@ struct GBA_APU {
     struct {
         u32 wave_ram_size, wave_ram_bank, playback, sound_len;
     } chan[6];
+
+    struct {
+        u32 sound_bias;
+    } io;
 };
 
 struct GBA;

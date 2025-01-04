@@ -683,7 +683,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     render_emu_window(fsys, io);
     // debug controls window
     if (ImGui::Begin("Play")){
-        static int steps[4] = { 10, 1, 1, 1 };
+        static int steps[4] = { 100, 1, 1, 1 };
         bool play_pause = false;
         bool step_clocks = false, step_scanlines = false, step_seconds = false, step_frames = false;
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;

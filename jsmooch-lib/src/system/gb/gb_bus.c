@@ -69,7 +69,6 @@ inline void GB_bus_CPU_write(struct GB_bus* this, u32 addr, u32 val) {
 
     if ((addr >= 0x8000) && (addr < 0xA000)) { // VRAM
         DBG_EVENT(DBG_GB_EVENT_VRAM_WRITE);
-        printf("\nWRITE VRAM!");
         this->generic_mapper.VRAM[(addr & 0x1FFF) + this->generic_mapper.VRAM_bank_offset] = (u8)val;
         return;
     }

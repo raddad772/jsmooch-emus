@@ -26,6 +26,7 @@ static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
 
 void ARM7TDMI_init(struct ARM7TDMI *this, u32 *waitstates)
 {
+    //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));
     ARM7TDMI_fill_arm_table(this);
     this->waitstates = waitstates;
@@ -49,8 +50,16 @@ void ARM7TDMI_delete(struct ARM7TDMI *this)
 
 void ARM7TDMI_reset(struct ARM7TDMI *this)
 {
-    this->regs.CPSR.u = 0;
-    this->regs.CPSR.mode = ARM7_user;
+    this->pipeline.flushed = 0;
+
+    this->regs.CPSR.F = 1;
+    this->regs.CPSR.mode = ARM7_supervisor;
+    this->regs.SPSR_svc = this->regs.CPSR.u;
+    this->regs.CPSR.T = 0;
+    this->regs.CPSR.I = 1;
+    *this->regmap[14] = 0;
+    *this->regmap[15] = 0;
+    ARM7TDMI_reload_pipeline(this);
 
 }
 
@@ -71,14 +80,6 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry*
     jsm_string_quickempty(&entry->dasm);
     jsm_string_quickempty(&entry->context);
     assert(1==0);
-
-    /*struct M68k_ins_t *ins = &M68k_decoded[opcode];
-    u32 mPC = entry->addr+2;
-    ins->disasm(ins, &mPC, &this->trace.strct, &entry->dasm);
-    entry->ins_size_bytes = mPC - entry->addr;
-    struct M68k_ins_t *t =  &M68k_decoded[IR & 0xFFFF];
-    pprint_ea(this, t, 0, &entry->context);
-    pprint_ea(this, t, 1, &entry->context);*/
 }
 
 static void do_IRQ(struct ARM7TDMI* this)
@@ -142,7 +143,7 @@ static void bad_trace(struct ARM7TDMI *this, u32 r, u32 sz)
         did_yo = 1;
     }
     if (sz == 2) {
-        ARM7TDMI_thumb_disassemble(r, &arryo, -1);
+        ARM7TDMI_thumb_disassemble(r, &arryo, -1, NULL);
         printf("\nFetch THUMB opcode from %08x: %04x: %s", this->regs.PC - 4, r, arryo.ptr);
     }
     else {
@@ -220,16 +221,15 @@ static void print_context(struct ARM7TDMI *this, struct ARMctxt *ct, struct jsm_
 
 static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 T)
 {
+    struct ARMctxt ct;
+    ct.regs = 0;
     if (T) {
-        ARM7TDMI_thumb_disassemble(opcode, &this->trace.str, (i64) addr);
-        jsm_string_quickempty(&this->trace.str2);
+        ARM7TDMI_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
     else {
-        struct ARMctxt ct;
-        ct.regs = 0;
         ARMv4_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
-        print_context(this, &ct, &this->trace.str2);
     }
+    print_context(this, &ct, &this->trace.str2);
     u64 tc;
     if (!this->trace.cycles) tc = 0;
     else tc = *this->trace.cycles;

@@ -353,19 +353,19 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
                             // 1d mapping=1 means its htiles*y
                             // 1d mapping=0 means its 32 * y
                             u32 tile_num = ptr[2] & 0x3FF; // Get tile number
-                            if (bpp8) tile_num &= 0x3FE;
 
                             // Now advance by block y
                             if (this->ppu.io.obj_mapping_1d) {
-                                tile_num += (tex_x_tiles * block_y);
+                                tile_num += ((tex_x_tiles << bpp8) * block_y);
                             }
                             else {
-                                tile_num += ((32 << bpp8) * block_y);
+                                tile_num += (32 * block_y);
                             }
 
                             // Advance by block x
-                            tile_num += block_x;
+                            tile_num += block_x << bpp8;
 
+                            if (bpp8) tile_num &= 0x3FE;
                             tile_num &= 0x3FF;
 
                             // Now get pointer to that tile
@@ -896,6 +896,40 @@ static void setup_image_view_bg(struct GBA* this, struct debugger_interface *dbg
 
 }
 
+static void setup_events_view(struct GBA* this, struct debugger_interface *dbgr) {
+    this->dbg.events.view = debugger_view_new(dbgr, dview_events);
+    struct debugger_view *dview = cpg(this->dbg.events.view);
+    struct events_view *ev = &dview->events;
+
+    ev->timing = ev_timing_master_clock,
+    ev->master_clocks.per_line = 1232;
+    ev->master_clocks.height = 228;
+    ev->master_clocks.ptr = &this->clock.master_cycle_count;
+
+    for (u32 i = 0; i < 2; i++) {
+        ev->display[i].width = 308;
+        ev->display[i].height = 228;
+        ev->display[i].buf = NULL;
+        ev->display[i].frame_num = 0;
+    }
+
+    ev->associated_display = this->ppu.display_ptr;
+
+    DEBUG_REGISTER_EVENT_CATEGORY("PPU events", DBG_GBA_CATEGORY_PPU);
+    DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_GBA_CATEGORY_CPU);
+    cvec_grow_by(&ev->events, DBG_GBA_EVENT_MAX);
+    cvec_lock_reallocs(&ev->events);
+    DEBUG_REGISTER_EVENT("Affine regs write", 0xFFFF00, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_WRITE_AFFINE_REGS);
+    DEBUG_REGISTER_EVENT("Set IF.HBlank", 0xFF00FF, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_SET_HBLANK_IRQ);
+    DEBUG_REGISTER_EVENT("Set IF.VBlank", 0x00FF00, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_SET_VBLANK_IRQ);
+    DEBUG_REGISTER_EVENT("Set IF.LY=LYC", 0x00FFFF, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_SET_LINECOUNT_IRQ);
+    DEBUG_REGISTER_EVENT("Write VRAM", 0x0000FF, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_WRITE_VRAM);
+
+    SET_EVENT_VIEW(this->cpu);
+    debugger_report_frame(this->dbg.interface);
+}
+
+
 static void setup_image_view_window(struct GBA* this, struct debugger_interface *dbgr, u32 wnum)
 {
     struct debugger_view *dview;
@@ -959,6 +993,7 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     dbgr->smallest_step = 1;
 
     //setup_ARM7TDMI_disassembly(dbgr, this);
+    setup_events_view(this, dbgr);
     setup_cpu_trace(dbgr, this);
     setup_image_view_window(this, dbgr, 0);
     setup_image_view_window(this, dbgr, 1);
@@ -968,7 +1003,7 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_bg(this, dbgr, 1);
     setup_image_view_bg(this, dbgr, 2);
     setup_image_view_bg(this, dbgr, 3);
-    setup_image_view_tiles(this, dbgr);
     setup_image_view_sprites(this, dbgr);
+    setup_image_view_tiles(this, dbgr);
     setup_image_view_palettes(this, dbgr);
 }

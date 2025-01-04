@@ -508,7 +508,6 @@ static void GB_PPU_disable(struct GB_PPU* this) {
 
 static void GB_PPU_enable(struct GB_PPU *this) {
     if (this->enabled) return;
-    //printf("\nENABLE PPU %d", this->clock->master_clock);
     this->enabled = TRUE;
     this->display->enabled = 1;
     this->display->scan_x = this->display->scan_y = 0;
@@ -737,7 +736,8 @@ u32 GB_PPU_bus_read_IO(struct GB_bus* bus, u32 addr, u32 val){
             mode1_enable = (this->io.STAT_IE & 2) >> 1;
             mode2_enable = (this->io.STAT_IE & 4) >> 2;
             lylyc_enable = (this->io.STAT_IE & 8) >> 3;
-            return this->clock->ppu_mode |
+            u32 mode = this->enabled ? this->clock->ppu_mode : 0;
+            return mode |
                 ((this->clock->ly == this->io.lyc) ? 1 : 0) |
                 (mode0_enable << 3) |
                 (mode1_enable << 4) |
@@ -903,7 +903,8 @@ void GB_PPU_cycle(struct GB_PPU* this) {
             this->display->scan_y++;
             this->display->scan_x = 0;
         }
-        return;
+        if (this->display->scan_y > 153) this->display->scan_y = 153;
+        //return;
     }
     if (this->clock->ppu_mode < 2) return;
 

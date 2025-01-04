@@ -62,6 +62,8 @@ struct GBA {
             u32 send;
             u32 multi[4];
         } SIO;
+
+        u8 POSTFLG;
     } io;
 
     struct {
@@ -141,6 +143,8 @@ struct GBA {
     } dbg_info;
 
     DBG_START
+        DBG_EVENT_VIEW
+
         DBG_CPU_REG_START1
             *R[16]
         DBG_CPU_REG_END1

@@ -275,8 +275,8 @@ static void dasm_LDRSB_LDRSH(u32 opcode, struct jsm_string *out, i64 instruction
     add_context(ct, Rnd);
     add_context(ct, Rmd);
     u32 H = OBIT(5);
-    if (H) mn("ldrsh", 2)
-    else mn("ldrsb", 2)
+    if (H) mn("ldrsh", 3)
+    else mn("ldrsb", 3)
     oregc(Rdd);
     ostr("[");
     oreg(Rnd); // base regiter
@@ -311,9 +311,9 @@ static void dasm_MSR_reg(u32 opcode, struct jsm_string *out, i64 instruction_add
     if (c) mask |= 0xFF;
     mn("msr", 3);
     if (PSR)
-        ostr("spsr ");
+        ostr("spsr_");
     else
-        ostr("cpsr ");
+        ostr("cpsr_");
     if (f) ostr("f");
     if (s) ostr("s");
     if (x) ostr("x");
@@ -501,8 +501,10 @@ static void dasm_data_proc_immediate(u32 opcode, struct jsm_string *out, i64 ins
         add_context(ct, Rdd);
         oregc(Rdd);
     }
-    oregc(Rnd);
-    add_context(ct, Rnd);
+    if (alu_opcode < 13) {
+        oregc(Rnd);
+        add_context(ct, Rnd);
+    }
     ostr("#$");
     ohex(Rm, 8);
 }
@@ -528,8 +530,8 @@ static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i6
     else if (T && (!B)) w = "t";
     else if ((!T) && B) w = "b";
     else w = NULL;
-    if (L) mnp("ldr", 2, w)
-    else mnp("str", 2, w)
+    if (L) mnp("ldr", 3, w)
+    else mnp("str", 3, w)
     oregc(Rdd);
     add_context(ct, Rdd);
     ostr("[");
@@ -541,18 +543,18 @@ static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i6
             return;
         }
         oregc(Rnd);
-        if (U) ostr(" +#");
-        else ostr(" -#");
-        odec(offset);
+        if (U) ostr(" +#$");
+        else ostr(" -#$");
+        ohex(offset, 2);
         ostr("]");
     }
     else {
         oreg(Rnd);
         add_context(ct, Rnd);
         ostr("], ");
-        if (U) ostr("+#");
-        else ostr("-#");
-        odec(offset);
+        if (U) ostr("+#$");
+        else ostr("-#$");
+        ohex(offset, 2);
     }
     if (W) ostr("!");
 }
@@ -646,7 +648,12 @@ static void dasm_B_BL(u32 opcode, struct jsm_string *out, i64 instruction_addr, 
     offset <<= 2;
     if (link) mn("bl", 4)
     else mn("b", 5)
-    odec(offset);
+    if (instruction_addr == -1) {
+        odec(offset);
+    }
+    else {
+        ohex(offset+instruction_addr+8, 8);
+    }
 }
 
 static void dasm_STC_LDC(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)

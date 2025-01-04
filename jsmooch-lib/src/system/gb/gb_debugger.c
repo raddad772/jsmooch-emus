@@ -172,7 +172,7 @@ static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
 
     for (u32 i = 0; i < 2; i++) {
         ev->display[i].width = 456;
-        ev->display[i].height = 154;
+        ev->display[i].height = 155;
         ev->display[i].buf = NULL;
         ev->display[i].frame_num = 0;
     }

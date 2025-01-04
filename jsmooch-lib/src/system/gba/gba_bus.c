@@ -197,6 +197,9 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
             v |= this->timer[tn].enable << 7;
             return v;
         }
+
+        case 0x04000300: return this->io.POSTFLG & 0xFF;
+
         // Unsupported stubs...
         case 0x0400012A: return this->io.SIO.send & 0xFF;
         case 0x0400012B: return this->io.SIO.send >> 8;
@@ -299,7 +302,6 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             return;
         case 0x04000209: // IME hi
             return;
-
         case 0x0400020A:
         case 0x0400020B: // not used
         case 0x0400020C: // not used
@@ -409,6 +411,7 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400010D: this->timer[3].counter.reload = (this->timer[3].counter.reload & 0xFF) | (val << 8); return;
 
 
+        case 0x04000300: { this->io.POSTFLG = val; return; }
         case 0x04000301: { this->io.halted = 1; return; }
 
         // DMA enable 0->1 while start timing = 0 will start it

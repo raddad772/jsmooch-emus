@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "armv4_disassembler.h"
 #include "thumb_disassembler.h"
 
 static u16 doBITS(u16 val, u16 hi, u16 lo)
@@ -19,6 +20,10 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
 #define BITS(hi,lo) (doBITS(opc, hi, lo))
 #define ostr(...) jsm_string_sprintf(out, __VA_ARGS__)
 
+static void add_context(struct ARMctxt *t, u32 rnum)
+{
+    if (t) t->regs |= (1 << rnum);
+}
 
 static void outreg(struct jsm_string *out, u32 num, u32 add_comma) {
     if (num == 13) ostr("SP");
@@ -57,59 +62,63 @@ static void outdec(struct jsm_string *out, u32 num, u32 add_comma)
 #define rd_addr_rb_ro    { oregc(Rd); ostr("["); oregc(Rb); oreg(Ro); ostr("]"); }
 #define rd_addr_rb_imm    { oregc(Rd); ostr("["); oregc(Rb); odec(imm); ostr("]"); }
 
-static void dasm_invalid(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_invalid(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     ostr("unknown ");
     ohex(opc, 4);
 }
 
-static void dasm_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 I = OBIT(10); // 0 = register, 1 = immediate
     u32 sub_opcode = OBIT(9); // 0= add, 1 = sub
     u32 Rn, imm;
-    if (!I)
-        Rn = BITS(8,6);
+    if (!I) {
+        Rn = BITS(8, 6);
+        add_context(ct, Rn);
+    }
     else
         imm = BITS(8, 6);
     u32 Rs = BITS(5, 3);
     u32 Rd = BITS(2, 0);
+    add_context(ct, Rs);
     if ((sub_opcode == 2) && (imm == 0)) { // MOV alias
-        ostr("mov ");
+        ostr("mov  ");
         oreg2(Rd, Rs);
         return;
     }
     switch(sub_opcode) {
         case 0: // add Rd,Rs,Rn
-            ostr("add ");
+            ostr("add   ");
             oreg3(Rd, Rs, Rn);
             return;
         case 1: // sub Rd, Rs, Rn
-            ostr("sub ");
+            ostr("sub   ");
             oreg3(Rd, Rs, Rn);
             return;
         case 2: // add Rd, Rs, #nn
-            ostr("add ");
+            ostr("add   ");
             oreg2_hex(Rd, Rs, imm, 2);
             return;
         case 3: // sub Rd, Rs, #nn
-            ostr("sub ");
+            ostr("sub   ");
             oreg2_hex(Rd, Rs, imm, 2);
             return;
     }
     NOGOHERE;
 }
 
-static void dasm_LSL_LSR_ASR(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LSL_LSR_ASR(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 sub_opcode = BITS(12, 11);
     u32 imm = BITS(10, 6);
     u32 Rs = BITS(5, 3);
     u32 Rd = BITS(2, 0);
+    add_context(ct, Rs);
     switch(sub_opcode) {
-        case 0: ostr("lsl "); break;
-        case 1: ostr("lsr "); break;
-        case 2: ostr("asr "); break;
+        case 0: ostr("lsl  "); break;
+        case 1: ostr("lsr  "); break;
+        case 2: ostr("asr  "); break;
         case 3:
             jsm_string_sprintf(out, "BAD INSTRUCTION1");
             return;
@@ -118,25 +127,26 @@ static void dasm_LSL_LSR_ASR(u16 opc, struct jsm_string *out, i64 ins_addr)
     }
     oreg2_dec(Rd,Rs,imm);
 }
-static void dasm_MOV_CMP_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_MOV_CMP_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 sub_opcode = BITS(12, 11);
     u32 Rd = BITS(10, 8);
     u32 imm = BITS(7, 0);
     switch(sub_opcode) {
-        case 0: ostr("mov ");
-        case 1: ostr("cmp ");
-        case 2: ostr("add ");
-        case 3: ostr("sub ");
+        case 0: ostr("movs "); break;
+        case 1: ostr("cmps "); break;
+        case 2: ostr("adds "); break;
+        case 3: ostr("subs "); break;
     }
     oreg_hex(Rd, imm, 2);
 }
 
-static void dasm_data_proc(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_data_proc(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 sub_opcode = BITS(9, 6);
     u32 Rs = BITS(5, 3);
     u32 Rd = BITS(2, 0);
+    add_context(ct, Rs);
     switch(sub_opcode) {
         case 0: ostr("and "); break;
         case 1: ostr("eor "); break;
@@ -157,20 +167,22 @@ static void dasm_data_proc(u16 opc, struct jsm_string *out, i64 ins_addr)
     }
     oreg2(Rd, Rs);
 }
-static void dasm_BX(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_BX(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     ostr("bx  ");
     u32 Rs = OBIT(6) << 3;
     Rs |= BITS(5,3);
+    add_context(ct, Rs);
     oreg(Rs);
 }
 
-static void dasm_ADD_CMP_MOV_hi(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_ADD_CMP_MOV_hi(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 Rd = OBIT(7) << 3;
     u32 Rs = OBIT(6) << 3;
     Rs |= BITS(5,3);
     Rd |= BITS(2, 0);
+    add_context(ct, Rs);
     u32 sub_opcode = BITS(9, 8);
     if ((sub_opcode == 2) && (Rd == 8) && (Rs == 8)) {
         ostr("nop ");
@@ -185,122 +197,156 @@ static void dasm_ADD_CMP_MOV_hi(u16 opc, struct jsm_string *out, i64 ins_addr)
     }
     oreg2(Rd, Rs);
 }
-static void dasm_LDR_PC_relative(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDR_PC_relative(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 Rd = BITS(10, 8);
     u32 imm = BITS(7, 0);
     imm <<= 2;
-    ostr("ldr ");
+    ostr("ldr  ");
     oregc(Rd);
+    add_context(ct, Rd);
     ostr("[PC,#");
     ohex(imm, 1);
     ostr("]");
 }
 
-static void dasm_LDRH_STRH_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDRH_STRH_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 Ro = BITS(8, 6);
     u32 Rb = BITS(5, 3);
     u32 Rd = BITS(2, 0);
-    if (L) ostr("ldrh ");
-    else ostr("strh ");
+    add_context(ct, Ro);
+    add_context(ct, Rb);
+    if (L)
+        ostr("ldrh ");
+    else {
+        add_context(ct, Rd);
+        ostr("strh ");
+    }
     rd_addr_rb_ro;
 }
 
 
 
-static void dasm_LDRSH_LDRSB_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDRSH_LDRSB_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 B = !OBIT(11);
     u32 Ro = BITS(8, 6);
     u32 Rb = BITS(5, 3);
     u32 Rd = BITS(2, 0);
+    add_context(ct, Ro);
+    add_context(ct, Rb);
     if (B) ostr("ldrsb ");
     else ostr("ldrsh ");
     rd_addr_rb_ro;
-
 }
 
-static void dasm_LDR_STR_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDR_STR_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 Ro = BITS(8, 6);
     u32 Rb = BITS(5, 3);
     u32 Rd = BITS(2, 0);
+    add_context(ct, Rb);
+    add_context(ct, Ro);
     if (L) ostr("ldr  ");
-    else ostr("str  ");
+    else {
+        add_context(ct, Rd);
+        ostr("str  ");
+    }
     rd_addr_rb_ro;
 }
 
-static void dasm_LDRB_STRB_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDRB_STRB_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 L = OBIT(11); // 0=STR, 1=LDR
     u32 Ro = BITS(8, 6);
     u32 Rb = BITS(5, 3);
     u32 Rd = BITS(2, 0);
-    if (L) ostr("ldrb ");
-    else ostr("strb ");
+    add_context(ct, Rb);
+    add_context(ct, Ro);
+    if (L) ostr("ldrb  ");
+    else {
+        add_context(ct, Rd);
+        ostr("strb  ");
+    }
     rd_addr_rb_ro;
 }
 
-static void dasm_LDR_STR_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDR_STR_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 imm = BITS(10, 6);
     imm <<= 2;
     u32 Rb = BITS(5, 3);
     u32 Rd = BITS(2, 0);
+    add_context(ct, Rb);
     if (L) ostr("ldr  ");
-    else ostr("str  ");
+    else {
+        ostr("str  ");
+        add_context(ct, Rd);
+    }
     rd_addr_rb_imm;
 }
 
-static void dasm_LDRB_STRB_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDRB_STRB_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 imm = BITS(10, 6);
     u32 Rb = BITS(5, 3);
     u32 Rd = BITS(2, 0);
+    add_context(ct, Rb);
     if (L) ostr("ldrb ");
-    else ostr("strb ");
+    else {
+        ostr("strb ");
+        add_context(ct, Rd);
+    }
     rd_addr_rb_imm;
 }
 
-static void dasm_LDRH_STRH_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDRH_STRH_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 imm = BITS(10, 6);
     imm <<= 1;
     u32 Rb = BITS(5, 3);
+    add_context(ct, Rb);
     u32 Rd = BITS(2, 0);
     if (L) ostr("ldrh ");
-    else ostr("strh ");
+    else {
+        ostr("strh ");
+        add_context(ct, Rd);
+    }
     rd_addr_rb_imm;
 }
 
-static void dasm_LDR_STR_SP_relative(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDR_STR_SP_relative(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 Rd = BITS(10, 8);
     u32 imm = BITS(7, 0);
     imm <<= 2;
-    if (L) ostr("ldr  ");
-    else ostr("str  ");
+    if (L) ostr("ldr   ");
+    else {
+        add_context(ct, Rd);
+        ostr("str   ");
+    }
     // Rd,[SP,#nn]
     oregc(Rd);
-    ostr("[SP,#");
+    ostr("[sp,#");
     odec(imm);
     ostr("]");
 }
 
-static void dasm_ADD_SP_or_PC(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_ADD_SP_or_PC(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 SP = OBIT(11);
     u32 Rd = BITS(10, 8);
     u32 imm = BITS(7, 0);
     imm <<= 2;
 
+    add_context(ct, Rd);
     if (SP) {
         // 1: ADD  Rd,SP,#nn    ;Rd = SP + nn
         ostr("add  ");
@@ -317,7 +363,7 @@ static void dasm_ADD_SP_or_PC(u16 opc, struct jsm_string *out, i64 ins_addr)
     }
 }
 
-static void dasm_ADD_SUB_SP(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_ADD_SUB_SP(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 S = OBIT(7);
     u32 imm = BITS(6, 0);
@@ -349,7 +395,7 @@ static void do_rlist(struct jsm_string *out, u16 rlist)
     }
 }
 
-static void dasm_PUSH_POP(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_PUSH_POP(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     // 0: PUSH {Rlist}{LR}   ;store in memory, decrements SP (R13)
     // 1: POP  {Rlist}{PC}   ;load from memory, increments SP (R13
@@ -371,10 +417,11 @@ static void dasm_PUSH_POP(u16 opc, struct jsm_string *out, i64 ins_addr)
         if (rlist != 0) ostr("}");
     }
 }
-static void dasm_LDM_STM(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_LDM_STM(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 sub_opcode = OBIT(11);
     u32 Rb = BITS(10, 8);
+    add_context(ct, Rb);
     u32 rlist = BITS(7, 0);
     /*
  0: STMIA Rb!,{Rlist}   ;store in memory, increments Rb
@@ -387,13 +434,13 @@ static void dasm_LDM_STM(u16 opc, struct jsm_string *out, i64 ins_addr)
     if (rlist) ostr("}");
 }
 
-static void dasm_SWI(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_SWI(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 comment = BITS(7, 0);
     ostr("swi   ");
     ohex(comment, 2);
 }
-static void dasm_UNDEFINED_BCC(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_UNDEFINED_BCC(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 sub_opcode = BITS(11, 8);
     u32 imm = BITS(7, 0);
@@ -402,7 +449,7 @@ static void dasm_UNDEFINED_BCC(u16 opc, struct jsm_string *out, i64 ins_addr)
     ostr("bcc   undefined");
 }
 
-static void dasm_BCC(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_BCC(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 sub_opcode = BITS(11, 8);
     u32 imm = BITS(7, 0);
@@ -423,12 +470,12 @@ static void dasm_BCC(u16 opc, struct jsm_string *out, i64 ins_addr)
         case 11: ostr("blt   "); break;
         case 12: ostr("bgt   "); break;
         case 13: ostr("ble   "); break;
-        case 14: ostr("bund   "); break;
+        case 14: ostr("bund  "); break;
         case 15: ostr("swi   "); break;
     }
     odec(imm);
 }
-static void dasm_B(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_B(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 imm = BITS(10, 0);
     imm = SIGNe11to32(imm);
@@ -437,7 +484,7 @@ static void dasm_B(u16 opc, struct jsm_string *out, i64 ins_addr)
     odec(imm);
 }
 
-static void dasm_BL_BLX_prefix(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_BL_BLX_prefix(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 imm = BITS(11, 0);
     imm = (i32)SIGNe11to32(imm); // now SHL 11...
@@ -446,7 +493,7 @@ static void dasm_BL_BLX_prefix(u16 opc, struct jsm_string *out, i64 ins_addr)
     odec(imm);
 }
 
-static void dasm_BL_suffix(u16 opc, struct jsm_string *out, i64 ins_addr)
+static void dasm_BL_suffix(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     u32 imm = BITS(10, 0);
     imm <<= 1;
@@ -455,87 +502,87 @@ static void dasm_BL_suffix(u16 opc, struct jsm_string *out, i64 ins_addr)
 }
 
 
-void ARM7TDMI_thumb_disassemble(u16 opc, struct jsm_string *out, i64 ins_addr)
+void ARM7TDMI_thumb_disassemble(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
 {
     jsm_string_quickempty(out);
 
     if ((opc & 0b1111100000000000) == 0b0001100000000000) { // ADD_SUB
-        dasm_ADD_SUB(opc, out, ins_addr);
+        dasm_ADD_SUB(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1110000000000000) == 0b0000000000000000) { // LSL, LSR, etc.
-        dasm_LSL_LSR_ASR(opc, out, ins_addr);
+        dasm_LSL_LSR_ASR(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1110000000000000) == 0b0010000000000000) { // MOV, CMP, ADD, SUB
-        dasm_MOV_CMP_ADD_SUB(opc, out, ins_addr);
+        dasm_MOV_CMP_ADD_SUB(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111110000000000) == 0b0100000000000000) { // data proc
-        dasm_data_proc(opc, out, ins_addr);
+        dasm_data_proc(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111111100000000) == 0b0100011100000000) { // BX
-        dasm_BX(opc, out, ins_addr);
+        dasm_BX(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111110000000000) == 0b0100010000000000) { // ADD, CMP, MOV hi
-        dasm_ADD_CMP_MOV_hi(opc, out, ins_addr);
+        dasm_ADD_CMP_MOV_hi(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111100000000000) == 0b0100100000000000) { // 01001.....
-        dasm_LDR_PC_relative(opc, out, ins_addr);
+        dasm_LDR_PC_relative(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111011000000000) == 0b0101001000000000) { // 0101.01...
-        dasm_LDRH_STRH_reg_offset(opc, out, ins_addr);
+        dasm_LDRH_STRH_reg_offset(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111011000000000) == 0b0101011000000000) { // 0101.11...
-        dasm_LDRSH_LDRSB_reg_offset(opc, out, ins_addr);
+        dasm_LDRSH_LDRSB_reg_offset(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111011000000000) == 0b0101000000000000) { // 0101.00...
-        dasm_LDR_STR_reg_offset(opc, out, ins_addr);
+        dasm_LDR_STR_reg_offset(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111011000000000) == 0b0101010000000000) { // 0101.10...
-        dasm_LDRB_STRB_reg_offset(opc, out, ins_addr);
+        dasm_LDRB_STRB_reg_offset(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111000000000000) == 0b0110000000000000) { // 0110......
-        dasm_LDR_STR_imm_offset(opc, out, ins_addr);
+        dasm_LDR_STR_imm_offset(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111000000000000) == 0b0111000000000000) { // 0111......
-        dasm_LDRB_STRB_imm_offset(opc, out, ins_addr);
+        dasm_LDRB_STRB_imm_offset(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111000000000000) == 0b1000000000000000) { // 1000......
-        dasm_LDRH_STRH_imm_offset(opc, out, ins_addr);
+        dasm_LDRH_STRH_imm_offset(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111000000000000) == 0b1001000000000000) { // 1001......
-        dasm_LDR_STR_SP_relative(opc, out, ins_addr);
+        dasm_LDR_STR_SP_relative(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111000000000000) == 0b1010000000000000) { // 1010......
-        dasm_ADD_SP_or_PC(opc, out, ins_addr);
+        dasm_ADD_SP_or_PC(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111111100000000) == 0b1011000000000000) { // 10110000..
-        dasm_ADD_SUB_SP(opc, out, ins_addr);
+        dasm_ADD_SUB_SP(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111011000000000) == 0b1011010000000000) { // 1011.10...
-        dasm_PUSH_POP(opc, out, ins_addr);
+        dasm_PUSH_POP(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111000000000000) == 0b1100000000000000) { // 1100......
-        dasm_LDM_STM(opc, out, ins_addr);
+        dasm_LDM_STM(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111111100000000) == 0b1101111100000000) { // 11011111..
-        dasm_SWI(opc, out, ins_addr);
+        dasm_SWI(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111111100000000) == 0b1101111000000000) { // 11011110..
-        dasm_UNDEFINED_BCC(opc, out, ins_addr);
+        dasm_UNDEFINED_BCC(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111000000000000) == 0b1101000000000000) { // 1101......
-        dasm_BCC(opc, out, ins_addr);
+        dasm_BCC(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111100000000000) == 0b1110000000000000) { // 11100.....
-        dasm_B(opc, out, ins_addr);
+        dasm_B(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111100000000000) == 0b1111000000000000) { // 11110.....
-        dasm_BL_BLX_prefix(opc, out, ins_addr);
+        dasm_BL_BLX_prefix(opc, out, ins_addr, ct);
     }
     else if ((opc & 0b1111100000000000) == 0b1111100000000000) { // 11111.....
-        dasm_BL_suffix(opc, out, ins_addr);
+        dasm_BL_suffix(opc, out, ins_addr, ct);
     }
     else {
-        dasm_invalid(opc, out, ins_addr);
+        dasm_invalid(opc, out, ins_addr, ct);
     }
 #undef OBIT
 #undef BITS

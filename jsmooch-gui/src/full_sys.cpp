@@ -615,11 +615,12 @@ void full_system::load_default_ROM()
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "drmario.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
@@ -672,16 +673,23 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/irq_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/m7_demo.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/m7_demo_mb.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/m7_ex.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
+            //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

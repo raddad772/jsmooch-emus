@@ -33,7 +33,6 @@ struct GBA_PPU_OBJ {
 
 struct GBA_PPU {
     u16 *cur_output;
-    u32 cur_pixel;
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 
@@ -66,6 +65,7 @@ struct GBA_PPU {
         u32 vblank_irq_enable, hblank_irq_enable, vcount_irq_enable;
         u32 vcount_at;
     } io;
+
     struct GBA_PPU_bg {
         u32 enable;
 
@@ -83,6 +83,7 @@ struct GBA_PPU {
 
         i32 pa, pb, pc, pd;
         i32 x, y;
+        u32 x_written, y_written;
         i32 x_lerp, y_lerp;
 
         struct GBA_PX line[248];

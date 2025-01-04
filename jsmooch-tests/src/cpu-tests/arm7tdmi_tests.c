@@ -635,7 +635,8 @@ void test_arm7tdmi()
     rt.ptr = &ts;
 
     memset(&ts, 0, sizeof(ts));
-    ARM7TDMI_init(&ts.cpu);
+    u32 ws;
+    ARM7TDMI_init(&ts.cpu, &ws);
     ARM7TDMI_setup_tracing(&ts.cpu, &rt, &ts.trace_cycles, 0);
     ts.cpu.read = &read_test_cpu;
     ts.cpu.write = &write_test_cpu;
