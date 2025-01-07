@@ -338,7 +338,7 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
         if ((sx >= 0) && (sx < 240)) {
             this->ppu.obj.drawing_cycles -= 1;
             struct GBA_PX *opx = &this->ppu.obj.line[sx];
-            if ((mode > 1) || (!opx->has)) {
+            if ((mode > 1) || (!opx->has) || (priority < opx->priority)) {
                 u8 c = tptr[tile_x];
                 switch (mode) {
                     case 1:
@@ -359,8 +359,6 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
             }
         }
         if (this->ppu.obj.drawing_cycles < 1) return;
-        if (hflip) sx--;
-        else sx++;
     }
 }
 
@@ -565,7 +563,7 @@ static void apply_mosaic(struct GBA *this)
     if (this->ppu.mosaic.bg.y_counter == 0) {
         this->ppu.mosaic.bg.y_current = this->clock.ppu.y;
     }
-    for (u32 i = 0; i < 3; i++) {
+    for (u32 i = 0; i < 4; i++) {
         bg = &this->ppu.bg[i];
         if (!bg->enable) continue;
         if (bg->mosaic_enable) bg->mosaic_y = this->ppu.mosaic.bg.y_current;
@@ -580,10 +578,9 @@ static void apply_mosaic(struct GBA *this)
 
 
     // Now do horizontal blend
-
-    for (u32 i = 0; i < 3; i++) {
+    for (u32 i = 0; i < 4; i++) {
         bg = &this->ppu.bg[i];
-        if (!bg->enable | !bg->mosaic_enable) continue;
+        if (!bg->enable || !bg->mosaic_enable) continue;
         u32 mosaic_counter = 0;
         struct GBA_PX *src;
         for (u32 x = 0; x < 240; x++) {
@@ -792,7 +789,7 @@ static void output_pixel(struct GBA *this, u32 x, u32 obj_enable, u32 bg_enables
     if (active_window) actives = active_window->active;
 
     struct GBA_PX *sp_px = &this->ppu.obj.line[x];
-    struct GBA_PX empty_px = {.color=0, .priority=4, .translucent_sprite=0, .has=1};
+    struct GBA_PX empty_px = {.color=this->ppu.palette_RAM[0], .priority=4, .translucent_sprite=0, .has=1};
     sp_px->has &= obj_enable;
 
     struct GBA_PX *layers[6] = {
@@ -925,6 +922,7 @@ static void draw_bg_line4(struct GBA *this)
 
     assert(this->ppu.io.frame < 1);
     u32 base_addr = 0xA000 * this->ppu.io.frame;
+    //if (this->clock.ppu.y == 50) printf("\nF:%lld L:%d BIT:%d", this->clock.master_frame, this->clock.ppu.y, this->ppu.io.frame);
     struct GBA_PX *px = &bg->line[0];
     for (u32 x = 0; x < 240; x++) {
         i32 tx = fx >> 8;
@@ -1153,14 +1151,32 @@ void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 acces
 void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     //DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
-    addr &= 0x1FFFF;
-    if (addr < 0x18000)
-        return cW[sz](this->ppu.VRAM, addr, val);
-    else
-        return cW[sz](this->ppu.VRAM, addr - 0x8000, val);
 
-    /*if (addr < 0x06018000)
-        return cW[sz](this->ppu.VRAM, addr - 0x06000000, val);*/
+    u32 vram_boundary = this->ppu.io.bg_mode >= 3 ? 0x14000 : 0x10000;
+    u32 mask = sz == 4 ? 0xFFFFFFFF : (sz == 2 ? 0xFFFF : 0xFF);
+    val &= mask;
+    addr &= 0x1FFFF;
+    if (addr >= vram_boundary) {
+        if (sz != 1) {
+            if (addr >= 0x18000) {
+                addr &= ~0x8000;
+
+                if (addr < vram_boundary) {
+                    return;
+                }
+            }
+            return cW[sz](this->ppu.VRAM, addr, val);
+        }
+        return;
+    }
+    else {
+        if (sz == 1) {
+            addr &= 0xFFFE;
+            sz = 2;
+            val = (val << 8) | val;
+        }
+        return cW[sz](this->ppu.VRAM, addr, val);
+    }
 
     GBA_PPU_write_invalid(this, addr, sz, access, val);
 }

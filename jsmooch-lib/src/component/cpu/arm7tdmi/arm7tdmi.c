@@ -325,19 +325,21 @@ u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access)
     if (sz == 2) addr &= 0xFFFFFFFE;
     else addr &= 0xFFFFFFFC;
     u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
-    this->cycles_executed++;
+    this->cycles_executed+= 1;
     return v;
 }
 
+static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
+
 u32 ARM7TDMI_read(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    u32 v = this->read(this->read_ptr, addr, sz, access, has_effect);
-    this->cycles_executed++;
+    u32 v = this->read(this->read_ptr, addr, sz, access, has_effect) & masksz[sz];
+    this->cycles_executed+= 1;
     return v;
 }
 
 void ARM7TDMI_write(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     this->write(this->write_ptr, addr, sz, access, val);
-    this->cycles_executed++;
+    this->cycles_executed+= 1;
 }

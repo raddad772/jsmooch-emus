@@ -52,7 +52,6 @@ struct GBA {
         } button_irq;
         u32 IE, IF, IME;
         u32 halted;
-        u32 open_bus;
 
         // Unsupported-yet stub stuff
         u32 W8;

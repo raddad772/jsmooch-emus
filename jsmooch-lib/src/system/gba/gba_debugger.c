@@ -477,12 +477,46 @@ static void render_image_view_bgmap(struct debugger_interface *dbgr, struct debu
     u32 vsize = bg->vpixels;
     u32 hsize = bg->hpixels;
     memset(outbuf, 0, out_width * 4 * vsize);
+    if ((this->ppu.io.bg_mode >= 3) && (bg_num != 2)) return;
+    switch(this->ppu.io.bg_mode) {
+        case 3: // 240x160 16-bit 1 buffer
+            hsize = 240;
+            vsize = 160;
+            break;
+        case 4: // 240x160 8-bit 2 buffer
+            hsize = 480;
+            vsize = 160;
+            break;
+        case 5: // 160x128 16-bit 2 buffer
+            hsize = 320;
+            vsize = 128;
+            break;
+    }
+
     iv->viewport.p[1].x = (i32)hsize;
     iv->viewport.p[1].y = (i32)vsize;
+    if (this->ppu.io.bg_mode == 4) {
+        for (u32 screen_y = 0; screen_y < 160; screen_y++) {
+            u32 *lineptr = (outbuf + (screen_y * out_width));
+            for (u32 screen_x = 0; screen_x < 480; screen_x++) {
+                u32 get_x = screen_x % 240;
+                u32 base_addr = (screen_x >= 240) ? 0xA000 : 0;
+                u32 c = this->ppu.palette_RAM[this->ppu.VRAM[base_addr + (screen_y * 240) + get_x]];
+                if (this->ppu.io.frame ^ (screen_x >= 240)) {
+                    u32 b = (c >> 16) & 0xFF;
+                    u32 g = (c >> 8) & 0xFF;
+                    u32 r = (c >> 0) & 0xFF;
+                    c = 0xFF000000 | (b << 16) | (g << 8) | r;
+                }
+                lineptr[screen_x] = gba_to_screen(c);
+            }
+        }
+    }
+    else {
+        for (u32 tilemap_y = 0; tilemap_y < vsize; tilemap_y++) {
+            for (u32 tilemap_x = 0; tilemap_x < hsize; tilemap_x++) {
 
-    for (u32 tilemap_y = 0; tilemap_y < vsize; tilemap_y++) {
-        for (u32 tilemap_x = 0; tilemap_x < hsize; tilemap_x++) {
-
+            }
         }
     }
 }
@@ -908,6 +942,7 @@ static void setup_image_view_bgmap(struct GBA* this, struct debugger_interface *
 
     iv->update_func.ptr = this;
 
+    debugger_widgets_add_checkbox(&dview->options, "Testing test", 1, 0, 1);
     struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
     debugger_widget_radiogroup_add_button(rg, "None", 0, 1);
     debugger_widget_radiogroup_add_button(rg, "Inside", 1, 1);

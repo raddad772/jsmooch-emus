@@ -16,12 +16,12 @@ static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has
 static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     printf("\nWRITE UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     dbg.var++;
-    if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
+    //if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
 }
 
 static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x40000) return cR[sz](this->BIOS.data, addr);
-    return this->io.open_bus;
+    return this->io.cpu.open_bus_data;
 }
 
 static void buswr_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
@@ -89,14 +89,6 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
             return GBA_get_controller_state(this->controller.pio) & 0xFF;
         case 0x04000131: // buttons!!!
             return GBA_get_controller_state(this->controller.pio) >> 8;
-        case 0x04000200: return this->io.IE & 0xFF;
-        case 0x04000201: return this->io.IE >> 8;
-        case 0x04000202: return this->io.IF & 0xFF;
-        case 0x04000203: return this->io.IF >> 8;
-        case 0x04000204: return this->io.W8 & 0xFF;
-        case 0x04000205: return this->io.W8 >> 8;
-        case 0x04000208: return this->io.IME;
-        case 0x04000209: return 0;
 
         case 0x040000B0: return (this->dma[0].io.src_addr >> 0) & 0xFF;
         case 0x040000B1: return (this->dma[0].io.src_addr >> 8) & 0xFF;
@@ -216,14 +208,27 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
         case 0x04000128: return this->io.SIO.control & 0xFF;
         case 0x04000129: return this->io.SIO.control >> 8;
 
+        case 0x04000200: return this->io.IE & 0xFF;
+        case 0x04000201: return this->io.IE >> 8;
+        case 0x04000202: return this->io.IF & 0xFF;
+        case 0x04000203: return this->io.IF >> 8;
+        case 0x04000204: return this->io.W8 & 0xFF;
+        case 0x04000205: return this->io.W8 >> 8;
+        case 0x04000208: return this->io.IME;
+        case 0x04000209: return 0;
+
         // Unsupproted altogether...
+        case 0x04000150:
+        case 0x04000151:
+        case 0x04000152:
+        case 0x04000153:
         case 0x0400020a:
         case 0x0400020b:
             return 0;
 
         case 0x04076a68: // Read by Duke3D. ?
         case 0x04076a69:
-            return this->io.open_bus & 0xFF;
+            return this->io.cpu.open_bus_data & 0xFF;
     }
     return busrd_invalid(this, addr, sz, access, has_effect);
 }
@@ -671,7 +676,6 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     if (addr < 0x10000000) v = this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
 
     else v = busrd_invalid(this, addr, sz, access, has_effect);
-    this->io.open_bus = v;
     if (dbg.trace_on && dbg.traces.ram) trace_read(this, addr, sz, v);
     return v;
 }
@@ -679,7 +683,9 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
 {
     struct GBA *this = (struct GBA*)ptr;
-    return GBA_mainbus_read(ptr, addr, sz, access, 1);
+    u32 v = GBA_mainbus_read(ptr, addr, sz, access, 1);
+    this->io.cpu.open_bus_data = v;
+    return v;
 }
 
 void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)

@@ -680,17 +680,22 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
-            worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
+
+            //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
+
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
@@ -843,7 +848,7 @@ void full_system::add_image_view(u32 idx)
     myv.enabled = true;
     myv.view = dview;
     images.push_back(myv);
-    printf("\nAdding image view %s: width %d", myv.view->image.label, myv.view->image.width);
+    //printf("\nAdding image view %s: width %d", myv.view->image.label, myv.view->image.width);
 }
 
 void full_system::setup_debugger_interface()
