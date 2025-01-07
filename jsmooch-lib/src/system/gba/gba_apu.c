@@ -17,6 +17,20 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
             return this->apu.io.sound_bias & 0xFF;
         case 0x04000089:
             return this->apu.io.sound_bias >> 8;
+        case 0x0400008C:
+        case 0x0400008D:
+        case 0x0400008E:
+        case 0x0400008F:
+            return GBA_open_bus_byte(this, addr);
+        case 0x040000A8:
+        case 0x040000A9:
+        case 0x040000AA:
+        case 0x040000AB:
+        case 0x040000AC:
+        case 0x040000AD:
+        case 0x040000AE:
+        case 0x040000AF:
+            return GBA_open_bus_byte(this, addr);
     }
     //printf("\nWARN UNDONE READ FROM APU %08x", addr);
     return 0;

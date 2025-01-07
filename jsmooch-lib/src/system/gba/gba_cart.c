@@ -150,14 +150,21 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (sz == 32) {
+    addr &= 0x01FFFFFF;
+    if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) return read_eeprom(this, addr, sz, access, has_effect);
+
+    if (sz == 4){
+        addr &= ~3;
         u32 v = GBA_cart_read(this, addr, 2, access, has_effect);
-        v |= (GBA_cart_read(this, addr+2, 2, access, has_effect) << 16);
+        v |= GBA_cart_read(this, addr+2, 2, access, has_effect) << 16;
         return v;
     }
-    if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) return read_eeprom(this, addr, sz, access, has_effect);
-    addr &= 0x01FFFFFF;
-    if (addr >= this->cart.ROM.size) return (addr >> 1) & masksz[sz];
+    if (sz == 2) addr &= ~1;
+
+
+    if (addr >= this->cart.ROM.size) {
+        return (addr >> 1) & masksz[sz];
+    }
     return cR[sz](this->cart.ROM.ptr, addr);
 }
 
@@ -225,7 +232,18 @@ static u32 read_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_ef
 u32 GBA_cart_read_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (this->cart.RAM.is_flash) return read_flash(this, addr, sz, access, has_effect);
-    return ((u8 *)this->cart.RAM.store->data)[addr & this->cart.RAM.mask];
+
+    /*if (addr >= 0x0E010000) {
+        return GBA_open_bus(this, addr, sz);
+    }*/
+    u32 v = ((u8 *)this->cart.RAM.store->data)[addr & this->cart.RAM.mask];
+    if (sz == 2) {
+        v *= 0x101;
+    }
+    if (sz == 4) {
+        v *= 0x1010101;
+    }
+    return v;
 }
 
 void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
@@ -340,11 +358,18 @@ static void write_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 
 void GBA_cart_write_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    assert(sz==1);
-
     if (this->cart.RAM.is_flash) return write_flash(this, addr, sz, access, val);
 
-    printf("\nWRITE SRAM! %08x", addr);
+    //printf("\nWRITE SRAM! %08x", addr);
+    if (sz == 2) {
+        if (addr & 1) val >>= 8;
+    }
+    if (sz == 4) {
+        if ((addr & 3) == 1) val >>= 8;
+        else if ((addr & 3) == 2) val >>= 16;
+        else if ((addr & 3) == 3) val >>= 24;
+    }
+    val &= 0xFF;
     ((u8 *)this->cart.RAM.store->data)[addr & this->cart.RAM.mask] = val;
     this->cart.RAM.store->dirty = 1;
 }

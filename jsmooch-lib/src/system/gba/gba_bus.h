@@ -63,6 +63,8 @@ struct GBA {
         } SIO;
 
         u8 POSTFLG;
+
+        i32 bios_open_bus;
     } io;
 
     struct {
@@ -139,6 +141,10 @@ struct GBA {
             } bg[4];
             u32 bg_mode;
         } line[160];
+        struct {
+            u32 enable;
+            char str[257];
+        } mgba;
     } dbg_info;
 
     DBG_START
@@ -181,4 +187,6 @@ void GBA_bus_init(struct GBA *);
 void GBA_eval_irqs(struct GBA *);
 void GBA_check_dma_at_hblank(struct GBA *);
 void GBA_check_dma_at_vblank(struct GBA *);
+u32 GBA_open_bus_byte(struct GBA *, u32 addr);
+u32 GBA_open_bus(struct GBA *this, u32 addr, u32 sz);
 #endif //JSMOOCH_EMUS_GBA_BUS_H

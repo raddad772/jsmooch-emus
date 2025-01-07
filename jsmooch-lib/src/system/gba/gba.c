@@ -228,9 +228,11 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
         switch(ch->io.src_addr_ctrl) {
             case 0: // increment
                 ch->op.src_addr = (ch->op.src_addr + ch->op.sz) & 0x0FFFFFFF;
+                if (num == 0) ch->op.src_addr &= 0x07FFFFFF;
                 break;
             case 1: // decrement
                 ch->op.src_addr = (ch->op.src_addr - ch->op.sz) & 0x0FFFFFFF;
+                if (num == 0) ch->op.src_addr &= 0x07FFFFFF;
                 break;
             case 2: // constant
                 break;
@@ -242,14 +244,17 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
         switch(ch->io.dest_addr_ctrl) {
             case 0: // increment
                 ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
+                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
                 break;
             case 1: // decrement
                 ch->op.dest_addr = (ch->op.dest_addr - ch->op.sz) & 0x0FFFFFFF;
+                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
                 break;
             case 2: // constant
                 break;
             case 3: // increment & reload on repeat
                 ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
+                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
                 break;
         }
 

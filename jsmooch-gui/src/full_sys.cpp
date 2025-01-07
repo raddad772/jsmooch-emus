@@ -514,7 +514,7 @@ void full_system::sync_persistent_storage()
 {
     if (my_ps) {
         if (my_ps->dirty && my_ps->persistent) {
-            printf("\nWriting save data..,");
+            //printf("\nWriting save data..,");
             fseek(my_ps->fno, 0, SEEK_SET);
             fwrite(my_ps->data, 1, my_ps->actual_size, my_ps->fno);
             fflush(my_ps->fno);
@@ -672,7 +672,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/sbb_aff.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/irq_demo.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "tonc/tmr_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m7_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m7_demo_mb.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m7_ex.gba", nullptr);
@@ -685,7 +685,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
@@ -695,6 +695,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
 
             break;
         case SYS_GENESIS_USA:

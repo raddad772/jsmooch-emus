@@ -82,6 +82,7 @@ struct GBA_PPU {
         u32 hpixels_mask, vpixels_mask;
 
         u32 priority;
+        u32 extrabits; // IO bits that are saved but useless
         u32 character_base_block, screen_base_block;
         u32 mosaic_enable, display_overflow;
         u32 screen_size;

@@ -920,7 +920,7 @@ static void draw_bg_line4(struct GBA *this)
     affine_line_start(this, bg, &fx, &fy);
     if (!bg->enable) return;
 
-    assert(this->ppu.io.frame < 1);
+    assert(this->ppu.io.frame < 2);
     u32 base_addr = 0xA000 * this->ppu.io.frame;
     //if (this->clock.ppu.y == 50) printf("\nF:%lld L:%d BIT:%d", this->clock.master_frame, this->clock.ppu.y, this->ppu.io.frame);
     struct GBA_PX *px = &bg->line[0];
@@ -1105,7 +1105,7 @@ void GBA_PPU_finish_scanline(struct GBA*this)
 static u32 GBA_PPU_read_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     printf("\nREAD UNKNOWN PPU ADDR:%08x sz:%d", addr, sz);
-    return 0;
+    return GBA_open_bus_byte(this, addr);
 }
 
 static void GBA_PPU_write_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
@@ -1117,14 +1117,18 @@ static void GBA_PPU_write_invalid(struct GBA *this, u32 addr, u32 sz, u32 access
 
 u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (addr < 0x05000400)
-        return cR[sz](this->ppu.palette_RAM, addr & 0x3FF);
+    if (sz == 4) addr &= ~3;
+    if (sz == 2) addr &= ~1;
+    //if (addr < 0x05000400)
+    return cR[sz](this->ppu.palette_RAM, addr & 0x3FF);
 
-    return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
+    //return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
 }
 
 u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    if (sz == 4) addr &= ~3;
+    if (sz == 2) addr &= ~1;
     addr &= 0x1FFFF;
     if (addr < 0x18000)
         return cR[sz](this->ppu.VRAM, addr);
@@ -1133,23 +1137,31 @@ u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u3
 }
 
 u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
-    if (addr < 0x07000400)
+    if (sz == 4) addr &= ~3;
+    if (sz == 2) addr &= ~1;
+    //if (addr < 0x07000400)
         return cR[sz](this->ppu.OAM, addr & 0x3FF);
 
-    return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
+    //return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
 }
 
 void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (addr < 0x05000400) {
-        return cW[sz](this->ppu.palette_RAM, addr & 0x3FF, val);
-    }
+    if (sz == 4) addr &= ~3;
+    if (sz == 2) addr &= ~1;
+    if (sz == 1) { sz = 2; val = (val & 0xFF) | ((val << 8) & 0xFF00); }
 
-    GBA_PPU_write_invalid(this, addr, sz, access, val);
+    //if (addr < 0x05000400) {
+        return cW[sz](this->ppu.palette_RAM, addr & 0x3FF, val);
+    //}
+
+    //GBA_PPU_write_invalid(this, addr, sz, access, val);
 }
 
 void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    if (sz == 4) addr &= ~3;
+    if (sz == 2) addr &= ~1;
     //DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
 
     u32 vram_boundary = this->ppu.io.bg_mode >= 3 ? 0x14000 : 0x10000;
@@ -1183,17 +1195,38 @@ void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, 
 
 void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (addr < 0x07000400)
+    if (sz == 4) addr &= ~3;
+    if (sz == 2) addr &= ~1;
+    if (sz == 1) return;
+    //if (addr < 0x07000400)
         return cW[sz](this->ppu.OAM, addr & 0x3FF, val);
 
-    GBA_PPU_write_invalid(this, addr, sz, access, val);
+    //GBA_PPU_write_invalid(this, addr, sz, access, val);
 }
+
+#define BG3PA 0x04000030
+#define BG3PB 0x04000032
+#define BG3PC 0x04000034
+#define BG3PD 0x04000036
+
+#define WIN0H 0x04000040
+#define WIN1H 0x04000042
+#define WIN0V 0x04000044
+#define WIN1V 0x04000046
+
+#define WININ 0x04000048
+#define WINOUT 0x0400004A
+
+#define MOSAIC 0x0400004C
+#define BLDCNT 0x04000050
+#define BLDALPHA 0x04000052
+#define BLDY 0x04000054
 
 u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v = 0;
     switch(addr) {
-        case 0x04000000: // DISPCTRL lo
+        case 0x04000000: // DISPCTRL lo DISPCNT
             v = this->ppu.io.bg_mode;
             v |= (this->ppu.io.frame) << 4;
             v |= (this->ppu.io.hblank_free) << 5;
@@ -1232,6 +1265,7 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             u32 bgnum = (addr & 0b0110) >> 1;
             struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
             v = bg->priority;
+            v |= bg->extrabits << 4;
             v |= (bg->character_base_block >> 12);
             v |= bg->mosaic_enable << 6;
             v |= bg->bpp8 << 7;
@@ -1246,18 +1280,121 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             if (bgnum >= 2) v |= bg->display_overflow << 5;
             v |= bg->screen_size << 6;
             return v; }
-        case 0x0400004C:
-            v = this->ppu.mosaic.bg.hsize - 1;
-            v |= (this->ppu.mosaic.bg.vsize - 1) << 4;
+
+        case WININ:
+            v = this->ppu.window[0].active[1] << 0;
+            v |= this->ppu.window[0].active[2] << 1;
+            v |= this->ppu.window[0].active[3] << 2;
+            v |= this->ppu.window[0].active[4] << 3;
+            v |= this->ppu.window[0].active[0] << 4;
+            v |= this->ppu.window[0].active[5] << 5;
             return v;
-        case 0x0400004D:
-            v = this->ppu.mosaic.obj.hsize - 1;
-            v |= (this->ppu.mosaic.obj.vsize - 1) << 4;
+        case WININ+1:
+            v = this->ppu.window[1].active[1] << 0;
+            v |= this->ppu.window[1].active[2] << 1;
+            v |= this->ppu.window[1].active[3] << 2;
+            v |= this->ppu.window[1].active[4] << 3;
+            v |= this->ppu.window[1].active[0] << 4;
+            v |= this->ppu.window[1].active[5] << 5;
             return v;
-        case 0x04000050:
+        case WINOUT:
+            v = this->ppu.window[GBA_WINOUTSIDE].active[1] << 0;
+            v |= this->ppu.window[GBA_WINOUTSIDE].active[2] << 1;
+            v |= this->ppu.window[GBA_WINOUTSIDE].active[3] << 2;
+            v |= this->ppu.window[GBA_WINOUTSIDE].active[4] << 3;
+            v |= this->ppu.window[GBA_WINOUTSIDE].active[0] << 4;
+            v |= this->ppu.window[GBA_WINOUTSIDE].active[5] << 5;
+            return v;
+        case WINOUT+1:
+            v = this->ppu.window[GBA_WINOBJ].active[1] << 0;
+            v |= this->ppu.window[GBA_WINOBJ].active[2] << 1;
+            v |= this->ppu.window[GBA_WINOBJ].active[3] << 2;
+            v |= this->ppu.window[GBA_WINOBJ].active[4] << 3;
+            v |= this->ppu.window[GBA_WINOBJ].active[0] << 4;
+            v |= this->ppu.window[GBA_WINOBJ].active[5] << 5;
+            return v;
+        case BLDCNT:
+            v = this->ppu.blend.targets_a[0] << 4;
+            v |= this->ppu.blend.targets_a[1] << 0;
+            v |= this->ppu.blend.targets_a[2] << 1;
+            v |= this->ppu.blend.targets_a[3] << 2;
+            v |= this->ppu.blend.targets_a[4] << 3;
+            v |= this->ppu.blend.targets_a[5] << 5;
+            v |= this->ppu.blend.mode << 6;
+            return v;
+        case BLDCNT+1:
+            v = this->ppu.blend.targets_b[0] << 4;
+            v |= this->ppu.blend.targets_b[1] << 0;
+            v |= this->ppu.blend.targets_b[2] << 1;
+            v |= this->ppu.blend.targets_b[3] << 2;
+            v |= this->ppu.blend.targets_b[4] << 3;
+            v |= this->ppu.blend.targets_b[5] << 5;
+            return v;
+        case BLDALPHA:
             return this->ppu.blend.eva_a;
-        case 0x04000051:
+        case BLDALPHA+1:
             return this->ppu.blend.eva_b;
+
+
+        case 0x04000010:
+        case 0x04000011:
+        case 0x04000012:
+        case 0x04000013:
+        case 0x04000014:
+        case 0x04000015:
+        case 0x04000016:
+        case 0x04000017:
+        case 0x04000018:
+        case 0x04000019:
+        case 0x0400001A:
+        case 0x0400001B:
+        case 0x0400001C:
+        case 0x0400001D:
+        case 0x0400001E:
+        case 0x0400001F:
+        case 0x04000020:
+        case 0x04000021:
+        case 0x04000022:
+        case 0x04000023:
+        case 0x04000024:
+        case 0x04000025:
+        case 0x04000026:
+        case 0x04000027:
+        case 0x04000028:
+        case 0x04000029:
+        case 0x0400002A:
+        case 0x0400002B:
+        case 0x0400002C:
+        case 0x0400002D:
+        case 0x0400002E:
+        case 0x0400002F:
+        case 0x04000030:
+        case 0x04000031:
+        case 0x04000032:
+        case 0x04000033:
+        case 0x04000034:
+        case 0x04000035:
+        case 0x04000036:
+        case 0x04000037:
+        case 0x04000038:
+        case 0x04000039:
+        case 0x0400003A:
+        case 0x0400003B:
+        case 0x0400003C:
+        case 0x0400003D:
+        case 0x0400003E:
+        case 0x0400003F:
+        case WIN0H:
+        case WIN0H+1:
+        case WIN1H:
+        case WIN1H+1:
+        case WIN0V:
+        case WIN0V+1:
+        case WIN1V:
+        case WIN1V+1:
+        case MOSAIC:
+        case MOSAIC+1:
+            return GBA_open_bus_byte(this, addr);
 
     }
     return GBA_PPU_read_invalid(this, addr, sz, access, has_effect);
@@ -1384,15 +1521,16 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x04000008: // BG control
         case 0x0400000A:
         case 0x0400000C:
-        case 0x0400000E: {
+        case 0x0400000E: { // BGCNT lo
             u32 bgnum = (addr & 0b0110) >> 1;
             struct GBA_PPU_bg *bg = &this->ppu.bg[bgnum];
             bg->priority = val & 3;
+            bg->extrabits = (val >> 4) & 3;
             bg->character_base_block = ((val >> 2) & 3) << 14;
             bg->mosaic_enable = (val >> 6) & 1;
             bg->bpp8 = (val >> 7) & 1;
             return; }
-        case 0x04000009: // BG control
+        case 0x04000009: // BG control // BGCNT hi
         case 0x0400000B:
         case 0x0400000D:
         case 0x0400000F: {
@@ -1439,14 +1577,14 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x0400002E: update_bg_y(this, BG2, 2, val); return;
         case 0x0400002F: update_bg_y(this, BG2, 3, val); return;
 
-        case 0x04000030: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFFFFFF00) | val; return;
-        case 0x04000031: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000032: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFFFFFF00) | val; return;
-        case 0x04000033: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000034: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFFFFFF00) | val; return;
-        case 0x04000035: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
-        case 0x04000036: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFFFFFF00) | val; return;
-        case 0x04000037: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case BG3PA:   this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFFFFFF00) | val; return;
+        case BG3PA+1: this->ppu.bg[3].pa = (this->ppu.bg[3].pa & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case BG3PB:   this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFFFFFF00) | val; return;
+        case BG3PB+1: this->ppu.bg[3].pb = (this->ppu.bg[3].pb & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case BG3PC:   this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFFFFFF00) | val; return;
+        case BG3PC+1: this->ppu.bg[3].pc = (this->ppu.bg[3].pc & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
+        case BG3PD:   this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFFFFFF00) | val; return;
+        case BG3PD+1: this->ppu.bg[3].pd = (this->ppu.bg[3].pd & 0xFF) | (val << 8) | (((val >> 7) & 1) * 0xFFFF0000); return;
         case 0x04000038: update_bg_x(this, BG3, 0, val); return;
         case 0x04000039: update_bg_x(this, BG3, 1, val); return;
         case 0x0400003A: update_bg_x(this, BG3, 2, val); return;
@@ -1456,16 +1594,16 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case 0x0400003E: update_bg_y(this, BG3, 2, val); return;
         case 0x0400003F: update_bg_y(this, BG3, 3, val); return;
 
-        case 0x04000040: this->ppu.window[0].right = val; return;
-        case 0x04000041: this->ppu.window[0].left = val; return;
-        case 0x04000042: this->ppu.window[1].right = val; return;
-        case 0x04000043: this->ppu.window[1].left = val; return;
-        case 0x04000044: this->ppu.window[0].bottom = val; return;
-        case 0x04000045: this->ppu.window[0].top = val; return;
-        case 0x04000046: this->ppu.window[1].bottom = val; return;
-        case 0x04000047: this->ppu.window[1].top = val; return;
+        case WIN0H:   this->ppu.window[0].right = val; return;
+        case WIN0H+1: this->ppu.window[0].left = val; return;
+        case WIN1H:   this->ppu.window[1].right = val; return;
+        case WIN1H+1: this->ppu.window[1].left = val; return;
+        case WIN0V:   this->ppu.window[0].bottom = val; return;
+        case WIN0V+1: this->ppu.window[0].top = val; return;
+        case WIN1V:   this->ppu.window[1].bottom = val; return;
+        case WIN1V+1: this->ppu.window[1].top = val; return;
 
-        case 0x04000048:
+        case WININ:
             this->ppu.window[0].active[1] = (val >> 0) & 1;
             this->ppu.window[0].active[2] = (val >> 1) & 1;
             this->ppu.window[0].active[3] = (val >> 2) & 1;
@@ -1473,7 +1611,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.window[0].active[0] = (val >> 4) & 1;
             this->ppu.window[0].active[5] = (val >> 5) & 1;
             return;
-        case 0x04000049:
+        case WININ+1:
             this->ppu.window[1].active[1] = (val >> 0) & 1;
             this->ppu.window[1].active[2] = (val >> 1) & 1;
             this->ppu.window[1].active[3] = (val >> 2) & 1;
@@ -1481,7 +1619,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.window[1].active[0] = (val >> 4) & 1;
             this->ppu.window[1].active[5] = (val >> 5) & 1;
             return;
-        case 0x0400004A:
+        case WINOUT:
             this->ppu.window[GBA_WINOUTSIDE].active[1] = (val >> 0) & 1;
             this->ppu.window[GBA_WINOUTSIDE].active[2] = (val >> 1) & 1;
             this->ppu.window[GBA_WINOUTSIDE].active[3] = (val >> 2) & 1;
@@ -1489,7 +1627,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.window[GBA_WINOUTSIDE].active[0] = (val >> 4) & 1;
             this->ppu.window[GBA_WINOUTSIDE].active[5] = (val >> 5) & 1;
             return;
-        case 0x0400004B:
+        case WINOUT+1:
             this->ppu.window[GBA_WINOBJ].active[1] = (val >> 0) & 1;
             this->ppu.window[GBA_WINOBJ].active[2] = (val >> 1) & 1;
             this->ppu.window[GBA_WINOBJ].active[3] = (val >> 2) & 1;
@@ -1512,7 +1650,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
 #define BT_OBJ 4
 #define BT_BD 5
 
-        case 0x04000050:
+        case BLDCNT:
             this->ppu.blend.mode = (val >> 6) & 3;
             // sp, bg0, bg1, bg2, bg3, bd
             this->ppu.blend.targets_a[0] = (val >> 4) & 1;
@@ -1522,7 +1660,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.blend.targets_a[4] = (val >> 3) & 1;
             this->ppu.blend.targets_a[5] = (val >> 5) & 1;
             return;
-        case 0x04000051:
+        case BLDCNT+1:
             this->ppu.blend.targets_b[0] = (val >> 4) & 1;
             this->ppu.blend.targets_b[1] = (val >> 0) & 1;
             this->ppu.blend.targets_b[2] = (val >> 1) & 1;
@@ -1531,12 +1669,12 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->ppu.blend.targets_b[5] = (val >> 5) & 1;
             return;
 
-        case 0x04000052:
+        case BLDALPHA:
             this->ppu.blend.eva_a = val & 31;
             this->ppu.blend.use_eva_a = this->ppu.blend.eva_a;
             if (this->ppu.blend.use_eva_a > 16) this->ppu.blend.use_eva_a = 16;
             return;
-        case 0x04000053:
+        case BLDALPHA+1:
             this->ppu.blend.eva_b = val & 31;
             this->ppu.blend.use_eva_b = this->ppu.blend.eva_b;
             if (this->ppu.blend.use_eva_b > 16) this->ppu.blend.use_eva_b = 16;
