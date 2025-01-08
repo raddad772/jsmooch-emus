@@ -68,8 +68,13 @@ struct GBA_cart {
                u32 addr;
             } cmd;
         } eeprom;
+
         struct persistent_store *store;
     } RAM;
+
+    struct {
+        u32 enable;
+    } prefetch;
 };
 
 void GBA_cart_init(struct GBA_cart*);

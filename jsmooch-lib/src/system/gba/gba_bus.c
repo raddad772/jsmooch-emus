@@ -28,6 +28,8 @@ static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
     //if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
 }
 
+#define WAITCNT 0x04000204
+
 static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x40000) {
         if (this->cpu.regs.R[15] < 0x40000) {
@@ -81,6 +83,21 @@ static void dma_start(struct GBA_DMA_ch *ch, u32 i)
     ch->op.word_mask = i == 3 ? 0xFFFF : 0x3FFF;
     if (i == 0) printf("\nDMA ch:%d src:%08x dst:%08x sz:%d num:%d", i, ch->op.src_addr, ch->op.dest_addr, ch->op.sz, ch->op.word_count);
 }
+
+static void set_waitstates(struct GBA *this) {
+#define DOV4(n, a, b, c, d) switch(this->waitstates.io. n) { case 0: this->waitstates. n = a; break; case 1: this->waitstates. n = b; break; case 2: this->waitstates. n = c; break; case 3: this->waitstates. n = d; break; }
+#define DOV2(n, a, b) switch(this->waitstates.io. n) { case 0: this->waitstates. n = a; break; case 1: this->waitstates. n = b; break; }
+    DOV4(sram, 4, 3, 2, 8);
+    DOV4(ws0_n, 4, 3, 2, 8);
+    DOV2(ws0_s, 2, 1);
+    DOV4(ws1_n, 4, 3, 2, 8);
+    DOV2(ws1_s, 4, 1);
+    DOV4(ws2_n, 4, 3, 2, 8);
+    DOV2(ws2_s, 8, 1);
+#undef DOV4
+#undef DOV2
+}
+
 
 static void buswr_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     if (sz == 4) addr &= ~3;
@@ -190,8 +207,6 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
         case 0x04000143:
         case 0x0400015A:
         case 0x0400015B:
-        case 0x04000206:
-        case 0x04000207:
         case 0x04000302:
         case 0x04000303: return 0;
 
@@ -217,8 +232,25 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
         case 0x04000201: return this->io.IE >> 8;
         case 0x04000202: return this->io.IF & 0xFF;
         case 0x04000203: return this->io.IF >> 8;
-        case 0x04000204: return this->io.W8 & 0xFF;
-        case 0x04000205: return this->io.W8 >> 8;
+        case WAITCNT: {
+            u32 v = this->waitstates.io.sram;
+            v |= this->waitstates.io.ws0_n << 2;
+            v |= this->waitstates.io.ws0_s << 4;
+            v |= this->waitstates.io.ws1_n << 5;
+            v |= this->waitstates.io.ws1_s << 7;
+
+            return v;}
+        case WAITCNT+1: {
+            u32 v = this->waitstates.io.ws2_n;
+            v |= this->waitstates.io.ws2_s << 2;
+            v |= this->waitstates.io.phi_term << 3;
+            v |= this->waitstates.io.empty_bit << 5;
+            v |= this->cart.prefetch.enable << 6;
+            return v; }
+        case WAITCNT+2:
+            return this->waitstates.io.byte2;
+        case WAITCNT+3:
+            return this->waitstates.io.byte3;
         case 0x04000208: return this->io.IME;
         case 0x04000209: return 0;
 
@@ -329,14 +361,26 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             this->io.IF &= ~(val << 8);
             GBA_eval_irqs(this);
             return;
-        case 0x04000204: // WAITcnt, ignore for now
-            this->io.W8 = (this->io.W8 & 0xFF00) | val;
+        case WAITCNT:
+            this->waitstates.io.sram = val & 3;
+            this->waitstates.io.ws0_n = (val >> 2) & 3;
+            this->waitstates.io.ws0_s = (val >> 4) & 1;
+            this->waitstates.io.ws1_n = (val >> 5) & 3;
+            this->waitstates.io.ws1_s = (val >> 7) & 1;
+            set_waitstates(this);
             return;
-        case 0x04000205: // WAITcnt, ignore for now
-            this->io.W8 = (this->io.W8 & 0xFF) | (val << 8);
+        case WAITCNT+1:
+            this->waitstates.io.ws2_n = val & 3;
+            this->waitstates.io.ws2_s = (val >> 2) & 1;
+            this->waitstates.io.phi_term = (val >> 3) & 3;
+            this->waitstates.io.empty_bit = (val >> 5) & 1;
+            this->cart.prefetch.enable = (val >> 6) & 1;
             return;
-        case 0x04000206: // empty, ignore
-        case 0x04000207: // empty, ignore
+        case WAITCNT+2: // empty, ignore
+            this->waitstates.io.byte2 = val;
+            return;
+        case WAITCNT+3: // empty, ignore
+            this->waitstates.io.byte3 = val;
             return;
         case 0x04000208: // IME lo
             this->io.IME = val & 1;
@@ -675,6 +719,8 @@ void GBA_bus_init(struct GBA *this)
     this->mem.write[0xC] = &GBA_cart_write;
     this->mem.write[0xD] = &GBA_cart_write;
     this->mem.write[0xE] = &GBA_cart_write_sram;
+
+    set_waitstates(this);
 }
 
 static u32 GBA_mainbus_IO_read(struct GBA *this, u32 addr, u32 sz, u32 has_effect)

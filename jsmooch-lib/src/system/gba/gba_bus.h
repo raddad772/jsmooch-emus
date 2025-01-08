@@ -32,6 +32,19 @@ struct GBA {
 
     struct {
         u32 current_transaction;
+        struct {
+            u32 sram;
+            u32 ws0_n, ws0_s;
+            u32 ws1_n, ws1_s;
+            u32 ws2_n, ws2_s;
+            u32 empty_bit;
+            u32 phi_term;
+            u8 byte2, byte3; // upper bytes of register
+        } io;
+        u32 sram;
+        u32 ws0_n, ws0_s;
+        u32 ws1_n, ws1_s;
+        u32 ws2_n, ws2_s;
     } waitstates;
 
     char WRAM_slow[256 * 1024];
@@ -54,7 +67,7 @@ struct GBA {
         u32 halted;
 
         // Unsupported-yet stub stuff
-        u32 W8;
+
         struct {
             u32 general_purpose_data;
             u32 control;
@@ -74,7 +87,6 @@ struct GBA {
     } jsm;
 
     i32 cycles_to_execute;
-    i32 cycles_executed;
 
     struct GBA_DMA_ch {
         struct {

@@ -105,7 +105,7 @@ struct ARM7TDMI {
     struct {
         u32 opcode[2];
         u32 addr[2];
-        int access;
+        u32 access;
         u32 flushed;
     } pipeline;
 
@@ -114,11 +114,9 @@ struct ARM7TDMI {
 
     u32 *waitstates;
 
-    u32 last_arm7_opcode;
     struct ARM7_ins *arm7_ins;
 
     i32 cycles_to_execute;
-    i32 cycles_executed;
 
     struct {
         struct jsm_debug_read_trace strct;
@@ -158,6 +156,8 @@ void ARM7TDMI_cycle(struct ARM7TDMI*, i32 num);
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *);
 void ARM7TDMI_reload_pipeline(struct ARM7TDMI *);
+void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num);
+
 
 u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *, u32 addr, u32 sz, u32 access);
 u32 ARM7TDMI_read(struct ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 has_effect);

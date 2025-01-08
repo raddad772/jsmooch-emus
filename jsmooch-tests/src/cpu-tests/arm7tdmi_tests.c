@@ -94,6 +94,7 @@ struct arm7_test_state {
     u32 SPSR_fiq, SPSR_svc, SPSR_abt, SPSR_irq, SPSR_und;
     u32 CPSR;
     u32 pipeline[2];
+    u32 access;
 };
 
 struct arm7_test {
@@ -113,7 +114,7 @@ struct arm7_test_struct {
     struct ARM7TDMI cpu;
     struct arm7_test test;
     struct arm7_test_transactions my_transactions;
-
+    u32 cycles_executing;
     u64 trace_cycles;
 };
 
@@ -158,6 +159,7 @@ static u8* load_state(struct arm7_test_state *state, u8 *ptr, u32 initial)
     state->SPSR_und = R32;
     state->pipeline[0] = R32;
     state->pipeline[1] = R32;
+    state->access = R32;
     assert((start+state_sz)==ptr);
     return ptr;
 }
@@ -251,7 +253,7 @@ static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
         }
     }
     if (theirt) theirt->visited = 1;
-    ts->cpu.cycles_executed++;
+    ts->cycles_executing++;
     return (u32)v;
 }
 
@@ -280,12 +282,12 @@ static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect
         if (theirt == NULL) {
             ts->test.failed = 1;
             printf("\nUH OH! CANT FIND TRANSACTION TO READ FROM!");
-            ts->cpu.cycles_executed++;
+            ts->cycles_executing++;
             return addr;
         }
         myt->data = theirt->data;
         theirt->visited = 1;
-        ts->cpu.cycles_executed++;
+        ts->cycles_executing++;
     }
     if (theirt != NULL) {
         return theirt->data;
@@ -319,11 +321,11 @@ static void write_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     if (theirt == NULL) {
         ts->test.failed = 1;
         printf("\nUH OH4! CANT FIND TRANSACTION TO READ FROM!");
-        ts->cpu.cycles_executed++;
+        ts->cycles_executing++;
         return;
     }
     theirt->visited = 1;
-    ts->cpu.cycles_executed++;
+    ts->cycles_executing++;
 }
 
 static u32 do_test_read_trace(void *ptr, u32 addr, u32 sz) {
@@ -352,6 +354,7 @@ static void copy_state_to_cpu(struct ARM7TDMI* cpu, struct arm7_test_state *ts)
     cpu->regs.SPSR_und = ts->SPSR_und;
     cpu->regs.CPSR.u = ts->CPSR;
     ARM7TDMI_fill_regmap(cpu);
+    cpu->pipeline.access = ts->access;
 }
 
 static void pprint_CPSR(const char *str, u32 v)
@@ -418,6 +421,18 @@ static u32 cval(u64 mine, u64 theirs, u64 initial, const char* display_str, cons
     return 0;
 }
 
+static u32 cval_access(u64 mine, u64 theirs, u64 initial, const char* display_str, const char *name) {
+    if (mine == theirs) return 1;
+    printf("\n%s mine:", name);
+    printf(display_str, mine);
+    printf(" theirs:");
+    printf(display_str, theirs);
+    printf(" initial:");
+    printf(display_str, initial);
+
+    return 0;
+}
+
 static u32 compare_transactions(struct arm7_test_struct *ts)
 {
     if (ts->my_transactions.num != ts->test.transactions.num) {
@@ -432,6 +447,7 @@ static u32 compare_transactions(struct arm7_test_struct *ts)
         CMP(kind, "kind");
         CMP(addr, "addr");
         CMP(data, "data");
+        CMP(access, "access");
 
         if (my->size != their->size) {
             if ((their->size == 1) && (my->size == 2) && (their->data == my->data)) {
@@ -492,6 +508,7 @@ static u32 compare_state_to_cpu(struct arm7_test_struct *ts, struct arm7_test_st
     CP(SPSR_und, SPSR_und, "SPSR_und");
     all_passed &= cval(ts->cpu.pipeline.opcode[0], final->pipeline[0], initial->pipeline[0], "%08llx", "pipeline0");
     all_passed &= cval(ts->cpu.pipeline.opcode[1], final->pipeline[1], initial->pipeline[1], "%08llx", "pipeline1");
+    all_passed &= cval_access(ts->cpu.pipeline.access, final->access, initial->access, "%d", "access");
 #undef CP
     return all_passed;
 }
@@ -501,7 +518,7 @@ static u32 dopppt(char *ptr, struct transaction *t)
 {
     char *m = ptr;
 
-    m += sprintf(ptr, "(%02d) %c.%c %06x:%08x  ", t->cycle, kkttr[t->kind], t->size == 1 ? '1' : t->size == 2 ? '2' : '4', t->addr, t->data);
+    m += sprintf(ptr, "(%02d) %c.%c %06x:%08x/%d  ", t->cycle, kkttr[t->kind], t->size == 1 ? '1' : t->size == 2 ? '2' : '4', t->addr, t->data, t->access);
     return m - ptr;
 }
 
@@ -541,7 +558,7 @@ static void pprint_transactions(struct arm7_test_transactions *ts, struct arm7_t
         }
         else ptr += sprintf(ptr, "  ");
         if (t1 == NULL) {
-            ptr += sprintf(ptr, "                            ");
+            ptr += sprintf(ptr, "                              ");
         }
         else {
             ptr += dopppt(ptr, t1);
@@ -588,7 +605,7 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         ts->cpu.testing = 1;
         ts->my_transactions.num = 0;
         ts->cpu.cycles_to_execute = 0;
-        ts->cpu.cycles_executed = 0;
+        ts->cycles_executing++;
 
         ARM7TDMI_cycle(&ts->cpu, 1);
 
@@ -605,7 +622,7 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
             struct jsm_string out;
             jsm_string_init(&out, 100);
             if (ts->test.initial.CPSR & 0x20) {
-                ARM7TDMI_thumb_disassemble(ts->test.opcode, &out, -1);
+                ARM7TDMI_thumb_disassemble(ts->test.opcode, &out, -1, NULL);
             }
             else {
                 ARMv4_disassemble(ts->test.opcode, &out, -1, NULL);
@@ -617,6 +634,10 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
             pprint_CPSR("\ntheirs :", ts->test.final.CPSR);
             pprint_CPSR("\ninitial:", ts->test.initial.CPSR);
             printf("\nTest failed...");
+            printf("\n0 nonsequential");
+            printf("\n1 sequential");
+            printf("\n2 nonsequential code");
+            printf("\n3 sequential code");
             return 0;
         }
     }
@@ -635,8 +656,7 @@ void test_arm7tdmi()
     rt.ptr = &ts;
 
     memset(&ts, 0, sizeof(ts));
-    u32 ws;
-    ARM7TDMI_init(&ts.cpu, &ws);
+    ARM7TDMI_init(&ts.cpu, &ts.cycles_executing);
     ARM7TDMI_setup_tracing(&ts.cpu, &rt, &ts.trace_cycles, 0);
     ts.cpu.read = &read_test_cpu;
     ts.cpu.write = &write_test_cpu;

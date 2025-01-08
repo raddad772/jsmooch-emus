@@ -264,16 +264,20 @@ static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode, u32 opcode_ad
     // bits 27-0 and 7-4
     if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
-    this->last_arm7_opcode = opcode;
     this->arm7_ins = &this->opcode_table_arm[decode];
     this->arm7_ins->exec(this, opcode);
+}
+
+void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num)
+{
+    *this->waitstates += num;
 }
 
 void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
 {
     this->cycles_to_execute += num;
     while(this->cycles_to_execute > 0) {
-        this->cycles_executed = 0;
+        *this->waitstates = 0;
         if (this->regs.IRQ_line && !this->regs.CPSR.I) {
             do_IRQ(this);
         }
@@ -303,14 +307,13 @@ void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
                 this->regs.PC += 4;
             }
         }
-        if (this->cycles_executed == 0) {
-            this->cycles_executed++;
-        }
-        assert(this->cycles_executed > 0);
-        this->cycles_to_execute -= this->cycles_executed;
-        if (this->trace.cycles) *this->trace.cycles += this->cycles_executed;
+        this->cycles_to_execute -= (i32)*this->waitstates;
+        if (this->trace.cycles) *this->trace.cycles += *this->waitstates;
 
-        if (dbg.do_break) break;
+        if (dbg.do_break) {
+            this->cycles_to_execute = 0;
+            break;
+        }
     }
 }
 
@@ -324,8 +327,8 @@ u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access)
 {
     if (sz == 2) addr &= 0xFFFFFFFE;
     else addr &= 0xFFFFFFFC;
+    (*this->waitstates)++;
     u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
-    this->cycles_executed+= 1;
     return v;
 }
 
@@ -334,12 +337,12 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 u32 ARM7TDMI_read(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v = this->read(this->read_ptr, addr, sz, access, has_effect) & masksz[sz];
-    this->cycles_executed+= 1;
+    (*this->waitstates)++;
     return v;
 }
 
 void ARM7TDMI_write(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     this->write(this->write_ptr, addr, sz, access, val);
-    this->cycles_executed+= 1;
+    (*this->waitstates)++;
 }

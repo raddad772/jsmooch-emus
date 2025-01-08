@@ -9,8 +9,8 @@
 #include "arm7tdmi_instructions.h"
 
 #define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x PC:%08x cyc:%lld", opcode, this->regs.PC, *this->trace.cycles); assert(1==2)
-#define AREAD(addr, sz) ARM7TDMI_read(this, (addr), (sz), this->pipeline.access, 1)
-#define AWRITE(addr, sz, val) ARM7TDMI_write(this, (addr), (sz), this->pipeline.access, (val) & mask)
+#define AREAD(addr, sz) ARM7TDMI_read(this, (addr), (sz), ARM7P_nonsequential, 1)
+#define AWRITE(addr, sz, val) ARM7TDMI_write(this, (addr), (sz), ARM7P_nonsequential, (val) & mask)
 
 #define OBIT(x) ((opcode >> (x)) & 1)
 
@@ -152,10 +152,12 @@ static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
 
 static u32 MUL(struct ARM7TDMI *this, u32 product, u32 multiplicand, u32 multiplier, u32 S)
 {
-    this->cycles_executed++;
-    if((multiplier >> 8) && (multiplier >>  8 != 0xFFFFFF)) this->cycles_executed++;
-    if((multiplier >> 16) && (multiplier >> 16 != 0xFFFF)) this->cycles_executed++;
-    if((multiplier >> 24) && (multiplier >> 24 != 0xFF)) this->cycles_executed++;
+    u32 n = 1;
+
+    if((multiplier >> 8) && (multiplier >>  8 != 0xFFFFFF)) n++;
+    if((multiplier >> 16) && (multiplier >> 16 != 0xFFFF)) n++;
+    if((multiplier >> 24) && (multiplier >> 24 != 0xFF)) n++;
+    ARM7TDMI_idle(this, n);
     product += multiplicand * multiplier;
     if(this->regs.CPSR.T || S) {
         this->regs.CPSR.Z = product == 0;
@@ -167,13 +169,14 @@ static u32 MUL(struct ARM7TDMI *this, u32 product, u32 multiplicand, u32 multipl
 void ARM7TDMI_ins_MUL_MLA(struct ARM7TDMI *this, u32 opcode)
 {
     u32 accumulate = OBIT(21);
-    if (accumulate) this->cycles_executed++;
+    if (accumulate) ARM7TDMI_idle(this, 1);
     u32 S = OBIT(20);
     u32 Rdd = (opcode >> 16) & 15;
     u32 Rnd = (opcode >> 12) & 15;
     u32 Rsd = (opcode >> 8) & 15;
     u32 Rmd = opcode & 15;
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     u32 Rn = *getR(this, Rnd);
     u32 Rm = *getR(this, Rmd);
     u32 Rs = *getR(this, Rsd);
@@ -191,23 +194,25 @@ void ARM7TDMI_ins_MULL_MLAL(struct ARM7TDMI *this, u32 opcode)
     u32 sign = OBIT(22); // signed if =1
     u32 accumulate = OBIT(21); // acumulate if =1
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     u64 Rm = *getR(this, Rmd);
     u64 Rs = *getR(this, Rsd);
 
-    this->cycles_executed += 2 + accumulate;
+    u32 n = 2 + accumulate;
     u64 result = 0;
     if (sign) {
-        if ((Rs >> 8) && ((Rs >> 8) != 0xFFFFFF)) this->cycles_executed++;
-        if ((Rs >> 16) && ((Rs >> 16) != 0xFFFF)) this->cycles_executed++;
-        if ((Rs >> 24) && ((Rs >> 24) != 0xFF)) this->cycles_executed++;
+        if ((Rs >> 8) && ((Rs >> 8) != 0xFFFFFF)) n++;
+        if ((Rs >> 16) && ((Rs >> 16) != 0xFFFF)) n++;
+        if ((Rs >> 24) && ((Rs >> 24) != 0xFF)) n++;
         result = (u64)((i64)(i32)Rm * (i64)(i32)Rs);
     }
     else {
-        if (Rs >> 8) this->cycles_executed++;
-        if (Rs >> 16) this->cycles_executed++;
-        if (Rs >> 24) this->cycles_executed++;
+        if (Rs >> 8) n++;
+        if (Rs >> 16) n++;
+        if (Rs >> 24) n++;
         result = Rm * Rs;
     }
+    ARM7TDMI_idle(this, n);
 
     u32 *Rd = getR(this, Rdd);
     u32 *Rn = getR(this, Rnd);
@@ -227,6 +232,7 @@ void ARM7TDMI_ins_SWP(struct ARM7TDMI *this, u32 opcode)
     u32 Rdd = (opcode >> 12) & 15;
     u32 Rmd = opcode & 15;
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     // Rd=[Rn], [Rn]=Rm
     u32 *Rn = getR(this, Rnd);
     u32 *Rd = getR(this, Rdd);
@@ -238,7 +244,7 @@ void ARM7TDMI_ins_SWP(struct ARM7TDMI *this, u32 opcode)
         sz = 1;
     }
     u32 tmp = ARM7TDMI_read(this, *Rn, sz, ARM7P_nonsequential, 1) & mask;
-    ARM7TDMI_write(this, *Rn, sz, ARM7P_nonsequential, (*Rm) & mask); // Rm = [Rn]
+    ARM7TDMI_write(this, *Rn, sz, ARM7P_nonsequential | ARM7P_lock, (*Rm) & mask); // Rm = [Rn]
     if (!B) tmp = align_val(*Rn, tmp);
     write_reg(this, Rd, tmp); // Rd = [Rn]
 }
@@ -264,6 +270,7 @@ void ARM7TDMI_ins_LDRH_STRH(struct ARM7TDMI *this, u32 opcode)
     if (P) addr = U ? (addr + Rm) : (addr - Rm);
     // L = 0 is store
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     if (L) {
         u32 val = ARM7TDMI_read(this, addr, 2, ARM7P_nonsequential, 1);
         if (addr &  1) { // read of a halfword to a unaligned address produces a weird ROR
@@ -326,6 +333,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
         val = SIGNe8to32(val);
     }
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     if (!P) addr = U ? (addr + Rm) : (addr - Rm);
     if (W) {
         if (Rnd == 15) {// writeback fails. technically invalid here
@@ -350,6 +358,7 @@ void ARM7TDMI_ins_MRS(struct ARM7TDMI *this, u32 opcode)
         *Rd = this->regs.CPSR.u;
     }
 
+    this->pipeline.access = ARM7P_sequential | ARM7P_code;
     this->regs.PC += 4;
 }
 
@@ -383,6 +392,7 @@ void ARM7TDMI_ins_MSR_reg(struct ARM7TDMI *this, u32 opcode)
             *v = (~mask & *v) | (imm & mask);
         }
     }
+    this->pipeline.access = ARM7P_sequential | ARM7P_code;
     this->regs.PC += 4;
 }
 
@@ -419,6 +429,7 @@ void ARM7TDMI_ins_MSR_imm(struct ARM7TDMI *this, u32 opcode)
         }
     }
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_sequential | ARM7P_code;
 }
 
 void ARM7TDMI_ins_BX(struct ARM7TDMI *this, u32 opcode)
@@ -554,6 +565,7 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     u32 shift_type = (opcode >> 5) & 3; // 0=LSL, 1=LSR, 2=ASR, 3=ROR
     // R(bit4) = 0 for this
     u32 Rmd = opcode & 15;
+    this->pipeline.access = ARM7P_code | ARM7P_sequential;
 
     u32 Rn = *getR(this, Rnd);
     u32 Rm = *getR(this, Rmd);
@@ -602,6 +614,8 @@ void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
     u32 Rmd = opcode & 15;
 
     u32 Is = (*getR(this, Isd)) & 0xFF; // shift amount
+    ARM7TDMI_idle(this, 1);
+    this->pipeline.access = ARM7P_code | ARM7P_nonsequential; // weird quirk of ARM
     this->regs.PC += 4;
     u32 Rn = *getR(this, Rnd);
     u32 Rm = *getR(this, Rmd);
@@ -654,6 +668,7 @@ void ARM7TDMI_ins_data_proc_immediate(struct ARM7TDMI *this, u32 opcode)
     u32 Rn = *getR(this, Rnd);
     this->regs.PC += 4;
     u32 *Rd = getR(this, Rdd);
+    this->pipeline.access = ARM7P_code | ARM7P_sequential;
 
     u32 Rm = opcode & 0xFF;
     u32 imm_ROR_amount = (opcode >> 7) & 30;
@@ -689,6 +704,7 @@ void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
     u32 offset = (opcode & 4095);
     u32 addr = *Rn;
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     //if (Rnd == 15) addr += 4;
     if (P) addr = U ? (addr + offset) : (addr - offset);
     u32 sz = B ? 1 : 4;
@@ -758,6 +774,7 @@ void ARM7TDMI_ins_LDR_STR_register_offset(struct ARM7TDMI *this, u32 opcode)
     u32 sz = B ? 1 : 4;
     u32 mask = B ? 0xFF : 0xFFFFFFFF;
     this->regs.PC += 4;
+    this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     if (L == 1) { // LDR from RAM
         u32 v = AREAD(addr, sz);
         if ((!B) && (addr & 3)) v = align_val(addr, v);
@@ -862,7 +879,7 @@ void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)
         access_type = ARM7P_sequential;
     }
     if (L) {
-        this->cycles_executed++;
+        ARM7TDMI_idle(this, 1);
         if (do_mode_switch) {
             // According to MBA,
             /*"     During the following two cycles of a usermode LDM,\n"

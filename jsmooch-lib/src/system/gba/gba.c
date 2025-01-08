@@ -221,7 +221,7 @@ static void raise_irq_for_dma(struct GBA *this, u32 num)
 static u32 dma_go_ch(struct GBA *this, u32 num) {
     struct GBA_DMA_ch *ch = &this->dma[num];
     if ((ch->io.enable) && (ch->op.started)) {
-        this->cycles_executed += 2;
+        this->waitstates.current_transaction += 2;
         u32 v = GBA_mainbus_read((void *)this, ch->op.src_addr, ch->op.sz, 0, 1);
         GBA_mainbus_write((void *)this, ch->op.dest_addr, ch->op.sz, 0, v);
 
@@ -325,12 +325,12 @@ static void tick_timers(struct GBA *this, u32 num_ticks) {
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {
     // add in DMA here
-    this->cycles_to_execute += num_cycles;
+    this->cycles_to_execute += (i32)num_cycles;
     while(this->cycles_to_execute > 0) {
-        this->cycles_executed = 0;
+        this->waitstates.current_transaction = 0;
         if (dma_go(this)) {
-            this->cycles_to_execute -= this->cycles_executed;
-            tick_timers(this, this->cycles_executed);
+            tick_timers(this, this->waitstates.current_transaction);
+            this->cycles_to_execute -= (i32)this->waitstates.current_transaction;
         }
         else {
             if (this->io.halted) {
@@ -340,7 +340,7 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
             if (!this->io.halted) {
                 ARM7TDMI_cycle(&this->cpu, 1);
             }
-            this->cycles_to_execute--;
+            this->cycles_to_execute -= 1;
             tick_timers(this, 1);
         }
 

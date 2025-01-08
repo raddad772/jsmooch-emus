@@ -161,7 +161,6 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
     }
     if (sz == 2) addr &= ~1;
 
-
     if (addr >= this->cart.ROM.size) {
         return (addr >> 1) & masksz[sz];
     }
