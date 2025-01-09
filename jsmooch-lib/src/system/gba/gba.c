@@ -312,6 +312,14 @@ static void tick_timers(struct GBA *this, u32 num_ticks) {
     for (u32 ticks = 0; ticks < num_ticks; ticks++) {
         for (u32 timer = 0; timer < 4; timer++) {
             struct GBA_TIMER *t = &this->timer[timer];
+            if (t->enable_counter > 0) {
+                t->enable_counter--;
+                if ((t->enable_counter == 0) && (!t->enable))  {
+                    t->enable = 1;
+                    t->divider.counter = 0;
+                    t->counter.val = t->counter.reload;
+                }
+            }
             if (t->enable && !t->cascade) {
                 t->divider.counter = (t->divider.counter + 1) & t->divider.mask;
                 if (t->divider.counter == 0) {
@@ -355,7 +363,6 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 u32 GBAJ_finish_scanline(JSM)
 {
     JTHIS;
-    this->cycles_to_execute = 0;
     GBA_PPU_start_scanline(this);
     if (dbg.do_break) return 0;
     cycle_DMA_and_CPU(this, MASTER_CYCLES_BEFORE_HBLANK);

@@ -148,38 +148,45 @@ static u32 read_eeprom(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_e
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
-u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws)
 {
     addr &= 0x01FFFFFF;
     if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) return read_eeprom(this, addr, sz, access, has_effect);
 
     if (sz == 4){
         addr &= ~3;
-        u32 v = GBA_cart_read(this, addr, 2, access, has_effect);
-        v |= GBA_cart_read(this, addr+2, 2, access, has_effect) << 16;
+        u32 v = GBA_cart_read(this, addr, 2, access, has_effect, ws);
+        v |= GBA_cart_read(this, addr+2, 2, access | ARM7P_sequential, has_effect, ws) << 16;
         return v;
     }
     if (sz == 2) addr &= ~1;
 
+    this->waitstates.current_transaction++;
     if (addr >= this->cart.ROM.size) {
         return (addr >> 1) & masksz[sz];
+    }
+
+    switch(ws) {
+        case 0: this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws0_s : this->waitstates.ws0_n; break;
+        case 1: this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws1_s : this->waitstates.ws1_n; break;
+        case 2: this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws2_s : this->waitstates.ws2_n; break;
     }
     return cR[sz](this->cart.ROM.ptr, addr);
 }
 
 u32 GBA_cart_read_wait0(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    return GBA_cart_read(this, addr, sz, access, has_effect);
+    return GBA_cart_read(this, addr, sz, access, has_effect, 0);
 }
 
 u32 GBA_cart_read_wait1(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    return GBA_cart_read(this, addr, sz, access, has_effect);
+    return GBA_cart_read(this, addr, sz, access, has_effect, 1);
 }
 
 u32 GBA_cart_read_wait2(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    return GBA_cart_read(this, addr, sz, access, has_effect);
+    return GBA_cart_read(this, addr, sz, access, has_effect, 2);
 }
 
 #define idstr_SST 0xD4BF
@@ -191,6 +198,7 @@ u32 GBA_cart_read_wait2(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_
 
 static u32 read_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    this->waitstates.current_transaction++;
     if (this->cart.RAM.flash.state == GBAFS_get_id) {
         if (addr == 0x0E000000) {
             switch (this->cart.RAM.flash.kind) {

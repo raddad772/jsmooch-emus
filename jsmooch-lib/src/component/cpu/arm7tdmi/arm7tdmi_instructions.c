@@ -245,6 +245,7 @@ void ARM7TDMI_ins_SWP(struct ARM7TDMI *this, u32 opcode)
     }
     u32 tmp = ARM7TDMI_read(this, *Rn, sz, ARM7P_nonsequential, 1) & mask;
     ARM7TDMI_write(this, *Rn, sz, ARM7P_nonsequential | ARM7P_lock, (*Rm) & mask); // Rm = [Rn]
+    ARM7TDMI_idle(this, 1);
     if (!B) tmp = align_val(*Rn, tmp);
     write_reg(this, Rd, tmp); // Rd = [Rn]
 }
@@ -283,6 +284,7 @@ void ARM7TDMI_ins_LDRH_STRH(struct ARM7TDMI *this, u32 opcode)
             else
                 write_reg(this, Rn, addr);
         }
+        ARM7TDMI_idle(this, 1);
         write_reg(this, Rd, val);
     }
     else {
@@ -342,6 +344,7 @@ void ARM7TDMI_ins_LDRSB_LDRSH(struct ARM7TDMI *this, u32 opcode)
         else
             write_reg(this, Rn, addr);
     }
+    ARM7TDMI_idle(this, 1);
     write_reg(this, Rd, val);
 }
 
@@ -719,7 +722,7 @@ void ARM7TDMI_ins_LDR_STR_immediate_offset(struct ARM7TDMI *this, u32 opcode)
             else
                 write_reg(this, Rn, addr);
         }
-
+        ARM7TDMI_idle(this, 1);
         write_reg(this, Rd, v);
     }
     else { // load from RAM
@@ -785,6 +788,7 @@ void ARM7TDMI_ins_LDR_STR_register_offset(struct ARM7TDMI *this, u32 opcode)
             else
                 write_reg(this, Rn, addr);
         }
+        ARM7TDMI_idle(this, 1);
         write_reg(this, Rd, v);
     }
     else { // STR to RAM
@@ -798,6 +802,7 @@ void ARM7TDMI_ins_LDR_STR_register_offset(struct ARM7TDMI *this, u32 opcode)
         }
     }
 }
+
 void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)
 {
     u32 P = OBIT(24); // P=0 add offset after. P=1 add offset first

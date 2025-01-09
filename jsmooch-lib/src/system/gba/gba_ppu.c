@@ -1117,8 +1117,11 @@ static void GBA_PPU_write_invalid(struct GBA *this, u32 addr, u32 sz, u32 access
 
 u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (sz == 4) addr &= ~3;
-    if (sz == 2) addr &= ~1;
+    this->waitstates.current_transaction++;
+    if (sz == 4) {
+        this->waitstates.current_transaction++;
+        addr &= ~3;
+    }    if (sz == 2) addr &= ~1;
     //if (addr < 0x05000400)
     return cR[sz](this->ppu.palette_RAM, addr & 0x3FF);
 
@@ -1127,8 +1130,11 @@ u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access,
 
 u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (sz == 4) addr &= ~3;
-    if (sz == 2) addr &= ~1;
+    this->waitstates.current_transaction++;
+    if (sz == 4) {
+        this->waitstates.current_transaction++;
+        addr &= ~3;
+    }    if (sz == 2) addr &= ~1;
     addr &= 0x1FFFF;
     if (addr < 0x18000)
         return cR[sz](this->ppu.VRAM, addr);
@@ -1137,6 +1143,7 @@ u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u3
 }
 
 u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     //if (addr < 0x07000400)
@@ -1147,22 +1154,25 @@ u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32
 
 void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (sz == 4) addr &= ~3;
+    this->waitstates.current_transaction++;
+    if (sz == 4) {
+        this->waitstates.current_transaction++;
+        addr &= ~3;
+    }
     if (sz == 2) addr &= ~1;
     if (sz == 1) { sz = 2; val = (val & 0xFF) | ((val << 8) & 0xFF00); }
 
-    //if (addr < 0x05000400) {
-        return cW[sz](this->ppu.palette_RAM, addr & 0x3FF, val);
-    //}
-
-    //GBA_PPU_write_invalid(this, addr, sz, access, val);
+    return cW[sz](this->ppu.palette_RAM, addr & 0x3FF, val);
 }
 
 void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (sz == 4) addr &= ~3;
+    this->waitstates.current_transaction++;
+    if (sz == 4) {
+        this->waitstates.current_transaction++;
+        addr &= ~3;
+    }
     if (sz == 2) addr &= ~1;
-    //DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
 
     u32 vram_boundary = this->ppu.io.bg_mode >= 3 ? 0x14000 : 0x10000;
     u32 mask = sz == 4 ? 0xFFFFFFFF : (sz == 2 ? 0xFFFF : 0xFF);
@@ -1195,6 +1205,7 @@ void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, 
 
 void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     if (sz == 1) return;

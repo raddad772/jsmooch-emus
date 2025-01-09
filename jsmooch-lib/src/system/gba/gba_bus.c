@@ -31,6 +31,7 @@ static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
 #define WAITCNT 0x04000204
 
 static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    this->waitstates.current_transaction++;
     if (addr < 0x40000) {
         if (this->cpu.regs.R[15] < 0x40000) {
             u32 v = cR[sz](this->BIOS.data, addr);
@@ -46,23 +47,34 @@ static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_ef
 }
 
 static void buswr_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    this->waitstates.current_transaction++;
     printf("\nWarning write to BIOS...");
 }
 
 
 static u32 busrd_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
-    if (sz == 4) addr &= ~3;
+    this->waitstates.current_transaction += 3;
+    if (sz == 4) {
+        addr &= ~3;
+        this->waitstates.current_transaction += 3;
+    }
     if (sz == 2) addr &= ~1;
     return cR[sz](this->WRAM_slow, addr & 0x3FFFF);
 }
 
 static u32 busrd_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     return cR[sz](this->WRAM_fast, addr & 0x7FFF);
 }
 
 static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    this->waitstates.current_transaction += 3;
+    if (sz == 4) {
+        addr &= ~3;
+        this->waitstates.current_transaction += 3;
+    }
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     cW[sz](this->WRAM_slow, addr & 0x3FFFF, val);
@@ -100,6 +112,7 @@ static void set_waitstates(struct GBA *this) {
 
 
 static void buswr_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     cW[sz](this->WRAM_fast, addr & 0x7FFF, val);
@@ -114,19 +127,7 @@ static u32 DMA_CH_NUM(u32 addr)
     return 3;
 }
 
-static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
-    if (this->dbg_info.mgba.enable) {
-    }
-    u32 r = 0;
-    if (sz >= 2) {
-        r = busrd_IO(this, addr, 1, access, has_effect) << 0;
-        r |= busrd_IO(this, addr+1, 1, access, has_effect) << 8;
-    }
-    if (sz == 4) {
-        r |= busrd_IO(this, addr+2, 1, access, has_effect) << 16;
-        r |= busrd_IO(this, addr+3, 1, access, has_effect) << 24;
-    }
-    if (sz != 1) return r;
+static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x4000060) return GBA_PPU_mainbus_read_IO(this, addr, sz, access, has_effect);
     if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_read_IO(this, addr, sz, access, has_effect);
 
@@ -280,6 +281,19 @@ static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effe
     return busrd_invalid(this, addr, sz, access, has_effect);
 }
 
+static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    this->waitstates.current_transaction++;
+    u32 r = 0;
+    r = busrd_IO8(this, addr, 1, access, has_effect) << 0;
+    if (sz >= 2) {
+        r |= busrd_IO8(this, addr + 1, 1, access, has_effect) << 8;
+    }
+    if (sz == 4) {
+        r |= busrd_IO8(this, addr + 2, 1, access, has_effect) << 16;
+        r |= busrd_IO8(this, addr + 3, 1, access, has_effect) << 24;
+    }
+    return r;
+}
 
 
 void GBA_eval_irqs(struct GBA *this)
@@ -309,31 +323,7 @@ void GBA_eval_irqs(struct GBA *this)
   14-15 Not used */
 }
 
-static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
-    if (addr == 0x04fff780) {
-        assert(sz==2);
-        if (val == 0xc0de) this->dbg_info.mgba.enable = 1;
-        return;
-    }
-    if (this->dbg_info.mgba.enable) {
-        if (addr == 0x04fff700) {
-            //if (val & 0x100) {
-            if (this->dbg_info.mgba.str[0] != 0) {
-                printf("\n%s", this->dbg_info.mgba.str);
-                memset(this->dbg_info.mgba.str, 0, sizeof(this->dbg_info.mgba.str));
-            }
-            return;
-        }
-    }
-    if (sz >= 2) {
-        buswr_IO(this, addr, 1, access, (val >> 0) & 0xFF);
-        buswr_IO(this, addr+1, 1, access, (val >> 8) & 0xFF);
-    }
-    if (sz == 4) {
-        buswr_IO(this, addr+2, 1, access, (val >> 16) & 0xFF);
-        buswr_IO(this, addr+3, 1, access, (val >> 24) & 0xFF);
-    }
-    if (sz != 1) return;
+static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     val &= 0xFF;
     if (addr < 0x04000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
     if (addr < 0x040000B0) return GBA_APU_write_IO(this, addr, sz, access, val);
@@ -477,11 +467,14 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             }
             this->timer[tn].cascade = (val >> 2) & 1;
             this->timer[tn].irq_on_overflow = (val >> 6) & 1;
-            u32 old_enable = this->timer[tn].enable;
-            this->timer[tn].enable = (val >> 7) & 1;
-            if ((!old_enable) && (this->timer[tn].enable = 1)) {
-                this->timer[tn].divider.counter = 0;
-                this->timer[tn].counter.val = this->timer[tn].counter.reload;
+            u32 old_enable = this->timer[tn].enable || (this->timer[tn].enable_counter > 0) ;
+            u32 new_enable = (val >> 7) & 1;
+            if (!new_enable) {
+                this->timer[tn].enable_counter = 0;
+                this->timer[tn].enable = 0;
+            }
+            if ((!old_enable) && (new_enable)) {
+                this->timer[tn].enable_counter = 3; // it will be ticked after this write in the same "cycle"...I think...
             }
             //printf("\nTIMER:%d ENABLE:%d CASCADE:%d IRQ:%d DMASK:%d", tn, this->timer[tn].enable, this->timer[tn].cascade, this->timer[tn].irq_on_overflow, this->timer[tn].divider.mask);
             return; }
@@ -683,6 +676,34 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     buswr_invalid(this, addr, sz, access, val);
 }
 
+static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    this->waitstates.current_transaction++;
+    if (addr == 0x04fff780) {
+        assert(sz == 2);
+        if (val == 0xc0de) this->dbg_info.mgba.enable = 1;
+        return;
+    }
+    if (this->dbg_info.mgba.enable) {
+        if (addr == 0x04fff700) {
+            //if (val & 0x100) {
+            if (this->dbg_info.mgba.str[0] != 0) {
+                printf("\n%s", this->dbg_info.mgba.str);
+                memset(this->dbg_info.mgba.str, 0, sizeof(this->dbg_info.mgba.str));
+            }
+            return;
+        }
+    }
+    buswr_IO8(this, addr, 1, access, (val >> 0) & 0xFF);
+    if (sz >= 2) {
+        buswr_IO8(this, addr + 1, 1, access, (val >> 8) & 0xFF);
+    }
+    if (sz == 4) {
+        buswr_IO8(this, addr + 2, 1, access, (val >> 16) & 0xFF);
+        buswr_IO8(this, addr + 3, 1, access, (val >> 24) & 0xFF);
+    }
+}
+
+
 void GBA_bus_init(struct GBA *this)
 {
     for (u32 i = 0; i < 16; i++) {
@@ -749,7 +770,6 @@ static void trace_read(struct GBA *this, u32 addr, u32 sz, u32 val)
 u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     struct GBA *this = (struct GBA *)ptr;
-
     u32 v;
 
     if (addr < 0x10000000) v = this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
@@ -778,7 +798,6 @@ void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     struct GBA *this = (struct GBA *)ptr;
-
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
         return this->mem.write[(addr >> 24) & 15](this, addr, sz, access, val);

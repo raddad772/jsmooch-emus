@@ -344,6 +344,7 @@ void ARM7TDMI_THUMB_ins_LDR_PC_relative(struct ARM7TDMI *this, struct thumb_inst
     u32 *Rd = getR(this, ins->Rd);
     u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
     *Rd = v;
+    ARM7TDMI_idle(this, 1);
 }
 
 void ARM7TDMI_THUMB_ins_LDRH_STRH_reg_offset(struct ARM7TDMI *this, struct thumb_instruction *ins)
@@ -372,6 +373,7 @@ void ARM7TDMI_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM7TDMI *this, struct thu
     u32 mask = ins->B ? 0xFF : 0xFFFF;
 
     u32 v = ARM7TDMI_read(this, addr, sz, ARM7P_nonsequential, 1);
+    ARM7TDMI_idle(this, 1);
     if ((ins->B)) {
         v = SIGNe8to32(v);
     }
@@ -394,6 +396,7 @@ void ARM7TDMI_THUMB_ins_LDR_STR_reg_offset(struct ARM7TDMI *this, struct thumb_i
  */
     if (ins->L) { // Load
         u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
+        ARM7TDMI_idle(this, 1);
         if (addr & 3) v = align_val(addr, v);
         *Rd = v;
     }
@@ -410,6 +413,7 @@ void ARM7TDMI_THUMB_ins_LDRB_STRB_reg_offset(struct ARM7TDMI *this, struct thumb
     this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     if (ins->L) { // Load
         u32 v = ARM7TDMI_read(this, addr, 1, ARM7P_nonsequential, 1);
+        ARM7TDMI_idle(this, 1);
         *Rd = v;
     }
     else { // Store
@@ -425,12 +429,8 @@ void ARM7TDMI_THUMB_ins_LDR_STR_imm_offset(struct ARM7TDMI *this, struct thumb_i
     u32 *Rd = getR(this, ins->Rd);
     if (ins->L) { // Load
         u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
+        ARM7TDMI_idle(this, 1);
         if (addr & 3) v = align_val(addr, v);
-        /*
-	ldr 	r1,=0x44332211
-	ldr 	r2,=0x88776655
-	ldr 	r3,=_tvar64
-         */
         *Rd = v;
     }
     else { // Store
@@ -447,6 +447,7 @@ void ARM7TDMI_THUMB_ins_LDRB_STRB_imm_offset(struct ARM7TDMI *this, struct thumb
     if (ins->L) { // load
         u32 v = ARM7TDMI_read(this, addr, 1, ARM7P_nonsequential, 1);
         //if (addr & 1) v = (v >> 8) | (v << 24);
+        ARM7TDMI_idle(this, 1);
         write_reg(this, Rd, v);
     }
     else { // store
@@ -462,6 +463,7 @@ void ARM7TDMI_THUMB_ins_LDRH_STRH_imm_offset(struct ARM7TDMI *this, struct thumb
     this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     if (ins->L) { // load
         u32 v = ARM7TDMI_read(this, addr, 2, ARM7P_nonsequential, 1);
+        ARM7TDMI_idle(this, 1);
         if (addr & 1) v = (v >> 8) | (v << 24);
         write_reg(this, Rd, v);
     }
@@ -477,6 +479,7 @@ void ARM7TDMI_THUMB_ins_LDR_STR_SP_relative(struct ARM7TDMI *this, struct thumb_
     this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
     if (ins->L) { // if Load
         u32 v = ARM7TDMI_read(this, addr, 4, ARM7P_nonsequential, 1);
+        ARM7TDMI_idle(this, 1);
         if (addr & 3) v = align_val(addr, v);
         write_reg(this, getR(this, ins->Rd), v);
     }

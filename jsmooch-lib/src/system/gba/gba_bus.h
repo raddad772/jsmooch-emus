@@ -122,7 +122,7 @@ struct GBA {
             u32 counter;
         } divider;
 
-        u32 enable;
+        u32 enable, enable_counter;
         u32 cascade;
         u32 irq_on_overflow;
 

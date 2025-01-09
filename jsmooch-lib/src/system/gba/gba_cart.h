@@ -80,7 +80,7 @@ struct GBA_cart {
 void GBA_cart_init(struct GBA_cart*);
 void GBA_cart_delete(struct GBA_cart *);
 void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val);
-u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect);
+u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws);
 u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart*, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable);
 
 struct GBA;
