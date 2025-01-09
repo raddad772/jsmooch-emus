@@ -220,10 +220,35 @@ static void raise_irq_for_dma(struct GBA *this, u32 num)
 
 static u32 dma_go_ch(struct GBA *this, u32 num) {
     struct GBA_DMA_ch *ch = &this->dma[num];
+    if (ch->run_counter && ch->io.enable) {
+        ch->run_counter--;
+        if (ch->run_counter == 0) GBA_dma_start(ch, num);
+        else return 0;
+    }
     if ((ch->io.enable) && (ch->op.started)) {
-        this->waitstates.current_transaction += 2;
-        u32 v = GBA_mainbus_read((void *)this, ch->op.src_addr, ch->op.sz, 0, 1);
-        GBA_mainbus_write((void *)this, ch->op.dest_addr, ch->op.sz, 0, v);
+        if (ch->op.sz == 2) {
+            u16 value;
+
+            if (ch->op.src_addr >= 0x02000000) {
+                value = GBA_mainbus_read(this, ch->op.src_addr, 2, ch->op.src_access, 1);
+                ch->io.open_bus = (value << 16) | value;
+            } else {
+                if (ch->op.dest_addr & 2) {
+                    value = ch->io.open_bus >> 16;
+                } else {
+                    value = ch->io.open_bus & 0xFFFF;
+                }
+                this->waitstates.current_transaction++;
+            }
+            GBA_mainbus_write(this, ch->op.dest_addr, 2, ch->op.dest_access, value);
+        }
+        else {
+            if (ch->op.src_addr >= 0x02000000)
+                ch->io.open_bus = GBA_mainbus_read(this, ch->op.src_addr, 4, ch->op.src_access, 1);
+            else
+                this->waitstates.current_transaction++;
+            GBA_mainbus_write(this, ch->op.dest_addr, 4, ch->op.dest_access, ch->io.open_bus);
+        }
 
         switch(ch->io.src_addr_ctrl) {
             case 0: // increment
@@ -289,42 +314,21 @@ static void sound_FIFO(struct GBA *this, u32 num)
 }
 
 
-static void tick_timer(struct GBA *this, struct GBA_TIMER *t, u32 timernum)
-{
-    t->counter.val++;
-    if (t->counter.val == 0) {
-        if (t->irq_on_overflow) {
-            this->io.IF |= 1 << (3 + timernum);
-        }
-        t->counter.val = t->counter.reload;
-        if(this->apu.fifo[0].timer_id == timernum) sound_FIFO(this, 0);
-        if(this->apu.fifo[1].timer_id == timernum) sound_FIFO(this, 1);
-        if (timernum < 3) {
-            struct GBA_TIMER *tp1 = &this->timer[timernum+1];
-            if (tp1->cascade) {
-                tick_timer(this, tp1, timernum+1);
-            }
-        }
-    }
-}
-
 static void tick_timers(struct GBA *this, u32 num_ticks) {
     for (u32 ticks = 0; ticks < num_ticks; ticks++) {
-        for (u32 timer = 0; timer < 4; timer++) {
-            struct GBA_TIMER *t = &this->timer[timer];
-            if (t->enable_counter > 0) {
-                t->enable_counter--;
-                if ((t->enable_counter == 0) && (!t->enable))  {
-                    t->enable = 1;
-                    t->divider.counter = 0;
-                    t->counter.val = t->counter.reload;
+        u64 current_time = this->clock.master_cycle_count + ticks;
+        // Check for overflow...
+        for (u32 tn = 0; tn < 4; tn++) {
+            struct GBA_TIMER *t = &this->timer[tn];
+            if (!t->cascade && (current_time >= t->overflow_at)) {
+                // DO OVERFLOW!
+                t->overflow_at += ((0x1000 - t->reload) << t->shift);
+                if (t->irq_on_overflow) {
+                    this->io.IF |= 1 << (3 + tn);
+                    GBA_eval_irqs(this);
                 }
-            }
-            if (t->enable && !t->cascade) {
-                t->divider.counter = (t->divider.counter + 1) & t->divider.mask;
-                if (t->divider.counter == 0) {
-                    tick_timer(this, t, timer);
-                }
+                if(this->apu.fifo[0].timer_id == tn) sound_FIFO(this, 0);
+                if(this->apu.fifo[1].timer_id == tn) sound_FIFO(this, 1);
             }
         }
     }
@@ -333,31 +337,35 @@ static void tick_timers(struct GBA *this, u32 num_ticks) {
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {
     // add in DMA here
-    this->cycles_to_execute += (i32)num_cycles;
-    while(this->cycles_to_execute > 0) {
+    this->scanline_cycles_to_execute += (i32)num_cycles;
+    while(this->scanline_cycles_to_execute > 0) {
         this->waitstates.current_transaction = 0;
         if (dma_go(this)) {
-            tick_timers(this, this->waitstates.current_transaction);
-            this->cycles_to_execute -= (i32)this->waitstates.current_transaction;
         }
         else {
             if (this->io.halted) {
                 this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
-                //if (!this->io.halted) printf("\nEXIT HALT!");
+                this->waitstates.current_transaction++;
             }
-            if (!this->io.halted) {
-                ARM7TDMI_cycle(&this->cpu, 1);
+            else {
+                ARM7TDMI_run(&this->cpu);
             }
-            this->cycles_to_execute -= 1;
-            tick_timers(this, 1);
         }
+        tick_timers(this, this->waitstates.current_transaction);
+        this->scanline_cycles_to_execute -= (i32)this->waitstates.current_transaction;
+        this->clock.master_cycle_count += this->waitstates.current_transaction;
 
         if (dbg.do_break) {
-            this->cycles_to_execute = 0;
+            this->scanline_cycles_to_execute = 0;
             break;
         }
     }
 
+}
+
+u64 GBA_clock_current(struct GBA *this)
+{
+    return this->clock.master_cycle_count + this->waitstates.current_transaction;
 }
 
 u32 GBAJ_finish_scanline(JSM)
@@ -379,7 +387,7 @@ u32 GBAJ_finish_scanline(JSM)
 static u32 GBAJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    ARM7TDMI_cycle(&this->cpu, howmany);
+    ARM7TDMI_run(&this->cpu);
     return 0;
 }
 

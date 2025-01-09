@@ -17,6 +17,7 @@ void GBA_cart_init(struct GBA_cart* this)
 {
     *this = (struct GBA_cart) {}; // Set all fields to 0
 
+    this->prefetch.enable = 1;
     buf_init(&this->ROM);
 }
 
@@ -150,8 +151,8 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws)
 {
-    addr &= 0x01FFFFFF;
     if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) return read_eeprom(this, addr, sz, access, has_effect);
+    addr &= 0x01FFFFFF;
 
     if (sz == 4){
         addr &= ~3;
@@ -161,15 +162,31 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
     }
     if (sz == 2) addr &= ~1;
 
-    this->waitstates.current_transaction++;
     if (addr >= this->cart.ROM.size) {
+        this->waitstates.current_transaction++;
         return (addr >> 1) & masksz[sz];
     }
 
+    if (this->cart.prefetch.was_disabled) {
+        access &= ~ARM7P_sequential;
+        this->cart.prefetch.was_disabled = 0;
+    }
     switch(ws) {
-        case 0: this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws0_s : this->waitstates.ws0_n; break;
-        case 1: this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws1_s : this->waitstates.ws1_n; break;
-        case 2: this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws2_s : this->waitstates.ws2_n; break;
+        case 0: {
+            this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws0_s : this->waitstates.ws0_n;
+            break;
+        }
+        case 1: {
+            this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws1_s : this->waitstates.ws1_n;
+            break;
+        }
+        case 2: {
+            this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws2_s : this->waitstates.ws2_n;
+            break;
+        }
+        default:
+            printf("\nWTF!?!?");
+            break;
     }
     return cR[sz](this->cart.ROM.ptr, addr);
 }
@@ -243,6 +260,7 @@ u32 GBA_cart_read_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_e
     /*if (addr >= 0x0E010000) {
         return GBA_open_bus(this, addr, sz);
     }*/
+
     u32 v = ((u8 *)this->cart.RAM.store->data)[addr & this->cart.RAM.mask];
     if (sz == 2) {
         v *= 0x101;
@@ -250,6 +268,7 @@ u32 GBA_cart_read_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_e
     if (sz == 4) {
         v *= 0x1010101;
     }
+    this->waitstates.current_transaction += this->waitstates.sram;
     return v;
 }
 
@@ -257,6 +276,7 @@ void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if ((addr >= 0x0d000000) && (addr < 0x0e000000))
         return write_eeprom(this, addr, sz, access, val);
+    this->waitstates.current_transaction++;
     printf("\nWARNING write cart addr %08x", addr);
 }
 

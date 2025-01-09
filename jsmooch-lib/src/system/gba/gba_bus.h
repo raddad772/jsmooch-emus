@@ -39,7 +39,6 @@ struct GBA {
             u32 ws2_n, ws2_s;
             u32 empty_bit;
             u32 phi_term;
-            u8 byte2, byte3; // upper bytes of register
         } io;
         u32 sram;
         u32 ws0_n, ws0_s;
@@ -78,6 +77,7 @@ struct GBA {
         u8 POSTFLG;
 
         i32 bios_open_bus;
+        u32 dma_open_bus;
     } io;
 
     struct {
@@ -86,7 +86,7 @@ struct GBA {
         i64 cycles_left;
     } jsm;
 
-    i32 cycles_to_execute;
+    i32 scanline_cycles_to_execute;
 
     struct GBA_DMA_ch {
         struct {
@@ -102,6 +102,7 @@ struct GBA {
             u32 start_timing;
             u32 irq_on_end;
             u32 enable;
+            u32 open_bus;
         } io;
 
         struct {
@@ -110,9 +111,11 @@ struct GBA {
             u32 word_mask;
             u32 src_addr;
             u32 dest_addr;
+            u32 src_access, dest_access;
             u32 sz;
             u32 first_run;
         } op;
+        u32 run_counter;
     } dma[4];
 
     struct GBA_TIMER {
@@ -122,14 +125,14 @@ struct GBA {
             u32 counter;
         } divider;
 
-        u32 enable, enable_counter;
-        u32 cascade;
-        u32 irq_on_overflow;
+        u32 shift;
 
-        struct {
-            u16 val;
-            u16 reload;
-        } counter;
+        u64 enable_at; // cycle # we'll be enabled at
+        u64 overflow_at; // cycle # we'll overflow at
+        u32 cascade;
+        u16 val_at_stop;
+        u32 irq_on_overflow;
+        u16 reload;
     } timer[4];
 
     struct {
@@ -201,4 +204,6 @@ void GBA_check_dma_at_hblank(struct GBA *);
 void GBA_check_dma_at_vblank(struct GBA *);
 u32 GBA_open_bus_byte(struct GBA *, u32 addr);
 u32 GBA_open_bus(struct GBA *this, u32 addr, u32 sz);
+void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i);
+
 #endif //JSMOOCH_EMUS_GBA_BUS_H

@@ -686,16 +686,16 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
+            //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
+            worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
 
             break;

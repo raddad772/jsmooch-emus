@@ -116,8 +116,6 @@ struct ARM7TDMI {
 
     struct ARM7_ins *arm7_ins;
 
-    i32 cycles_to_execute;
-
     struct {
         struct jsm_debug_read_trace strct;
         struct jsm_string str;
@@ -152,7 +150,7 @@ void ARM7TDMI_delete(struct ARM7TDMI *);
 void ARM7TDMI_reset(struct ARM7TDMI *);
 void ARM7TDMI_disassemble_entry(struct ARM7TDMI*, struct disassembly_entry* entry);
 void ARM7TDMI_setup_tracing(struct ARM7TDMI*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
-void ARM7TDMI_cycle(struct ARM7TDMI*, i32 num);
+void ARM7TDMI_run(struct ARM7TDMI*);
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);
 void ARM7TDMI_fill_regmap(struct ARM7TDMI *);
 void ARM7TDMI_reload_pipeline(struct ARM7TDMI *);

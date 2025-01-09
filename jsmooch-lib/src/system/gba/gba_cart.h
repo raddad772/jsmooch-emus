@@ -74,6 +74,7 @@ struct GBA_cart {
 
     struct {
         u32 enable;
+        u32 was_disabled;
     } prefetch;
 };
 
@@ -82,6 +83,7 @@ void GBA_cart_delete(struct GBA_cart *);
 void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val);
 u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws);
 u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart*, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable);
+u64 GBA_clock_current(struct GBA *);
 
 struct GBA;
 u32 GBA_cart_read_wait0(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);

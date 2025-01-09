@@ -273,48 +273,35 @@ void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num)
     *this->waitstates += num;
 }
 
-void ARM7TDMI_cycle(struct ARM7TDMI*this, i32 num)
+void ARM7TDMI_run(struct ARM7TDMI*this)
 {
-    this->cycles_to_execute += num;
-    while(this->cycles_to_execute > 0) {
-        *this->waitstates = 0;
-        if (this->regs.IRQ_line && !this->regs.CPSR.I) {
-            do_IRQ(this);
-            this->cycles_to_execute -= (i32)*this->waitstates;
-            continue;
-        }
+    if (this->regs.IRQ_line && !this->regs.CPSR.I) {
+        do_IRQ(this);
+    }
 
-        u32 opcode = this->pipeline.opcode[0];
-        u32 opcode_addr = this->pipeline.addr[0];
-        this->pipeline.opcode[0] = this->pipeline.opcode[1];
-        this->pipeline.addr[0] = this->pipeline.addr[1];
-        this->regs.PC &= 0xFFFFFFFE;
+    u32 opcode = this->pipeline.opcode[0];
+    u32 opcode_addr = this->pipeline.addr[0];
+    this->pipeline.opcode[0] = this->pipeline.opcode[1];
+    this->pipeline.addr[0] = this->pipeline.addr[1];
+    this->regs.PC &= 0xFFFFFFFE;
 
-        if (this->regs.CPSR.T) { // THUMB mode!
-            this->pipeline.opcode[1] = fetch_ins(this, 2);
-            this->pipeline.addr[1] = this->regs.PC;
-            decode_and_exec_thumb(this, opcode, opcode_addr);
+    if (this->regs.CPSR.T) { // THUMB mode!
+        this->pipeline.opcode[1] = fetch_ins(this, 2);
+        this->pipeline.addr[1] = this->regs.PC;
+        decode_and_exec_thumb(this, opcode, opcode_addr);
+    }
+    else {
+        this->pipeline.opcode[1] = fetch_ins(this, 4);
+        this->pipeline.addr[1] = this->regs.PC;
+        if (condition_passes(&this->regs, (int)(opcode >> 28))) {
+            decode_and_exec_arm(this, opcode, opcode_addr);
+            if (this->pipeline.flushed)
+                ARM7TDMI_reload_pipeline(this);
         }
         else {
-            this->pipeline.opcode[1] = fetch_ins(this, 4);
-            this->pipeline.addr[1] = this->regs.PC;
-            if (condition_passes(&this->regs, (int)(opcode >> 28))) {
-                decode_and_exec_arm(this, opcode, opcode_addr);
-                if (this->pipeline.flushed)
-                    ARM7TDMI_reload_pipeline(this);
-            }
-            else {
-                if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
-                this->pipeline.access = ARM7P_code | ARM7P_sequential;
-                this->regs.PC += 4;
-            }
-        }
-        this->cycles_to_execute -= (i32)*this->waitstates;
-        if (this->trace.cycles) *this->trace.cycles += *this->waitstates;
-
-        if (dbg.do_break) {
-            this->cycles_to_execute = 0;
-            break;
+            if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
+            this->pipeline.access = ARM7P_code | ARM7P_sequential;
+            this->regs.PC += 4;
         }
     }
 }

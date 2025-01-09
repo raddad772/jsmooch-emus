@@ -604,10 +604,9 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         ts->trace_cycles = 0;
         ts->cpu.testing = 1;
         ts->my_transactions.num = 0;
-        ts->cpu.cycles_to_execute = 0;
         ts->cycles_executing++;
 
-        ARM7TDMI_cycle(&ts->cpu, 1);
+        ARM7TDMI_run(&ts->cpu);
 
         /*for (u32 j = 0; j < ts->test.transactions.num; j++) {
             struct transaction *t = &ts->test.transactions.items[j];

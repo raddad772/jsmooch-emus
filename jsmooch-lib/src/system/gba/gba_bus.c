@@ -7,8 +7,13 @@
 #include "gba_bus.h"
 #include "helpers/multisize_memaccess.c"
 
+static u32 timer_enabled(struct GBA *this, u32 tn) {
+    return GBA_clock_current(this) >= this->timer[tn].enable_at;
+}
+
 static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
+    this->waitstates.current_transaction++;
     //dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad reads", this->clock.master_cycle_count);
     u32 v = GBA_open_bus_byte(this, addr);
@@ -24,6 +29,7 @@ static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has
 
 static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     printf("\nWRITE UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
+    this->waitstates.current_transaction++;
     dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
 }
@@ -80,34 +86,43 @@ static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
     cW[sz](this->WRAM_slow, addr & 0x3FFFF, val);
 }
 
-static void dma_start(struct GBA_DMA_ch *ch, u32 i)
+void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i)
 {
     ch->op.started = 1;
+    u32 mask = ch->io.transfer_size ? ~3 : ~1;
+    mask &= 0x0FFFFFFF;
+    //u32 mask = 0x0FFFFFFF;
     if (ch->op.first_run) {
-        ch->op.dest_addr = ch->io.dest_addr & 0x0FFFFFFF;
-        ch->op.src_addr = ch->io.src_addr & 0x0FFFFFFF;
+        ch->op.dest_addr = ch->io.dest_addr & mask;
+        ch->op.src_addr = ch->io.src_addr & mask;
     }
     else if (ch->io.dest_addr_ctrl == 3) {
-        ch->op.dest_addr = ch->io.dest_addr & 0x0FFFFFFF;
+        ch->op.dest_addr = ch->io.dest_addr & mask;
     }
     ch->op.word_count = ch->io.word_count;
     ch->op.sz = ch->io.transfer_size ? 4 : 2;
     ch->op.word_mask = i == 3 ? 0xFFFF : 0x3FFF;
-    if (i == 0) printf("\nDMA ch:%d src:%08x dst:%08x sz:%d num:%d", i, ch->op.src_addr, ch->op.dest_addr, ch->op.sz, ch->op.word_count);
+    ch->op.dest_access = ARM7P_sequential | ARM7P_dma;
+    ch->op.src_access = ARM7P_sequential | ARM7P_dma;
+    //if (i == 0) printf("\nDMA ch:%d src:%08x dst:%08x sz:%d num:%d", i, ch->op.src_addr, ch->op.dest_addr, ch->op.sz, ch->op.word_count);
 }
 
 static void set_waitstates(struct GBA *this) {
 #define DOV4(n, a, b, c, d) switch(this->waitstates.io. n) { case 0: this->waitstates. n = a; break; case 1: this->waitstates. n = b; break; case 2: this->waitstates. n = c; break; case 3: this->waitstates. n = d; break; }
 #define DOV2(n, a, b) switch(this->waitstates.io. n) { case 0: this->waitstates. n = a; break; case 1: this->waitstates. n = b; break; }
-    DOV4(sram, 4, 3, 2, 8);
-    DOV4(ws0_n, 4, 3, 2, 8);
-    DOV2(ws0_s, 2, 1);
-    DOV4(ws1_n, 4, 3, 2, 8);
-    DOV2(ws1_s, 4, 1);
-    DOV4(ws2_n, 4, 3, 2, 8);
-    DOV2(ws2_s, 8, 1);
+    DOV4(sram, 5, 4, 3, 9);
+    DOV4(ws0_n, 5, 4, 3, 9);
+    DOV2(ws0_s, 3, 2);
+    DOV4(ws1_n, 5, 4, 3, 9);
+    DOV2(ws1_s, 5, 2);
+    DOV4(ws2_n, 5, 4, 3, 9);
+    DOV2(ws2_s, 9, 2);
 #undef DOV4
 #undef DOV2
+    //printf("\nWaitstates!");
+#define d(x) this->waitstates. x
+    //printf("\n0n:%d 0s:%d 1n:%d 1s:%d 2n:%d 2s:%d", d(ws0_n), d(ws0_s), d(ws1_n), d(ws1_s), d(ws2_n), d(ws2_s));
+#undef d
 }
 
 
@@ -125,6 +140,17 @@ static u32 DMA_CH_NUM(u32 addr)
     if (addr < 0xC8) return 1;
     if (addr < 0xD4) return 2;
     return 3;
+}
+
+static u32 read_timer(struct GBA *this, u32 tn)
+{
+    struct GBA_TIMER *t = &this->timer[tn];
+    u64 current_time = this->clock.master_cycle_count + this->waitstates.current_transaction;
+    if (!timer_enabled(this, tn) || t->cascade) return t->val_at_stop;
+
+    // Timer is enabled, so, check how many cycles we have had...
+    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (0x1000 - (u64)t->reload);
+    return t->reload + ticks_passed;
 }
 
 static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
@@ -175,14 +201,14 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
             return v;}
 
 
-        case 0x04000100: return (this->timer[0].counter.val >> 0) & 0xFF;
-        case 0x04000101: return (this->timer[0].counter.val >> 8) & 0xFF;
-        case 0x04000104: return (this->timer[1].counter.val >> 0) & 0xFF;
-        case 0x04000105: return (this->timer[1].counter.val >> 8) & 0xFF;
-        case 0x04000108: return (this->timer[2].counter.val >> 0) & 0xFF;
-        case 0x04000109: return (this->timer[2].counter.val >> 8) & 0xFF;
-        case 0x0400010C: return (this->timer[3].counter.val >> 0) & 0xFF;
-        case 0x0400010D: return (this->timer[3].counter.val >> 8) & 0xFF;
+        case 0x04000100: return (read_timer(this, 0) >> 0) & 0xFF;
+        case 0x04000101: return (read_timer(this, 0) >> 8) & 0xFF;
+        case 0x04000104: return (read_timer(this, 1) >> 0) & 0xFF;
+        case 0x04000105: return (read_timer(this, 1) >> 8) & 0xFF;
+        case 0x04000108: return (read_timer(this, 2) >> 0) & 0xFF;
+        case 0x04000109: return (read_timer(this, 2) >> 8) & 0xFF;
+        case 0x0400010C: return (read_timer(this, 3) >> 0) & 0xFF;
+        case 0x0400010D: return (read_timer(this, 3) >> 8) & 0xFF;
 
         case 0x04000103: // TIMERCNT upper, not used.
         case 0x04000107:
@@ -198,7 +224,7 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
             u32 v = this->timer[tn].divider.io;
             v |= this->timer[tn].cascade << 2;
             v |= this->timer[tn].irq_on_overflow << 6;
-            v |= this->timer[tn].enable << 7;
+            v |= timer_enabled(this, tn) << 7;
             return v;
         }
 
@@ -208,6 +234,8 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
         case 0x04000143:
         case 0x0400015A:
         case 0x0400015B:
+        case 0x04000206:
+        case 0x04000207:
         case 0x04000302:
         case 0x04000303: return 0;
 
@@ -248,10 +276,6 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
             v |= this->waitstates.io.empty_bit << 5;
             v |= this->cart.prefetch.enable << 6;
             return v; }
-        case WAITCNT+2:
-            return this->waitstates.io.byte2;
-        case WAITCNT+3:
-            return this->waitstates.io.byte3;
         case 0x04000208: return this->io.IME;
         case 0x04000209: return 0;
 
@@ -278,13 +302,12 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
         case 0x04fff781:
             return this->io.cpu.open_bus_data & 0xFF;
     }
-    return busrd_invalid(this, addr, sz, access, has_effect);
+    return GBA_open_bus_byte(this, addr);
 }
 
 static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     this->waitstates.current_transaction++;
-    u32 r = 0;
-    r = busrd_IO8(this, addr, 1, access, has_effect) << 0;
+    u32 r = busrd_IO8(this, addr, 1, access, has_effect) << 0;
     if (sz >= 2) {
         r |= busrd_IO8(this, addr + 1, 1, access, has_effect) << 8;
     }
@@ -353,31 +376,32 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             return;
         case WAITCNT:
             this->waitstates.io.sram = val & 3;
-            this->waitstates.io.ws0_n = (val >> 2) & 3;
-            this->waitstates.io.ws0_s = (val >> 4) & 1;
-            this->waitstates.io.ws1_n = (val >> 5) & 3;
-            this->waitstates.io.ws1_s = (val >> 7) & 1;
+            this->waitstates.io.ws0_n = (val >> 2) & 3; // 2-3
+            this->waitstates.io.ws0_s = (val >> 4) & 1; // 4
+            this->waitstates.io.ws1_n = (val >> 5) & 3; // 5-6
+            this->waitstates.io.ws1_s = (val >> 7) & 1; // 7
             set_waitstates(this);
             return;
-        case WAITCNT+1:
+        case WAITCNT+1: {
             this->waitstates.io.ws2_n = val & 3;
             this->waitstates.io.ws2_s = (val >> 2) & 1;
             this->waitstates.io.phi_term = (val >> 3) & 3;
             this->waitstates.io.empty_bit = (val >> 5) & 1;
+            u32 old_enable = this->cart.prefetch.enable;
             this->cart.prefetch.enable = (val >> 6) & 1;
-            return;
-        case WAITCNT+2: // empty, ignore
-            this->waitstates.io.byte2 = val;
-            return;
-        case WAITCNT+3: // empty, ignore
-            this->waitstates.io.byte3 = val;
-            return;
+            set_waitstates(this);
+            if (old_enable && !this->cart.prefetch.enable) {
+                this->cart.prefetch.was_disabled = 1;
+            }
+            return; }
         case 0x04000208: // IME lo
             this->io.IME = val & 1;
             GBA_eval_irqs(this);
             return;
         case 0x04000209: // IME hi
             return;
+        case 0x04000206:
+        case 0x04000207:
         case 0x0400020A:
         case 0x0400020B: // not used
         case 0x0400020C: // not used
@@ -458,36 +482,38 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400010A:
         case 0x0400010E: {
             u32 tn = (addr >> 2) & 3;
-            this->timer[tn].divider.io = val & 3;
+            struct GBA_TIMER *t = &this->timer[tn];
+            t->divider.io = val & 3;
             switch(val & 3) {
-                case 0: this->timer[tn].divider.mask = 0; break;
-                case 1: this->timer[tn].divider.mask = 63; break;
-                case 2: this->timer[tn].divider.mask = 255; break;
-                case 3: this->timer[tn].divider.mask = 1023; break;
+                case 0: t->shift = 0; break;
+                case 1: t->shift = 6; break;
+                case 2: t->shift = 8; break;
+                case 3: t->shift = 10; break;
             }
-            this->timer[tn].cascade = (val >> 2) & 1;
-            this->timer[tn].irq_on_overflow = (val >> 6) & 1;
-            u32 old_enable = this->timer[tn].enable || (this->timer[tn].enable_counter > 0) ;
-            u32 new_enable = (val >> 7) & 1;
-            if (!new_enable) {
-                this->timer[tn].enable_counter = 0;
-                this->timer[tn].enable = 0;
+            u32 new_enable = ((val >> 7) & 1) && !t->cascade;
+            if (!new_enable) { // turn off
+                if (timer_enabled(this, tn) && !t->cascade) {
+                    t->val_at_stop = read_timer(this, tn);
+                }
+                t->enable_at = 0xFFFFFFFFFFFFFFFF; // the infinite future!
+                t->overflow_at = 0xFFFFFFFFFFFFFFFF;
             }
-            if ((!old_enable) && (new_enable)) {
-                this->timer[tn].enable_counter = 3; // it will be ticked after this write in the same "cycle"...I think...
+            if (!timer_enabled(this, tn) && new_enable) { // turn on
+                t->enable_at = GBA_clock_current(this) + 1;
+                t->overflow_at = t->enable_at + ((0x10000 - (u32)t->reload) << t->shift);
             }
-            //printf("\nTIMER:%d ENABLE:%d CASCADE:%d IRQ:%d DMASK:%d", tn, this->timer[tn].enable, this->timer[tn].cascade, this->timer[tn].irq_on_overflow, this->timer[tn].divider.mask);
+            t->cascade = (val >> 2) & 1;
+            t->irq_on_overflow = (val >> 6) & 1;
             return; }
+        case 0x04000100: this->timer[0].reload = (this->timer[0].reload & 0xFF00) | val; return;
+        case 0x04000104: this->timer[1].reload = (this->timer[1].reload & 0xFF00) | val; return;
+        case 0x04000108: this->timer[2].reload = (this->timer[2].reload & 0xFF00) | val; return;
+        case 0x0400010C: this->timer[3].reload = (this->timer[3].reload & 0xFF00) | val; return;
 
-        case 0x04000100: this->timer[0].counter.reload = (this->timer[0].counter.reload & 0xFF00) | val; return;
-        case 0x04000104: this->timer[1].counter.reload = (this->timer[1].counter.reload & 0xFF00) | val; return;
-        case 0x04000108: this->timer[2].counter.reload = (this->timer[2].counter.reload & 0xFF00) | val; return;
-        case 0x0400010C: this->timer[3].counter.reload = (this->timer[3].counter.reload & 0xFF00) | val; return;
-
-        case 0x04000101: this->timer[0].counter.reload = (this->timer[0].counter.reload & 0xFF) | (val << 8); return;
-        case 0x04000105: this->timer[1].counter.reload = (this->timer[1].counter.reload & 0xFF) | (val << 8); return;
-        case 0x04000109: this->timer[2].counter.reload = (this->timer[2].counter.reload & 0xFF) | (val << 8); return;
-        case 0x0400010D: this->timer[3].counter.reload = (this->timer[3].counter.reload & 0xFF) | (val << 8); return;
+        case 0x04000101: this->timer[0].reload = (this->timer[0].reload & 0xFF) | (val << 8); return;
+        case 0x04000105: this->timer[1].reload = (this->timer[1].reload & 0xFF) | (val << 8); return;
+        case 0x04000109: this->timer[2].reload = (this->timer[2].reload & 0xFF) | (val << 8); return;
+        case 0x0400010D: this->timer[3].reload = (this->timer[3].reload & 0xFF) | (val << 8); return;
 
 
         case 0x04000300: { this->io.POSTFLG = val; return; }
@@ -519,8 +545,8 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             if ((ch->io.enable == 1) && (old_enable == 0)) {
                 ch->op.first_run = 1;
                 if (ch->io.start_timing == 0) {
-                    //printf("\nDMA START VIA ENABLE %d", chnum);
-                    dma_start(ch, chnum);
+                    GBA_dma_start(ch, chnum);
+                    //ch->run_counter = 3;
                 }
             }
             return;}
@@ -555,7 +581,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             this->io.button_irq.up = (val >> 6) & 1;
             this->io.button_irq.down = (val >> 7) & 1;
             return;
-        case 0x04000133:
+        case 0x04000133: {
             this->io.button_irq.r = val & 1;
             this->io.button_irq.l = (val >> 1) & 1;
             u32 old_enable = this->io.button_irq.enable;
@@ -564,7 +590,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
                 printf("\nWARNING BUTTON IRQ ENABLED...");
             }
             this->io.button_irq.condition = (val >> 7) & 1;
-            return;
+            return; }
 
         case 0x04000128: // TODO: Link cable BS
             this->io.SIO.control = (this->io.SIO.control & 0xFF00) | val;
@@ -673,7 +699,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
 
             return;
     }
-    buswr_invalid(this, addr, sz, access, val);
+    //buswr_invalid(this, addr, sz, access, val);
 }
 
 static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
@@ -687,7 +713,7 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         if (addr == 0x04fff700) {
             //if (val & 0x100) {
             if (this->dbg_info.mgba.str[0] != 0) {
-                printf("\n%s", this->dbg_info.mgba.str);
+                //printf("\n%s", this->dbg_info.mgba.str);
                 memset(this->dbg_info.mgba.str, 0, sizeof(this->dbg_info.mgba.str));
             }
             return;
@@ -703,9 +729,13 @@ static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     }
 }
 
-
 void GBA_bus_init(struct GBA *this)
 {
+    for (u32 i = 0; i < 4; i++) {
+        struct GBA_TIMER *t = &this->timer[i];
+        t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+        t->enable_at = 0xFFFFFFFFFFFFFFFF;
+    }
     for (u32 i = 0; i < 16; i++) {
         this->mem.read[i] = &busrd_invalid;
         this->mem.write[i] = &buswr_invalid;
@@ -795,8 +825,6 @@ u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
 
 void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (sz == 4) addr &= ~3;
-    if (sz == 2) addr &= ~1;
     struct GBA *this = (struct GBA *)ptr;
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
@@ -819,7 +847,7 @@ void GBA_check_dma_at_hblank(struct GBA *this)
                 if (this->clock.ppu.y >= 160) continue;
             }
             //printf("\nDMA HBLANK START %d", i);
-            dma_start(ch, i);
+            GBA_dma_start(ch, i);
         }
     }
     // And if it's channel 3 and "special", if we're in the correct lines.
@@ -861,7 +889,7 @@ void GBA_check_dma_at_vblank(struct GBA *this)
         struct GBA_DMA_ch *ch = &this->dma[i];
         if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
             //printf("\nDMA VBLANK START %d", i);
-            dma_start(ch, i);
+            GBA_dma_start(ch, i);
         }
     }
 }
