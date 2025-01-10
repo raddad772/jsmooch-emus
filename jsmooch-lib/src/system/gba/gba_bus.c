@@ -108,15 +108,53 @@ void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i)
 }
 
 static void set_waitstates(struct GBA *this) {
+
+// 8 and 8+1  are set to...based on the thing....
 #define DOV4(n, a, b, c, d) switch(this->waitstates.io. n) { case 0: this->waitstates. n = a; break; case 1: this->waitstates. n = b; break; case 2: this->waitstates. n = c; break; case 3: this->waitstates. n = d; break; }
 #define DOV2(n, a, b) switch(this->waitstates.io. n) { case 0: this->waitstates. n = a; break; case 1: this->waitstates. n = b; break; }
     DOV4(sram, 5, 4, 3, 9);
+    
+    // OK we need to fill up 3 sections based on Nonsequential and Sequential
+    // Nonsequentiual gets 4 possible values, sequential gets different values
+    static const u32 nonseq[4] = {5, 4, 3, 9};
+    static const u32 seq0[2] = {3, 2};
+    static const u32 seq1[2] = {5, 2};
+    static const u32 seq2[2] = {9, 2};
+    
+#define t16 this->waitstates.timing16
+#define t32 this->waitstates.timing32
+#define WS0 (0x8+i)
+#define WS1 (0xA+i)
+#define WS2 (0xC+i)
+    for (u32 i = 0; i < 1; i++) {
+        t16[0][WS0] = nonseq[this->waitstates.io.ws0_n];
+        t16[0][WS1] = nonseq[this->waitstates.io.ws1_n];
+        t16[0][WS2] = nonseq[this->waitstates.io.ws2_n];
+        t16[1][WS0] = seq0[this->waitstates.io.ws0_s];
+        t16[1][WS1] = seq1[this->waitstates.io.ws1_s];
+        t16[1][WS2] = seq2[this->waitstates.io.ws2_s];
+        
+        t32[0][WS0] = t16[0][WS0] + t16[1][WS0];
+        t32[0][WS1] = t16[0][WS1] + t16[1][WS1];
+        t32[0][WS2] = t16[0][WS2] + t16[1][WS2];
+
+        t32[1][WS0] = t16[1][WS0] << 1;
+        t32[1][WS1] = t16[1][WS1] << 1;
+        t32[1][WS2] = t16[1][WS2] << 1;
+    }
+#undef t16
+#undef t32
+#undef WS0
+#undef WS1
+#undef WS2
+    /*
+    DOV4(ws0_n, 8, 5, 4, 3, 9)
     DOV4(ws0_n, 5, 4, 3, 9);
     DOV2(ws0_s, 3, 2);
     DOV4(ws1_n, 5, 4, 3, 9);
     DOV2(ws1_s, 5, 2);
     DOV4(ws2_n, 5, 4, 3, 9);
-    DOV2(ws2_s, 9, 2);
+    DOV2(ws2_s, 9, 2);*/
 #undef DOV4
 #undef DOV2
     //printf("\nWaitstates!");
@@ -150,7 +188,11 @@ static u32 read_timer(struct GBA *this, u32 tn)
 
     // Timer is enabled, so, check how many cycles we have had...
     u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (0x1000 - (u64)t->reload);
-    return t->reload + ticks_passed;
+    u32 v = t->reload + ticks_passed;
+    /*if (v == 4 && this->cart.prefetch.enable) {
+        dbg_break("BREAKPOINT!", this->clock.master_cycle_count);
+    }*/
+    return v;
 }
 
 static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
@@ -346,6 +388,21 @@ void GBA_eval_irqs(struct GBA *this)
   14-15 Not used */
 }
 
+
+static void enable_prefetch(struct GBA *this)
+{
+    u32 page = this->cpu.regs.R[15] >> 28;
+    if ((page < 8) || (page >= 0xE)) { // Prefetch is enabled but not great...
+        this->cart.prefetch.last_access = 0xFFFFFFFFFFFFFFFF;
+    }
+    else {
+        this->cart.prefetch.last_access = GBA_clock_current(this);
+    }
+    this->cart.prefetch.cycles_banked = 0;
+    this->cart.prefetch.next_addr = this->cpu.regs.R[15];
+    this->cart.prefetch.duty_cycle = this->waitstates.timing16[1][page];
+}
+
 static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     val &= 0xFF;
     if (addr < 0x04000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
@@ -392,6 +449,10 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             set_waitstates(this);
             if (old_enable && !this->cart.prefetch.enable) {
                 this->cart.prefetch.was_disabled = 1;
+                //this->cart.prefetch.active = 0;
+            }
+            if (!old_enable && this->cart.prefetch.enable) {
+                enable_prefetch(this);
             }
             return; }
         case 0x04000208: // IME lo
@@ -791,11 +852,24 @@ static void trace_read(struct GBA *this, u32 addr, u32 sz, u32 val)
     if (!tv) return;
     trace_view_startline(tv, 2);
     trace_view_printf(tv, 0, "BUSrd");
-    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count);
+    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
     trace_view_printf(tv, 2, "%08x", addr);
     trace_view_printf(tv, 3, "%08x", val);
     trace_view_endline(tv);
 }
+
+static void trace_write(struct GBA *this, u32 addr, u32 sz, u32 val)
+{
+    struct trace_view *tv = this->cpu.dbg.tvptr;
+    if (!tv) return;
+    trace_view_startline(tv, 2);
+    trace_view_printf(tv, 0, "BUSwr");
+    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
+    trace_view_printf(tv, 2, "%08x", addr);
+    trace_view_printf(tv, 3, "%08x", val);
+    trace_view_endline(tv);
+}
+
 
 u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
@@ -804,7 +878,7 @@ u32 GBA_mainbus_read(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 
     if (addr < 0x10000000) v = this->mem.read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
     else v = busrd_invalid(this, addr, sz, access, has_effect);
-    if (dbg.trace_on && dbg.traces.ram) trace_read(this, addr, sz, v);
+    if (dbg.trace_on) trace_read(this, addr, sz, v);
     return v;
 }
 
@@ -826,6 +900,7 @@ u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
 void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct GBA *this = (struct GBA *)ptr;
+    if (dbg.trace_on) trace_write(this, addr, sz, val);
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
         return this->mem.write[(addr >> 24) & 15](this, addr, sz, access, val);

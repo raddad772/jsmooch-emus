@@ -149,45 +149,144 @@ static u32 read_eeprom(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_e
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
-u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws)
+static u32 prefetch_stop(struct GBA *this)
 {
-    if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) return read_eeprom(this, addr, sz, access, has_effect);
-    addr &= 0x01FFFFFF;
-
-    if (sz == 4){
-        addr &= ~3;
-        u32 v = GBA_cart_read(this, addr, 2, access, has_effect, ws);
-        v |= GBA_cart_read(this, addr+2, 2, access | ARM7P_sequential, has_effect, ws) << 16;
-        return v;
+    // So we need to cover a few cases here...
+    // "If ROM data/SRAM/FLASH is accessed in a cycle, where the prefetch unit
+    //  is active and finishing a half-word access, then a one-cycle penalty applies."
+    if (this->cart.prefetch.enable) {
+        u32 page = this->cpu.regs.R[15] >> 24;
+        if ((page >= 8) && (page < 0xE) && (this->cart.prefetch.cycles_banked > 0)) {
+            // OK so we have cycles-banked that can be up to 8* what it should compare to
+            i32 cb = this->cart.prefetch.cycles_banked % this->cart.prefetch.duty_cycle;
+            if (dbg.trace_on) {
+                struct trace_view *tv = this->cpu.dbg.tvptr;
+                if (tv) {
+                    trace_view_startline(tv, 3);
+                    trace_view_printf(tv, 0, "ifetch");
+                    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
+                    trace_view_printf(tv, 2, "%08x", this->cpu.regs.R[15]);
+                    trace_view_printf(tv, 4, "stop_prefetch with %d cycles left (1=penalty):", this->cart.prefetch.duty_cycle - cb);
+                    trace_view_endline(tv);
+                }
+            }
+            if (cb == (this->cart.prefetch.duty_cycle - 1)) { // ABOUT to finish
+                return 1;
+            }
+        }
     }
+    return 0;
+}
+
+u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws) {
+    if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000))
+        return read_eeprom(this, addr, sz, access, has_effect);
+    if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
 
-    if (addr >= this->cart.ROM.size) {
+    u32 page = addr >> 24;
+    addr &= 0x01FFFFFF;
+
+    if (addr >= this->cart.ROM.size) { // OOB read
         this->waitstates.current_transaction++;
         return (addr >> 1) & masksz[sz];
     }
 
     if (this->cart.prefetch.was_disabled) {
-        access &= ~ARM7P_sequential;
+        access &= ~ARM7P_sequential; // Clear sequential flag
         this->cart.prefetch.was_disabled = 0;
     }
-    switch(ws) {
-        case 0: {
-            this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws0_s : this->waitstates.ws0_n;
-            break;
+    u32 sequential = (access & ARM7P_sequential);
+    // determine cycles of this access
+    if (dbg.trace_on) {
+        struct trace_view *tv = this->cpu.dbg.tvptr;
+        if (tv) {
+            trace_view_startline(tv, 3);
+            trace_view_printf(tv, 0, "ifetch");
+            trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
+            trace_view_printf(tv, 2, "%08x", addr);
+            trace_view_printf(tv, 4, "READ GAMEPAK. seq:%d code:%d page:%d", sequential, !!(access & ARM7P_code), page);
+            trace_view_endline(tv);
         }
-        case 1: {
-            this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws1_s : this->waitstates.ws1_n;
-            break;
-        }
-        case 2: {
-            this->waitstates.current_transaction += (access & ARM7P_sequential) ? this->waitstates.ws2_s : this->waitstates.ws2_n;
-            break;
-        }
-        default:
-            printf("\nWTF!?!?");
-            break;
     }
+    u32 outcycles = 0;
+    if (!this->cart.prefetch.enable) {
+        // Just do a normal read
+        outcycles = prefetch_stop(this);
+        if (sz == 4) outcycles += this->waitstates.timing32[sequential][page];
+        else outcycles += this->waitstates.timing16[sequential][page];
+        this->waitstates.current_transaction += outcycles;
+        return cR[sz](this->cart.ROM.ptr, addr);
+    }
+
+    // If we got here, prefetch is enabled.
+    i64 tt = (i64)GBA_clock_current(this);
+    i64 this_cycles = (sz == 4) ? this->waitstates.timing32[1][page] : this->waitstates.timing16[1][page];
+    // If we are at the next prefetch addr, and it's code...
+    if (addr == this->cart.prefetch.next_addr && (access & ARM7P_code)) {
+        // Add cycles since last visit
+
+        if (this->cart.prefetch.last_access != 0xFFFFFFFFFFFFFFFF)
+            this->cart.prefetch.cycles_banked += (tt - (i64)this->cart.prefetch.last_access);
+
+        // Subtract # of cycles of this access
+        this->cart.prefetch.cycles_banked -= this_cycles;
+        // if we don't have enough...
+        if (this->cart.prefetch.cycles_banked < 0) {
+            if (dbg.trace_on) {
+                struct trace_view *tv = this->cpu.dbg.tvptr;
+                if (tv) {
+                    trace_view_startline(tv, 3);
+                    trace_view_printf(tv, 0, "ifetch");
+                    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
+                    trace_view_printf(tv, 2, "%08x", addr);
+                    trace_view_printf(tv, 4, "partial complete. cycles left: %d", (0 - this->cart.prefetch.cycles_banked));
+                    trace_view_endline(tv);
+                }
+            }
+            // Add what we have left to the wait
+            outcycles += (0 - this->cart.prefetch.cycles_banked);
+            // Reset cycles banked to 0
+            this->cart.prefetch.cycles_banked = 0;
+        } else { // if we DO have enough...
+            if (dbg.trace_on) {
+                struct trace_view *tv = this->cpu.dbg.tvptr;
+                if (tv) {
+                    trace_view_startline(tv, 3);
+                    trace_view_printf(tv, 0, "ifetch");
+                    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
+                    trace_view_printf(tv, 2, "%08x", addr);
+                    trace_view_printf(tv, 4, "prefetch hit!");
+                    trace_view_endline(tv);
+                }
+            }
+            outcycles++; // transaction only takes 1 cycle!
+            if (this->cart.prefetch.cycles_banked > (this->cart.prefetch.duty_cycle * 8)) { // We can only get ahead 8 times
+                this->cart.prefetch.cycles_banked = this->cart.prefetch.duty_cycle * 8;
+            }
+        }
+    }
+    else { // Abort prefetcher!
+        outcycles += prefetch_stop(this); // Penalty if we're 1 from end!
+        this->cart.prefetch.cycles_banked = 0; // Restart prefetches
+        outcycles += (sz == 4) ? this->waitstates.timing32[sequential][page] : this->waitstates.timing16[sequential][page];; // Full cost of the read
+        if (dbg.trace_on) {
+            struct trace_view *tv = this->cpu.dbg.tvptr;
+            if (tv) {
+                trace_view_startline(tv, 3);
+                trace_view_printf(tv, 0, "ifetch");
+                trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
+                trace_view_printf(tv, 2, "%08x", addr);
+                trace_view_printf(tv, 4, "abort prefetch! %d cycles to read", outcycles);
+                trace_view_endline(tv);
+            }
+        }
+    }
+    this->cart.prefetch.duty_cycle = this->waitstates.timing16[1][page];
+    this->cart.prefetch.next_addr = addr + sz;
+    this->cart.prefetch.last_access = tt + outcycles;
+    this->waitstates.current_transaction += outcycles;
+
     return cR[sz](this->cart.ROM.ptr, addr);
 }
 
@@ -277,6 +376,8 @@ void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
     if ((addr >= 0x0d000000) && (addr < 0x0e000000))
         return write_eeprom(this, addr, sz, access, val);
     this->waitstates.current_transaction++;
+    this->waitstates.current_transaction += prefetch_stop(this);
+    this->cart.prefetch.cycles_banked = 0;
     printf("\nWARNING write cart addr %08x", addr);
 }
 

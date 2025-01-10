@@ -19,7 +19,6 @@
 
 static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
     u32 r = ARM7TDMI_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
-    //bad_trace(this, r, sz);
     return r;
 }
 
@@ -233,6 +232,7 @@ static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 
     u64 tc;
     if (!this->trace.cycles) tc = 0;
     else tc = *this->trace.cycles;
+    tc += *this->waitstates;
     struct trace_view *tv = this->dbg.tvptr;
     trace_view_startline(tv, this->trace.source_id);
     if (T) {

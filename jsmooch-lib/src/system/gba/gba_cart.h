@@ -73,6 +73,10 @@ struct GBA_cart {
     } RAM;
 
     struct {
+        i64 cycles_banked;
+        u32 next_addr;
+        u32 duty_cycle;
+        u64 last_access;
         u32 enable;
         u32 was_disabled;
     } prefetch;

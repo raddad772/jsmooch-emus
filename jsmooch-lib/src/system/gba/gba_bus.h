@@ -41,9 +41,8 @@ struct GBA {
             u32 phi_term;
         } io;
         u32 sram;
-        u32 ws0_n, ws0_s;
-        u32 ws1_n, ws1_s;
-        u32 ws2_n, ws2_s;
+        u32 timing16[2][16]; // 0=nonsequential, 1=sequential
+        u32 timing32[2][16]; // 0=nonsequential, 1=sequential
     } waitstates;
 
     char WRAM_slow[256 * 1024];

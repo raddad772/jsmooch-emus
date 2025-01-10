@@ -380,7 +380,6 @@ u32 GBAJ_finish_scanline(JSM)
     cycle_DMA_and_CPU(this, HBLANK_CYCLES);
     if (dbg.do_break) return 0;
     GBA_PPU_finish_scanline(this);
-    //GBAJ_step_master(jsm, MASTER_CYCLES_PER_SCANLINE);
     return 0;
 }
 
