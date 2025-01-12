@@ -269,7 +269,7 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
     else { // Abort prefetcher!
         outcycles += prefetch_stop(this); // Penalty if we're 1 from end!
         this->cart.prefetch.cycles_banked = 0; // Restart prefetches
-        outcycles += (sz == 4) ? this->waitstates.timing32[sequential][page] : this->waitstates.timing16[sequential][page];; // Full cost of the read
+        outcycles += (sz == 4) ? this->waitstates.timing32[0][page] : this->waitstates.timing16[0][page];; // Full cost of the read
         if (dbg.trace_on) {
             struct trace_view *tv = this->cpu.dbg.tvptr;
             if (tv) {
