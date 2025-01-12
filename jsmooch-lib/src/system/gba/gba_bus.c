@@ -400,7 +400,7 @@ static void enable_prefetch(struct GBA *this)
     }
     this->cart.prefetch.cycles_banked = 0;
     this->cart.prefetch.next_addr = this->cpu.regs.R[15];
-    this->cart.prefetch.duty_cycle = this->waitstates.timing16[1][page];
+    this->cart.prefetch.duty_cycle = this->waitstates.timing16[0][page];
 }
 
 static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {

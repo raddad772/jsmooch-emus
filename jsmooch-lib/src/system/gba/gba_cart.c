@@ -151,6 +151,7 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 static u32 prefetch_stop(struct GBA *this)
 {
+    return 0;
     // So we need to cover a few cases here...
     // "If ROM data/SRAM/FLASH is accessed in a cycle, where the prefetch unit
     //  is active and finishing a half-word access, then a one-cycle penalty applies."
@@ -159,17 +160,6 @@ static u32 prefetch_stop(struct GBA *this)
         if ((page >= 8) && (page < 0xE) && (this->cart.prefetch.cycles_banked > 0)) {
             // OK so we have cycles-banked that can be up to 8* what it should compare to
             i32 cb = this->cart.prefetch.cycles_banked % this->cart.prefetch.duty_cycle;
-            if (dbg.trace_on) {
-                struct trace_view *tv = this->cpu.dbg.tvptr;
-                if (tv) {
-                    trace_view_startline(tv, 3);
-                    trace_view_printf(tv, 0, "ifetch");
-                    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
-                    trace_view_printf(tv, 2, "%08x", this->cpu.regs.R[15]);
-                    trace_view_printf(tv, 4, "stop_prefetch with %d cycles left (1=penalty):", this->cart.prefetch.duty_cycle - cb);
-                    trace_view_endline(tv);
-                }
-            }
             if (cb == (this->cart.prefetch.duty_cycle - 1)) { // ABOUT to finish
                 return 1;
             }

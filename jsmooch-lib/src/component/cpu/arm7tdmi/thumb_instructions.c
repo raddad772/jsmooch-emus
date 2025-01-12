@@ -281,7 +281,7 @@ void ARM7TDMI_THUMB_ins_data_proc(struct ARM7TDMI *this, struct thumb_instructio
             setnz(*Rd);
             break;
         case 13: // MUL
-            ARM7TDMI_idle(this, thumb_mul_ticks(Rs, 0));
+            ARM7TDMI_idle(this, thumb_mul_ticks(*Rd, 0));
             *Rd *= Rs;
             this->pipeline.access = ARM7P_nonsequential | ARM7P_code;
             setnz(*Rd);
