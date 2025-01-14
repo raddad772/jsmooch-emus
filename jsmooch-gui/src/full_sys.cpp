@@ -695,7 +695,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // same issues as duke3d
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
@@ -717,7 +717,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
-            //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
+            worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever.gba", nullptr); // works great!

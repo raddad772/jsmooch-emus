@@ -475,6 +475,26 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
     return n;
 }
 
+static inline u32 shade_boundary_func(u32 kind, u32 incolor)
+{
+    switch(kind) {
+        case 0: // Nothin
+            return incolor;
+        case 1: {// Shaded
+            u32 c = (incolor & 0xFFFFFF00) | 0xFF000000;
+            u32 v = incolor & 0xFF;
+            v += 0xFF;
+            v >>= 1;
+            if (v > 255) v = 255;
+            return c | v; }
+        case 2: // black
+            return 0xFF000000;
+        case 3: // white
+            return 0xFFFFFFFF;
+    }
+    return 0;
+}
+
 static void render_image_view_bgmap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int bg_num) {
     struct GBA *this = (struct GBA *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -482,27 +502,61 @@ static void render_image_view_bgmap(struct debugger_interface *dbgr, struct debu
 
     struct image_view *iv = &dview->image;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
-    u32 vsize = bg->vpixels;
-    u32 hsize = bg->hpixels;
-    memset(outbuf, 0, out_width * 4 * vsize);
-    if ((this->ppu.io.bg_mode >= 3) && (bg_num != 2)) return;
-    switch(this->ppu.io.bg_mode) {
-        case 3: // 240x160 16-bit 1 buffer
-            hsize = 240;
-            vsize = 160;
-            break;
-        case 4: // 240x160 8-bit 2 buffer
-            hsize = 480;
-            vsize = 160;
-            break;
-        case 5: // 160x128 16-bit 2 buffer
-            hsize = 320;
-            vsize = 128;
-            break;
+    u32 max_vsize = bg->vpixels;
+    u32 max_hsize = bg->hpixels;
+    memset(outbuf, 0, out_width * 4 * 1024);
+    u32 affine_char_base;
+    u32 affine_screen_base;
+    u32 has_affine = 0;
+    u32 affine_htiles = 0;
+    // Search through debug info for the bg
+    for (u32 line = 0; line < 160; line++) {
+        struct GBA_DBG_line *dbgl = &this->dbg_info.line[line];
+        u32 do_affine = 0;
+        if (dbgl->bg_mode == 1) {
+            if (bg_num == 2) do_affine = 1;
+        }
+        else if (dbgl->bg_mode == 2) {
+            if (bg_num >= 2) do_affine = 1;
+        }
+        struct GBA_DBG_line_bg *dbgbg = &dbgl->bg[bg_num];
+        if (do_affine) {
+            if (!has_affine) {
+                u32 hsize = dbgbg->htiles * 8;
+                u32 vsize = dbgbg->vtiles * 8;
+                if (hsize > max_hsize) max_hsize = hsize;
+                if (vsize > max_vsize) max_vsize = vsize;
+                affine_char_base = dbgbg->character_base_block;
+                affine_screen_base = dbgbg->screen_base_block;
+                affine_htiles = dbgbg->htiles;
+            }
+            has_affine = 1;
+        }
+    }
+    if (!has_affine) {
+        switch (this->ppu.io.bg_mode) {
+            case 3: // 240x160 16-bit 1 buffer
+                max_hsize = 240;
+                max_vsize = 160;
+                break;
+            case 4: // 240x160 8-bit 2 buffer
+                max_hsize = 480;
+                max_vsize = 160;
+                break;
+            case 5: // 160x128 16-bit 2 buffer
+                max_hsize = 320;
+                max_vsize = 128;
+                break;
+        }
     }
 
-    iv->viewport.p[1].x = (i32)hsize;
-    iv->viewport.p[1].y = (i32)vsize;
+    iv->viewport.p[1].x = (i32)max_hsize;
+    iv->viewport.p[1].y = (i32)max_vsize;
+
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    debugger_widgets_textbox_clear(tb);
+    debugger_widgets_textbox_sprintf(tb, "hsize:%d vsize:%d", max_hsize, max_vsize);
+
     if (this->ppu.io.bg_mode == 4) {
         for (u32 screen_y = 0; screen_y < 160; screen_y++) {
             u32 *lineptr = (outbuf + (screen_y * out_width));
@@ -522,11 +576,40 @@ static void render_image_view_bgmap(struct debugger_interface *dbgr, struct debu
     }
     else {
         u32 bpp8 = bg->bpp8;
-        u32 char_base_block = bg->character_base_block;
-        u32 screen_base_block = bg->screen_base_block;
-        for (u32 tilemap_y = 0; tilemap_y < vsize; tilemap_y++) {
-            for (u32 tilemap_x = 0; tilemap_x < hsize; tilemap_x++) {
+        u32 character_base_block = affine_char_base;
+        u32 screen_base_block = affine_screen_base;
+        if (has_affine) {
+            for (u32 tilemap_y = 0; tilemap_y < max_vsize; tilemap_y++) {
+                u32 *lineptr = (outbuf + (tilemap_y * out_width));
+                u8 *scrollptr = &this->dbg_info.bg_scrolls[bg_num].lines[128 * tilemap_y];
+                for (u32 tilemap_x = 0; tilemap_x < max_hsize; tilemap_x++) {
+                    u32 is_shaded = (scrollptr[tilemap_x >> 3] >> (tilemap_x & 7)) & 1;
+                    u32 px = tilemap_x;
+                    u32 py = tilemap_y;
+                    u32 block_x = px >> 3;
+                    u32 block_y = py >> 3;
+                    u32 line_in_tile = py & 7;
 
+                    u32 tile_width = affine_htiles;
+
+                    u32 screenblock_addr = screen_base_block;
+                    screenblock_addr += block_x + (block_y * tile_width);
+                    u32 tile_num = ((u8 *) this->ppu.VRAM)[screenblock_addr];
+
+                    // so now, grab that tile...
+                    u32 tile_start_addr = character_base_block + (tile_num * 64);
+                    u32 line_start_addr = tile_start_addr + (line_in_tile * 8);
+                    line_start_addr &= 0xFFFF;
+                    u32 has = 0;
+                    u8 *lsptr = ((u8 *) this->ppu.VRAM) + line_start_addr;
+                    u8 data = lsptr[px & 7];
+                    u32 color = 0xFF000000;
+                    if (data != 0) {
+                        has = 1;
+                        color = gba_to_screen(this->ppu.palette_RAM[data]);
+                    }
+                    lineptr[tilemap_x] = shade_boundary_func(is_shaded * 3, color);
+                }
             }
         }
     }
@@ -616,7 +699,6 @@ static void render_image_view_bg(struct debugger_interface *dbgr, struct debugge
                 px &= hpixels_mask;
                 py &= vpixels_mask;
             }
-
 
             // Deal with clipping
             u32 color=0, has=0, palette=0, bpp8=0, priority=0;
@@ -962,6 +1044,7 @@ static void setup_image_view_bgmap(struct GBA* this, struct debugger_interface *
 
     iv->update_func.ptr = this;
 
+    debugger_widgets_add_textbox(&dview->options, "hsize:0  vsize:0", 1);
     debugger_widgets_add_checkbox(&dview->options, "Testing test", 1, 0, 1);
     struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Shade scroll area", 1, 0, 1);
     debugger_widget_radiogroup_add_button(rg, "None", 0, 1);

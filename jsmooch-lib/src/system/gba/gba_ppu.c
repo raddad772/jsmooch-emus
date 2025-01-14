@@ -2,7 +2,6 @@
 // Created by . on 12/4/24.
 //
 
-#include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -95,6 +94,12 @@ void GBA_PPU_start_scanline(struct GBA*this)
         this->ppu.mosaic.bg.y_current = 0;
         this->ppu.mosaic.obj.y_counter = 0;
         this->ppu.mosaic.obj.y_current = 0;
+
+        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+            for (u32 line = 0; line < 1024; line++) {
+                memset(&this->dbg_info.bg_scrolls[bgnum].lines[0], 0, 1024 * 128);
+            }
+        }
     }
     if (this->clock.ppu.y < 160) {
         struct GBA_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
@@ -154,20 +159,6 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
 
 static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, struct GBA_PPU_bg *bg, i32 px, i32 py, struct GBA_PX *opx)
 {
-    // so first deal with clipping...
-    if (bg->display_overflow) { // wraparound
-        //while (px < 0) px += bg->hpixels;
-        //while (py < 0) py += bg->vpixels;
-        px &= bg->hpixels_mask;
-        py &= bg->vpixels_mask;
-    }
-    else { // clip/transparent
-        if (px < 0) return;
-        if (py < 0) return;
-        if (px >= bg->hpixels) return;
-        if (py >= bg->vpixels) return;
-    }
-
     // Now px and py represent a number inside 0...hpixels and 0...vpixels
     u32 block_x = px >> 3;
     u32 block_y = py >> 3;
@@ -732,10 +723,25 @@ static void draw_bg_line_affine(struct GBA *this, u32 bgnum)
     affine_line_start(this, bg, &fx, &fy);
     if (!bg->enable) return;
 
+    struct GBA_DBG_tilemap_line_bg *dtl = &this->dbg_info.bg_scrolls[bgnum];
+
     for (i64 screen_x = 0; screen_x < 240; screen_x++) {
-        get_affine_bg_pixel(this, bgnum, bg, fx>>8, fy>>8, &bg->line[screen_x]);
+        i32 px = fx >> 8;
+        i32 py = fy >> 8;
         fx += bg->pa;
         fy += bg->pc;
+        if (bg->display_overflow) { // wraparound
+            px &= bg->hpixels_mask;
+            py &= bg->vpixels_mask;
+        }
+        else { // clip/transparent
+            if (px < 0) continue;
+            if (py < 0) continue;
+            if (px >= bg->hpixels) continue;
+            if (py >= bg->vpixels) continue;
+        }
+        get_affine_bg_pixel(this, bgnum, bg, px, py, &bg->line[screen_x]);
+        dtl->lines[(py << 7) + (px >> 3)] |= 1 << (px & 7);
     }
     affine_line_end(this, bg);
 }
@@ -746,7 +752,6 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     memset(bg->line, 0, sizeof(bg->line));
     if (!bg->enable) return;
     // first do a fetch for fine scroll -1
-    //if (this->clock.ppu.y == 100) printf("\nline:100 vscroll:%d mosaic_y:%d", bg->vscroll, bg->mosaic_y);
     u32 hpos = bg->hscroll & bg->hpixels_mask;
     u32 vpos = (bg->vscroll + bg->mosaic_y) & bg->vpixels_mask;
     u32 fine_x = hpos & 7;
@@ -754,7 +759,9 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     struct GBA_PX bgpx[8];
     //hpos = ((hpos >> 3) - 1) << 3;
     fetch_bg_slice(this, bg, bgnum, hpos >> 3, vpos, bgpx, 0);
+    struct GBA_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
     // TODO HERE
+    u8 *scroll_line = &this->dbg_info.bg_scrolls[bgnum].lines[((bg->vscroll + this->clock.ppu.y) & bg->vpixels_mask) * 128];
     u32 startx = fine_x;
     for (u32 i = startx; i < 8; i++) {
         bg->line[screen_x].color = bgpx[i].color;
@@ -762,10 +769,19 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
         bg->line[screen_x].priority = bgpx[i].priority;
         screen_x++;
         hpos = (hpos + 1) & bg->hpixels_mask;
+        scroll_line[hpos >> 3] |= 1 << (hpos & 7);
     }
 
     while (screen_x < 240) {
         fetch_bg_slice(this, bg, bgnum, hpos >> 3, vpos, &bg->line[screen_x], screen_x);
+        if (screen_x <= 232) {
+            scroll_line[hpos >> 3] = 0xFF;
+        }
+        else {
+            for (u32 rx = screen_x; rx < 240; rx++) {
+                scroll_line[hpos >> 3] |= 1 << (rx - screen_x);
+            }
+        }
         screen_x += 8;
         hpos = (hpos + 8) & bg->hpixels_mask;
     }

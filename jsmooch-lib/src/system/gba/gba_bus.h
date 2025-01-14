@@ -157,6 +157,9 @@ struct GBA {
             } bg[4];
             u32 bg_mode;
         } line[160];
+        struct GBA_DBG_tilemap_line_bg {
+            u8 lines[1024 * 128]; // 4, 128*8 1-bit "was rendered or not" values
+        } bg_scrolls[4];
         struct {
             u32 enable;
             char str[257];
