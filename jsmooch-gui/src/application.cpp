@@ -618,7 +618,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
     which = SYS_GBA;
-    dbg_enable_trace();
+    //dbg_enable_trace();
 #endif
 
     fsys.setup_system(which);

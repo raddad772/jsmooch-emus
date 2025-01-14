@@ -931,6 +931,9 @@ void ARM7TDMI_ins_B_BL(struct ARM7TDMI *this, u32 opcode)
     offset <<= 2;
     if (link) *getR(this, 14) = this->regs.PC - 4;
     this->regs.PC += (u32)offset;
+    /*if (this->regs.PC == 0x08001ec4) {
+        dbg_break("BAD MOJO", *this->trace.cycles);
+    }*/
     ARM7TDMI_flush_pipeline(this);
 }
 

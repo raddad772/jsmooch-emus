@@ -567,7 +567,7 @@ static void apply_mosaic(struct GBA *this)
         bg = &this->ppu.bg[i];
         if (!bg->enable) continue;
         if (bg->mosaic_enable) bg->mosaic_y = this->ppu.mosaic.bg.y_current;
-        else bg->mosaic_y = this->clock.ppu.y;
+        else bg->mosaic_y = this->clock.ppu.y + 1;
     }
     this->ppu.mosaic.bg.y_counter = (this->ppu.mosaic.bg.y_counter + 1) % this->ppu.mosaic.bg.vsize;
 
@@ -738,6 +738,7 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     memset(bg->line, 0, sizeof(bg->line));
     if (!bg->enable) return;
     // first do a fetch for fine scroll -1
+    //if (this->clock.ppu.y == 100) printf("\nline:100 vscroll:%d mosaic_y:%d", bg->vscroll, bg->mosaic_y);
     u32 hpos = bg->hscroll & bg->hpixels_mask;
     u32 vpos = (bg->vscroll + bg->mosaic_y) & bg->vpixels_mask;
     u32 fine_x = hpos & 7;
@@ -933,7 +934,7 @@ static void draw_bg_line4(struct GBA *this)
 
         u8 *line_input = ((u8 *) this->ppu.VRAM) + base_addr + (ty * 240);
         u32 color = this->ppu.palette_RAM[line_input[tx]];
-        px->has = color != 0;
+        px->has = line_input[tx] != 0;
         px->priority = bg->priority;
         px->color = color;
 
@@ -1085,9 +1086,41 @@ void GBA_PPU_hblank(struct GBA*this)
     GBA_check_dma_at_hblank(this);
 }
 
+
+static void process_button_IRQ(struct GBA *this)
+{
+    if (this->io.button_irq.enable) {
+        u32 bits = GBA_get_controller_state(this->controller.pio);
+        u32 or = 0;
+        u32 and = 1;
+        for (u32 i = 0; i < 10; i++) {
+            u32 bit = 1 << i;
+            if ((this->io.button_irq.buttons & bit) && (bits & bit)) {
+                or = 1;
+            }
+            else {
+                and = 0;
+            }
+        }
+        u32 care_about = this->io.button_irq.condition ? and : or;
+        u32 old_IF = this->io.IF;
+        if (care_about) this->io.IF |= (1 << 12);
+        else this->io.IF &= ~(1 << 12);
+            //printf("\nCARE_ABOUT? %d BITS:%d BUTTONS:%d CONDITION:%d", care_about, bits, this->io.button_irq.buttons, this->io.button_irq.condition);
+        if (old_IF != this->io.IF) {
+            if (this->io.IF) printf("\nTRIGGERING THE INTERRUPT...");
+            GBA_eval_irqs(this);
+        }
+    }
+}
+
+
 void GBA_PPU_finish_scanline(struct GBA*this)
 {
     // do stuff, then
+    if (this->clock.ppu.y == 0) {
+        process_button_IRQ(this);
+    }
     this->clock.ppu.hblank_active = 0;
     this->clock.ppu.y++;
     if (this->clock.ppu.y == 160) {
@@ -1193,7 +1226,7 @@ void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, 
     }
     else {
         if (sz == 1) {
-            addr &= 0xFFFE;
+            addr &= 0x1FFFE;
             sz = 2;
             val = (val << 8) | val;
         }

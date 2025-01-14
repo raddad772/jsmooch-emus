@@ -182,11 +182,12 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
         return (addr >> 1) & masksz[sz];
     }
 
-    if (this->cart.prefetch.was_disabled) {
+    /*if (this->cart.prefetch.was_disabled) {
         access &= ~ARM7P_sequential; // Clear sequential flag
         this->cart.prefetch.was_disabled = 0;
-    }
+    }*/
     u32 sequential = (access & ARM7P_sequential);
+    if ((addr & 0x1FFFF) == 0) sequential = 0; // 128KB blocks are non-sequential
     // determine cycles of this access
     if (dbg.trace_on) {
         struct trace_view *tv = this->cpu.dbg.tvptr;
@@ -211,6 +212,7 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
 
     // If we got here, prefetch is enabled.
     i64 tt = (i64)GBA_clock_current(this);
+    // This is fine as non-sequential. Sequential is always paid for upfront
     i64 this_cycles = (sz == 4) ? this->waitstates.timing32[1][page] : this->waitstates.timing16[1][page];
     // If we are at the next prefetch addr, and it's code...
     if (addr == this->cart.prefetch.next_addr && (access & ARM7P_code)) {
@@ -218,6 +220,9 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
 
         if (this->cart.prefetch.last_access != 0xFFFFFFFFFFFFFFFF)
             this->cart.prefetch.cycles_banked += (tt - (i64)this->cart.prefetch.last_access);
+        if (this->cart.prefetch.cycles_banked > (this_cycles * 8)) { // We can only get ahead 8 times
+            this->cart.prefetch.cycles_banked = this_cycles * 8;
+        }
 
         // Subtract # of cycles of this access
         this->cart.prefetch.cycles_banked -= this_cycles;
@@ -239,38 +244,16 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
             // Reset cycles banked to 0
             this->cart.prefetch.cycles_banked = 0;
         } else { // if we DO have enough...
-            if (dbg.trace_on) {
-                struct trace_view *tv = this->cpu.dbg.tvptr;
-                if (tv) {
-                    trace_view_startline(tv, 3);
-                    trace_view_printf(tv, 0, "ifetch");
-                    trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
-                    trace_view_printf(tv, 2, "%08x", addr);
-                    trace_view_printf(tv, 4, "prefetch hit!");
-                    trace_view_endline(tv);
-                }
-            }
             outcycles++; // transaction only takes 1 cycle!
-            if (this->cart.prefetch.cycles_banked > (this->cart.prefetch.duty_cycle * 8)) { // We can only get ahead 8 times
-                this->cart.prefetch.cycles_banked = this->cart.prefetch.duty_cycle * 8;
-            }
+            //if (this->cart.prefetch.cycles_banked > (this->cart.prefetch.duty_cycle * 8)) { // We can only get ahead 8 times
+            //    this->cart.prefetch.cycles_banked = this->cart.prefetch.duty_cycle * 8;
+            //}
         }
     }
     else { // Abort prefetcher!
         outcycles += prefetch_stop(this); // Penalty if we're 1 from end!
         this->cart.prefetch.cycles_banked = 0; // Restart prefetches
-        outcycles += (sz == 4) ? this->waitstates.timing32[0][page] : this->waitstates.timing16[0][page];; // Full cost of the read
-        if (dbg.trace_on) {
-            struct trace_view *tv = this->cpu.dbg.tvptr;
-            if (tv) {
-                trace_view_startline(tv, 3);
-                trace_view_printf(tv, 0, "ifetch");
-                trace_view_printf(tv, 1, "%lld", this->clock.master_cycle_count + this->waitstates.current_transaction);
-                trace_view_printf(tv, 2, "%08x", addr);
-                trace_view_printf(tv, 4, "abort prefetch! %d cycles to read", outcycles);
-                trace_view_endline(tv);
-            }
-        }
+        outcycles += (sz == 4) ? this->waitstates.timing32[sequential][page] : this->waitstates.timing16[sequential][page];; // Full cost of the read
     }
     this->cart.prefetch.duty_cycle = this->waitstates.timing16[1][page];
     this->cart.prefetch.next_addr = addr + sz;

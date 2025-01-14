@@ -556,6 +556,14 @@ u32 M68k_read_ea_addr(struct M68k* this, uint32 opnum, u32 sz, u32 hold, u32 pre
         case M68k_AM_address_register_indirect_with_displacement: // 1 ext word
             v = (u32)((i64)this->regs.A[ea->reg] + (i64)(i16)(prefetch & 0xFFFF));
             return v;
+        case M68k_AM_address_register_indirect_with_index: // 1 ext word
+            v = this->regs.A[ea->reg];
+            a = SIGNe8to64(prefetch);
+            b = prefetch & 0x8000 ? this->regs.A[(prefetch >> 12) & 7] : this->regs.D[(prefetch >> 12) & 7];
+            if (!(prefetch & 0x800))
+                b = (u32)(i32)(i16)(b & 0xFFFF);
+            v = ((v + a + b) & 0xFFFFFFFF);
+            return v;
         case M68k_AM_absolute_short_data: // 1 ext word
             // Sign-extend 16-bit prefetch word, and use that
             return SIGNe16to32(prefetch);

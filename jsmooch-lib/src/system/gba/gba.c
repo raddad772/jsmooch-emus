@@ -208,7 +208,7 @@ void GBAJ_reset(JSM)
     }
     this->io.SIO.send = 0xFFFF;
 
-    skip_BIOS(this);
+    //skip_BIOS(this);
     printf("\nGBA reset!");
 }
 

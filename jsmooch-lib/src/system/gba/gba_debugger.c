@@ -302,6 +302,14 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
         else {
             tx = half_x << 8;
             ty = half_y << 8;
+            if (hflip) {
+                tx = (i32)(hpixels<<7) - (1 << 8);
+                pa = (i32)0xFFFFFF00;
+            }
+            if (vflip) {
+                ty = (i32)(vpixels<<7) - (1 << 8);
+                pd = (i32)0xFFFFFF00;
+            }
         }
         i32 screen_x_right = screen_x + (i32)hpixels;
         i32 screen_y_bottom = screen_y + (i32)vpixels;
@@ -513,6 +521,9 @@ static void render_image_view_bgmap(struct debugger_interface *dbgr, struct debu
         }
     }
     else {
+        u32 bpp8 = bg->bpp8;
+        u32 char_base_block = bg->character_base_block;
+        u32 screen_base_block = bg->screen_base_block;
         for (u32 tilemap_y = 0; tilemap_y < vsize; tilemap_y++) {
             for (u32 tilemap_x = 0; tilemap_x < hsize; tilemap_x++) {
 

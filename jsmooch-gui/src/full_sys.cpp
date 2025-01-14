@@ -678,33 +678,76 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/m7_ex.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/mos_demo.gba", nullptr);
 
+            //worked = grab_ROM(&ROMs, which, "sram.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "flash64.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "flash128.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "memory.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "bios.gba", nullptr);
+
+
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr);
+            // worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
+            //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // same issues as duke3d
+            worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "advance_guardian_heroes.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "supersonic_warriors.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "dbaa.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "funni.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "armfrag.gba", nullptr);
+
+            //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
+            //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ecks_sever.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "007_nightfire.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mmz4.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mmz.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "drill_dozer.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "rhythm_tengokou.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "driv3r.gba", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
+            //worked = grab_ROM(&ROMs, which, "lunar_legend.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tony_hawk_downhill.gba", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "nfs_most_wanted.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
+            //worked = grab_ROM(&ROMs, which, "kill_switch.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "ssx3.gba", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);
+
+            //worked = grab_ROM(&ROMs, which, "gang-ldmstm.gba", nullptr);
+
+
+            //dbg_enable_trace();
 
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
             //dbg_enable_trace();
-            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
@@ -775,7 +818,7 @@ void full_system::load_default_ROM()
 
 
             //worked = grab_ROM(&ROMs, which, "wonder_boy4.md", nullptr); // seems fine
-            //worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // seems fine
+            //worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // issues!
             //worked = grab_ROM(&ROMs, which, "star_cruiser.bin", nullptr); // seems fine? hard to say
             //worked = grab_ROM(&ROMs, which, "sonic_spinball.md", nullptr); // same sprite priority issue
             //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well
@@ -783,7 +826,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "direct_color_dma.bin", nullptr); // does nothing
-            worked = grab_ROM(&ROMs, which, "alien_soldier_jp.md", nullptr); // works well
+            //worked = grab_ROM(&ROMs, which, "alien_soldier_jp.md", nullptr); // works well
             //worked = grab_ROM(&ROMs, which, "alien_soldier_usa.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "beyond_oasis.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "granada.md", nullptr);

@@ -365,9 +365,6 @@ void GBA_eval_irqs(struct GBA *this)
 {
     u32 old_line = this->cpu.regs.IRQ_line;
     this->cpu.regs.IRQ_line = (!!(this->io.IE & this->io.IF & 0x3FFF)) & this->io.IME;
-    /*if (old_line != this->cpu.regs.IRQ_line) {
-        printf("\nLINE SET TO %d cyc:%lld", this->cpu.regs.IRQ_line, this->clock.master_cycle_count);
-    }*/
     /*
 
   Bit   Expl.
@@ -633,20 +630,14 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             return;
 
         case 0x04000132:
-            this->io.button_irq.a = val & 1;
-            this->io.button_irq.b = (val >> 1) & 1;
-            this->io.button_irq.select = (val >> 2) & 1;
-            this->io.button_irq.start = (val >> 3) & 1;
-            this->io.button_irq.right = (val >> 4) & 1;
-            this->io.button_irq.left = (val >> 5) & 1;
-            this->io.button_irq.up = (val >> 6) & 1;
-            this->io.button_irq.down = (val >> 7) & 1;
+            this->io.button_irq.buttons = (this->io.button_irq.buttons & 0b1100000000) | val;
+            printf("\nWRITE VAL TO 0:%d", val);
             return;
         case 0x04000133: {
-            this->io.button_irq.r = val & 1;
-            this->io.button_irq.l = (val >> 1) & 1;
+            this->io.button_irq.buttons = (this->io.button_irq.buttons & 0xFF) | ((val & 0b11) << 8);
             u32 old_enable = this->io.button_irq.enable;
             this->io.button_irq.enable = (val >> 6) & 1;
+            printf("\nWRITE VAL TO 1:%d", val);
             if ((old_enable == 0) && this->io.button_irq.enable) {
                 printf("\nWARNING BUTTON IRQ ENABLED...");
             }
