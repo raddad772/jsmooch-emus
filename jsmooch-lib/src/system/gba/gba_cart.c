@@ -215,14 +215,15 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
     // This is fine as non-sequential. Sequential is always paid for upfront
     i64 this_cycles = (sz == 4) ? this->waitstates.timing32[1][page] : this->waitstates.timing16[1][page];
     // If we are at the next prefetch addr, and it's code...
+    if (this->cart.prefetch.last_access != 0xFFFFFFFFFFFFFFFF)
+        this->cart.prefetch.cycles_banked += (tt - (i64)this->cart.prefetch.last_access);
+    if (this->cart.prefetch.cycles_banked > (this_cycles * 8)) { // We can only get ahead 8 times
+        this->cart.prefetch.cycles_banked = this_cycles * 8;
+    }
+
     if (addr == this->cart.prefetch.next_addr && (access & ARM7P_code)) {
         // Add cycles since last visit
 
-        if (this->cart.prefetch.last_access != 0xFFFFFFFFFFFFFFFF)
-            this->cart.prefetch.cycles_banked += (tt - (i64)this->cart.prefetch.last_access);
-        if (this->cart.prefetch.cycles_banked > (this_cycles * 8)) { // We can only get ahead 8 times
-            this->cart.prefetch.cycles_banked = this_cycles * 8;
-        }
 
         // Subtract # of cycles of this access
         this->cart.prefetch.cycles_banked -= this_cycles;
@@ -250,10 +251,25 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
             //}
         }
     }
-    else { // Abort prefetcher!
-        outcycles += prefetch_stop(this); // Penalty if we're 1 from end!
-        this->cart.prefetch.cycles_banked = 0; // Restart prefetches
-        outcycles += (sz == 4) ? this->waitstates.timing32[sequential][page] : this->waitstates.timing16[sequential][page];; // Full cost of the read
+    else { // Check for another case: fetch is tried of the currently-in-progress fetch
+        // First calculate what the current in-progress fetch is
+        u32 current_fetch_addr = this->cart.prefetch.next_addr;
+        u32 duty_cycle = this->waitstates.timing16[1][page];
+        if (sz == 4) duty_cycle *= 2;
+
+        u32 fetch_cycles = this->cart.prefetch.cycles_banked / duty_cycle;
+        current_fetch_addr += (fetch_cycles * sz);
+        if (addr == current_fetch_addr && (access & ARM7P_code) && (fetch_cycles > 0)) {
+            //printf("\nI HIT THE CASE...");
+            u32 cycles_left_to_fetch = this->cart.prefetch.cycles_banked % duty_cycle;
+            outcycles += cycles_left_to_fetch;
+            this->cart.prefetch.cycles_banked = 0;
+        }
+        else { // Abort the prefetcher
+            outcycles += prefetch_stop(this); // Penalty if we're 1 from end!
+            this->cart.prefetch.cycles_banked = 0; // Restart prefetches
+            outcycles += (sz == 4) ? this->waitstates.timing32[sequential][page] : this->waitstates.timing16[sequential][page];; // Full cost of the read
+        }
     }
     this->cart.prefetch.duty_cycle = this->waitstates.timing16[1][page];
     this->cart.prefetch.next_addr = addr + sz;

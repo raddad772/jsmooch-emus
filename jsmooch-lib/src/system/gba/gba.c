@@ -168,6 +168,7 @@ static void skip_BIOS(struct GBA* this)
 SWI 00h (GBA/NDS7/NDS9) - SoftReset
 Clears 200h bytes of RAM (containing stacks, and BIOS IRQ vector/flags)
 */
+    printf("\nSKIP GBA BIOS!");
     for (u32 i = 0x3007E00; i < 0x3008000; i++) {
         cW[1](this->WRAM_fast, i - 0x3000000, 0);
     }
@@ -208,7 +209,7 @@ void GBAJ_reset(JSM)
     }
     this->io.SIO.send = 0xFFFF;
 
-    //skip_BIOS(this);
+    skip_BIOS(this);
     printf("\nGBA reset!");
 }
 

@@ -146,7 +146,9 @@ struct GBA {
             struct GBA_DBG_line_bg {
                 u32 hscroll, vscroll;
                 i32 hpos, vpos;
+                i32 x_lerp, y_lerp;
                 i32 pa, pb, pc, pd;
+                u32 reset_x, reset_y;
                 u32 htiles, vtiles;
                 u32 display_overflow;
                 u32 screen_base_block, character_base_block;

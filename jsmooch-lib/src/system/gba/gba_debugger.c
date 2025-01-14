@@ -552,15 +552,16 @@ static void render_image_view_bg(struct debugger_interface *dbgr, struct debugge
     struct GBA_PPU_bg *bg = &this->ppu.bg[bg_num];
 
     debugger_widgets_textbox_clear(tb);
-    u32 is_affine = (((this->ppu.io.bg_mode == 2) && (bg_num == 2)) || ((this->ppu.io.bg_mode == 3) && (bg_num >= 2)));
+    u32 is_affine = (((this->ppu.io.bg_mode == 1) && (bg_num == 2)) || ((this->ppu.io.bg_mode == 2) && (bg_num >= 2)));
     debugger_widgets_textbox_sprintf(tb, "enable:%d  bpp:%c  htiles:%d  vtiles:%d\naffine:%d  mode:%d  priority:%d\nsample a:%d  b:%d", bg->enable, bg->bpp8 ? '8' : '4', bg->htiles, bg->vtiles, is_affine, this->ppu.io.bg_mode, bg->priority, this->ppu.blend.targets_a[bg_num+1], this->ppu.blend.targets_b[bg_num+1]);
-
+    i32 h_origin = 0;
+    i32 v_origin = 0;
     for (i32 screen_y = 0; screen_y < 160; screen_y++) {
         struct GBA_DBG_line *dbgl = &this->dbg_info.line[screen_y];
         struct GBA_DBG_line_bg *bgd = &dbgl->bg[bg_num];
         u32 *lineptr = (outbuf + (screen_y * out_width));
 
-        is_affine = (((dbgl->bg_mode == 2) && (bg_num == 2)) || ((dbgl->bg_mode == 3) && (bg_num >= 2)));
+        is_affine = (((dbgl->bg_mode == 1) && (bg_num == 2)) || ((dbgl->bg_mode == 2) && (bg_num >= 2)));
 
         // Affine infos for non-affine
         // pa is x change per x
@@ -582,22 +583,26 @@ static void render_image_view_bg(struct debugger_interface *dbgr, struct debugge
 
             //pos_y = bgd->vpos + (pd*screen_y);
             //pos_x = bgd->hpos + (pb*screen_y);
-            hpos = bgd->hpos;
-            vpos = bgd->vpos;
+            hpos = bgd->x_lerp;
+            vpos = bgd->y_lerp;
+            //hpos = bgd->hpos;
+            //vpos = bgd->vpos;
+
             sxadd = 0;
             syadd = 0;
         }
 
         // Each line is set up separately...
+        u32 no_px = 0; // set to 1 if we flunk outta here....
         for (i32 screen_x = 0; screen_x < 240; screen_x++) {
             i64 ix = screen_x + sxadd;
             i64 iy = screen_y + syadd;
-            i64 px = ((pa*ix + pb*iy)+hpos)>>8;    // get x texture coordinate
-            i64 py = ((pc*ix + pd*iy)+vpos)>>8;    // get y texture coordinate
-
-            u32 no_px = 0; // set to 1 if we flunk outta here....
-            // Deal with clipping
+            i64 px, py;
             if (is_affine) {
+                px = hpos >> 8;
+                py = vpos >> 8;
+                hpos += pa;
+                vpos += pc;
                 if (bgd->display_overflow) {
                     px &= hpixels_mask;
                     py &= vpixels_mask;
@@ -605,11 +610,15 @@ static void render_image_view_bg(struct debugger_interface *dbgr, struct debugge
                 else {
                     no_px = ((px < 0) || (px >= hpixels) || (py < 0) || (py >= vpixels));
                 }
-            }
-            else {
+            } else {
+                px = ((pa*ix + pb*iy)+hpos)>>8;    // get x texture coordinate
+                py = ((pc*ix + pd*iy)+vpos)>>8;    // get y texture coordinate
                 px &= hpixels_mask;
                 py &= vpixels_mask;
             }
+
+
+            // Deal with clipping
             u32 color=0, has=0, palette=0, bpp8=0, priority=0;
             if (!no_px) {
                 // Deal with fetching pixel

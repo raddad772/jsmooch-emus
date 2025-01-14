@@ -284,6 +284,7 @@ void ARM7TDMI_run(struct ARM7TDMI*this)
     this->pipeline.opcode[0] = this->pipeline.opcode[1];
     this->pipeline.addr[0] = this->pipeline.addr[1];
     this->regs.PC &= 0xFFFFFFFE;
+    //if (this->regs.PC == 0x0800a648) dbg_break("PC==0800a649", *this->trace.cycles);
 
     if (this->regs.CPSR.T) { // THUMB mode!
         this->pipeline.opcode[1] = fetch_ins(this, 2);

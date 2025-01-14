@@ -96,16 +96,24 @@ void GBA_PPU_start_scanline(struct GBA*this)
         this->ppu.mosaic.obj.y_counter = 0;
         this->ppu.mosaic.obj.y_current = 0;
     }
-    for (u32 i = 2; i < 4; i++) {
-        bg = &this->ppu.bg[i];
-        if ((this->clock.ppu.y == 0) || bg->x_written) {
-            bg->x_lerp = bg->x;
-        }
+    if (this->clock.ppu.y < 160) {
+        struct GBA_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
+        for (u32 i = 2; i < 4; i++) {
+            bg = &this->ppu.bg[i];
+            struct GBA_DBG_line_bg *dbgbg = &dbgl->bg[i];
+            if ((this->clock.ppu.y == 0) || bg->x_written) {
+                bg->x_lerp = bg->x;
+                dbgbg->reset_x = 1;
+            }
+            dbgbg->x_lerp = bg->x_lerp;
 
-        if ((this->clock.ppu.y == 0) || (bg->y_written)) {
-            bg->y_lerp = bg->y;
+            if ((this->clock.ppu.y == 0) || (bg->y_written)) {
+                bg->y_lerp = bg->y;
+                dbgbg->reset_y = 1;
+            }
+            dbgbg->y_lerp = bg->y_lerp;
+            bg->x_written = bg->y_written = 0;
         }
-        bg->x_written = bg->y_written = 0;
     }
 }
 
