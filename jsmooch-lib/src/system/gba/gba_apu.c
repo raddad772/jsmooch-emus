@@ -15,7 +15,9 @@ void GBA_APU_init(struct GBA*this)
 #define FIFO_A_H 0x040000A2
 #define FIFO_B_L 0x040000A4
 #define FIFO_B_H 0x040000A6
-#define SOUNDCNT_H 0x04000084
+#define SOUNDCNT_L 0x04000080
+#define SOUNDCNT_H 0x04000082
+#define SOUNDCNT_X 0x04000084
 #define SOUND3CNT_L 0x04000070
 #define SOUND3CNT_H 0x04000072
 
@@ -27,7 +29,6 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
             return this->apu.io.sound_bias & 0xFF;
         case SOUNDBIAS+1:
             return this->apu.io.sound_bias >> 8;
-
         case SOUND3CNT_L+0:
             v = (this->apu.chan[2].wave_ram_size == 64 ? 1 : 0) << 5;
             v |= this->apu.chan[2].wave_ram_bank << 6;
@@ -43,7 +44,7 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
             return v;
 
         case SOUNDCNT_H+0:
-            v = this->apu.io.ch04_vol;
+            v = this->apu.io.ch03_vol;
             v |= this->apu.fifo[0].vol << 2;
             v |= this->apu.fifo[1].vol << 3;
             return v;
@@ -156,8 +157,22 @@ static void GBA_APU_write_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u3
                 case 3: this->apu.divider2.mask = 7; break;
             }
             return;
+        case SOUNDCNT_L+0:
+            this->apu.io.ch03_vol_r = val & 7;
+            this->apu.io.ch03_vol_l = (val >> 4) & 7;
+            return;
+        case SOUNDCNT_L+1:
+            this->apu.chan[0].enable_r = (val >> 0) & 1;
+            this->apu.chan[1].enable_r = (val >> 1) & 1;
+            this->apu.chan[2].enable_r = (val >> 2) & 1;
+            this->apu.chan[3].enable_r = (val >> 3) & 1;
+            this->apu.chan[0].enable_l = (val >> 4) & 1;
+            this->apu.chan[1].enable_l = (val >> 5) & 1;
+            this->apu.chan[2].enable_l = (val >> 6) & 1;
+            this->apu.chan[3].enable_l = (val >> 7) & 1;
+            return;
         case SOUNDCNT_H+0:
-            this->apu.io.ch04_vol = val & 3;
+            this->apu.io.ch03_vol = val & 3;
             this->apu.fifo[0].vol = (val >> 2) & 1;
             this->apu.fifo[1].vol = (val >> 3) & 1;
             return;
@@ -170,6 +185,11 @@ static void GBA_APU_write_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u3
             this->apu.fifo[1].enable_r = (val >> 5) & 1;
             this->apu.fifo[1].timer_id = (val >> 6) & 1;
             if ((val >> 7) & 1) FIFO_reset(this, 0);
+            return;
+        case SOUNDCNT_X+0:
+            this->apu.io.master_enable = (val >> 7) & 1;
+            return;
+        case SOUNDCNT_X+1:
             return;
         case FIFO_A_L+0: FIFO_write(this, 0, 0, val); return;
         case FIFO_A_L+1: FIFO_write(this, 0, 1, val); return;
@@ -244,7 +264,8 @@ float GBA_APU_mix_sample(struct GBA*this, u32 is_debug)
         i32 center = left + right;
         // 11 bits possible now!
         // Now convert to float
-        s = (((float)(center + 1024)) / 2047.0f) - 1.0f;
+        //s = (((float)(center + 1024)) / 2047.0f) - 1.0f;
+        s = (((float)(center + 512)) / 1027.0f) - 1.0f;
         assert(s <= 1.0f);
         assert(s >= -1.0f);
     }

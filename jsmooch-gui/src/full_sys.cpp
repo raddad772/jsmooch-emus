@@ -698,7 +698,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "advance_guardian_heroes.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "supersonic_warriors.gba", nullptr); // works!
@@ -734,7 +734,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tony_hawk_downhill.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "nfs_most_wanted.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
+            //worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
             //worked = grab_ROM(&ROMs, which, "kill_switch.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ssx3.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);

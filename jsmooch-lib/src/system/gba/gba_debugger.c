@@ -1281,7 +1281,6 @@ static void setup_waveforms_view(struct GBA* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "FIFO B");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
-
 }
 
 

@@ -166,6 +166,7 @@ u32 GBAJ_finish_frame(JSM)
         GBAJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
+    struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[4]);
     return this->ppu.display->last_written;
 }
 
@@ -433,7 +434,6 @@ static void sample_audio(struct GBA* this, u32 num_cycles)
         }
     }
 }
-
 
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {

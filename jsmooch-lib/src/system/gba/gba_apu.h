@@ -27,6 +27,7 @@ struct GBA_APU {
 
     struct {
         u32 wave_ram_size, wave_ram_bank, playback, sound_len;
+        u32 enable_l, enable_r;
 
         i32 output;
         u32 vol;
@@ -38,7 +39,9 @@ struct GBA_APU {
 
     struct {
         u32 sound_bias;
-        u32 ch04_vol;
+        u32 ch03_vol;
+        u32 ch03_vol_l;
+        u32 ch03_vol_r;
         u32 master_enable;
         u32 bias_amplitude;
     } io;
