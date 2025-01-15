@@ -120,11 +120,10 @@ void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i, u32 is_sound)
     ch->op.src_access = ARM7P_nonsequential | ARM7P_dma;
     ch->op.is_sound = is_sound;
     if (is_sound) {
-        //printf("\nSOUND DMA START %d", i);
         ch->op.sz = 4;
+        ch->io.dest_addr_ctrl = 2;
         ch->op.word_count = 4;
     }
-    //if (i == 0) printf("\nDMA ch:%d src:%08x dst:%08x sz:%d num:%d", i, ch->op.src_addr, ch->op.dest_addr, ch->op.sz, ch->op.word_count);
 }
 
 static void set_waitstates(struct GBA *this) {

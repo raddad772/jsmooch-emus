@@ -14,7 +14,7 @@ struct GBA_APU {
     struct GBA_APU_FIFO {
         u32 timer_id;
         u32 head, tail, len, output_head;
-        i32 data[32]; // 8 32-bit entries
+        i8 data[32]; // 8 32-bit entries
 
         i32 sample;
         i32 output;

@@ -80,14 +80,24 @@ void GBA_APU_sound_FIFO(struct GBA *this, u32 num) {
     struct GBA_APU_FIFO *fifo = &this->apu.fifo[num];
 
     // Move sound FIFO sample
-    if ((fifo->output_head & 3) == 3) { // See if we can advance to next word
+    /*if ((fifo->output_head & 3) == 3) { // See if we can advance to next word
         if (fifo->len >= 4) {
             fifo->len -= 4;
             fifo->output_head = fifo->head;
             fifo->head = (fifo->head + 4) & 31;
         }
+        else {
+            printf("\nGBA FIFO UNDERFLOW!");
+        }
     } else fifo->output_head++; // Advance within current word
-    fifo->sample = SIGNe8to32(fifo->data[fifo->output_head]);
+    fifo->sample = SIGNe8to32(fifo->data[fifo->output_head]);*/
+
+    //fifo->sample = SIGNe8to32(fifo->data[fifo->head]);
+    if (fifo->len > 0) {
+        fifo->len--;
+        fifo->sample = (i32)fifo->data[fifo->head];
+        fifo->head = (fifo->head + 1) & 31;
+    }
 
     // If we need more data...
     if (fifo->len <= 16) {
@@ -114,7 +124,7 @@ static void FIFO_commit(struct GBA *this, u32 fn)
     f->needs_commit = 0;
     f->tail = (f->tail + 4) & 31;
     f->len += 4;
-    if (f->len > 28) {
+    if (f->len > 32) {
         FIFO_reset(this, fn);
     }
 }
@@ -122,8 +132,10 @@ static void FIFO_commit(struct GBA *this, u32 fn)
 static void FIFO_write(struct GBA* this, u32 fn, u32 which, u32 v)
 {
     struct GBA_APU_FIFO *f = &this->apu.fifo[fn];
-    f->needs_commit = 1;
-    f->data[(f->tail + which) & 31] = (i32)(i8)v;
+    if (f->len == 32) f->head = (f->head + 1) & 31; // Full buffer, push another byte?...
+    else f->len++;
+    f->data[f->tail] = v;
+    f->tail = (f->tail + 1) & 31;
 }
 
 static void GBA_APU_write_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
@@ -221,9 +233,7 @@ float GBA_APU_sample_channel(struct GBA *this, u32 n)
 {
     if (n < 4) return 0.0f;
     struct GBA_APU_FIFO *fifo = &this->apu.fifo[n - 4];
-    i32 sample = fifo->sample << fifo->vol;
-    if (sample < -256) sample = -256;
-    if (sample > 255) sample = 255;
+    i32 sample = fifo->output << fifo->vol;
 
     switch(this->apu.io.bias_amplitude) {
         case 0: break;
@@ -232,8 +242,18 @@ float GBA_APU_sample_channel(struct GBA *this, u32 n)
         case 3: sample &= ~7; break;
     }
 
-    float s = (((float)(sample + 256)) / 511.0f) - 1.0f;
-    return s;
+    /*if (sample < fifo->sample_min) {
+        printf("\nNEW MIN! %d!", sample);
+        fifo->sample_min = sample;
+    }
+
+    if (sample > fifo->sample_max) {
+        printf("\nNEW MAX! %d!", sample);
+        fifo->sample_max = sample;
+    }*/
+
+    return (float)(sample << 7) / 32768.0f;
+    //return s;
 }
 
 float GBA_APU_mix_sample(struct GBA*this, u32 is_debug)
@@ -244,14 +264,18 @@ float GBA_APU_mix_sample(struct GBA*this, u32 is_debug)
         for (u32 i = 0; i < 2; i++) {
             struct GBA_APU_FIFO *fifo = &this->apu.fifo[i];
             if (!fifo->ext_enable && !is_debug) continue;
-            if (fifo->enable_l) left += fifo->sample << fifo->vol;
-            if (fifo->enable_r) right += fifo->sample << fifo->vol;
+            if (fifo->enable_l) {
+                left += fifo->output << fifo->vol; // 8 to 9 bits
+            }
+            if (fifo->enable_r) {
+                right += fifo->output << fifo->vol; // 8 to 9 bits
+            }
         }
-        // up to 10 bits now. Clamp!
-        if (left < -512) left = -512;
-        if (left > 511) left = 511;
-        if (right < -512) right = -512;
-        if (right > 511) right = 511;
+        // up to 11 bits possible now. Clamp!
+        if (left < -1024) left = -1024;
+        if (left > 1023) left = 1023;
+        if (right < -1024) right = -1024;
+        if (right > 1023) right = 1023;
 
         // Get rid of bits...
         switch(this->apu.io.bias_amplitude) {
@@ -262,10 +286,11 @@ float GBA_APU_mix_sample(struct GBA*this, u32 is_debug)
         }
 
         i32 center = left + right;
-        // 11 bits possible now!
+        // 11 bits possible now! Because we're mixing left and right!
         // Now convert to float
         //s = (((float)(center + 1024)) / 2047.0f) - 1.0f;
-        s = (((float)(center + 512)) / 1027.0f) - 1.0f;
+        s = (float)(center << 5) / 32768.0f;
+        //s = (((float)center) / 1024.0f);
         assert(s <= 1.0f);
         assert(s >= -1.0f);
     }
@@ -283,8 +308,8 @@ void GBA_APU_cycle(struct GBA*this)
 
         // Further divide by more for samples...
         if (this->apu.divider2.counter == 0) {
-            this->apu.fifo[0].output = this->apu.fifo[0].sample << this->apu.fifo[0].vol;
-            this->apu.fifo[1].output = this->apu.fifo[1].sample << this->apu.fifo[1].vol;
+            this->apu.fifo[0].output = this->apu.fifo[0].sample;
+            this->apu.fifo[1].output = this->apu.fifo[1].sample;
         }
         this->apu.divider2.counter = (this->apu.divider2.counter + 1) & this->apu.divider2.mask;
 
