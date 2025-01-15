@@ -714,10 +714,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "funni.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armfrag.gba", nullptr);
 
+            //worked = grab_ROM(&ROMs, which, "hm_fomt.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
-            worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever.gba", nullptr); // works great!
@@ -733,7 +734,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tony_hawk_downhill.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "nfs_most_wanted.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
+            worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
             //worked = grab_ROM(&ROMs, which, "kill_switch.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ssx3.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);
@@ -748,12 +749,12 @@ void full_system::load_default_ROM()
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
             //dbg_enable_trace();
-            worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
             //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!

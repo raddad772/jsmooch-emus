@@ -1221,6 +1221,70 @@ static void setup_image_view_window(struct GBA* this, struct debugger_interface 
 
 }
 
+static void setup_waveforms_view(struct GBA* this, struct debugger_interface *dbgr)
+{
+    printf("\nSETTING UP WAVEFORMS VIEW...");
+    this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(this->dbg.waveforms.view);
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    snprintf(wv->name, sizeof(wv->name), "GBA APU");
+
+    cvec_alloc_atleast(&wv->waveforms, 8);
+    cvec_lock_reallocs(&wv->waveforms);
+
+    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+    dw->default_clock_divider = 240;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Square 0");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Square 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Waveform");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Noise");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "FIFO A");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "FIFO B");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+}
+
+
 void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
@@ -1230,21 +1294,22 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     dbgr->smallest_step = 1;
 
     //setup_ARM7TDMI_disassembly(dbgr, this);
+    setup_waveforms_view(this, dbgr);
     setup_events_view(this, dbgr);
     setup_cpu_trace(dbgr, this);
-    setup_image_view_window(this, dbgr, 0);
-    setup_image_view_window(this, dbgr, 1);
-    setup_image_view_window(this, dbgr, 2);
-    setup_image_view_window(this, dbgr, 3);
+    setup_image_view_palettes(this, dbgr);
     setup_image_view_bg(this, dbgr, 0);
     setup_image_view_bg(this, dbgr, 1);
     setup_image_view_bg(this, dbgr, 2);
     setup_image_view_bg(this, dbgr, 3);
+    setup_image_view_sprites(this, dbgr);
     setup_image_view_bgmap(this, dbgr, 0);
     setup_image_view_bgmap(this, dbgr, 1);
     setup_image_view_bgmap(this, dbgr, 2);
     setup_image_view_bgmap(this, dbgr, 3);
-    setup_image_view_sprites(this, dbgr);
     setup_image_view_tiles(this, dbgr);
-    setup_image_view_palettes(this, dbgr);
+    setup_image_view_window(this, dbgr, 0);
+    setup_image_view_window(this, dbgr, 1);
+    setup_image_view_window(this, dbgr, 2);
+    setup_image_view_window(this, dbgr, 3);
 }

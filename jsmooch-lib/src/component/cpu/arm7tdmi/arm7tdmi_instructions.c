@@ -142,9 +142,6 @@ void ARM7TDMI_fill_regmap(struct ARM7TDMI *this) {
 
 static inline void write_reg(struct ARM7TDMI *this, u32 *r, u32 v) {
     *r = v;
-    if ((r == this->regmap[14]) && (v == 0x080014aa)) {
-        printf("\nSetting LR to 0x14AA! cyc:%lld", *this->trace.cycles);
-    }
     if (r == &this->regs.PC) {
         ARM7TDMI_flush_pipeline(this);
     }

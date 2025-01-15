@@ -38,20 +38,48 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs);
 #define MASTER_CYCLES_PER_FRAME (228 * MASTER_CYCLES_PER_SCANLINE)
 #define SCANLINE_HBLANK 1006
 
+static u32 timer_reload_ticks(u32 reload)
+{
+    // So it overflows at 0x100
+    // reload value is 0xFD
+    // 0xFD ^ 0xFF = 2
+    // How many ticks til 0x100? 256 - 253 = 3, correct!
+    // 100. 256 - 100 = 156, correct!
+    // Unfortunately if we set 0xFFFF, we need 0x1000 tiks...
+    // ok but what about when we set 255? 256 - 255 = 1 which is wrong
+    if (reload == 0xFFFF) return 0x10000;
+    return 0x10000 - reload;
+}
+
+static void setup_debug_waveform(struct debug_waveform *dw)
+{
+    if (dw->samples_requested == 0) return;
+    dw->samples_rendered = dw->samples_requested;
+    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.buf_pos = 0;
+}
+
 void GBAJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
+        this->audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
         this->audio.next_sample_cycle = 0;
-        //struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.main);
-        //this->psg.ext_enable = wf->ch_output_enabled;
+        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
+        this->apu.ext_enable = wf->ch_output_enabled;
     }
 
     // PSG
-    //struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-    //setup_debug_waveform(wf);
+    setup_debug_waveform(cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index));
+    for (u32 i = 0; i < 6; i++) {
+        setup_debug_waveform(cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index));
+        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
+        if (i < 4)
+            this->apu.chan[i].ext_enable = wf->ch_output_enabled;
+        else
+            this->apu.fifo[i - 4].ext_enable = wf->ch_output_enabled;
+    }
 
 }
 
@@ -223,7 +251,7 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
     struct GBA_DMA_ch *ch = &this->dma[num];
     if (ch->run_counter && ch->io.enable) {
         ch->run_counter--;
-        if (ch->run_counter == 0) GBA_dma_start(ch, num);
+        if (ch->run_counter == 0) GBA_dma_start(ch, num, 0);
         else return 0;
     }
     if ((ch->io.enable) && (ch->op.started)) {
@@ -250,6 +278,9 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
                 this->waitstates.current_transaction++;
             GBA_mainbus_write(this, ch->op.dest_addr, 4, ch->op.dest_access, ch->io.open_bus);
         }
+
+        ch->op.src_access = ARM7P_sequential | ARM7P_dma;
+        ch->op.dest_access = ARM7P_sequential | ARM7P_dma;
 
         switch(ch->io.src_addr_ctrl) {
             case 0: // increment
@@ -294,7 +325,6 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
 
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
-                //printf("\nENABLE DISABLE!");
             }
         }
         return 1;
@@ -309,11 +339,49 @@ static u32 dma_go(struct GBA *this) {
     return 0;
 }
 
-static void sound_FIFO(struct GBA *this, u32 num)
-{
-    // TODO: this!
+static u32 timer_enabled(struct GBA *this, u32 tn) {
+    return GBA_clock_current(this) >= this->timer[tn].enable_at;
 }
 
+
+static void overflow_timer(struct GBA *this, u32 tn, u64 current_time);
+
+static void cascade_timer_step(struct GBA *this, u32 tn, u64 current_time)
+{
+    //printf("\nCASCADE TIMER STEP!");
+    struct GBA_TIMER *t = &this->timer[tn];
+    t->val_at_stop = (t->val_at_stop + 1) & 0xFFFF;
+    if (t->val_at_stop == 0) {
+        overflow_timer(this, tn, current_time);
+    }
+}
+
+static void overflow_timer(struct GBA *this, u32 tn, u64 current_time) {
+    struct GBA_TIMER *t = &this->timer[tn];
+    //printf("\nOVERFLOW: %d", tn);
+    if (!t->cascade) {
+        t->enable_at = current_time;
+        t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
+        t->overflow_at = t->enable_at + t->reload_ticks;
+        //printf("\nNew overflow in %lld cycles", t->overflow_at - t->enable_at);
+    }
+    t->val_at_stop = t->reload;
+    if (t->irq_on_overflow) {
+        //printf("\nIRQ!");
+        this->io.IF |= 1 << (3 + tn);
+        GBA_eval_irqs(this);
+    }
+    if (this->apu.fifo[0].timer_id == tn) GBA_APU_sound_FIFO(this, 0);
+    if (this->apu.fifo[1].timer_id == tn) GBA_APU_sound_FIFO(this, 1);
+
+    if (tn < 3) {
+        // Check for cascade!
+        struct GBA_TIMER *tp1 = &this->timer[tn+1];
+        if (timer_enabled(this, tn+1) && tp1->cascade) {
+            cascade_timer_step(this, tn+1, current_time);
+        }
+    }
+}
 
 static void tick_timers(struct GBA *this, u32 num_ticks) {
     for (u32 ticks = 0; ticks < num_ticks; ticks++) {
@@ -322,18 +390,50 @@ static void tick_timers(struct GBA *this, u32 num_ticks) {
         for (u32 tn = 0; tn < 4; tn++) {
             struct GBA_TIMER *t = &this->timer[tn];
             if (!t->cascade && (current_time >= t->overflow_at)) {
-                // DO OVERFLOW!
-                t->overflow_at += ((0x1000 - t->reload) << t->shift);
-                if (t->irq_on_overflow) {
-                    this->io.IF |= 1 << (3 + tn);
-                    GBA_eval_irqs(this);
-                }
-                if(this->apu.fifo[0].timer_id == tn) sound_FIFO(this, 0);
-                if(this->apu.fifo[1].timer_id == tn) sound_FIFO(this, 1);
+                overflow_timer(this, tn, current_time);
             }
         }
     }
 }
+
+static void sample_audio(struct GBA* this, u32 num_cycles)
+{
+    for (u64 i = 0; i < num_cycles; i++) {
+        GBA_APU_cycle(this);
+        u64 mc = this->clock.master_cycle_count + i;
+        if (this->audio.buf && (mc >= (u64) this->audio.next_sample_cycle)) {
+            this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+            if (this->audio.buf->upos < this->audio.buf->samples_len) {
+                ((float *)(this->audio.buf->ptr))[this->audio.buf->upos] = GBA_APU_mix_sample(this, 0);
+            }
+            this->audio.buf->upos++;
+        }
+
+        struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
+        if (mc >= (u64)dw->user.next_sample_cycle) {
+            if (dw->user.buf_pos < dw->samples_requested) {
+                dw->user.next_sample_cycle += dw->user.cycle_stride;
+                ((float *) dw->buf.ptr)[dw->user.buf_pos] = GBA_APU_mix_sample(this, 1);
+                dw->user.buf_pos++;
+            }
+        }
+
+        dw = cpg(this->dbg.waveforms.chan[0]);
+        if (mc >= (u64)dw->user.next_sample_cycle) {
+            for (int j = 0; j < 6; j++) {
+                dw = cpg(this->dbg.waveforms.chan[j]);
+                if (dw->user.buf_pos < dw->samples_requested) {
+                    dw->user.next_sample_cycle += dw->user.cycle_stride;
+                    float sv = GBA_APU_sample_channel(this, j);
+                    ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
+                    dw->user.buf_pos++;
+                    assert(dw->user.buf_pos < 410);
+                }
+            }
+        }
+    }
+}
+
 
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {
@@ -353,6 +453,7 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
             }
         }
         tick_timers(this, this->waitstates.current_transaction);
+        sample_audio(this, this->waitstates.current_transaction);
         this->scanline_cycles_to_execute -= (i32)this->waitstates.current_transaction;
         this->clock.master_cycle_count += this->waitstates.current_transaction;
 
@@ -361,7 +462,6 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
             break;
         }
     }
-
 }
 
 u64 GBA_clock_current(struct GBA *this)
@@ -444,7 +544,7 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 48000;
+    chan->sample_rate = 262144;
     chan->low_pass_filter = 24000;
 }
 

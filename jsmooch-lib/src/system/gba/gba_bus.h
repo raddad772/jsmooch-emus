@@ -113,6 +113,7 @@ struct GBA {
             u32 src_access, dest_access;
             u32 sz;
             u32 first_run;
+            u32 is_sound;
         } op;
         u32 run_counter;
     } dma[4];
@@ -132,6 +133,7 @@ struct GBA {
         u16 val_at_stop;
         u32 irq_on_overflow;
         u16 reload;
+        u64 reload_ticks;
     } timer[4];
 
     struct {
@@ -190,6 +192,10 @@ struct GBA {
             MDBG_IMAGE_VIEW(palettes)
             MDBG_IMAGE_VIEW(tiles)
         DBG_IMAGE_VIEWS_END
+        DBG_WAVEFORM_START1
+            DBG_WAVEFORM_MAIN
+            DBG_WAVEFORM_CHANS(6)
+        DBG_WAVEFORM_END1
     DBG_END
 
 };
@@ -208,6 +214,6 @@ void GBA_check_dma_at_hblank(struct GBA *);
 void GBA_check_dma_at_vblank(struct GBA *);
 u32 GBA_open_bus_byte(struct GBA *, u32 addr);
 u32 GBA_open_bus(struct GBA *this, u32 addr, u32 sz);
-void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i);
+void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i, u32 is_sound);
 
 #endif //JSMOOCH_EMUS_GBA_BUS_H

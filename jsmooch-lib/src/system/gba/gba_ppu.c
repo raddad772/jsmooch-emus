@@ -1542,7 +1542,7 @@ void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u3
                 dbg_break("ILLEGAL BG MODE", this->clock.master_cycle_count);
             }
             else {
-                if (new_mode != ppu->io.bg_mode) printf("\nBG MODE:%d LINE:%d", val & 7, this->clock.ppu.y);
+                //if (new_mode != ppu->io.bg_mode) printf("\nBG MODE:%d LINE:%d", val & 7, this->clock.ppu.y);
             }
 
             ppu->io.bg_mode = new_mode;

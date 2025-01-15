@@ -7,6 +7,20 @@
 #include "gba_bus.h"
 #include "helpers/multisize_memaccess.c"
 
+static u32 timer_reload_ticks(u32 reload)
+{
+    // So it overflows at 0x100
+    // reload value is 0xFD
+    // 0xFD ^ 0xFF = 2
+    // How many ticks til 0x100? 256 - 253 = 3, correct!
+    // 100. 256 - 100 = 156, correct!
+    // Unfortunately if we set 0xFFFF, we need 0x1000 tiks...
+    // ok but what about when we set 255? 256 - 255 = 1 which is wrong
+    if (reload == 0xFFFF) return 0x10000;
+    return 0x10000 - reload;
+}
+
+
 static u32 timer_enabled(struct GBA *this, u32 tn) {
     return GBA_clock_current(this) >= this->timer[tn].enable_at;
 }
@@ -86,7 +100,7 @@ static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
     cW[sz](this->WRAM_slow, addr & 0x3FFFF, val);
 }
 
-void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i)
+void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i, u32 is_sound)
 {
     ch->op.started = 1;
     u32 mask = ch->io.transfer_size ? ~3 : ~1;
@@ -102,8 +116,14 @@ void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i)
     ch->op.word_count = ch->io.word_count;
     ch->op.sz = ch->io.transfer_size ? 4 : 2;
     ch->op.word_mask = i == 3 ? 0xFFFF : 0x3FFF;
-    ch->op.dest_access = ARM7P_sequential | ARM7P_dma;
-    ch->op.src_access = ARM7P_sequential | ARM7P_dma;
+    ch->op.dest_access = ARM7P_nonsequential | ARM7P_dma;
+    ch->op.src_access = ARM7P_nonsequential | ARM7P_dma;
+    ch->op.is_sound = is_sound;
+    if (is_sound) {
+        //printf("\nSOUND DMA START %d", i);
+        ch->op.sz = 4;
+        ch->op.word_count = 4;
+    }
     //if (i == 0) printf("\nDMA ch:%d src:%08x dst:%08x sz:%d num:%d", i, ch->op.src_addr, ch->op.dest_addr, ch->op.sz, ch->op.word_count);
 }
 
@@ -187,11 +207,8 @@ static u32 read_timer(struct GBA *this, u32 tn)
     if (!timer_enabled(this, tn) || t->cascade) return t->val_at_stop;
 
     // Timer is enabled, so, check how many cycles we have had...
-    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (0x1000 - (u64)t->reload);
+    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (timer_reload_ticks(t->reload));
     u32 v = t->reload + ticks_passed;
-    /*if (v == 4 && this->cart.prefetch.enable) {
-        dbg_break("BREAKPOINT!", this->clock.master_cycle_count);
-    }*/
     return v;
 }
 
@@ -403,7 +420,6 @@ static void enable_prefetch(struct GBA *this)
 static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     val &= 0xFF;
     if (addr < 0x04000060) return GBA_PPU_mainbus_write_IO(this, addr, sz, access, val);
-    if (addr < 0x040000B0) return GBA_APU_write_IO(this, addr, sz, access, val);
     u32 mask = 0xFF;
     if ((addr >= 0x4FFF600) && (addr < 0x4FFF700)) {
         this->dbg_info.mgba.str[addr - 0x4FFF600] = val & 0xFF;
@@ -541,6 +557,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400010E: {
             u32 tn = (addr >> 2) & 3;
             struct GBA_TIMER *t = &this->timer[tn];
+            u32 old_enable = timer_enabled(this, tn);
             t->divider.io = val & 3;
             switch(val & 3) {
                 case 0: t->shift = 0; break;
@@ -548,19 +565,24 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
                 case 2: t->shift = 8; break;
                 case 3: t->shift = 10; break;
             }
-            u32 new_enable = ((val >> 7) & 1) && !t->cascade;
-            if (!new_enable) { // turn off
-                if (timer_enabled(this, tn) && !t->cascade) {
-                    t->val_at_stop = read_timer(this, tn);
-                }
+            u32 new_enable = ((val >> 7) & 1);
+            if (old_enable && !new_enable) { // turn off
+                t->val_at_stop = read_timer(this, tn);
                 t->enable_at = 0xFFFFFFFFFFFFFFFF; // the infinite future!
                 t->overflow_at = 0xFFFFFFFFFFFFFFFF;
             }
-            if (!timer_enabled(this, tn) && new_enable) { // turn on
-                t->enable_at = GBA_clock_current(this) + 1;
-                t->overflow_at = t->enable_at + ((0x10000 - (u32)t->reload) << t->shift);
-            }
+            u32 old_cascade = t->cascade;
             t->cascade = (val >> 2) & 1;
+            if (old_cascade && !t->cascade && (old_enable == new_enable == 1)) { // update overflow time
+                t->enable_at = GBA_clock_current(this);
+                t->overflow_at = t->enable_at + (timer_reload_ticks(t->val_at_stop) << t->shift);
+            }
+            if (!old_enable && new_enable) { // turn on
+                t->enable_at = GBA_clock_current(this) + 1;
+                t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
+                t->overflow_at = t->enable_at + t->reload_ticks;
+                t->val_at_stop = t->reload;
+            }
             t->irq_on_overflow = (val >> 6) & 1;
             return; }
         case 0x04000100: this->timer[0].reload = (this->timer[0].reload & 0xFF00) | val; return;
@@ -603,8 +625,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             if ((ch->io.enable == 1) && (old_enable == 0)) {
                 ch->op.first_run = 1;
                 if (ch->io.start_timing == 0) {
-                    GBA_dma_start(ch, chnum);
-                    //ch->run_counter = 3;
+                    GBA_dma_start(ch, chnum, 0);
                 }
             }
             return;}
@@ -756,6 +777,8 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
 
 static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     this->waitstates.current_transaction++;
+    if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_write_IO(this, addr, sz, access, val);
+
     if (addr == 0x04fff780) {
         assert(sz == 2);
         if (val == 0xc0de) this->dbg_info.mgba.enable = 1;
@@ -913,7 +936,7 @@ void GBA_check_dma_at_hblank(struct GBA *this)
                 if (this->clock.ppu.y >= 160) continue;
             }
             //printf("\nDMA HBLANK START %d", i);
-            GBA_dma_start(ch, i);
+            GBA_dma_start(ch, i, 0);
         }
     }
     // And if it's channel 3 and "special", if we're in the correct lines.
@@ -954,8 +977,7 @@ void GBA_check_dma_at_vblank(struct GBA *this)
     for (u32 i = 0; i < 4; i++) {
         struct GBA_DMA_ch *ch = &this->dma[i];
         if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
-            //printf("\nDMA VBLANK START %d", i);
-            GBA_dma_start(ch, i);
+            GBA_dma_start(ch, i, 0);
         }
     }
 }
