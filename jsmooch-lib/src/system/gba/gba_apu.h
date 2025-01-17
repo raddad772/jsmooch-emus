@@ -73,6 +73,7 @@ struct GBA_APU {
             i32 period_counter;
             i32 direction;
             u32 initial_vol;
+            u32 force75;
             u32 rshift;
             u32 on;
         } env;

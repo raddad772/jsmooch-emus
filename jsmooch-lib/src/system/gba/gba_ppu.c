@@ -1452,6 +1452,20 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
         case 0x0400003D:
         case 0x0400003E:
         case 0x0400003F:
+        case 0x0400004E:
+        case 0x0400004F:
+        case 0x04000054:
+        case 0x04000055:
+        case 0x04000056:
+        case 0x04000057:
+        case 0x04000058:
+        case 0x04000059:
+        case 0x0400005A:
+        case 0x0400005B:
+        case 0x0400005C:
+        case 0x0400005D:
+        case 0x0400005E:
+        case 0x0400005F:
         case WIN0H:
         case WIN0H+1:
         case WIN1H:

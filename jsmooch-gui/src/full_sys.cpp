@@ -686,7 +686,7 @@ void full_system::load_default_ROM()
 
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
+            //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             // worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
@@ -708,7 +708,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);

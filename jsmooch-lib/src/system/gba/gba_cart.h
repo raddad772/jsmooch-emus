@@ -73,6 +73,11 @@ struct GBA_cart {
     } RAM;
 
     struct {
+        u32 present;
+        u64 timestamp_start;
+    } RTC;
+
+    struct {
         i64 cycles_banked;
         u32 next_addr;
         u32 duty_cycle;

@@ -360,9 +360,18 @@ u32 GBA_cart_read_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_e
     return v;
 }
 
+static void write_RTC(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    // Ignore byte writes...weirdly?
+    if (sz == 1) return;
+}
+
 void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if ((addr >= 0x0d000000) && (addr < 0x0e000000))
+    if (this->cart.RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
+        return write_RTC(this, addr, sz, access, val);
+    }
+    if (this->cart.RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000))
         return write_eeprom(this, addr, sz, access, val);
     this->waitstates.current_transaction++;
     this->waitstates.current_transaction += prefetch_stop(this);
@@ -543,6 +552,17 @@ static enum save_kinds search_strings(struct buf *f)
     return SK_none;
 }
 
+static void detect_RTC(struct GBA_cart *this, struct buf *ROM)
+{
+    // offset 00000C4 at least 6 bytes filled with 0
+    u8 *ptr = ((u8 *)ROM->ptr) + 0xC4;
+    u32 detect = 1;
+    for (u32 i = 0; i < 6; i++) {
+        if (ptr[i] != 0) detect = 0;
+    }
+    this->RTC.present = detect;
+    if (detect) printf("\nRTC DETECTED!");
+}
 
 u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable) {
     buf_allocate(&this->ROM, fil_sz);
@@ -611,6 +631,8 @@ u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart* this, char* fil, u64 fil_sz, str
     this->RAM.size = this->RAM.store->requested_size;
     this->RAM.mask = this->RAM.size - 1;
     this->RAM.persists = this->RAM.present = 1;
+
+    detect_RTC(this, &this->ROM);
 
     return 1;
 }

@@ -75,7 +75,7 @@ static inline u8 read_NRx1(struct GBASNDCHAN *chan)
         case 0:
         case 1:
             r |= chan->wave_duty << 6;
-            r |= (chan->length_counter ^ 0x3F);
+            //r |= (chan->length_counter ^ 0x3F);
             return r;
         case 2:
             return chan->length_counter ^ 0xFF;
@@ -95,6 +95,7 @@ static inline u8 read_NRx2(struct GBASNDCHAN *chan)
             return r;
         case 2:
             r |= chan->env.initial_vol << 5;
+            r |= chan->env.force75 << 7;
             return r;
         case 3:
             r |= chan->env.initial_vol << 4;
@@ -115,7 +116,7 @@ static inline u8 read_NRx3(struct GBASNDCHAN* chan)
         return r;
 
     }
-    return chan->period & 0xFF;
+    return 0;
 }
 
 static inline u8 read_NRx4(struct GBASNDCHAN* chan)
@@ -204,6 +205,7 @@ static inline void write_NRx2(struct GBASNDCHAN* chan, u8 val)
             return;
         case 2:
             chan->env.initial_vol = (val >> 5) & 3;
+            chan->env.force75 = (val >> 7) & 1;
             switch(chan->env.initial_vol) {
                 case 0:
                     chan->env.rshift = 4;
@@ -297,6 +299,8 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
             v |= this->apu.channels[3].on << 3;
             v |= this->apu.io.master_enable << 7;
             return v;
+        case SOUNDCNT_X+1:
+            return 0;
         case SOUNDCNT_L+0:
             v = this->apu.io.ch03_vol_r;
             v |= this->apu.io.ch03_vol_l << 4;
@@ -328,11 +332,11 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
         case SOUND2CNT_H+0:
             return read_NRx3(C1);
         case SOUND2CNT_H+1:
-            return read_NRx3(C1);
+            return read_NRx4(C1);
         case SOUND3CNT_L+0:
             return read_NRx0(C2);
         case SOUND3CNT_H+0:
-            return read_NRx1(C2);
+            return 0;
         case SOUND3CNT_H+1:
             return read_NRx2(C2);
         case SOUND3CNT_X+0:
@@ -340,7 +344,7 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
         case SOUND3CNT_X+1:
             return read_NRx4(C2);
         case SOUND4CNT_L+0:
-            return read_NRx1(C3);
+            return 0;
         case SOUND4CNT_L+1:
             return read_NRx2(C3);
         case SOUND4CNT_H+0:
@@ -379,6 +383,35 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
         case WAVE_RAM+14:
         case WAVE_RAM+15:
             return read_wave_ram(this, addr & 15);
+        case 0x04000061:
+        case 0x04000066:
+        case 0x04000067:
+        case 0x0400006A:
+        case 0x0400006B:
+
+        case 0x0400006E:
+        case 0x0400006F:
+        case 0x04000071:
+        case 0x04000076:
+        case 0x04000077:
+        case 0x0400007A:
+        case 0x0400007B:
+        case 0x0400007E:
+        case 0x0400007F:
+        case 0x04000086:
+        case 0x04000087:
+        case 0x0400008A:
+        case 0x0400008B:
+            return 0;
+
+        case FIFO_A_L+0:
+        case FIFO_A_L+1:
+        case FIFO_A_H+0:
+        case FIFO_A_H+1:
+        case FIFO_B_L+0:
+        case FIFO_B_L+1:
+        case FIFO_B_H+0:
+        case FIFO_B_H+1:
 
         case 0x0400008C:
         case 0x0400008D:
@@ -589,6 +622,38 @@ static void GBA_APU_write_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u3
         case WAVE_RAM+15:
             write_wave_ram(this, addr & 15, val);
             return;
+        case 0x04000061:
+
+        case 0x04000066:
+        case 0x04000067:
+        case 0x0400006A:
+        case 0x0400006B:
+        case 0x0400006E:
+        case 0x0400006F:
+        case 0x04000071:
+        case 0x04000076:
+        case 0x04000077:
+        case 0x0400007A:
+        case 0x0400007B:
+        case 0x0400007E:
+        case 0x0400007F:
+        case 0x04000086:
+        case 0x04000087:
+        case 0x0400008A:
+        case 0x0400008B:
+        case 0x0400008C:
+        case 0x0400008D:
+        case 0x0400008E:
+        case 0x0400008F:
+        case 0x040000A8:
+        case 0x040000A9:
+        case 0x040000AA:
+        case 0x040000AB:
+        case 0x040000AC:
+        case 0x040000AD:
+        case 0x040000AE:
+        case 0x040000AF:
+            return;
     }
     printf("\nWARN UNDONE WRITE TO APU %08x", addr);
 }
@@ -718,7 +783,13 @@ static void tick_wave_period_twice(struct GBA_APU *this) {
                         chan->sample_sample_bank ^= chan->sample_bank_mode; // don't flip if mode = 0
                     }
                 }
-                chan->polarity = chan->sample_buffer[chan->duty_counter & 1] >> chan->env.rshift;
+                if (chan->env.force75) {
+                    chan->polarity = (chan->sample_buffer[chan->duty_counter & 1] * 3) >> 2;
+                }
+                else {
+                    chan->polarity = chan->sample_buffer[chan->duty_counter & 1] >> chan->env.rshift;
+                }
+
             }
         }
     }
