@@ -297,6 +297,20 @@ u32 GBA_APU_read_IO(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effec
             v |= this->apu.channels[3].on << 3;
             v |= this->apu.io.master_enable << 7;
             return v;
+        case SOUNDCNT_L+0:
+            v = this->apu.io.ch03_vol_r;
+            v |= this->apu.io.ch03_vol_l << 4;
+            return v;
+        case SOUNDCNT_L+1:
+            v = this->apu.channels[0].enable_r;
+            v |= this->apu.channels[1].enable_r << 1;
+            v |= this->apu.channels[2].enable_r << 2;
+            v |= this->apu.channels[3].enable_r << 3;
+            v |= this->apu.channels[0].enable_l << 4;
+            v |= this->apu.channels[1].enable_l << 5;
+            v |= this->apu.channels[2].enable_l << 6;
+            v |= this->apu.channels[3].enable_l << 7;
+            return v;
         case SOUND1CNT_L+0:
             return read_NRx0(C0);
         case SOUND1CNT_H+0:
@@ -695,13 +709,15 @@ static void tick_wave_period_twice(struct GBA_APU *this) {
             chan->period_counter++;
             if (chan->period_counter >= 0x7FF) {
                 chan->period_counter = chan->period;
-                if ((chan->duty_counter & 1) == 0) {
-                    chan->sample_sample_bank ^= chan->sample_bank_mode; // don't flip if mode = 0
+                chan->duty_counter = (chan->duty_counter + 1) & 31;
+                if ((chan->duty_counter & 1) == 0) { // End of current byte
+                    if (chan->duty_counter == 0) { // End of current bank, swap to next!
+                        chan->sample_sample_bank ^= chan->sample_bank_mode; // don't flip if mode = 0
+                    }
                     u8 p = chan->samples[(chan->sample_sample_bank << 4) | (chan->duty_counter >> 1)];
                     chan->sample_buffer[0] = p >> 4;
                     chan->sample_buffer[1] = p & 15;
                 }
-                chan->duty_counter = (chan->duty_counter + 1) & 31;
                 chan->polarity = chan->sample_buffer[chan->duty_counter & 1] >> chan->env.rshift;
             }
         }
