@@ -864,8 +864,8 @@ static void sample_psg(struct GBA* this)
     // Current range: 0...60
 
     // Apply volumes...
-    left = ((left * (1 + (i32)this->apu.io.ch03_vol_l)) << 1) >> (3 - this->apu.io.ch03_vol);
-    right = ((right * (1 + (i32)this->apu.io.ch03_vol_r)) << 1) >> (3 - this->apu.io.ch03_vol);
+    left = (left * (1 + (i32)this->apu.io.ch03_vol_l)) >> (3 - this->apu.io.ch03_vol);
+    right = (right * (1 + (i32)this->apu.io.ch03_vol_r)) >> (3 - this->apu.io.ch03_vol);
 // New range 0...960, so 10 bits unsigned, 11 bits signed?
 
     this->apu.psg.output_l = left;
