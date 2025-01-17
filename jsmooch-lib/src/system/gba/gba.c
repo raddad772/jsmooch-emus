@@ -259,7 +259,6 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
     if ((ch->io.enable) && (ch->op.started)) {
         if (ch->op.sz == 2) {
             u16 value;
-
             if (ch->op.src_addr >= 0x02000000) {
                 value = GBA_mainbus_read(this, ch->op.src_addr, 2, ch->op.src_access, 1);
                 ch->io.open_bus = (value << 16) | value;
@@ -271,6 +270,13 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
                 }
                 this->waitstates.current_transaction++;
             }
+            /*if (num == 3){
+               if (((ch->op.dest_addr >= 0x0d000000) && (ch->op.dest_addr < 0x0d100000)) ||
+                       (ch->op.src_addr >= 0x0d000000) && (ch->op.src_addr < 0x0d100000)) {
+                   printf("\nDMA TRANSFER %d from %08x to %08x (%d/%d)", value & 1, ch->op.src_addr, ch->op.dest_addr, (ch->op.dest_addr - ch->io.dest_addr)>>1, ch->io.word_count);
+               }
+            }*/
+
             GBA_mainbus_write(this, ch->op.dest_addr, 2, ch->op.dest_access, value);
         }
         else {

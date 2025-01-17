@@ -27,11 +27,6 @@ enum GBA_flash_states {
     GBAFS_await_bank
 };
 
-enum GBA_EEPROM_modes {
-    GEM_none,
-    GEM_recv,
-    GEM_read_request,
-};
 
 struct GBA_cart {
     struct buf ROM;
@@ -55,18 +50,25 @@ struct GBA_cart {
 
         } flash;
 
-        struct {
-            u32 size_detected;
+        struct GBA_CART_EEPROM {
             u32 addr_bus_size;
-            enum GBA_EEPROM_modes mode;
-            u32 size, mask;
+            u32 size_was_detected;
+            u32 size_in_bytes;
+            u32 addr_mask;
+
+            u32 mode;
+
+            u64 ready_at;
 
             struct {
-               u8 data[11];
-               u32 pos;
-               u32 len;
-               u32 addr;
+                u64 data;
+                u32 sz;
+            } serial;
+
+            struct {
+                u32 cur_bit_addr;
             } cmd;
+
         } eeprom;
 
         struct persistent_store *store;

@@ -9,7 +9,7 @@
 #include "gba_ppu.h"
 #include "gba_apu.h"
 #include "gba_controller.h"
-#include "gba_cart.h"
+#include "cart/gba_cart.h"
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 

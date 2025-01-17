@@ -10,8 +10,10 @@
 #include "helpers/debug.h"
 #include "helpers/physical_io.h"
 #include "helpers/multisize_memaccess.c"
-#include "gba_bus.h"
+
+#include "../gba_bus.h"
 #include "gba_cart.h"
+#include "eeprom.h"
 
 void GBA_cart_init(struct GBA_cart* this)
 {
@@ -24,127 +26,6 @@ void GBA_cart_init(struct GBA_cart* this)
 void GBA_cart_delete(struct GBA_cart *this)
 {
     buf_delete(&this->ROM);
-}
-
-static void start_eeprom_read(struct GBA *this) {
-    this->cart.RAM.eeprom.mode = GEM_read_request;
-    memset(this->cart.RAM.eeprom.cmd.data, 0, sizeof(this->cart.RAM.eeprom.cmd.data));
-    this->cart.RAM.eeprom.cmd.pos = 4;
-    this->cart.RAM.eeprom.cmd.len = 68;
-    // It's going to want MSB as its first read
-    // So we need to read MSB->LSBaddr-- in memory, and write LSB->MSB in output bufferpos++
-
-    u8 *read_ptr = (u8 *)this->cart.RAM.store->data + this->cart.RAM.eeprom.cmd.addr;
-    u8 *write_ptr = this->cart.RAM.eeprom.cmd.data;
-
-    for (u32 i = 0; i < 64; i++) {
-        u32 bn = 63 - i;
-        u32 read_byte_num = bn >> 3;
-        u32 read_shift = bn & 7;
-        u32 bit = (read_ptr[read_byte_num] >> read_shift) & 1;
-
-        u32 write_byte_num = this->cart.RAM.eeprom.cmd.pos >> 3;
-        u32 write_shift = this->cart.RAM.eeprom.cmd.pos & 7;
-        this->cart.RAM.eeprom.cmd.pos++;
-        write_ptr[write_byte_num] |= bit << write_shift;
-        }
-    this->cart.RAM.eeprom.cmd.pos = 0; // Prepare for DMA to read it all...
-}
-
-static void finish_eeprom_write(struct GBA *this) {
-    this->cart.RAM.eeprom.mode = GEM_none;
-    u8 *read_ptr = this->cart.RAM.eeprom.cmd.data;
-    u8 *write_ptr = ((u8 *) this->cart.RAM.store->data) + this->cart.RAM.eeprom.cmd.addr;
-    this->cart.RAM.eeprom.cmd.pos -= 2; // truncate extra and align us to correct start position
-    // LSB of input is at end
-    // So if we write from low...high, we should go from high...lo on the input
-    // So we want to go from LSB->MSB in output, since we will get LSB first going backward
-    memset(write_ptr, 0, 8);
-    for (u32 i = 0; i < 64; i++) {
-        u32 read_byte_num = this->cart.RAM.eeprom.cmd.pos >> 3;
-        u32 read_shift = this->cart.RAM.eeprom.cmd.pos & 7;
-        assert(this->cart.RAM.eeprom.cmd.pos > 0);
-        this->cart.RAM.eeprom.cmd.pos--;
-        u32 bit = (read_ptr[read_byte_num] >> read_shift) & 1;
-
-        u32 write_shift = i & 7;
-        u32 write_byte_num = i >> 3;
-        write_ptr[write_byte_num] |= bit << write_shift;
-    }
-    this->cart.RAM.store->dirty = 1;
-}
-
-static void finish_eeprom_cmd(struct GBA *this)
-{
-    // Interpret the buffer
-    u32 cmd_kind = ((this->cart.RAM.eeprom.cmd.data[0] & 2) >> 1) | ((this->cart.RAM.eeprom.cmd.data[0] & 1) << 1);
-    // extract address
-    u32 cmd_addr = 0;
-    for (u32 i = 2; i < (this->cart.RAM.eeprom.addr_bus_size + 2); i++) {
-        u32 byte_num = i >> 3;
-        u32 shift = i & 7;
-        u32 shift_in = (i - 2) & 7;
-        cmd_addr |= ((this->cart.RAM.eeprom.cmd.data[byte_num] >> shift) & 1) << shift_in;
-    }
-    cmd_addr *= 8; // 8 bytes per read/write
-    this->cart.RAM.eeprom.cmd.addr = cmd_addr;
-    // 11 read request
-    // 10 write request
-    if (cmd_kind == 3) { // Read request
-        start_eeprom_read(this);
-        return;
-    }
-    else if (cmd_kind == 2) {
-        finish_eeprom_write(this);
-        return;
-    }
-    else printf("\nUNHANDLED CMD:%d", cmd_kind);
-}
-
-
-static void write_eeprom(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
-{
-    // First, a read must be done!
-    if (this->cart.RAM.eeprom.mode == GEM_none) {
-        this->cart.RAM.eeprom.mode = GEM_recv;
-        memset(this->cart.RAM.eeprom.cmd.data, 0, sizeof(this->cart.RAM.eeprom.cmd.data));
-        this->cart.RAM.eeprom.cmd.pos = 0;
-        this->cart.RAM.eeprom.cmd.len = this->dma[3].io.word_count;
-        if (!this->cart.RAM.eeprom.size_detected) {
-            this->cart.RAM.eeprom.size_detected = 1;
-            this->cart.RAM.eeprom.addr_bus_size = this->cart.RAM.eeprom.cmd.len - 3;
-            this->cart.RAM.eeprom.size = (1 << this->cart.RAM.eeprom.addr_bus_size) * 8;
-            this->cart.RAM.eeprom.mask = this->cart.RAM.eeprom.size - 1;
-            printf("\nDetect EEPROM size: %d bytes", this->cart.RAM.eeprom.size);
-        }
-    }
-    if (this->cart.RAM.eeprom.mode == GEM_recv) {
-        u32 byte_num = this->cart.RAM.eeprom.cmd.pos >> 3;
-        u32 shift = this->cart.RAM.eeprom.cmd.pos & 7;
-        //this->cart.RAM.eeprom.cmd.data[byte_num] &= 0xFF ^ (1 << shift);
-        this->cart.RAM.eeprom.cmd.data[byte_num] |= (val & 1) << shift;
-        this->cart.RAM.eeprom.cmd.pos++;
-        if (this->cart.RAM.eeprom.cmd.pos >= this->cart.RAM.eeprom.cmd.len) {
-            finish_eeprom_cmd(this);
-        }
-        return;
-    }
-    printf("\nUNHANDLED EPR!");
-}
-
-static u32 read_eeprom(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
-{
-    //printf("\nREAD EPR addr:%08x", addr);
-    if (this->cart.RAM.eeprom.mode == GEM_read_request) {
-        u32 byte_num = this->cart.RAM.eeprom.cmd.pos >> 3;
-        u32 shift = this->cart.RAM.eeprom.cmd.pos & 7;
-        this->cart.RAM.eeprom.cmd.pos++;
-        if (this->cart.RAM.eeprom.cmd.pos >= this->cart.RAM.eeprom.cmd.len) {
-            this->cart.RAM.eeprom.mode = GEM_none;
-        }
-        return (this->cart.RAM.eeprom.cmd.data[byte_num] >> shift) & 1;
-    }
-    return 1;
 }
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
@@ -170,7 +51,7 @@ static u32 prefetch_stop(struct GBA *this)
 
 u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws) {
     if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000))
-        return read_eeprom(this, addr, sz, access, has_effect);
+        return GBA_cart_read_eeprom(this, addr, sz, access, has_effect);
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
 
@@ -372,7 +253,7 @@ void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
         return write_RTC(this, addr, sz, access, val);
     }
     if (this->cart.RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000))
-        return write_eeprom(this, addr, sz, access, val);
+        return GBA_cart_write_eeprom(this, addr, sz, access, val);
     this->waitstates.current_transaction++;
     this->waitstates.current_transaction += prefetch_stop(this);
     this->cart.prefetch.cycles_banked = 0;
@@ -569,6 +450,7 @@ u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart* this, char* fil, u64 fil_sz, str
     memcpy(this->ROM.ptr, fil, fil_sz);
     if (SRAM_enable) *SRAM_enable = 1;
     this->RAM.store = &pio->cartridge_port.SRAM;
+    this->RAM.store->fill_value = 0xFF;
     struct persistent_store *ps = &pio->cartridge_port.SRAM;
     this->RAM.is_sram = 0;
     this->RAM.is_flash = 0;
@@ -611,6 +493,7 @@ u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart* this, char* fil, u64 fil_sz, str
         case SK_EEPROM_Vnnn:
             // 512 bytes (SMA) to 8K (Boktai)
             printf("\nEEPROM detect!");
+            GBA_cart_init_eeprom(this);
             this->RAM.is_eeprom = 1;
             this->RAM.store->persistent = 1;
             this->RAM.store->requested_size = 8 * 1024;
