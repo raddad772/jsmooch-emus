@@ -76,7 +76,7 @@ void GBAJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
         setup_debug_waveform(cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index));
         struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.chan[i].vec, this->dbg.waveforms.chan[i].index);
         if (i < 4)
-            this->apu.chan[i].ext_enable = wf->ch_output_enabled;
+            this->apu.channels[i].ext_enable = wf->ch_output_enabled;
         else
             this->apu.fifo[i - 4].ext_enable = wf->ch_output_enabled;
     }
@@ -103,6 +103,7 @@ void GBA_new(struct jsm_system *jsm)
     GBA_clock_init(&this->clock);
     GBA_cart_init(&this->cart);
     GBA_PPU_init(this);
+    GBA_APU_init(this);
 
     snprintf(jsm->label, sizeof(jsm->label), "GameBoy Advance");
     struct jsm_debug_read_trace dt;

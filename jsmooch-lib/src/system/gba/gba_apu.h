@@ -6,36 +6,82 @@
 #define JSMOOCH_EMUS_GBA_APU_H
 
 #include "helpers/int.h"
-#include "component/audio/gb_apu/gb_apu.h"
 
 struct GBA_APU {
     u32 ext_enable;
-    struct GB_APU old;
     struct GBA_APU_FIFO {
         u32 timer_id;
         u32 head, tail, len, output_head;
         i8 data[32]; // 8 32-bit entries
 
         i32 sample;
-        i32 output;
+        i32 output; // output being 0-15
         u32 enable_l, enable_r;
         u32 vol;
         u32 needs_commit;
 
         u32 ext_enable;
+
     } fifo[2];
 
     struct {
-        u32 wave_ram_size, wave_ram_bank, playback, sound_len;
+        u32 divider_16; // 16MHz->1MHz divider
+        u32 divider_16_4; // 16 * 4 divider. 1MHz->262kHz
+        u32 divider_2048; // / 512Hz @ 1MHz
+        u32 frame_sequencer;
+    } clocks;
+
+
+    struct GBASNDCHAN {
+        u32 ext_enable;
+        u32 number;
+        u32 dac_on;
+
+        u32 vol;
+        u32 on;
+        u32 left, right;
+
         u32 enable_l, enable_r;
 
-        i32 output;
-        u32 vol;
+        u32 period;
+        u32 next_period;
+        u32 length_enable;
+        u32 period_counter;
+        u32 wave_duty;
+        i32 polarity;
+        u32 duty_counter;
+        u32 short_mode;
+        u32 divisor;
+        u32 clock_shift;
+        i32 length_counter;
 
-        u32 snd_vol, force_vol;
+        i32 samples[32];
+        u32 sample_bank_mode;
+        u32 sample_sample_bank; // Keeping track of our bank playing
+        u32 cur_sample_bank;
+        u8 sample_buffer[2];
 
-        u32 ext_enable;
-    } chan[4];
+        struct GBASNDSWEEP {
+            i32 pace;
+            i32 pace_counter;
+            i32 direction;
+            i32 individual_step;
+        } sweep;
+
+        struct GBASNDENVSWEEP {
+            i32 period;
+            i32 period_counter;
+            i32 direction;
+            u32 initial_vol;
+            u32 rshift;
+            u32 on;
+        } env;
+
+    } channels[4];
+
+    struct {
+        i32 output_l, output_r;
+    } psg;
 
     struct {
         u32 sound_bias;
@@ -45,10 +91,6 @@ struct GBA_APU {
         u32 master_enable;
         u32 bias_amplitude;
     } io;
-
-    struct {
-        u32 counter;
-    } divider1;
 
     struct {
         u32 counter, divisor, mask;
