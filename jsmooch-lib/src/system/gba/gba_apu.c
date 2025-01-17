@@ -711,12 +711,12 @@ static void tick_wave_period_twice(struct GBA_APU *this) {
                 chan->period_counter = chan->period;
                 chan->duty_counter = (chan->duty_counter + 1) & 31;
                 if ((chan->duty_counter & 1) == 0) { // End of current byte
-                    if (chan->duty_counter == 0) { // End of current bank, swap to next!
-                        chan->sample_sample_bank ^= chan->sample_bank_mode; // don't flip if mode = 0
-                    }
                     u8 p = chan->samples[(chan->sample_sample_bank << 4) | (chan->duty_counter >> 1)];
                     chan->sample_buffer[0] = p >> 4;
                     chan->sample_buffer[1] = p & 15;
+                    if (chan->duty_counter == 0) { // End of current bank, swap to next!
+                        chan->sample_sample_bank ^= chan->sample_bank_mode; // don't flip if mode = 0
+                    }
                 }
                 chan->polarity = chan->sample_buffer[chan->duty_counter & 1] >> chan->env.rshift;
             }
