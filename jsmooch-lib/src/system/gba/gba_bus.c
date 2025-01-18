@@ -68,7 +68,7 @@ static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_ef
 
 static void buswr_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     this->waitstates.current_transaction++;
-    printf("\nWarning write to BIOS...");
+    //printf("\nWarning write to BIOS...");
 }
 
 

@@ -43,7 +43,6 @@ void trace_view_init(struct trace_view *this)
     for (u32 i = 0; i < this->max_trace_lines; i++) {
         trace_view_line_init(cvec_push_back(&this->lines));
     }
-    printf("\nTRACE VIEW INIT...");
     this->num_trace_lines = 0;
     this->waiting_for_startline = 0;
     this->waiting_for_endline = 1;

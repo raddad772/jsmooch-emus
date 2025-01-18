@@ -688,7 +688,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // same issues as duke3d
@@ -697,7 +697,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pcrysound.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "advance_guardian_heroes.gba", nullptr); // works!
