@@ -145,6 +145,13 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gba", BASE_PATH);
             mfs_add("gba_bios.bin", BIOS_PATH, BIOSes);
             break;
+        case SYS_NDS:
+            has_bios = 1;
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/nds", BASE_PATH);
+            mfs_add("biosnds7.rom", BIOS_PATH, BIOSes);
+            mfs_add("biosnds9.rom", BIOS_PATH, BIOSes);
+            mfs_add("firmware.bin", BIOS_PATH, BIOSes);
+            break;
         case SYS_SG1000:
         case SYS_PSX:
         case SYS_GENESIS_JAP:
@@ -220,6 +227,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             break;
         case SYS_GBA:
             snprintf(out, out_sz, "%s/gba", BASER_PATH);
+            *worked = 1;
+            break;
+        case SYS_NDS:
+            snprintf(out, out_sz, "%s/nds", BASER_PATH);
             *worked = 1;
             break;
         case SYS_GENESIS_USA:
@@ -651,6 +662,9 @@ void full_system::load_default_ROM()
         case SYS_APPLEIIe:
             worked = 1;
             break;
+        case SYS_NDS:
+            worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
+            break;
         case SYS_GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
@@ -685,10 +699,10 @@ void full_system::load_default_ROM()
 
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
+            worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // same issues as duke3d
@@ -727,7 +741,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mmz.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "drill_dozer.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "rhythm_tengokou.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "driv3r.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
             //worked = grab_ROM(&ROMs, which, "lunar_legend.gba", nullptr);
@@ -738,6 +752,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "kill_switch.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ssx3.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "srr.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "astro_boy.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "minish_cap.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "gang-ldmstm.gba", nullptr);
 

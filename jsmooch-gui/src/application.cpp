@@ -618,6 +618,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
     which = SYS_GBA;
+    //which = SYS_NDS;
     //dbg_enable_trace();
 #endif
 

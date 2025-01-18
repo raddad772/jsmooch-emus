@@ -31,7 +31,10 @@ void GBA_PPU_delete(struct GBA *this)
 
 void GBA_PPU_reset(struct GBA *this)
 {
-
+    this->ppu.mosaic.bg.hsize = this->ppu.mosaic.bg.vsize = 1;
+    this->ppu.mosaic.obj.hsize = this->ppu.mosaic.obj.vsize = 1;
+    this->ppu.bg[2].pa = 1 << 8; this->ppu.bg[2].pd = 1 << 8;
+    this->ppu.bg[3].pa = 1 << 8; this->ppu.bg[3].pd = 1 << 8;
 }
 
 static void vblank(struct GBA *this, u32 val)

@@ -24,6 +24,7 @@ enum jsm_systems {
     SYS_MACPLUS_1MB,
     SYS_APPLEIIe,
     SYS_GBA,
+    SYS_NDS,
 };
 
 enum jsm_regions {

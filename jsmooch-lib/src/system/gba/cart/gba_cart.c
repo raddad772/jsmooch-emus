@@ -143,6 +143,7 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
         current_fetch_addr += (fetch_cycles * sz);
         if (addr == current_fetch_addr && (access & ARM7P_code) && (fetch_cycles > 0)) {
             //printf("\nI HIT THE CASE...");
+            // TODO: reaosn this out with nonsequential timing
             u32 cycles_left_to_fetch = this->cart.prefetch.cycles_banked % duty_cycle;
             outcycles += cycles_left_to_fetch;
             this->cart.prefetch.cycles_banked = 0;

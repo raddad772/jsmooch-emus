@@ -307,6 +307,31 @@ add_library(jsmooch-lib
         src/system/gba/cart/flash.h
         src/system/gba/cart/sram.c
         src/system/gba/cart/sram.h
+        src/component/cpu/sh2/sh2_interpreter.c
+        src/component/cpu/sh2/sh2_interpreter.h
+        src/system/nds/nds.c
+        src/system/nds/nds.h
+        src/system/nds/nds_bus.c
+        src/system/nds/nds_bus.h
+        src/system/nds/nds_clock.c
+        src/system/nds/nds_clock.h
+        src/system/nds/nds_debugger.c
+        src/system/nds/nds_debugger.h
+        src/system/nds/nds_controller.c
+        src/system/nds/nds_controller.h
+        src/system/nds/cart/nds_cart.c
+        src/system/nds/cart/nds_cart.h
+        src/component/cpu/arm946es/arm946es.c
+        src/component/cpu/arm946es/arm946es.h
+        src/system/nds/cart/nds_cart.c
+        src/component/cpu/arm946es/thumb2_instructions.c
+        src/component/cpu/arm946es/thumb2_instructions.h
+        src/system/nds/nds_ppu.c
+        src/system/nds/nds_ppu.h
+        src/component/cpu/arm946es/arm946es_decode.c
+        src/component/cpu/arm946es/arm946es_decode.h
+        src/component/cpu/arm946es/arm946es_instructions.c
+        src/component/cpu/arm946es/arm946es_instructions.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

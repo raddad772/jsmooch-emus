@@ -5,9 +5,9 @@
 #include "sys_interface.h"
 #include "system/gb/gb.h"
 #include "system/nes/nes.h"
+#include "system/nds/nds.h"
 #include "system/sms_gg/sms_gg.h"
 #include "system/dreamcast/dreamcast.h"
-#include "system/gba/gba.h"
 #include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
@@ -15,6 +15,7 @@
 #include "system/mac/mac.h"
 #include "helpers/debug.h"
 #include "helpers/debugger/debugger.h"
+#include "system/gba/gba.h"
 
 struct jsm_system* new_system(enum jsm_systems which)
 {
@@ -28,6 +29,9 @@ struct jsm_system* new_system(enum jsm_systems which)
 	switch (which) {
         case SYS_GBA:
             GBA_new(out);
+            break;
+        case SYS_NDS:
+            NDS_new(out);
             break;
         case SYS_GENESIS_JAP:
         case SYS_GENESIS_USA:
@@ -103,6 +107,9 @@ void jsm_delete(struct jsm_system* jsm)
     switch(jsm->kind) {
         case SYS_GBA:
             GBA_delete(jsm);
+            break;
+        case SYS_NDS:
+            NDS_delete(jsm);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

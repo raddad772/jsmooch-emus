@@ -160,7 +160,6 @@ void GBA_delete(struct jsm_system *jsm)
 u32 GBAJ_finish_frame(JSM)
 {
     JTHIS;
-    ARM7TDMI_delete(&this->cpu);
 
     u64 current_frame = this->clock.master_frame;
     while (this->clock.master_frame == current_frame) {
