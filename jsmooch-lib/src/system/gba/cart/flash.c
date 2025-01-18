@@ -26,30 +26,24 @@ static void write_flash_cmd(struct GBA *this, u32 addr, u32 cmd)
     this->cart.RAM.flash.last_cmd = cmd;
     switch(cmd) {
         case 0x5590: // get ID mode
-            printf("\nGET ID MODE");
             this->cart.RAM.flash.state = GBAFS_get_id;
             return;
         case 0x55F0: // exit get ID mode
-            printf("\nEXIT GET ID MODE");
             if (this->cart.RAM.flash.state == GBAFS_get_id) this->cart.RAM.flash.state = GBAFS_idle;
             return;
         case 0x5580: // Erase command start
-            printf("\nERASE CMD START!");
             return;
         case 0x5510: // Erase entire chip when previous = 5580
             if (last_cmd == 0x5580) {
-                printf("\nERASE DO!");
                 erase_flash(this);
                 return;
             }
-            printf("\nERASE DONT DO!");
             break;
         case 0x5530: // all devices except atmel, erase 4kb sector 0E00n000h = FF
             if (this->cart.RAM.flash.kind != GBAFK_atmel) {
                 this->cart.RAM.flash.state = GBAFS_idle;
                 if ((addr & 0x0FFF) == 0) {
                     u32 base = addr & 0xF000;
-                    printf("\nERASE 4KB SECTOR %04x", addr);
                     memset(((u8 *)this->cart.RAM.store->data) + (base | this->cart.RAM.flash.bank_offset), 0xFF, 0x1000);
                     this->cart.RAM.store->dirty = 1;
                 }
@@ -59,17 +53,14 @@ static void write_flash_cmd(struct GBA *this, u32 addr, u32 cmd)
         case 0x55A0:
             this->cart.RAM.flash.cmd_loc = 3;            // atmel-only: erase-and-write
             if (this->cart.RAM.flash.kind == GBAFK_atmel) {
-                printf("\nERASE AND WRITE");
                 printf("\nIMPLEMENT ATMEL ERASE-AND-WRITE PELASE");
                 return;
             }
             // other than atmel: write
-            printf("\nWRITE BYTE");
             this->cart.RAM.flash.state = GBAFS_write_byte;
             return;
         case 0x55B0:
             if ((this->cart.RAM.flash.kind == GBAFK_sanyo128k) || (this->cart.RAM.flash.kind == GBAFK_macronix128k)) {
-                printf("\nAWAIT CHANGE BANK");
                 this->cart.RAM.flash.state = GBAFS_await_bank;
                 this->cart.RAM.flash.cmd_loc = 3;
             }
@@ -142,16 +133,12 @@ u32 GBA_cart_read_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_
     u32 v = ((u8 *)this->cart.RAM.store->data)[addr | this->cart.RAM.flash.bank_offset];
     if (sz == 4) v *= 0x01010101;
     if (sz == 2) v *= 0x0101;
-    printf("\nREAD FLASH %04x: %02x", addr, v);
     return v;
-    /*printf("\nRead invalid flash addr %08x?", addr);
-    return 0xFFFF;*/
 }
 
 static void finish_flash_cmd(struct GBA *this, u32 addr, u32 sz, u32 val) {
     this->cart.RAM.flash.cmd_loc = 0;
     if (this->cart.RAM.flash.state == GBAFS_await_bank) {
-        printf("\nFLASH SET BANK %d", val);
         val &= flash_bank_mask(this->cart.RAM.flash.kind);
         this->cart.RAM.flash.bank_offset = val << 16;
         return;
@@ -163,7 +150,6 @@ static void finish_flash_cmd(struct GBA *this, u32 addr, u32 sz, u32 val) {
             val >>= (addr & 3) << 3;
         }
         val &= 0xFF;
-        printf("\nWRITE BYTE FLASH %04x: %02x", addr, val & 0xFF);
         ((u8 *) this->cart.RAM.store->data)[addr | this->cart.RAM.flash.bank_offset] = val;
         this->cart.RAM.flash.state = GBAFS_idle;
         this->cart.RAM.store->dirty = 1;
@@ -179,7 +165,6 @@ void GBA_cart_write_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
     this->waitstates.current_transaction += this->waitstates.sram;
     addr &= 0x00FFFF;
     addr |= 0x0E000000;
-    printf("\nWRITE FLASH addr:%08x val:%02x", addr, val);
     switch(this->cart.RAM.flash.cmd_loc) {
         case 0: {
             if ((addr == 0x0E005555) && (val == 0xAA)) {
@@ -194,7 +179,6 @@ void GBA_cart_write_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
             return;
         }
         case 2: {
-            printf("\nWRITE FLASH CMD ADDR:%08x", addr);
             write_flash_cmd(this, addr, 0x5500 | val);
             return;
         }
@@ -202,5 +186,5 @@ void GBA_cart_write_flash(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
             finish_flash_cmd(this, addr, sz, val);
             return;
     }
-    printf("\nNOT HANDLED...");
+    printf("\nFLASH CMD NOT HANDLED...");
 }
