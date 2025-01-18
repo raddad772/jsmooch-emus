@@ -102,6 +102,7 @@ static void pprint_RAM_hw_bit0(struct GBA *this, u32 addr, u32 numbits, u32 was_
 void GBA_cart_write_eeprom(struct GBA*this, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct GBA_CART_EEPROM *e = &this->cart.RAM.eeprom;
+    this->waitstates.current_transaction += this->waitstates.sram;
     if (e->mode & STATE_GET_CMD) {
         // Add bit to buffer
         // If buffer size is 2, start next command...
@@ -178,6 +179,7 @@ void GBA_cart_write_eeprom(struct GBA*this, u32 addr, u32 sz, u32 access, u32 va
 u32 GBA_cart_read_eeprom(struct GBA*this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     struct GBA_CART_EEPROM *e = &this->cart.RAM.eeprom;
+    this->waitstates.current_transaction += this->waitstates.sram;
     if (e->mode & STATE_WRITE) {
         printf("\nEEPROM: READ DURING WRITE OP!?");
         return 1;

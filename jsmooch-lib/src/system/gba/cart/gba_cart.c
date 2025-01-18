@@ -234,6 +234,7 @@ void GBA_cart_write_sram(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val
     }
     val &= 0xFF;
     ((u8 *)this->cart.RAM.store->data)[addr & this->cart.RAM.mask] = val;
+    this->waitstates.current_transaction += this->waitstates.sram;
     this->cart.RAM.store->dirty = 1;
 }
 
