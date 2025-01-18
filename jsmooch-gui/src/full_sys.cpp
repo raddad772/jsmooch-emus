@@ -679,7 +679,7 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "sram.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "flash64.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "flash128.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "flash128.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "memory.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "bios.gba", nullptr);
 
@@ -697,7 +697,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pcrysound.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "advance_guardian_heroes.gba", nullptr); // works!
@@ -739,7 +739,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "ssx3.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);
 
-            worked = grab_ROM(&ROMs, which, "gang-ldmstm.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "gang-ldmstm.gba", nullptr);
 
 
             //dbg_enable_trace();

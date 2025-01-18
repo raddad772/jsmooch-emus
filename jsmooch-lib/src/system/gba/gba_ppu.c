@@ -20,6 +20,8 @@ void GBA_PPU_init(struct GBA *this)
     memset(&this->ppu, 0, sizeof(this->ppu));
     this->ppu.mosaic.bg.hsize = this->ppu.mosaic.bg.vsize = 1;
     this->ppu.mosaic.obj.hsize = this->ppu.mosaic.obj.vsize = 1;
+    this->ppu.bg[2].pa = 1 << 8; this->ppu.bg[2].pd = 1 << 8;
+    this->ppu.bg[3].pa = 1 << 8; this->ppu.bg[3].pd = 1 << 8;
 }
 
 void GBA_PPU_delete(struct GBA *this)
@@ -945,10 +947,12 @@ static void draw_bg_line4(struct GBA *this)
     affine_line_start(this, bg, &fx, &fy);
     if (!bg->enable) return;
 
+
     assert(this->ppu.io.frame < 2);
     u32 base_addr = 0xA000 * this->ppu.io.frame;
     //if (this->clock.ppu.y == 50) printf("\nF:%lld L:%d BIT:%d", this->clock.master_frame, this->clock.ppu.y, this->ppu.io.frame);
     struct GBA_PX *px = &bg->line[0];
+
     for (u32 x = 0; x < 240; x++) {
         i32 tx = fx >> 8;
         i32 ty = fy >> 8;
@@ -1404,6 +1408,8 @@ u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
             return this->ppu.blend.eva_b;
 
 
+        case 0x04000002:
+        case 0x04000003:
         case 0x04000010:
         case 0x04000011:
         case 0x04000012:

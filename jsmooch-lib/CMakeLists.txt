@@ -303,6 +303,10 @@ add_library(jsmooch-lib
         src/helpers/color.h
         src/system/gba/cart/eeprom.c
         src/system/gba/cart/eeprom.h
+        src/system/gba/cart/flash.c
+        src/system/gba/cart/flash.h
+        src/system/gba/cart/sram.c
+        src/system/gba/cart/sram.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

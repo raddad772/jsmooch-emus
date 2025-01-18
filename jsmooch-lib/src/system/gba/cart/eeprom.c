@@ -163,6 +163,7 @@ void GBA_cart_write_eeprom(struct GBA*this, u32 addr, u32 sz, u32 access, u32 va
             serial_clear(e);
             e->mode = STATE_GET_CMD;
             e->ready_at = GBA_clock_current(this) + 100000;
+            this->cart.RAM.store->dirty = 1;
             //pprint_RAM_hw_bit0(this, this->dma[3].op.src_addr - (64 * 2), 64, 0);
         }
         else {

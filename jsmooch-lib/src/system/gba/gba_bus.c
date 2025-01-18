@@ -829,6 +829,7 @@ void GBA_bus_init(struct GBA *this)
     this->mem.read[0xC] = &GBA_cart_read_wait2;
     this->mem.read[0xD] = &GBA_cart_read_wait2;
     this->mem.read[0xE] = &GBA_cart_read_sram;
+    this->mem.read[0xF] = &GBA_cart_read_sram;
 
     this->mem.write[0x0] = &buswr_bios;
     this->mem.write[0x2] = &buswr_WRAM_slow;
@@ -844,6 +845,7 @@ void GBA_bus_init(struct GBA *this)
     this->mem.write[0xC] = &GBA_cart_write;
     this->mem.write[0xD] = &GBA_cart_write;
     this->mem.write[0xE] = &GBA_cart_write_sram;
+    this->mem.write[0xF] = &GBA_cart_write_sram;
 
     set_waitstates(this);
 }
