@@ -616,38 +616,35 @@ static void apply_mosaic(struct GBA *this)
     }
 }
 
-static void calculate_windows(struct GBA *this, u32 force)
+static void calculate_windows_vflag(struct GBA *this)
+{
+    for (u32 wn = 0; wn < 2; wn++) {
+        struct GBA_PPU_window *w = &this->ppu.window[wn];
+        if (this->clock.ppu.y == w->top) w->v_flag = 1;
+        if (this->clock.ppu.y == w->bottom) w->v_flag = 0;
+    }
+}
+
+static void calculate_windows(struct GBA *this, u32 in_vblank)
 {
     //if (!force && !this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
 
     // Calculate windows...
+    calculate_windows_vflag(this);
     if (this->clock.ppu.y >= 160) return;
-    struct GBA_PPU_window *w;
+    calculate_windows_vflag(this);
     for (u32 wn = 0; wn < 2; wn++) {
-        w = &this->ppu.window[wn];
+        struct GBA_PPU_window *w = &this->ppu.window[wn];
         if (!w->enable) {
             memset(&w->inside, 0, sizeof(w->inside));
             continue;
         }
 
-        if (w->left == w->right) {
-            memset(&w->inside, 0, sizeof(w->inside));
-            continue;
-        }
-        u32 x;
-        u32 l_morethan_r = w->left > w->right;
-        u32 in_topbottom;
-        u32 y = this->clock.ppu.y;
-        if (w->top > w->bottom) { // wrapping...
-            in_topbottom = ((y < w->top) || (y >= w->bottom));
-        }
-        else { // normal!
-            in_topbottom = ((y >= w->top) && (y < w->bottom));
-        }
+        for (u32 x = 0; x < 240; x++) {
+            if (x == w->left) w->h_flag = 1;
+            if (x == w->right) w->h_flag = 0;
 
-        for (x = 0; x < 240; x++) {
-            u32 inside = ((x >= w->left) && (x < w->right)) ^ l_morethan_r;
-            w->inside[x] = inside && in_topbottom;
+            w->inside[x] =  w->h_flag & w->v_flag;
         }
     }
 
@@ -658,7 +655,7 @@ static void calculate_windows(struct GBA *this, u32 force)
     u32 w0r = w0->enable;
     u32 w1r = w1->enable;
     u32 wsr = ws->enable;
-    w = &this->ppu.window[GBA_WINOUTSIDE];
+    struct GBA_PPU_window *w = &this->ppu.window[GBA_WINOUTSIDE];
     memset(w->inside, 0, sizeof(w->inside));
     for (u32 x = 0; x < 240; x++) {
         u32 w0i = w0r & w0->inside[x];
@@ -1105,6 +1102,9 @@ void GBA_PPU_hblank(struct GBA*this)
             default:
                 assert(1 == 2);
         }
+    }
+    else {
+        calculate_windows_vflag(this);
     }
 
     // It's cleared at cycle 0 and set at cycle 1007

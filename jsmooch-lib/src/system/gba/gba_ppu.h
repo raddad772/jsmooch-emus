@@ -12,6 +12,8 @@
 struct GBA_PPU_window {
     u32 enable;
 
+    u32 v_flag, h_flag;
+
     i32 left, right, top, bottom;
 
     u32 active[6]; // In OBJ, bg0, bg1, bg2, bg3, special FX order
