@@ -39,7 +39,7 @@ struct thumb2_instruction {
 
 void ARM946ES_THUMB_ins_INVALID(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_ADD_SUB(struct ARM946ES *, struct thumb2_instruction *ins);
-void ARM946ES_THUMB_ins_LSL_LSR_ASR_ROR(struct ARM946ES *, struct thumb2_instruction *ins);
+void ARM946ES_THUMB_ins_LSL_LSR_ASR(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_MOV_CMP_ADD_SUB(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_data_proc(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_BX_BLX(struct ARM946ES *, struct thumb2_instruction *ins);

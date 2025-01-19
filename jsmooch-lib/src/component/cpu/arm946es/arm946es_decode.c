@@ -184,7 +184,7 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1110000000000000) == 0b0000000000000000) { // LSL, LSR, etc.
-        ins->func = &ARM946ES_THUMB_ins_LSL_LSR_ASR_ROR;
+        ins->func = &ARM946ES_THUMB_ins_LSL_LSR_ASR;
         ins->sub_opcode = BITS(12, 11);
         ins->imm = BITS(10, 6);
         ins->Rs = BITS(5, 3);

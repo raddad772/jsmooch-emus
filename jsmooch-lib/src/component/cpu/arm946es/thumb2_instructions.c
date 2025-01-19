@@ -148,7 +148,7 @@ void ARM946ES_THUMB_ins_ADD_SUB(struct ARM946ES *this, struct thumb2_instruction
     else *Rd = ADD(this, op1, val);
 }
 
-void ARM946ES_THUMB_ins_LSL_LSR_ASR_ROR(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LSL_LSR_ASR(struct ARM946ES *this, struct thumb2_instruction *ins)
 {
     //UPDATE!
     u32 *Rd = getR(this, ins->Rd);
@@ -353,7 +353,6 @@ void ARM946ES_THUMB_ins_LDR_PC_relative(struct ARM946ES *this, struct thumb2_ins
     u32 *Rd = getR(this, ins->Rd);
     u32 v = ARM946ES_read(this, addr, 4, ARM9P_nonsequential, 1);
     *Rd = v;
-    ARM946ES_idle(this, 1);
 }
 
 void ARM946ES_THUMB_ins_LDRH_STRH_reg_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
@@ -382,13 +381,11 @@ void ARM946ES_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM946ES *this, struct thu
     u32 mask = ins->B ? 0xFF : 0xFFFF;
 
     u32 v = ARM946ES_read(this, addr, sz, ARM9P_nonsequential, 1);
-    ARM946ES_idle(this, 1);
     if ((ins->B)) {
         v = SIGNe8to32(v);
     }
     else {
-        if (addr & 1) { v = (v >> 8); v = SIGNe8to32(v); }
-        else v = SIGNe16to32(v);
+        v = SIGNe16to32(v);
     }
     *Rd = v;
 }
@@ -399,13 +396,8 @@ void ARM946ES_THUMB_ins_LDR_STR_reg_offset(struct ARM946ES *this, struct thumb2_
     this->regs.PC += 2;
     this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
     u32 *Rd = getR(this, ins->Rd);
-/*
-	@ LDR Rd,[Rb,#imm]
-	@ LDR Rd,[Rb,Ro]
- */
     if (ins->L) { // Load
         u32 v = ARM946ES_read(this, addr, 4, ARM9P_nonsequential, 1);
-        ARM946ES_idle(this, 1);
         if (addr & 3) v = align_val(addr, v);
         *Rd = v;
     }
@@ -422,7 +414,6 @@ void ARM946ES_THUMB_ins_LDRB_STRB_reg_offset(struct ARM946ES *this, struct thumb
     this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
     if (ins->L) { // Load
         u32 v = ARM946ES_read(this, addr, 1, ARM9P_nonsequential, 1);
-        ARM946ES_idle(this, 1);
         *Rd = v;
     }
     else { // Store
@@ -438,7 +429,6 @@ void ARM946ES_THUMB_ins_LDR_STR_imm_offset(struct ARM946ES *this, struct thumb2_
     u32 *Rd = getR(this, ins->Rd);
     if (ins->L) { // Load
         u32 v = ARM946ES_read(this, addr, 4, ARM9P_nonsequential, 1);
-        ARM946ES_idle(this, 1);
         if (addr & 3) v = align_val(addr, v);
         *Rd = v;
     }
@@ -456,7 +446,6 @@ void ARM946ES_THUMB_ins_LDRB_STRB_imm_offset(struct ARM946ES *this, struct thumb
     if (ins->L) { // load
         u32 v = ARM946ES_read(this, addr, 1, ARM9P_nonsequential, 1);
         //if (addr & 1) v = (v >> 8) | (v << 24);
-        ARM946ES_idle(this, 1);
         write_reg(this, Rd, v);
     }
     else { // store
@@ -472,7 +461,6 @@ void ARM946ES_THUMB_ins_LDRH_STRH_imm_offset(struct ARM946ES *this, struct thumb
     this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
     if (ins->L) { // load
         u32 v = ARM946ES_read(this, addr, 2, ARM9P_nonsequential, 1);
-        ARM946ES_idle(this, 1);
         if (addr & 1) v = (v >> 8) | (v << 24);
         write_reg(this, Rd, v);
     }
@@ -488,7 +476,6 @@ void ARM946ES_THUMB_ins_LDR_STR_SP_relative(struct ARM946ES *this, struct thumb2
     this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
     if (ins->L) { // if Load
         u32 v = ARM946ES_read(this, addr, 4, ARM9P_nonsequential, 1);
-        ARM946ES_idle(this, 1);
         if (addr & 3) v = align_val(addr, v);
         write_reg(this, getR(this, ins->Rd), v);
     }

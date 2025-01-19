@@ -280,7 +280,6 @@ void ARM946ES_ins_LDRH_STRH(struct ARM946ES *this, u32 opcode)
             else
                 write_reg(this, Rn, addr);
         }
-        ARM946ES_idle(this, 1);
         write_reg(this, Rd, val);
     }
     else {
@@ -340,7 +339,6 @@ void ARM946ES_ins_LDRSB_LDRSH(struct ARM946ES *this, u32 opcode)
         else
             write_reg(this, Rn, addr);
     }
-    ARM946ES_idle(this, 1);
     write_reg(this, Rd, val);
 }
 
@@ -718,7 +716,6 @@ void ARM946ES_ins_LDR_STR_immediate_offset(struct ARM946ES *this, u32 opcode)
             else
                 write_reg(this, Rn, addr);
         }
-        ARM946ES_idle(this, 1);
         write_reg(this, Rd, v);
     }
     else { // load from RAM
@@ -784,7 +781,6 @@ void ARM946ES_ins_LDR_STR_register_offset(struct ARM946ES *this, u32 opcode)
             else
                 write_reg(this, Rn, addr);
         }
-        ARM946ES_idle(this, 1);
         write_reg(this, Rd, v);
     }
     else { // STR to RAM
@@ -1148,7 +1144,6 @@ STRD/LDRD: Address must be double-word aligned (multiple of eight).
             else
                 write_reg(this, Rn, addr);
         }
-        ARM946ES_idle(this, 1);
         write_reg(this, Rd, val);
         write_reg(this, Rdp1, val_hi);
     }
