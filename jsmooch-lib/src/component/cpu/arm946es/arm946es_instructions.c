@@ -966,3 +966,64 @@ void ARM946ES_ins_INVALID(struct ARM946ES *this, u32 opcode)
 {
     UNIMPLEMENTED;
 }
+
+void ARM946ES_ins_PLD(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_SMLAxy(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_SMLAWy(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_SMULWy(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_SMLALxy(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_SMULxy(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_LDRD_STRD(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_CLZ(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_BLX_reg(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_QADD_QSUB_QDADD_QDSUB(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_BKPT(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+
+void ARM946ES_ins_B_BL_BLX(struct ARM946ES *this, u32 opcode)
+{
+UNIMPLEMENTED;
+}
+

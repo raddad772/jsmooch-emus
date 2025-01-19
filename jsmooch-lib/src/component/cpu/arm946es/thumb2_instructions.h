@@ -39,10 +39,10 @@ struct thumb2_instruction {
 
 void ARM946ES_THUMB_ins_INVALID(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_ADD_SUB(struct ARM946ES *, struct thumb2_instruction *ins);
-void ARM946ES_THUMB_ins_LSL_LSR_ASR(struct ARM946ES *, struct thumb2_instruction *ins);
+void ARM946ES_THUMB_ins_LSL_LSR_ASR_ROR(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_MOV_CMP_ADD_SUB(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_data_proc(struct ARM946ES *, struct thumb2_instruction *ins);
-void ARM946ES_THUMB_ins_BX(struct ARM946ES *, struct thumb2_instruction *ins);
+void ARM946ES_THUMB_ins_BX_BLX(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_ADD_CMP_MOV_hi(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_LDR_PC_relative(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_LDRH_STRH_reg_offset(struct ARM946ES *, struct thumb2_instruction *ins);
@@ -63,5 +63,7 @@ void ARM946ES_THUMB_ins_BCC(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_B(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_BL_BLX_prefix(struct ARM946ES *, struct thumb2_instruction *ins);
 void ARM946ES_THUMB_ins_BL_suffix(struct ARM946ES *, struct thumb2_instruction *ins);
+void ARM946ES_THUMB_ins_BKPT(struct ARM946ES *, struct thumb2_instruction *ins);
+void ARM946ES_THUMB_ins_BLX_suffix(struct ARM946ES *, struct thumb2_instruction *ins);
 
 #endif //JSMOOCH_EMUS_THUMB2_INSTRUCTIONS_H

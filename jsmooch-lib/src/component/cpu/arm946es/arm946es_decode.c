@@ -18,90 +18,78 @@ enum ARM_ins_kind {
     ARM_BX,
     ARM_data_proc_immediate_shift,
     ARM_data_proc_register_shift,
+    ARM_data_proc_undefined,
     ARM_undefined_instruction,
     ARM_data_proc_immediate,
     ARM_LDR_STR_immediate_offset,
     ARM_LDR_STR_register_offset,
     ARM_LDM_STM,
-    ARM_B_BL,
     ARM_STC_LDC,
     ARM_CDP,
     ARM_MCR_MRC,
     ARM_SWI,
-    ARM_INVALID
+    ARM_INVALID,
+    ARM_PLD,
+    ARM_SMLAxy,
+    ARM_SMLAWy,
+    ARM_SMULWy,
+    ARM_SMLALxy,
+    ARM_SMULxy,
+    ARM_LDRD_STRD,
+    ARM_CLZ,
+    ARM_BLX_reg,
+    ARM_QADD_QSUB_QDADD_QDSUB,
+    ARM_BKPT,
+    ARM_B_BL_BLX,
 };
+
+#define OB(a,b,c) (0b ## a ## b ## c)
+#define OPCd(n,a,b) if ((opc & a) == b) return ARM_##n
 
 static enum ARM_ins_kind decode_arm(u32 opc)
 {
-    if ((opc & 0b111111001111) == 0b000000001001) // 000'000.. 1001  MUL, MLA
-        return ARM_MUL_MLA;
-        //000'01... 1001  MULL, MLAL
-    else if ((opc & 0b111110001111) == 0b000010001001)
-        return ARM_MULL_MLAL;
-        //000'10.00 1001  SWP
-    else if ((opc & 0b111110111111) == 0b000100001001)
-        return ARM_SWP;
-        //000'..... 1011  LDRH, STRH
-    else if ((opc & 0b111000001111) == 0b000000001011)
-        return ARM_LDRH_STRH;
-        //000'....1 11.1  LDRSB, LDRSH
-    else if ((opc & 0b111000011101) == 0b000000011101)
-        return ARM_LDRSB_LDRSH;
-        //000'10.00 0000  MRS
-    else if ((opc & 0b111110111111) == 0b000100000000)
-        return ARM_MRS;
-        //000'10.10 0000  MSR (register)
-    else if ((opc & 0b111110111111) == 0b000100100000)
-        return ARM_MSR_reg;
-        // 001'10.10 ....  MSR (immediate)
-    else if ((opc & 0b111110110000) == 0b001100100000)
-        return ARM_MSR_imm;
-        //000'10010 0001  BX
-    else if (opc == 0b000100100001)
-        return ARM_BX;
-        //000'..... ...0  Data Processing (immediate shift)
-    else if ((opc & 0b111000000001) == 0b000000000000)
-        return ARM_data_proc_immediate_shift;
-        //000'..... 0..1  Data Processing (register shift)
-    else if ((opc & 0b111000001001) == 0b000000000001)
-        return ARM_data_proc_register_shift;
-        //001'10.00 ....  Undefined instructions in Data Processing
-    else if ((opc & 0b111110110000) == 0b001100000000)
-        return ARM_undefined_instruction;
-        //001'..... ....  Data Processing (immediate value)
-    else if ((opc & 0b111000000000) == 0b001000000000)
-        return ARM_data_proc_immediate;
-        //010'..... ....  LDR, STR (immediate offset)
-    else if ((opc & 0b111000000000) == 0b010000000000)
-        return ARM_LDR_STR_immediate_offset;
-        // 011'..... ...0  LDR, STR (register offset)
-    else if ((opc & 0b111000000001) == 0b011000000000)
-        return ARM_LDR_STR_register_offset;
-        //100'..... ....  LDM, STM
-    else if ((opc & 0b111000000000) == 0b100000000000)
-        return ARM_LDM_STM;
-        //101'..... ....  B, BL
-    else if ((opc & 0b111000000000) == 0b101000000000)
-        return ARM_B_BL;
-        //110'..... ....  STC, LDC
-    else if ((opc & 0b111000000000) == 0b110000000000)
-        return ARM_STC_LDC;
-        //111'0.... ...0  CDP
-    else if ((opc & 0b111100000001) == 0b111000000000)
-        return ARM_CDP;
-        //111'0.... ...1  MCR, MRC
-    else if ((opc & 0b111100000001) == 0b111000000001)
-        return ARM_MCR_MRC;
-        //111'1.... ....  SWI
-    else if ((opc & 0b111100000000) == 0b111100000000)
-        return ARM_SWI;
+    OPCd(PLD,                       OB(1111,11010111,0000), OB(1111,01010101,0000)); // 1111 01.'1.101 ....  PLD
+    OPCd(undefined_instruction,     OB(1111,10000000,0000), OB(1111,00000000,0000)); // 1111 0..'..... ....  Undefined
+    OPCd(undefined_instruction,     OB(1111,11100000,0000), OB(1111,10000000,0000)); // 1111 100'..... ....  Undefined
+    OPCd(undefined_instruction,     OB(1111,11110000,0000), OB(1111,11110000,0000)); // 1111 111'1.... ....  Undefined
+    OPCd(MUL_MLA,                   OB(0000,11111100,1111), OB(0000,00000000,1001)); // .... 000'000.. 1001  MUL, MLA
+    OPCd(MULL_MLAL,                 OB(0000,11111000,1111), OB(0000,00001000,1001)); // .... 000'01... 1001  MULL, MLAL
+    OPCd(SMLAxy,                    OB(0000,11111111,1001), OB(0000,00010000,1000)); // .... 000'10000 1..0  SMLAxy
+    OPCd(SMLAWy,                    OB(0000,11111111,1011), OB(0000,00010010,1000)); // .... 000'10010 1.00  SMLAWy
+    OPCd(SMULWy,                    OB(0000,11111111,1011), OB(0000,00010010,1010)); // .... 000'10010 1.10  SMULWy
+    OPCd(SMLALxy,                   OB(0000,11111111,1001), OB(0000,00010100,1000)); // .... 000'10100 1..0  SMLALxy
+    OPCd(SMULxy,                    OB(0000,11111111,1001), OB(0000,00010110,1000)); // .... 000'10110 1..0  SMULxy
+    OPCd(SWP,                       OB(0000,11111011,1111), OB(0000,00010000,1001)); // .... 000'10.00 1001  SWP
+    OPCd(LDRH_STRH,                 OB(0000,11100000,1111), OB(0000,00000000,1011)); // .... 000'..... 1011  LDRH, STRH
+    OPCd(LDRD_STRD,                 OB(0000,11100001,1101), OB(0000,00000000,1101)); // .... 000'....0 11.1  LDRD, STRD
+    OPCd(LDRSB_LDRSH,               OB(0000,11100001,1101), OB(0000,00000001,1101)); // .... 000'....1 11.1  LDRSB, LDRSH
+    OPCd(MRS,                       OB(0000,11111011,1111), OB(0000,00010000,0000)); // .... 000'10.00 0000  MRS
+    OPCd(MSR_reg,                   OB(0000,11111011,1111), OB(0000,00010010,0000)); // .... 000'10.10 0000  MSR (register)
+    OPCd(MSR_imm,                   OB(0000,11111011,0000), OB(0000,00110010,0000)); // .... 001'10.10 ....  MSR (immediate)
+    OPCd(BX,                        OB(0000,11111111,1111), OB(0000,00010010,0001)); // .... 000'10010 0001  BX
+    OPCd(CLZ,                       OB(0000,11111111,1111), OB(0000,00010110,0001)); // .... 000'10110 0001  CLZ
+    OPCd(BLX_reg,                   OB(0000,11111111,1111), OB(0000,00010010,0011)); // .... 000'10010 0011  BLX (register)
+    OPCd(QADD_QSUB_QDADD_QDSUB,     OB(0000,11111001,1111), OB(0000,00010000,0101)); // .... 000'10..0 0101  QADD, QSUB, QDADD, QDSUB
+    OPCd(BKPT,                      OB(0000,11111111,1111), OB(0000,00010010,0111)); // .... 000'10010 0111  BKPT
+    OPCd(data_proc_immediate_shift, OB(0000,11100000,0001), OB(0000,00000000,0000)); // .... 000'..... ...0  Data Processing (immediate shift)
+    OPCd(data_proc_register_shift,  OB(0000,11100000,1001), OB(0000,00000000,0001)); // .... 000'..... 0..1  Data Processing (register shift)
+    OPCd(data_proc_undefined,       OB(0000,11111011,0000), OB(0000,00110000,0000)); // .... 001'10.00 ....  Undefined instructions in Data Processing
+    OPCd(data_proc_immediate,       OB(0000,11100000,0000), OB(0000,00100000,0000)); // .... 001'..... ....  Data Processing (immediate value)
+    OPCd(LDR_STR_immediate_offset,  OB(0000,11100000,0000), OB(0000,01000000,0000)); // .... 010'..... ....  LDR, STR (immediate offset)
+    OPCd(LDR_STR_register_offset,   OB(0000,11100000,0001), OB(0000,01100000,0000)); // .... 011'..... ...0  LDR, STR (register offset)
+    OPCd(LDM_STM,                   OB(0000,11100000,0000), OB(0000,10000000,0000)); // .... 100'..... ....  LDM, STM
+    OPCd(B_BL_BLX,                  OB(0000,11100000,0000), OB(0000,10100000,0000)); // .... 101'..... ....  B, BL, BLX
+    OPCd(STC_LDC,                   OB(0000,11100000,0000), OB(0000,11000000,0000)); // .... 110'..... ....  STC, LDC
+    OPCd(CDP,                       OB(0000,11110000,0001), OB(0000,11100000,0000)); // .... 111'0.... ...0  CDP
+    OPCd(MCR_MRC,                   OB(0000,11110000,0001), OB(0000,11100000,0001)); // .... 111'0.... ...1  MCR, MRC
+    OPCd(SWI,                       OB(0000,11110000,0000), OB(0000,11110000,0000)); // .... 111'1.... ....  SWI
     return ARM_INVALID;
 }
 
 
 void ARM946ES_fill_arm_table(struct ARM946ES *this)
 {
-    for (u32 opc = 0; opc < 4096; opc++) {
+    for (u32 opc = 0; opc < 65536; opc++) {
         struct arm9_ins *ins = &this->opcode_table_arm[opc];
         enum ARM_ins_kind k = decode_arm(opc);
         switch(k) {
@@ -122,12 +110,23 @@ void ARM946ES_fill_arm_table(struct ARM946ES *this)
             I(LDR_STR_immediate_offset)
             I(LDR_STR_register_offset)
             I(LDM_STM)
-            I(B_BL)
             I(STC_LDC)
             I(CDP)
             I(MCR_MRC)
             I(SWI)
             I(INVALID)
+            I(PLD)
+            I(SMLAxy)
+            I(SMLAWy)
+            I(SMULWy)
+            I(SMLALxy)
+            I(SMULxy)
+            I(LDRD_STRD)
+            I(CLZ)
+            I(BLX_reg)
+            I(QADD_QSUB_QDADD_QDSUB)
+            I(BKPT)
+            I(B_BL_BLX)
             default:
                 assert(1==2);
                 break;
@@ -160,7 +159,7 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1110000000000000) == 0b0000000000000000) { // LSL, LSR, etc.
-        ins->func = &ARM946ES_THUMB_ins_LSL_LSR_ASR;
+        ins->func = &ARM946ES_THUMB_ins_LSL_LSR_ASR_ROR;
         ins->sub_opcode = BITS(12, 11);
         ins->imm = BITS(10, 6);
         ins->Rs = BITS(5, 3);
@@ -179,7 +178,7 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
         ins->Rd = BITS(2, 0);
     }
     else if ((opc & 0b1111111100000000) == 0b0100011100000000) { // BX
-        ins->func = &ARM946ES_THUMB_ins_BX;
+        ins->func = &ARM946ES_THUMB_ins_BX_BLX;
         ins->Rd = OBIT(7) << 3;
         ins->Rs = OBIT(6) << 3;
         ins->Rs |= BITS(5,3);
@@ -276,6 +275,10 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
         ins->PC_LR = OBIT(8);
         ins->rlist = BITS(7, 0);
     }
+    else if ((opc & 0b1111111100000000) == 0b1011111000000000) {// 1011 1110..  BKPT
+        ins->func = &ARM946ES_THUMB_ins_BKPT;
+        // UPDATE!
+    }
     else if ((opc & 0b1111000000000000) == 0b1100000000000000) { // 1100......
         ins->func = &ARM946ES_THUMB_ins_LDM_STM;
         ins->sub_opcode = OBIT(11);
@@ -305,6 +308,9 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
         ins->imm = BITS(10, 0);
         ins->imm = SIGNe11to32(ins->imm);
         ins->imm <<= 1;
+    }
+    else if ((opc & 0b1111100000000000) == 0b1110100000000000) { // 11101.....  BLX suffix
+        // UPDATE!
     }
     else if ((opc & 0b1111100000000000) == 0b1111000000000000) { // 11110.....
         ins->func = &ARM946ES_THUMB_ins_BL_BLX_prefix;

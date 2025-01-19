@@ -148,8 +148,9 @@ void ARM946ES_THUMB_ins_ADD_SUB(struct ARM946ES *this, struct thumb2_instruction
     else *Rd = ADD(this, op1, val);
 }
 
-void ARM946ES_THUMB_ins_LSL_LSR_ASR(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LSL_LSR_ASR_ROR(struct ARM946ES *this, struct thumb2_instruction *ins)
 {
+    //UPDATE!
     u32 *Rd = getR(this, ins->Rd);
     u32 Rs = *getR(this, ins->Rs);
     this->regs.PC += 2;
