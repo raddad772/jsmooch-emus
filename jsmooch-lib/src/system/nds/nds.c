@@ -120,9 +120,11 @@ void NDS_new(struct jsm_system *jsm)
 
     ARM946ES_init(&this->arm9, &this->waitstates.current_transaction);
     this->arm9.read_ptr = this;
-    this->arm9.write_ptr = this;
     this->arm9.read = &NDS_mainbus_read9;
+
+    this->arm9.write_ptr = this;
     this->arm9.write = &NDS_mainbus_write9;
+
     this->arm9.fetch_ptr = this;
     this->arm9.fetch_ins = &NDS_mainbus_fetchins9;
 

@@ -12,6 +12,7 @@
 #include "helpers/cvec.h"
 
 #include "thumb2_instructions.h"
+#include "nds_cp15.h"
 #define ARM9P_nonsequential 0
 #define ARM9P_sequential 1
 #define ARM9P_code 2
@@ -86,6 +87,8 @@ struct ARM946ES_regs {
         };
         u32 u;
     } CPSR;
+
+    u32 EBR; // Exception Base Register, my own kinda abstraction
     union {
         struct {
         };
@@ -110,12 +113,83 @@ struct ARM946ES {
         u32 flushed;
     } pipeline;
 
+    struct {
+        struct {
+            union {
+                struct {
+                    // Bits 0...7
+                    u32 mmu_pu_enable : 1;
+                    u32 alignment_fault_check : 1;
+                    u32 data_unified_cache: 1;
+                    u32 write_buffer : 1;
+                    u32 exception_handling : 1;
+                    u32 address_faults26 : 1;
+                    u32 abort_model : 1;
+                    u32 endian : 1;
+
+                    // Bits 8...15
+                    u32 system_protection : 1;  // 8
+                    u32 rom_protection : 1;     // 9
+                    u32 _imp1 : 1;              // 10
+                    u32 branch_prediction : 1;  // 11
+                    u32 instruction_cache : 1;  // 12
+                    u32 exception_vectors : 1;  // 13
+                    u32 cache_replacement: 1;   // 14
+                    u32 pre_armv5_mode : 1;     // 15
+
+                    // Bits 16-23
+                    u32 dtcm_enable;            // 16
+                    u32 dtcm_load_mode;         // 17
+                    u32 itcm_enable;            // 18
+                    u32 itcm_load_mode;         // 19
+                    u32 _res: 2;                // 20,21
+                    u32 unaligned_access: 1;    // 22
+                    u32 extended_page_table: 1; // 23
+
+
+                    // Bits 24-31
+                    u32 _res2: 1;               // 24
+                    u32 cpsr_e_on_exceptions: 1;// 25
+                    u32 _res3: 1;               // 26
+                    u32 fiq_behavior: 1;        // 27
+                    u32 tex_remap : 1;          // 28
+                    u32 force_ap : 1;           // 29
+                    u32 _res4: 2;               // 30, 31
+                };
+                u32 u;
+            }control;
+            u32 pu_data_cacheable;
+            u32 pu_instruction_cacheable;
+            u32 pu_data_cached_write;
+            u32 pu_data_rw;
+            u32 pu_code_rw;
+            u32 pu_region[8];
+            u32 dtcm_setting;
+            u32 itcm_setting;
+            u32 trace_process_id;
+        } regs;
+
+        u32 rng_seed;
+        struct {
+             u8 data[DTCM_SIZE];
+             u32 size, base_addr, end_addr, mask;
+        } dtcm;
+
+        struct {
+            u8 data[ITCM_SIZE];
+            u32 size, base_addr, end_addr, mask;
+        } itcm;
+    } cp15;
+
     u32 *regmap[16];
     u32 carry; // temp for instructions
 
     u32 *waitstates;
+    u32 waitstates9; // 66MHz waitstates
 
     struct arm9_ins *arm9_ins;
+
+    u32 halted;
 
     struct {
         struct jsm_debug_read_trace strct;

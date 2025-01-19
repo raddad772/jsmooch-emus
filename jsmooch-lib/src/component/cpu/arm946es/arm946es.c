@@ -9,6 +9,8 @@
 #include "arm946es_decode.h"
 #include "armv5_disassembler.h"
 #include "arm946es_instructions.h"
+
+#include "helpers/multisize_memaccess.c"
 #define PC R[15]
 
 static u32 fetch_ins(struct ARM946ES *this, u32 sz) {
@@ -53,6 +55,8 @@ void ARM946ES_reset(struct ARM946ES *this)
     *this->regmap[15] = 0;
     ARM946ES_reload_pipeline(this);
 
+    this->regs.EBR = 0xFFFF0000;
+
 }
 
 void ARM946ES_setup_tracing(struct ARM946ES* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
@@ -67,6 +71,7 @@ void ARM946ES_setup_tracing(struct ARM946ES* this, struct jsm_debug_read_trace *
 
 static void do_IRQ(struct ARM946ES* this)
 {
+    this->halted = 0;
     if (this->regs.CPSR.T) {
         fetch_ins(this, 2);
     }
@@ -90,7 +95,7 @@ static void do_IRQ(struct ARM946ES* this)
         *r14 = this->regs.PC - 4;
     }
 
-    this->regs.PC = 0x00000018;
+    this->regs.PC = this->regs.EBR | 0x00000018;
     ARM946ES_reload_pipeline(this);
 }
 static void do_FIQ(struct ARM946ES *this)
@@ -111,7 +116,7 @@ static void do_FIQ(struct ARM946ES *this)
         *r14 = this->regs.PC - 4;
     }
 
-    this->regs.PC = 0x0000001C;
+    this->regs.PC = this->regs.EBR | 0x0000001C;
     ARM946ES_reload_pipeline(this);
 }
 
@@ -232,18 +237,14 @@ static void decode_and_exec_arm(struct ARM946ES *this, u32 opcode, u32 opcode_ad
 }
 
 
-u32 ARM946ES_fetch_ins(struct ARM946ES *this, u32 addr, u32 sz, u32 access)
-{
-    if (sz == 2) addr &= 0xFFFFFFFE;
-    else addr &= 0xFFFFFFFC;
-    u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
-    return v;
-}
-
 void ARM946ES_run(struct ARM946ES*this)
 {
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
+    }
+    if (this->halted) {
+        *this->waitstates++;
+        return;
     }
 
     u32 opcode = this->pipeline.opcode[0];
@@ -304,13 +305,77 @@ void ARM946ES_idle(struct ARM946ES*this, u32 num)
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
-u32 ARM946ES_read(struct ARM946ES *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+u32 ARM946ES_fetch_ins(struct ARM946ES *this, u32 addr, u32 sz, u32 access)
 {
-    u32 v = this->read(this->read_ptr, addr, sz, access, has_effect) & masksz[sz];
+    if (sz == 2) addr &= 0xFFFFFFFE;
+    else addr &= 0xFFFFFFFC;
+    u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
+    return v;
+}
+
+static inline u32 addr_in_itcm(struct ARM946ES *this, u32 addr)
+{
+    return ((addr >= this->cp15.itcm.base_addr) && ((addr < this->cp15.itcm.end_addr)));
+}
+
+static inline u32 addr_in_dtcm(struct ARM946ES *this, u32 addr)
+{
+    return ((addr >= this->cp15.dtcm.base_addr) && ((addr < this->cp15.dtcm.end_addr)));
+}
+
+static inline u32 read_dtcm(struct ARM946ES *this, u32 addr, u32 sz)
+{
+    this->waitstates++;
+    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
+    return cR[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1));
+}
+
+static inline void write_dtcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
+{
+    this->waitstates++;
+    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
+    cW[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1), v);
+}
+
+static inline u32 read_itcm(struct ARM946ES *this, u32 addr, u32 sz)
+{
+    this->waitstates++;
+    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
+    return cR[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1));
+}
+
+static inline void write_itcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
+{
+    this->waitstates++;
+    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
+    cW[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1), v);
+}
+
+
+u32 ARM946ES_read(struct ARM946ES *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    u32 v = 0;
+
+    if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable && !this->cp15.regs.control.itcm_load_mode) {
+        return read_itcm(this, addr, sz);
+    }
+    if (!(access & ARM9P_code) && addr_in_dtcm(this, addr) && this->cp15.regs.control.dtcm_enable && !this->cp15.regs.control.dtcm_load_mode) {
+        return read_dtcm(this, addr, sz);
+    }
+
+    v = this->read(this->read_ptr, addr, sz, access, has_effect) & masksz[sz];
     return v;
 }
 
 void ARM946ES_write(struct ARM946ES *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable) {
+        write_itcm(this, addr, sz, val);
+        return;
+    }
+    if (!(access & ARM9P_code) && addr_in_dtcm(this, addr) && this->cp15.regs.control.dtcm_enable) {
+        write_dtcm(this, addr, sz, val);
+        return;
+    }
+
     this->write(this->write_ptr, addr, sz, access, val);
 }

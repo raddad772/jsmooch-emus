@@ -631,7 +631,7 @@ Execution SWI/BKPT:
     this->regs.CPSR.I = 1; // mask IRQ
     this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
     ARM946ES_fill_regmap(this);
-    this->regs.PC = 0x00000008;
+    this->regs.PC = this->regs.EBR | 0x00000008;
     ARM946ES_flush_pipeline(this);
 }
 
@@ -644,7 +644,7 @@ void ARM946ES_THUMB_ins_BKPT(struct ARM946ES *this, struct thumb2_instruction *i
     this->regs.CPSR.I = 1; // mask IRQ
     this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
     ARM946ES_fill_regmap(this);
-    this->regs.PC = 0x0000000C;
+    this->regs.PC = this->regs.EBR | 0x0000000C;
     ARM946ES_flush_pipeline(this);
 }
 

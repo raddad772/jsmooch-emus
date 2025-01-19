@@ -6,6 +6,7 @@
 
 #include "arm946es.h"
 #include "arm946es_instructions.h"
+#include "nds_cp15.h"
 
 #define UNIMPLEMENTED printf("\nUNIMPLEMENTED INSTRUCTION! %08x PC:%08x cyc:%lld", opcode, this->regs.PC, *this->trace.cycles); assert(1==2)
 #define AREAD(addr, sz) ARM946ES_read(this, (addr), (sz), ARM9P_nonsequential, 1)
@@ -369,15 +370,17 @@ void ARM946ES_ins_MSR_reg(struct ARM946ES *this, u32 opcode)
     u32 Rmd = opcode & 15;
     u32 mask = 0;
     if (f) mask |= 0xFF000000;
-    if (s) mask |= 0xFF0000;
-    if (x) mask |= 0xFF00;
-    if (c) mask |= 0xFF;
+    u32 cycles = 0;
+    if (s) { cycles = 2; mask |= 0xFF0000; };
+    if (x) { cycles = 2; mask |= 0xFF00; };
+    if (c) { cycles = 2; mask |= 0xFF; };
     u32 imm = *getR(this, Rmd);
     if (!PSR) { // CPSR
         if (this->regs.CPSR.mode == ARM9_user)
             mask &= 0xFF000000;
         if (mask & 0xFF)
             imm |= 0x10; // force this bit always
+        u32 old_mode = this->regs.CPSR.mode;
         this->regs.CPSR.u = (~mask & this->regs.CPSR.u) | (imm & mask);
         if (mask & 0x0F) {
             ARM946ES_fill_regmap(this);
@@ -388,7 +391,9 @@ void ARM946ES_ins_MSR_reg(struct ARM946ES *this, u32 opcode)
             u32 *v = get_SPSR_by_mode(this);
             *v = (~mask & *v) | (imm & mask);
         }
+        cycles = 2;
     }
+    if (cycles) ARM946ES_idle(this, cycles);
     this->pipeline.access = ARM9P_sequential | ARM9P_code;
     this->regs.PC += 4;
 }
@@ -405,10 +410,11 @@ void ARM946ES_ins_MSR_imm(struct ARM946ES *this, u32 opcode)
     u32 imm = opcode & 255;
     if (Is) imm = (imm << (32 - Is)) | (imm >> Is);
     u32 mask = 0;
+    u32 cycles = 0;
     if (f) mask |= 0xFF000000;
-    if (s) mask |= 0xFF0000;
-    if (x) mask |= 0xFF00;
-    if (c) mask |= 0xFF;
+    if (s) { mask |= 0xFF0000; cycles = 2; }
+    if (x) { mask |= 0xFF00; cycles = 2; }
+    if (c) { mask |= 0xFF; cycles = 2; }
     if (!PSR) { // CPSR
         if (this->regs.CPSR.mode == ARM9_user)
             mask &= 0xFF000000;
@@ -424,7 +430,9 @@ void ARM946ES_ins_MSR_imm(struct ARM946ES *this, u32 opcode)
             u32 *v = get_SPSR_by_mode(this);
             *v = (~mask & *v) | (imm & mask);
         }
+        cycles = 2;
     }
+    if (cycles) ARM946ES_idle(this, cycles);
     this->regs.PC += 4;
     this->pipeline.access = ARM9P_sequential | ARM9P_code;
 }
@@ -651,7 +659,7 @@ void ARM946ES_ins_undefined_instruction(struct ARM946ES *this, u32 opcode)
     this->regs.CPSR.mode = ARM9_undefined;
     ARM946ES_fill_regmap(this);
     this->regs.CPSR.I = 1;
-    this->regs.PC = 0x00000004;
+    this->regs.PC = this->regs.EBR | 0x00000004;
     ARM946ES_flush_pipeline(this);
 }
 
@@ -927,10 +935,55 @@ void ARM946ES_ins_CDP(struct ARM946ES *this, u32 opcode)
     UNIMPLEMENTED;
 }
 
+static void undefined_exception(struct ARM946ES *this)
+{
+    this->regs.R_und[1] = this->regs.PC - 4;
+    printf("\nWARN: PC MAY BE WRONG");
+    this->regs.SPSR_und = this->regs.CPSR.u;
+    this->regs.CPSR.mode = ARM9_undefined;
+    ARM946ES_fill_regmap(this);
+
+    this->regs.CPSR.I = 1;
+    this->regs.PC = this->regs.EBR | 0x00000004;
+    ARM946ES_flush_pipeline(this);
+}
+
 void ARM946ES_ins_MCR_MRC(struct ARM946ES *this, u32 opcode)
 {
-    dbg_break("BAD ARM OP", *this->trace.cycles);
-    //UNIMPLEMENTED;
+    if (this->regs.CPSR.mode == ARM9_user) {
+        undefined_exception(this);
+        return;
+    }
+
+    u32 v2 = ((opcode >> 28) & 15) == 15;
+    u32 cp_opc = (opcode >> 21) & 7; // CP Opc - Coprocessor operation code
+    u32 copro_to_arm = OBIT(20);
+    u32 Cnd = (opcode >> 16) & 15; // Cn     - Coprocessor source/dest. Register  (C0-C15)
+    u32 Rdd = (opcode >> 12) & 15; // Rd     - ARM source/destination Register    (R0-R15)
+    u32 Pnd = (opcode >> 8) & 15; // Coprocessor number                 (P0-P15)
+    u32 CP = (opcode >> 5) & 7; // CP     - Coprocessor information            (0-7)
+    u32 Cmd = opcode & 15; //  Coprocessor operand Register       (C0-C15)
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
+
+
+    if (!copro_to_arm) { // ARM->CoPro
+         u32 val = NDS_CP_read(this, Pnd, cp_opc, Cnd, Cmd, CP);
+         if (Rdd == 15) {
+             // When using MRC with R15: Bit 31-28 of data are copied to Bit 31-28 of CPSR (ie. N,Z,C,V flags), other data bits are ignored, CPSR Bit 27-0 are not affected, R15 (PC) is not affected.     */
+             this->regs.CPSR.u = (this->regs.CPSR.u & 0x0FFFFFFF) | (val & 0xF0000000);
+         }
+         else {
+             *getR(this, Rdd) = val;
+         }
+    }
+    else {
+        // When using MCR with R15: Coprocessor will receive a data value of PC+12.
+        u32 v = *getR(this, Rdd);
+        if (Rdd == 15) v += 4;
+        NDS_CP_write(this, Pnd, cp_opc, Cnd, Cmd, CP, v);
+    }
+    ARM946ES_idle(this, 1);
 }
 
 void ARM946ES_ins_SWI(struct ARM946ES *this, u32 opcode)
@@ -940,7 +993,7 @@ void ARM946ES_ins_SWI(struct ARM946ES *this, u32 opcode)
     this->regs.CPSR.mode = ARM9_supervisor;
     ARM946ES_fill_regmap(this);
     this->regs.CPSR.I = 1;
-    this->regs.PC = 0x00000008;
+    this->regs.PC = this->regs.EBR | 0x00000008;
     ARM946ES_flush_pipeline(this);
     //printf("\nWARNING SWI %d", opcode & 0xFF);
 }
@@ -1164,12 +1217,13 @@ void ARM946ES_ins_CLZ(struct ARM946ES *this, u32 opcode)
 {
     u32 Rdd = (opcode >> 12) & 15;
     u32 Rmd = opcode & 15;
-    u32 v = *getR(this, Rmd);
-    this->regs.PC += 4;
 
+    u32 v = *getR(this, Rmd);
+
+    this->regs.PC += 4;
     this->pipeline.access = ARM9P_code | ARM9P_sequential;
 
-    *getR(this, Rdd) = __builtin_clz(v);
+    *getR(this, Rdd) = (v == 0) ? 32 : __builtin_clz(v);
     if (Rdd == 15) ARM946ES_flush_pipeline(this);
 }
 
@@ -1249,7 +1303,7 @@ void ARM946ES_ins_QADD_QSUB_QDADD_QDSUB(struct ARM946ES *this, u32 opcode) {
         }
     }
 
-    write_reg(this, getR(this, Rdd), result);
+    if (Rdd != 15) write_reg(this, getR(this, Rdd), result);
 }
 
 void ARM946ES_ins_BKPT(struct ARM946ES *this, u32 opcode)
@@ -1259,7 +1313,7 @@ void ARM946ES_ins_BKPT(struct ARM946ES *this, u32 opcode)
     this->regs.CPSR.mode = ARM9_abort;
     ARM946ES_fill_regmap(this);
     this->regs.CPSR.I = 1;
-    this->regs.PC = 0x0000000C;
+    this->regs.PC = this->regs.EBR | 0x0000000C;
     ARM946ES_flush_pipeline(this);
 }
 

@@ -467,7 +467,6 @@ static u32 ADD(struct ARM7TDMI *this, u32 Rnd, u32 Rmd, u32 carry, u32 S)
 }
 
 
-// case 2: v = SUB(this, Rn, Rm, 1); break;
 static u32 SUB(struct ARM7TDMI *this, u32 Rn, u32 Rm, u32 carry, u32 S)
 {
     u32 iRm = Rm ^ 0xFFFFFFFF;

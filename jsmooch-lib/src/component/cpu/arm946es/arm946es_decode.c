@@ -92,6 +92,7 @@ static enum ARM_ins_kind decode_arm_never(u32 opc)
     OPCd(undefined_instruction,     OB(11100000,0000), OB(10000000,0000)); // 1111 100'..... ....  Undefined
     OPCd(undefined_instruction,     OB(11110000,0000), OB(11110000,0000)); // 1111 111'1.... ....  Undefined
     OPCd(BLX,                       OB(11100000,0000), OB(10100000,0000)); // .... 101'..... ....  B, BL, BLX
+    OPCd(MCR_MRC,                   OB(11110000,0001), OB(11100000,0001)); // .... 111'0.... ...1  MCR, MRC
     return ARM_INVALID;
 }
 #undef OPCd
@@ -152,6 +153,7 @@ void ARM946ES_fill_arm_table(struct ARM946ES *this)
             I(PLD);
             I(undefined_instruction);
             I(BLX);
+            I(MCR_MRC);
             case ARM_INVALID:
                 ins->valid = 0;
                 break;
