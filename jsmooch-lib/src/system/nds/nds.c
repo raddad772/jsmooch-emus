@@ -364,7 +364,7 @@ static void NDSIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_
     NDSJ_reset(jsm);
 }
 
-void setup_lcd(struct JSM_DISPLAY *d)
+static void setup_lcd(struct JSM_DISPLAY *d)
 {
     d->standard = JSS_LCD;
     d->enabled = 1;

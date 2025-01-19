@@ -31,7 +31,7 @@ enum ARM_ins_kind {
     ARM_INVALID
 };
 
-enum ARM_ins_kind decode_arm(u32 opc)
+static enum ARM_ins_kind decode_arm(u32 opc)
 {
     if ((opc & 0b111111001111) == 0b000000001001) // 000'000.. 1001  MUL, MLA
         return ARM_MUL_MLA;
@@ -102,7 +102,7 @@ enum ARM_ins_kind decode_arm(u32 opc)
 void ARM946ES_fill_arm_table(struct ARM946ES *this)
 {
     for (u32 opc = 0; opc < 4096; opc++) {
-        struct ARM9_ins *ins = &this->opcode_table_arm[opc];
+        struct arm9_ins *ins = &this->opcode_table_arm[opc];
         enum ARM_ins_kind k = decode_arm(opc);
         switch(k) {
 #define I(x) case ARM_##x: ins->exec = &ARM946ES_ins_##x; break;

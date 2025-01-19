@@ -216,7 +216,7 @@ void decode_thumb(u16 opc, struct thumb_instruction *ins)
     }
 }
 
-enum ARM_ins_kind decode_arm(u32 opc)
+static enum ARM_ins_kind decode_arm(u32 opc)
 {
     if ((opc & 0b111111001111) == 0b000000001001) // 000'000.. 1001  MUL, MLA
         return ARM_MUL_MLA;

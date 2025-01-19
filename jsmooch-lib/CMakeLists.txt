@@ -332,6 +332,8 @@ add_library(jsmooch-lib
         src/component/cpu/arm946es/arm946es_decode.h
         src/component/cpu/arm946es/arm946es_instructions.c
         src/component/cpu/arm946es/arm946es_instructions.h
+        src/component/cpu/arm946es/armv5_disassembler.c
+        src/component/cpu/arm946es/armv5_disassembler.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
