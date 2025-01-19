@@ -290,6 +290,8 @@ void ARM7TDMI_run(struct ARM7TDMI*this)
         this->pipeline.opcode[1] = fetch_ins(this, 2);
         this->pipeline.addr[1] = this->regs.PC;
         decode_and_exec_thumb(this, opcode, opcode_addr);
+        if (this->pipeline.flushed)
+            ARM7TDMI_reload_pipeline(this);
     }
     else {
         this->pipeline.opcode[1] = fetch_ins(this, 4);

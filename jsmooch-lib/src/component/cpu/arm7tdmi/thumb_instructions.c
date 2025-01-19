@@ -298,9 +298,8 @@ void ARM7TDMI_THUMB_ins_data_proc(struct ARM7TDMI *this, struct thumb_instructio
     this->regs.CPSR.C = this->carry;
 }
 
-void ARM7TDMI_THUMB_ins_BX_BLX(struct ARM7TDMI *this, struct thumb_instruction *ins)
+void ARM7TDMI_THUMB_ins_BX(struct ARM7TDMI *this, struct thumb_instruction *ins)
 {
-    // UPDATE!
     u32 addr = *getR(this, ins->Rs);
     this->regs.CPSR.T = addr & 1;
     this->pipeline.access = ARM7P_nonsequential | ARM7P_code;

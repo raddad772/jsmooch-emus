@@ -98,6 +98,7 @@ struct ARM946ES_regs {
 struct ARM946ES;
 struct arm9_ins {
     void (*exec)(struct ARM946ES*, u32 opcode);
+    u32 valid;
 };
 
 struct ARM946ES {
@@ -134,7 +135,8 @@ struct ARM946ES {
     u32 (*read)(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect);
     void (*write)(void *ptr, u32 addr, u32 sz, u32 access, u32 val);
 
-    struct arm9_ins opcode_table_arm[65536];
+    struct arm9_ins opcode_table_arm[4096];
+    struct arm9_ins opcode_table_arm_never[4096];
     struct thumb2_instruction opcode_table_thumb[65536];
 
     DBG_START

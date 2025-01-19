@@ -40,56 +40,67 @@ enum ARM_ins_kind {
     ARM_BLX_reg,
     ARM_QADD_QSUB_QDADD_QDSUB,
     ARM_BKPT,
-    ARM_B_BL_BLX,
+    ARM_B_BL,
+    ARM_BLX
 };
 
-#define OB(a,b,c) (0b ## a ## b ## c)
+#define OB(a,b) (0b ## a ## b)
 #define OPCd(n,a,b) if ((opc & a) == b) return ARM_##n
 
 static enum ARM_ins_kind decode_arm(u32 opc)
 {
-    OPCd(PLD,                       OB(1111,11010111,0000), OB(1111,01010101,0000)); // 1111 01.'1.101 ....  PLD
-    OPCd(undefined_instruction,     OB(1111,10000000,0000), OB(1111,00000000,0000)); // 1111 0..'..... ....  Undefined
-    OPCd(undefined_instruction,     OB(1111,11100000,0000), OB(1111,10000000,0000)); // 1111 100'..... ....  Undefined
-    OPCd(undefined_instruction,     OB(1111,11110000,0000), OB(1111,11110000,0000)); // 1111 111'1.... ....  Undefined
-    OPCd(MUL_MLA,                   OB(0000,11111100,1111), OB(0000,00000000,1001)); // .... 000'000.. 1001  MUL, MLA
-    OPCd(MULL_MLAL,                 OB(0000,11111000,1111), OB(0000,00001000,1001)); // .... 000'01... 1001  MULL, MLAL
-    OPCd(SMLAxy,                    OB(0000,11111111,1001), OB(0000,00010000,1000)); // .... 000'10000 1..0  SMLAxy
-    OPCd(SMLAWy,                    OB(0000,11111111,1011), OB(0000,00010010,1000)); // .... 000'10010 1.00  SMLAWy
-    OPCd(SMULWy,                    OB(0000,11111111,1011), OB(0000,00010010,1010)); // .... 000'10010 1.10  SMULWy
-    OPCd(SMLALxy,                   OB(0000,11111111,1001), OB(0000,00010100,1000)); // .... 000'10100 1..0  SMLALxy
-    OPCd(SMULxy,                    OB(0000,11111111,1001), OB(0000,00010110,1000)); // .... 000'10110 1..0  SMULxy
-    OPCd(SWP,                       OB(0000,11111011,1111), OB(0000,00010000,1001)); // .... 000'10.00 1001  SWP
-    OPCd(LDRH_STRH,                 OB(0000,11100000,1111), OB(0000,00000000,1011)); // .... 000'..... 1011  LDRH, STRH
-    OPCd(LDRD_STRD,                 OB(0000,11100001,1101), OB(0000,00000000,1101)); // .... 000'....0 11.1  LDRD, STRD
-    OPCd(LDRSB_LDRSH,               OB(0000,11100001,1101), OB(0000,00000001,1101)); // .... 000'....1 11.1  LDRSB, LDRSH
-    OPCd(MRS,                       OB(0000,11111011,1111), OB(0000,00010000,0000)); // .... 000'10.00 0000  MRS
-    OPCd(MSR_reg,                   OB(0000,11111011,1111), OB(0000,00010010,0000)); // .... 000'10.10 0000  MSR (register)
-    OPCd(MSR_imm,                   OB(0000,11111011,0000), OB(0000,00110010,0000)); // .... 001'10.10 ....  MSR (immediate)
-    OPCd(BX,                        OB(0000,11111111,1111), OB(0000,00010010,0001)); // .... 000'10010 0001  BX
-    OPCd(CLZ,                       OB(0000,11111111,1111), OB(0000,00010110,0001)); // .... 000'10110 0001  CLZ
-    OPCd(BLX_reg,                   OB(0000,11111111,1111), OB(0000,00010010,0011)); // .... 000'10010 0011  BLX (register)
-    OPCd(QADD_QSUB_QDADD_QDSUB,     OB(0000,11111001,1111), OB(0000,00010000,0101)); // .... 000'10..0 0101  QADD, QSUB, QDADD, QDSUB
-    OPCd(BKPT,                      OB(0000,11111111,1111), OB(0000,00010010,0111)); // .... 000'10010 0111  BKPT
-    OPCd(data_proc_immediate_shift, OB(0000,11100000,0001), OB(0000,00000000,0000)); // .... 000'..... ...0  Data Processing (immediate shift)
-    OPCd(data_proc_register_shift,  OB(0000,11100000,1001), OB(0000,00000000,0001)); // .... 000'..... 0..1  Data Processing (register shift)
-    OPCd(data_proc_undefined,       OB(0000,11111011,0000), OB(0000,00110000,0000)); // .... 001'10.00 ....  Undefined instructions in Data Processing
-    OPCd(data_proc_immediate,       OB(0000,11100000,0000), OB(0000,00100000,0000)); // .... 001'..... ....  Data Processing (immediate value)
-    OPCd(LDR_STR_immediate_offset,  OB(0000,11100000,0000), OB(0000,01000000,0000)); // .... 010'..... ....  LDR, STR (immediate offset)
-    OPCd(LDR_STR_register_offset,   OB(0000,11100000,0001), OB(0000,01100000,0000)); // .... 011'..... ...0  LDR, STR (register offset)
-    OPCd(LDM_STM,                   OB(0000,11100000,0000), OB(0000,10000000,0000)); // .... 100'..... ....  LDM, STM
-    OPCd(B_BL_BLX,                  OB(0000,11100000,0000), OB(0000,10100000,0000)); // .... 101'..... ....  B, BL, BLX
-    OPCd(STC_LDC,                   OB(0000,11100000,0000), OB(0000,11000000,0000)); // .... 110'..... ....  STC, LDC
-    OPCd(CDP,                       OB(0000,11110000,0001), OB(0000,11100000,0000)); // .... 111'0.... ...0  CDP
-    OPCd(MCR_MRC,                   OB(0000,11110000,0001), OB(0000,11100000,0001)); // .... 111'0.... ...1  MCR, MRC
-    OPCd(SWI,                       OB(0000,11110000,0000), OB(0000,11110000,0000)); // .... 111'1.... ....  SWI
+    OPCd(MUL_MLA,                   OB(11111100,1111), OB(00000000,1001)); // .... 000'000.. 1001  MUL, MLA
+    OPCd(MULL_MLAL,                 OB(11111000,1111), OB(00001000,1001)); // .... 000'01... 1001  MULL, MLAL
+    OPCd(SMLAxy,                    OB(11111111,1001), OB(00010000,1000)); // .... 000'10000 1..0  SMLAxy
+    OPCd(SMLAWy,                    OB(11111111,1011), OB(00010010,1000)); // .... 000'10010 1.00  SMLAWy
+    OPCd(SMULWy,                    OB(11111111,1011), OB(00010010,1010)); // .... 000'10010 1.10  SMULWy
+    OPCd(SMLALxy,                   OB(11111111,1001), OB(00010100,1000)); // .... 000'10100 1..0  SMLALxy
+    OPCd(SMULxy,                    OB(11111111,1001), OB(00010110,1000)); // .... 000'10110 1..0  SMULxy
+    OPCd(SWP,                       OB(11111011,1111), OB(00010000,1001)); // .... 000'10.00 1001  SWP
+    OPCd(LDRH_STRH,                 OB(11100000,1111), OB(00000000,1011)); // .... 000'..... 1011  LDRH, STRH
+    OPCd(LDRD_STRD,                 OB(11100001,1101), OB(00000000,1101)); // .... 000'....0 11.1  LDRD, STRD
+    OPCd(LDRSB_LDRSH,               OB(11100001,1101), OB(00000001,1101)); // .... 000'....1 11.1  LDRSB, LDRSH
+    OPCd(MRS,                       OB(11111011,1111), OB(00010000,0000)); // .... 000'10.00 0000  MRS
+    OPCd(MSR_reg,                   OB(11111011,1111), OB(00010010,0000)); // .... 000'10.10 0000  MSR (register)
+    OPCd(MSR_imm,                   OB(11111011,0000), OB(00110010,0000)); // .... 001'10.10 ....  MSR (immediate)
+    OPCd(BX,                        OB(11111111,1111), OB(00010010,0001)); // .... 000'10010 0001  BX
+    OPCd(CLZ,                       OB(11111111,1111), OB(00010110,0001)); // .... 000'10110 0001  CLZ
+    OPCd(BLX_reg,                   OB(11111111,1111), OB(00010010,0011)); // .... 000'10010 0011  BLX (register)
+    OPCd(QADD_QSUB_QDADD_QDSUB,     OB(11111001,1111), OB(00010000,0101)); // .... 000'10..0 0101  QADD, QSUB, QDADD, QDSUB
+    OPCd(BKPT,                      OB(11111111,1111), OB(00010010,0111)); // .... 000'10010 0111  BKPT
+    OPCd(data_proc_immediate_shift, OB(11100000,0001), OB(00000000,0000)); // .... 000'..... ...0  Data Processing (immediate shift)
+    OPCd(data_proc_register_shift,  OB(11100000,1001), OB(00000000,0001)); // .... 000'..... 0..1  Data Processing (register shift)
+    OPCd(data_proc_undefined,       OB(11111011,0000), OB(00110000,0000)); // .... 001'10.00 ....  Undefined instructions in Data Processing
+    OPCd(data_proc_immediate,       OB(11100000,0000), OB(00100000,0000)); // .... 001'..... ....  Data Processing (immediate value)
+    OPCd(LDR_STR_immediate_offset,  OB(11100000,0000), OB(01000000,0000)); // .... 010'..... ....  LDR, STR (immediate offset)
+    OPCd(LDR_STR_register_offset,   OB(11100000,0001), OB(01100000,0000)); // .... 011'..... ...0  LDR, STR (register offset)
+    OPCd(LDM_STM,                   OB(11100000,0000), OB(10000000,0000)); // .... 100'..... ....  LDM, STM
+    OPCd(B_BL,                      OB(11100000,0000), OB(10100000,0000)); // .... 101'..... ....  B, BL, BLX
+    OPCd(STC_LDC,                   OB(11100000,0000), OB(11000000,0000)); // .... 110'..... ....  STC, LDC
+    OPCd(CDP,                       OB(11110000,0001), OB(11100000,0000)); // .... 111'0.... ...0  CDP
+    OPCd(MCR_MRC,                   OB(11110000,0001), OB(11100000,0001)); // .... 111'0.... ...1  MCR, MRC
+    OPCd(SWI,                       OB(11110000,0000), OB(11110000,0000)); // .... 111'1.... ....  SWI
     return ARM_INVALID;
 }
 
 
+
+static enum ARM_ins_kind decode_arm_never(u32 opc)
+{
+    OPCd(PLD,                       OB(11010111,0000), OB(01010101,0000)); // 1111 01.'1.101 ....  PLD
+    OPCd(undefined_instruction,     OB(10000000,0000), OB(00000000,0000)); // 1111 0..'..... ....  Undefined
+    OPCd(undefined_instruction,     OB(11100000,0000), OB(10000000,0000)); // 1111 100'..... ....  Undefined
+    OPCd(undefined_instruction,     OB(11110000,0000), OB(11110000,0000)); // 1111 111'1.... ....  Undefined
+    OPCd(BLX,                       OB(11100000,0000), OB(10100000,0000)); // .... 101'..... ....  B, BL, BLX
+    return ARM_INVALID;
+}
+#undef OPCd
+#undef OB
+
+
 void ARM946ES_fill_arm_table(struct ARM946ES *this)
 {
-    for (u32 opc = 0; opc < 65536; opc++) {
+    for (u32 opc = 0; opc < 4096; opc++) {
         struct arm9_ins *ins = &this->opcode_table_arm[opc];
         enum ARM_ins_kind k = decode_arm(opc);
         switch(k) {
@@ -126,12 +137,26 @@ void ARM946ES_fill_arm_table(struct ARM946ES *this)
             I(BLX_reg)
             I(QADD_QSUB_QDADD_QDSUB)
             I(BKPT)
-            I(B_BL_BLX)
+            I(B_BL)
             default:
                 assert(1==2);
                 break;
-#undef I
         }
+        // Now do the same but for the NEVER table
+        ins = &this->opcode_table_arm_never[opc];
+        k = decode_arm_never(opc);
+#undef I
+#define I(x) case ARM_##x: ins->exec = &ARM946ES_ins_##x; ins->valid = 1; break;
+
+        switch(k) {
+            I(PLD);
+            I(undefined_instruction);
+            I(BLX);
+            case ARM_INVALID:
+                ins->valid = 0;
+                break;
+        }
+#undef I
     }
 }
 static u16 doBITS(u16 val, u16 hi, u16 lo)
@@ -179,10 +204,13 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
     }
     else if ((opc & 0b1111111100000000) == 0b0100011100000000) { // BX
         ins->func = &ARM946ES_THUMB_ins_BX_BLX;
-        ins->Rd = OBIT(7) << 3;
+        // for BX, MSBd must be zero
+        // for BLX, MSBd must be one
+        //ins->Rd = OBIT(7) << 3;
         ins->Rs = OBIT(6) << 3;
         ins->Rs |= BITS(5,3);
-        ins->Rd |= BITS(2, 0);
+        ins->Rd = BITS(2, 0);
+        ins->sub_opcode = OBIT(7); // 0=BX, 1=BLX
     }
     else if ((opc & 0b1111110000000000) == 0b0100010000000000) { // ADD, CMP, MOV hi
         ins->func = &ARM946ES_THUMB_ins_ADD_CMP_MOV_hi;
@@ -277,7 +305,6 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
     }
     else if ((opc & 0b1111111100000000) == 0b1011111000000000) {// 1011 1110..  BKPT
         ins->func = &ARM946ES_THUMB_ins_BKPT;
-        // UPDATE!
     }
     else if ((opc & 0b1111000000000000) == 0b1100000000000000) { // 1100......
         ins->func = &ARM946ES_THUMB_ins_LDM_STM;
@@ -310,7 +337,9 @@ void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
         ins->imm <<= 1;
     }
     else if ((opc & 0b1111100000000000) == 0b1110100000000000) { // 11101.....  BLX suffix
-        // UPDATE!
+        ins->func = &ARM946ES_THUMB_ins_BLX_suffix;
+        ins->imm = BITS(10, 0);
+        ins->imm <<= 1;
     }
     else if ((opc & 0b1111100000000000) == 0b1111000000000000) { // 11110.....
         ins->func = &ARM946ES_THUMB_ins_BL_BLX_prefix;

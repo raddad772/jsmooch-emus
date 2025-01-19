@@ -920,19 +920,6 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
     }
 }
 
-void ARM946ES_ins_B_BL(struct ARM946ES *this, u32 opcode)
-{
-    u32 link = OBIT(24);
-    i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
-    offset <<= 2;
-    if (link) *getR(this, 14) = this->regs.PC - 4;
-    this->regs.PC += (u32)offset;
-    /*if (this->regs.PC == 0x08001ec4) {
-        dbg_break("BAD MOJO", *this->trace.cycles);
-    }*/
-    ARM946ES_flush_pipeline(this);
-}
-
 void ARM946ES_ins_STC_LDC(struct ARM946ES *this, u32 opcode)
 {
     printf("\nWARNING STC/LDC");
@@ -969,61 +956,338 @@ void ARM946ES_ins_INVALID(struct ARM946ES *this, u32 opcode)
 
 void ARM946ES_ins_PLD(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    UNIMPLEMENTED;
 }
 
 void ARM946ES_ins_SMLAxy(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 Rdd = (opcode >> 16) & 15;
+    u32 Rnd = (opcode >> 12) & 15;
+    u32 Rsd = (opcode >> 8) & 15;
+    u32 y = OBIT(6); // 1 = RS top, 0 bottom
+    u32 x = OBIT(5); // 1 = Rm top, 0 bottom
+    u32 Rmd = opcode & 15;
+
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_code | ARM9P_sequential;
+
+    u32 *Rd = getR(this, Rdd);
+    u32 Rn = *getR(this, Rnd);
+    u32 Rs = *getR(this, Rsd);
+    u32 Rm = *getR(this, Rmd);
+    if (x) Rm >>= 16;
+    else Rm &= 0xFFFF;
+    if (y) Rs >>= 16;
+    else Rs &= 0xFFFF;
+
+    u64 mul_result = ((i16)Rm * (i16)Rs);
+    u64 result = mul_result + Rn;
+
+    *Rd = result;
+    if (Rdd == 15) {
+        ARM946ES_flush_pipeline(this);
+    }
+
+    this->regs.CPSR.Q |= result > 0xFFFFFFFF;
+
 }
 
 void ARM946ES_ins_SMLAWy(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 Rdd = (opcode >> 16) & 15;
+    u32 Rnd = (opcode >> 12) & 15;
+    u32 Rsd = (opcode >> 8) & 15;
+    u32 y = OBIT(6); // 1 = RS top, 0 bottom
+    u32 Rmd = opcode & 15;
+
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_code | ARM9P_sequential;
+
+    u32 *Rd = getR(this, Rdd);
+    u32 Rn = *getR(this, Rnd);
+    u32 Rs = *getR(this, Rsd);
+    u32 Rm = *getR(this, Rmd);
+
+    if (y) Rs >>= 16;
+    else Rs &= 0xFFFF;
+
+    u64 multiply_result = ((i64)(i32)Rm * (i64)(i16)Rs) >> 16;
+    u64 result = multiply_result + Rn;
+
+    *Rd = result;
+    if (Rdd == 15) {
+        ARM946ES_flush_pipeline(this);
+    }
+
+    this->regs.CPSR.Q |= result > 0xFFFFFFFF;
+
 }
 
 void ARM946ES_ins_SMULWy(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 Rdd = (opcode >> 16) & 15;
+    //u32 Rnd = (opcode >> 12) & 15;
+    u32 Rsd = (opcode >> 8) & 15;
+    u32 y = OBIT(6); // 1 = RS top, 0 bottom
+    u32 Rmd = opcode & 15;
+
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_code | ARM9P_sequential;
+
+    u32 *Rd = getR(this, Rdd);
+    u32 Rs = *getR(this, Rsd);
+    u32 Rm = *getR(this, Rmd);
+
+    if (y) Rs >>= 16;
+    else Rs &= 0xFFFF;
+
+    u64 result = ((i64)(i32)Rm * (i16)Rs) >> 16;
+
+    *Rd = result;
+
+    if (Rdd == 15) {
+        ARM946ES_flush_pipeline(this);
+    }
 }
 
 void ARM946ES_ins_SMLALxy(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 Rdd = (opcode >> 16) & 15;
+    u32 Rnd = (opcode >> 12) & 15;
+    u32 Rsd = (opcode >> 8) & 15;
+    u32 y = OBIT(6); // 1 = RS top, 0 bottom
+    u32 x = OBIT(5); // 1 = Rm top, 0 bottom
+    u32 Rmd = opcode & 15;
+
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_code | ARM9P_nonsequential; // this one becomes nonsequential
+
+    u32 *Rd = getR(this, Rdd);
+    u32 Rs = *getR(this, Rsd);
+    u32 Rm = *getR(this, Rmd);
+    u32 *Rn = getR(this, Rnd);
+
+    if (y) Rs >>= 16;
+    else Rs &= 0xFFFF;
+    if (x) Rm >>= 16;
+    else Rm &= 0xFFFF;
+
+    i64 result = (i64)(i16)Rm * (i64)(i16)Rs;
+    result += (i64)(((u64)*Rn) | (((u64)*Rd) << 32));
+
+    *Rn = ((u64)result) & 0xFFFFFFFF;
+    *Rd = ((u64)result) >> 32;
+    if (Rdd == 15) {
+        ARM946ES_flush_pipeline(this);
+    }
 }
 
 void ARM946ES_ins_SMULxy(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 Rdd = (opcode >> 16) & 15;
+    u32 Rsd = (opcode >> 8) & 15;
+    u32 y = OBIT(6); // 1 = RS top, 0 bottom
+    u32 x = OBIT(5); // 1 = Rm top, 0 bottom
+    u32 Rmd = opcode & 15;
+
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_code | ARM9P_nonsequential; // this one becomes nonsequential
+
+    u32 *Rd = getR(this, Rdd);
+    u32 Rs = *getR(this, Rsd);
+    u32 Rm = *getR(this, Rmd);
+
+    if (y) Rs >>= 16;
+    else Rs &= 0xFFFF;
+    if (x) Rm >>= 16;
+    else Rm &= 0xFFFF;
+
+    *Rd = ((i16)Rm * (i16)Rs);
+    if (Rdd == 15) {
+        ARM946ES_flush_pipeline(this);
+    }
 }
 
 void ARM946ES_ins_LDRD_STRD(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+/*
+2: LDR{cond}D  Rd,<Address>  ;Load Doubleword  R(d)=[a], R(d+1)=[a+4]
+3: STR{cond}D  Rd,<Address>  ;Store Doubleword [a]=R(d), [a+4]=R(d+1)
+STRD/LDRD: Rd must be an even numbered register (R0,R2,R4,R6,R8,R10,R12).
+STRD/LDRD: Address must be double-word aligned (multiple of eight).
+          */
+    u32 P = OBIT(24); // pre or post. 0=post
+    u32 U = OBIT(23); // up/down, 0=down
+    u32 I = OBIT(22); // 0 = register, 1 = immediate offset
+    u32 L = !OBIT(5); // bits 5-6 = opcode. 10 = LDR, 11 = STR. so bit 5 == 1 = STR
+    u32 W = 1;
+    if (P) W = OBIT(21);
+
+    u32 Rnd = (opcode >> 16) & 15;
+    u32 Rdd = (opcode >> 12) & 14; // Only use top 3 bits
+    u32 imm_off = 0;
+    imm_off = ((opcode >> 8) & 15) << 4;
+    imm_off |= (opcode & 15);
+    u32 Rmd = opcode & 15; // Offset register
+    u32 *Rn = getR(this, Rnd);
+    u32 *Rd = getR(this, Rdd);
+    u32 *Rdp1 = getR(this, Rdd | 1);
+    u32 Rm = I ? imm_off : *getR(this, Rmd);
+    u32 addr = *Rn;
+    if (P) addr = U ? (addr + Rm) : (addr - Rm);
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
+    if (L) {
+        u32 val = ARM946ES_read(this, addr, 4, ARM9P_nonsequential, 1);
+        u32 val_hi = ARM946ES_read(this, addr+4, 4, ARM9P_sequential, 1);
+
+        if (!P) addr = U ? (addr + Rm) : (addr - Rm);
+        if (W && !((Rnd == 15) && (Rdd == 14))) {
+            if (Rnd == 15) // writeback fails. technically invalid here
+                write_reg(this, Rn, addr + 4);
+            else
+                write_reg(this, Rn, addr);
+        }
+        ARM946ES_idle(this, 1);
+        write_reg(this, Rd, val);
+        write_reg(this, Rdp1, val_hi);
+    }
+    else {
+        ARM946ES_write(this, addr, 4, ARM9P_nonsequential, *Rd);
+        ARM946ES_write(this, addr+4, 4, ARM9P_sequential, *Rdp1);
+        if (!P) addr = U ? (addr + Rm) : (addr - Rm);
+        if (W) {
+            if (Rnd == 15) // writeback fails. technically invalid here
+                write_reg(this, Rn, addr + 4);
+            else
+                write_reg(this, Rn, addr);
+        }
+    }
 }
 
 void ARM946ES_ins_CLZ(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 Rdd = (opcode >> 12) & 15;
+    u32 Rmd = opcode & 15;
+    u32 v = *getR(this, Rmd);
+    this->regs.PC += 4;
+
+    this->pipeline.access = ARM9P_code | ARM9P_sequential;
+
+    *getR(this, Rdd) = __builtin_clz(v);
+    if (Rdd == 15) ARM946ES_flush_pipeline(this);
 }
 
 void ARM946ES_ins_BLX_reg(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 link = this->regs.PC - 4;
+    this->regs.PC = (*getR(this, opcode & 15)) & 0xFFFFFFFE;
+    *getR(this, 14) = link;
+
+    this->regs.CPSR.T = 1;
+    ARM946ES_flush_pipeline(this);
 }
 
-void ARM946ES_ins_QADD_QSUB_QDADD_QDSUB(struct ARM946ES *this, u32 opcode)
-{
-UNIMPLEMENTED;
+void ARM946ES_ins_QADD_QSUB_QDADD_QDSUB(struct ARM946ES *this, u32 opcode) {
+    u32 sub_opcode = (opcode >> 20) & 15;
+    u32 Rnd = (opcode >> 16) & 15;
+    u32 Rdd = (opcode >> 12) & 15;
+    u32 Rmd = opcode & 15;
+
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_sequential | ARM9P_code;
+
+    u32 Rm = *getR(this, Rmd);
+    u32 Rn = *getR(this, Rnd);
+
+    u64 result;
+    switch (sub_opcode) {
+        case 0b0000: // QADD
+            result = Rm + Rn;
+            if (result > 0xFFFFFFFF) {
+                this->regs.CPSR.Q = 1;
+                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
+            }
+            break;
+        case 0b0010: // QSUB
+            result = (Rm - Rn) & 0xFFFFFFFF;
+            if (((Rm ^ Rn) & 0x80000000) && ((Rm ^ result) & 0x80000000)) {
+                this->regs.CPSR.Q = 1;
+                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
+            }
+            break;
+        case 0b0100: // QDADD
+            result = Rn + Rn;
+            if (result > 0xFFFFFFFF) {
+                this->regs.CPSR.Q = 1;
+                Rn = (Rn & 0x80000000) ? 0x80000000 : 0x7FFFFFFF;
+            } else {
+                Rn = result;
+            }
+
+            result = Rm + Rn;
+            if (result > 0xFFFFFFFF) {
+                this->regs.CPSR.Q = 1;
+                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
+            }
+            break;
+        case 0b0110: // QDSUB
+            result = Rn + Rn;
+            if (result > 0xFFFFFFFF) {
+                this->regs.CPSR.Q = 1;
+                Rn = (Rn & 0x80000000) ? 0x80000000 : 0x7FFFFFFF;
+            } else {
+                Rn = result;
+            }
+
+            result = Rm - Rn;
+            if (((Rm ^ Rn) & 0x80000000) && ((Rm ^ result) & 0x80000000)) {
+                this->regs.CPSR.Q = 1;
+                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
+            }
+
+            break;
+
+        default: {
+            UNIMPLEMENTED;
+            result = 0;
+        }
+    }
+
+    write_reg(this, getR(this, Rdd), result);
 }
 
 void ARM946ES_ins_BKPT(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    this->regs.R_abt[1] = this->regs.PC - 4;
+    this->regs.SPSR_abt = this->regs.CPSR.u;
+    this->regs.CPSR.mode = ARM9_abort;
+    ARM946ES_fill_regmap(this);
+    this->regs.CPSR.I = 1;
+    this->regs.PC = 0x0000000C;
+    ARM946ES_flush_pipeline(this);
 }
 
-void ARM946ES_ins_B_BL_BLX(struct ARM946ES *this, u32 opcode)
+void ARM946ES_ins_B_BL(struct ARM946ES *this, u32 opcode)
 {
-UNIMPLEMENTED;
+    u32 link = OBIT(24);
+    i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
+    offset <<= 2;
+    if (link) *getR(this, 14) = this->regs.PC - 4;
+    this->regs.PC += (u32)offset;
+    ARM946ES_flush_pipeline(this);
 }
 
+void ARM946ES_ins_BLX(struct ARM946ES *this, u32 opcode)
+{
+    i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
+    offset <<= 2;
+    u32 H = OBIT(24) << 1;
+    offset += H;
+
+    *getR(this, 14) = this->regs.PC - 4;
+    this->regs.PC += (u32)offset;
+    this->regs.CPSR.T = 1;
+
+    ARM946ES_flush_pipeline(this);
+}

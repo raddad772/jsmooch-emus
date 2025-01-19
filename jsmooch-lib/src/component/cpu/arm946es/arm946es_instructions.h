@@ -24,7 +24,6 @@ void ARM946ES_ins_data_proc_immediate(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_LDR_STR_immediate_offset(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_LDR_STR_register_offset(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_LDM_STM(struct ARM946ES *, u32 opcode);
-void ARM946ES_ins_B_BL(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_STC_LDC(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_CDP(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_MCR_MRC(struct ARM946ES *, u32 opcode);
@@ -41,6 +40,7 @@ void ARM946ES_ins_CLZ(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_BLX_reg(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_QADD_QSUB_QDADD_QDSUB(struct ARM946ES *, u32 opcode);
 void ARM946ES_ins_BKPT(struct ARM946ES *, u32 opcode);
-void ARM946ES_ins_B_BL_BLX(struct ARM946ES *, u32 opcode);
+void ARM946ES_ins_B_BL(struct ARM946ES *, u32 opcode);
+void ARM946ES_ins_BLX(struct ARM946ES *, u32 opcode);
 
 #endif //JSMOOCH_EMUS_ARM946ES_INSTRUCTIONS_H

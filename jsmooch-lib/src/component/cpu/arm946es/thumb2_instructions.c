@@ -299,12 +299,20 @@ void ARM946ES_THUMB_ins_data_proc(struct ARM946ES *this, struct thumb2_instructi
     this->regs.CPSR.C = this->carry;
 }
 
-void ARM946ES_THUMB_ins_BX(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_BX_BLX(struct ARM946ES *this, struct thumb2_instruction *ins)
 {
+    // Update the BLX!
+    // for BX, MSBd must be zero
+    // for BLX, MSBd must be one
+    // MSBd = bit 7
     u32 addr = *getR(this, ins->Rs);
     this->regs.CPSR.T = addr & 1;
     this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
+    u32 lnk = this->regs.PC - 1;
     this->regs.PC = addr & 0xFFFFFFFE;
+    if (ins->sub_opcode) { // BLX
+        *getR(this, 14) = lnk;
+    }
     ARM946ES_flush_pipeline(this);
 }
 
@@ -640,6 +648,19 @@ Execution SWI/BKPT:
     ARM946ES_flush_pipeline(this);
 }
 
+void ARM946ES_THUMB_ins_BKPT(struct ARM946ES *this, struct thumb2_instruction *ins)
+{
+    this->regs.R_abt[1] = this->regs.PC - 2;
+    this->regs.SPSR_abt = this->regs.CPSR.u;
+    this->regs.CPSR.mode = ARM9_abort;
+    this->regs.CPSR.T = 0; // exit THUMB
+    this->regs.CPSR.I = 1; // mask IRQ
+    this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
+    ARM946ES_fill_regmap(this);
+    this->regs.PC = 0x0000000C;
+    ARM946ES_flush_pipeline(this);
+}
+
 void ARM946ES_THUMB_ins_UNDEFINED_BCC(struct ARM946ES *this, struct thumb2_instruction *ins)
 {
     ARM946ES_THUMB_ins_BCC(this, ins);
@@ -681,3 +702,14 @@ void ARM946ES_THUMB_ins_BL_suffix(struct ARM946ES *this, struct thumb2_instructi
     ARM946ES_flush_pipeline(this);
 }
 
+void ARM946ES_THUMB_ins_BLX_suffix(struct ARM946ES *this, struct thumb2_instruction *ins)
+{
+
+    u32 v = (this->regs.PC - 2) | 1;
+    u32 *LR = getR(this, 14);
+    u32 addr = (*LR) + ins->imm;
+    *LR = v;
+    this->regs.PC = addr & 0xFFFFFFFC;
+    this->regs.CPSR.T = 0;
+    ARM946ES_flush_pipeline(this);
+}

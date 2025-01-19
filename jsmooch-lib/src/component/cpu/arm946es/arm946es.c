@@ -8,6 +8,7 @@
 #include "arm946es.h"
 #include "arm946es_decode.h"
 #include "armv5_disassembler.h"
+#include "arm946es_instructions.h"
 #define PC R[15]
 
 static u32 fetch_ins(struct ARM946ES *this, u32 sz) {
@@ -230,6 +231,7 @@ static void decode_and_exec_arm(struct ARM946ES *this, u32 opcode, u32 opcode_ad
     this->arm9_ins->exec(this, opcode);
 }
 
+
 u32 ARM946ES_fetch_ins(struct ARM946ES *this, u32 addr, u32 sz, u32 access)
 {
     if (sz == 2) addr &= 0xFFFFFFFE;
@@ -255,6 +257,8 @@ void ARM946ES_run(struct ARM946ES*this)
         this->pipeline.opcode[1] = fetch_ins(this, 2);
         this->pipeline.addr[1] = this->regs.PC;
         decode_and_exec_thumb(this, opcode, opcode_addr);
+        if (this->pipeline.flushed)
+            ARM946ES_reload_pipeline(this);
     }
     else {
         this->pipeline.opcode[1] = fetch_ins(this, 4);
@@ -265,9 +269,25 @@ void ARM946ES_run(struct ARM946ES*this)
                 ARM946ES_reload_pipeline(this);
         }
         else {
-            if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
-            this->pipeline.access = ARM9P_code | ARM9P_sequential;
-            this->regs.PC += 4;
+            // check for PLD and 4 undefined's
+            u32 execed = 0;
+            if ((opcode >> 28) == 15) {
+                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
+                u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
+                this->arm9_ins = &this->opcode_table_arm_never[decode];
+                if (this->arm9_ins->valid) {
+                    this->arm9_ins->exec(this, opcode);
+                    if (this->pipeline.flushed)
+                        ARM946ES_reload_pipeline(this);
+                    execed = 1;
+                }
+            }
+
+            if (!execed) {
+                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
+                this->pipeline.access = ARM9P_code | ARM9P_sequential;
+                this->regs.PC += 4;
+            }
         }
     }
 }
