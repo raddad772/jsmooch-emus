@@ -41,11 +41,13 @@ static void vblank(struct GBA *this, u32 val)
 {
     //pprint_palette_ram(this);
     this->clock.ppu.vblank_active = val;
-    u32 old_IF = this->io.IF;
-    this->io.IF |= this->ppu.io.vblank_irq_enable && val;
-    if (old_IF != this->io.IF) {
-        DBG_EVENT(DBG_GBA_EVENT_SET_VBLANK_IRQ);
-        GBA_eval_irqs(this);
+    if (val) {
+        u32 old_IF = this->io.IF;
+        this->io.IF |= this->ppu.io.vblank_irq_enable && val;
+        if (old_IF != this->io.IF) {
+            DBG_EVENT(DBG_GBA_EVENT_SET_VBLANK_IRQ);
+            GBA_eval_irqs(this);
+        }
     }
 }
 

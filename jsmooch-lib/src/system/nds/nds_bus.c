@@ -23,10 +23,6 @@ static u32 timer_reload_ticks(u32 reload)
 }
 
 
-static u32 timer_enabled(struct NDS *this, u32 tn) {
-    return NDS_clock_current(this) >= this->timer[tn].enable_at;
-}
-
 static u32 busrd7_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD7 UNKNOWN ADDR:%08x sz:%d", addr, sz);
     this->waitstates.current_transaction++;
@@ -106,47 +102,6 @@ static u32 busrd7_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 h
 {
     if (!this->io.rights.gba_slot) return masksz[sz];
     return 0;
-}
-
-
-
-void NDS_dma_start(struct NDS_DMA_ch *ch, u32 i, u32 is_sound)
-{
-    ch->op.started = 1;
-    u32 mask = ch->io.transfer_size ? ~3 : ~1;
-    mask &= 0x0FFFFFFF;
-    //u32 mask = 0x0FFFFFFF;
-    if (ch->op.first_run) {
-        ch->op.dest_addr = ch->io.dest_addr & mask;
-        ch->op.src_addr = ch->io.src_addr & mask;
-    }
-    else if (ch->io.dest_addr_ctrl == 3) {
-        ch->op.dest_addr = ch->io.dest_addr & mask;
-    }
-    ch->op.word_count = ch->io.word_count;
-    ch->op.sz = ch->io.transfer_size ? 4 : 2;
-    ch->op.word_mask = i == 3 ? 0xFFFF : 0x3FFF;
-    ch->op.dest_access = ARM7P_nonsequential | ARM7P_dma;
-    ch->op.src_access = ARM7P_nonsequential | ARM7P_dma;
-    ch->op.is_sound = is_sound;
-    if (is_sound) {
-        ch->op.sz = 4;
-        ch->io.dest_addr_ctrl = 2;
-        ch->op.word_count = 4;
-    }
-}
-
-
-static u32 read_timer(struct NDS *this, u32 tn)
-{
-    struct NDS_TIMER *t = &this->timer[tn];
-    u64 current_time = this->clock.master_cycle_count + this->waitstates.current_transaction;
-    if (!timer_enabled(this, tn) || t->cascade) return t->val_at_stop;
-
-    // Timer is enabled, so, check how many cycles we have had...
-    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (timer_reload_ticks(t->reload));
-    u32 v = t->reload + ticks_passed;
-    return v;
 }
 
 static u32 busrd9_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
@@ -471,7 +426,10 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 void NDS_bus_init(struct NDS *this)
 {
     for (u32 i = 0; i < 4; i++) {
-        struct NDS_TIMER *t = &this->timer[i];
+        struct NDS_TIMER *t = &this->timer7[i];
+        t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+        t->enable_at = 0xFFFFFFFFFFFFFFFF;
+        t = &this->timer9[i];
         t->overflow_at = 0xFFFFFFFFFFFFFFFF;
         t->enable_at = 0xFFFFFFFFFFFFFFFF;
     }
@@ -613,8 +571,12 @@ void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     buswr9_invalid(this, addr, sz, access, val);
 }
 
-
-u64 NDS_clock_current(struct NDS *this)
+u64 NDS_clock_current7(struct NDS *this)
 {
-    return this->clock.master_cycle_count + this->waitstates.current_transaction;
+    return this->clock.master_cycle_count7 + this->waitstates.current_transaction;
+}
+
+u64 NDS_clock_current9(struct NDS *this)
+{
+    return this->clock.master_cycle_count9 + this->waitstates.current_transaction;
 }

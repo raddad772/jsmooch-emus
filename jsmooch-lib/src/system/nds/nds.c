@@ -9,6 +9,8 @@
 #include "nds.h"
 #include "nds_bus.h"
 #include "nds_debugger.h"
+#include "nds_dma.h"
+#include "nds_timers.h"
 
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
@@ -138,12 +140,12 @@ void NDS_new(struct jsm_system *jsm)
     struct jsm_debug_read_trace dt7;
     dt7.read_trace_arm = &read_trace_cpu7;
     dt7.ptr = this;
-    ARM7TDMI_setup_tracing(&this->arm7, &dt7, &this->clock.master_cycle_count, 1);
+    ARM7TDMI_setup_tracing(&this->arm7, &dt7, &this->clock.master_cycle_count7, 1);
 
     struct jsm_debug_read_trace dt9;
     dt9.read_trace_arm = &read_trace_cpu9;
     dt9.ptr = this;
-    ARM946ES_setup_tracing(&this->arm9, &dt9, &this->clock.master_cycle_count, 2);
+    ARM946ES_setup_tracing(&this->arm9, &dt9, &this->clock.master_cycle_count9, 2);
 
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
@@ -223,14 +225,14 @@ void NDSJ_get_framevars(JSM, struct framevars* out)
     out->master_frame = this->clock.master_frame;
     out->x = this->clock.ppu.x;
     out->scanline = this->clock.ppu.y;
-    out->master_cycle = this->clock.master_cycle_count;
+    out->master_cycle = this->clock.master_cycle_count7;
 }
 
 static void skip_BIOS(struct NDS* this)
 {
     printf("\nSKIP NDS BIOS!");
     assert(1==2);
-    dbg_break("NOT SUPPORT SKIP BIOS!", this->clock.master_cycle_count);
+    dbg_break("NOT SUPPORT SKIP BIOS!", this->clock.master_cycle_count7);
 
 }
 
@@ -293,6 +295,13 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
 {
     this->waitstates.current_transaction = 0;
     // Run DMA & CPU
+    if (NDS_dma7_go(this)) {
+    }
+    else {
+        ARM7TDMI_run(&this->arm7);
+    }
+    NDS_tick_timers7(this, this->waitstates.current_transaction);
+    this->clock.master_cycle_count7 += this->waitstates.current_transaction;
 
     return this->waitstates.current_transaction;
 }
@@ -300,7 +309,14 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
 static i64 run_arm9(struct NDS *this, i64 num_cycles)
 {
     this->waitstates.current_transaction = 0;
-    // Run DMA and CPU
+    // Run DMA & CPU
+    if (NDS_dma7_go(this)) {
+    }
+    else {
+        ARM946ES_run(&this->arm9);
+    }
+    NDS_tick_timers9(this, this->waitstates.current_transaction);
+    this->clock.master_cycle_count7 += this->waitstates.current_transaction;
 
     return this->waitstates.current_transaction;
 }

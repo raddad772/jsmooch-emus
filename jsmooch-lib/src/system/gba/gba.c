@@ -41,12 +41,6 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs);
 static u32 timer_reload_ticks(u32 reload)
 {
     // So it overflows at 0x100
-    // reload value is 0xFD
-    // 0xFD ^ 0xFF = 2
-    // How many ticks til 0x100? 256 - 253 = 3, correct!
-    // 100. 256 - 100 = 156, correct!
-    // Unfortunately if we set 0xFFFF, we need 0x1000 tiks...
-    // ok but what about when we set 255? 256 - 255 = 1 which is wrong
     if (reload == 0xFFFF) return 0x10000;
     return 0x10000 - reload;
 }
@@ -246,6 +240,7 @@ static void raise_irq_for_dma(struct GBA *this, u32 num)
 {
     u32 shift = 8 + num;
     this->io.IF |= (1 << shift);
+    GBA_eval_irqs(this);
 }
 
 static u32 dma_go_ch(struct GBA *this, u32 num) {

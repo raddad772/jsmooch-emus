@@ -82,7 +82,6 @@ struct NDS {
             u32 buttons;
             u32 enable, condition;
         } button_irq;
-        u32 IE, IF, IME;
         u32 halted;
 
         u8 POSTFLG;
@@ -96,10 +95,12 @@ struct NDS {
         struct {
             u32 BIOSPROT;
             u32 EXMEM;
+            u32 IF, IE, IME;
         } arm7;
 
         struct {
             u32 EXMEM;
+            u32 IF, IE, IME;
         } arm9;
 
         struct {
@@ -144,7 +145,7 @@ struct NDS {
             u32 is_sound;
         } op;
         u32 run_counter;
-    } dma[4];
+    } dma7[4], dma9[4];
 
     struct NDS_TIMER {
         struct {
@@ -162,7 +163,7 @@ struct NDS {
         u32 irq_on_overflow;
         u16 reload;
         u64 reload_ticks;
-    } timer[4];
+    } timer7[4], timer9[4];
 
     struct {
         double master_cycles_per_audio_sample;
@@ -262,11 +263,12 @@ u32 NDS_mainbus_fetchins9(void *ptr, u32 addr, u32 sz, u32 access);
 
 void NDS_bus_init(struct NDS *);
 void NDS_eval_irqs(struct NDS *);
-void NDS_check_dma_at_hblank(struct NDS *);
-void NDS_check_dma_at_vblank(struct NDS *);
+void NDS_check_dma9_at_hblank(struct NDS *);
+void NDS_check_dma7_at_vblank(struct NDS *);
+void NDS_check_dma9_at_vblank(struct NDS *);
 u32 NDS_open_bus_byte(struct NDS *, u32 addr);
 u32 NDS_open_bus(struct NDS *this, u32 addr, u32 sz);
-void NDS_dma_start(struct NDS_DMA_ch *ch, u32 i, u32 is_sound);
-u64 NDS_clock_current(struct NDS *);
+u64 NDS_clock_current7(struct NDS *);
+u64 NDS_clock_current9(struct NDS *);
 
 #endif //JSMOOCH_EMUS_NDS_BUS_H

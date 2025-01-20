@@ -40,6 +40,10 @@ struct NDS_PPU {
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 
+    struct {
+        u32 vblank_irq_enable, hblank_irq_enable, vcount_irq_enable;
+        u32 vcount_at;
+    } io;
     struct NDSENG2D {
         u32 num;
 
@@ -54,19 +58,6 @@ struct NDS_PPU {
         } mem;
 
         struct {
-            struct {
-                u32 hsize, vsize;
-                u32 enable;
-                u32 y_counter, y_current;
-            } bg;
-            struct {
-                u32 hsize, vsize;
-                u32 enable;
-                u32 y_counter, y_current;
-            } obj;
-        } mosaic;
-
-        struct {
             u32 mode;
             u32 targets_a[6];
             u32 targets_b[6];
@@ -79,8 +70,6 @@ struct NDS_PPU {
             u32 bg_mode;
             u32 force_blank;
             u32 frame, hblank_free, obj_mapping_1d;
-            u32 vblank_irq_enable, hblank_irq_enable, vcount_irq_enable;
-            u32 vcount_at;
         } io;
 
         struct NDS_PPU_bg {
@@ -110,6 +99,18 @@ struct NDS_PPU {
 
             u32 hscroll, vscroll;
         } bg[4];
+
+        struct {
+            struct {
+                u32 hsize, vsize;
+                u32 enable;
+            } bg;
+            struct {
+                u32 hsize, vsize;
+                u32 enable;
+            } obj;
+        } mosaic;
+
         struct NDS_PPU_window window[4]; // win0, win1, win-else and win-obj
         struct NDS_PPU_OBJ obj;
     } eng2d[2];
@@ -120,6 +121,15 @@ struct NDS_PPU {
             u8 *palette[6];
         } slots;
     } eng3d;
+
+    struct {
+        struct {
+            u32 y_counter, y_current;
+        } bg;
+        struct {
+            u32 y_counter, y_current;
+        } obj;
+    } mosaic;
 };
 
 struct NDS;
