@@ -7,6 +7,7 @@
 #include "nds_bus.h"
 #include "nds_vram.h"
 #include "nds_dma.h"
+#include "nds_irq.h"
 #include "nds_timers.h"
 #include "helpers/multisize_memaccess.c"
 
@@ -237,6 +238,16 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 {
     u32 v;
     switch(addr) {
+        case R_IME: return this->io.arm7.IME;
+        case R_IE+0: return this->io.arm7.IE & 0xFF;
+        case R_IE+1: return (this->io.arm7.IE >> 8) & 0xFF;
+        case R_IE+2: return (this->io.arm7.IE >> 16) & 0xFF;
+        case R_IE+3: return (this->io.arm7.IE >> 24) & 0xFF;
+        case R_IF+0: return this->io.arm7.IF & 0xFF;
+        case R_IF+1: return (this->io.arm7.IF >> 8) & 0xFF;
+        case R_IF+2: return (this->io.arm7.IF >> 16) & 0xFF;
+        case R_IF+3: return (this->io.arm7.IF >> 24) & 0xFF;
+
         case R_DMA0SAD+0: return this->dma9[0].io.src_addr & 0xFF;
         case R_DMA0SAD+1: return (this->dma9[0].io.src_addr >> 8) & 0xFF;
         case R_DMA0SAD+2: return (this->dma9[0].io.src_addr >> 16) & 0xFF;
@@ -351,6 +362,30 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_IME: this->io.arm7.IME = val & 1; NDS_eval_irqs_7(this); return;
+        case R_IF+0: this->io.arm7.IF &= ~val; NDS_eval_irqs_7(this); return;
+        case R_IF+1: this->io.arm7.IF &= ~(val << 8); NDS_eval_irqs_7(this); return;
+        case R_IF+2: this->io.arm7.IF &= ~(val << 16); NDS_eval_irqs_7(this); return;
+        case R_IF+3: this->io.arm7.IF &= ~(val << 24); NDS_eval_irqs_7(this); return;
+
+        case R_IE+0:
+            this->io.arm7.IE = (this->io.arm7.IE & 0xFF00) | (val & 0xFF);
+            this->io.arm7.IE &= ~0x80; // bit 7 doesn't get set on ARM9
+            NDS_eval_irqs_7(this);
+            return;
+        case R_IE+1:
+            this->io.arm7.IE = (this->io.arm7.IE & 0xFF) | (val << 8);
+            NDS_eval_irqs_7(this);
+            return;
+        case R_IE+2:
+            this->io.arm7.IE = (this->io.arm7.IE & 0xFF00FFFF) | (val << 16);
+            NDS_eval_irqs_7(this);
+            return;
+        case R_IE+3:
+            this->io.arm7.IE = (this->io.arm7.IE & 0x00FFFFFF) | (val << 24);
+            NDS_eval_irqs_7(this);
+            return;
+
         case R_DMA0SAD+0: this->dma7[0].io.src_addr = (this->dma7[0].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
         case R_DMA0SAD+1: this->dma7[0].io.src_addr = (this->dma7[0].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
         case R_DMA0SAD+2: this->dma7[0].io.src_addr = (this->dma7[0].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
@@ -498,6 +533,16 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 {
     u32 v;
     switch(addr) {
+        case R_IME: return this->io.arm9.IME;
+        case R_IE+0: return this->io.arm9.IE & 0xFF;
+        case R_IE+1: return (this->io.arm9.IE >> 8) & 0xFF;
+        case R_IE+2: return (this->io.arm9.IE >> 16) & 0xFF;
+        case R_IE+3: return (this->io.arm9.IE >> 24) & 0xFF;
+        case R_IF+0: return this->io.arm9.IF & 0xFF;
+        case R_IF+1: return (this->io.arm9.IF >> 8) & 0xFF;
+        case R_IF+2: return (this->io.arm9.IF >> 16) & 0xFF;
+        case R_IF+3: return (this->io.arm9.IF >> 24) & 0xFF;
+
         case R9_WRAMCNT:
             return this->mem.io.RAM9.val;
         case R9_EXMEMCNT+0:
@@ -628,6 +673,30 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_IME: this->io.arm9.IME = val & 1; NDS_eval_irqs_9(this); return;
+        case R_IF+0: this->io.arm9.IF &= ~val; NDS_eval_irqs_9(this); return;
+        case R_IF+1: this->io.arm9.IF &= ~(val << 8); NDS_eval_irqs_9(this); return;
+        case R_IF+2: this->io.arm9.IF &= ~(val << 16); NDS_eval_irqs_9(this); return;
+        case R_IF+3: this->io.arm9.IF &= ~(val << 24); NDS_eval_irqs_9(this); return;
+
+        case R_IE+0:
+            this->io.arm9.IE = (this->io.arm9.IE & 0xFFFFFF00) | (val & 0xFF);
+            this->io.arm9.IE &= ~0x80; // bit 7 doesn't get set on ARM9
+            NDS_eval_irqs_9(this);
+            return;
+        case R_IE+1:
+            this->io.arm9.IE = (this->io.arm9.IE & 0xFFFF00FF) | (val << 8);
+            NDS_eval_irqs_9(this);
+            return;
+        case R_IE+2:
+            this->io.arm9.IE = (this->io.arm9.IE & 0xFF00FFFF) | (val << 16);
+            NDS_eval_irqs_9(this);
+            return;
+        case R_IE+3:
+            this->io.arm9.IE = (this->io.arm9.IE & 0x00FFFFFF) | (val << 24);
+            NDS_eval_irqs_9(this);
+            return;
+
         case R_DMA0SAD+0: this->dma9[0].io.src_addr = (this->dma9[0].io.src_addr & 0xFFFFFF00) | (val << 0); return;
         case R_DMA0SAD+1: this->dma9[0].io.src_addr = (this->dma9[0].io.src_addr & 0xFFFF00FF) | (val << 8); return;
         case R_DMA0SAD+2: this->dma9[0].io.src_addr = (this->dma9[0].io.src_addr & 0xFF00FFFF) | (val << 16); return;

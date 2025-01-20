@@ -98,7 +98,7 @@ struct NDS {
         struct {
             u32 BIOSPROT;
             u32 EXMEM;
-            u32 IF, IE, IME;
+            u32 IF, IE, IME, IE_val;
         } arm7;
 
         struct {

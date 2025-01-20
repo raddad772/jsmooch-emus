@@ -426,13 +426,13 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     }
     switch(addr) {
         case 0x04000200: // IE lo-byte
-            this->io.IE = (this->io.IE & 0xFF00) | ((this->io.IE & ~mask) | (val & mask));
+            this->io.IE = (this->io.IE & 0xFF00) | (val & 0xFF);
             GBA_eval_irqs(this);
             return;
         case 0x04000201: // IE hi-byte
             mask <<= 8;
             val <<= 8;
-            this->io.IE = (this->io.IE & 0xFF) | ((this->io.IE & ~mask) | (val & mask));
+            this->io.IE = (this->io.IE & 0xFF) | (val << 8);
             GBA_eval_irqs(this);
             return;
         case 0x04000202: // IF lo-byte

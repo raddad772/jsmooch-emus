@@ -35,6 +35,10 @@
 #define R_DMA2CNT_L 0x040000D0
 #define R_DMA3CNT_L 0x040000DC
 
+#define R_IME 0x04000208
+#define R_IF  0x04000214
+#define R_IE  0x04000210
+
 #define R_DMA0CNT_H 0x040000BA // r/w. lower 5 bits of this now used for word count
 #define R_DMA1CNT_H 0x040000C6 // bit27 unused on arm7
 #define R_DMA2CNT_H 0x040000D2
