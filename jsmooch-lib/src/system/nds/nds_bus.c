@@ -59,13 +59,15 @@ static void buswr9_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 v
 
 static void buswr7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (!this->mem.io.RAM7.disabled) cW[sz](this->mem.RAM, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base, val);
+    if (addr >= 0x03800000) return cW[sz](this->mem.WRAM_arm7, addr & 0xFFFF, val);
+    if (!this->mem.io.RAM7.disabled) cW[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base, val);
 }
 
 static u32 busrd7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    if (addr >= 0x03800000) return cR[sz](this->mem.WRAM_arm7, addr & 0xFFFF);
     if (this->mem.io.RAM7.disabled) return 0; // undefined
-    return cR[sz](this->mem.RAM, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base);
+    return cR[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base);
 }
 
 static void buswr7_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
@@ -182,13 +184,13 @@ static u32 busrd9_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 h
 
 static void buswr9_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (!this->mem.io.RAM9.disabled) cW[sz](this->mem.RAM, (addr & this->mem.io.RAM9.mask) + this->mem.io.RAM9.base, val);
+    if (!this->mem.io.RAM9.disabled) cW[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM9.mask) + this->mem.io.RAM9.base, val);
 }
 
 static u32 busrd9_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (this->mem.io.RAM9.disabled) return 0; // undefined
-    return cR[sz](this->mem.RAM, (addr & this->mem.io.RAM9.mask) + this->mem.io.RAM9.base);
+    return cR[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM9.mask) + this->mem.io.RAM9.base);
 }
 
 static void buswr9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
