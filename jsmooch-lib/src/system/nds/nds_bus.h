@@ -59,16 +59,13 @@ struct NDS {
             struct {
                 u32 base, mask, disabled, val;
             } RAM7, RAM9;
-            struct {
-                u32 enabled9;
-            } gba_cart;
         } io;
 
         struct NDS_VRAM {
             u8 data[656 * 1024];
             struct {
                 struct {
-                    u32 mst, ofs;
+                    u32 mst, ofs, enable;
                 } bank[9];
             } io;
             struct {
@@ -95,6 +92,21 @@ struct NDS {
         } open_bus;
 
         struct NDS_CPU_FIFO to_arm7, to_arm9;
+
+        struct {
+            u32 BIOSPROT;
+            u32 EXMEM;
+        } arm7;
+
+        struct {
+            u32 EXMEM;
+        } arm9;
+
+        struct {
+            u32 gba_slot;
+            u32 nds_slot;
+            u32 main_memory;
+        } rights;
     } io;
 
     struct {

@@ -4,7 +4,10 @@
 #include <string.h>
 
 #include "nds_bus.h"
+#include "nds_vram.h"
 #include "helpers/multisize_memaccess.c"
+
+static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
 
 static u32 timer_reload_ticks(u32 reload)
 {
@@ -54,7 +57,56 @@ static void buswr9_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 v
     //if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
 }
 
-#define WAITCNT 0x04000204
+static void buswr7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    if (!this->mem.io.RAM7.disabled) cW[sz](this->mem.RAM, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base, val);
+}
+
+static u32 busrd7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    if (this->mem.io.RAM7.disabled) return 0; // undefined
+    return cR[sz](this->mem.RAM, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base);
+}
+
+static void buswr7_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    u32 bank = (addr >> 17) & 1;
+    if (this->mem.vram.map.arm7[bank]) return cW[sz](this->mem.vram.map.arm7[bank], addr & 0x1FFFF, val);
+
+    printf("\nWarning write7 to unmapped VRAM:%08x sz:%d data:%08x", addr, sz, val);
+}
+
+static u32 busrd7_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    u32 bank = (addr >> 17) & 1;
+    if (this->mem.vram.map.arm7[bank]) return cR[sz](this->mem.vram.map.arm7[bank], addr & 0x1FFFF);
+
+    return busrd7_invalid(this, addr, sz, access, has_effect);
+}
+
+static void buswr7_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    return;
+}
+
+static u32 busrd7_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    if (!this->io.rights.gba_slot) return (addr & 0x1FFFF) >> 1;
+    return 0;
+}
+
+static void buswr7_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    return;
+}
+
+static u32 busrd7_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    if (!this->io.rights.gba_slot) return masksz[sz];
+    return 0;
+}
+
+
 
 void NDS_dma_start(struct NDS_DMA_ch *ch, u32 i, u32 is_sound)
 {
@@ -113,7 +165,7 @@ static void buswr9_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 
 
 static u32 busrd9_gba_cart(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (this->mem.io.gba_cart.enabled9) return (addr & 0x1FFFF) >> 1;
+    if (this->io.rights.gba_slot) return (addr & 0x1FFFF) >> 1;
     return 0;
 }
 
@@ -122,11 +174,9 @@ static void buswr9_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 
     return;
 }
 
-static u32 masksz[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
-
 static u32 busrd9_gba_sram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (this->mem.io.gba_cart.enabled9) return 0xFFFFFFFF & masksz[sz];
+    if (this->io.rights.gba_slot) return masksz[sz];
     return 0;
 }
 
@@ -163,6 +213,7 @@ static u32 busrd9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access
 
 static void buswr9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    if (sz == 1) return; // 8-bit writes ignored
     u8 *ptr = this->mem.vram.map.arm9[(addr >> 14) & 0x3FF];
     if (ptr) cW[sz](ptr, addr & 0x3FFF, val);
 
@@ -194,37 +245,115 @@ static u32 busrd9_oam(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     return busrd9_invalid(this, addr, sz, access, has_effect);
 }
 
+#define WAITCNT 0x04000204
+
+#define R7_BIOSPROT 0x04000308
+#define R7_VRAMSTAT 0x04000240
 #define R7_WRAMSTAT 0x04000241
+#define R7_EXMEMSTAT 0x04000204
+
+#define R9_EXMEMCNT 0x04000204
 #define R9_WRAMCNT  0x04000247
+#define R9_VRAMCNT 0x04000240
+
+static u32 busrd7_bios7(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    return cR[sz](this->mem.bios7, addr & 0x3FFF);
+}
+
+static void buswr7_bios7(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+}
+
+static u32 busrd7_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    return cR[sz](this->mem.RAM, addr & 0x3FFFFF);
+}
+
+static void buswr7_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    cW[sz](this->mem.RAM, addr & 0x3FFFFF, val);
+}
+
 
 static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    u32 v;
     switch(addr) {
+        case R7_VRAMSTAT:
+            v = this->mem.vram.io.bank[NVC].enable && (this->mem.vram.io.bank[NVC].mst == 2);
+            v |= (this->mem.vram.io.bank[NVD].enable && (this->mem.vram.io.bank[NVD].mst == 2)) << 1;
+            return v;
         case R7_WRAMSTAT:
             return this->mem.io.RAM9.val;
+        case R7_EXMEMSTAT+0:
+            return (this->io.arm7.EXMEM & 0x7F) | (this->io.arm9.EXMEM & 0x80);
+        case R7_EXMEMSTAT+1:
+            return (this->io.arm9.EXMEM >> 8) | (1 << 5);
     }
-    printf("\nUnhandled BUSRDIO78 addr:%08x", addr);
-    return 0;
-}
-
-static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
-{
-    switch(addr) {
-        case R9_WRAMCNT:
-            return this->mem.io.RAM9.val;
-    }
-    printf("\nUnhandled BUSRDIO98 addr:%08x", addr);
+    printf("\nUnhandled BUSRD7IO8 addr:%08x", addr);
     return 0;
 }
 
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    printf("\nUnhandled BUSWRIO78 addr:%08x val:%08x", addr, val);
+    switch(addr) {
+        case R7_BIOSPROT+0:
+            this->io.arm7.BIOSPROT = (this->io.arm7.BIOSPROT & 0xFF00) | val;
+            return;
+        case R7_BIOSPROT+1:
+            this->io.arm7.BIOSPROT = (this->io.arm7.BIOSPROT & 0xFF) | (val << 8);
+            return;
+        case R7_EXMEMSTAT+0:
+            this->io.arm7.EXMEM = val & 0x7F;
+            return;
+        case R7_EXMEMSTAT+1:
+            return;
+
+    }
+    printf("\nUnhandled BUSWR7IO8 addr:%08x val:%08x", addr, val);
+}
+
+// --------------
+static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
+{
+    u32 v;
+    switch(addr) {
+        case R9_WRAMCNT:
+            return this->mem.io.RAM9.val;
+        case R9_EXMEMCNT+0:
+            return this->io.arm9.EXMEM & 0xFF;
+        case R9_EXMEMCNT+1:
+            return (this->io.arm9.EXMEM >> 8) | (1 << 5);
+
+    }
+    printf("\nUnhandled BUSRD9IO8 addr:%08x", addr);
+    return 0;
 }
 
 static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R9_VRAMCNT+0:
+        case R9_VRAMCNT+1:
+        case R9_VRAMCNT+2:
+        case R9_VRAMCNT+3:
+        case R9_VRAMCNT+4:
+        case R9_VRAMCNT+5:
+        case R9_VRAMCNT+6:
+        case R9_VRAMCNT+8:
+        case R9_VRAMCNT+9: {
+            u32 bank_num = addr - R9_VRAMCNT;
+            if (bank_num >= 8) bank_num--;
+
+            if ((bank_num < 2) || (bank_num >= 7)) this->mem.vram.io.bank[bank_num].mst = val & 3;
+            else this->mem.vram.io.bank[bank_num].mst = val & 7;
+
+            this->mem.vram.io.bank[bank_num].ofs = (val >> 3) & 3;
+            this->mem.vram.io.bank[bank_num].enable = (val >> 7) & 1;
+            NDS_VRAM_resetup_banks(this);
+            return; }
+
         case R9_WRAMCNT: {
             switch (val & 3) {
                 this->mem.io.RAM9.val = val;
@@ -260,11 +389,23 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                     this->mem.io.RAM7.mask = 0x7FFF;
                     this->mem.io.RAM7.disabled = 0;
             }
+            return; }
+
+        case R9_EXMEMCNT+0:
+            this->io.arm9.EXMEM = (this->io.arm9.EXMEM & 0xFF00) | val;
+            this->io.rights.gba_slot = ((val >> 7) & 1) ^ 1;
             return;
-        }
+        case R9_EXMEMCNT+1:
+            this->io.arm9.EXMEM = (this->io.arm9.EXMEM & 0xFF) | (val << 8);
+            this->io.rights.nds_slot = ((val >> 3) & 1) ^ 1;
+            this->io.rights.main_memory = ((val >> 7) & 1) ^ 1;
+            return;
+
     }
-    printf("\nUnhandled BUSWRIO98 addr:%08x val:%08x", addr, val);
+    printf("\nUnhandled BUSWR9IO8 addr:%08x val:%08x", addr, val);
 }
+
+// -----
 
 static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
@@ -286,9 +427,24 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         buswr9_io8(this, addr+3, 1, access, (val >> 24) & 0xFF);
     }
 }
+// 0x2000 bytes
+static u32 busrd7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    if (addr < 0x04808000) return cR[sz](this->mem.wifi, addr & 0x1FFF);
+
+    return busrd7_invalid(this, addr, sz, access, has_effect);
+}
+
+static void buswr7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
+{
+    if (addr < 0x04808000) return cW[sz](this->mem.wifi, addr & 0x1FFF, val);
+
+    buswr7_invalid(this, addr, sz, access, val);
+}
+
 
 static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    if (addr >= 0x04800000) return busrd7_wifi(this, addr, sz, access, has_effect);
     u32 v = busrd7_io8(this, addr, 1, access, has_effect);
     if (sz >= 2) v |= busrd7_io8(this, addr+1, 1, access, has_effect) << 8;
     if (sz == 4) {
@@ -300,6 +456,7 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 
 static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    if (addr >= 0x04800000) return buswr7_wifi(this, addr, sz, access, val);
     buswr7_io8(this, addr, 1, access, val & 0xFF);
     if (sz >= 2) buswr7_io8(this, addr+1, 1, access, (val >> 8) & 0xFF);
     if (sz == 4) {
@@ -336,7 +493,14 @@ void NDS_bus_init(struct NDS *this)
 #undef BND9
 
 #define BND7(page, func) { this->mem.rw[0].read[page] = &busrd7_##func; this->mem.rw[0].write[page] = &buswr7_##func; }
+    BND7(0x0, bios7);
+    BND7(0x2, main);
+    BND7(0x3, shared);
     BND7(0x4, io);
+    BND7(0x6, vram);
+    BND7(0x8, gba_cart);
+    BND7(0x9, gba_cart);
+    BND7(0xA, gba_sram);
 #undef BND7
 }
 
@@ -376,12 +540,18 @@ u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     return v;
 }
 
+static u32 rd9_bios(struct NDS *this, u32 addr, u32 sz)
+{
+    return cR[sz](this->mem.bios9, addr & 0xFFF);
+}
+
 u32 NDS_mainbus_read9(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     struct NDS *this = (struct NDS *)ptr;
     u32 v;
 
     if (addr < 0x10000000) v = this->mem.rw[1].read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
+    else if ((addr & 0xFFFF0000) == 0xFFFF0000) v = rd9_bios(this, addr & 0xFFFF, sz);
     else v = busrd9_invalid(this, addr, sz, access, has_effect);
     //if (dbg.trace_on) trace_read(this, addr, sz, v);
     return v;

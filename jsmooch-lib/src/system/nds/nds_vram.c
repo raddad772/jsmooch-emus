@@ -423,7 +423,7 @@ void NDS_VRAM_resetup_banks(struct NDS *this) {
     clear(this->ppu.eng3d.slots);
 #undef clear
 
-#define setbank(letter,bn) set_bank##letter(this, this->mem.vram.io.bank[bn].mst, this->mem.vram.io.bank[bn].ofs, this->mem.vram.data + VRAM_offsets[bn]);
+#define setbank(letter,bn) if (this->mem.vram.io.bank[bn].enable) set_bank##letter(this, this->mem.vram.io.bank[bn].mst, this->mem.vram.io.bank[bn].ofs, this->mem.vram.data + VRAM_offsets[bn]);
     setbank(A,NVA);
     setbank(B,NVB);
     setbank(C,NVC);
