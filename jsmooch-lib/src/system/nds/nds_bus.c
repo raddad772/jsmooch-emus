@@ -3,8 +3,11 @@
 //
 #include <string.h>
 
+#include "nds_regs.h"
 #include "nds_bus.h"
 #include "nds_vram.h"
+#include "nds_dma.h"
+#include "nds_timers.h"
 #include "helpers/multisize_memaccess.c"
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
@@ -202,17 +205,6 @@ static u32 busrd9_oam(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     return busrd9_invalid(this, addr, sz, access, has_effect);
 }
 
-#define WAITCNT 0x04000204
-
-#define R7_BIOSPROT 0x04000308
-#define R7_VRAMSTAT 0x04000240
-#define R7_WRAMSTAT 0x04000241
-#define R7_EXMEMSTAT 0x04000204
-
-#define R9_EXMEMCNT 0x04000204
-#define R9_WRAMCNT  0x04000247
-#define R9_VRAMCNT 0x04000240
-
 static u32 busrd7_bios7(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     return cR[sz](this->mem.bios7, addr & 0x3FFF);
@@ -232,6 +224,14 @@ static void buswr7_main(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     cW[sz](this->mem.RAM, addr & 0x3FFFFF, val);
 }
 
+static u32 DMA_CH_NUM(u32 addr)
+{
+    addr &= 0xFF;
+    if (addr < 0xBC) return 0;
+    if (addr < 0xC8) return 1;
+    if (addr < 0xD4) return 2;
+    return 3;
+}
 
 static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
@@ -255,6 +255,132 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_DMA0SAD+0: this->dma7[0].io.src_addr = (this->dma7[0].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA0SAD+1: this->dma7[0].io.src_addr = (this->dma7[0].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA0SAD+2: this->dma7[0].io.src_addr = (this->dma7[0].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA0SAD+3: this->dma7[0].io.src_addr = (this->dma7[0].io.src_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+        case R_DMA0DAD+0: this->dma7[0].io.dest_addr = (this->dma7[0].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA0DAD+1: this->dma7[0].io.dest_addr = (this->dma7[0].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA0DAD+2: this->dma7[0].io.dest_addr = (this->dma7[0].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA0DAD+3: this->dma7[0].io.dest_addr = (this->dma7[0].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+
+        case R_DMA1SAD+0: this->dma7[1].io.src_addr = (this->dma7[1].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA1SAD+1: this->dma7[1].io.src_addr = (this->dma7[1].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA1SAD+2: this->dma7[1].io.src_addr = (this->dma7[1].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA1SAD+3: this->dma7[1].io.src_addr = (this->dma7[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case R_DMA1DAD+0: this->dma7[1].io.dest_addr = (this->dma7[1].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA1DAD+1: this->dma7[1].io.dest_addr = (this->dma7[1].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA1DAD+2: this->dma7[1].io.dest_addr = (this->dma7[1].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA1DAD+3: this->dma7[1].io.dest_addr = (this->dma7[1].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+
+        case R_DMA2SAD+0: this->dma7[2].io.src_addr = (this->dma7[2].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA2SAD+1: this->dma7[2].io.src_addr = (this->dma7[2].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA2SAD+2: this->dma7[2].io.src_addr = (this->dma7[2].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA2SAD+3: this->dma7[2].io.src_addr = (this->dma7[2].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case R_DMA2DAD+0: this->dma7[2].io.dest_addr = (this->dma7[2].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA2DAD+1: this->dma7[2].io.dest_addr = (this->dma7[2].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA2DAD+2: this->dma7[2].io.dest_addr = (this->dma7[2].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA2DAD+3: this->dma7[2].io.dest_addr = (this->dma7[2].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+
+        case R_DMA3SAD+0: this->dma7[3].io.src_addr = (this->dma7[3].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA3SAD+1: this->dma7[3].io.src_addr = (this->dma7[3].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA3SAD+2: this->dma7[3].io.src_addr = (this->dma7[3].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA3SAD+3: this->dma7[3].io.src_addr = (this->dma7[3].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case R_DMA3DAD+0: this->dma7[3].io.dest_addr = (this->dma7[3].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case R_DMA3DAD+1: this->dma7[3].io.dest_addr = (this->dma7[3].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case R_DMA3DAD+2: this->dma7[3].io.dest_addr = (this->dma7[3].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case R_DMA3DAD+3: this->dma7[3].io.dest_addr = (this->dma7[3].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+
+        case R_DMA0CNT_L+0: this->dma7[0].io.word_count = (this->dma7[0].io.word_count & 0x3F00) | (val << 0); return;
+        case R_DMA0CNT_L+1: this->dma7[0].io.word_count = (this->dma7[0].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case R_DMA1CNT_L+0: this->dma7[1].io.word_count = (this->dma7[1].io.word_count & 0x3F00) | (val << 0); return;
+        case R_DMA1CNT_L+1: this->dma7[1].io.word_count = (this->dma7[1].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case R_DMA2CNT_L+0: this->dma7[2].io.word_count = (this->dma7[2].io.word_count & 0x3F00) | (val << 0); return;
+        case R_DMA2CNT_L+1: this->dma7[2].io.word_count = (this->dma7[2].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case R_DMA3CNT_L+0: this->dma7[3].io.word_count = (this->dma7[3].io.word_count & 0xFF00) | (val << 0); return;
+        case R_DMA3CNT_L+1: this->dma7[3].io.word_count = (this->dma7[3].io.word_count & 0xFF) | ((val & 0xFF) << 8); return;
+
+        case R_DMA0CNT_H+0:
+        case R_DMA1CNT_H+0:
+        case R_DMA2CNT_H+0:
+        case R_DMA3CNT_H+0: {
+            struct NDS_DMA_ch *ch = &this->dma7[DMA_CH_NUM(addr)];
+            ch->io.dest_addr_ctrl = (val >> 5) & 3;
+            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 2) | ((val >> 7) & 1);
+            return;}
+
+        case R_DMA0CNT_H+1:
+        case R_DMA1CNT_H+1:
+        case R_DMA2CNT_H+1:
+        case R_DMA3CNT_H+1: {
+            u32 chnum = DMA_CH_NUM(addr);
+            struct NDS_DMA_ch *ch = &this->dma7[chnum];
+            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 1) | ((val & 1) << 1);
+            ch->io.repeat = (val >> 1) & 1;
+            ch->io.transfer_size = (val >> 2) & 1;
+            ch->io.start_timing = (val >> 4) & 3;
+            ch->io.irq_on_end = (val >> 6) & 1;
+            u32 old_enable = ch->io.enable;
+            ch->io.enable = (val >> 7) & 1;
+            if ((ch->io.enable == 1) && (old_enable == 0)) {
+                ch->op.first_run = 1;
+                if (ch->io.start_timing == 0) {
+                    NDS_dma7_start(ch, chnum);
+                }
+            }
+            return;}
+
+        case R_TM0CNT_H+1:
+        case R_TM1CNT_H+1:
+        case R_TM2CNT_H+1:
+        case R_TM3CNT_H+1:
+            return;
+
+        case R_TM0CNT_H+0:
+        case R_TM1CNT_H+0:
+        case R_TM2CNT_H+0:
+        case R_TM3CNT_H+0: {
+            u32 tn = (addr >> 2) & 3;
+            struct NDS_TIMER *t = &this->timer7[tn];
+            u32 old_enable = NDS_timer7_enabled(this, tn);
+            t->divider.io = val & 3;
+            switch(val & 3) {
+                case 0: t->shift = 0; break;
+                case 1: t->shift = 6; break;
+                case 2: t->shift = 8; break;
+                case 3: t->shift = 10; break;
+            }
+            u32 new_enable = ((val >> 7) & 1);
+            if (old_enable && !new_enable) { // turn off
+                t->val_at_stop = NDS_read_timer7(this, tn);
+                t->enable_at = 0xFFFFFFFFFFFFFFFF; // the infinite future!
+                t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+            }
+            u32 old_cascade = t->cascade;
+            t->cascade = (val >> 2) & 1;
+            if (old_cascade && !t->cascade && (old_enable == new_enable == 1)) { // update overflow time
+                t->enable_at = NDS_clock_current7(this);
+                t->overflow_at = t->enable_at + (timer_reload_ticks(t->val_at_stop) << t->shift);
+            }
+            if (!old_enable && new_enable) { // turn on
+                t->enable_at = NDS_clock_current7(this) + 1;
+                t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
+                t->overflow_at = t->enable_at + t->reload_ticks;
+                t->val_at_stop = t->reload;
+            }
+            t->irq_on_overflow = (val >> 6) & 1;
+            return; }
+
+        case R_TM0CNT_L+0: this->timer7[0].reload = (this->timer7[0].reload & 0xFF00) | val; return;
+        case R_TM1CNT_L+0: this->timer7[1].reload = (this->timer7[1].reload & 0xFF00) | val; return;
+        case R_TM2CNT_L+0: this->timer7[2].reload = (this->timer7[2].reload & 0xFF00) | val; return;
+        case R_TM3CNT_L+0: this->timer7[3].reload = (this->timer7[3].reload & 0xFF00) | val; return;
+
+        case R_TM0CNT_L+1: this->timer7[0].reload = (this->timer7[0].reload & 0xFF) | (val << 8); return;
+        case R_TM1CNT_L+1: this->timer7[1].reload = (this->timer7[1].reload & 0xFF) | (val << 8); return;
+        case R_TM2CNT_L+1: this->timer7[2].reload = (this->timer7[2].reload & 0xFF) | (val << 8); return;
+        case R_TM3CNT_L+1: this->timer7[3].reload = (this->timer7[3].reload & 0xFF) | (val << 8); return;
+
         case R7_BIOSPROT+0:
             this->io.arm7.BIOSPROT = (this->io.arm7.BIOSPROT & 0xFF00) | val;
             return;
@@ -282,7 +408,23 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return this->io.arm9.EXMEM & 0xFF;
         case R9_EXMEMCNT+1:
             return (this->io.arm9.EXMEM >> 8) | (1 << 5);
-
+        case R9_DMAFIL+0:
+        case R9_DMAFIL+1:
+        case R9_DMAFIL+2:
+        case R9_DMAFIL+3:
+        case R9_DMAFIL+4:
+        case R9_DMAFIL+5:
+        case R9_DMAFIL+6:
+        case R9_DMAFIL+7:
+        case R9_DMAFIL+8:
+        case R9_DMAFIL+9:
+        case R9_DMAFIL+10:
+        case R9_DMAFIL+11:
+        case R9_DMAFIL+12:
+        case R9_DMAFIL+13:
+        case R9_DMAFIL+14:
+        case R9_DMAFIL+15:
+            return this->io.dma.filldata[addr & 15];
     }
     printf("\nUnhandled BUSRD9IO8 addr:%08x", addr);
     return 0;
@@ -291,6 +433,101 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_DMA0SAD+0: this->dma9[0].io.src_addr = (this->dma9[0].io.src_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA0SAD+1: this->dma9[0].io.src_addr = (this->dma9[0].io.src_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA0SAD+2: this->dma9[0].io.src_addr = (this->dma9[0].io.src_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA0SAD+3: this->dma9[0].io.src_addr = (this->dma9[0].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+        case R_DMA0DAD+0: this->dma9[0].io.dest_addr = (this->dma9[0].io.dest_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA0DAD+1: this->dma9[0].io.dest_addr = (this->dma9[0].io.dest_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA0DAD+2: this->dma9[0].io.dest_addr = (this->dma9[0].io.dest_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA0DAD+3: this->dma9[0].io.dest_addr = (this->dma9[0].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+
+        case R_DMA1SAD+0: this->dma9[1].io.src_addr = (this->dma9[1].io.src_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA1SAD+1: this->dma9[1].io.src_addr = (this->dma9[1].io.src_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA1SAD+2: this->dma9[1].io.src_addr = (this->dma9[1].io.src_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA1SAD+3: this->dma9[1].io.src_addr = (this->dma9[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+        case R_DMA1DAD+0: this->dma9[1].io.dest_addr = (this->dma9[1].io.dest_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA1DAD+1: this->dma9[1].io.dest_addr = (this->dma9[1].io.dest_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA1DAD+2: this->dma9[1].io.dest_addr = (this->dma9[1].io.dest_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA1DAD+3: this->dma9[1].io.dest_addr = (this->dma9[1].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+
+        case R_DMA2SAD+0: this->dma9[2].io.src_addr = (this->dma9[2].io.src_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA2SAD+1: this->dma9[2].io.src_addr = (this->dma9[2].io.src_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA2SAD+2: this->dma9[2].io.src_addr = (this->dma9[2].io.src_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA2SAD+3: this->dma9[2].io.src_addr = (this->dma9[2].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+        case R_DMA2DAD+0: this->dma9[2].io.dest_addr = (this->dma9[2].io.dest_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA2DAD+1: this->dma9[2].io.dest_addr = (this->dma9[2].io.dest_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA2DAD+2: this->dma9[2].io.dest_addr = (this->dma9[2].io.dest_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA2DAD+3: this->dma9[2].io.dest_addr = (this->dma9[2].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+
+        case R_DMA3SAD+0: this->dma9[3].io.src_addr = (this->dma9[3].io.src_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA3SAD+1: this->dma9[3].io.src_addr = (this->dma9[3].io.src_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA3SAD+2: this->dma9[3].io.src_addr = (this->dma9[3].io.src_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA3SAD+3: this->dma9[3].io.src_addr = (this->dma9[3].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+        case R_DMA3DAD+0: this->dma9[3].io.dest_addr = (this->dma9[3].io.dest_addr & 0xFFFFFF00) | (val << 0); return;
+        case R_DMA3DAD+1: this->dma9[3].io.dest_addr = (this->dma9[3].io.dest_addr & 0xFFFF00FF) | (val << 8); return;
+        case R_DMA3DAD+2: this->dma9[3].io.dest_addr = (this->dma9[3].io.dest_addr & 0xFF00FFFF) | (val << 16); return;
+        case R_DMA3DAD+3: this->dma9[3].io.dest_addr = (this->dma9[3].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return;
+
+        case R_DMA0CNT_L+0: this->dma9[0].io.word_count = (this->dma9[0].io.word_count & 0x1FFF00) | (val << 0); return;
+        case R_DMA0CNT_L+1: this->dma9[0].io.word_count = (this->dma9[0].io.word_count & 0x1F00FF) | (val << 8); return;
+        case R_DMA1CNT_L+0: this->dma9[1].io.word_count = (this->dma9[1].io.word_count & 0x1FFF00) | (val << 0); return;
+        case R_DMA1CNT_L+1: this->dma9[1].io.word_count = (this->dma9[1].io.word_count & 0x1F00FF) | (val << 8); return;
+        case R_DMA2CNT_L+0: this->dma9[2].io.word_count = (this->dma9[2].io.word_count & 0x1FFF00) | (val << 0); return;
+        case R_DMA2CNT_L+1: this->dma9[2].io.word_count = (this->dma9[2].io.word_count & 0x1F00FF) | (val << 8); return;
+        case R_DMA3CNT_L+0: this->dma9[3].io.word_count = (this->dma9[3].io.word_count & 0x1FFF00) | (val << 0); return;
+        case R_DMA3CNT_L+1: this->dma9[3].io.word_count = (this->dma9[3].io.word_count & 0x1F00FF) | (val << 8); return;
+
+        case R_DMA0CNT_H+0:
+        case R_DMA1CNT_H+0:
+        case R_DMA2CNT_H+0:
+        case R_DMA3CNT_H+0: {
+            struct NDS_DMA_ch *ch = &this->dma9[DMA_CH_NUM(addr)];
+            ch->io.word_count = (ch->io.word_count & 0xFFFF) | ((val & 31) << 16);
+            ch->io.dest_addr_ctrl = (val >> 5) & 3;
+            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 2) | ((val >> 7) & 1);
+            return;}
+
+        case R_DMA0CNT_H+1:
+        case R_DMA1CNT_H+1:
+        case R_DMA2CNT_H+1:
+        case R_DMA3CNT_H+1: {
+            u32 chnum = DMA_CH_NUM(addr);
+            struct NDS_DMA_ch *ch = &this->dma9[chnum];
+            ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 1) | ((val & 1) << 1);
+            ch->io.repeat = (val >> 1) & 1;
+            ch->io.transfer_size = (val >> 2) & 1;
+            ch->io.start_timing = (val >> 3) & 7;
+            ch->io.irq_on_end = (val >> 6) & 1;
+
+            u32 old_enable = ch->io.enable;
+            ch->io.enable = (val >> 7) & 1;
+            if ((ch->io.enable == 1) && (old_enable == 0)) {
+                ch->op.first_run = 1;
+                if (ch->io.start_timing == 0) {
+                    NDS_dma9_start(ch, chnum);
+                }
+            }
+            return;}
+
+        case R9_DMAFIL+0:
+        case R9_DMAFIL+1:
+        case R9_DMAFIL+2:
+        case R9_DMAFIL+3:
+        case R9_DMAFIL+4:
+        case R9_DMAFIL+5:
+        case R9_DMAFIL+6:
+        case R9_DMAFIL+7:
+        case R9_DMAFIL+8:
+        case R9_DMAFIL+9:
+        case R9_DMAFIL+10:
+        case R9_DMAFIL+11:
+        case R9_DMAFIL+12:
+        case R9_DMAFIL+13:
+        case R9_DMAFIL+14:
+        case R9_DMAFIL+15:
+            this->io.dma.filldata[addr & 15] = val;
+            return;
         case R9_VRAMCNT+0:
         case R9_VRAMCNT+1:
         case R9_VRAMCNT+2:
@@ -310,6 +547,57 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->mem.vram.io.bank[bank_num].enable = (val >> 7) & 1;
             NDS_VRAM_resetup_banks(this);
             return; }
+
+        case R_TM0CNT_H+1:
+        case R_TM1CNT_H+1:
+        case R_TM2CNT_H+1:
+        case R_TM3CNT_H+1:
+            return;
+
+        case R_TM0CNT_H+0:
+        case R_TM1CNT_H+0:
+        case R_TM2CNT_H+0:
+        case R_TM3CNT_H+0: {
+            u32 tn = (addr >> 2) & 3;
+            struct NDS_TIMER *t = &this->timer9[tn];
+            u32 old_enable = NDS_timer9_enabled(this, tn);
+            t->divider.io = val & 3;
+            switch(val & 3) {
+                case 0: t->shift = 0; break;
+                case 1: t->shift = 6; break;
+                case 2: t->shift = 8; break;
+                case 3: t->shift = 10; break;
+            }
+            u32 new_enable = ((val >> 7) & 1);
+            if (old_enable && !new_enable) { // turn off
+                t->val_at_stop = NDS_read_timer9(this, tn);
+                t->enable_at = 0xFFFFFFFFFFFFFFFF; // the infinite future!
+                t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+            }
+            u32 old_cascade = t->cascade;
+            t->cascade = (val >> 2) & 1;
+            if (old_cascade && !t->cascade && (old_enable == new_enable == 1)) { // update overflow time
+                t->enable_at = NDS_clock_current9(this);
+                t->overflow_at = t->enable_at + (timer_reload_ticks(t->val_at_stop) << t->shift);
+            }
+            if (!old_enable && new_enable) { // turn on
+                t->enable_at = NDS_clock_current9(this) + 1;
+                t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
+                t->overflow_at = t->enable_at + t->reload_ticks;
+                t->val_at_stop = t->reload;
+            }
+            t->irq_on_overflow = (val >> 6) & 1;
+            return; }
+
+        case R_TM0CNT_L+0: this->timer9[0].reload = (this->timer9[0].reload & 0xFF00) | val; return;
+        case R_TM1CNT_L+0: this->timer9[1].reload = (this->timer9[1].reload & 0xFF00) | val; return;
+        case R_TM2CNT_L+0: this->timer9[2].reload = (this->timer9[2].reload & 0xFF00) | val; return;
+        case R_TM3CNT_L+0: this->timer9[3].reload = (this->timer9[3].reload & 0xFF00) | val; return;
+
+        case R_TM0CNT_L+1: this->timer9[0].reload = (this->timer9[0].reload & 0xFF) | (val << 8); return;
+        case R_TM1CNT_L+1: this->timer9[1].reload = (this->timer9[1].reload & 0xFF) | (val << 8); return;
+        case R_TM2CNT_L+1: this->timer9[2].reload = (this->timer9[2].reload & 0xFF) | (val << 8); return;
+        case R_TM3CNT_L+1: this->timer9[3].reload = (this->timer9[3].reload & 0xFF) | (val << 8); return;
 
         case R9_WRAMCNT: {
             switch (val & 3) {

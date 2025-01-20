@@ -13,18 +13,18 @@ static u32 timer_reload_ticks(u32 reload)
     return 0x10000 - reload;
 }
 
-static u32 timer_enabled7(struct NDS *this, u32 tn) {
+u32 NDS_timer7_enabled(struct NDS *this, u32 tn) {
     return NDS_clock_current7(this) >= this->timer7[tn].enable_at;
 }
 
-static u32 timer_enabled9(struct NDS *this, u32 tn) {
+u32 NDS_timer9_enabled(struct NDS *this, u32 tn) {
     return NDS_clock_current9(this) >= this->timer7[tn].enable_at;
 }
 
 static void overflow_timer7(struct NDS *this, u32 tn, u64 current_time);
 static void overflow_timer9(struct NDS *this, u32 tn, u64 current_time);
 
-static void cascade_timer_step7(struct NDS *this, u32 tn, u64 current_time)
+static void cascade_timer7_step(struct NDS *this, u32 tn, u64 current_time)
 {
     //printf("\nCASCADE TIMER STEP!");
     struct NDS_TIMER *t = &this->timer7[tn];
@@ -34,7 +34,7 @@ static void cascade_timer_step7(struct NDS *this, u32 tn, u64 current_time)
     }
 }
 
-static void cascade_timer_step9(struct NDS *this, u32 tn, u64 current_time)
+static void cascade_timer9_step(struct NDS *this, u32 tn, u64 current_time)
 {
     //printf("\nCASCADE TIMER STEP!");
     struct NDS_TIMER *t = &this->timer9[tn];
@@ -62,8 +62,8 @@ static void overflow_timer7(struct NDS *this, u32 tn, u64 current_time) {
     if (tn < 3) {
         // Check for cascade!
         struct NDS_TIMER *tp1 = &this->timer7[tn+1];
-        if (timer_enabled7(this, tn+1) && tp1->cascade) {
-            cascade_timer_step7(this, tn+1, current_time);
+        if (NDS_timer7_enabled(this, tn + 1) && tp1->cascade) {
+            cascade_timer7_step(this, tn+1, current_time);
         }
     }
 }
@@ -84,8 +84,8 @@ static void overflow_timer9(struct NDS *this, u32 tn, u64 current_time)
     if (tn < 3) {
         // Check for cascade!
         struct NDS_TIMER *tp1 = &this->timer9[tn+1];
-        if (timer_enabled9(this, tn+1) && tp1->cascade) {
-            cascade_timer_step9(this, tn+1, current_time);
+        if (NDS_timer9_enabled(this, tn + 1) && tp1->cascade) {
+            cascade_timer9_step(this, tn+1, current_time);
         }
     }
 }
@@ -114,4 +114,28 @@ void NDS_tick_timers9(struct NDS *this, u32 num_ticks) {
             }
         }
     }
+}
+
+u32 NDS_read_timer7(struct NDS *this, u32 tn)
+{
+    struct NDS_TIMER *t = &this->timer7[tn];
+    u64 current_time = this->clock.master_cycle_count7 + this->waitstates.current_transaction;
+    if (!NDS_timer7_enabled(this, tn) || t->cascade) return t->val_at_stop;
+
+    // Timer is enabled, so, check how many cycles we have had...
+    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (timer_reload_ticks(t->reload));
+    u32 v = t->reload + ticks_passed;
+    return v;
+}
+
+u32 NDS_read_timer9(struct NDS *this, u32 tn)
+{
+    struct NDS_TIMER *t = &this->timer9[tn];
+    u64 current_time = this->clock.master_cycle_count9 + this->waitstates.current_transaction;
+    if (!NDS_timer9_enabled(this, tn) || t->cascade) return t->val_at_stop;
+
+    // Timer is enabled, so, check how many cycles we have had...
+    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (timer_reload_ticks(t->reload));
+    u32 v = t->reload + ticks_passed;
+    return v;
 }

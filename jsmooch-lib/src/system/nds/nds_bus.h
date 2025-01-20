@@ -79,6 +79,9 @@ struct NDS {
 
     struct {
         struct {
+            u8 filldata[16];
+        } dma;
+        struct {
             u32 buttons;
             u32 enable, condition;
         } button_irq;
@@ -126,7 +129,7 @@ struct NDS {
             u32 src_addr_ctrl;
             u32 repeat;
             u32 transfer_size;
-            u32 game_pak_drq; // ch3 only
+
             u32 start_timing;
             u32 irq_on_end;
             u32 enable;

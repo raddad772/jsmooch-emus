@@ -1,0 +1,51 @@
+//
+// Created by . on 1/20/25.
+//
+
+#ifndef JSMOOCH_EMUS_NDS_REGS_H
+#define JSMOOCH_EMUS_NDS_REGS_H
+
+#define R7_BIOSPROT 0x04000308
+#define R7_VRAMSTAT 0x04000240
+#define R7_WRAMSTAT 0x04000241
+#define R7_EXMEMSTAT 0x04000204
+
+#define R9_DMAFIL 0x040000E0
+#define R9_EXMEMCNT 0x04000204
+#define R9_WRAMCNT  0x04000247
+#define R9_VRAMCNT 0x04000240
+
+
+
+/*
+  40000B0h  30h  DMA Channel 0..3
+ */
+#define R_DMA0SAD 0x040000B0 // r/w
+#define R_DMA1SAD 0x040000BC
+#define R_DMA2SAD 0x040000C8
+#define R_DMA3SAD 0x040000D4
+
+#define R_DMA0DAD 0x040000B4 // r/w
+#define R_DMA1DAD 0x040000C0
+#define R_DMA2DAD 0x040000CC
+#define R_DMA3DAD 0x040000D8
+
+#define R_DMA0CNT_L 0x040000B8 // r/w
+#define R_DMA1CNT_L 0x040000C4
+#define R_DMA2CNT_L 0x040000D0
+#define R_DMA3CNT_L 0x040000DC
+
+#define R_DMA0CNT_H 0x040000BA // r/w. lower 5 bits of this now used for word count
+#define R_DMA1CNT_H 0x040000C6 // bit27 unused on arm7
+#define R_DMA2CNT_H 0x040000D2
+#define R_DMA3CNT_H 0x040000DE
+#define R_TM0CNT_L  0x04000100
+#define R_TM0CNT_H  0x04000102
+#define R_TM1CNT_L  0x04000104
+#define R_TM1CNT_H  0x04000106
+#define R_TM2CNT_L  0x04000108
+#define R_TM2CNT_H  0x0400010A
+#define R_TM3CNT_L  0x0400010C
+#define R_TM3CNT_H  0x0400010E
+
+#endif //JSMOOCH_EMUS_NDS_REGS_H

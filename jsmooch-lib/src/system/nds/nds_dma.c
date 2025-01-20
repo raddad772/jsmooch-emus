@@ -171,7 +171,6 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
 
         ch->op.src_access = ARM9P_sequential | ARM9P_dma;
         ch->op.dest_access = ARM9P_sequential | ARM9P_dma;
-
         switch(ch->io.src_addr_ctrl) {
             case 0: // increment
                 ch->op.src_addr = (ch->op.src_addr + ch->op.sz) & 0x0FFFFFFF;
