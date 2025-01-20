@@ -223,7 +223,7 @@ void NDS_CP_write(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u3
                 // Invalidate all d cache, invalidate by address
                 return;
             }
-            if ((Cm == 10 ) && ((CP == 1) || (CP == 2)) {
+            if ((Cm == 10 ) && ((CP == 1) || (CP == 2))) {
                 // Flush d cache by val, all
                 return;
             }

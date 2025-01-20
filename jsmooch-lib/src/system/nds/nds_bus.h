@@ -48,7 +48,6 @@ struct NDS {
             u8 data[16 * 1024];
             u8 code[32 * 1024];
         } tcm;
-        u8 VRAM[656 * 1024]; // can be divided up all funky
         u8 oam[2048];
         u8 palette[2048];
         u8 internal_3d[248 * 1024];
@@ -56,6 +55,28 @@ struct NDS {
         char bios7[16384];
         char bios9[4096];
         char firmware[256 * 1024];
+        struct {
+            struct {
+                u32 base, mask, disabled, val;
+            } RAM7, RAM9;
+            struct {
+                u32 enabled9;
+            } gba_cart;
+        } io;
+
+        struct NDS_VRAM {
+            u8 data[656 * 1024];
+            struct {
+                struct {
+                    u32 mst, ofs;
+                } bank[9];
+            } io;
+            struct {
+                u8 *arm9[1024]; // 16KB banks from 06000000 to 06FFFFFF
+                // addr >> 14 & 0x3FF
+                u8 *arm7[2];    // 2 128KB banks at 06000000. addr < 06400000, slot[0] or [1] & 128KB
+            } map;
+        } vram;
 
     } mem;
 

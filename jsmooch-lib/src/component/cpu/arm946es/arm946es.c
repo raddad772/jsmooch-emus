@@ -243,7 +243,7 @@ void ARM946ES_run(struct ARM946ES*this)
         do_IRQ(this);
     }
     if (this->halted) {
-        *this->waitstates++;
+        this->waitstates++;
         return;
     }
 

@@ -40,8 +40,19 @@ struct NDS_PPU {
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 
-    struct NDSENG2 {
+    struct NDSENG2D {
         u32 num;
+
+        struct {
+            u8 *bg_vram[32];
+            u8 *obj_vram[16];
+            u8 *bg_extended_palette[4];
+            u8 *obj_extended_palette;
+            u8 bg_palette[512];
+            u8 obj_palette[512];
+            u8 oam[1024];
+        } mem;
+
         struct {
             struct {
                 u32 hsize, vsize;
@@ -101,7 +112,14 @@ struct NDS_PPU {
         } bg[4];
         struct NDS_PPU_window window[4]; // win0, win1, win-else and win-obj
         struct NDS_PPU_OBJ obj;
-    } eng2[2];
+    } eng2d[2];
+
+    struct NDSENG3D {
+        struct {
+            u8 *texture[4];
+            u8 *palette[6];
+        } slots;
+    } eng3d;
 };
 
 struct NDS;
@@ -111,5 +129,12 @@ void NDS_PPU_reset(struct NDS *);
 void NDS_PPU_start_scanline(struct NDS*); // Called on scanline start
 void NDS_PPU_hblank(struct NDS*); // Called at hblank time
 void NDS_PPU_finish_scanline(struct NDS*); // Called on scanline end, to render and do housekeeping
+
+u32 NDS_PPU_read_2d_bg_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
+u32 NDS_PPU_read_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
+
+void NDS_PPU_write_2d_bg_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
+void NDS_PPU_write_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
+
 
 #endif //JSMOOCH_EMUS_NDS_PPU_H
