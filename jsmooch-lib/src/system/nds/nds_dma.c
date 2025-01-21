@@ -15,12 +15,12 @@
 
 static void raise_irq_for_dma7(struct NDS *this, u32 num)
 {
-    NDS_update_IF7(this, 8 + num, 1);
+    NDS_update_IF7(this, 8 + num);
 }
 
 static void raise_irq_for_dma9(struct NDS *this, u32 num)
 {
-    NDS_update_IF9(this, 8 + num, 1);
+    NDS_update_IF9(this, 8 + num);
 }
 
 static u32 dma7_go_ch(struct NDS *this, u32 num) {

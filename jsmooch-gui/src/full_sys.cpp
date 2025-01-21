@@ -756,6 +756,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "srr.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "astro_boy.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "minish_cap.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "motoracer.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "gang-ldmstm.gba", nullptr);
 

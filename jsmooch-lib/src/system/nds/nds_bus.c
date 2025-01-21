@@ -8,6 +8,7 @@
 #include "nds_vram.h"
 #include "nds_dma.h"
 #include "nds_irq.h"
+#include "nds_ipc.h"
 #include "nds_timers.h"
 #include "helpers/multisize_memaccess.c"
 
@@ -238,6 +239,28 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 {
     u32 v;
     switch(addr) {
+        case R_IPCFIFOCNT+0:
+            // send fifo from 7 is to_9
+            v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9);
+            v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm9) << 1;
+            v |= this->io.ipc.arm7.irq_on_send_fifo_empty << 2;
+            return v;
+        case R_IPCFIFOCNT+1:
+            v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7);
+            v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm7) << 1;
+            v |= this->io.ipc.arm7.irq_on_recv_fifo_not_empty << 2;
+            v |= this->io.ipc.arm7.error << 6;
+            v |= this->io.ipc.arm7.fifo_enable << 7;
+            return v;
+
+
+        case R_IPCSYNC+0:
+            return this->io.ipc.arm9sync.dinput;
+        case R_IPCSYNC+1:
+            v = this->io.ipc.arm9sync.doutput;
+            v |= this->io.ipc.arm9sync.enable_irq_from_remote << 6;
+            return v;
+
         case R_IME: return this->io.arm7.IME;
         case R_IE+0: return this->io.arm7.IE & 0xFF;
         case R_IE+1: return (this->io.arm7.IE >> 8) & 0xFF;
@@ -359,9 +382,164 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     return 0;
 }
 
+static void start_div(struct NDS *this)
+{
+    // Set time and needs calculation
+    this->io.div.needs_calc = 1;
+    u64 num_clks = 20;
+    switch(this->io.div.mode) {
+        case 0:
+            num_clks = 18;
+        case 1:
+        case 2:
+            num_clks = 34;
+    }
+    this->io.div.busy_until = NDS_clock_current9(this) + num_clks;
+}
+
+static void start_sqrt(struct NDS *this)
+{
+    this->io.sqrt.needs_calc = 1;
+    this->io.div.busy_until = NDS_clock_current9(this) + 13;
+}
+
+static void div_calc(struct NDS *this)
+{
+    this->io.div.needs_calc = 0;
+
+    switch (this->io.div.mode) {
+        case 0: {
+            i32 num = (i32)this->io.div.numer.data32[0];
+            i32 den = (i32)this->io.div.denom.data32[0];
+            if (den == 0) {
+                this->io.div.result.data32[0] = (num<0) ? 1:-1;
+                this->io.div.result.data32[1] = (num<0) ? -1:0;
+                this->io.div.remainder.u = num;
+            }
+            else if (num == -0x80000000 && den == -1) {
+                this->io.div.result.u = 0x80000000;
+            }
+            else {
+                this->io.div.result.u = (i64)(num / den);
+                this->io.div.remainder.u = (i64)(num % den);
+            }
+            break; }
+
+        case 1:
+        case 3: {
+            i64 num = (i64)this->io.div.numer.u;
+            i32 den = (i32)this->io.div.denom.data32[0];
+            if (den == 0) {
+                this->io.div.result.u = (num<0) ? 1:-1;
+                this->io.div.remainder.u = num;
+            }
+            else if (num == -0x8000000000000000 && den == -1) {
+                this->io.div.result.u = 0x8000000000000000;
+                this->io.div.remainder.u = 0;
+            }
+            else {
+                this->io.div.result.u = (i64)(num / den);
+                this->io.div.remainder.u = (i64)(num % den);
+            }
+            break; }
+
+        case 2: {
+            i64 num = (i64)this->io.div.numer.u;
+            i64 den = (i64)this->io.div.denom.u;
+            if (den == 0) {
+                this->io.div.result.u = (num<0) ? 1:-1;
+                this->io.div.remainder.u = num;
+            }
+            else if (num == -0x8000000000000000 && den == -1) {
+                this->io.div.result.u = 0x8000000000000000;
+                this->io.div.remainder.u = 0;
+            }
+            else {
+                this->io.div.result.u = (i64)(num / den);
+                this->io.div.remainder.u = (i64)(num % den);
+            }
+            break; }
+    }
+
+    this->io.div.by_zero |= this->io.div.denom.u == 0;
+}
+
+static void sqrt_calc(struct NDS *this)
+{
+    this->io.sqrt.needs_calc = 0;
+    u64 val;
+    u32 res = 0;
+    u64 rem = 0;
+    u32 prod = 0;
+    u32 nbits, topshift;
+
+    if (this->io.sqrt.mode)
+    {
+        val = this->io.sqrt.param.u;
+        nbits = 32;
+        topshift = 62;
+    }
+    else
+    {
+        val = (u64)this->io.sqrt.param.data32[0];
+        nbits = 16;
+        topshift = 30;
+    }
+
+    for (u32 i = 0; i < nbits; i++)
+    {
+        rem = (rem << 2) + ((val >> topshift) & 0x3);
+        val <<= 2;
+        res <<= 1;
+
+        prod = (res << 1) + 1;
+        if (rem >= prod)
+        {
+            rem -= prod;
+            res++;
+        }
+    }
+
+    this->io.sqrt.result.u = res;
+}
+
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_IPCFIFOCNT+0: {
+            u32 old_bits = this->io.ipc.arm7.irq_on_send_fifo_empty & NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9);
+            this->io.ipc.arm7.irq_on_send_fifo_empty = (val >> 2) & 1;
+            if ((val >> 3) & 1) { // arm7's send fifo is to_arm9
+                NDS_IPC_empty_fifo(this, &this->io.ipc.to_arm9);
+            }
+            // Edge-sensitive trigger...
+            if (this->io.ipc.arm7.irq_on_send_fifo_empty & !old_bits) {
+                NDS_update_IF7(this, 17);
+            }
+            return; }
+        case R_IPCFIFOCNT+1: {
+            u32 old_bits = this->io.ipc.arm7.irq_on_recv_fifo_not_empty & NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7);
+            this->io.ipc.arm7.irq_on_recv_fifo_not_empty = (val >> 2) & 1;
+            if ((val >> 6) & 1) this->io.ipc.arm7.error = 0;
+            this->io.ipc.arm7.fifo_enable = (val >> 7) & 1;
+            u32 new_bits = this->io.ipc.arm7.irq_on_recv_fifo_not_empty & NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7);
+            if (!old_bits && new_bits) {
+                NDS_update_IF7(this, 18);
+            }
+            return; }
+
+        case R_IPCSYNC+0:
+            return;
+        case R_IPCSYNC+1:
+            this->io.ipc.arm9sync.dinput = this->io.ipc.arm7sync.doutput = val & 15;
+
+            u32 send_irq = (val >> 5) & 1;
+            if (send_irq && this->io.ipc.arm9sync.enable_irq_from_remote) {
+                NDS_update_IF9(this, 16);
+            }
+            this->io.ipc.arm7sync.enable_irq_from_remote = (val >> 6) & 1;
+            return;
+
         case R_IME: this->io.arm7.IME = val & 1; NDS_eval_irqs_7(this); return;
         case R_IF+0: this->io.arm7.IF &= ~val; NDS_eval_irqs_7(this); return;
         case R_IF+1: this->io.arm7.IF &= ~(val << 8); NDS_eval_irqs_7(this); return;
@@ -533,6 +711,99 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 {
     u32 v;
     switch(addr) {
+        case R_IPCFIFOCNT+0:
+            // send fifo from 9 is to_7
+            v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7);
+            v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm7) << 1;
+            v |= this->io.ipc.arm9.irq_on_send_fifo_empty << 2;
+            return v;
+        case R_IPCFIFOCNT+1:
+            v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9);
+            v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm9) << 1;
+            v |= this->io.ipc.arm9.irq_on_recv_fifo_not_empty << 2;
+            v |= this->io.ipc.arm9.error << 6;
+            v |= this->io.ipc.arm9.fifo_enable << 7;
+            return v;
+
+        case R_IPCSYNC+0:
+            return this->io.ipc.arm9sync.dinput;
+        case R_IPCSYNC+1:
+            v = this->io.ipc.arm9sync.doutput;
+            v |= this->io.ipc.arm9sync.enable_irq_from_remote << 6;
+            return v;
+
+        case R9_DIVCNT+0:
+            v = this->io.div.mode;
+            return v;
+        case R9_DIVCNT+1:
+            v = this->io.div.by_zero << 6;
+            v |= (NDS_clock_current9(this) < this->io.div.busy_until) << 7;
+            return v;
+
+        case R9_DIV_NUMER+0:
+        case R9_DIV_NUMER+1:
+        case R9_DIV_NUMER+2:
+        case R9_DIV_NUMER+3:
+        case R9_DIV_NUMER+4:
+        case R9_DIV_NUMER+5:
+        case R9_DIV_NUMER+6:
+        case R9_DIV_NUMER+7:
+            return this->io.div.numer.data[addr & 7];
+
+        case R9_DIV_DENOM+0:
+        case R9_DIV_DENOM+1:
+        case R9_DIV_DENOM+2:
+        case R9_DIV_DENOM+3:
+        case R9_DIV_DENOM+4:
+        case R9_DIV_DENOM+5:
+        case R9_DIV_DENOM+6:
+        case R9_DIV_DENOM+7:
+            return this->io.div.denom.data[addr & 7];
+
+        case R9_DIV_RESULT+0:
+        case R9_DIV_RESULT+1:
+        case R9_DIV_RESULT+2:
+        case R9_DIV_RESULT+3:
+        case R9_DIV_RESULT+4:
+        case R9_DIV_RESULT+5:
+        case R9_DIV_RESULT+6:
+        case R9_DIV_RESULT+7:
+            if (this->io.div.needs_calc) div_calc(this);
+            return this->io.div.result.data[addr & 7];
+
+        case R9_DIVREM_RESULT+0:
+        case R9_DIVREM_RESULT+1:
+        case R9_DIVREM_RESULT+2:
+        case R9_DIVREM_RESULT+3:
+        case R9_DIVREM_RESULT+4:
+        case R9_DIVREM_RESULT+5:
+        case R9_DIVREM_RESULT+6:
+        case R9_DIVREM_RESULT+7:
+            if (this->io.div.needs_calc) div_calc(this);
+            return this->io.div.remainder.data[addr & 7];
+
+        case R9_SQRTCNT+0:
+            return this->io.sqrt.mode;
+        case R9_SQRTCNT+1:
+            return 0;
+
+        case R9_SQRT_PARAM+0:
+        case R9_SQRT_PARAM+1:
+        case R9_SQRT_PARAM+2:
+        case R9_SQRT_PARAM+3:
+        case R9_SQRT_PARAM+4:
+        case R9_SQRT_PARAM+5:
+        case R9_SQRT_PARAM+6:
+        case R9_SQRT_PARAM+7:
+            return this->io.sqrt.param.data[addr & 7];
+
+        case R9_SQRT_RESULT+0:
+        case R9_SQRT_RESULT+1:
+        case R9_SQRT_RESULT+2:
+        case R9_SQRT_RESULT+3:
+            if (this->io.sqrt.needs_calc) sqrt_calc(this);
+            return this->io.sqrt.result.data[addr & 3];
+
         case R_IME: return this->io.arm9.IME;
         case R_IE+0: return this->io.arm9.IE & 0xFF;
         case R_IE+1: return (this->io.arm9.IE >> 8) & 0xFF;
@@ -670,14 +941,112 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     return 0;
 }
 
+#define IS_SEND 1
+#define IS_RECV 0
+
+
+
 static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_IPCFIFOCNT+0: {
+            u32 old_bits = this->io.ipc.arm9.irq_on_send_fifo_empty & NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7);
+            this->io.ipc.arm9.irq_on_send_fifo_empty = (val >> 2) & 1;
+            if ((val >> 3) & 1) { // arm9's send fifo is to_arm7
+                NDS_IPC_empty_fifo(this, &this->io.ipc.to_arm7);
+            }
+            // Edge-sensitive trigger...
+            if (this->io.ipc.arm9.irq_on_send_fifo_empty & !old_bits) {
+                NDS_update_IF9(this, 17);
+            }
+            return; }
+        case R_IPCFIFOCNT+1: {
+            u32 old_bits = this->io.ipc.arm9.irq_on_recv_fifo_not_empty & NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9);
+            this->io.ipc.arm9.irq_on_recv_fifo_not_empty = (val >> 2) & 1;
+            if ((val >> 6) & 1) this->io.ipc.arm9.error = 0;
+            this->io.ipc.arm9.fifo_enable = (val >> 7) & 1;
+            u32 new_bits = this->io.ipc.arm9.irq_on_recv_fifo_not_empty & NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9);
+            if (!old_bits && new_bits) {
+                NDS_update_IF9(this, 18);
+            }
+            return; }
+
+
+
+        case R_IPCSYNC+0:
+            return;
+        case R_IPCSYNC+1:
+            this->io.ipc.arm7sync.dinput = this->io.ipc.arm9sync.doutput = val & 15;
+
+            u32 send_irq = (val >> 5) & 1;
+            if (send_irq && this->io.ipc.arm7sync.enable_irq_from_remote) {
+                NDS_update_IF7(this, 16);
+            }
+            this->io.ipc.arm9sync.enable_irq_from_remote = (val >> 6) & 1;
+            return;
+
+
         case R_IME: this->io.arm9.IME = val & 1; NDS_eval_irqs_9(this); return;
         case R_IF+0: this->io.arm9.IF &= ~val; NDS_eval_irqs_9(this); return;
         case R_IF+1: this->io.arm9.IF &= ~(val << 8); NDS_eval_irqs_9(this); return;
         case R_IF+2: this->io.arm9.IF &= ~(val << 16); NDS_eval_irqs_9(this); return;
         case R_IF+3: this->io.arm9.IF &= ~(val << 24); NDS_eval_irqs_9(this); return;
+
+        case R9_DIVCNT+0:
+            this->io.div.mode = val & 3;
+            if (this->io.div.mode == 3) {
+                printf("\nFORBIDDEN DIV MODE");
+            }
+            start_div(this);
+            return;
+        case R9_DIVCNT+1:
+            this->io.div.by_zero = (val >> 6) & 1;
+            start_div(this);
+            return;
+
+        case R9_DIV_NUMER+0:
+        case R9_DIV_NUMER+1:
+        case R9_DIV_NUMER+2:
+        case R9_DIV_NUMER+3:
+        case R9_DIV_NUMER+4:
+        case R9_DIV_NUMER+5:
+        case R9_DIV_NUMER+6:
+        case R9_DIV_NUMER+7:
+            this->io.div.numer.data[addr & 7] = val;
+            start_div(this);
+            return;
+
+        case R9_DIV_DENOM+0:
+        case R9_DIV_DENOM+1:
+        case R9_DIV_DENOM+2:
+        case R9_DIV_DENOM+3:
+        case R9_DIV_DENOM+4:
+        case R9_DIV_DENOM+5:
+        case R9_DIV_DENOM+6:
+        case R9_DIV_DENOM+7:
+            this->io.div.denom.data[addr & 7] = val;
+            start_div(this);
+            return;
+
+        case R9_SQRTCNT+0:
+            this->io.sqrt.mode = val & 1;
+            start_sqrt(this);
+            return;
+        case R9_SQRTCNT+1:
+            start_sqrt(this);
+            return;
+
+        case R9_SQRT_PARAM+0:
+        case R9_SQRT_PARAM+1:
+        case R9_SQRT_PARAM+2:
+        case R9_SQRT_PARAM+3:
+        case R9_SQRT_PARAM+4:
+        case R9_SQRT_PARAM+5:
+        case R9_SQRT_PARAM+6:
+        case R9_SQRT_PARAM+7:
+            this->io.sqrt.param.data[addr & 7] = val;
+            start_sqrt(this);
+            return;
 
         case R_IE+0:
             this->io.arm9.IE = (this->io.arm9.IE & 0xFFFFFF00) | (val & 0xFF);
@@ -762,6 +1131,9 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             ch->io.repeat = (val >> 1) & 1;
             ch->io.transfer_size = (val >> 2) & 1;
             ch->io.start_timing = (val >> 3) & 7;
+            if (ch->io.start_timing > 3) {
+                printf("\nwarn DMA9 Start timing:%d", ch->io.start_timing);
+            }
             ch->io.irq_on_end = (val >> 6) & 1;
 
             u32 old_enable = ch->io.enable;
@@ -918,7 +1290,34 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
 static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    u32 v = busrd9_io8(this, addr, 1, access, has_effect);
+    u32 v;
+    switch(addr) {
+        case R_IPCFIFORECV+0:
+        case R_IPCFIFORECV+1:
+        case R_IPCFIFORECV+2:
+        case R_IPCFIFORECV+3:
+            // arm9 reads from to_arm9
+            if (this->io.ipc.arm9.fifo_enable) {
+                if (NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9)) {
+                    this->io.ipc.arm9.error |= 1;
+                    v = NDS_IPC_fifo_peek_last(&this->io.ipc.to_arm9);
+                }
+                else {
+                    u32 old_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm7.irq_on_send_fifo_empty;
+                    v = NDS_IPC_fifo_pop(&this->io.ipc.to_arm9);
+                    u32 new_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm7.irq_on_send_fifo_empty;
+                    if (!old_bits && new_bits) { // arm7 send is empty
+                        NDS_update_IF7(this, 17);
+                    }
+                }
+            }
+            else {
+                v = NDS_IPC_fifo_peek_last(&this->io.ipc.to_arm9);
+            };
+            return v & masksz[sz];
+    }
+
+    v = busrd9_io8(this, addr, 1, access, has_effect);
     if (sz >= 2) v |= busrd9_io8(this, addr+1, 1, access, has_effect) << 8;
     if (sz == 4) {
         v |= busrd9_io8(this, addr+2, 1, access, has_effect) << 16;
@@ -929,6 +1328,32 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 
 static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    switch(addr) {
+        case R_IPCFIFOSEND+0:
+        case R_IPCFIFOSEND+1:
+        case R_IPCFIFOSEND+2:
+        case R_IPCFIFOSEND+3:
+            // All writes are only 32 bits here
+            if (this->io.ipc.arm9.fifo_enable) {
+                if (sz == 2) {
+                    val &= 0xFFFF;
+                    val = (val << 16) | val;
+                }
+                if (sz == 1) {
+                    val &= 0xFF;
+                    val = (val << 24) | (val << 16) | (val << 8) | val;
+                }
+                // ARM9 writes to_arm7
+                u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
+                this->io.ipc.arm9.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm7, val);
+                u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
+                if (!old_bits && new_bits) {
+                    // Trigger ARM7 recv not empty
+                    NDS_update_IF7(this, 18);
+                }
+            }
+            return;
+    }
     buswr9_io8(this, addr, 1, access, val & 0xFF);
     if (sz >= 2) buswr9_io8(this, addr+1, 1, access, (val >> 8) & 0xFF);
     if (sz == 4) {
@@ -954,7 +1379,34 @@ static void buswr7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (addr >= 0x04800000) return busrd7_wifi(this, addr, sz, access, has_effect);
-    u32 v = busrd7_io8(this, addr, 1, access, has_effect);
+    u32 v;
+    switch(addr) {
+        case R_IPCFIFORECV+0:
+        case R_IPCFIFORECV+1:
+        case R_IPCFIFORECV+2:
+        case R_IPCFIFORECV+3:
+            // arm7 reads from to_arm7
+            if (this->io.ipc.arm7.fifo_enable) {
+                if (NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7)) {
+                    this->io.ipc.arm7.error |= 1;
+                    v = NDS_IPC_fifo_peek_last(&this->io.ipc.to_arm7);
+                }
+                else {
+                    u32 old_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm9.irq_on_send_fifo_empty;
+                    v = NDS_IPC_fifo_pop(&this->io.ipc.to_arm7);
+                    u32 new_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm9.irq_on_send_fifo_empty;
+                    if (!old_bits && new_bits) { // arm7 send is empty
+                        NDS_update_IF9(this, 17);
+                    }
+                }
+            }
+            else {
+                v = NDS_IPC_fifo_peek_last(&this->io.ipc.to_arm7);
+            };
+            return v & masksz[sz];
+    }
+
+    v = busrd7_io8(this, addr, 1, access, has_effect);
     if (sz >= 2) v |= busrd7_io8(this, addr+1, 1, access, has_effect) << 8;
     if (sz == 4) {
         v |= busrd7_io8(this, addr+2, 1, access, has_effect) << 16;
@@ -965,6 +1417,34 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 
 static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    // TODO: Write arm7 control register. Read arm7 & arm9
+    switch(addr) {
+        case R_IPCFIFOSEND+0:
+        case R_IPCFIFOSEND+1:
+        case R_IPCFIFOSEND+2:
+        case R_IPCFIFOSEND+3:
+            // All writes are only 32 bits here
+            if (this->io.ipc.arm7.fifo_enable) {
+                if (sz == 2) {
+                    val &= 0xFFFF;
+                    val = (val << 16) | val;
+                }
+                if (sz == 1) {
+                    val &= 0xFF;
+                    val = (val << 24) | (val << 16) | (val << 8) | val;
+                }
+                // ARM7 writes to_arm9
+                u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
+                this->io.ipc.arm7.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm9, val);
+                u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
+                if (!old_bits && new_bits) {
+                    // Trigger ARM9 recv not empty
+                    NDS_update_IF9(this, 18);
+                }
+            }
+            return;
+    }
+
     if (addr >= 0x04800000) return buswr7_wifi(this, addr, sz, access, val);
     buswr7_io8(this, addr, 1, access, val & 0xFF);
     if (sz >= 2) buswr7_io8(this, addr+1, 1, access, (val >> 8) & 0xFF);

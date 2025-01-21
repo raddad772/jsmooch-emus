@@ -310,13 +310,13 @@ static i64 run_arm9(struct NDS *this, i64 num_cycles)
 {
     this->waitstates.current_transaction = 0;
     // Run DMA & CPU
-    if (NDS_dma7_go(this)) {
+    if (NDS_dma9_go(this)) {
     }
     else {
         ARM946ES_run(&this->arm9);
     }
     NDS_tick_timers9(this, this->waitstates.current_transaction);
-    this->clock.master_cycle_count7 += this->waitstates.current_transaction;
+    this->clock.master_cycle_count9 += this->waitstates.current_transaction;
 
     return this->waitstates.current_transaction;
 }

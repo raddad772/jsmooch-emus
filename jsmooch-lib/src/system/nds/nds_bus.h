@@ -9,6 +9,7 @@
 #include "nds_ppu.h"
 #include "nds_controller.h"
 #include "cart/nds_cart.h"
+#include "nds_ipc.h"
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm946es/arm946es.h"
@@ -16,12 +17,6 @@
 struct NDS;
 typedef u32 (*NDS_rdfunc)(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
 typedef void (*NDS_wrfunc)(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
-
-struct NDS_CPU_FIFO {
-    u8 data[64];
-    u32 head, tail;
-    u32 len;
-};
 
 struct NDS {
     struct ARM7TDMI arm7;
@@ -93,7 +88,23 @@ struct NDS {
             u32 arm7, arm9, bios, dma;
         } open_bus;
 
-        struct NDS_CPU_FIFO to_arm7, to_arm9;
+        struct {
+            struct NDS_CPU_FIFO to_arm7, to_arm9;
+
+            struct {
+                u32 irq_on_send_fifo_empty;
+                u32 irq_on_recv_fifo_not_empty;
+                u32 error;
+                u32 fifo_enable;
+            } arm7, arm9;
+            struct {
+                u32 dinput;
+                u32 doutput;
+                u32 enable_irq_from_remote;
+
+            } arm7sync, arm9sync;
+        } ipc;
+
 
         struct {
             u32 BIOSPROT;
@@ -111,6 +122,32 @@ struct NDS {
             u32 nds_slot;
             u32 main_memory;
         } rights;
+
+        struct {
+            u64 busy_until;
+            u32 mode;
+            u32 by_zero;
+            u32 needs_calc;
+
+            union NDSreg64 {
+                u8 data[8];
+                u32 data32[2];
+                u64 u;
+           } numer, denom, result, remainder;
+            // numer & demom are r/w, result and remainder are R-only
+        } div;
+
+        struct {
+            u64 busy_until;
+            u32 mode;
+            u32 needs_calc;
+
+            union NDSreg32 {
+                u8 data[4];
+                u32 u;
+            } result; // r-only
+            union NDSreg64 param; // r/w
+        } sqrt;
     } io;
 
     struct {

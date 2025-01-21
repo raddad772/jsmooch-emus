@@ -42,10 +42,10 @@ static void hblank(struct NDS *this, u32 val)
 {
     this->clock.ppu.hblank_active = 1;
     if (val == 0) { // beginning of scanline
-        NDS_update_IFs(this, 2, ((this->ppu.io.vcount_at == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable));
+        if ((this->ppu.io.vcount_at == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable) NDS_update_IFs(this, 2);
     }
     else {
-        NDS_update_IFs(this, 1, this->ppu.io.hblank_irq_enable);
+        if (this->ppu.io.hblank_irq_enable) NDS_update_IFs(this, 1);
     }
 }
 
@@ -173,7 +173,7 @@ static void vblank(struct NDS *this, u32 val)
 {
     this->clock.ppu.vblank_active = val;
     if (val) {
-        NDS_update_IFs(this, 0, this->ppu.io.vblank_irq_enable && val);
+        if (this->ppu.io.vblank_irq_enable) NDS_update_IFs(this, 0);
     }
 }
 
