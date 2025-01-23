@@ -11,6 +11,9 @@
 #include "nds_debugger.h"
 #include "nds_dma.h"
 #include "nds_timers.h"
+#include "nds_rtc.h"
+#include "nds_irq.h"
+#include "nds_regs.h"
 
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
@@ -203,7 +206,7 @@ u32 NDSJ_finish_frame(JSM)
         NDSJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[4]);
+    //struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[4]);
     return this->ppu.display->last_written;
 }
 
@@ -228,23 +231,104 @@ void NDSJ_get_framevars(JSM, struct framevars* out)
     out->master_cycle = this->clock.master_cycle_count7;
 }
 
-static void skip_BIOS(struct NDS* this)
+static void skip_BIOS(struct NDS *this)
 {
-    printf("\nSKIP NDS BIOS!");
-    assert(1==2);
-    dbg_break("NOT SUPPORT SKIP BIOS!", this->clock.master_cycle_count7);
+    // Load 170h bytes of header into main RAM starting at 27FFE00
+    u32 *hdr_start = (u32 *)this->cart.ROM.ptr;
+    u32 *hdr = hdr_start;
+    for (i32 i = 0; i < 0x170; i += 4) {
+        NDS_mainbus_write9(this, 0x027FFE00+i, 4, 0, *hdr);
+    }
 
-}
+    // Read binary addresses
+    u32 bin7_offset, bin9_offset, bin9_lo, bin7_lo, bin9_size, bin7_size, arm7_entry, arm9_entry, bin9_hi, bin7_hi;
+    bin9_offset = cR[4](hdr, 0x20);
+    arm9_entry = cR[4](hdr, 0x24);
+    bin9_lo = cR[4](hdr, 0x28);
+    bin9_size = cR[4](hdr, 0x2C);
+
+    bin7_offset = cR[4](hdr, 0x30);
+    arm7_entry = cR[4](hdr, 0x34);
+    bin7_lo = cR[4](hdr, 0x38);
+    bin7_size = cR[4](hdr, 0x3C);
+
+    // Copy binaries into RAM
+    for (u32 i = 0; i < bin7_size; i += 4) {
+        NDS_mainbus_write7(this, bin7_lo+i, 4, 0, cR[4](this->cart.ROM.ptr, bin7_offset+i));
+    }
+    for (u32 i = 0; i < bin9_size; i += 4) {
+        NDS_mainbus_write9(this, bin9_lo+i, 4, 0, cR[4](this->cart.ROM.ptr, bin9_offset+i));
+    }
+
+    this->arm9.regs.R[14] = 0x03002F7C;
+    this->arm9.regs.R_irq[0] = 0x03003F80;
+    this->arm9.regs.R_svc[0] = 0x03003FC0;
+    this->arm9.regs.R[15] = arm9_entry;
+    this->arm9.regs.CPSR.mode = ARM9_system;
+    ARM946ES_fill_regmap(&this->arm9);
+    ARM946ES_NDS_direct_boot(&this->arm9);
+    ARM946ES_reload_pipeline(&this->arm9);
+
+    this->arm7.regs.R[13] = 0x0380FD80;
+    this->arm7.regs.R_irq[0] = 0x0380FF80;
+    this->arm7.regs.R_svc[0] = 0x0380FFC0;
+    this->arm7.regs.R[15] = arm7_entry;
+    this->arm7.regs.CPSR.mode = ARM7_system;
+    ARM7TDMI_fill_regmap(&this->arm7);
+    ARM7TDMI_reload_pipeline(&this->arm7);
+
+    NDS_mainbus_write9(this, 0x027FF800, 4, 0, 0x1FC2); // chip id
+    NDS_mainbus_write9(this, 0x027FF804, 4, 0, 0x1FC2); // chip id
+    NDS_mainbus_write9(this, 0x027FF850u, 2, 0, 0x5835); // ARM7 BIOS CRC
+    NDS_mainbus_write9(this, 0x027FF880u, 2, 0, 0x0007); // Message from ARM9 to ARM7
+    NDS_mainbus_write9(this, 0x027FF884u, 2, 0, 0x0006); // ARM7 boot task
+    NDS_mainbus_write9(this, 0x027FFC00u, 4, 0, 0x1FC2); // Copy of chip ID 1
+    NDS_mainbus_write9(this, 0x027FFC04u, 4, 0, 0x1FC2); // Copy of chip ID 2
+    NDS_mainbus_write9(this, 0x027FFC10u, 4, 0, 0x5835); // Copy of ARM7 BIOS CRC
+    NDS_mainbus_write9(this, 0x027FFC40u, 4, 0, 0x0001); // Boot indicator
+    // Now copy 112 bytes from firmware 0x03FE00  to RAM 0x027FFC80
+    for (u32 i = 0; i < 112; i++) {
+        NDS_mainbus_write9(this, 0x027FFC80 + i, 1, 0, this->mem.firmware[0x03FE00+i]);
+    }
+    // Now write to POSTFLG registers...
+    NDS_mainbus_write9(this, 0x04000300, 1, 0, 1);
+    NDS_mainbus_write7(this, 0x04000300, 1, 0, 1);
+
+    // Do some more boot stuf...
+    NDS_mainbus_write9(this, R9_POWCNT1, 2, 0, 0x0203);
+
+    // TODO: cart stuff
+    printf("\ndirect boot done!");
+ }
 
 void NDSJ_reset(JSM)
 {
     JTHIS;
+    // Emu resets...
     ARM7TDMI_reset(&this->arm7);
     ARM946ES_reset(&this->arm9);
     NDS_clock_reset(&this->clock);
     NDS_PPU_reset(this);
+    NDS_mainbus_write9(this, R9_VRAMCNT+0, 1, 0, 0);
+    NDS_mainbus_write9(this, R9_VRAMCNT+1, 1, 0, 0);
+    NDS_mainbus_write9(this, R9_VRAMCNT+2, 1, 0, 0);
+    NDS_mainbus_write9(this, R9_VRAMCNT+3, 1, 0, 0);
+    NDS_mainbus_write9(this, R9_VRAMCNT+4, 1, 0, 0);
+    NDS_mainbus_write9(this, R9_VRAMCNT+6, 1, 0, 0);
+    NDS_mainbus_write9(this, R9_WRAMCNT, 1, 0, 3); // at R9_VRAMCNT+7
+    NDS_mainbus_write9(this, R9_VRAMCNT+8, 1, 0, 0);
+    NDS_mainbus_write9(this, R9_VRAMCNT+9, 1, 0, 0);
 
-    //skip_BIOS(this);
+    this->io.arm7.IME = this->io.arm7.IE = this->io.arm7.IF = 0;
+    this->io.arm9.IME = this->io.arm9.IE = this->io.arm9.IF = 0;
+    this->io.arm7.POSTFLG = this->io.arm9.POSTFLG = 0;
+    // TODO: Reset DMA and timers...
+    // IPC, SPi, APU
+
+    // Components such as RTC...
+    NDS_bus_reset(this);
+
+    skip_BIOS(this);
     printf("\nNDS reset!");
 }
 
@@ -298,7 +382,12 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
     if (NDS_dma7_go(this)) {
     }
     else {
-        ARM7TDMI_run(&this->arm7);
+        if (this->io.arm7.halted) {
+            this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
+            this->waitstates.current_transaction++;
+        }
+        else
+            ARM7TDMI_run(&this->arm7);
     }
     NDS_tick_timers7(this, this->waitstates.current_transaction);
     this->clock.master_cycle_count7 += this->waitstates.current_transaction;
@@ -332,6 +421,12 @@ static void run_system(struct NDS *this, u64 num_cycles)
 
         if (this->clock.cycles9 > 0) {
             this->clock.cycles9 -= run_arm9(this, MIN(16, this->clock.cycles9));
+        }
+        // We need to use our scheduler...
+        if (this->clock.cycles7 >= this->io.rtc.next_tick) NDS_RTC_tick(this);
+        if ((this->clock.cycles7 >= this->spi.irq_when) && (this->spi.cnt.irq_enable)) {
+            this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
+            NDS_update_IF7(this, 23);
         }
     }
 
@@ -378,7 +473,7 @@ static void NDSIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_
     struct buf* b = &mfs->files[0].buf;
 
     u32 r;
-    //NDS_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, pio, &r);
+    NDS_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, pio, &r);
     NDSJ_reset(jsm);
 }
 

@@ -988,6 +988,16 @@ void ARM946ES_ins_MCR_MRC(struct ARM946ES *this, u32 opcode)
 
 void ARM946ES_ins_SWI(struct ARM946ES *this, u32 opcode)
 {
+    if ((opcode >> 28) == 14) { // BKPT
+        this->regs.R_abt[1] = this->regs.PC - 4;
+        this->regs.SPSR_abt = this->regs.CPSR.u;
+        this->regs.CPSR.mode = ARM9_abort;
+        ARM946ES_fill_regmap(this);
+        this->regs.CPSR.I = 1;
+        this->regs.PC = this->regs.EBR | 0x0000000C;
+        ARM946ES_flush_pipeline(this);
+        return;
+    }
     this->regs.R_svc[1] = this->regs.PC - 4;
     this->regs.SPSR_svc = this->regs.CPSR.u;
     this->regs.CPSR.mode = ARM9_supervisor;
@@ -1304,17 +1314,6 @@ void ARM946ES_ins_QADD_QSUB_QDADD_QDSUB(struct ARM946ES *this, u32 opcode) {
     }
 
     if (Rdd != 15) write_reg(this, getR(this, Rdd), result);
-}
-
-void ARM946ES_ins_BKPT(struct ARM946ES *this, u32 opcode)
-{
-    this->regs.R_abt[1] = this->regs.PC - 4;
-    this->regs.SPSR_abt = this->regs.CPSR.u;
-    this->regs.CPSR.mode = ARM9_abort;
-    ARM946ES_fill_regmap(this);
-    this->regs.CPSR.I = 1;
-    this->regs.PC = this->regs.EBR | 0x0000000C;
-    ARM946ES_flush_pipeline(this);
 }
 
 void ARM946ES_ins_B_BL(struct ARM946ES *this, u32 opcode)

@@ -47,9 +47,9 @@ struct NDS {
         u8 palette[2048];
         u8 internal_3d[248 * 1024];
         u8 wifi[8 * 1024];
-        char bios7[16384];
-        char bios9[4096];
-        char firmware[256 * 1024];
+        u8 bios7[16384];
+        u8 bios9[4096];
+        u8 firmware[256 * 1024];
         struct {
             struct {
                 u32 base, mask, disabled, val;
@@ -76,11 +76,6 @@ struct NDS {
         struct {
             u8 filldata[16];
         } dma;
-        struct {
-            u32 buttons;
-            u32 enable, condition;
-        } button_irq;
-        u32 halted;
 
         u8 POSTFLG;
 
@@ -110,11 +105,22 @@ struct NDS {
             u32 BIOSPROT;
             u32 EXMEM;
             u32 IF, IE, IME, IE_val;
+            struct {
+                u32 buttons;
+                u32 enable, condition;
+            } button_irq;
+            u32 halted;
+            u32 POSTFLG;
         } arm7;
 
         struct {
             u32 EXMEM;
             u32 IF, IE, IME;
+            struct {
+                u32 buttons;
+                u32 enable, condition;
+            } button_irq;
+            u32 POSTFLG;
         } arm9;
 
         struct {
@@ -148,7 +154,113 @@ struct NDS {
             } result; // r-only
             union NDSreg64 param; // r/w
         } sqrt;
+
+        struct {
+            u64 timestamp;
+            u16 data;
+
+            u8 input;
+            u32 input_bit, input_pos;
+            u8 output[8];
+            u32 output_bit, output_pos;
+            u32 cmd;
+            u32 status_reg[2];
+            u32 date_time[7];
+            u32 alarm1[3], alarm2[3];
+
+            u64 next_tick;
+            u64 divider;
+
+            u64 minute_count;
+            u32 irq_flag;
+            u32 clock_adjust;
+            u32 free_register;
+            u32 alarm_date1[3];
+            u32 alarm_date2[3];
+            u32 FOUT1, FOUT2;
+        } rtc;
+
+        struct {
+            u32 rcnt;
+        } sio;
+
+        struct {
+            u32 lcd_enable;
+
+            u32 speakers;
+            u32 wifi;
+            u32 wifi_waitcnt;
+
+        } powcnt;
     } io;
+
+    struct {
+        union {
+            struct {
+                // byte 0
+                u32 baudrate : 2;
+                u32 _r : 5;
+                u32 busy : 1;
+
+                // byte 1
+                u32 device : 2;
+                u32 transfer_sz : 1;
+                u32 chipselect_hold : 1;
+                u32 _r2 : 2;
+                u32 irq_enable : 1;
+                u32 bus_enable : 1;
+            };
+            u32 u;
+        } cnt;
+        u32 enable;
+        u64 busy_until;
+        u64 irq_when;
+        u32 input, output;
+        u32 chipsel;
+
+        struct {
+            u32 hold;
+            u32 index, pos;
+            u32 dir;
+            u8 regs[4];
+        } pwm;
+
+        struct {
+            u32 write_enable;
+            u32 status;
+
+            u32 input[8];
+            u32 output[8];
+            struct {
+                u32 pos;
+                u32 addr;
+                u32 cur;
+            } cmd;
+
+            u32 num_params;
+
+            u32 hold;
+        } firmware;
+
+        struct {
+            union {
+                struct {
+                    u8 power_down_mode : 2;
+                    u8 ref_select : 1;
+                    u8 conversion_mode : 1;
+                    u8 chan_select : 3;
+                    u8 start : 1;
+                };
+                u8 u;
+            } cnt;
+            u32 result;
+            u32 pos;
+            u32 touch_x, touch_y;
+            u32 hold;
+        } touchscr;
+
+        u32 hold;
+    } spi;
 
     struct {
         struct cvec* IOs;
@@ -237,6 +349,8 @@ struct NDS {
         } mgba;
     } dbg_info;
 
+    struct NDS_cart cart;
+
     DBG_START
         DBG_EVENT_VIEW
 
@@ -310,5 +424,6 @@ u32 NDS_open_bus_byte(struct NDS *, u32 addr);
 u32 NDS_open_bus(struct NDS *this, u32 addr, u32 sz);
 u64 NDS_clock_current7(struct NDS *);
 u64 NDS_clock_current9(struct NDS *);
+void NDS_bus_reset(struct NDS *);
 
 #endif //JSMOOCH_EMUS_NDS_BUS_H

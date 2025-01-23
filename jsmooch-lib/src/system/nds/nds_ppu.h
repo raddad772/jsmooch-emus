@@ -43,9 +43,12 @@ struct NDS_PPU {
     struct {
         u32 vblank_irq_enable, hblank_irq_enable, vcount_irq_enable;
         u32 vcount_at;
+        u32 display_block; // A B C or D
+        u32 display_swap;
     } io;
     struct NDSENG2D {
         u32 num;
+        u32 enable;
 
         struct {
             u8 *bg_vram[32];
@@ -69,8 +72,17 @@ struct NDS_PPU {
         struct {
             u32 bg_mode;
             u32 force_blank;
-            u32 frame, hblank_free, obj_mapping_1d;
+            u32 frame, hblank_free;
+            u32 tile_obj_map_1d;
+            u32 bitmap_obj_map_1d;
+            u32 bitmap_obj_2d_dim;
+            u32 character_base, screen_base;
+            u32 bitmap_obj_id_boundary, tile_obj_id_boundary;
+            u32 bg_extended_palettes, obj_extended_palettes;
+            u32 display_mode;
         } io;
+
+        u16 line_px[256];
 
         struct NDS_PPU_bg {
             u32 enable;
@@ -98,6 +110,8 @@ struct NDS_PPU {
             u32 mosaic_y;
 
             u32 hscroll, vscroll;
+
+            u32 do3d; // Just for BG0 on Engine A, lol.
         } bg[4];
 
         struct {
@@ -120,6 +134,9 @@ struct NDS_PPU {
             u8 *texture[4];
             u8 *palette[6];
         } slots;
+
+        u32 geometry_enable;
+        u32 render_enable;
     } eng3d;
 
     struct {
@@ -146,5 +163,6 @@ u32 NDS_PPU_read_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
 void NDS_PPU_write_2d_bg_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
 void NDS_PPU_write_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
 
-
+void NDS_PPU_write_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+u32 NDS_PPU_read_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
 #endif //JSMOOCH_EMUS_NDS_PPU_H

@@ -276,3 +276,10 @@ void NDS_CP_reset(struct ARM946ES *this)
 
     this->cp15.regs.pu_code_rw = 0;
 }
+
+void ARM946ES_NDS_direct_boot(struct ARM946ES *this)
+{
+    NDS_CP_write(this, 15, 0, 1, 0, 0, 0x0005707D);
+    NDS_CP_write(this, 15, 0, 9, 1, 0, 0x0300000A);
+    NDS_CP_write(this, 15, 0, 9, 1, 1, 0x00000020);
+}

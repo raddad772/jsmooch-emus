@@ -231,7 +231,7 @@ void ARM946ES_flush_pipeline(struct ARM946ES *);
 void ARM946ES_fill_regmap(struct ARM946ES *);
 void ARM946ES_reload_pipeline(struct ARM946ES *);
 void ARM946ES_idle(struct ARM946ES*this, u32 num);
-
+void ARM946ES_NDS_direct_boot(struct ARM946ES *);
 u32 ARM946ES_fetch_ins(struct ARM946ES *, u32 addr, u32 sz, u32 access);
 u32 ARM946ES_read(struct ARM946ES *, u32 addr, u32 sz, u32 access, u32 has_effect);
 void ARM946ES_write(struct ARM946ES *, u32 addr, u32 sz, u32 access, u32 val);

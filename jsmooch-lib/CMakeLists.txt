@@ -348,6 +348,12 @@ add_library(jsmooch-lib
         src/system/nds/nds_regs.h
         src/system/nds/nds_ipc.c
         src/system/nds/nds_ipc.h
+        src/system/nds/nds_rtc.c
+        src/system/nds/nds_rtc.h
+        src/system/nds/nds_spi.c
+        src/system/nds/nds_spi.h
+        src/component/cpu/arm946es/thumb2_disassembler.c
+        src/component/cpu/arm946es/thumb2_disassembler.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

@@ -9,6 +9,7 @@
 #include "arm946es_decode.h"
 #include "armv5_disassembler.h"
 #include "arm946es_instructions.h"
+#include "thumb2_disassembler.h"
 
 #include "helpers/multisize_memaccess.c"
 #define PC R[15]
@@ -53,6 +54,7 @@ void ARM946ES_reset(struct ARM946ES *this)
     this->regs.CPSR.I = 1;
     *this->regmap[14] = 0;
     *this->regmap[15] = 0;
+    this->regs.R[15] = 0xFFFF0000;
     ARM946ES_reload_pipeline(this);
 
     this->regs.EBR = 0xFFFF0000;
@@ -102,7 +104,6 @@ static void do_FIQ(struct ARM946ES *this)
 {
     this->regs.SPSR_irq = this->regs.CPSR.u;
     this->regs.CPSR.mode = ARM9_fiq;
-    printf("\nFIQ! CURRENT PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
     this->regs.CPSR.mode = ARM9_fiq;
     ARM946ES_fill_regmap(this);
     this->regs.CPSR.I = 1;
@@ -191,10 +192,10 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
     struct ARMctxt ct;
     ct.regs = 0;
     if (T) {
-        //ARM946ES_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        ARM946ES_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
     else {
-        //ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
     print_context(this, &ct, &this->trace.str2);
     u64 tc;

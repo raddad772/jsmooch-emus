@@ -4,7 +4,7 @@
 
 #include "nds_controller.h"
 
-u32 NDS_get_controller_state(struct physical_io_device *d)
+u32 NDS_get_controller_state(struct physical_io_device *d, u32 byte)
 {
     struct JSM_CONTROLLER* cnt = &d->controller;
     struct cvec* bl = &cnt->digital_buttons;
@@ -21,10 +21,15 @@ u32 NDS_get_controller_state(struct physical_io_device *d)
     B_GET(7, 1); // down
     B_GET(8, 7); // R button
     B_GET(9, 6); // L button
-    B_GET(10, 10); // X button
-    B_GET(11, 11); // Y button
+    B_GET(16, 10); // X button
+    B_GET(17, 11); // Y button
 #undef B_GET
-    v ^= 0b1111111111;
+    v ^= 0x7FFFFF;
+    if (byte == 0) return v & 0xFF;
+    if (byte == 1) return (v >> 8) & 0xFF;
+    if (byte == 2) return (v >> 16) & 0xFF;
+    if (byte == 3) return 0;
+    printf("\nWHAT!?!?!?!?");
     return v;
 }
 

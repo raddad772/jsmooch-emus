@@ -29,6 +29,12 @@ enum NDS_flash_states {
 
 
 struct NDS_cart {
+    struct {
+        u32 data[8];
+        u32 pos;
+
+    } cmd;
+
     struct buf ROM;
 };
 

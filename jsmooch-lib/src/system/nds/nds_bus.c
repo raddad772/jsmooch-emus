@@ -9,6 +9,8 @@
 #include "nds_dma.h"
 #include "nds_irq.h"
 #include "nds_ipc.h"
+#include "nds_rtc.h"
+#include "nds_spi.h"
 #include "nds_timers.h"
 #include "helpers/multisize_memaccess.c"
 
@@ -239,6 +241,34 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 {
     u32 v;
     switch(addr) {
+        case R7_SPICNT+0:
+            this->spi.cnt.busy = NDS_clock_current7(this) < this->spi.busy_until;
+            return this->spi.cnt.u & 0xFF;
+        case R7_SPICNT+1:
+            return this->spi.cnt.u >> 8;
+
+        case R_POSTFLG:
+            return this->io.arm7.POSTFLG;
+
+        case R7_WIFIWAITCNT:
+            return this->io.powcnt.wifi ? this->io.powcnt.wifi_waitcnt : 0;
+        case R7_WIFIWAITCNT+1:
+            return 0;
+
+        case R7_POWCNT2+0:
+            v = this->io.powcnt.speakers;
+            v |= this->io.powcnt.wifi << 1;
+            return v;
+        case R7_POWCNT2+1:
+            return 0;
+
+        case R_KEYINPUT+0: // buttons!!!
+            return NDS_get_controller_state(this->controller.pio, 0);
+        case R_KEYINPUT+1: // buttons!!!
+            return NDS_get_controller_state(this->controller.pio, 1);
+        case R_EXTKEYIN+0:
+            return NDS_get_controller_state(this->controller.pio, 2);
+
         case R_IPCFIFOCNT+0:
             // send fifo from 7 is to_9
             v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9);
@@ -506,6 +536,68 @@ static void sqrt_calc(struct NDS *this)
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R7_SPICNT+0:
+            this->spi.cnt.u = (this->spi.cnt.u & 0xFF80) | (val & 0b00000011);
+            return;
+        case R7_SPICNT+1: {
+            if ((val & 0x80) && (!this->spi.cnt.bus_enable)) {
+                // Enabling the bus releases hold on current device
+                this->spi.chipsel = 0;
+                NDS_SPI_release_hold(this);
+            }
+            // Don't change device while chipsel is hi?
+            if (this->spi.cnt.chipselect_hold) val = (val & 0b11111100) | this->spi.cnt.device;
+
+            this->spi.cnt.u = (this->spi.cnt.u | 0xFF) | ((val & 0b11001111) << 8);
+            return; }
+
+        case R_POSTFLG:
+            this->io.arm7.POSTFLG |= val & 1;
+            return;
+
+        case R7_WIFIWAITCNT+0:
+            if (this->io.powcnt.wifi)
+                this->io.powcnt.wifi_waitcnt = val;
+            return;
+        case R7_WIFIWAITCNT+1:
+            return;
+        case R7_HALTCNT+0: {
+            u32 v = (val >> 6) & 3;
+            switch(v) {
+                case 0:
+                    return;
+                case 1:
+                    printf("\nWARNING GBA MODE ATTEMPT");
+                    return;
+                case 2:
+                    this->io.arm7.halted = 1;
+                    return;
+                case 3:
+                    printf("\nWARNING SLEEP MODE ATTEMPT");
+                    return;
+            }
+            return; }
+
+        case R7_POWCNT2+0:
+            this->io.powcnt.speakers = val & 1;
+            this->io.powcnt.wifi = (val >> 1) & 1;
+            return;
+        case R7_POWCNT2+1:
+            return;
+
+        case R_KEYCNT+0:
+            this->io.arm7.button_irq.buttons = (this->io.arm7.button_irq.buttons & 0b1100000000) | val;
+            return;
+        case R_KEYCNT+1: {
+            this->io.arm7.button_irq.buttons = (this->io.arm7.button_irq.buttons & 0xFF) | ((val & 0b11) << 8);
+            u32 old_enable = this->io.arm7.button_irq.enable;
+            this->io.arm7.button_irq.enable = (val >> 6) & 1;
+            if ((old_enable == 0) && this->io.arm7.button_irq.enable) {
+                printf("\nWARNING BUTTON IRQ ENABLED ARM9...");
+            }
+            this->io.arm7.button_irq.condition = (val >> 7) & 1;
+            return; }
+
         case R_IPCFIFOCNT+0: {
             u32 old_bits = this->io.ipc.arm7.irq_on_send_fifo_empty & NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9);
             this->io.ipc.arm7.irq_on_send_fifo_empty = (val >> 2) & 1;
@@ -709,8 +801,29 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 // --------------
 static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04010000) && (addr < 0x04010070))) {
+        return NDS_PPU_read_io(this, addr, sz, access, has_effect);
+    }
     u32 v;
     switch(addr) {
+        case R9_POWCNT1+0:
+            v = this->io.powcnt.lcd_enable;
+            v |= this->ppu.eng2d[0].enable << 1;
+            v |= this->ppu.eng3d.render_enable << 2;
+            v |= this->ppu.eng3d.geometry_enable << 3;
+            return v;
+        case R9_POWCNT1+1:
+            v = this->ppu.eng2d[1].enable << 1;
+            v |= this->ppu.io.display_swap << 7;
+            return v;
+
+        case R_KEYINPUT+0: // buttons!!!
+            return NDS_get_controller_state(this->controller.pio, 0);
+        case R_KEYINPUT+1: // buttons!!!
+            return NDS_get_controller_state(this->controller.pio, 1);
+        case R_EXTKEYIN+0:
+            return NDS_get_controller_state(this->controller.pio, 2);
+
         case R_IPCFIFOCNT+0:
             // send fifo from 9 is to_7
             v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7);
@@ -941,14 +1054,37 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     return 0;
 }
 
-#define IS_SEND 1
-#define IS_RECV 0
-
-
-
 static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_POSTFLG:
+            this->io.arm9.POSTFLG |= val & 1;
+            this->io.arm9.POSTFLG = (this->io.arm9.POSTFLG & 1) | (val & 2);
+            return;
+        case R9_POWCNT1+0:
+            this->io.powcnt.lcd_enable = val & 1;
+            this->ppu.eng2d[0].enable = (val >> 1) & 1;
+            this->ppu.eng3d.render_enable = (val >> 2) & 1;
+            this->ppu.eng3d.geometry_enable = (val >> 3) & 1;
+            return;
+        case R9_POWCNT1+1:
+            this->ppu.eng2d[1].enable = (val >> 1) & 1;
+            this->ppu.io.display_swap = (val >> 7) & 1;
+            return;
+
+        case R_KEYCNT+0:
+            this->io.arm9.button_irq.buttons = (this->io.arm9.button_irq.buttons & 0b1100000000) | val;
+            return;
+        case R_KEYCNT+1: {
+            this->io.arm9.button_irq.buttons = (this->io.arm9.button_irq.buttons & 0xFF) | ((val & 0b11) << 8);
+            u32 old_enable = this->io.arm9.button_irq.enable;
+            this->io.arm9.button_irq.enable = (val >> 6) & 1;
+            if ((old_enable == 0) && this->io.arm9.button_irq.enable) {
+                printf("\nWARNING BUTTON IRQ ENABLED ARM9...");
+            }
+            this->io.arm9.button_irq.condition = (val >> 7) & 1;
+            return; }
+
         case R_IPCFIFOCNT+0: {
             u32 old_bits = this->io.ipc.arm9.irq_on_send_fifo_empty & NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7);
             this->io.ipc.arm9.irq_on_send_fifo_empty = (val >> 2) & 1;
@@ -971,8 +1107,6 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             return; }
 
-
-
         case R_IPCSYNC+0:
             return;
         case R_IPCSYNC+1:
@@ -984,7 +1118,6 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             this->io.ipc.arm9sync.enable_irq_from_remote = (val >> 6) & 1;
             return;
-
 
         case R_IME: this->io.arm9.IME = val & 1; NDS_eval_irqs_9(this); return;
         case R_IF+0: this->io.arm9.IF &= ~val; NDS_eval_irqs_9(this); return;
@@ -1292,6 +1425,10 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 {
     u32 v;
     switch(addr) {
+
+        case R_POSTFLG:
+            return this->io.arm9.POSTFLG;
+
         case R_IPCFIFORECV+0:
         case R_IPCFIFORECV+1:
         case R_IPCFIFORECV+2:
@@ -1328,6 +1465,10 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 
 static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04010000) && (addr < 0x04010070))) {
+        NDS_PPU_write_io(this, addr, sz, access, val);
+        return;
+    }
     switch(addr) {
         case R_IPCFIFOSEND+0:
         case R_IPCFIFOSEND+1:
@@ -1381,6 +1522,9 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     if (addr >= 0x04800000) return busrd7_wifi(this, addr, sz, access, has_effect);
     u32 v;
     switch(addr) {
+        case R7_SPIDATA:
+            return NDS_SPI_read(this, sz);
+
         case R_IPCFIFORECV+0:
         case R_IPCFIFORECV+1:
         case R_IPCFIFORECV+2:
@@ -1419,6 +1563,12 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     // TODO: Write arm7 control register. Read arm7 & arm9
     switch(addr) {
+        case R7_SPIDATA:
+            NDS_SPI_write(this, sz, val);
+
+        case R_RTC:
+            NDS_write_RTC(this, sz, val & 0xFFFF);
+            return;
         case R_IPCFIFOSEND+0:
         case R_IPCFIFOSEND+1:
         case R_IPCFIFOSEND+2:
@@ -1454,6 +1604,19 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     }
 }
 
+void NDS_bus_reset(struct NDS *this) {
+    NDS_RTC_reset(this);
+    this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
+
+    for (u32 i = 0; i < 4; i++) {
+        struct NDS_TIMER *t = &this->timer7[i];
+        t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+        t->enable_at = 0xFFFFFFFFFFFFFFFF;
+        t = &this->timer9[i];
+        t->overflow_at = 0xFFFFFFFFFFFFFFFF;
+        t->enable_at = 0xFFFFFFFFFFFFFFFF;
+    }
+}
 
 void NDS_bus_init(struct NDS *this)
 {
@@ -1494,6 +1657,8 @@ void NDS_bus_init(struct NDS *this)
     BND7(0x9, gba_cart);
     BND7(0xA, gba_sram);
 #undef BND7
+
+    NDS_RTC_init(this);
 }
 
 /*static void trace_read(struct NDS *this, u32 addr, u32 sz, u32 val)
