@@ -1719,6 +1719,9 @@ u32 NDS_mainbus_read9(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     if (addr < 0x10000000) v = this->mem.rw[1].read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
     else if ((addr & 0xFFFF0000) == 0xFFFF0000) v = rd9_bios(this, addr & 0xFFFF, sz);
     else v = busrd9_invalid(this, addr, sz, access, has_effect);
+#ifdef TRACE
+    printf("\n rd9:%08x sz:%d val:%08x", addr, sz, v);
+#endif
     //if (dbg.trace_on) trace_read(this, addr, sz, v);
     return v;
 }
@@ -1772,6 +1775,9 @@ void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
     struct NDS *this = (struct NDS *)ptr;
     this->waitstates.current_transaction++;
     //if (dbg.trace_on) trace_write(this, addr, sz, val);
+#ifdef TRACE
+    printf("\n wr9:%08x sz:%d val:%08x", addr, sz, val);
+#endif
     if (addr < 0x10000000) {
         return this->mem.rw[1].write[(addr >> 24) & 15](this, addr, sz, access, val);
     }

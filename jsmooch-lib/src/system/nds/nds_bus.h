@@ -5,6 +5,8 @@
 #ifndef JSMOOCH_EMUS_NDS_BUS_H
 #define JSMOOCH_EMUS_NDS_BUS_H
 
+#define TRACE
+
 #include "nds_clock.h"
 #include "nds_ppu.h"
 #include "nds_controller.h"

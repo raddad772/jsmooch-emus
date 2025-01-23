@@ -679,7 +679,34 @@ static void dasm_CDP(u32 opcode, struct jsm_string *out, i64 instruction_addr, s
 
 static void dasm_MCR_MRC(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
-    ostr("mcr/mrc unsupported");
+    u32 v2 = (opcode >> 28) == 15;
+    u32 copcode = (opcode >> 21) & 7;
+    u32 Cn = (opcode >> 16) & 15;
+    u32 Rdd = (opcode >> 12) & 15;
+    u32 Pnd = (opcode >> 8) & 15;
+    u32 CP = (opcode >> 5) & 7;
+    u32 Cm = opcode & 15;
+    u32 MRC = OBIT(20);
+    if (v2) {
+        if (MRC) {
+            ostr("mrc2   ");
+        }
+        else {
+            ostr("mcr2   ");
+            add_context(ct, Rdd);
+        }
+    }
+    else {
+        if (MRC) {
+            mn("mrc", 3);
+        }
+        else {
+            mn("mcr", 3);
+            add_context(ct, Rdd);
+        }
+    }
+    // Pn, cpopc, Rd, Cn, Cm, cp
+    ostr("P%d, %d, R%d, %d, %d, %d", Pnd, copcode, Rdd, Cn, Cm, CP);
 }
 
 static void dasm_SWI(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)

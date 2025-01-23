@@ -138,13 +138,13 @@ struct ARM946ES {
                     u32 pre_armv5_mode : 1;     // 15
 
                     // Bits 16-23
-                    u32 dtcm_enable;            // 16
-                    u32 dtcm_load_mode;         // 17
-                    u32 itcm_enable;            // 18
-                    u32 itcm_load_mode;         // 19
-                    u32 _res: 2;                // 20,21
-                    u32 unaligned_access: 1;    // 22
-                    u32 extended_page_table: 1; // 23
+                    u32 dtcm_enable : 1;            // 16
+                    u32 dtcm_load_mode : 1;         // 17
+                    u32 itcm_enable : 1;            // 18
+                    u32 itcm_load_mode : 1;         // 19
+                    u32 _res : 2;                // 20,21
+                    u32 unaligned_access : 1;    // 22
+                    u32 extended_page_table : 1; // 23
 
 
                     // Bits 24-31

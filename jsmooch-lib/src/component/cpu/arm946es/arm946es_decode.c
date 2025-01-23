@@ -2,6 +2,8 @@
 // Created by . on 1/18/25.
 //
 
+#include <stdio.h>
+
 #include "arm946es.h"
 #include "arm946es_decode.h"
 #include "arm946es_instructions.h"

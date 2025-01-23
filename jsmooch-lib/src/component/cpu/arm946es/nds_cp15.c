@@ -58,6 +58,7 @@ static enum CP15_regs get_register(u32 opcode, u32 cn, u32 cm, u32 cp)
 
 u32 NDS_CP_read(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
 {
+    printf("\nCP READ...");
     if (num != 15) {
         printf("\n!BAD! CP.r:%d opcode:%d Cn:%d Cm:%d CP:%d", num, opcode, Cn, Cm, CP);
         return 0;
@@ -137,9 +138,11 @@ static void update_dtcm(struct ARM946ES *this)
     else {
         this->cp15.dtcm.size = 0x200 << ((this->cp15.regs.dtcm_setting >> 1) & 0x1F);
         if (this->cp15.dtcm.size < 0x1000) this->cp15.dtcm.size = 0x1000;
-        this->cp15.dtcm.mask = 0xFFFFF000 & ((this->cp15.dtcm.size - 1) ^ 0xFFFFFFFF);
-        this->cp15.dtcm.base_addr = this->cp15.regs.dtcm_setting & this->cp15.dtcm.mask;
+        u32 mask = 0xFFFFF000 & ((this->cp15.dtcm.size - 1) ^ 0xFFFFFFFF);
+        this->cp15.dtcm.base_addr = this->cp15.regs.dtcm_setting & mask;
         this->cp15.dtcm.end_addr = this->cp15.dtcm.base_addr + this->cp15.dtcm.size;
+        this->cp15.dtcm.mask = this->cp15.dtcm.size > DTCM_SIZE ? DTCM_SIZE : this->cp15.dtcm.size;
+        this->cp15.dtcm.mask--;
     }
 }
 
@@ -150,6 +153,8 @@ static void update_itcm(struct ARM946ES *this)
     }
     else {
         this->cp15.itcm.size = 0x200 << ((this->cp15.regs.itcm_setting >> 1) & 0x1F);
+        this->cp15.itcm.mask = this->cp15.itcm.size > ITCM_SIZE ? ITCM_SIZE : this->cp15.itcm.size;
+        this->cp15.itcm.mask--;
     }
     this->cp15.itcm.end_addr = this->cp15.itcm.size;
 }
@@ -166,6 +171,7 @@ void NDS_CP_write(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u3
 
     switch(cpreg) {
         case CP15r_control_register: {
+            // 42078
             this->cp15.regs.control.u = (this->cp15.regs.control.u & (~0xFF085)) | (val & 0xFF085);
             update_dtcm(this);
             update_itcm(this);

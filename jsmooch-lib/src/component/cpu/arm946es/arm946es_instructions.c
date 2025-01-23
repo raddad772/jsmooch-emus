@@ -957,7 +957,7 @@ void ARM946ES_ins_MCR_MRC(struct ARM946ES *this, u32 opcode)
 
     u32 v2 = ((opcode >> 28) & 15) == 15;
     u32 cp_opc = (opcode >> 21) & 7; // CP Opc - Coprocessor operation code
-    u32 copro_to_arm = OBIT(20);
+    u32 copro_to_arm = !OBIT(20);
     u32 Cnd = (opcode >> 16) & 15; // Cn     - Coprocessor source/dest. Register  (C0-C15)
     u32 Rdd = (opcode >> 12) & 15; // Rd     - ARM source/destination Register    (R0-R15)
     u32 Pnd = (opcode >> 8) & 15; // Coprocessor number                 (P0-P15)

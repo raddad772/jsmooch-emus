@@ -178,7 +178,7 @@ static void print_context(struct ARM946ES *this, struct ARMctxt *ct, struct jsm_
     jsm_string_quickempty(out);
     u32 needs_commaspace = 0;
     if (!taken) jsm_string_sprintf(out, "NT.");
-    for (u32 i = 0; i < 15; i++) {
+    for (u32 i = 0; i < 16; i++) {
         if (ct->regs & (1 << i)) {
             if (needs_commaspace) {
                 jsm_string_sprintf(out, ", ");
@@ -201,6 +201,7 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
         ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
     print_context(this, &ct, &this->trace.str2, taken);
+    printf("\n%08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
     u64 tc;
     if (!this->trace.cycles) tc = 0;
     else tc = *this->trace.cycles;
@@ -346,7 +347,7 @@ static inline u32 addr_in_dtcm(struct ARM946ES *this, u32 addr)
 static inline u32 read_dtcm(struct ARM946ES *this, u32 addr, u32 sz)
 {
     this->waitstates++;
-    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
+    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (DTCM_SIZE - 1);
     return cR[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1));
 }
 
@@ -360,15 +361,15 @@ static inline void write_dtcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
 static inline u32 read_itcm(struct ARM946ES *this, u32 addr, u32 sz)
 {
     this->waitstates++;
-    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
-    return cR[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1));
+    u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
+    return cR[sz](this->cp15.itcm.data, tcm_addr);
 }
 
 static inline void write_itcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
 {
     this->waitstates++;
-    u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
-    cW[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1), v);
+    u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
+    cW[sz](this->cp15.itcm.data, tcm_addr, v);
 }
 
 
