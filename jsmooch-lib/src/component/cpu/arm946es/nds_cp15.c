@@ -227,15 +227,15 @@ void NDS_CP_write(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u3
                 // Flush d cache by val, all
                 return;
             }
-            break;
+            return;
         case CP15r_TCM_data_TCM_base_and_virtual_size:
             this->cp15.regs.dtcm_setting = val & 0xFFFFF03E;
             update_dtcm(this);
-            break;
+            return;
         case CP15r_TCM_instruction_TCM_base_and_virtual_size:
             this->cp15.regs.itcm_setting = val & 0x3E;
             update_itcm(this);
-            break;
+            return;
         case CP15r_misc_process_ID:
             this->cp15.regs.trace_process_id = val;
             return;

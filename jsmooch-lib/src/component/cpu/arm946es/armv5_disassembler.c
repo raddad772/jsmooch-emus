@@ -240,13 +240,13 @@ static void dasm_LDRH_STRH(u32 opcode, struct jsm_string *out, i64 instruction_a
     u32 Rdd = (opcode >> 12) & 15;
     u32 Rnd = (opcode >> 16) & 15;
     u32 Rmd = opcode & 15; // Offset register
-    add_context(ct, Rdd);
     add_context(ct, Rnd);
     add_context(ct, Rmd);
     if (L) {
         mnp("ldr", 3, "h");
     }
     else {
+        add_context(ct, Rdd);
         mnp("str", 3, "h");
     }
     oregc(Rdd);
@@ -271,7 +271,6 @@ static void dasm_LDRSB_LDRSH(u32 opcode, struct jsm_string *out, i64 instruction
     u32 imm_off = ((opcode >> 8) & 15) << 4;
     imm_off |= (opcode & 15);
     u32 Rmd = opcode & 15; // Offset register
-    add_context(ct, Rdd);
     add_context(ct, Rnd);
     add_context(ct, Rmd);
     u32 H = OBIT(5);
@@ -530,10 +529,14 @@ static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i6
     else if (T && (!B)) w = "t";
     else if ((!T) && B) w = "b";
     else w = NULL;
-    if (L) mnp("ldr", 3, w)
-    else mnp("str", 3, w)
+    if (L) {
+        mnp("ldr", 3, w)
+    }
+    else {
+        add_context(ct, Rdd);
+        mnp("str", 3, w)
+    }
     oregc(Rdd);
-    add_context(ct, Rdd);
     ostr("[");
     if (P) { // pre
         if (offset == 0) {
@@ -579,11 +582,15 @@ static void dasm_LDR_STR_register_offset(u32 opcode, struct jsm_string *out, i64
     else if (T && (!B)) w = "t";
     else if ((!T) && B) w = "b";
     else w = NULL;
-    if (L) mnp("ldr", 2, w)
-    else mnp("str", 2, w)
+    if (L) {
+        mnp("ldr", 2, w)
+    }
+    else {
+        mnp("str", 2, w)
+        add_context(ct, Rdd);
+    }
     oregc(Rdd);
     add_context(ct, Rnd);
-    add_context(ct, Rdd);
     add_context(ct, Rmd);
     ostr("[");
     if (P) { // pre
@@ -778,13 +785,13 @@ static void dasm_LDRD_STRD(u32 opcode, struct jsm_string *out, i64 instruction_a
     u32 Rdd = (opcode >> 12) & 15;
     u32 Rnd = (opcode >> 16) & 15;
     u32 Rmd = opcode & 15; // Offset register
-    add_context(ct, Rdd);
     add_context(ct, Rnd);
     add_context(ct, Rmd);
     if (L) {
         mnp("ldr", 3, "d");
     }
     else {
+        add_context(ct, Rdd);
         mnp("str", 3, "d");
     }
     oregc(Rdd);

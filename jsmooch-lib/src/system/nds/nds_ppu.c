@@ -302,7 +302,7 @@ void NDS_PPU_write_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             eng->io.display_mode = val & 3;
             if ((en == 1) && (eng->io.display_mode > 1)) {
-                printf("\nWARNING eng1 BAD DISPLAY MODE: %d", this->ppu.io.display_mode);
+                printf("\nWARNING eng1 BAD DISPLAY MODE: %d", eng->io.display_mode);
             }
             eng->io.tile_obj_id_boundary = (val >> 4) & 3;
             eng->io.hblank_free = (val >> 7) & 1;
@@ -335,7 +335,28 @@ void NDS_PPU_write_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
 u32 NDS_PPU_read_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    u32 v;
+    switch(addr) {
+        case R_DISPSTAT+0: // DISPSTAT lo
+            v = this->clock.ppu.vblank_active;
+            v |= this->clock.ppu.hblank_active << 1;
+            v |= (this->clock.ppu.y == this->ppu.io.vcount_at) << 2;
+            v |= this->ppu.io.vblank_irq_enable << 3;
+            v |= this->ppu.io.hblank_irq_enable << 4;
+            v |= this->ppu.io.vcount_irq_enable << 5;
+            v |= (this->ppu.io.vcount_at & 0x100) >> 1; // hi bit of vcount_at
+            return v;
+        case R_DISPSTAT+1: // DISPSTAT hi
+            v = this->ppu.io.vcount_at & 0xFF;
+            return v;
+        case R_VCOUNT+0: // VCOunt lo
+            return this->clock.ppu.y & 0xFF;
+        case R_VCOUNT+1:
+            return this->clock.ppu.y >> 8;
+    }
+
     printf("\nUNKNOWN PPU RD ADDR:%08x sz:%d", addr, sz);
+    return 0;
 }
 
 u32 NDS_PPU_read_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)

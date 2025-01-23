@@ -1136,12 +1136,33 @@ static void setup_waveforms_view(struct NDS* this, struct debugger_interface *db
 }
 
 */
+
+static void setup_cpu_trace(struct debugger_interface *dbgr, struct NDS *this)
+{
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
+    struct debugger_view *dview = cpg(p);
+    struct trace_view *tv = &dview->trace;
+    snprintf(tv->name, sizeof(tv->name), "Trace");
+    trace_view_add_col(tv, "Arch", 5);
+    trace_view_add_col(tv, "Cycle#", 10);
+    trace_view_add_col(tv, "Addr", 8);
+    trace_view_add_col(tv, "Opcode", 8);
+    trace_view_add_col(tv, "Disassembly", 45);
+    trace_view_add_col(tv, "Context", 32);
+    tv->autoscroll = 1;
+    tv->display_end_top = 0;
+
+    this->arm7.dbg.tvptr = tv;
+    this->arm9.dbg.tvptr = tv;
+}
+
 void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
 
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
+    setup_cpu_trace(dbgr, this);
 }
 /*
     //setup_ARM7TDMI_disassembly(dbgr, this);

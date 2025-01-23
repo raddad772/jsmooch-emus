@@ -14,6 +14,8 @@
 #include "helpers/multisize_memaccess.c"
 #define PC R[15]
 
+#define TRACE
+
 static u32 fetch_ins(struct ARM946ES *this, u32 sz) {
     u32 r = ARM946ES_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
     return r;
@@ -171,10 +173,11 @@ void ARM946ES_reload_pipeline(struct ARM946ES* this)
     }
 }
 
-static void print_context(struct ARM946ES *this, struct ARMctxt *ct, struct jsm_string *out)
+static void print_context(struct ARM946ES *this, struct ARMctxt *ct, struct jsm_string *out, u32 taken)
 {
     jsm_string_quickempty(out);
     u32 needs_commaspace = 0;
+    if (!taken) jsm_string_sprintf(out, "NT.");
     for (u32 i = 0; i < 15; i++) {
         if (ct->regs & (1 << i)) {
             if (needs_commaspace) {
@@ -187,7 +190,7 @@ static void print_context(struct ARM946ES *this, struct ARMctxt *ct, struct jsm_
 }
 
 
-static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 T)
+static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 T, u32 taken)
 {
     struct ARMctxt ct;
     ct.regs = 0;
@@ -197,7 +200,7 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
     else {
         ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
-    print_context(this, &ct, &this->trace.str2);
+    print_context(this, &ct, &this->trace.str2, taken);
     u64 tc;
     if (!this->trace.cycles) tc = 0;
     else tc = *this->trace.cycles;
@@ -205,11 +208,11 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
     struct trace_view *tv = this->dbg.tvptr;
     trace_view_startline(tv, this->trace.source_id);
     if (T) {
-        trace_view_printf(tv, 0, "THUMB");
+        trace_view_printf(tv, 0, "THUMB9");
         trace_view_printf(tv, 3, "%04x", opcode);
     }
     else {
-        trace_view_printf(tv, 0, "ARM");
+        trace_view_printf(tv, 0, "ARM9");
         trace_view_printf(tv, 3, "%08x", opcode);
     }
     trace_view_printf(tv, 1, "%lld", tc);
@@ -221,7 +224,11 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
 
 static void decode_and_exec_thumb(struct ARM946ES *this, u32 opcode, u32 opcode_addr)
 {
-    if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 1);
+#ifdef TRACE
+    armv5_trace_format(this, opcode, opcode_addr, 1, 1);
+#else
+    if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 1, 1);
+#endif
     struct thumb2_instruction *ins = &this->opcode_table_thumb[opcode];
     ins->func(this, ins);
     if (this->pipeline.flushed)
@@ -231,7 +238,11 @@ static void decode_and_exec_thumb(struct ARM946ES *this, u32 opcode, u32 opcode_
 static void decode_and_exec_arm(struct ARM946ES *this, u32 opcode, u32 opcode_addr)
 {
     // bits 27-0 and 7-4
-    if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
+#ifdef TRACE
+    armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+#else
+if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+#endif
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     this->arm9_ins = &this->opcode_table_arm[decode];
     this->arm9_ins->exec(this, opcode);
@@ -274,7 +285,11 @@ void ARM946ES_run(struct ARM946ES*this)
             // check for PLD and 4 undefined's
             u32 execed = 0;
             if ((opcode >> 28) == 15) {
+#ifdef TRACE
+                armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+#else
                 if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
+#endif
                 u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
                 this->arm9_ins = &this->opcode_table_arm_never[decode];
                 if (this->arm9_ins->valid) {
@@ -286,7 +301,11 @@ void ARM946ES_run(struct ARM946ES*this)
             }
 
             if (!execed) {
+#ifdef TRACE
+                armv5_trace_format(this, opcode, opcode_addr, 0, 0);
+#else
                 if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
+#endif
                 this->pipeline.access = ARM9P_code | ARM9P_sequential;
                 this->regs.PC += 4;
             }

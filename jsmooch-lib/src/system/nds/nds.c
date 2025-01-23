@@ -418,7 +418,6 @@ static void run_system(struct NDS *this, u64 num_cycles)
         if (this->clock.cycles7 > 0) {
             this->clock.cycles7 -= run_arm7(this, MIN(16, this->clock.cycles7));
         }
-
         if (this->clock.cycles9 > 0) {
             this->clock.cycles9 -= run_arm9(this, MIN(16, this->clock.cycles9));
         }
@@ -428,6 +427,7 @@ static void run_system(struct NDS *this, u64 num_cycles)
             this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
             NDS_update_IF7(this, 23);
         }
+        if (dbg.do_break) break;
     }
 
 }

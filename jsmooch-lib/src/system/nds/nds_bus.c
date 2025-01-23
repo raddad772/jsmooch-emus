@@ -58,6 +58,7 @@ static void buswr9_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 v
     this->waitstates.current_transaction++;
     dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
+    dbg_break("unknown addr write9", this->clock.master_cycle_count7);
 }
 
 static void buswr7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
@@ -292,6 +293,7 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return v;
 
         case R_IME: return this->io.arm7.IME;
+        case R_IME+1: return 0;
         case R_IE+0: return this->io.arm7.IE & 0xFF;
         case R_IE+1: return (this->io.arm7.IE >> 8) & 0xFF;
         case R_IE+2: return (this->io.arm7.IE >> 16) & 0xFF;
@@ -633,6 +635,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
 
         case R_IME: this->io.arm7.IME = val & 1; NDS_eval_irqs_7(this); return;
+        case R_IME+1: return;
         case R_IF+0: this->io.arm7.IF &= ~val; NDS_eval_irqs_7(this); return;
         case R_IF+1: this->io.arm7.IF &= ~(val << 8); NDS_eval_irqs_7(this); return;
         case R_IF+2: this->io.arm7.IF &= ~(val << 16); NDS_eval_irqs_7(this); return;
@@ -918,6 +921,7 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return this->io.sqrt.result.data[addr & 3];
 
         case R_IME: return this->io.arm9.IME;
+        case R_IME+1: return 0;
         case R_IE+0: return this->io.arm9.IE & 0xFF;
         case R_IE+1: return (this->io.arm9.IE >> 8) & 0xFF;
         case R_IE+2: return (this->io.arm9.IE >> 16) & 0xFF;
@@ -1071,7 +1075,9 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->ppu.eng2d[1].enable = (val >> 1) & 1;
             this->ppu.io.display_swap = (val >> 7) & 1;
             return;
-
+        case R9_POWCNT1+2:
+        case R9_POWCNT1+3:
+            return;
         case R_KEYCNT+0:
             this->io.arm9.button_irq.buttons = (this->io.arm9.button_irq.buttons & 0b1100000000) | val;
             return;
@@ -1120,6 +1126,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
 
         case R_IME: this->io.arm9.IME = val & 1; NDS_eval_irqs_9(this); return;
+        case R_IME+1: return;
         case R_IF+0: this->io.arm9.IF &= ~val; NDS_eval_irqs_9(this); return;
         case R_IF+1: this->io.arm9.IF &= ~(val << 8); NDS_eval_irqs_9(this); return;
         case R_IF+2: this->io.arm9.IF &= ~(val << 16); NDS_eval_irqs_9(this); return;
@@ -1689,6 +1696,7 @@ static void trace_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     struct NDS *this = (struct NDS *)ptr;
+    this->waitstates.current_transaction++;
     u32 v;
 
     if (addr < 0x10000000) v = this->mem.rw[0].read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
@@ -1705,6 +1713,7 @@ static u32 rd9_bios(struct NDS *this, u32 addr, u32 sz)
 u32 NDS_mainbus_read9(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     struct NDS *this = (struct NDS *)ptr;
+    this->waitstates.current_transaction++;
     u32 v;
 
     if (addr < 0x10000000) v = this->mem.rw[1].read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
@@ -1748,6 +1757,7 @@ u32 NDS_mainbus_fetchins7(void *ptr, u32 addr, u32 sz, u32 access)
 void NDS_mainbus_write7(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct NDS *this = (struct NDS *)ptr;
+    this->waitstates.current_transaction++;
     //if (dbg.trace_on) trace_write(this, addr, sz, val);
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
@@ -1760,6 +1770,7 @@ void NDS_mainbus_write7(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct NDS *this = (struct NDS *)ptr;
+    this->waitstates.current_transaction++;
     //if (dbg.trace_on) trace_write(this, addr, sz, val);
     if (addr < 0x10000000) {
         return this->mem.rw[1].write[(addr >> 24) & 15](this, addr, sz, access, val);
