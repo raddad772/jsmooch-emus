@@ -680,9 +680,9 @@ void ARM946ES_ins_data_proc_immediate(struct ARM946ES *this, u32 opcode)
     this->carry = this->regs.CPSR.C;
     if (imm_ROR_amount) Rm = ROR(this, Rm, imm_ROR_amount);
 
-    if (((opcode >> 28) == 1) && (alu_opcode == 12) && (Rnd == 1) && (Rm == 0x10)){
-        printf("\nFAIL HAPPENED HERE3!");
-        dbg_break("THE PLACE hAPPENED", *this->trace.cycles);
+    if (((opcode >> 28) == 1) && (alu_opcode == 12) && (Rnd == 1)){
+        printf("\nFAIL HAPPENED HERE3! Rm:%d", Rm);
+        //dbg_break("THE PLACE hAPPENED", *this->trace.cycles);
     }
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
