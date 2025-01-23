@@ -838,7 +838,6 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
 
     u32 cur_addr = *getR(this, Rnd);
     u32 base_addr = cur_addr;
-    u32 old_base = cur_addr;
 
     u32 do_mode_switch = S && (!L || !move_pc);
     u32 old_mode = this->regs.CPSR.mode;
@@ -870,22 +869,26 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
 
         if (L) {
             u32 v = ARM946ES_read(this, cur_addr, 4, access_type, 1);
-            if (W && (i == first)) {
-                write_reg(this, getR(this, Rnd), base_addr);
-            }
             write_reg(this, getR(this, i), v);
-            //if (i == 15) this->regs.CPSR.T = v & 1;
         }
         else {
             ARM946ES_write(this, cur_addr, 4, access_type, *getR(this, i));
-            if (W && (i == first)) {
-                write_reg(this, getR(this, Rnd), base_addr);
-            }
         }
 
         if (!P) cur_addr += 4;
         access_type = ARM9P_sequential;
     }
+
+    if (W) {
+        u32 base_is_last = (rlist == 0) ? 0 : ((rlist >> Rnd) == 1);
+        if (L) {
+            if (!base_is_last || rlist == (1 << Rnd))
+                *getR(this, Rnd) = base_addr;
+        } else {
+            *getR(this, Rnd) = base_addr;
+        }
+    }
+
     if (L) {
         //ARM946ES_idle(this, 1);
         if (do_mode_switch) {
@@ -897,6 +900,11 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
         }
 
         if (move_pc) {
+            if ((this->regs.PC & 1) && !S) {
+                this->regs.CPSR.T = 1;
+                this->regs.PC &= 0xFFFFFFFE;
+            }
+
             if (S) { // If force usermode...
                 this->regs.CPSR.u |= 0x10;
                 switch(old_mode) {
@@ -916,8 +924,8 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
                     default:
                         break;
                 }
-                this->pipeline.flushed = 1;
             }
+            this->pipeline.flushed = 1;
             ARM946ES_fill_regmap(this);
         }
     }
@@ -925,6 +933,7 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
         this->regs.CPSR.mode = old_mode;
         ARM946ES_fill_regmap(this);
     }
+
 }
 
 void ARM946ES_ins_STC_LDC(struct ARM946ES *this, u32 opcode)
