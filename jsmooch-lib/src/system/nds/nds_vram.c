@@ -31,13 +31,11 @@ static const u32 VRAM_masks[9] = {
         0x03FFF  // I - 16K
 };
 
-static void map_arm9(struct NDS *this, u32 addr_start, u32 addr_end, u8 *ptr)
+static void map_arm9(struct NDS *this, u32 addr_start, u32 addr_end, u8 *ptr, u32 wh)
 {
     for (u32 addr = addr_start; addr < addr_end; addr += 0x4000) {
-        this->mem.vram.map.arm9[(addr >> 14) & 0x3FF] = ptr;
-        if (ptr != NULL) {
-            ptr += 0x4000;
-        }
+        u32 v = (ptr == NULL) ? 0 : ((addr - addr_start) & VRAM_masks[wh]);
+        this->mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK] = ptr+v;
     }
 }
 
@@ -98,18 +96,19 @@ static void map_eng3d_palette_slot(struct NDS *this, u32 slot_start, u32 slot_en
 static void set_bankA(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     u32 offset;
+    printf("\nset_bankA mst:%d ofs:%d ptr:%p", mst, ofs, ptr);
     switch(mst) {
         case 0: // ARM9 06800000
-            map_arm9(this, 0x06800000, 0x0681FFFF, ptr);
+            map_arm9(this, 0x06800000, 0x0681FFFF, ptr, NVA);
             break;
         case 1: // ARM9 06000000 & EngA BG-VRAM. + 20,000h * OFS
             offset = 0x20000 * ofs;
-            map_arm9(this, 0x06000000+offset,   0x0601FFFF+offset, ptr);
+            map_arm9(this, 0x06000000+offset,   0x0601FFFF+offset, ptr, NVA);
             map_eng2d_bg_vram(this, ENG_A, offset, 0x1FFFF+offset, ptr);
             break;//
         case 2: // map to ARM9 06400000&EngA_OBJ-VRAM + (20,000h * OFS.0)
             offset = 0x20000 * (ofs & 1);
-            map_arm9(this, 0x06400000+offset, 0x0641FFFF+offset, ptr);
+            map_arm9(this, 0x06400000+offset, 0x0641FFFF+offset, ptr, NVA);
             map_eng2d_obj_vram(this, ENG_A, offset, 0x1FFFF+offset, ptr);
             break;
         case 3: // map to 3DE_texture slot 0-3 by OFS
@@ -125,16 +124,16 @@ static void set_bankB(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     u32 offset;
     switch(mst) {
         case 0: // ARM9 06820000
-            map_arm9(this, 0x06820000, 0x0683FFFF, ptr);
+            map_arm9(this, 0x06820000, 0x0683FFFF, ptr, NVB);
             break;
         case 1: // ARM9 06000000 & EngA BG-VRAM. + 20,000h * OFS
             offset = 0x20000 * ofs;
-            map_arm9(this, 0x06000000+offset,   0x0601FFFF+offset, ptr);
+            map_arm9(this, 0x06000000+offset,   0x0601FFFF+offset, ptr, NVB);
             map_eng2d_bg_vram(this, ENG_A, offset, 0x1FFFF+offset, ptr);
             break;//
         case 2: // map to ARM9 06400000&EngA_OBJ-VRAM + (20,000h * OFS.0)
             offset = 0x20000 * (ofs & 1);
-            map_arm9(this, 0x06400000+offset, 0x0641FFFF+offset, ptr);
+            map_arm9(this, 0x06400000+offset, 0x0641FFFF+offset, ptr, NVB);
             map_eng2d_obj_vram(this, ENG_A, offset, 0x1FFFF+offset, ptr);
             break;
         case 3: // map to 3DE_texture slot 0-3 by OFS
@@ -152,11 +151,11 @@ static void set_bankC(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     u32 offset;
     switch(mst) {
         case 0: // ARM9 06840000
-            map_arm9(this, 0x06840000, 0x0685FFFF, ptr);
+            map_arm9(this, 0x06840000, 0x0685FFFF, ptr, NVC);
             break;
         case 1: // ARM9 06000000 & EngA BG-VRAM. + 20,000h * OFS
             offset = 0x20000 * ofs;
-            map_arm9(this, 0x06000000 + offset, 0x0601FFFF + offset, ptr);
+            map_arm9(this, 0x06000000 + offset, 0x0601FFFF + offset, ptr, NVC);
             map_eng2d_bg_vram(this, ENG_A, offset, 0x1FFFF + offset, ptr);
             break;
         case 2: //  map to ARM7 06000000 + (20,000h * OFS.0)
@@ -166,7 +165,7 @@ static void set_bankC(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
             map_eng3d_texture_slot(this, ofs, ptr);
             break;
         case 4: // map to ARM9 06200000 & EngB_BG-VRAM
-            map_arm9(this, 0x06200000, 0x0621FFFF, ptr);
+            map_arm9(this, 0x06200000, 0x0621FFFF, ptr, NVC);
             map_eng2d_bg_vram(this, ENG_B, 0, 0x1FFFF, ptr);
             break;
         case 5:
@@ -180,11 +179,11 @@ static void set_bankD(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     u32 offset;
     switch(mst) {
         case 0: // ARM9 06860000
-            map_arm9(this, 0x06860000, 0x0687FFFF, ptr);
+            map_arm9(this, 0x06860000, 0x0687FFFF, ptr, NVD);
             break;
         case 1: // ARM9 06000000 & EngA BG-VRAM. + 20,000h * OFS
             offset = 0x20000 * ofs;
-            map_arm9(this, 0x06000000 + offset, 0x0601FFFF + offset, ptr);
+            map_arm9(this, 0x06000000 + offset, 0x0601FFFF + offset, ptr, NVD);
             map_eng2d_bg_vram(this, ENG_A, offset, 0x1FFFF + offset, ptr);
             break;
         case 2: //  map to ARM7 06000000 + (20,000h * OFS.0)
@@ -194,7 +193,7 @@ static void set_bankD(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
             map_eng3d_texture_slot(this, ofs, ptr);
             break;
         case 4: // map to ARM9 06600000 & EngB_OBJ-VRAM
-            map_arm9(this, 0x06600000, 0x0661FFFF, ptr);
+            map_arm9(this, 0x06600000, 0x0661FFFF, ptr, NVD);
             map_eng2d_obj_vram(this, ENG_B, 0, 0x1FFFF, ptr);
             break;
         default:
@@ -202,7 +201,7 @@ static void set_bankD(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     }
 }
 
-// 06000000 to 06FFFFFF in 16KB segments is 1024. addr >> 14 & 0x3FF
+// 06000000 to 06FFFFFF in 16KB segments is 1024. addr >> 14 & 0x17FF
 // u8* mem.vram.map.arm9[1024]
 // u8* mem.vram.map.arm7[2]
 // ARM7 will just be,
@@ -231,14 +230,14 @@ static void set_bankE(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     // 64K
     switch(mst) {
         case 0: // ARM9 06880000
-            map_arm9(this, 0x06880000, 0x0688FFFF, ptr);
+            map_arm9(this, 0x06880000, 0x0688FFFF, ptr, NVE);
             break;
         case 1: // ARM9 06000000&EngA_BG-VRAM+0
-            map_arm9(this, 0x06000000, 0x0600FFFF, ptr);
+            map_arm9(this, 0x06000000, 0x0600FFFF, ptr, NVE);
             map_eng2d_bg_vram(this, ENG_A, 0, 0xFFFF, ptr);
             break;
         case 2: // ARM9 06400000&EngA_OBJ-VRAM+0
-            map_arm9(this, 0x06400000, 0x0640FFFF, ptr);
+            map_arm9(this, 0x06400000, 0x0640FFFF, ptr, NVE);
             map_eng2d_obj_vram(this, ENG_A, 0, 0xFFFF, ptr);
             break;
         case 3: // 3DE texture palette slot 0-3
@@ -264,16 +263,16 @@ static void set_bankF(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     u32 offset;
     switch(mst) {
         case 0: // ARM9 06890000
-            map_arm9(this, 0x06890000, 0x06893FFF, ptr);
+            map_arm9(this, 0x06890000, 0x06893FFF, ptr, NVF);
             break;
         case 1: // ARM9&EngA BG-VRAM + 06000000+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
-            map_arm9(this, 0x06000000+offset, 0x06003FFF+offset, ptr);
+            map_arm9(this, 0x06000000+offset, 0x06003FFF+offset, ptr, NVF);
             map_eng2d_bg_vram(this, ENG_A, offset, 0x3FFF+offset, ptr);
             break;
         case 2: // ARM9&EngA OBJ-VRAM + 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
-            map_arm9(this, 0x06400000+offset, 0x06403FFF+offset, ptr);
+            map_arm9(this, 0x06400000+offset, 0x06403FFF+offset, ptr, NVF);
             map_eng2d_obj_vram(this, ENG_A, offset, 0x3FFF+offset, ptr);
             break;
         case 3: // 3DE texture palette Slot (OFS.0*1)+(OFS.1*4) 0, 1, 4, or 5
@@ -298,16 +297,16 @@ static void set_bankG(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     u32 offset;
     switch(mst) {
         case 0: // ARM9 06894000
-            map_arm9(this, 0x06894000, 0x06897FFF, ptr);
+            map_arm9(this, 0x06894000, 0x06897FFF, ptr, NVG);
             break;
         case 1: // ARM9&EngA BG-VRAM + 06000000+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
-            map_arm9(this, 0x06000000 + offset, 0x06003FFF + offset, ptr);
+            map_arm9(this, 0x06000000 + offset, 0x06003FFF + offset, ptr, NVG);
             map_eng2d_bg_vram(this, ENG_A, offset, 0x3FFF + offset, ptr);
             break;
         case 2: // ARM9&EngA OBJ-VRAM + 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
             offset = (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
-            map_arm9(this, 0x06400000 + offset, 0x06403FFF + offset, ptr);
+            map_arm9(this, 0x06400000 + offset, 0x06403FFF + offset, ptr, NVG);
             map_eng2d_obj_vram(this, ENG_A, offset, 0x3FFF + offset, ptr);
             break;
         case 3: // 3DE texture palette slot (OFS.0*1)+(OFS.1*4) 0, 1, 4, or 5
@@ -335,10 +334,10 @@ static void set_bankH(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     u32 offset;
     switch(mst) {
         case 0: // ARM9 06898000
-            map_arm9(this, 0x06898000, 0x0689FFFF, ptr);
+            map_arm9(this, 0x06898000, 0x0689FFFF, ptr, NVH);
             break;
         case 1: // ARM9&EngB BG-VRAM 6200000h
-            map_arm9(this, 0x06200000, 0x06207FFF, ptr);
+            map_arm9(this, 0x06200000, 0x06207FFF, ptr, NVH);
             map_eng2d_bg_vram(this, ENG_B, 0x0000, 0x7FFF, ptr);
             break;
         case 2: // EngB BG extended palette slots 0-3
@@ -358,14 +357,14 @@ static void set_bankI(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     u32 offset;
     switch(mst) {
         case 0: // ARM9 068A0000
-            map_arm9(this, 0x068A0000, 0x068A3FFF, ptr);
+            map_arm9(this, 0x068A0000, 0x068A3FFF, ptr, NVI);
             break;
         case 1: // ARM9&EngB BG-VRAM 6208000h
-            map_arm9(this, 0x06208000, 0x0620BFFF, ptr);
+            map_arm9(this, 0x06208000, 0x0620BFFF, ptr, NVI);
             map_eng2d_bg_vram(this, ENG_B, 0x8000, 0xBFFF, ptr);
             break;
         case 2: // ARM9&EngB OBJ-VRAM 06600000h
-            map_arm9(this, 0x06600000, 0x06603FFF, ptr);
+            map_arm9(this, 0x06600000, 0x06603FFF, ptr, NVI);
             map_eng2d_obj_vram(this, ENG_B, 0, 0x3FFF, ptr);
             break;
         case 3: // EngB OBJ extended palette

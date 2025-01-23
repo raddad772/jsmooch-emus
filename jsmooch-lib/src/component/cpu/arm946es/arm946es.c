@@ -14,7 +14,8 @@
 #include "helpers/multisize_memaccess.c"
 #define PC R[15]
 
-#define TRACE
+//#define TRACE
+static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 static u32 fetch_ins(struct ARM946ES *this, u32 sz) {
     u32 r = ARM946ES_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
@@ -201,7 +202,9 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
         ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
     print_context(this, &ct, &this->trace.str2, taken);
-    printf("\n%08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
+#ifdef TRACE
+    printf("\nARM9: %08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
+#else
     u64 tc;
     if (!this->trace.cycles) tc = 0;
     else tc = *this->trace.cycles;
@@ -221,6 +224,7 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
     trace_view_printf(tv, 4, "%s", this->trace.str.ptr);
     trace_view_printf(tv, 5, "%s", this->trace.str2.ptr);
     trace_view_endline(tv);
+#endif
 }
 
 static void decode_and_exec_thumb(struct ARM946ES *this, u32 opcode, u32 opcode_addr)
@@ -256,7 +260,7 @@ void ARM946ES_run(struct ARM946ES*this)
         do_IRQ(this);
     }
     if (this->halted) {
-        this->waitstates++;
+        (*this->waitstates)++;
         return;
     }
 
@@ -289,7 +293,7 @@ void ARM946ES_run(struct ARM946ES*this)
 #ifdef TRACE
                 armv5_trace_format(this, opcode, opcode_addr, 0, 1);
 #else
-                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
+                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 1);
 #endif
                 u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
                 this->arm9_ins = &this->opcode_table_arm_never[decode];
@@ -305,7 +309,7 @@ void ARM946ES_run(struct ARM946ES*this)
 #ifdef TRACE
                 armv5_trace_format(this, opcode, opcode_addr, 0, 0);
 #else
-                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0);
+                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 0);
 #endif
                 this->pipeline.access = ARM9P_code | ARM9P_sequential;
                 this->regs.PC += 4;
@@ -323,8 +327,6 @@ void ARM946ES_idle(struct ARM946ES*this, u32 num)
 {
     *this->waitstates += num;
 }
-
-static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 u32 ARM946ES_fetch_ins(struct ARM946ES *this, u32 addr, u32 sz, u32 access)
 {
@@ -346,30 +348,30 @@ static inline u32 addr_in_dtcm(struct ARM946ES *this, u32 addr)
 
 static inline u32 read_dtcm(struct ARM946ES *this, u32 addr, u32 sz)
 {
-    this->waitstates++;
+    (*this->waitstates)++;
     u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (DTCM_SIZE - 1);
     return cR[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1));
 }
 
 static inline void write_dtcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
 {
-    this->waitstates++;
+    (*this->waitstates)++;
     u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
     cW[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1), v);
 }
 
 static inline u32 read_itcm(struct ARM946ES *this, u32 addr, u32 sz)
 {
-    this->waitstates++;
+    (*this->waitstates)++;
     u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
-    return cR[sz](this->cp15.itcm.data, tcm_addr);
+    return cR[sz](this->cp15.itcm.data, tcm_addr & (ITCM_SIZE - 1));
 }
 
 static inline void write_itcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
 {
-    this->waitstates++;
+    (*this->waitstates)++;
     u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
-    cW[sz](this->cp15.itcm.data, tcm_addr, v);
+    cW[sz](this->cp15.itcm.data, tcm_addr & (ITCM_SIZE - 1), v);
 }
 
 

@@ -12,6 +12,8 @@
 #include "armv4_disassembler.h"
 #include "thumb_disassembler.h"
 
+//#define TRACE
+
 #define PC R[15]
 #define LR R[14]
 #define SP R[13]
@@ -229,6 +231,10 @@ static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 
         ARMv4_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
     print_context(this, &ct, &this->trace.str2);
+#ifdef TRACE
+    printf("\nARM7: %08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
+#else
+
     u64 tc;
     if (!this->trace.cycles) tc = 0;
     else tc = *this->trace.cycles;
@@ -248,11 +254,16 @@ static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 
     trace_view_printf(tv, 4, "%s", this->trace.str.ptr);
     trace_view_printf(tv, 5, "%s", this->trace.str2.ptr);
     trace_view_endline(tv);
+#endif
 }
 
 static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode, u32 opcode_addr)
 {
+#ifdef TRACE
+    armv4_trace_format(this, opcode, opcode_addr, 1);
+#else
     if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 1);
+#endif
     struct thumb_instruction *ins = &this->opcode_table_thumb[opcode];
     ins->func(this, ins);
     if (this->pipeline.flushed)
@@ -262,7 +273,11 @@ static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode, u32 opcode_
 static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode, u32 opcode_addr)
 {
     // bits 27-0 and 7-4
+#ifdef TRACE
+    armv4_trace_format(this, opcode, opcode_addr, 0);
+#else
     if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
+#endif
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     this->arm7_ins = &this->opcode_table_arm[decode];
     this->arm7_ins->exec(this, opcode);
@@ -270,7 +285,7 @@ static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode, u32 opcode_ad
 
 void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num)
 {
-    *this->waitstates += num;
+    (*this->waitstates) += num;
 }
 
 void ARM7TDMI_run(struct ARM7TDMI*this)
@@ -302,7 +317,11 @@ void ARM7TDMI_run(struct ARM7TDMI*this)
                 ARM7TDMI_reload_pipeline(this);
         }
         else {
+#ifdef TRACE
+            armv4_trace_format(this, opcode, opcode_addr, 0);
+#else
             if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
+#endif
             this->pipeline.access = ARM7P_code | ARM7P_sequential;
             this->regs.PC += 4;
         }

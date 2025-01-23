@@ -159,43 +159,46 @@ static u32 busrd9_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has
 static void buswr9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (addr < 0x05000000) return;
-    if (addr < 0x050000200) NDS_PPU_write_2d_bg_palette(this, 0, addr & 0x1FF, sz, val);
-    if (addr < 0x050000400) NDS_PPU_write_2d_obj_palette(this, 0, addr & 0x1FF, sz, val);
-    if (addr < 0x050000600) NDS_PPU_write_2d_bg_palette(this, 1, addr & 0x1FF, sz, val);
-    if (addr < 0x050000800) NDS_PPU_write_2d_obj_palette(this, 1, addr & 0x1FF, sz, val);
+    if (addr < 0x05000200) NDS_PPU_write_2d_bg_palette(this, 0, addr & 0x1FF, sz, val);
+    if (addr < 0x05000400) NDS_PPU_write_2d_obj_palette(this, 0, addr & 0x1FF, sz, val);
+    if (addr < 0x05000600) NDS_PPU_write_2d_bg_palette(this, 1, addr & 0x1FF, sz, val);
+    if (addr < 0x05000800) NDS_PPU_write_2d_obj_palette(this, 1, addr & 0x1FF, sz, val);
     buswr9_invalid(this, addr, sz, access, val);
 }
 
 static u32 busrd9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (addr < 0x05000000) return busrd9_invalid(this, addr, sz, access, has_effect);
-    if (addr < 0x050000200) return NDS_PPU_read_2d_bg_palette(this, 0, addr & 0x1FF, sz);
-    if (addr < 0x050000400) return NDS_PPU_read_2d_obj_palette(this, 0, addr & 0x1FF, sz);
-    if (addr < 0x050000600) return NDS_PPU_read_2d_bg_palette(this, 1, addr & 0x1FF, sz);
-    if (addr < 0x050000800) return NDS_PPU_read_2d_obj_palette(this, 1, addr & 0x1FF, sz);
+    if (addr < 0x05000200) return NDS_PPU_read_2d_bg_palette(this, 0, addr & 0x1FF, sz);
+    if (addr < 0x05000400) return NDS_PPU_read_2d_obj_palette(this, 0, addr & 0x1FF, sz);
+    if (addr < 0x05000600) return NDS_PPU_read_2d_bg_palette(this, 1, addr & 0x1FF, sz);
+    if (addr < 0x05000800) return NDS_PPU_read_2d_obj_palette(this, 1, addr & 0x1FF, sz);
     return busrd9_invalid(this, addr, sz, access, has_effect);
 }
 
 static void buswr9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (sz == 1) return; // 8-bit writes ignored
-    u8 *ptr = this->mem.vram.map.arm9[(addr >> 14) & 0x3FF];
-    if (ptr) cW[sz](ptr, addr & 0x3FFF, val);
+    u8 *ptr = this->mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK];
+    if (ptr) return cW[sz](ptr, addr & 0x3FFF, val);
 
     printf("\nInvalid VRAM write unmapped addr:%08x sz:%d val:%08x", addr, sz, val);
+    dbg_break("Unmapped VRAM9 write", this->clock.master_cycle_count7);
 }
 
 static u32 busrd9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    u8 *ptr = this->mem.vram.map.arm9[(addr >> 14) & 0x3FF];
+    u8 *ptr = this->mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK];
     if (ptr) return cR[sz](ptr, addr & 0x3FFF);
 
     printf("\nInvalid VRAM read unmapped addr:%08x sz:%d", addr, sz);
+    dbg_break("Unmapped VRAM9 read", this->clock.master_cycle_count7);
     return 0;
 }
 
 static void buswr9_oam(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    return;
     if (addr < 0x07000000) return;
     if (addr < 0x07000400) return cW[sz](this->ppu.eng2d[0].mem.oam, addr, val);
     if (addr < 0x07000800) return cW[sz](this->ppu.eng2d[0].mem.oam, addr, val);
@@ -1321,6 +1324,8 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
             this->mem.vram.io.bank[bank_num].ofs = (val >> 3) & 3;
             this->mem.vram.io.bank[bank_num].enable = (val >> 7) & 1;
+
+            printf("\nWRITE VRAM val:%02x CNT:%d MST:%d OFS:%d enable:%d", val, bank_num, this->mem.vram.io.bank[bank_num].mst, this->mem.vram.io.bank[bank_num].ofs, this->mem.vram.io.bank[bank_num].enable);
             NDS_VRAM_resetup_banks(this);
             return; }
 
@@ -1702,6 +1707,9 @@ u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     if (addr < 0x10000000) v = this->mem.rw[0].read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
     else v = busrd7_invalid(this, addr, sz, access, has_effect);
     //if (dbg.trace_on) trace_read(this, addr, sz, v);
+#ifdef TRACE
+    printf("\n rd7:%08x sz:%d val:%08x", addr, sz, v);
+#endif
     return v;
 }
 
@@ -1717,7 +1725,7 @@ u32 NDS_mainbus_read9(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
     u32 v;
 
     if (addr < 0x10000000) v = this->mem.rw[1].read[(addr >> 24) & 15](this, addr, sz, access, has_effect);
-    else if ((addr & 0xFFFF0000) == 0xFFFF0000) v = rd9_bios(this, addr & 0xFFFF, sz);
+    else if ((addr & 0xFFFF0000) == 0xFFFF0000) v = rd9_bios(this, addr, sz);
     else v = busrd9_invalid(this, addr, sz, access, has_effect);
 #ifdef TRACE
     printf("\n rd9:%08x sz:%d val:%08x", addr, sz, v);
@@ -1761,6 +1769,9 @@ void NDS_mainbus_write7(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct NDS *this = (struct NDS *)ptr;
     this->waitstates.current_transaction++;
+#ifdef TRACE
+    printf("\n wr7:%08x sz:%d val:%08x", addr, sz, val);
+#endif
     //if (dbg.trace_on) trace_write(this, addr, sz, val);
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);

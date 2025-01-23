@@ -460,8 +460,8 @@ static void NDSJ_load_BIOS(JSM, struct multi_file_set* mfs)
     JTHIS;
     // 7, 9, firmware
     memcpy(this->mem.bios7, mfs->files[0].buf.ptr, 16384);
-    memcpy(this->mem.bios9, mfs->files[0].buf.ptr, 4096);
-    memcpy(this->mem.firmware, mfs->files[0].buf.ptr, 256 * 1024);
+    memcpy(this->mem.bios9, mfs->files[1].buf.ptr, 4096);
+    memcpy(this->mem.firmware, mfs->files[2].buf.ptr, 256 * 1024);
 }
 
 static void NDSIO_unload_cart(JSM)
@@ -493,13 +493,13 @@ static void setup_lcd(struct JSM_DISPLAY *d)
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
-    d->pixelometry.rows.visible = 192;
-    d->pixelometry.rows.max_visible = 192;
+    d->pixelometry.rows.visible = 384;
+    d->pixelometry.rows.max_visible = 384;
     d->pixelometry.rows.bottom_vblank = 71;
     d->pixelometry.offset.y = 0;
 
     d->geometry.physical_aspect_ratio.width = 4;
-    d->geometry.physical_aspect_ratio.height = 3;
+    d->geometry.physical_aspect_ratio.height = 6;
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
@@ -550,6 +550,8 @@ static void NDSJ_describe_io(JSM, struct cvec* IOs)
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
     d->display.output[0] = malloc(256 * 384 * 2);
     d->display.output[1] = malloc(256 * 384 * 2);
+    memset(d->display.output[0], 0, 256*384*2);
+    memset(d->display.output[1], 0, 256*384*2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_lcd(&d->display);

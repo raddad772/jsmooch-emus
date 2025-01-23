@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_BUS_H
 #define JSMOOCH_EMUS_NDS_BUS_H
 
-#define TRACE
+//#define TRACE
 
 #include "nds_clock.h"
 #include "nds_ppu.h"
@@ -19,6 +19,9 @@
 struct NDS;
 typedef u32 (*NDS_rdfunc)(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
 typedef void (*NDS_wrfunc)(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+
+#define NDSVRAMSHIFT(nda) (((nda) & 0xFFFFFF) >> 14)
+#define NDSVRAMMASK 0x3FF
 
 struct NDS {
     struct ARM7TDMI arm7;
@@ -38,7 +41,7 @@ struct NDS {
             NDS_rdfunc read[16];
             NDS_wrfunc write[16];
         } rw[2]; // ARM7, ARM9 maps...
-        u8 RAM[4 * 1024 * 1024]; // 4MB RAM
+        u8 RAM[0x400000]; // 4MB RAM
         u8 WRAM_share[32 * 1024];      // 32KB WRAM mappable
         u8 WRAM_arm7[64 * 1024]; // 64KB of WRAM for ARM7 only
         struct {
@@ -66,8 +69,7 @@ struct NDS {
                 } bank[9];
             } io;
             struct {
-                u8 *arm9[1024]; // 16KB banks from 06000000 to 06FFFFFF
-                // addr >> 14 & 0x3FF
+                u8 *arm9[0x400]; // 16KB banks from 06000000 to 06FFFFFF
                 u8 *arm7[2];    // 2 128KB banks at 06000000. addr < 06400000, slot[0] or [1] & 128KB
             } map;
         } vram;
