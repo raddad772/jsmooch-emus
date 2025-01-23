@@ -58,7 +58,6 @@ static enum CP15_regs get_register(u32 opcode, u32 cn, u32 cm, u32 cp)
 
 u32 NDS_CP_read(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u32 CP)
 {
-    printf("\nCP READ...");
     if (num != 15) {
         printf("\n!BAD! CP.r:%d opcode:%d Cn:%d Cm:%d CP:%d", num, opcode, Cn, Cm, CP);
         return 0;

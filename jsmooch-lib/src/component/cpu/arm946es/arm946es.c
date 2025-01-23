@@ -16,6 +16,7 @@
 
 //#define TRACE
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
+static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
 static u32 fetch_ins(struct ARM946ES *this, u32 sz) {
     u32 r = ARM946ES_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
@@ -330,8 +331,7 @@ void ARM946ES_idle(struct ARM946ES*this, u32 num)
 
 u32 ARM946ES_fetch_ins(struct ARM946ES *this, u32 addr, u32 sz, u32 access)
 {
-    if (sz == 2) addr &= 0xFFFFFFFE;
-    else addr &= 0xFFFFFFFC;
+    addr &= maskalign[sz];
     u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
     return v;
 }
@@ -376,7 +376,8 @@ static inline void write_itcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
 
 
 u32 ARM946ES_read(struct ARM946ES *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
-    u32 v = 0;
+    u32 v;
+    addr &= maskalign[sz];
 
     if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable && !this->cp15.regs.control.itcm_load_mode) {
         return read_itcm(this, addr, sz);
@@ -391,6 +392,7 @@ u32 ARM946ES_read(struct ARM946ES *this, u32 addr, u32 sz, u32 access, u32 has_e
 
 void ARM946ES_write(struct ARM946ES *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    addr &= maskalign[sz];
     if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable) {
         write_itcm(this, addr, sz, val);
         return;

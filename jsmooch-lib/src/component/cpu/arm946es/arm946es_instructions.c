@@ -679,6 +679,11 @@ void ARM946ES_ins_data_proc_immediate(struct ARM946ES *this, u32 opcode)
     u32 imm_ROR_amount = (opcode >> 7) & 30;
     this->carry = this->regs.CPSR.C;
     if (imm_ROR_amount) Rm = ROR(this, Rm, imm_ROR_amount);
+
+    if (((opcode >> 28) == 1) && (alu_opcode == 12) && (Rnd == 1) && (Rm == 0x10)){
+        printf("\nFAIL HAPPENED HERE3!");
+        dbg_break("THE PLACE hAPPENED", *this->trace.cycles);
+    }
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
         if (this->regs.CPSR.mode != ARM9_system)
@@ -826,10 +831,6 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
     u32 byte_sz = rcount << 2; // 4 byte per register
 
     if (rlist == 0) {
-        /* according to NBA, "If the register list is empty, only r15 will be loaded/stored but
-         * the base will be incremented/decremented as if each register was transferred."
-         */
-        rlist = 0x8000;
         first = 15;
         byte_sz = 64;
     }
@@ -837,6 +838,7 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
 
     u32 cur_addr = *getR(this, Rnd);
     u32 base_addr = cur_addr;
+    u32 old_base = cur_addr;
 
     u32 do_mode_switch = S && (!L || !move_pc);
     u32 old_mode = this->regs.CPSR.mode;
@@ -872,6 +874,7 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
                 write_reg(this, getR(this, Rnd), base_addr);
             }
             write_reg(this, getR(this, i), v);
+            //if (i == 15) this->regs.CPSR.T = v & 1;
         }
         else {
             ARM946ES_write(this, cur_addr, 4, access_type, *getR(this, i));
@@ -884,7 +887,7 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
         access_type = ARM9P_sequential;
     }
     if (L) {
-        ARM946ES_idle(this, 1);
+        //ARM946ES_idle(this, 1);
         if (do_mode_switch) {
             // According to MBA,
             /*"     During the following two cycles of a usermode LDM,\n"
