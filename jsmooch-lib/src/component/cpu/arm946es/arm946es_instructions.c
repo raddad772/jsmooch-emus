@@ -810,133 +810,98 @@ void ARM946ES_ins_LDR_STR_register_offset(struct ARM946ES *this, u32 opcode)
     }
 }
 
-void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
-{
+void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode) {
     u32 P = OBIT(24); // P=0 add offset after. P=1 add offset first
     u32 U = OBIT(23); // 0=subtract offset, 1 =add
     u32 S = OBIT(22); // 0=no, 1=load PSR or force user bit
     u32 W = OBIT(21); // 0=no writeback, 1= writeback
     u32 L = OBIT(20); // 0=store, 1=load
     u32 Rnd = (opcode >> 16) & 15;
-    if ((Rnd == 13) && W  printf("\nTRYIN IT HERE...");
     u32 rlist = (opcode & 0xFFFF);
-    u32 rcount = 0;
-    //u32 *Rd = getR(this, Rnd);
-    int first = -1;
-    u32 bit = 0;
-    u32 move_pc = 0;
-    for (u32 i = 0; i < 16; i++) {
-        u32 mbit = (rlist >> (bit++)) & 1;
-        rcount += mbit;
-        if (mbit && (first==-1)) first = (int)i;
+
+    u32 pc_moved = rlist & (1 << 15);
+
+    u32 bytes = 0;
+    u32 base_new;
+    u32 addr = *getR(this, Rnd);
+    u32 Rnd_last = 0;
+
+    if (rlist != 0) {
+        for (u32 i = 0; i <= 15; i++) {
+            if ((rlist >> i) & 1)
+                bytes += sizeof(u32);
+        }
+
+        Rnd_last = (rlist >> Rnd) == 1;
+    } else {
+        bytes = 64;
     }
-    u32 byte_sz = rcount << 2; // 4 byte per register
 
-    if (rlist == 0) {
-        first = 15;
-        byte_sz = 64;
+    if (!U) {
+        addr -= bytes;
+        base_new = addr;
+    } else {
+        base_new = addr + bytes;
     }
-    move_pc = (rlist >> 15) & 1;
 
-    u32 cur_addr = *getR(this, Rnd);
-    u32 base_addr = cur_addr;
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_code | ARM9P_nonsequential;
 
-    u32 do_mode_switch = S && (!L || !move_pc);
-    u32 old_mode = this->regs.CPSR.mode;
-    if (do_mode_switch) {
+    u32 mode = this->regs.CPSR.mode;
+
+    if (S && (!L || !pc_moved)) {
         this->regs.CPSR.mode = ARM9_user;
         ARM946ES_fill_regmap(this);
     }
 
-    if (!U) {
-        P = !P;
-        cur_addr -= byte_sz;
-        base_addr -= byte_sz;
-    }
-    else {
-        base_addr += byte_sz;
-    }
+    u32 i = 0;
+    u32 remaining = rlist;
+    u32 access = ARM9P_nonsequential;
+    while (remaining != 0) {
+        while (((remaining >> i) &  1) == 0) i++;
 
-    this->pipeline.access = ARM9P_code | ARM9P_nonsequential;
-    this->regs.PC += 4;
-    int access_type = ARM9P_nonsequential;
-    u32 vr = *getR(this, Rnd);
-    for (int i = first; i < 16; i++) {
-        if (~rlist & (1 << i)) {
-            continue;
-        }
-        if (P) {
-            cur_addr += 4;
-        }
+        if (P == U)
+            addr += 4;
 
-        if (L) {
-            u32 v = ARM946ES_read(this, cur_addr, 4, access_type, 1);
-            write_reg(this, getR(this, i), v);
-        }
-        else {
-            ARM946ES_write(this, cur_addr, 4, access_type, *getR(this, i));
-        }
+        if (L) *getR(this, i) = ARM946ES_read(this, addr, 4, access, 1);
+        else ARM946ES_write(this, addr, 4, access, *getR(this, i));
 
-        if (!P) cur_addr += 4;
-        access_type = ARM9P_sequential;
+        access = ARM9P_sequential;
+
+        if (P != U)
+            addr += 4;
+
+        remaining &= ~(1 << i);
     }
 
-    if (W) {
-        u32 base_is_last = (rlist == 0) ? 0 : ((rlist >> Rnd) == 1);
-        if (L) {
-            if (!base_is_last || rlist == (1 << Rnd)) {
-                *getR(this, Rnd) = base_addr;
-            }
+    if (S) {
+        if (L && pc_moved) {
+            if (this->regs.CPSR.mode != ARM9_system)
+                this->regs.CPSR.u = *get_SPSR_by_mode(this);
         } else {
-            *getR(this, Rnd) = base_addr;
+            this->regs.CPSR.mode = mode;
         }
-    }
-
-    if (L) {
-        //ARM946ES_idle(this, 1);
-        if (do_mode_switch) {
-            // According to MBA,
-            /*"     During the following two cycles of a usermode LDM,\n"
-                   register accesses will go to both the user bank and original bank.
-                   */
-            // TODO: this
-        }
-
-        if (move_pc) {
-            if ((this->regs.PC & 1) && !S) {
-                this->regs.CPSR.T = 1;
-                this->regs.PC &= 0xFFFFFFFE;
-            }
-
-            if (S) { // If force usermode...
-                this->regs.CPSR.u |= 0x10;
-                switch(old_mode) {
-                    case ARM9_system:
-                    case ARM9_user:
-                        break;
-                    case ARM9_fiq:
-                        this->regs.CPSR.u = this->regs.SPSR_fiq; break;
-                    case ARM9_irq:
-                        this->regs.CPSR.u = this->regs.SPSR_irq; break;
-                    case ARM9_supervisor:
-                        this->regs.CPSR.u = this->regs.SPSR_svc; break;
-                    case ARM9_abort:
-                        this->regs.CPSR.u = this->regs.SPSR_abt; break;
-                    case ARM9_undefined:
-                        this->regs.CPSR.u = this->regs.SPSR_und; break;
-                    default:
-                        break;
-                }
-            }
-            this->pipeline.flushed = 1;
-            ARM946ES_fill_regmap(this);
-        }
-    }
-    if (do_mode_switch) {
-        this->regs.CPSR.mode = old_mode;
         ARM946ES_fill_regmap(this);
     }
 
+    if (W) {
+        if (L) {
+            // writeback if base is the only register or *NOT* the "last" register
+            if (!Rnd_last || rlist == (1 << Rnd)) {
+                *getR(this, Rnd) = base_new;
+            }
+        } else {
+            *getR(this, Rnd) = base_new;
+        }
+    }
+
+    if (L && pc_moved) {
+        if ((this->regs.PC & 1) && !S) {
+            this->regs.CPSR.T = 1;
+            this->regs.PC &= 0xFFFFFFFE;
+        }
+        ARM946ES_flush_pipeline(this);
+    }
 }
 
 void ARM946ES_ins_STC_LDC(struct ARM946ES *this, u32 opcode)
