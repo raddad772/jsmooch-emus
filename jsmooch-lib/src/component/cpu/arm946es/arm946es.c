@@ -374,7 +374,6 @@ static inline void write_itcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
     cW[sz](this->cp15.itcm.data, tcm_addr & (ITCM_SIZE - 1), v);
 }
 
-
 u32 ARM946ES_read(struct ARM946ES *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     u32 v;
     addr &= maskalign[sz];

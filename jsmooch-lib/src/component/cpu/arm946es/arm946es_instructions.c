@@ -681,7 +681,7 @@ void ARM946ES_ins_data_proc_immediate(struct ARM946ES *this, u32 opcode)
     if (imm_ROR_amount) Rm = ROR(this, Rm, imm_ROR_amount);
 
     if (((opcode >> 28) == 1) && (alu_opcode == 12) && (Rnd == 1)){
-        printf("\nFAIL HAPPENED HERE3! Rm:%d", Rm);
+        printf("\nFAIL HAPPENED HERE3! Rm:%x", Rm);
         //dbg_break("THE PLACE hAPPENED", *this->trace.cycles);
     }
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
@@ -1260,72 +1260,48 @@ void ARM946ES_ins_BLX_reg(struct ARM946ES *this, u32 opcode)
 }
 
 void ARM946ES_ins_QADD_QSUB_QDADD_QDSUB(struct ARM946ES *this, u32 opcode) {
-    u32 sub_opcode = (opcode >> 20) & 15;
-    u32 Rnd = (opcode >> 16) & 15;
-    u32 Rdd = (opcode >> 12) & 15;
-    u32 Rmd = opcode & 15;
+    u32 src1 =  opcode & 15;
+    u32 src2 = (opcode >> 16) & 15;
+    u32 dst  = (opcode >> 12) & 15;
+    u32 op2  = *getR(this, src2);
+
+    u32 subtract = OBIT(21);
+    u32 double_op2 = OBIT(22);
+
+    if(double_op2) {
+        u32 result = op2 + op2;
+
+        if((op2 ^ result) >> 31) {
+            this->regs.CPSR.Q = 1;
+            result = 0x80000000 - (result >> 31);
+        }
+
+        op2 = result;
+    }
+
+    if (subtract) {
+        u32 op1 = *getR(this, src1);
+        u32 result = op1 - op2;
+
+        if(((op1 ^ op2) & (op1 ^ result)) >> 31) {
+            this->regs.CPSR.Q = 1;
+            result = 0x80000000 - (result >> 31);
+        }
+
+        *getR(this, dst) = result;
+    } else {
+        u32 op1 = *getR(this, src1);
+        u32 result = op1 + op2;
+
+        if((~(op1 ^ op2) & (op2 ^ result)) >> 31) {
+            this->regs.CPSR.Q = 1;
+            result = 0x80000000 - (result >> 31);
+        }
+        *getR(this, dst) = result;
+    }
 
     this->regs.PC += 4;
     this->pipeline.access = ARM9P_sequential | ARM9P_code;
-
-    u32 Rm = *getR(this, Rmd);
-    u32 Rn = *getR(this, Rnd);
-
-    u64 result;
-    switch (sub_opcode) {
-        case 0b0000: // QADD
-            result = Rm + Rn;
-            if (result > 0xFFFFFFFF) {
-                this->regs.CPSR.Q = 1;
-                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
-            }
-            break;
-        case 0b0010: // QSUB
-            result = (Rm - Rn) & 0xFFFFFFFF;
-            if (((Rm ^ Rn) & 0x80000000) && ((Rm ^ result) & 0x80000000)) {
-                this->regs.CPSR.Q = 1;
-                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
-            }
-            break;
-        case 0b0100: // QDADD
-            result = Rn + Rn;
-            if (result > 0xFFFFFFFF) {
-                this->regs.CPSR.Q = 1;
-                Rn = (Rn & 0x80000000) ? 0x80000000 : 0x7FFFFFFF;
-            } else {
-                Rn = result;
-            }
-
-            result = Rm + Rn;
-            if (result > 0xFFFFFFFF) {
-                this->regs.CPSR.Q = 1;
-                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
-            }
-            break;
-        case 0b0110: // QDSUB
-            result = Rn + Rn;
-            if (result > 0xFFFFFFFF) {
-                this->regs.CPSR.Q = 1;
-                Rn = (Rn & 0x80000000) ? 0x80000000 : 0x7FFFFFFF;
-            } else {
-                Rn = result;
-            }
-
-            result = Rm - Rn;
-            if (((Rm ^ Rn) & 0x80000000) && ((Rm ^ result) & 0x80000000)) {
-                this->regs.CPSR.Q = 1;
-                result = (result & 0x80000000) ? 0x7FFFFFFF : 0x80000000;
-            }
-
-            break;
-
-        default: {
-            UNIMPLEMENTED;
-            result = 0;
-        }
-    }
-
-    if (Rdd != 15) write_reg(this, getR(this, Rdd), result);
 }
 
 void ARM946ES_ins_B_BL(struct ARM946ES *this, u32 opcode)
