@@ -297,6 +297,8 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 
         case R_IME: return this->io.arm7.IME;
         case R_IME+1: return 0;
+        case R_IME+2: return 0;
+        case R_IME+3: return 0;
         case R_IE+0: return this->io.arm7.IE & 0xFF;
         case R_IE+1: return (this->io.arm7.IE >> 8) & 0xFF;
         case R_IE+2: return (this->io.arm7.IE >> 16) & 0xFF;
@@ -639,6 +641,8 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
         case R_IME: this->io.arm7.IME = val & 1; NDS_eval_irqs_7(this); return;
         case R_IME+1: return;
+        case R_IME+2: return;
+        case R_IME+3: return;
         case R_IF+0: this->io.arm7.IF &= ~val; NDS_eval_irqs_7(this); return;
         case R_IF+1: this->io.arm7.IF &= ~(val << 8); NDS_eval_irqs_7(this); return;
         case R_IF+2: this->io.arm7.IF &= ~(val << 16); NDS_eval_irqs_7(this); return;
@@ -925,6 +929,8 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 
         case R_IME: return this->io.arm9.IME;
         case R_IME+1: return 0;
+        case R_IME+2: return 0;
+        case R_IME+3: return 0;
         case R_IE+0: return this->io.arm9.IE & 0xFF;
         case R_IE+1: return (this->io.arm9.IE >> 8) & 0xFF;
         case R_IE+2: return (this->io.arm9.IE >> 16) & 0xFF;
@@ -1130,6 +1136,8 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
         case R_IME: this->io.arm9.IME = val & 1; NDS_eval_irqs_9(this); return;
         case R_IME+1: return;
+        case R_IME+2: return;
+        case R_IME+3: return;
         case R_IF+0: this->io.arm9.IF &= ~val; NDS_eval_irqs_9(this); return;
         case R_IF+1: this->io.arm9.IF &= ~(val << 8); NDS_eval_irqs_9(this); return;
         case R_IF+2: this->io.arm9.IF &= ~(val << 16); NDS_eval_irqs_9(this); return;

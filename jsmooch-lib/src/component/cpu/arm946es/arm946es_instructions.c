@@ -730,8 +730,10 @@ void ARM946ES_ins_LDR_STR_immediate_offset(struct ARM946ES *this, u32 opcode)
                 write_reg(this, Rn, addr);
         }
         write_reg(this, Rd, v);
+        if (Rdd == 15)
+            this->regs.CPSR.T = this->regs.PC & 1;
     }
-    else { // load from RAM
+    else {
         AWRITE(addr, sz, *Rd);
         if (!P) addr = U ? (addr + offset) : (addr - offset);
         if (W) {
@@ -816,7 +818,7 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
     u32 W = OBIT(21); // 0=no writeback, 1= writeback
     u32 L = OBIT(20); // 0=store, 1=load
     u32 Rnd = (opcode >> 16) & 15;
-
+    if ((Rnd == 13) && W  printf("\nTRYIN IT HERE...");
     u32 rlist = (opcode & 0xFFFF);
     u32 rcount = 0;
     //u32 *Rd = getR(this, Rnd);
@@ -882,8 +884,9 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode)
     if (W) {
         u32 base_is_last = (rlist == 0) ? 0 : ((rlist >> Rnd) == 1);
         if (L) {
-            if (!base_is_last || rlist == (1 << Rnd))
+            if (!base_is_last || rlist == (1 << Rnd)) {
                 *getR(this, Rnd) = base_addr;
+            }
         } else {
             *getR(this, Rnd) = base_addr;
         }

@@ -665,6 +665,7 @@ void full_system::load_default_ROM()
         case SYS_NDS:
             worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "armwrestler-2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
             break;
         case SYS_GBA:
