@@ -122,7 +122,7 @@ static void draw_line(struct NDS *this, u32 eng_num)
 
     // Then we will pixel output it to the screen...
     u16 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);
-    if (eng_num ^ this->ppu.io.display_swap) line_output += (192 * OUT_WIDTH);
+    if (eng_num ^ this->ppu.io.display_swap ^ 1) line_output += (192 * OUT_WIDTH);
 
     u32 display_mode = eng->io.display_mode;
     if (eng_num == 1) display_mode &= 1;
