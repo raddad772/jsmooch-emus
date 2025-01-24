@@ -1027,7 +1027,8 @@ void ARM946ES_ins_INVALID(struct ARM946ES *this, u32 opcode)
 
 void ARM946ES_ins_PLD(struct ARM946ES *this, u32 opcode)
 {
-    UNIMPLEMENTED;
+    //UNIMPLEMENTED;
+    printf("\nPLD!");
 }
 
 void ARM946ES_ins_SMLAxy(struct ARM946ES *this, u32 opcode)
@@ -1252,10 +1253,12 @@ void ARM946ES_ins_CLZ(struct ARM946ES *this, u32 opcode)
 void ARM946ES_ins_BLX_reg(struct ARM946ES *this, u32 opcode)
 {
     u32 link = this->regs.PC - 4;
-    this->regs.PC = (*getR(this, opcode & 15)) & 0xFFFFFFFE;
+    this->regs.PC = (*getR(this, opcode & 15));
     *getR(this, 14) = link;
+    this->regs.CPSR.T = this->regs.PC & 1;
+    if (this->regs.CPSR.T) this->regs.PC &= 0xFFFFFFFE;
+    else this->regs.PC &= 0xFFFFFFFC;
 
-    this->regs.CPSR.T = 1;
     ARM946ES_flush_pipeline(this);
 }
 

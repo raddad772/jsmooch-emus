@@ -506,58 +506,56 @@ void ARM946ES_THUMB_ins_PUSH_POP(struct ARM946ES *this, struct thumb2_instructio
 {
     u32 *r13 = getR(this, 13);
     u32 pop = ins->sub_opcode;
-    this->regs.PC += 2;
-    this->pipeline.access = ARM9P_nonsequential | ARM9P_code;
-    if ((ins->rlist == 0) && (!ins->PC_LR)) {
-        if (pop) {
-            this->regs.PC = ARM946ES_read(this, *r13, 4, ARM9P_nonsequential, 1);
-            ARM946ES_flush_pipeline(this);
-            *r13 += 64;
-        }
-        else {
-            *r13 -= 64;
-            ARM946ES_write(this, *r13, 4, ARM9P_nonsequential, this->regs.PC);
-        }
-        return;
-    }
-    u32 addr = *r13;
-    int atype = ARM9P_nonsequential;
+
+    u32 rlist = ins->rlist;
+    u32 address = *getR(this, 13);
+
+    u32 access = ARM9P_nonsequential;
     if (pop) {
-        for (u32 i = 0; i < 8; i++) {
-            if (ins->rlist & (1 << i)) {
-                *getR(this, i) = ARM946ES_read(this, addr, 4, atype, 1);
-                addr += 4;
-                atype = ARM9P_sequential;
+        for (u32 r=0; r<8; r++) {
+            if ((rlist  >> r) & 1) {
+                *getR(this, r) = ARM946ES_read(this, address, 4, access, 1);
+                address += 4;
+                access = ARM9P_sequential;
             }
         }
-        if (ins->PC_LR) {
-            this->regs.PC = ARM946ES_read(this, addr, 4, atype, 1) & 0xFFFFFFFE;
-            *r13 = addr + 4;
-            ARM946ES_idle(this, 1);
+
+        if(ins->PC_LR) {
+            this->regs.PC = ARM946ES_read(this, address, 4, access, 1);
+            *getR(this, 13) = address + 4;
+            this->regs.CPSR.T = this->regs.PC & 1;
             ARM946ES_flush_pipeline(this);
             return;
         }
-        ARM946ES_idle(this, 1);
-        *r13 = addr;
-    }
-    else { // push!
-        for (u32 i = 0; i < 8; i++) {
-            if (ins->rlist & (1 << i))
-                addr -= 4;
+
+        *getR(this, 13) = address;
+    } else {
+        for (u32 r = 0; r < 8; r++) {
+            if ((rlist >> r) & 1)
+                address -= 4;
         }
-        if (ins->PC_LR) addr -= 4;
-        *r13 = addr;
-        for (u32 i = 0; i < 8; i++) {
-            if (ins->rlist & (1 << i)) {
-                ARM946ES_write(this, addr, 4, atype, *getR(this, i));
-                atype = ARM9P_sequential;
-                addr += 4;
+
+        if(ins->PC_LR) {
+            address -= 4;
+        }
+
+        *getR(this, 13) = address;
+
+        for (u32 r = 0; r < 8; r++) {
+            if ((rlist >> r) & 1) {
+                ARM946ES_write(this, address, 4, access, *getR(this, r));
+                address += 4;
+                access = ARM9P_sequential;
             }
         }
-        if (ins->PC_LR) {
-            ARM946ES_write(this, addr, 4, atype, *getR(this, 14));
+
+        if(ins->PC_LR) {
+            ARM946ES_write(this, address, 4, access, *getR(this, 14));
         }
     }
+
+    this->regs.PC += 2;
+    this->pipeline.access = ARM9P_code | ARM9P_nonsequential;
 }
 
 void ARM946ES_THUMB_ins_LDM_STM(struct ARM946ES *this, struct thumb2_instruction *ins) {
