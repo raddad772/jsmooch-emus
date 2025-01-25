@@ -1001,6 +1001,7 @@ void ARM946ES_ins_PLD(struct ARM946ES *this, u32 opcode)
 
 void ARM946ES_ins_SMLAxy(struct ARM946ES *this, u32 opcode)
 {
+    // Passes armwrestler.nds tests!
     u32 Rdd = (opcode >> 16) & 15;
     u32 Rnd = (opcode >> 12) & 15;
     u32 Rsd = (opcode >> 8) & 15;
@@ -1008,28 +1009,25 @@ void ARM946ES_ins_SMLAxy(struct ARM946ES *this, u32 opcode)
     u32 x = OBIT(5); // 1 = Rm top, 0 bottom
     u32 Rmd = opcode & 15;
 
+    i16 value1, value2;
+
+    if (x) value1 = (i16)(*getR(this, Rmd) >> 16);
+    else value1 = (i16)(*getR(this, Rmd) & 0xFFFF);
+
+    if (y) value2 = (i16)(*getR(this, Rsd) >> 16);
+    else value2 = (i16)(*getR(this, Rsd) & 0xFFFF);
+
+    u32 first_result = (u32)(value1 * value2);
+    u32 mop2 = *getR(this, Rnd);
+    u32 final_result = first_result + mop2;
+
+    if((~(first_result ^ mop2) & (mop2 ^ final_result)) >> 31)
+        this->regs.CPSR.Q = 1;
+
+    *getR(this, Rdd) = final_result;
+
     this->regs.PC += 4;
     this->pipeline.access = ARM9P_code | ARM9P_sequential;
-
-    u32 *Rd = getR(this, Rdd);
-    u32 Rn = *getR(this, Rnd);
-    u32 Rs = *getR(this, Rsd);
-    u32 Rm = *getR(this, Rmd);
-    if (x) Rm >>= 16;
-    else Rm &= 0xFFFF;
-    if (y) Rs >>= 16;
-    else Rs &= 0xFFFF;
-
-    u64 mul_result = ((i16)Rm * (i16)Rs);
-    u64 result = mul_result + Rn;
-
-    *Rd = result;
-    if (Rdd == 15) {
-        ARM946ES_flush_pipeline(this);
-    }
-
-    this->regs.CPSR.Q |= result > 0xFFFFFFFF;
-
 }
 
 void ARM946ES_ins_SMLAWy(struct ARM946ES *this, u32 opcode)
@@ -1040,27 +1038,24 @@ void ARM946ES_ins_SMLAWy(struct ARM946ES *this, u32 opcode)
     u32 y = OBIT(6); // 1 = RS top, 0 bottom
     u32 Rmd = opcode & 15;
 
-    this->regs.PC += 4;
-    this->pipeline.access = ARM9P_code | ARM9P_sequential;
+    i32 value1 = (i32)(*getR(this, Rmd));
+    i16 value2;
 
-    u32 *Rd = getR(this, Rdd);
-    u32 Rn = *getR(this, Rnd);
-    u32 Rs = *getR(this, Rsd);
-    u32 Rm = *getR(this, Rmd);
+    if (y) value2 = (i16)(*getR(this, Rsd) >> 16);
+    else value2 = (i16)(*getR(this, Rsd) & 0xFFFF);
 
-    if (y) Rs >>= 16;
-    else Rs &= 0xFFFF;
+    u32 first_result = (u32)((value1 * value2) >> 16);
+    u32 mop2 = *getR(this, Rnd);
+    u32 final_result = first_result + mop2;
 
-    u64 multiply_result = ((i64)(i32)Rm * (i64)(i16)Rs) >> 16;
-    u64 result = multiply_result + Rn;
-
-    *Rd = result;
-    if (Rdd == 15) {
-        ARM946ES_flush_pipeline(this);
+    if((~(first_result ^ mop2) & (mop2 ^ final_result)) >> 31) {
+        this->regs.CPSR.Q = 1;
     }
 
-    this->regs.CPSR.Q |= result > 0xFFFFFFFF;
+    *getR(this, Rdd) = final_result;
 
+    this->regs.PC += 4;
+    this->pipeline.access = ARM9P_code | ARM9P_sequential;
 }
 
 void ARM946ES_ins_SMULWy(struct ARM946ES *this, u32 opcode)
