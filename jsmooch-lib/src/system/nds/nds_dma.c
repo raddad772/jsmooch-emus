@@ -276,3 +276,23 @@ void NDS_check_dma9_at_hblank(struct NDS *this)
         }
     }
 }
+
+void NDS_trigger_dma7_if(struct NDS *this, u32 start_timing)
+{
+    struct NDS_DMA_ch *ch;
+    for (u32 i = 0; i < 4; i++) {
+        ch = &this->dma7[i];
+        if (ch->io.enable && ch->io.start_timing == start_timing)
+            NDS_dma7_start(ch, i);
+    }
+}
+
+void NDS_trigger_dma9_if(struct NDS *this, u32 start_timing)
+{
+    struct NDS_DMA_ch *ch;
+    for (u32 i = 0; i < 4; i++) {
+        ch = &this->dma9[i];
+        if (ch->io.enable && ch->io.start_timing == start_timing)
+            NDS_dma9_start(ch, i);
+    }
+}

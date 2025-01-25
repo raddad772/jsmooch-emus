@@ -662,6 +662,7 @@ void ARM946ES_THUMB_ins_BL_suffix(struct ARM946ES *this, struct thumb2_instructi
     this->regs.PC = ((*LR) + ins->imm) & 0xFFFFFFFE;
     *LR = v;
     ARM946ES_flush_pipeline(this);
+    printf("\nHERE3!");
 }
 
 void ARM946ES_THUMB_ins_BLX_suffix(struct ARM946ES *this, struct thumb2_instruction *ins)

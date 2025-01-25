@@ -135,7 +135,7 @@ void NDS_new(struct jsm_system *jsm)
 
     NDS_bus_init(this);
     NDS_clock_init(&this->clock);
-    //NDS_cart_init(&this->cart);
+    NDS_cart_init(this);
     NDS_PPU_init(this);
     //NDS_APU_init(this);
 
@@ -181,7 +181,7 @@ void NDS_delete(struct jsm_system *jsm)
     ARM7TDMI_delete(&this->arm7);
     ARM946ES_delete(&this->arm9);
     //NDS_PPU_delete(this);
-    //NDS_cart_delete(&this->cart);
+    NDS_cart_delete(this);
 
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
@@ -297,7 +297,7 @@ static void skip_BIOS(struct NDS *this)
     // Do some more boot stuf...
     NDS_mainbus_write9(this, R9_POWCNT1, 2, 0, 0x0203);
 
-    // TODO: cart stuff
+    NDS_cart_direct_boot(this);
     printf("\ndirect boot done!");
  }
 
@@ -307,6 +307,7 @@ void NDSJ_reset(JSM)
     // Emu resets...
     ARM7TDMI_reset(&this->arm7);
     ARM946ES_reset(&this->arm9);
+    NDS_CP_reset(&this->arm9);
     NDS_clock_reset(&this->clock);
     NDS_PPU_reset(this);
     NDS_mainbus_write9(this, R9_VRAMCNT+0, 1, 0, 0);
@@ -427,6 +428,7 @@ static void run_system(struct NDS *this, u64 num_cycles)
             this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
             NDS_update_IF7(this, 23);
         }
+        NDS_cart_check_transfer(this);
         if (dbg.do_break) break;
     }
 

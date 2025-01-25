@@ -57,8 +57,8 @@ static void buswr9_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 v
     printf("\nWRITE9 UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     this->waitstates.current_transaction++;
     dbg.var++;
-    //if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count);
-    dbg_break("unknown addr write9", this->clock.master_cycle_count7);
+    if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count7);
+    //dbg_break("unknown addr write9", this->clock.master_cycle_count7);
 }
 
 static void buswr7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
@@ -160,20 +160,22 @@ static u32 busrd9_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has
 static void buswr9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (addr < 0x05000000) return;
-    if (addr < 0x05000200) NDS_PPU_write_2d_bg_palette(this, 0, addr & 0x1FF, sz, val);
-    if (addr < 0x05000400) NDS_PPU_write_2d_obj_palette(this, 0, addr & 0x1FF, sz, val);
-    if (addr < 0x05000600) NDS_PPU_write_2d_bg_palette(this, 1, addr & 0x1FF, sz, val);
-    if (addr < 0x05000800) NDS_PPU_write_2d_obj_palette(this, 1, addr & 0x1FF, sz, val);
+    addr &= 0x7FF;
+    if (addr < 0x200) return NDS_PPU_write_2d_bg_palette(this, 0, addr & 0x1FF, sz, val);
+    if (addr < 0x400) return NDS_PPU_write_2d_obj_palette(this, 0, addr & 0x1FF, sz, val);
+    if (addr < 0x600) return NDS_PPU_write_2d_bg_palette(this, 1, addr & 0x1FF, sz, val);
+    if (addr < 0x800) return NDS_PPU_write_2d_obj_palette(this, 1, addr & 0x1FF, sz, val);
     buswr9_invalid(this, addr, sz, access, val);
 }
 
 static u32 busrd9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (addr < 0x05000000) return busrd9_invalid(this, addr, sz, access, has_effect);
-    if (addr < 0x05000200) return NDS_PPU_read_2d_bg_palette(this, 0, addr & 0x1FF, sz);
-    if (addr < 0x05000400) return NDS_PPU_read_2d_obj_palette(this, 0, addr & 0x1FF, sz);
-    if (addr < 0x05000600) return NDS_PPU_read_2d_bg_palette(this, 1, addr & 0x1FF, sz);
-    if (addr < 0x05000800) return NDS_PPU_read_2d_obj_palette(this, 1, addr & 0x1FF, sz);
+    addr &= 0x7FF;
+    if (addr < 200) return NDS_PPU_read_2d_bg_palette(this, 0, addr & 0x1FF, sz);
+    if (addr < 400) return NDS_PPU_read_2d_obj_palette(this, 0, addr & 0x1FF, sz);
+    if (addr < 600) return NDS_PPU_read_2d_bg_palette(this, 1, addr & 0x1FF, sz);
+    if (addr < 800) return NDS_PPU_read_2d_obj_palette(this, 1, addr & 0x1FF, sz);
     return busrd9_invalid(this, addr, sz, access, has_effect);
 }
 
@@ -254,6 +256,8 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 
         case R_POSTFLG:
             return this->io.arm7.POSTFLG;
+        case R_POSTFLG+1:
+            return 0;
 
         case R7_WIFIWAITCNT:
             return this->io.powcnt.wifi ? this->io.powcnt.wifi_waitcnt : 0;
@@ -544,6 +548,17 @@ static void sqrt_calc(struct NDS *this)
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_ROMCMD+0:
+        case R_ROMCMD+1:
+        case R_ROMCMD+2:
+        case R_ROMCMD+3:
+        case R_ROMCMD+4:
+        case R_ROMCMD+5:
+        case R_ROMCMD+6:
+        case R_ROMCMD+7:
+            NDS_cart_write_cmd(this, addr - R_ROMCMD, val);
+            return;
+
         case R7_SPICNT+0:
             this->spi.cnt.u = (this->spi.cnt.u & 0xFF80) | (val & 0b00000011);
             return;
@@ -1071,6 +1086,17 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+        case R_ROMCMD+0:
+        case R_ROMCMD+1:
+        case R_ROMCMD+2:
+        case R_ROMCMD+3:
+        case R_ROMCMD+4:
+        case R_ROMCMD+5:
+        case R_ROMCMD+6:
+        case R_ROMCMD+7:
+            NDS_cart_write_cmd(this, addr - R_ROMCMD, val);
+            return;
+
         case R_POSTFLG:
             this->io.arm9.POSTFLG |= val & 1;
             this->io.arm9.POSTFLG = (this->io.arm9.POSTFLG & 1) | (val & 2);
@@ -1445,6 +1471,12 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 {
     u32 v;
     switch(addr) {
+        case R_ROMDATA+0: // 4100010
+        case R_ROMDATA+1: // 4100010
+        case R_ROMDATA+2: // 4100010
+        case R_ROMDATA+3: // 4100010
+            assert(sz==4);
+            return NDS_cart_read_rom(this, addr, sz);
 
         case R_POSTFLG:
             return this->io.arm9.POSTFLG;
@@ -1490,6 +1522,22 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         return;
     }
     switch(addr) {
+        case R_AUXSPICNT: {
+            NDS_cart_spi_write_spicnt(this, val & 0xFFFF);
+            if (sz == 4) {
+                buswr9_io(this, R_AUXSPIDATA, 2, access, val >> 16);
+            }
+            return; }
+        case R_AUXSPIDATA:
+            NDS_cart_spi_transaction(this, val & 0xFFFF);
+            if (sz == 4) {
+                buswr9_io(this, R_ROMCTRL, 2, access, val >> 16);
+            }
+            return;
+        case R_ROMCTRL:
+            NDS_cart_write_romctrl(this, val & 0xFFFF);
+            return;
+
         case R_IPCFIFOSEND+0:
         case R_IPCFIFOSEND+1:
         case R_IPCFIFOSEND+2:
@@ -1542,6 +1590,13 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     if (addr >= 0x04800000) return busrd7_wifi(this, addr, sz, access, has_effect);
     u32 v;
     switch(addr) {
+        case R_ROMDATA+0:
+        case R_ROMDATA+1:
+        case R_ROMDATA+2:
+        case R_ROMDATA+3:
+            assert(sz==4);
+            return NDS_cart_read_rom(this, addr, sz);
+
         case R7_SPIDATA:
             return NDS_SPI_read(this, sz);
 
@@ -1585,6 +1640,22 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     switch(addr) {
         case R7_SPIDATA:
             NDS_SPI_write(this, sz, val);
+
+        case R_AUXSPICNT: {
+            NDS_cart_spi_write_spicnt(this, val & 0xFFFF);
+            if (sz == 4) {
+                buswr7_io(this, R_AUXSPIDATA, 2, access, val >> 16);
+            }
+            return; }
+        case R_AUXSPIDATA:
+            NDS_cart_spi_transaction(this, val & 0xFFFF);
+            if (sz == 4) {
+                buswr7_io(this, R_ROMCTRL, 2, access, val >> 16);
+            }
+            return;
+        case R_ROMCTRL:
+            NDS_cart_write_romctrl(this, val & 0xFFFF);
+            return;
 
         case R_RTC:
             NDS_write_RTC(this, sz, val & 0xFFFF);

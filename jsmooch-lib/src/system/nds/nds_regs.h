@@ -6,6 +6,13 @@
 #define JSMOOCH_EMUS_NDS_REGS_H
 
 // Register defs shared
+
+#define R_AUXSPICNT 0x040001A0
+#define R_AUXSPIDATA 0x040001A2
+#define R_ROMCMD 0x040001A8
+#define R_ROMCTRL 0x040001A4
+#define R_ROMDATA 0x04100010
+
 #define R_KEYINPUT      0x04000130
 #define R_KEYCNT        0x04000132
 #define R_EXTKEYIN      0x04000136

@@ -1275,7 +1275,9 @@ void ARM946ES_ins_B_BL(struct ARM946ES *this, u32 opcode)
     u32 link = OBIT(24);
     i32 offset = SIGNe24to32(opcode & 0xFFFFFF);
     offset <<= 2;
-    if (link) *getR(this, 14) = this->regs.PC - 4;
+    if (link) {
+        *getR(this, 14) = this->regs.PC - 4;
+    }
     this->regs.PC += (u32)offset;
     ARM946ES_flush_pipeline(this);
 }

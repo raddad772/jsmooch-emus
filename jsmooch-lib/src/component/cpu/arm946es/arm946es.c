@@ -329,16 +329,27 @@ void ARM946ES_idle(struct ARM946ES*this, u32 num)
     *this->waitstates += num;
 }
 
+static inline u32 addr_in_itcm(struct ARM946ES *this, u32 addr)
+{
+    //printf("\ntest ADDR:%08x. ?:%d", addr, ((addr >= this->cp15.itcm.base_addr) && (addr < this->cp15.itcm.end_addr)));
+    return ((addr >= this->cp15.itcm.base_addr) && (addr < this->cp15.itcm.end_addr));
+}
+
+static inline u32 read_itcm(struct ARM946ES *this, u32 addr, u32 sz)
+{
+    (*this->waitstates)++;
+    u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
+    return cR[sz](this->cp15.itcm.data, tcm_addr & (ITCM_SIZE - 1));
+}
+
 u32 ARM946ES_fetch_ins(struct ARM946ES *this, u32 addr, u32 sz, u32 access)
 {
     addr &= maskalign[sz];
+    if (addr_in_itcm(this, addr) && this->cp15.regs.control.itcm_enable && !this->cp15.regs.control.itcm_load_mode) {
+        return read_itcm(this, addr, sz);
+    }
     u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
     return v;
-}
-
-static inline u32 addr_in_itcm(struct ARM946ES *this, u32 addr)
-{
-    return ((addr >= this->cp15.itcm.base_addr) && ((addr < this->cp15.itcm.end_addr)));
 }
 
 static inline u32 addr_in_dtcm(struct ARM946ES *this, u32 addr)
@@ -358,13 +369,6 @@ static inline void write_dtcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
     (*this->waitstates)++;
     u32 tcm_addr = (addr - this->cp15.dtcm.base_addr) & (this->cp15.dtcm.size - 1);
     cW[sz](this->cp15.dtcm.data, tcm_addr & (DTCM_SIZE - 1), v);
-}
-
-static inline u32 read_itcm(struct ARM946ES *this, u32 addr, u32 sz)
-{
-    (*this->waitstates)++;
-    u32 tcm_addr = (addr - this->cp15.itcm.base_addr) & this->cp15.itcm.mask;
-    return cR[sz](this->cp15.itcm.data, tcm_addr & (ITCM_SIZE - 1));
 }
 
 static inline void write_itcm(struct ARM946ES *this, u32 addr, u32 sz, u32 v)
