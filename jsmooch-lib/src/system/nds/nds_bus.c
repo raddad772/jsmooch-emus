@@ -289,10 +289,10 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 
 
         case R_IPCSYNC+0:
-            return this->io.ipc.arm9sync.dinput;
+            return this->io.ipc.arm7sync.dinput;
         case R_IPCSYNC+1:
-            v = this->io.ipc.arm9sync.doutput;
-            v |= this->io.ipc.arm9sync.enable_irq_from_remote << 6;
+            v = this->io.ipc.arm7sync.doutput;
+            v |= this->io.ipc.arm7sync.enable_irq_from_remote << 6;
             return v;
 
         case R_IME: return this->io.arm7.IME;
@@ -1126,7 +1126,6 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
         case R_IPCSYNC+1:
             this->io.ipc.arm7sync.dinput = this->io.ipc.arm9sync.doutput = val & 15;
-
             u32 send_irq = (val >> 5) & 1;
             if (send_irq && this->io.ipc.arm7sync.enable_irq_from_remote) {
                 NDS_update_IF7(this, 16);
