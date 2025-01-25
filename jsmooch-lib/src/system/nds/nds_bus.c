@@ -65,12 +65,13 @@ static void buswr7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 va
 {
     if (addr >= 0x03800000) return cW[sz](this->mem.WRAM_arm7, addr & 0xFFFF, val);
     if (!this->mem.io.RAM7.disabled) cW[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base, val);
+    else cW[sz](this->mem.WRAM_arm7, addr & 0xFFFF, val);
 }
 
 static u32 busrd7_shared(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     if (addr >= 0x03800000) return cR[sz](this->mem.WRAM_arm7, addr & 0xFFFF);
-    if (this->mem.io.RAM7.disabled) return 0; // undefined
+    if (this->mem.io.RAM7.disabled) return cR[sz](this->mem.WRAM_arm7, addr & 0xFFFF);
     return cR[sz](this->mem.WRAM_share, (addr & this->mem.io.RAM7.mask) + this->mem.io.RAM7.base);
 }
 
@@ -1332,7 +1333,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->mem.vram.io.bank[bank_num].ofs = (val >> 3) & 3;
             this->mem.vram.io.bank[bank_num].enable = (val >> 7) & 1;
 
-            printf("\nWRITE VRAM val:%02x CNT:%d MST:%d OFS:%d enable:%d", val, bank_num, this->mem.vram.io.bank[bank_num].mst, this->mem.vram.io.bank[bank_num].ofs, this->mem.vram.io.bank[bank_num].enable);
+            //printf("\nWRITE VRAM val:%02x CNT:%d MST:%d OFS:%d enable:%d", val, bank_num, this->mem.vram.io.bank[bank_num].mst, this->mem.vram.io.bank[bank_num].ofs, this->mem.vram.io.bank[bank_num].enable);
             NDS_VRAM_resetup_banks(this);
             return; }
 
@@ -1388,8 +1389,8 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R_TM3CNT_L+1: this->timer9[3].reload = (this->timer9[3].reload & 0xFF) | (val << 8); return;
 
         case R9_WRAMCNT: {
+            this->mem.io.RAM9.val = val;
             switch (val & 3) {
-                this->mem.io.RAM9.val = val;
                 case 0: // 0 = 32k/0K, open-bus
                     this->mem.io.RAM9.base = 0;
                     this->mem.io.RAM9.mask = 0x7FFF;

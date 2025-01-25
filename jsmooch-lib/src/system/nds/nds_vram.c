@@ -96,7 +96,6 @@ static void map_eng3d_palette_slot(struct NDS *this, u32 slot_start, u32 slot_en
 static void set_bankA(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
 {
     u32 offset;
-    printf("\nset_bankA mst:%d ofs:%d ptr:%p", mst, ofs, ptr);
     switch(mst) {
         case 0: // ARM9 06800000
             map_arm9(this, 0x06800000, 0x0681FFFF, ptr, NVA);
