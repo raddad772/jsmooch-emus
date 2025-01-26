@@ -637,7 +637,6 @@ static void calculate_windows(struct GBA *this, u32 in_vblank)
     // Calculate windows...
     calculate_windows_vflag(this);
     if (this->clock.ppu.y >= 160) return;
-    calculate_windows_vflag(this);
     for (u32 wn = 0; wn < 2; wn++) {
         struct GBA_PPU_window *w = &this->ppu.window[wn];
         if (!w->enable) {

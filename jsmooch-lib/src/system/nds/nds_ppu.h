@@ -31,7 +31,7 @@ struct NDS_PPU_window {
     i32 left, right, top, bottom;
 
     u32 active[6]; // In OBJ, bg0, bg1, bg2, bg3, special FX order
-    u8 inside[240];
+    u8 inside[256];
 };
 
 struct NDS_PX {
@@ -44,7 +44,7 @@ struct NDS_PX {
 
 struct NDS_PPU_OBJ {
     u32 enable;
-    struct NDS_PX line[240];
+    struct NDS_PX line[256];
     i32 drawing_cycles;
 };
 
