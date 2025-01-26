@@ -894,6 +894,23 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
     eng->line_px[x] = output_color;
 }
 
+static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+{
+    draw_obj_line(this, eng);
+    draw_bg_line_normal(this, eng, 0);
+    draw_bg_line_normal(this, eng, 1);
+    draw_bg_line_normal(this, eng, 2);
+    draw_bg_line_normal(this, eng, 3);
+    apply_mosaic(this, eng);
+    calculate_windows(this, eng, 0);
+    u32 bg_enables[4] = {eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, eng->bg[3].enable};
+    memset(eng->line_px, 0x50, sizeof(eng->line_px));
+    for (u32 x = 0; x < 256; x++) {
+        output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
+    }
+}
+
+
 static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
@@ -905,7 +922,7 @@ static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 
     calculate_windows(this, eng, 0);
     u32 bg_enables[4] = {eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, 0};
-    memset(eng->line_px, 0, sizeof(eng->line_px));
+    memset(eng->line_px, 0x50, sizeof(eng->line_px));
     for (u32 x = 0; x < 256; x++) {
         output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
     }
@@ -919,8 +936,10 @@ static void draw_line(struct NDS *this, u32 eng_num)
     // We have 2-4 display modes. They can be: WHITE, NORMAL, VRAM display, and "main memory display"
     // During this time, the 2d engine runs like normal!
     // So we will draw our lines...
-
     switch(eng->io.bg_mode) {
+        case 0:
+            draw_line0(this, eng, l);
+            break;
         case 1:
             draw_line1(this, eng, l);
             break;
