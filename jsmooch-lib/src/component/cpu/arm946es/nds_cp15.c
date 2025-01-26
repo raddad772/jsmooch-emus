@@ -143,8 +143,9 @@ static void update_dtcm(struct ARM946ES *this)
         this->cp15.dtcm.mask = this->cp15.dtcm.size > DTCM_SIZE ? DTCM_SIZE : this->cp15.dtcm.size;
         this->cp15.dtcm.mask--;
     }
+#ifdef DBG_TCM
     printf("\nDTCM enable:%d base_addr:%08x end_addr:%08x size:%04x", this->cp15.regs.control.dtcm_enable, this->cp15.dtcm.base_addr, this->cp15.dtcm.end_addr, this->cp15.dtcm.size);
-
+#endif
 }
 
 static void update_itcm(struct ARM946ES *this)
@@ -158,7 +159,9 @@ static void update_itcm(struct ARM946ES *this)
         this->cp15.itcm.mask--;
     }
     this->cp15.itcm.end_addr = this->cp15.itcm.size;
+#ifdef DBG_TCN
     printf("\nITCM enable:%d base_addr:%08x end_addr:%08x size:%04x", this->cp15.regs.control.itcm_enable, this->cp15.itcm.base_addr, this->cp15.itcm.end_addr, this->cp15.itcm.size);
+#endif
 }
 
 

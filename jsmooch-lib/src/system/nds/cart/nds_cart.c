@@ -131,20 +131,31 @@ void NDS_cart_check_transfer(struct NDS *this)
     }
 }
 
-void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val)
+void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
 {
-    this->cart.io.spi.divider_val = val & 3;
-    switch(this->cart.io.spi.divider_val) {
-        case 0: this->cart.io.spi.divider = 8; break;
-        case 1: this->cart.io.spi.divider = 16; break;
-        case 2: this->cart.io.spi.divider = 32; break;
-        case 3: this->cart.io.spi.divider = 64; break;
+    if (bnum == 0) {
+        this->cart.io.spi.divider_val = val & 3;
+        switch (this->cart.io.spi.divider_val) {
+            case 0:
+                this->cart.io.spi.divider = 8;
+                break;
+            case 1:
+                this->cart.io.spi.divider = 16;
+                break;
+            case 2:
+                this->cart.io.spi.divider = 32;
+                break;
+            case 3:
+                this->cart.io.spi.divider = 64;
+                break;
+        }
+        this->cart.io.spi.next_chipsel = (val >> 6) & 1;
     }
-    this->cart.io.spi.next_chipsel = (val >> 6) & 1;
-    this->cart.io.spi.slot_mode = (val >> 13) & 1;
-    this->cart.io.nds_slot_enable = (val >> 15) & 1;
-    set_block_start_status(this, this->cart.io.romctrl.block_start_status, (val >> 14) & 1);
-
+    else {
+        this->cart.io.spi.slot_mode = (val >> 5) & 1;
+        this->cart.io.nds_slot_enable = (val >> 7) & 1;
+        set_block_start_status(this, this->cart.io.romctrl.block_start_status, (val >> 6) & 1);
+    }
 }
 
 void NDS_cart_spi_transaction(struct NDS *this, u32 val)
@@ -209,7 +220,7 @@ static void complete_cmd(struct NDS *this)
             this->cart.cmd.pos_out = 0;
             this->cart.cmd.sz_out = get_block_size(this);
             this->cart.cmd.addr = addr * this->cart.cmd.sz_out;
-            printf("\nREAD CART ADDR %08x", this->cart.cmd.addr);
+            printf("\nREAD CART ADDR:%08x bytes:%d", this->cart.cmd.addr, this->cart.cmd.sz_out);
             start_read(this);
 
             set_rom_busy_until(this);

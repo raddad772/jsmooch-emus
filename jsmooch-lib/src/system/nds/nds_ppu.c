@@ -426,6 +426,65 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     }
     struct NDSENG2D *eng = &this->ppu.eng2d[en];
     switch(addr) {
+        case R_VCOUNT+0: // read-only register...
+        case R_VCOUNT+1:
+            return;
+        case R9_DISP3DCNT+0:
+            this->ppu.eng3d.io.texture_mapping = val & 1;
+            this->ppu.eng3d.io.polygon_attr_shading = (val >> 1) & 1;
+            this->ppu.eng3d.io.alpha_test = (val >> 2) & 1;
+            this->ppu.eng3d.io.alpha_blending = (val >> 3) & 1;
+            this->ppu.eng3d.io.anti_aliasing = (val >> 4) & 1;
+            this->ppu.eng3d.io.edge_marking = (val >> 5) & 1;
+            this->ppu.eng3d.io.fog_color_alpha_mode = (val >> 6) & 1;
+            this->ppu.eng3d.io.fog_master_enable = (val >> 7) & 1;
+            return;
+        case R9_DISP3DCNT+1:
+            this->ppu.eng3d.io.fog_depth_shift = val & 15;
+            // These two are acknowledge
+            if ((val >> 4) & 1) this->ppu.eng3d.io.color_buffer_rdlines_underflow = 0;
+            if ((val >> 5) & 1) this->ppu.eng3d.io.polygon_vertex_ram_overflow = 0;
+            this->ppu.eng3d.io.rear_plane_mode  = (val >> 6) & 1;
+            return;
+
+        case R9_DISP3DCNT+2:
+        case R9_DISP3DCNT+3: return;
+
+        case R9_DISPCAPCNT+0:
+        case R9_DISPCAPCNT+1:
+        case R9_DISPCAPCNT+2:
+        case R9_DISPCAPCNT+3: {
+            static int doit = 0;
+            if (!doit) {
+                printf("\nwarning DISPCAPCNT not implement!");
+                doit = 1;
+            }
+            return; }
+        case R9_DISP_MMEM_FIFO+0:
+        case R9_DISP_MMEM_FIFO+1:
+        case R9_DISP_MMEM_FIFO+2:
+        case R9_DISP_MMEM_FIFO+3: {
+            static int doit = 0;
+            if (!doit) {
+                printf("\nwarning DISP_MMEM_FIFO not implement!");
+                doit = 1;
+            }
+            return; }
+        case R9_MASTER_BRIGHT_A+0:
+        case R9_MASTER_BRIGHT_A+1:
+        case R9_MASTER_BRIGHT_A+2:
+        case R9_MASTER_BRIGHT_A+3: {
+            static int doit = 0;
+            if (!doit) {
+                printf("\nwarning MASTER_BRIGHT_A not implement!");
+                doit = 1;
+            }
+            return; }
+        case R9_SWAP_BUFFERS:
+            this->ppu.eng3d.swap_buffers.on_next_vblank = 1;
+            this->ppu.eng3d.swap_buffers.translucent_poly_y_sorting = val & 1;
+            this->ppu.eng3d.swap_buffers.depth_buffering = (val >> 1) & 1;
+
         case R_DISPSTAT+0:
             this->ppu.io.vblank_irq_enable9 = (val >> 3) & 1;
             this->ppu.io.hblank_irq_enable9 = (val >> 4) & 1;
@@ -706,6 +765,23 @@ u32 NDS_PPU_read9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             v |= eng->window[0].enable << 5;
             v |= eng->window[1].enable << 6;
             v |= eng->window[NDS_WINOBJ].enable << 7;
+            return v;
+        case R9_DISPCNT+2:
+            v = eng->io.display_mode;
+            v |= eng->io.tile_obj_id_boundary << 4;
+            v |= eng->io.hblank_free << 7;
+            if (en == 0) {
+                v |= this->ppu.io.display_block << 2;
+                v |= eng->io.bitmap_obj_id_boundary << 6;
+            }
+            return v;
+        case R9_DISPCNT+3:
+            v = eng->io.bg_extended_palettes << 6;
+            v |= eng->io.obj_extended_palettes << 7;
+            if (en == 0) {
+                v |= eng->io.character_base >> 16;
+                v |= eng->io.screen_base >> 13;
+            }
             return v;
         case R_DISPSTAT+0: // DISPSTAT lo
             v = this->clock.ppu.vblank_active;

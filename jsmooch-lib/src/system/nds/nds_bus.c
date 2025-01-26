@@ -54,10 +54,17 @@ static void buswr7_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 v
 }
 
 static void buswr9_invalid(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
-    printf("\nWRITE9 UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
     this->waitstates.current_transaction++;
-    dbg.var++;
-    if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count7);
+    static int pokemon_didit = 0;
+    if ((addr == 0) && !pokemon_didit) {
+        pokemon_didit = 1;
+        printf("\nWRITE9 UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
+    }
+    if (addr != 0) {
+        printf("\nWRITE9 UNKNOWN ADDR:%08x sz:%d DATA:%08x", addr, sz, val);
+        dbg.var++;
+        if (dbg.var > 15) dbg_break("too many bad writes", this->clock.master_cycle_count7);
+    }
     //dbg_break("unknown addr write9", this->clock.master_cycle_count7);
 }
 
@@ -299,6 +306,8 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return NDS_get_controller_state(this->controller.pio, 1);
         case R_EXTKEYIN+0:
             return NDS_get_controller_state(this->controller.pio, 2);
+        case R_EXTKEYIN+1:
+            return 0;
 
         case R_IPCFIFOCNT+0:
             // send fifo from 7 is to_9
@@ -877,7 +886,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 // --------------
 static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return NDS_PPU_read9_io(this, addr, sz, access, has_effect);
     }
     u32 v;
@@ -899,6 +908,8 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return NDS_get_controller_state(this->controller.pio, 1);
         case R_EXTKEYIN+0:
             return NDS_get_controller_state(this->controller.pio, 2);
+        case R_EXTKEYIN+1:
+            return 0;
 
         case R_IPCFIFOCNT+0:
             // send fifo from 9 is to_7
@@ -1517,9 +1528,22 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
 // -----
 
+static u32 busrd9_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect){
+    static int already_did = 0;
+    if (!already_did) {
+        already_did = 1;
+        printf("\nWARN: APU READ9!");
+    }
+    return 0;
+}
+
 static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v;
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
+        return NDS_PPU_read9_io(this, addr, sz, access, has_effect);
+    }
+    if ((addr >= 0x04000400) && (addr < 0x04000520)) return busrd9_apu(this, addr, sz, access, has_effect);
     switch(addr) {
         case R_ROMCTRL:
             return NDS_cart_read_romctrl(this);
@@ -1568,20 +1592,55 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     return v;
 }
 
+static u32 busrd7_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect){
+    static int already_did = 0;
+    if (!already_did) {
+        already_did = 1;
+        printf("\nWARN: APU READ7!");
+    }
+    return 0;
+}
+
+static void buswr7_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
+    static int already_did = 0;
+    if (!already_did) {
+        already_did = 1;
+        printf("\nWARN: APU WRITE7!");
+    }
+}
+
+
+static void buswr9_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
+    static int already_did = 0;
+    if (!already_did) {
+        already_did = 1;
+        printf("\nWARN: APU WRITE9!");
+    }
+}
+
+
 static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (((addr >= 0x04000000) && (addr < 0x04000060)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         NDS_PPU_write9_io(this, addr, sz, access, val);
         return;
     }
+    if ((addr >= 0x04000400) && (addr < 0x04000520)) return buswr9_apu(this, addr, sz, access, val);
     switch(addr) {
         case R_AUXSPICNT: {
-            NDS_cart_spi_write_spicnt(this, val & 0xFFFF);
+            NDS_cart_spi_write_spicnt(this, val & 0xFF, 0);
+            if (sz >= 2)
+                NDS_cart_spi_write_spicnt(this, (val >> 8) & 0xFF, 1);
             if (sz == 4) {
                 buswr9_io(this, R_AUXSPIDATA, 2, access, val >> 16);
             }
             return; }
+        case R_AUXSPICNT+1:
+            NDS_cart_spi_write_spicnt(this, val & 0xFF, 1);
+            return;
+
         case R_AUXSPIDATA:
+            assert(sz!=1);
             NDS_cart_spi_transaction(this, val & 0xFFFF);
             if (sz == 4) {
                 buswr9_io(this, R_ROMCTRL, 2, access, val >> 16);
@@ -1623,7 +1682,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         buswr9_io8(this, addr+3, 1, access, (val >> 24) & 0xFF);
     }
 }
-// 0x2000 bytes
+
 static u32 busrd7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x04808000) return cR[sz](this->mem.wifi, addr & 0x1FFF);
 
@@ -1645,9 +1704,10 @@ static void buswr7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
 static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return NDS_PPU_read7_io(this, addr, sz, access, has_effect);
     }
+    if ((addr >= 0x04000400) && (addr < 0x04000520)) return busrd7_apu(this, addr, sz, access, has_effect);
     if (addr >= 0x04800000) return busrd7_wifi(this, addr, sz, access, has_effect);
     u32 v;
     switch(addr) {
@@ -1700,10 +1760,11 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 
 static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         NDS_PPU_write7_io(this, addr, sz, access, val);
         return;
     }
+    if ((addr >= 0x04000400) && (addr < 0x04000520)) return buswr7_apu(this, addr, sz, access, val);
     if (addr >= 0x04800000) return buswr7_wifi(this, addr, sz, access, val);
 
     switch(addr) {
@@ -1711,11 +1772,18 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             NDS_SPI_write(this, sz, val);
 
         case R_AUXSPICNT: {
-            NDS_cart_spi_write_spicnt(this, val & 0xFFFF);
+            NDS_cart_spi_write_spicnt(this, val & 0xFF, 0);
+            if (sz >= 2) {
+                NDS_cart_spi_write_spicnt(this, (val >> 8) & 0xFF, 1);
+            }
             if (sz == 4) {
                 buswr7_io(this, R_AUXSPIDATA, 2, access, val >> 16);
             }
             return; }
+        case R_AUXSPICNT+1:
+            NDS_cart_spi_write_spicnt(this, val & 0xFF, 1);
+            return;
+
         case R_AUXSPIDATA:
             NDS_cart_spi_transaction(this, val & 0xFFFF);
             if (sz == 4) {
