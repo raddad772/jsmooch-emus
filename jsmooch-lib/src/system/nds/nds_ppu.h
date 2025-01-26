@@ -8,6 +8,21 @@
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 
+enum NDS_SCREEN_KINDS {
+    SK_none = 0,
+    SK_3donly = 20,
+    SK_text = 1,
+    SK_affine = 2,
+    SK_extended = 3,
+    SK_large = 4,
+    SK_rotscale_16bit = 5,
+    SK_rotscale_8bit = 6,
+    SK_rotscale_direct = 7,
+    SK_gba_mode_3,
+    SK_gba_mode_4,
+    SK_gba_mode_5
+};
+
 struct NDS_PPU_window {
     u32 enable;
 
@@ -33,6 +48,10 @@ struct NDS_PPU_OBJ {
     i32 drawing_cycles;
 };
 
+#define NDS_WIN0 0
+#define NDS_WIN1 1
+#define NDS_WINOBJ 2
+#define NDS_WINOUTSIDE 3
 
 struct NDS_PPU {
     // 2 mostly-identical 2d engines (A and B) and a 3d engine
@@ -41,8 +60,10 @@ struct NDS_PPU {
     struct JSM_DISPLAY *display;
 
     struct {
-        u32 vblank_irq_enable, hblank_irq_enable, vcount_irq_enable;
-        u32 vcount_at;
+        u32 vblank_irq_enable7, hblank_irq_enable7, vcount_irq_enable7;
+        u32 vcount_at7;
+        u32 vblank_irq_enable9, hblank_irq_enable9, vcount_irq_enable9;
+        u32 vcount_at9;
         u32 display_block; // A B C or D
         u32 display_swap;
     } io;
@@ -85,6 +106,7 @@ struct NDS_PPU {
         u16 line_px[256];
 
         struct NDS_PPU_bg {
+            enum NDS_SCREEN_KINDS kind;
             u32 enable;
 
             u32 bpp8;
@@ -163,6 +185,8 @@ u32 NDS_PPU_read_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
 void NDS_PPU_write_2d_bg_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
 void NDS_PPU_write_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz, u32 val);
 
-void NDS_PPU_write_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
-u32 NDS_PPU_read_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
+void NDS_PPU_write9_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+u32 NDS_PPU_read9_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
+void NDS_PPU_write7_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
+u32 NDS_PPU_read7_io(struct NDS *, u32 addr, u32 sz, u32 access, u32 has_effect);
 #endif //JSMOOCH_EMUS_NDS_PPU_H

@@ -248,6 +248,28 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 {
     u32 v;
     switch(addr) {
+        case R7_SOUNDCNT+0:
+            return this->apu.io.master_vol;
+        case R7_SOUNDCNT+1:
+            v = this->apu.io.left_output_from;
+            v |= this->apu.io.right_output_from << 2;
+            v |= this->apu.io.output_ch1_from_mixer << 4;
+            v |= this->apu.io.output_ch3_from_mixer << 5;
+            v |= this->apu.master_enable << 7;
+            return v;
+        case R7_SOUNDCNT+2:
+        case R7_SOUNDCNT+3:
+            return 0;
+
+        case R7_SOUNDBIAS+0:
+            return this->apu.io.SOUNDBIAS & 0xFF;
+        case R7_SOUNDBIAS+1:
+            return (this->apu.io.SOUNDBIAS >> 8) & 3;
+
+        case R_RCNT+0: return this->io.sio_data & 0xFF;
+        case R_RCNT+1: return this->io.sio_data >> 8;
+        case 0x04000138:
+        case 0x04000139: return 0;
         case R7_SPICNT+0:
             this->spi.cnt.busy = NDS_clock_current7(this) < this->spi.busy_until;
             return this->spi.cnt.u & 0xFF;
@@ -548,6 +570,34 @@ static void sqrt_calc(struct NDS *this)
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
+
+        case R7_SOUNDCNT+0:
+            this->apu.io.master_vol = val & 0x7F;
+            return;
+        case R7_SOUNDCNT+1:
+            this->apu.io.left_output_from = val & 3;
+            this->apu.io.right_output_from = (val >> 2) & 3;
+            this->apu.io.output_ch1_from_mixer = (val >> 4) & 1;
+            this->apu.io.output_ch3_from_mixer = (val >> 5) & 1;
+            this->apu.master_enable = (val >> 7) & 1;
+            return;
+        case R7_SOUNDCNT+2:
+        case R7_SOUNDCNT+3:
+            return;
+
+        case R7_SOUNDBIAS+0:
+            this->apu.io.SOUNDBIAS = (this->apu.io.SOUNDBIAS & 0x300) | val;
+            return;
+        case R7_SOUNDBIAS+1:
+            this->apu.io.SOUNDBIAS = (this->apu.io.SOUNDBIAS & 0xFF) | ((val & 3) << 8);
+            return;
+
+        case R_RCNT+0:
+            this->io.sio_data = (this->io.sio_data & 0xFF00) | val;
+            return;
+        case R_RCNT+1:
+            this->io.sio_data = (this->io.sio_data & 0xFF) | (val << 8);
+            return;
         case R_ROMCMD+0:
         case R_ROMCMD+1:
         case R_ROMCMD+2:
@@ -827,8 +877,8 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 // --------------
 static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04010000) && (addr < 0x04010070))) {
-        return NDS_PPU_read_io(this, addr, sz, access, has_effect);
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+        return NDS_PPU_read9_io(this, addr, sz, access, has_effect);
     }
     u32 v;
     switch(addr) {
@@ -1471,6 +1521,9 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 {
     u32 v;
     switch(addr) {
+        case R_ROMCTRL:
+            return NDS_cart_read_romctrl(this);
+
         case R_ROMDATA+0: // 4100010
         case R_ROMDATA+1: // 4100010
         case R_ROMDATA+2: // 4100010
@@ -1517,8 +1570,8 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 
 static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04010000) && (addr < 0x04010070))) {
-        NDS_PPU_write_io(this, addr, sz, access, val);
+    if (((addr >= 0x04000000) && (addr < 0x04000060)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+        NDS_PPU_write9_io(this, addr, sz, access, val);
         return;
     }
     switch(addr) {
@@ -1581,15 +1634,26 @@ static void buswr7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (addr < 0x04808000) return cW[sz](this->mem.wifi, addr & 0x1FFF, val);
 
+    switch(addr) {
+        case 0x048080ae:
+            printf("\nWarning ignore WIFI WRITE....");
+            return;
+    }
     buswr7_invalid(this, addr, sz, access, val);
 }
 
 
 static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+        return NDS_PPU_read7_io(this, addr, sz, access, has_effect);
+    }
     if (addr >= 0x04800000) return busrd7_wifi(this, addr, sz, access, has_effect);
     u32 v;
     switch(addr) {
+        case R_ROMCTRL:
+            return NDS_cart_read_romctrl(this);
+
         case R_ROMDATA+0:
         case R_ROMDATA+1:
         case R_ROMDATA+2:
@@ -1636,7 +1700,12 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
 
 static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    // TODO: Write arm7 control register. Read arm7 & arm9
+    if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001060))) {
+        NDS_PPU_write7_io(this, addr, sz, access, val);
+        return;
+    }
+    if (addr >= 0x04800000) return buswr7_wifi(this, addr, sz, access, val);
+
     switch(addr) {
         case R7_SPIDATA:
             NDS_SPI_write(this, sz, val);

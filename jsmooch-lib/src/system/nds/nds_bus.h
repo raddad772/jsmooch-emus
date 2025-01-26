@@ -29,7 +29,19 @@ struct NDS {
     struct NDS_clock clock;
     struct NDS_PPU ppu;
     struct NDS_controller controller;
-    //struct NDS_APU apu;
+
+    struct {
+        struct {
+            u32 master_vol;
+            u32 left_output_from;
+            u32 right_output_from;
+            u32 output_ch1_from_mixer;
+            u32 output_ch3_from_mixer;
+            u32 SOUNDBIAS;
+        } io;
+        u32 master_enable;
+
+    } apu;
 
     struct {
         u32 current_transaction;
@@ -196,6 +208,8 @@ struct NDS {
             u32 wifi_waitcnt;
 
         } powcnt;
+
+        u32 sio_data;
     } io;
 
     struct {
