@@ -44,6 +44,10 @@ static void NDSJ_describe_io(JSM, struct cvec* IOs);
 #define MASTER_CYCLES_PER_FRAME 570716
 
 
+/*
+Especially when games have very bizarre bugs, such as bowsers inside story purposefully sabotaging inputs at the save select screen because I allowed cart reads from the secure area, which made it think it was running on a flashcart
+Or Mario jumping way way way too high because I calculated the zero flag incorrectly for a certain multiply instruction */
+
 // master cycles per second: 33554432 (ARM7)
 //59.8261 = 560866 per frame
 /*   355 x 263
@@ -247,8 +251,6 @@ static void skip_BIOS(struct NDS *this)
     arm9_entry = cR[4](hdr, 0x24);
     bin9_lo = cR[4](hdr, 0x28);
     bin9_size = cR[4](hdr, 0x2C);
-
-    printf("\nARM9 OFFSET:%08x", bin9_offset);
 
     bin7_offset = cR[4](hdr, 0x30);
     arm7_entry = cR[4](hdr, 0x34);

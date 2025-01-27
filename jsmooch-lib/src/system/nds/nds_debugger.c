@@ -702,39 +702,46 @@ static void render_image_view_bg3map(struct debugger_interface *dbgr, struct deb
     render_image_view_bgmap(dbgr, dview, ptr, out_width, 3);
 }
 
+*/
 
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
+
 static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct NDS *this = (struct NDS *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
-    memset(outbuf, 0, out_width * (((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2)); // Clear out at least 4 rows worth
+    memset(outbuf, 0, out_width * (((16 * PAL_BOX_SIZE_W_BORDER) * 5) + 2));
 
-    u32 offset = 0;
-    u32 y_offset = 0;
-    for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) {
-        for (u32 palette = 0; palette < 16; palette++) {
-            for (u32 color = 0; color < 16; color++) {
-                u32 y_top = y_offset + offset;
-                u32 x_left = color * PAL_BOX_SIZE_W_BORDER;
-                u32 c = gba_to_screen(this->ppu.palette_RAM[lohi + (palette << 4) + color]);
-                for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
-                    u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
-                    for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
-                        box_ptr[x] = c;
+    for (u32 eng_num = 0; eng_num < 2; eng_num++) {
+        struct NDSENG2D *eng = &this->ppu.eng2d[eng_num];
+        u32 upper_row = eng_num * (PAL_BOX_SIZE_W_BORDER * 3);
+        u32 offset = 0;
+        u32 y_offset = 0;
+        for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) {
+            u16 *curpal = lohi == 0 ? (u16 *)eng->mem.bg_palette : (u16 *)eng->mem.obj_palette;
+            for (u32 palette = 0; palette < 16; palette++) {
+                for (u32 color = 0; color < 16; color++) {
+                    u32 y_top = y_offset + offset + upper_row;
+                    u32 x_left = color * PAL_BOX_SIZE_W_BORDER;
+                    u32 c = gba_to_screen(curpal[lohi + (palette << 4) + color]);
+                    for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
+                        u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
+                        for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
+                            box_ptr[x] = c;
+                        }
                     }
                 }
+                y_offset += PAL_BOX_SIZE;
             }
-            y_offset += PAL_BOX_SIZE;
+            offset += 2;
         }
-        offset += 2;
     }
 }
 
-
+/*
 
 
 static void get_disassembly_ARM7TDMI(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
@@ -845,6 +852,10 @@ static void setup_image_view_sprites(struct NDS* this, struct debugger_interface
     debugger_widgets_add_checkbox(&dview->options, "White box affine", 1, 0, 1);
     debugger_widgets_add_checkbox(&dview->options, "White box window", 1, 0, 1);
 }
+*/
+
+#define PAL_BOX_SIZE 10
+#define PAL_BOX_SIZE_W_BORDER 11
 
 static void setup_image_view_palettes(struct NDS* this, struct debugger_interface *dbgr)
 {
@@ -854,7 +865,7 @@ static void setup_image_view_palettes(struct NDS* this, struct debugger_interfac
     struct image_view *iv = &dview->image;
 
     iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
-    iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 2) + 2;
+    iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 5) + 2;
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
@@ -865,7 +876,7 @@ static void setup_image_view_palettes(struct NDS* this, struct debugger_interfac
     iv->update_func.func = &render_image_view_palette;
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
-
+/*
 static void setup_image_view_bgmap(struct NDS* this, struct debugger_interface *dbgr, u32 ppun, u32 wnum) {
     struct debugger_view *dview;
     switch(wnum) {
@@ -1162,6 +1173,7 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
 
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
+    setup_image_view_palettes(this, dbgr);
     setup_cpu_trace(dbgr, this);
 }
 /*
@@ -1169,7 +1181,6 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     setup_waveforms_view(this, dbgr);
     setup_events_view(this, dbgr);
     setup_cpu_trace(dbgr, this);
-    setup_image_view_palettes(this, dbgr);
     for (u32 ppun = 0; ppun < 2; ppun++) {
         setup_image_view_bg(this, dbgr, ppun, 0);
         setup_image_view_bg(this, dbgr, ppun, 1);

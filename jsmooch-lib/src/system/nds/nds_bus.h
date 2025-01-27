@@ -381,6 +381,7 @@ struct NDS {
         DBG_CPU_REG_END(arm9)
 
         DBG_IMAGE_VIEWS_START
+            MDBG_IMAGE_VIEW(palettes)
             MDBG_IMAGE_VIEW(a_window0)
             MDBG_IMAGE_VIEW(a_window1)
             MDBG_IMAGE_VIEW(a_window2)
@@ -394,7 +395,6 @@ struct NDS {
             MDBG_IMAGE_VIEW(a_bg2map)
             MDBG_IMAGE_VIEW(a_bg3map)
             MDBG_IMAGE_VIEW(a_sprites)
-            MDBG_IMAGE_VIEW(a_palettes)
             MDBG_IMAGE_VIEW(a_tiles)
             MDBG_IMAGE_VIEW(b_window0)
             MDBG_IMAGE_VIEW(b_window1)
@@ -409,7 +409,6 @@ struct NDS {
             MDBG_IMAGE_VIEW(b_bg2map)
             MDBG_IMAGE_VIEW(b_bg3map)
             MDBG_IMAGE_VIEW(b_sprites)
-            MDBG_IMAGE_VIEW(b_palettes)
             MDBG_IMAGE_VIEW(b_tiles)
         DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1

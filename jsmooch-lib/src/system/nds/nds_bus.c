@@ -330,6 +330,9 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             v = this->io.ipc.arm7sync.doutput;
             v |= this->io.ipc.arm7sync.enable_irq_from_remote << 6;
             return v;
+        case R_IPCSYNC+2:
+        case R_IPCSYNC+3:
+            return 0;
 
         case R_IME: return this->io.arm7.IME;
         case R_IME+1: return 0;
@@ -703,6 +706,8 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return; }
 
         case R_IPCSYNC+0:
+        case R_IPCSYNC+2:
+        case R_IPCSYNC+3:
             return;
         case R_IPCSYNC+1:
             this->io.ipc.arm9sync.dinput = this->io.ipc.arm7sync.doutput = val & 15;
@@ -931,6 +936,9 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             v = this->io.ipc.arm9sync.doutput;
             v |= this->io.ipc.arm9sync.enable_irq_from_remote << 6;
             return v;
+        case R_IPCSYNC+2:
+        case R_IPCSYNC+3:
+            return 0;
 
         case R9_DIVCNT+0:
             v = this->io.div.mode;
@@ -1139,6 +1147,11 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return v;
         }
 
+        case 0x04004008: // new DSi stuff libnds cares about?
+        case 0x04004009:
+        case 0x0400400A:
+        case 0x0400400B:
+            return 0;
     }
     printf("\nUnhandled BUSRD9IO8 addr:%08x", addr);
     return 0;
@@ -1211,6 +1224,8 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return; }
 
         case R_IPCSYNC+0:
+        case R_IPCSYNC+2:
+        case R_IPCSYNC+3:
             return;
         case R_IPCSYNC+1:
             this->io.ipc.arm7sync.dinput = this->io.ipc.arm9sync.doutput = val & 15;

@@ -336,12 +336,18 @@ static void calculate_windows(struct NDS *this, struct NDSENG2D *eng, u32 in_vbl
             memset(&w->inside, 0, sizeof(w->inside));
             continue;
         }
+        if (w->right == 0) w->right = 256;
+        if ((w->left == 0) && (w->right = 256)) {
+            memset(w->inside, 1, 256);
+        }
+        else
+        {
+            for (u32 x = 0; x < 256; x++) {
+                if (x == w->left) w->h_flag = 1;
+                if (x == w->right) w->h_flag = 0;
 
-        for (u32 x = 0; x < 240; x++) {
-            if (x == w->left) w->h_flag = 1;
-            if (x == w->right) w->h_flag = 0;
-
-            w->inside[x] =  w->h_flag & w->v_flag;
+                w->inside[x] = w->h_flag & w->v_flag;
+            }
         }
     }
 
@@ -354,7 +360,7 @@ static void calculate_windows(struct NDS *this, struct NDSENG2D *eng, u32 in_vbl
     u32 wsr = ws->enable;
     struct NDS_PPU_window *w = &eng->window[NDS_WINOUTSIDE];
     memset(w->inside, 0, sizeof(w->inside));
-    for (u32 x = 0; x < 240; x++) {
+    for (u32 x = 0; x < 256; x++) {
         u32 w0i = w0r & w0->inside[x];
         u32 w1i = w1r & w1->inside[x];
         u32 wsi = wsr & ws->inside[x];
@@ -363,7 +369,7 @@ static void calculate_windows(struct NDS *this, struct NDSENG2D *eng, u32 in_vbl
 
     struct NDS_PPU_window *wo = &eng->window[NDS_WINOUTSIDE];
     struct NDS_DBG_line *l = &this->dbg_info.line[this->clock.ppu.y];
-    for (u32 x = 0; x < 240; x++) {
+    for (u32 x = 0; x < 256; x++) {
         l->window_coverage[x] = w0->inside[x] | (w1->inside[x] << 1) | (ws->inside[x] << 2) | (wo->inside[x] << 3);
     }
 }
@@ -431,7 +437,7 @@ static void output_sprite_4bpp(struct NDS *this, struct NDSENG2D *eng, u32 addr,
         u8 data = read_vram_obj(this, eng, addr+tile_x, 1);
         for (u32 i = 0; i < 2; i++) {
             eng->obj.drawing_cycles -= 1;
-            if ((sx >= 0) && (sx < 240)) {
+            if ((sx >= 0) && (sx < 256)) {
                 struct NDS_PX *opx = &eng->obj.line[sx];
                 u32 c = data & 15;
                 data >>= 4;
@@ -469,11 +475,11 @@ static void draw_sprite_normal(struct NDS *this, struct NDSENG2D *eng, u32 addr,
     if (eng->obj.drawing_cycles < 1) return;
 
     u16 ptr[3];
-    ptr[0] = read_vram_obj(this, eng, addr, 2);
+    ptr[0] = read_oam(this, eng, addr, 2);
     u32 obj_disable = (ptr[0] >> 9) & 1;
     if (obj_disable) return;
-    ptr[1] = read_vram_obj(this, eng, addr+2, 2);
-    ptr[2] = read_vram_obj(this, eng, addr+4, 2);
+    ptr[1] = read_oam(this, eng, addr+2, 2);
+    ptr[2] = read_oam(this, eng, addr+4, 2);
 
     u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
     u32 sz = (ptr[1] >> 14) & 3;
@@ -532,7 +538,7 @@ static void draw_sprite_normal(struct NDS *this, struct NDSENG2D *eng, u32 addr,
 
 static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
 {
-    eng->obj.drawing_cycles = eng->io.hblank_free ? 954 : 1210;
+    eng->obj.drawing_cycles = eng->io.hblank_free ? 1530 : 2124;
 
     memset(eng->obj.line, 0, sizeof(eng->obj.line));
     struct NDS_PPU_window *w = &eng->window[NDS_WINOBJ];
@@ -544,7 +550,7 @@ static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
     // 10 + n*2 per pixel if rotated/scaled
     for (u32 i = 0; i < 128; i++) {
         u32 oam_offset = (i * 4);
-        u32 affine = (read_oam(this, eng, oam_offset, 1) >> 8) & 1;
+        u32 affine = (read_oam(this, eng, oam_offset, 2) >> 8) & 1;
 
         if (affine) draw_sprite_affine(this, eng, oam_offset, w, i);
         else draw_sprite_normal(this, eng, oam_offset, w, i);
@@ -563,7 +569,7 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
 
 static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, u32 bgnum, u32 block_x, u32 vpos, struct NDS_PX px[8], u32 screen_x) {
     u32 block_y = vpos >> 3;
-    u32 screenblock_addr = bg->screen_base_block + (se_index_fast(block_x, block_y, bg->screen_size) << 1);
+    u32 screenblock_addr = bg->screen_base_block + eng->io.screen_base + (se_index_fast(block_x, block_y, bg->screen_size) << 1);
 
     u16 attr = read_vram_bg(this, eng, screenblock_addr, 2);
     u32 tile_num = attr & 0x3FF;
@@ -576,7 +582,7 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
 
     u32 tile_bytes = bg->bpp8 ? 64 : 32;
     u32 line_size = bg->bpp8 ? 8 : 4;
-    u32 tile_start_addr = bg->character_base_block + (tile_num * tile_bytes);
+    u32 tile_start_addr = bg->character_base_block + eng->io.character_base + (tile_num * tile_bytes);
     u32 line_addr = tile_start_addr + (line_in_tile * line_size);
     //if (line_addr >= 0x10000) return; // hardware doesn't draw from up there
     u32 addr = line_addr;
@@ -586,10 +592,10 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
         for (u32 ex = 0; ex < 8; ex++) {
             u8 data = read_vram_bg(this, eng, mx + addr, 1);
             struct NDS_PX *p = &px[ex];
-            if ((screen_x + mx) < 240) {
+            if ((screen_x + mx) < 256) {
                 if (data != 0) {
                     p->has = 1;
-                    p->color = read_pram_bg(this, eng, data, 2);
+                    p->color = read_pram_bg(this, eng, data << 1, 2);
                     p->priority = bg->priority;
                 } else
                     p->has = 0;
@@ -607,10 +613,10 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
                 u16 c = data & 15;
                 data >>= 4;
                 struct NDS_PX *p = &px[mx];
-                if ((screen_x + mx) < 240) {
+                if ((screen_x + mx) < 256) {
                     if (c != 0) {
                         p->has = 1;
-                        p->color = read_pram_bg(this, eng, c + palbank, 2);
+                        p->color = read_pram_bg(this, eng, (c + palbank) << 1, 2);
                         p->priority = bg->priority;
                     } else
                         p->has = 0;
@@ -648,13 +654,13 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
         scroll_line[hpos >> 3] |= 1 << (hpos & 7);
     }
 
-    while (screen_x < 240) {
+    while (screen_x < 256) {
         fetch_bg_slice(this, eng, bg, bgnum, hpos >> 3, vpos, &bg->line[screen_x], screen_x);
-        if (screen_x <= 232) {
+        if (screen_x <= 248) {
             scroll_line[hpos >> 3] = 0xFF;
         }
         else {
-            for (u32 rx = screen_x; rx < 240; rx++) {
+            for (u32 rx = screen_x; rx < 256; rx++) {
                 scroll_line[hpos >> 3] |= 1 << (rx - screen_x);
             }
         }
@@ -695,18 +701,18 @@ static void get_affine_bg_pixel(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 
     u32 tile_width = bg->htiles;
 
-    u32 screenblock_addr = bg->screen_base_block;
+    u32 screenblock_addr = bg->screen_base_block + eng->io.screen_base;
     screenblock_addr += block_x + (block_y * tile_width);
     u32 tile_num = read_vram_bg(this, eng, screenblock_addr, 1);
 
     // so now, grab that tile...
-    u32 tile_start_addr = bg->character_base_block + (tile_num * 64);
+    u32 tile_start_addr = bg->character_base_block + eng->io.character_base + (tile_num * 64);
     u32 line_start_addr = tile_start_addr + (line_in_tile * 8);
     u32 addr = line_start_addr;
     u8 color = read_vram_bg(this, eng, line_start_addr + (px & 7), 1);
     if (color != 0) {
         opx->has = 1;
-        opx->color = read_pram_bg(this, eng, color, 2);
+        opx->color = read_pram_bg(this, eng, color << 1, 2);
         opx->priority = bg->priority;
     }
     else {
@@ -725,7 +731,7 @@ static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 
     struct NDS_DBG_tilemap_line_bg *dtl = &this->dbg_info.bg_scrolls[bgnum];
 
-    for (i64 screen_x = 0; screen_x < 240; screen_x++) {
+    for (i64 screen_x = 0; screen_x < 256; screen_x++) {
         i32 px = fx >> 8;
         i32 py = fy >> 8;
         fx += bg->pa;
@@ -773,7 +779,7 @@ static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
         if (!bg->enable || !bg->mosaic_enable) continue;
         u32 mosaic_counter = 0;
         struct NDS_PX *src;
-        for (u32 x = 0; x < 240; x++) {
+        for (u32 x = 0; x < 256; x++) {
             if (mosaic_counter == 0) {
                 src = &bg->line[x];
             }
@@ -789,7 +795,7 @@ static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
     // Now do sprites, which is a bit different
     struct NDS_PX *src = &eng->obj.line[0];
     u32 mosaic_counter = 0;
-    for (u32 x = 0; x < 240; x++) {
+    for (u32 x = 0; x < 256; x++) {
         struct NDS_PX *current = &eng->obj.line[x];
         if (!current->mosaic_sprite || !src->mosaic_sprite || (mosaic_counter == 0))  {
             src = current;
