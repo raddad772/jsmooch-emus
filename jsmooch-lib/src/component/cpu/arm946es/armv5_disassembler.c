@@ -546,6 +546,7 @@ static void dasm_LDR_STR_immediate_offset(u32 opcode, struct jsm_string *out, i6
             return;
         }
         oregc(Rnd);
+        add_context(ct, Rnd);
         if (U) ostr(" +#$");
         else ostr(" -#$");
         ohex(offset, 2);

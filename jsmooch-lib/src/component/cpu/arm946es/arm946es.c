@@ -14,7 +14,7 @@
 #include "helpers/multisize_memaccess.c"
 #define PC R[15]
 
-//#define TRACE
+#define TRACE
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
