@@ -33,6 +33,12 @@ enum NDS_cart_data_modes {
     NCDM_main
 };
 
+enum NDS_after_next_busy {
+    NDANB_none,
+    NDANB_handle_cmd,
+    NDANB_after_read
+};
+
 struct NDS_cart {
     struct {
         u32 data_in[8];
@@ -47,6 +53,8 @@ struct NDS_cart {
         u32 input, output;
         u32 block_size;
     } cmd;
+
+    enum NDS_after_next_busy after_next_busy;
 
     struct {
         struct {
@@ -69,7 +77,7 @@ struct NDS_cart {
                 // byte 2
                 u32 key2_gap_len : 6; // 16-21
                 u32 key2_encrypt_cmd : 1; // 22
-                u32 data_word_status : 1; // read-only, bit 23
+                u32 data_ready : 1; // read-only, bit 23
 
                 // byte 3
                 u32 data_block_size : 3; // 24-26
@@ -77,7 +85,7 @@ struct NDS_cart {
                 u32 key1_gap_clks : 1; // 28
                 u32 resb_release_reset : 1; // 29, cannot be cleared once set
                 u32 data_direction : 1; // 30, for FLASH/NAND carts
-                u32 block_start_status : 1; // 31 IRQ on bit14 of SPICNT, read-only
+                u32 busy : 1; // 31 IRQ on bit14 of SPICNT, read-only
             };
             u32 u;
         } romctrl;
@@ -85,7 +93,7 @@ struct NDS_cart {
 
     u64 spi_busy_until;
     u64 rom_busy_until;
-    u32 rom_reading;
+    u32 waiting_for_tx_done;
     enum NDS_cart_data_modes data_mode;
 
     struct buf ROM;

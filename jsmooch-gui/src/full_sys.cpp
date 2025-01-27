@@ -732,7 +732,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "funni.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armfrag.gba", nullptr);
 
-            worked = grab_ROM(&ROMs, which, "hm_fomt.gba", nullptr); // needs work! RTC, flash
+            //worked = grab_ROM(&ROMs, which, "hm_fomt.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
@@ -743,7 +743,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "007_nightfire.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "mmz4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "mmz.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "drill_dozer.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "driv3r.gba", nullptr); // works great

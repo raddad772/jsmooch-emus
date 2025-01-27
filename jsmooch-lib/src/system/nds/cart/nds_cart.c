@@ -74,13 +74,13 @@ static void raise_transfer_irq(struct NDS *this) {
 }
 
 static u32 get_transfer_irq_bits(struct NDS *this) {
-    return this->cart.io.transfer_ready_irq && !this->cart.io.romctrl.block_start_status;
+    return this->cart.io.transfer_ready_irq && !this->cart.io.romctrl.busy;
 }
 
 static void set_block_start_status(struct NDS *this, u32 val, u32 transfer_ready_irq)
 {
     u32 old_bits = get_transfer_irq_bits(this);
-    this->cart.io.romctrl.block_start_status = val;
+    this->cart.io.romctrl.busy = val;
     this->cart.io.transfer_ready_irq = transfer_ready_irq;
     u32 new_bits = get_transfer_irq_bits(this);
 
@@ -88,47 +88,141 @@ static void set_block_start_status(struct NDS *this, u32 val, u32 transfer_ready
         raise_transfer_irq(this);
 }
 
-static void set_rom_busy_until(struct NDS *this)
+static u32 rom_transfer_time(struct NDS *this, u32 clk_spd, u32 sz_in_bytes)
 {
-    static const u32 cpb[2] = { 5, 8 };
-    u32 transfer_len = cpb[this->cart.io.romctrl.transfer_clk_rate] * 4;
-    this->cart.rom_busy_until = NDS_clock_current7(this) + transfer_len;
+    static const u32 cpb[2] = {5, 8};
+    return cpb[clk_spd] * sz_in_bytes;
 }
 
 u32 NDS_cart_read_rom(struct NDS *this, u32 addr, u32 sz)
 {
     u32 output = 0xFFFFFFFF;
-    if (!data_ready(this)) return output;
+
+    if(!this->cart.io.romctrl.data_ready) {
+        return output;
+    }
 
     if (this->cart.cmd.sz_out != 0) {
         output = this->cart.cmd.data_out[this->cart.cmd.pos_out % this->cart.cmd.sz_out];
     }
     this->cart.cmd.pos_out++;
 
-    this->cart.io.romctrl.data_word_status = 0;
-    this->cart.rom_reading = 1;
+    this->cart.io.romctrl.data_ready = 0;
 
-    // If we've done all of our data...
     if (this->cart.cmd.pos_out == this->cart.cmd.sz_out) {
+        this->cart.io.romctrl.busy = 0;
         this->cart.cmd.pos_out = 0;
         this->cart.cmd.sz_out = 0;
-        set_block_start_status(this, 0, this->cart.io.transfer_ready_irq);
-    }
-    else {
-        set_rom_busy_until(this);
+
+        if (this->cart.io.transfer_ready_irq) {
+            NDS_update_IFs(this, 19);
+        }
+    } else {
+        this->cart.after_next_busy = NDANB_after_read;
+        this->cart.waiting_for_tx_done = 1;
     }
 
     return output;
 }
 
+static u32 get_block_size(struct NDS *this)
+{
+    u32 v = this->cart.io.romctrl.data_block_size;
+    switch(v) {
+        case 0:
+            return 0;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+            return 64 << v;
+        case 7:
+            return 1;
+    }
+    return 0;
+}
+
+static void handle_cmd(struct NDS *this)
+{
+    this->cart.cmd.pos_out = 0;
+    this->cart.cmd.sz_out = 0;
+    this->cart.io.romctrl.data_ready = 0;
+
+    //u32 data_block_size = this->cart.io.romctrl.data_block_size;
+
+    this->cart.cmd.sz_out = get_block_size(this);
+    switch(this->cart.cmd.data_in[0]) {
+        case 0xB7: { // Read!
+            u32 address = this->cart.cmd.data_in[1] << 24;
+            address |= this->cart.cmd.data_in[2] << 16;
+            address |= this->cart.cmd.data_in[3] <<  8;
+            address |= this->cart.cmd.data_in[4] <<  0;
+
+            address %= this->cart.ROM.size;
+
+            if(address <= 0x7FFF) {
+                address = 0x8000 + (address & 0x1FF);
+            }
+
+#ifndef MIN
+#define MIN(a,b) ((a) < (b)) ? (a) : (b)
+#endif
+            this->cart.cmd.sz_out = MIN(0x80, this->cart.cmd.sz_out);
+
+            memcpy(this->cart.cmd.data_out, this->cart.ROM.ptr+address, this->cart.cmd.sz_out * 4);
+            printf("\nCART READ %08x: %d bytes", address, this->cart.cmd.sz_out * 4);
+            break;
+        }
+        case 0xB8: { // rom chip ID
+            printf("\nCART GET CHIP ID");
+            this->cart.cmd.sz_out = 1;
+            this->cart.cmd.data_out[0] = 0x1FC2;
+            break;
+        }
+        default: {
+            printf("\nUNHANDLED CMD %02x", this->cart.cmd.data_in[0]);
+            break;
+        }
+    }
+
+    this->cart.io.romctrl.busy = this->cart.cmd.sz_out != 0;
+
+    if (this->cart.io.romctrl.busy) {
+        this->cart.rom_busy_until = NDS_clock_current7(this) + rom_transfer_time(this, this->cart.io.romctrl.transfer_clk_rate, 4);
+        this->cart.after_next_busy = NDANB_after_read;
+        this->cart.waiting_for_tx_done = 1;
+    }
+    else if(this->cart.io.transfer_ready_irq) {
+        NDS_update_IFs(this, 19);
+    }
+}
+
+static void after_read(struct NDS *this)
+{
+    this->cart.io.romctrl.data_ready = 1;
+
+    NDS_trigger_dma7_if(this, 5);
+    NDS_trigger_dma9_if(this, 5);
+}
+
 void NDS_cart_check_transfer(struct NDS *this)
 {
-    if (this->cart.rom_reading && data_ready(this)) {
-        this->cart.rom_reading = 0;
-        this->cart.io.romctrl.data_word_status = 1;
-        // Schedule DMAs if needed
-        NDS_trigger_dma7_if(this, 5);
-        NDS_trigger_dma9_if(this, 5);
+    //printf("\nWait for tx done? %d. Clock:%lld busy done:%lld", this->cart.waiting_for_tx_done, this->clock.master_cycle_count7, this->cart.rom_busy_until);
+    if (this->cart.waiting_for_tx_done && data_ready(this)) {
+        this->cart.waiting_for_tx_done = 0;
+        switch(this->cart.after_next_busy) {
+            case NDANB_none:
+                printf("\nERROR NDANDB: none!");
+                return;
+            case NDANB_handle_cmd:
+                handle_cmd(this);
+                return;
+            case NDANB_after_read:
+                after_read(this);
+                return;
+        }
     }
 }
 
@@ -155,7 +249,7 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
     else {
         this->cart.io.spi.slot_mode = (val >> 5) & 1;
         this->cart.io.nds_slot_enable = (val >> 7) & 1;
-        set_block_start_status(this, this->cart.io.romctrl.block_start_status, (val >> 6) & 1);
+        this->cart.io.transfer_ready_irq = (val >> 6) & 1;
     }
 }
 
@@ -166,74 +260,19 @@ void NDS_cart_spi_transaction(struct NDS *this, u32 val)
 
 void NDS_cart_write_romctrl(struct NDS *this, u32 val)
 {
-    u32 old_bits = this->cart.io.romctrl.u & (1 << 29);
-    old_bits |= this->cart.io.romctrl.u & (1 << 31);
+    u32 mask = 0x7FFFFFFF;
+    this->cart.io.romctrl.u = (val & 0x7FFFFFFF) | (this->cart.io.romctrl.u & 0x80000000);
+    if ((val & 0x80000000) && !this->cart.io.romctrl.busy) {
+        // Trigger handle of command
+        this->cart.io.romctrl.busy = 1;
 
-    this->cart.io.romctrl.u = (val & 0b01011111011111111111111111111111) | old_bits;
-}
-
-static u32 get_block_size(struct NDS *this)
-{
-    u32 v = this->cart.io.romctrl.data_block_size;
-    switch(v) {
-        case 0:
-            return 0;
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-            return 0x100 << v;
-        case 7:
-            return 4;
-    }
-    return 0;
-}
-
-static void start_read(struct NDS *this)
-{
-    if (this->cart.cmd.sz_out == 0) return;
-    /* Read the bytes... */
-    u32 start = this->cart.cmd.addr % this->cart.ROM.size;
-    u32 end = start + this->cart.cmd.sz_out;
-    if (end >= this->cart.ROM.size) {
-        end = this->cart.ROM.size - 1;
-        printf("\nINVALID END!");
-    }
-    if (end <= start) {
-        printf("\nDOUBLE INVALID START!");
-        return;
-    }
-    memcpy(&this->cart.cmd.data_out, this->cart.ROM.ptr+start, (end - start));
-}
-
-static void complete_cmd(struct NDS *this)
-{
-    u32 cmd_byte = this->cart.cmd.data_in[0];
-    switch(cmd_byte) {
-        case 0xB7: {// Read! B7aaaaaaaa000000h
-            // 4 bytes of address...
-            u32 addr = this->cart.cmd.data_in[1] << 24;
-            addr |= this->cart.cmd.data_in[2] << 16;
-            addr |= this->cart.cmd.data_in[3] << 8;
-            addr |= this->cart.cmd.data_in[4];
-            this->cart.cmd.pos_out = 0;
-            this->cart.cmd.sz_out = get_block_size(this);
-            this->cart.cmd.addr = addr * this->cart.cmd.sz_out;
-            printf("\nREAD CART ADDR:%08x bytes:%d", this->cart.cmd.addr, this->cart.cmd.sz_out);
-            start_read(this);
-
-            set_rom_busy_until(this);
-            return; }
-        default:
-            printf("\nUNKNOWN CART CMD %02x!", cmd_byte);
-            return;
+        this->cart.rom_busy_until = NDS_clock_current7(this) + rom_transfer_time(this, this->cart.io.romctrl.transfer_clk_rate, 8);
+        this->cart.after_next_busy = NDANB_handle_cmd;
+        this->cart.waiting_for_tx_done = 1;
     }
 }
 
 void NDS_cart_write_cmd(struct NDS *this, u32 addr, u32 val)
 {
     this->cart.cmd.data_in[addr] = val;
-    if (addr == 7) complete_cmd(this);
 }

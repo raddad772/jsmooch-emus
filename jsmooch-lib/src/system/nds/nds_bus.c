@@ -193,7 +193,7 @@ static void buswr9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     if (ptr) return cW[sz](ptr, addr & 0x3FFF, val);
 
     printf("\nInvalid VRAM write unmapped addr:%08x sz:%d val:%08x", addr, sz, val);
-    dbg_break("Unmapped VRAM9 write", this->clock.master_cycle_count7);
+    //dbg_break("Unmapped VRAM9 write", this->clock.master_cycle_count7);
 }
 
 static u32 busrd9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
@@ -1647,7 +1647,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             return;
         case R_ROMCTRL:
-            NDS_cart_write_romctrl(this, val & 0xFFFF);
+            NDS_cart_write_romctrl(this, val);
             return;
 
         case R_IPCFIFOSEND+0:
@@ -1791,7 +1791,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             return;
         case R_ROMCTRL:
-            NDS_cart_write_romctrl(this, val & 0xFFFF);
+            NDS_cart_write_romctrl(this, val);
             return;
 
         case R_RTC:
