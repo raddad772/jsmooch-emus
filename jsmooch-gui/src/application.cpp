@@ -101,7 +101,9 @@ static void update_input(struct full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
                 struct JSM_CONTROLLER *ctr = &pio->controller;
                 for (u32 i = 0; i < cvec_len(&ctr->digital_buttons); i++) {
                     struct HID_digital_button *db = (struct HID_digital_button *)cvec_get(&ctr->digital_buttons, i);
-                    db->state = ImGui::IsKeyDown(jk_to_imgui(db->common_id));
+                    db->state = 0;
+                    db->state |= ImGui::IsKeyDown(jk_to_imgui(db->common_id));
+                    db->state |= ImGui::IsKeyDown(jk_to_imgui_gp(db->common_id));
                 }
             }
         }
@@ -1137,7 +1139,9 @@ int webgpu_main(imgui_jsmooch_app &app)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();

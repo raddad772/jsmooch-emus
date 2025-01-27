@@ -173,7 +173,11 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
         T(3, 1, 8, 4)
         T(3, 2, 4, 8)
     }
-    printf("\nHEY! INVALID SHAPE %d", shape);
+    static int warned = 0;
+    if (!warned) {
+        warned = 1;
+        printf("\nHEY! INVALID SHAPE %d", shape);
+    }
     *htiles = 1;
     *vtiles = 1;
 #undef T

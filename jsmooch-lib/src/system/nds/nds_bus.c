@@ -1770,6 +1770,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     switch(addr) {
         case R7_SPIDATA:
             NDS_SPI_write(this, sz, val);
+            return;
 
         case R_AUXSPICNT: {
             NDS_cart_spi_write_spicnt(this, val & 0xFF, 0);

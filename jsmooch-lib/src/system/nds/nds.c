@@ -236,8 +236,9 @@ static void skip_BIOS(struct NDS *this)
     // Load 170h bytes of header into main RAM starting at 27FFE00
     u32 *hdr_start = (u32 *)this->cart.ROM.ptr;
     u32 *hdr = hdr_start;
+
     for (i32 i = 0; i < 0x170; i += 4) {
-        NDS_mainbus_write9(this, 0x027FFE00+i, 4, 0, *hdr);
+        NDS_mainbus_write9(this, 0x027FFE00+i, 4, 0, hdr[i>>2]);
     }
 
     // Read binary addresses
@@ -246,6 +247,8 @@ static void skip_BIOS(struct NDS *this)
     arm9_entry = cR[4](hdr, 0x24);
     bin9_lo = cR[4](hdr, 0x28);
     bin9_size = cR[4](hdr, 0x2C);
+
+    printf("\nARM9 OFFSET:%08x", bin9_offset);
 
     bin7_offset = cR[4](hdr, 0x30);
     arm7_entry = cR[4](hdr, 0x34);
@@ -276,6 +279,9 @@ static void skip_BIOS(struct NDS *this)
     this->arm7.regs.CPSR.mode = ARM7_system;
     ARM7TDMI_fill_regmap(&this->arm7);
     ARM7TDMI_reload_pipeline(&this->arm7);
+
+    NDS_mainbus_write9(this, R9_WRAMCNT, 1, 0, 3); // setup WRAM
+
 
     NDS_mainbus_write9(this, 0x027FF800, 4, 0, 0x1FC2); // chip id
     NDS_mainbus_write9(this, 0x027FF804, 4, 0, 0x1FC2); // chip id

@@ -144,6 +144,15 @@ static u32 get_block_size(struct NDS *this)
     return 0;
 }
 
+void pprint_mem(void *ptr, u32 num_bytes, u32 addr)
+{
+    printf("\nROM at addr:%08x", addr);
+    u8 *p = (u8 *)ptr;
+    for (u32 i = 0; i < num_bytes; i++) {
+        printf(" %02x", p[i]);
+    }
+}
+
 static void handle_cmd(struct NDS *this)
 {
     this->cart.cmd.pos_out = 0;
@@ -172,11 +181,10 @@ static void handle_cmd(struct NDS *this)
             this->cart.cmd.sz_out = MIN(0x80, this->cart.cmd.sz_out);
 
             memcpy(this->cart.cmd.data_out, this->cart.ROM.ptr+address, this->cart.cmd.sz_out * 4);
-            printf("\nCART READ %08x: %d bytes", address, this->cart.cmd.sz_out * 4);
+            //pprint_mem(this->cart.cmd.data_out, 4, address);
             break;
         }
         case 0xB8: { // rom chip ID
-            printf("\nCART GET CHIP ID");
             this->cart.cmd.sz_out = 1;
             this->cart.cmd.data_out[0] = 0x1FC2;
             break;

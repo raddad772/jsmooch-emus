@@ -5,6 +5,35 @@
 
 #include "keymap_translate.h"
 
+enum ImGuiKey jk_to_imgui_gp(enum JKEYS key_id) {
+    switch(key_id) {
+        case DBCID_co_start:
+            return ImGuiKey_GamepadStart;
+        case DBCID_co_select:
+            return ImGuiKey_GamepadBack;
+        case DBCID_co_up:
+            return ImGuiKey_GamepadDpadUp;
+        case DBCID_co_down:
+            return ImGuiKey_GamepadDpadDown;
+        case DBCID_co_left:
+            return ImGuiKey_GamepadDpadLeft;
+        case DBCID_co_right:
+            return ImGuiKey_GamepadDpadRight;
+        case DBCID_co_fire1:
+            return ImGuiKey_GamepadFaceDown;
+        case DBCID_co_fire2:
+            return ImGuiKey_GamepadFaceRight;
+        case DBCID_co_fire3:
+            return ImGuiKey_GamepadFaceUp;
+        case DBCID_co_fire4:
+            return ImGuiKey_GamepadFaceLeft;
+        case DBCID_co_shoulder_right:
+            return ImGuiKey_GamepadR2;
+        case DBCID_co_shoulder_left:
+            return ImGuiKey_GamepadR1;
+    }
+}
+
 enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {
     switch (dbcid_to_default(key_id)) {
         case JK_0:
