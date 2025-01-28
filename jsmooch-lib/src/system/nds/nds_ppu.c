@@ -336,15 +336,16 @@ static void calculate_windows(struct NDS *this, struct NDSENG2D *eng, u32 in_vbl
             memset(&w->inside, 0, sizeof(w->inside));
             continue;
         }
-        if (w->right == 0) w->right = 256;
-        if ((w->left == 0) && (w->right = 256)) {
+        u32 r = w->right;
+        if (r == 0) r = 256;
+        if ((w->left == 0) && (r == 256)) {
             memset(w->inside, 1, 256);
         }
         else
         {
             for (u32 x = 0; x < 256; x++) {
                 if (x == w->left) w->h_flag = 1;
-                if (x == w->right) w->h_flag = 0;
+                if (x == r) w->h_flag = 0;
 
                 w->inside[x] = w->h_flag & w->v_flag;
             }
@@ -519,7 +520,6 @@ static void draw_sprite_normal(struct NDS *this, struct NDSENG2D *eng, u32 addr,
 
     // OK we got all the attributes. Let's draw it!
     i32 line_in_sprite = my_y - y_min;
-    //printf("\nPPU LINE %d LINE IN SPR:%d Y:%d", this->clock.ppu.y, line_in_sprite, y);
     if (vflip) line_in_sprite = (((vtiles * 8) - 1) - line_in_sprite);
     u32 tile_y_in_sprite = line_in_sprite >> 3; // /8
     u32 line_in_tile = line_in_sprite & 7;
@@ -927,7 +927,6 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     }
 }
 
-
 static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
@@ -953,6 +952,7 @@ static void draw_line(struct NDS *this, u32 eng_num)
     // We have 2-4 display modes. They can be: WHITE, NORMAL, VRAM display, and "main memory display"
     // During this time, the 2d engine runs like normal!
     // So we will draw our lines...
+    //if (eng->num == 1 && this->clock.ppu.y == 100) { printf("\nline:100 bg_mode:%d what:%d bg0:%d bg1:%d bg2:%d bg3:%d", eng->io.bg_mode, eng->io.bg_mode, eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, eng->bg[3].enable); }
     switch(eng->io.bg_mode) {
         case 0:
             draw_line0(this, eng, l);
@@ -1204,7 +1204,6 @@ static void update_bg_x(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 w
     if ((v >> 27) & 1) v |= 0xF0000000;
     eng->bg[bgnum].x = v;
     eng->bg[bgnum].x_written = 1;
-    //printf("\nline:%d X%d update:%08x", this->clock.ppu.y, bgnum, v);
 }
 
 static void update_bg_y(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
@@ -1220,7 +1219,6 @@ static void update_bg_y(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 w
     if ((v >> 27) & 1) v |= 0xF0000000;
     eng->bg[bgnum].y = v;
     eng->bg[bgnum].y_written = 1;
-    //printf("\nline:%d Y%d update:%08x", this->clock.ppu.y, bgnum, v);
 }
 
 static const u32 boundary_to_stride[4] = {32, 64, 128, 256};
@@ -1314,6 +1312,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->ppu.eng3d.swap_buffers.on_next_vblank = 1;
             this->ppu.eng3d.swap_buffers.translucent_poly_y_sorting = val & 1;
             this->ppu.eng3d.swap_buffers.depth_buffering = (val >> 1) & 1;
+            return;
 
         case R_DISPSTAT+0:
             this->ppu.io.vblank_irq_enable9 = (val >> 3) & 1;
@@ -1457,7 +1456,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R9_BG3Y+3: update_bg_y(this, eng, BG3, 3, val); return;
 
         case R9_WIN0H:   eng->window[0].right = val; return;
-        case R9_WIN0H+1: eng->window[0].left = val; printf("\nPPU line %d left:%d right:%d", this->clock.ppu.y, eng->window[0].left, eng->window[0].right); return;
+        case R9_WIN0H+1: eng->window[0].left = val; return;
         case R9_WIN1H:   eng->window[1].right = val; return;
         case R9_WIN1H+1: eng->window[1].left = val; return;
         case R9_WIN0V:   eng->window[0].bottom = val; return;

@@ -240,8 +240,6 @@ void NDS_dma9_start(struct NDS_DMA_ch *ch, u32 i)
     ch->op.word_mask = 0x1FFFFF;
     ch->op.dest_access = ARM9P_nonsequential | ARM9P_dma;
     ch->op.src_access = ARM9P_nonsequential | ARM9P_dma;
-    if (ch->io.start_timing == 2) printf("\nHBLANK DMA9 on to %08x sz:%d", ch->op.dest_addr, ch->op.word_count);
-
 }
 
 // #############################
