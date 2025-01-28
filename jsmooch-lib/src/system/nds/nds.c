@@ -338,7 +338,7 @@ void NDSJ_reset(JSM)
     NDS_bus_reset(this);
 
     skip_BIOS(this);
-    printf("\nNDS reset!");
+    printf("\nNDS reset complete!");
 }
 
 

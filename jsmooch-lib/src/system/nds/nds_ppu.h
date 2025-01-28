@@ -99,7 +99,8 @@ struct NDS_PPU {
             u32 bitmap_obj_map_1d;
             u32 bitmap_obj_2d_dim;
             u32 character_base, screen_base;
-            u32 bitmap_obj_id_boundary, tile_obj_id_boundary;
+            u32 bitmap_obj_1d_boundary, tile_obj_1d_boundary;
+            u32 bitmap_obj_1d_stride, tile_obj_1d_stride;
             u32 bg_extended_palettes, obj_extended_palettes;
             u32 display_mode;
         } io;

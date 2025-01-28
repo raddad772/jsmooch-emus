@@ -208,19 +208,17 @@ static u32 busrd9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_e
 
 static void buswr9_oam(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    return;
-    if (addr < 0x07000000) return;
-    if (addr < 0x07000400) return cW[sz](this->ppu.eng2d[0].mem.oam, addr, val);
-    if (addr < 0x07000800) return cW[sz](this->ppu.eng2d[1].mem.oam, addr, val);
-    buswr9_invalid(this, addr, sz, access, val);
+    addr &= 0x7FF;
+    if (addr < 0x400) return cW[sz](this->ppu.eng2d[0].mem.oam, addr, val);
+    else return cW[sz](this->ppu.eng2d[1].mem.oam, addr, val);
+    //buswr9_invalid(this, addr, sz, access, val);
 }
 
 static u32 busrd9_oam(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    if (addr < 0x07000000) return busrd9_invalid(this, addr, sz, access, has_effect);
-    if (addr < 0x07000400) return cR[sz](this->ppu.eng2d[0].mem.oam, addr);
-    if (addr < 0x07000800) return cR[sz](this->ppu.eng2d[1].mem.oam, addr);
-    return busrd9_invalid(this, addr, sz, access, has_effect);
+    addr &= 0x7FF;
+    if (addr < 0x400) return cR[sz](this->ppu.eng2d[0].mem.oam, addr);
+    else return cR[sz](this->ppu.eng2d[1].mem.oam, addr);
 }
 
 static u32 busrd7_bios7(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)
