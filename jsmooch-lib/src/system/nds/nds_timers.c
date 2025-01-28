@@ -18,7 +18,7 @@ u32 NDS_timer7_enabled(struct NDS *this, u32 tn) {
 }
 
 u32 NDS_timer9_enabled(struct NDS *this, u32 tn) {
-    return NDS_clock_current9(this) >= this->timer7[tn].enable_at;
+    return NDS_clock_current9(this) >= this->timer9[tn].enable_at;
 }
 
 static void overflow_timer7(struct NDS *this, u32 tn, u64 current_time);

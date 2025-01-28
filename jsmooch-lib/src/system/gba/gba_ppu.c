@@ -437,9 +437,6 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     // Clip sprite
 
     u32 tile_num = ptr[2] & 0x3FF;
-    if ((this->ppu.io.bg_mode >= 3) && (tile_num < 512)) {
-        return;
-    }
 
     u32 mode = (ptr[0] >> 10) & 3;
     u32 bpp8 = (ptr[0] >> 13) & 1;
@@ -463,7 +460,6 @@ static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     // We have two possibilities; 1d or 2d layout
     u32 tile_addr = get_sprite_tile_addr(this, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, this->ppu.io.obj_mapping_1d);
     if (hflip) tile_addr += (htiles - 1) * (32 << bpp8);
-    //if (y_min != -1) printf("\nSPRITE%d y:%d PALETTE:%d", num, y_min, palette);
 
     i32 screen_x = x;
     for (u32 tile_xs = 0; tile_xs < htiles; tile_xs++) {

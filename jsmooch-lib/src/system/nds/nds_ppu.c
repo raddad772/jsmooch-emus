@@ -1457,7 +1457,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R9_BG3Y+3: update_bg_y(this, eng, BG3, 3, val); return;
 
         case R9_WIN0H:   eng->window[0].right = val; return;
-        case R9_WIN0H+1: eng->window[0].left = val; return;
+        case R9_WIN0H+1: eng->window[0].left = val; printf("\nPPU line %d left:%d right:%d", this->clock.ppu.y, eng->window[0].left, eng->window[0].right); return;
         case R9_WIN1H:   eng->window[1].right = val; return;
         case R9_WIN1H+1: eng->window[1].left = val; return;
         case R9_WIN0V:   eng->window[0].bottom = val; return;

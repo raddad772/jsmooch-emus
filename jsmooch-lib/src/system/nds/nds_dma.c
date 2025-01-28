@@ -240,6 +240,8 @@ void NDS_dma9_start(struct NDS_DMA_ch *ch, u32 i)
     ch->op.word_mask = 0x1FFFFF;
     ch->op.dest_access = ARM9P_nonsequential | ARM9P_dma;
     ch->op.src_access = ARM9P_nonsequential | ARM9P_dma;
+    if (ch->io.start_timing == 2) printf("\nHBLANK DMA9 on to %08x sz:%d", ch->op.dest_addr, ch->op.word_count);
+
 }
 
 // #############################
@@ -259,9 +261,9 @@ void NDS_check_dma9_at_vblank(struct NDS *this)
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
-        struct NDS_DMA_ch *ch = &this->dma7[i];
+        struct NDS_DMA_ch *ch = &this->dma9[i];
         if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
-            NDS_dma7_start(ch, i);
+            NDS_dma9_start(ch, i);
         }
     }
 }
@@ -272,7 +274,7 @@ void NDS_check_dma9_at_hblank(struct NDS *this)
     for (u32 i = 0; i < 4; i++) {
         struct NDS_DMA_ch *ch = &this->dma9[i];
         if (ch->io.enable && !ch->op.started && (ch->io.start_timing == 2)) {
-            NDS_dma7_start(ch, i);
+            NDS_dma9_start(ch, i);
         }
     }
 }
