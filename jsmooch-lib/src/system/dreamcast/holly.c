@@ -124,7 +124,7 @@ struct delay_func_struct {
     enum holly_interrupt_masks which;
 };
 
-u32 holly_delayed_raise_interrupt(void* ptr, u64 key, i64 clock, u32 jitter)
+u32 holly_delayed_raise_interrupt(void* ptr, u64 key, u64 clock, u32 jitter)
 {
     struct DC* this = (struct DC*)ptr;
     holly_raise_interrupt(this, key, 0);

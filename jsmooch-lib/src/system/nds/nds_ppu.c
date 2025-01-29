@@ -960,6 +960,13 @@ static void draw_line(struct NDS *this, u32 eng_num)
         case 1:
             draw_line1(this, eng, l);
             break;
+        default: {
+            static int warned = 0;
+            if (warned != eng->io.bg_mode) {
+                printf("\nWARNING implement mode %d eng%d", eng->io.bg_mode, eng->num);
+                warned = eng->io.bg_mode;
+            }
+        }
     }
 
     // Then we will pixel output it to the screen...

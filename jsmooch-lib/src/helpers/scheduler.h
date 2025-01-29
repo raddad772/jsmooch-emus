@@ -14,18 +14,19 @@ enum scheduler_event_kind {
 };
 
 // void* ptr, current timecode, jitter
-typedef u32 (*scheduler_callback)(void*,u64,i64,u32);
+typedef u32 (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_clock, u32 jitter);
 
-struct scheduled_bound_function { scheduler_callback func; void *ptr; };
+struct scheduled_bound_function { scheduler_callback func; void *ptr; u32 saveinfo; };
 
 
 struct scheduler_event {
-    i64 timecode;    // Timecode can be for instance, cycle in frame
-    enum scheduler_event_kind kind;  // Per-implementation
+    u64 timecode;    // Timecode can be for instance, cycle in frame
+    enum scheduler_event_kind kind;
 
-    u64 key;
+    u64 key; // user-data
     struct scheduled_bound_function* bound_func;
 
+    u64 id; // ID that can be used to track & delete
     struct scheduler_event* next;
 };
 
@@ -47,6 +48,11 @@ struct scheduler_t {
 
     u32 num_events;
     struct scheduler_event* first_event;
+
+
+    u32 exit_current; // Programs should exit any inner loops if they are checking this...
+    u64 id_counter;
+
 };
 
 //void scheduler_allocate(struct scheduler_t*, u32 howmany);
@@ -54,7 +60,8 @@ struct scheduler_t {
 void scheduler_init(struct scheduler_t*);
 void scheduler_delete(struct scheduler_t*);
 void scheduler_clear(struct scheduler_t*);
-void scheduler_add(struct scheduler_t*, i64 timecode, enum scheduler_event_kind event_kind, u64 key, struct scheduled_bound_function* bound_func);
+u64 scheduler_add(struct scheduler_t* this, i64 timecode, enum scheduler_event_kind event_kind, u64 key, struct scheduled_bound_function* bound_func);
+void scheduler_delete_if_exist(struct scheduler_t *this, u64 id);
 i64 scheduler_til_next_event(struct scheduler_t*, i64 timecode); // Returns time til next event
 u64 scheduler_next_event_if_any(struct scheduler_t*);
 void scheduler_ran_cycles(struct scheduler_t*, i64 howmany);

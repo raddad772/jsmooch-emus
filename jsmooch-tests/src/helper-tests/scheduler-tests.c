@@ -26,7 +26,7 @@ void print_schedule(struct scheduler_t* scheduler)
     printf("\n---Scheduled list end\n");
 }
 
-u32 print_hello(void *r, u64 k, i64 cycles, u32 jitter) {
+u32 print_hello(void *r, u64 k, u64 cycles, u32 jitter) {
     printf("\nhello...");
     return 0;
 }
@@ -39,7 +39,6 @@ void test_scheduler()
 
     scheduler_add(&scheduler, 200, SE_keyed_event, 2, 0);
     print_schedule(&scheduler);
-
 
     scheduler_add(&scheduler, -1, SE_keyed_event, 0, 0);
     print_schedule(&scheduler);

@@ -84,7 +84,7 @@ int main()
 {
     dbg_init();
     dbg.trace_on = 0;
-    //test_scheduler();
+    test_scheduler();
     //test_sm83();
     //test_z80();
     //generate_sh4();
@@ -94,5 +94,5 @@ int main()
     //test_bitbuf();
     //test_dasm_ranges();
     //test_nesm6502();
-    test_arm7tdmi();
+    //test_arm7tdmi();
 }

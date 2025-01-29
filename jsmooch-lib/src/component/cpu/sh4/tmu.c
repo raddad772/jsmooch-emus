@@ -13,7 +13,7 @@
 #define tmu_UNIE      0x0020
 #define TCUSE this->clock.timer_cycles
 
-u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter);
+u32 scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter);
 
 /* A lot of the structure and logic here very closely follows Reicast */
 
@@ -280,7 +280,7 @@ static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
     return 0;
 }
 
-u32 scheduled_tmu_callback(void *ptr, u64 key, i64 sch_cycle, u32 jitter)
+u32 scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter)
 {
     struct SH4* this = (struct SH4*)ptr;
     u32 ch = key;
