@@ -292,7 +292,8 @@ u32 NDSJ_finish_frame(JSM)
     JTHIS;
 
     u64 frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
-    if (frame_cycle >= this->clock.frame_start_cycle_next) {
+    if (frame_cycle >= MASTER_CYCLES_PER_FRAME) {
+        printf("\nOOPSIE...");
         this->clock.frame_start_cycle = this->clock.frame_start_cycle_next;
         this->clock.frame_start_cycle_next += MASTER_CYCLES_PER_FRAME;
         frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
