@@ -43,7 +43,12 @@ static void NDSJ_describe_io(JSM, struct cvec* IOs);
 #define MASTER_CYCLES_BEFORE_HBLANK 1538
 #define MASTER_CYCLES_PER_FRAME 570716
 
-
+enum NDS_frame_events {
+    evt_EMPTY=0,
+    evt_SCANLINE_START,
+    evt_HBLANK_IN,
+    evt_SCANLINE_END
+};
 /*
 Especially when games have very bizarre bugs, such as bowsers inside story purposefully sabotaging inputs at the save select screen because I allowed cart reads from the secure area, which made it think it was running on a flashcart
 Or Mario jumping way way way too high because I calculated the zero flag incorrectly for a certain multiply instruction */
@@ -57,8 +62,6 @@ H-Timing: 256 dots visible, 99 dots blanking, 355 dots total (15.7343KHz)
 V-Timing: 192 lines visible, 71 lines blanking, 263 lines total (59.8261 Hz)
 The V-Blank cycle for the 3D Engine consists of the 23 lines, 191..213. *
  */
-
-#define SCANLINE_HBLANK 1006
 
 static u32 timer_reload_ticks(u32 reload)
 {
@@ -115,10 +118,93 @@ static u32 read_trace_cpu7(void *ptr, u32 addr, u32 sz) {
     return NDS_mainbus_read7(this, addr, sz, 0, 0);
 }
 
+void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct NDS *this = (struct NDS*)ptr;
+    this->clock.scanline_start_cycle = this->clock.scanline_start_cycle_next;
+    this->clock.scanline_start_cycle_next = NDS_clock_current7(this) + MASTER_CYCLES_PER_SCANLINE;
+
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle, evt_SCANLINE_START, this, &NDS_PPU_start_scanline);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_BEFORE_HBLANK, evt_HBLANK_IN, this, &NDS_PPU_hblank);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_PER_SCANLINE, evt_SCANLINE_END, this, &NDS_PPU_finish_scanline);
+}
+
+static i64 run_arm7(struct NDS *this, i64 num_cycles)
+{
+    this->waitstates.current_transaction = 0;
+    // Run DMA & CPU
+    if (NDS_dma7_go(this)) {
+    }
+    else {
+        if (this->io.arm7.halted) {
+            this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
+            this->waitstates.current_transaction++;
+        }
+        else
+            ARM7TDMI_run(&this->arm7);
+    }
+    NDS_tick_timers7(this, this->waitstates.current_transaction);
+    this->clock.master_cycle_count7 += this->waitstates.current_transaction;
+
+    return this->waitstates.current_transaction;
+}
+
+static i64 run_arm9(struct NDS *this, i64 num_cycles)
+{
+    this->waitstates.current_transaction = 0;
+    // Run DMA & CPU
+    if (NDS_dma9_go(this)) {
+    }
+    else {
+        ARM946ES_run(&this->arm9);
+    }
+    NDS_tick_timers9(this, this->waitstates.current_transaction);
+    this->clock.master_cycle_count9 += this->waitstates.current_transaction;
+
+    return this->waitstates.current_transaction;
+}
+
+
+static void NDS_run(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
+{
+    struct NDS *this = (struct NDS *)ptr;
+
+    this->clock.cycles7 += (i64)num_cycles;
+    this->clock.cycles9 += (i64)num_cycles;
+    //printf("\nRUN %lld CYCLES!", num_cycles);
+    while((this->clock.cycles7 > 0) || (this->clock.cycles9 > 0)) {
+        if (this->clock.cycles7 > 0) {
+            this->clock.cycles7 -= run_arm7(this, this->clock.cycles7);
+        }
+        if (this->clock.cycles9 > 0) {
+            this->clock.cycles9 -= run_arm9(this, this->clock.cycles9);
+        }
+
+        // We need to use our scheduler...
+        if (this->clock.cycles7 >= this->io.rtc.next_tick) NDS_RTC_tick(this);
+        if ((this->clock.cycles7 >= this->spi.irq_when) && (this->spi.cnt.irq_enable)) {
+            this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
+            NDS_update_IF7(this, 23);
+        }
+        NDS_cart_check_transfer(this);
+        if (dbg.do_break) break;
+    }
+}
+
 void NDS_new(struct jsm_system *jsm)
 {
     struct NDS* this = (struct NDS*)malloc(sizeof(struct NDS));
     memset(this, 0, sizeof(*this));
+    this->waitstates.current_transaction = 0;
+    scheduler_init(&this->scheduler, &this->clock.master_cycle_count7);
+    this->scheduler.max_block_size = 50;
+
+    this->scheduler.schedule_more.func = &NDS_schedule_more;
+    this->scheduler.schedule_more.ptr = this;
+
+    this->scheduler.run.func = &NDS_run;
+    this->scheduler.run.ptr = this;
+
     ARM7TDMI_init(&this->arm7, &this->waitstates.current_transaction);
     this->arm7.read_ptr = this;
     this->arm7.write_ptr = this;
@@ -175,7 +261,7 @@ void NDS_new(struct jsm_system *jsm)
     jsm->setup_debugger_interface = &NDSJ_setup_debugger_interface;
     jsm->save_state = NULL;
     jsm->load_state = NULL;
-    
+    printf("\nCLOCK AT END OF THIS: %lld", NDS_clock_current7(this));
 }
 
 void NDS_delete(struct jsm_system *jsm)
@@ -205,12 +291,14 @@ u32 NDSJ_finish_frame(JSM)
 {
     JTHIS;
 
-    u64 current_frame = this->clock.master_frame;
-    while (this->clock.master_frame == current_frame) {
-        NDSJ_finish_scanline(jsm);
-        if (dbg.do_break) break;
+    u64 frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
+    if (frame_cycle >= this->clock.frame_start_cycle_next) {
+        this->clock.frame_start_cycle = this->clock.frame_start_cycle_next;
+        this->clock.frame_start_cycle_next += MASTER_CYCLES_PER_FRAME;
+        frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
     }
-    //struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[4]);
+    assert(frame_cycle < MASTER_CYCLES_PER_FRAME);
+    NDSJ_step_master(jsm, MASTER_CYCLES_PER_FRAME - frame_cycle);
     return this->ppu.display->last_written;
 }
 
@@ -338,6 +426,10 @@ void NDSJ_reset(JSM)
     NDS_bus_reset(this);
 
     skip_BIOS(this);
+    this->waitstates.current_transaction = 0;
+    this->clock.master_cycle_count7 = 0;
+    this->clock.master_cycle_count9 = 0;
+
     printf("\nNDS reset complete!");
 }
 
@@ -384,84 +476,23 @@ static void sample_audio(struct NDS* this, u32 num_cycles)
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #endif
 
-static i64 run_arm7(struct NDS *this, i64 num_cycles)
-{
-    this->waitstates.current_transaction = 0;
-    // Run DMA & CPU
-    if (NDS_dma7_go(this)) {
-    }
-    else {
-        if (this->io.arm7.halted) {
-            this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
-            this->waitstates.current_transaction++;
-        }
-        else
-            ARM7TDMI_run(&this->arm7);
-    }
-    NDS_tick_timers7(this, this->waitstates.current_transaction);
-    this->clock.master_cycle_count7 += this->waitstates.current_transaction;
-
-    return this->waitstates.current_transaction;
-}
-
-static i64 run_arm9(struct NDS *this, i64 num_cycles)
-{
-    this->waitstates.current_transaction = 0;
-    // Run DMA & CPU
-    if (NDS_dma9_go(this)) {
-    }
-    else {
-        ARM946ES_run(&this->arm9);
-    }
-    NDS_tick_timers9(this, this->waitstates.current_transaction);
-    this->clock.master_cycle_count9 += this->waitstates.current_transaction;
-
-    return this->waitstates.current_transaction;
-}
-
-static void run_system(struct NDS *this, u64 num_cycles)
-{
-    this->clock.cycles7 += (i64)num_cycles;
-    this->clock.cycles9 += (i64)num_cycles;
-    while((this->clock.cycles7 > 0) || (this->clock.cycles9 > 0)) {
-        if (this->clock.cycles7 > 0) {
-            this->clock.cycles7 -= run_arm7(this, MIN(16, this->clock.cycles7));
-        }
-        if (this->clock.cycles9 > 0) {
-            this->clock.cycles9 -= run_arm9(this, MIN(16, this->clock.cycles9));
-        }
-        // We need to use our scheduler...
-        if (this->clock.cycles7 >= this->io.rtc.next_tick) NDS_RTC_tick(this);
-        if ((this->clock.cycles7 >= this->spi.irq_when) && (this->spi.cnt.irq_enable)) {
-            this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
-            NDS_update_IF7(this, 23);
-        }
-        NDS_cart_check_transfer(this);
-        if (dbg.do_break) break;
-    }
-
-}
-
 u32 NDSJ_finish_scanline(JSM)
 {
     JTHIS;
-    NDS_PPU_start_scanline(this);
-    if (dbg.do_break) return 0;
-    run_system(this, MASTER_CYCLES_BEFORE_HBLANK);
-    if (dbg.do_break) return 0;
-    NDS_PPU_hblank(this);
-    if (dbg.do_break) return 0;
-    run_system(this, HBLANK_CYCLES);
-    if (dbg.do_break) return 0;
-    NDS_PPU_finish_scanline(this);
-    return 0;
+
+    u64 scanline_cycle = NDS_clock_current7(this) - this->clock.scanline_start_cycle;
+    assert(scanline_cycle < MASTER_CYCLES_PER_SCANLINE);
+    NDSJ_step_master(jsm, MASTER_CYCLES_PER_SCANLINE - scanline_cycle);
+    return this->ppu.display->last_written;
 }
 
 static u32 NDSJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    ARM7TDMI_run(&this->arm7);
-    ARM946ES_run(&this->arm9);
+    u64 before_frame = this->clock.master_frame;
+    scheduler_run_for_cycles(&this->scheduler, howmany);
+    u64 after_frame = this->clock.master_frame;
+    printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
     return 0;
 }
 

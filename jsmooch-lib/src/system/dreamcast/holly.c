@@ -124,19 +124,21 @@ struct delay_func_struct {
     enum holly_interrupt_masks which;
 };
 
-u32 holly_delayed_raise_interrupt(void* ptr, u64 key, u64 clock, u32 jitter)
+void holly_delayed_raise_interrupt(void* ptr, u64 key, u64 clock, u32 jitter)
 {
     struct DC* this = (struct DC*)ptr;
     holly_raise_interrupt(this, key, 0);
-    return 0;
 }
 
 
 void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, i64 delay)
 {
     if (delay > 0) {
-        struct scheduled_bound_function* bf = scheduler_bind_function(&holly_delayed_raise_interrupt, this);
-        scheduler_add(&this->scheduler, (i64)*this->sh4.trace.cycles + delay, SE_bound_function, irq_num, bf);
+        i64 tcode = (i64)*this->sh4.trace.cycles + delay;
+        u64 key = irq_num;
+
+        struct scheduler_event *e = scheduler_add_abs(&this->scheduler, tcode, key);
+        scheduler_bind_or_run(e, this, &holly_delayed_raise_interrupt, tcode, key);
         return;
     }
     u32 imask = 1 << (irq_num & 0xFF);

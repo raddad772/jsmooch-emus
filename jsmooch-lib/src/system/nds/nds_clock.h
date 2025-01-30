@@ -8,6 +8,8 @@
 #include "helpers/int.h"
 
 struct NDS_clock {
+    u64 scanline_start_cycle, scanline_start_cycle_next;
+    u64 frame_start_cycle, frame_start_cycle_next;
     u64 master_cycle_count7;
     u64 master_cycle_count9;
     u64 master_frame;

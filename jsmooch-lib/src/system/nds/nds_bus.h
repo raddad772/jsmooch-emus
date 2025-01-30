@@ -7,6 +7,7 @@
 
 //#define TRACE
 
+#include "helpers/scheduler.h"
 #include "nds_clock.h"
 #include "nds_ppu.h"
 #include "nds_controller.h"
@@ -29,6 +30,8 @@ struct NDS {
     struct NDS_clock clock;
     struct NDS_PPU ppu;
     struct NDS_controller controller;
+
+    struct scheduler_t scheduler;
 
     struct {
         struct {

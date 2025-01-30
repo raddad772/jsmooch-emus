@@ -13,7 +13,7 @@
 #define tmu_UNIE      0x0020
 #define TCUSE this->clock.timer_cycles
 
-u32 scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter);
+void scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter);
 
 /* A lot of the structure and logic here very closely follows Reicast */
 
@@ -76,12 +76,12 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
         togo = SH4_CYCLES_PER_SEC;
 
     if (this->tmu.mask[ch]) {
-        scheduler_add(this->scheduler, *this->trace.cycles + cycles, SE_bound_function, ch,
-                      scheduler_bind_function(&scheduled_tmu_callback, this));
-        //printf("\nSCHEDULED CH%d AT CYC:%llu FOR CYC:%llu (%d)", ch, this->clock.trace_cycles, this->clock.trace_cycles + cycles, cycles);
+        i64 tcode = *this->trace.cycles + cycles;
+        scheduler_add_or_run_abs(this->scheduler, tcode, ch, this, &scheduled_tmu_callback);
     }
-    else
-        scheduler_add(this->scheduler, -1, SE_bound_function, ch, scheduler_bind_function(&scheduled_tmu_callback, this));
+    else {
+        scheduler_add_or_run_abs(this->scheduler, -1, ch, this, &scheduled_tmu_callback);
+    }
 }
 
 
@@ -280,7 +280,7 @@ static u32 sh4ifunc(void *ptr, u64 key, i64 timecode, u32 jitter)
     return 0;
 }
 
-u32 scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter)
+void scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter)
 {
     struct SH4* this = (struct SH4*)ptr;
     u32 ch = key;
@@ -320,9 +320,6 @@ u32 scheduled_tmu_callback(void *ptr, u64 key, u64 sch_cycle, u32 jitter)
             write_TMU_TCNT(this, ch, tcnt);
         }
 
-        return 0;	//has already been scheduled by TCNT write
-    }
-    else {
-        return 0;	//this channel is disabled, no need to schedule next event
+        return;	//has already been scheduled by TCNT write
     }
 }

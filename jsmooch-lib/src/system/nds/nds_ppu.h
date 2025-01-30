@@ -198,9 +198,9 @@ struct NDS;
 void NDS_PPU_init(struct NDS *);
 void NDS_PPU_delete(struct NDS *);
 void NDS_PPU_reset(struct NDS *);
-void NDS_PPU_start_scanline(struct NDS*); // Called on scanline start
-void NDS_PPU_hblank(struct NDS*); // Called at hblank time
-void NDS_PPU_finish_scanline(struct NDS*); // Called on scanline end, to render and do housekeeping
+void NDS_PPU_start_scanline(void *ptr, u64 key, u64 clock, u32 jitter);
+void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter);
+void NDS_PPU_finish_scanline(void *ptr, u64 key, u64 clock, u32 jitter);
 
 u32 NDS_PPU_read_2d_bg_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
 u32 NDS_PPU_read_2d_obj_palette(struct NDS*, u32 eng_num, u32 addr, u32 sz);
