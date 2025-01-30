@@ -181,6 +181,13 @@ void NDS_SPI_release_hold(struct NDS *this)
     }
 }
 
+static void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
+{
+    struct NDS *this = (struct NDS *)ptr;
+    this->spi.irq_id = 0;
+    NDS_update_IF7(this, 23);
+}
+
 
 static void SPI_transaction(struct NDS *this, u32 val)
 {
@@ -209,7 +216,10 @@ static void SPI_transaction(struct NDS *this, u32 val)
         NDS_SPI_release_hold(this);
     }
     SPI.busy_until = NDS_clock_current7(this) + (8 * (8 << SPI.cnt.baudrate));
-    SPI.irq_when = SPI.busy_until;
+
+    if (SPI.irq_id) scheduler_delete_if_exist(&this->scheduler, SPI.irq_id);
+    // Schedule IRQ
+    SPI.irq_id = scheduler_add_or_run_abs(&this->scheduler, SPI.busy_until, 0, this, &SPI_irq);
 }
 
 u32 NDS_SPI_read(struct NDS *this, u32 sz)

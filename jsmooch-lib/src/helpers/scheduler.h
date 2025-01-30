@@ -78,10 +78,10 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
 void scheduler_delete_if_exist(struct scheduler_t *this, u64 id);
 
 void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany);
-void scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key);
+u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key);
 
 // Combine add with bind
-void scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback);
+u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback);
 
 struct scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr);
 

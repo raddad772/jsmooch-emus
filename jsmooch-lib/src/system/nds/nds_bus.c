@@ -1848,7 +1848,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
 void NDS_bus_reset(struct NDS *this) {
     NDS_RTC_reset(this);
-    this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
+    this->spi.irq_id = 0;
 
     for (u32 i = 0; i < 4; i++) {
         struct NDS_TIMER *t = &this->timer7[i];

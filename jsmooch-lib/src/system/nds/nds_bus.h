@@ -235,7 +235,6 @@ struct NDS {
         } cnt;
         u32 enable;
         u64 busy_until;
-        u64 irq_when;
         u32 input, output;
         u32 chipsel;
 
@@ -278,7 +277,11 @@ struct NDS {
             u32 pos;
             u32 touch_x, touch_y;
             u32 hold;
+
         } touchscr;
+
+        u64 irq_id;
+        u64 irq_scheduled;
 
         u32 hold;
     } spi;

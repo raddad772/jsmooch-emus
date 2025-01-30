@@ -164,8 +164,7 @@ static i64 run_arm9(struct NDS *this, i64 num_cycles)
     return this->waitstates.current_transaction;
 }
 
-
-static void NDS_run(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
+static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 {
     struct NDS *this = (struct NDS *)ptr;
 
@@ -182,10 +181,6 @@ static void NDS_run(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 
         // We need to use our scheduler...
         if (this->clock.cycles7 >= this->io.rtc.next_tick) NDS_RTC_tick(this);
-        if ((this->clock.cycles7 >= this->spi.irq_when) && (this->spi.cnt.irq_enable)) {
-            this->spi.irq_when = 0xFFFFFFFFFFFFFFFF;
-            NDS_update_IF7(this, 23);
-        }
         NDS_cart_check_transfer(this);
         if (dbg.do_break) break;
     }
@@ -202,7 +197,7 @@ void NDS_new(struct jsm_system *jsm)
     this->scheduler.schedule_more.func = &NDS_schedule_more;
     this->scheduler.schedule_more.ptr = this;
 
-    this->scheduler.run.func = &NDS_run;
+    this->scheduler.run.func = &NDS_run_block;
     this->scheduler.run.ptr = this;
 
     ARM7TDMI_init(&this->arm7, &this->waitstates.current_transaction);
@@ -493,7 +488,7 @@ static u32 NDSJ_step_master(JSM, u32 howmany)
     u64 before_frame = this->clock.master_frame;
     scheduler_run_for_cycles(&this->scheduler, howmany);
     u64 after_frame = this->clock.master_frame;
-    printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
+    //printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
     return 0;
 }
 

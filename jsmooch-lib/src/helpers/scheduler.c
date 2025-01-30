@@ -104,21 +104,23 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
     }
 }
 
-void scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key)
+u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key)
 {
     if (!e) {
         func(ptr, key, timecode, 0);
+        return 0;
     }
     else {
         e->bound_func.ptr = ptr;
         e->bound_func.func = func;
+        return e->id;
     }
 }
 
-void scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback)
+u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback)
 {
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key);
-    scheduler_bind_or_run(e, ptr, callback, timecode, key);
+    return scheduler_bind_or_run(e, ptr, callback, timecode, key);
 }
 
 
@@ -169,14 +171,14 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
 void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 {
     this->cycles_left_to_run += (i64)howmany;
-    printf("\nRun %lld. Cycles left to run: %lld", howmany, this->cycles_left_to_run);
+    //printf("\nRun %lld. Cycles left to run: %lld", howmany, this->cycles_left_to_run);
     while((this->cycles_left_to_run > 0) && (!dbg.do_break)) {
         struct scheduler_event *e = this->first_event;
         u64 loop_start_clock = *this->clock;
 
         // If there's no next event...
         if (!e) { // Schedule more!
-            printf("\nSchedule more...");
+            //printf("\nSchedule more...");
             this->schedule_more.func(this->schedule_more.ptr, 0, loop_start_clock, 0);
             continue;
         }
@@ -189,14 +191,14 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
             this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);
             i64 cycles_run = *this->clock - loop_start_clock;
             this->cycles_left_to_run -= (i64)cycles_run;
-            printf("\nTried:%lld ran:%lld left:%lld", num_cycles_to_run, cycles_run, this->cycles_left_to_run);
+            //printf("\nTried:%lld ran:%lld left:%lld", num_cycles_to_run, cycles_run, this->cycles_left_to_run);
             continue;
         }
 
         i64 jitter = *this->clock - e->timecode;
         if (jitter < 0) jitter = 0 - jitter;
         this->first_event = e->next;
-        printf("\nRun event id:%lld", e->id);
+        //printf("\nRun event id:%lld", e->id);
         e->bound_func.func(e->bound_func.ptr, e->key, *this->clock, (u32)jitter);
         e->next = NULL;
 
