@@ -290,12 +290,15 @@ void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num)
     (*this->waitstates) += num;
 }
 
-void ARM7TDMI_run(struct ARM7TDMI*this)
+void ARM7TDMI_IRQcheck(struct ARM7TDMI *this)
 {
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
     }
+}
 
+void ARM7TDMI_run_noIRQcheck(struct ARM7TDMI*this)
+{
     u32 opcode = this->pipeline.opcode[0];
     u32 opcode_addr = this->pipeline.addr[0];
     this->pipeline.opcode[0] = this->pipeline.opcode[1];

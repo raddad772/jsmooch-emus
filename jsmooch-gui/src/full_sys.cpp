@@ -712,8 +712,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // same issues as duke3d
-            //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // bad graphics issues
+            //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
@@ -723,7 +723,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "advance_guardian_heroes.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "supersonic_warriors.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "dbaa.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dbaa.gba", nullptr); // works!
 
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
@@ -746,14 +746,14 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "007_nightfire.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "mmz4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "mmz.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "drill_dozer.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "driv3r.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
             //worked = grab_ROM(&ROMs, which, "lunar_legend.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tony_hawk_downhill.gba", nullptr); // works great
-            //worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "nfs_most_wanted.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
             //worked = grab_ROM(&ROMs, which, "kill_switch.gba", nullptr);

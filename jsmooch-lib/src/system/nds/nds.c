@@ -141,7 +141,7 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
             this->waitstates.current_transaction++;
         }
         else
-            ARM7TDMI_run(&this->arm7);
+            ARM7TDMI_run_noIRQcheck(&this->arm7);
     }
     this->clock.master_cycle_count7 += this->waitstates.current_transaction;
 
@@ -155,7 +155,7 @@ static i64 run_arm9(struct NDS *this, i64 num_cycles)
     if (NDS_dma9_go(this)) {
     }
     else {
-        ARM946ES_run(&this->arm9);
+        ARM946ES_run_noIRQcheck(&this->arm9);
     }
     this->clock.master_cycle_count9 += this->waitstates.current_transaction;
 
@@ -181,6 +181,8 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
         NDS_cart_check_transfer(this);
         if (dbg.do_break) break;
     }
+    ARM7TDMI_IRQcheck(&this->arm7);
+    ARM946ES_IRQcheck(&this->arm9);
 }
 
 void NDS_new(struct jsm_system *jsm)

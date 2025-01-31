@@ -254,12 +254,14 @@ if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 1);
     this->arm9_ins->exec(this, opcode);
 }
 
-
-void ARM946ES_run(struct ARM946ES*this)
-{
+void ARM946ES_IRQcheck(struct ARM946ES *this) {
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
     }
+}
+
+void ARM946ES_run_noIRQcheck(struct ARM946ES*this)
+{
     if (this->halted) {
         (*this->waitstates)++;
         return;

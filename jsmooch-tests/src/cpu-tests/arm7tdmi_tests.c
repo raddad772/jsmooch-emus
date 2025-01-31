@@ -606,7 +606,7 @@ static u32 do_test(struct arm7_test_struct *ts, const char*file, const char *fna
         ts->my_transactions.num = 0;
         ts->cycles_executing++;
 
-        ARM7TDMI_run(&ts->cpu);
+        ARM7TDMI_run_noIRQcheck(&ts->cpu);
 
         /*for (u32 j = 0; j < ts->test.transactions.num; j++) {
             struct transaction *t = &ts->test.transactions.items[j];
