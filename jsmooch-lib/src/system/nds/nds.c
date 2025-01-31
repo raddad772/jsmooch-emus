@@ -187,6 +187,7 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
         NDS_cart_check_transfer(this);
         if (dbg.do_break) break;
     }
+    // TODO: let this be scheduled.
     ARM7TDMI_IRQcheck(&this->arm7);
     ARM946ES_IRQcheck(&this->arm9);
 }
