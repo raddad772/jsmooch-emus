@@ -1038,6 +1038,7 @@ static void new_frame(struct NDS *this)
 
 void NDS_PPU_finish_scanline(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanline end, to render and do housekeeping
 {
+    NDS_schedule_more(ptr, key, clock, jitter);
     struct NDS *this = (struct NDS *)ptr;
     this->clock.ppu.hblank_active = 0;
     this->clock.ppu.y++;

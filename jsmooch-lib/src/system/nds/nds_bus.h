@@ -187,7 +187,6 @@ struct NDS {
             u32 date_time[7];
             u32 alarm1[3], alarm2[3];
 
-            u64 next_tick;
             u64 divider;
 
             u64 minute_count;
@@ -197,6 +196,7 @@ struct NDS {
             u32 alarm_date1[3];
             u32 alarm_date2[3];
             u32 FOUT1, FOUT2;
+            u64 sch_id;
         } rtc;
 
         struct {
@@ -448,5 +448,5 @@ u32 NDS_open_bus(struct NDS *this, u32 addr, u32 sz);
 u64 NDS_clock_current7(struct NDS *);
 u64 NDS_clock_current9(struct NDS *);
 void NDS_bus_reset(struct NDS *);
-
+void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter);
 #endif //JSMOOCH_EMUS_NDS_BUS_H

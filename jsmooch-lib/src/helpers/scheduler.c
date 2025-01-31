@@ -35,17 +35,15 @@ void scheduler_delete(struct scheduler_t* this)
 
 void scheduler_clear(struct scheduler_t* this)
 {
-    this->num_events = 0;
-    this->current_key = 0;
     struct scheduler_event* cur = this->first_event;
-    while(cur != 0) {
+    while(cur != NULL) {
         struct scheduler_event* d = cur;
 
         cur = cur->next;
 
         del_event(this, d);
     }
-    this->first_event = 0;
+    this->first_event = NULL;
 }
 
 struct scheduler_event* alloc_event(struct scheduler_t *this, i64 timecode, u64 key, struct scheduler_event* next, u64 id) {
@@ -126,10 +124,12 @@ u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, vo
 
 struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key) {
     u32 instant = 0;
+    assert(timecode>=0);
+    //assert(timecode<50000);
+    u64 id = this->id_counter++;
     if ((timecode <= *this->clock) || (timecode == 0)) {
         return NULL;
     }
-    u64 id = this->id_counter++;
 
     // Insert into linked list at correct place
     // No events currently...
@@ -207,3 +207,6 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
     }
 }
 
+/*
+ * TODO: make it so
+ */

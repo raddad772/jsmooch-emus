@@ -180,7 +180,6 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
         }
 
         // We need to use our scheduler...
-        if (this->clock.cycles7 >= this->io.rtc.next_tick) NDS_RTC_tick(this);
         NDS_cart_check_transfer(this);
         if (dbg.do_break) break;
     }
@@ -256,7 +255,6 @@ void NDS_new(struct jsm_system *jsm)
     jsm->setup_debugger_interface = &NDSJ_setup_debugger_interface;
     jsm->save_state = NULL;
     jsm->load_state = NULL;
-    printf("\nCLOCK AT END OF THIS: %lld", NDS_clock_current7(this));
 }
 
 void NDS_delete(struct jsm_system *jsm)
@@ -397,6 +395,10 @@ void NDSJ_reset(JSM)
 {
     JTHIS;
     // Emu resets...
+    scheduler_clear(&this->scheduler);
+    this->clock.master_cycle_count7 = 0;
+    this->waitstates.current_transaction = 0;
+
     ARM7TDMI_reset(&this->arm7);
     ARM946ES_reset(&this->arm9);
     NDS_CP_reset(&this->arm9);
@@ -425,6 +427,8 @@ void NDSJ_reset(JSM)
     this->waitstates.current_transaction = 0;
     this->clock.master_cycle_count7 = 0;
     this->clock.master_cycle_count9 = 0;
+
+    NDS_schedule_more(this, 0, 0, 0);
 
     printf("\nNDS reset complete!");
 }
@@ -511,7 +515,7 @@ static void NDSIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_
 
     u32 r;
     NDS_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, pio, &r);
-    NDSJ_reset(jsm);
+    //NDSJ_reset(jsm);
 }
 
 static void setup_lcd(struct JSM_DISPLAY *d)

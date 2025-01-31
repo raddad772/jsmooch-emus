@@ -36,9 +36,6 @@ struct scheduler_event {
 struct scheduler_t {
     u64 max_block_size;
 
-    i32 current_key;
-
-    u32 num_events;
     struct scheduler_event* first_event;
 
     struct {
@@ -53,7 +50,6 @@ struct scheduler_t {
     u64 *clock;
 
     u64 id_counter;
-
 };
 
 //void scheduler_allocate(struct scheduler_t*, u32 howmany);

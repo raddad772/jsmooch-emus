@@ -7,6 +7,7 @@
 #include "nds_rtc.h"
 #include "nds_bus.h"
 #include "nds_irq.h"
+#include "helpers/scheduler.h"
 
 /*
  * this code pretty closely follows MelonDS.
@@ -193,8 +194,8 @@ void NDS_RTC_reset(struct NDS *this)
 
     this->io.rtc.cmd = 0;
 
-    this->io.rtc.next_tick = NDS_clock_current7(this) + 32768;
     this->io.rtc.divider = 0;
+    scheduler_add_or_run_abs(&this->scheduler, 32768, 0, this, &NDS_RTC_tick);
 }
 
 void NDS_RTC_init(struct NDS *this)
@@ -527,8 +528,13 @@ static void day_inc(struct NDS *this) {
     check_end_of_month(this);
 }
 
-void NDS_RTC_tick(struct NDS *this)
+#define MASTER_CYCLES_PER_FRAME 570716
+
+void NDS_RTC_tick(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanline start
 {
+    struct NDS *this = (struct NDS *)ptr;
+    u64 tstamp = (NDS_clock_current7(this) - jitter) + 32768;
+    this->io.rtc.sch_id = scheduler_add_or_run_abs(&this->scheduler, tstamp, 0, this, &NDS_RTC_tick);
     this->io.rtc.divider++;
     if ((this->io.rtc.divider & 0x7FFF) == 0) {
         this->io.rtc.date_time[6] = bcd_inc(this->io.rtc.date_time[6]);
@@ -575,5 +581,4 @@ void NDS_RTC_tick(struct NDS *this)
     }
 
     process_irqs(this, 1);
-    this->io.rtc.next_tick = NDS_clock_current7(this) + 32768;
 }
