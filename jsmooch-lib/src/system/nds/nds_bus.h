@@ -29,6 +29,7 @@ struct NDS {
     struct ARM946ES arm9;
     struct NDS_clock clock;
     struct NDS_PPU ppu;
+    u32 arm9_ins, arm7_ins;
     struct NDS_controller controller;
 
     struct scheduler_t scheduler;

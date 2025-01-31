@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_ARM7TDMI_H
 #define JSMOOCH_EMUS_ARM7TDMI_H
 
+#include "helpers/scheduler.h"
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/debugger/debugger.h"
 #include "helpers/debug.h"
@@ -101,6 +102,7 @@ struct ARM7_ins {
 };
 
 struct ARM7TDMI {
+    struct scheduler_t *scheduler;
     struct ARM7TDMI_regs regs;
     struct {
         u32 opcode[2];
@@ -113,6 +115,7 @@ struct ARM7TDMI {
     u32 carry; // temp for instructions
 
     u32 *waitstates;
+    u64 *master_clock;
 
     struct ARM7_ins *arm7_ins;
 
@@ -144,7 +147,7 @@ struct ARM7TDMI {
 };
 
 
-void ARM7TDMI_init(struct ARM7TDMI *, u32 *waitstates);
+void ARM7TDMI_init(struct ARM7TDMI *, u64 *master_clock, u32 *waitstates, struct scheduler_t *scheduler);
 void ARM7TDMI_delete(struct ARM7TDMI *);
 
 void ARM7TDMI_reset(struct ARM7TDMI *);
@@ -161,4 +164,6 @@ void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num);
 u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *, u32 addr, u32 sz, u32 access);
 u32 ARM7TDMI_read(struct ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 has_effect);
 void ARM7TDMI_write(struct ARM7TDMI *, u32 addr, u32 sz, u32 access, u32 val);
+void ARM7TDMI_schedule_IRQ_check(struct ARM7TDMI *);
+
 #endif //JSMOOCH_EMUS_ARM7TDMI_H

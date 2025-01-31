@@ -20,19 +20,64 @@
 
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
-
 static u32 fetch_ins(struct ARM7TDMI *this, u32 sz) {
     u32 r = ARM7TDMI_fetch_ins(this, this->regs.PC, sz, this->pipeline.access);
     return r;
 }
 
+static void do_IRQ(struct ARM7TDMI* this)
+{
+    if (this->regs.CPSR.T) {
+        fetch_ins(this, 2);
+    }
+    else {
+        fetch_ins(this, 4);
+    };
 
-void ARM7TDMI_init(struct ARM7TDMI *this, u32 *waitstates)
+
+    this->regs.SPSR_irq = this->regs.CPSR.u;
+    //printf("\nDO IRQ! CURRENT PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
+    this->regs.CPSR.mode = ARM7_irq;
+    ARM7TDMI_fill_regmap(this);
+    this->regs.CPSR.I = 1;
+
+    u32 *r14 = this->regmap[14];
+    if (this->regs.CPSR.T) {
+        this->regs.CPSR.T = 0;
+        *r14 = this->regs.PC;
+    }
+    else {
+        *r14 = this->regs.PC - 4;
+    }
+
+    this->regs.PC = 0x00000018;
+    ARM7TDMI_reload_pipeline(this);
+}
+
+
+static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
+{
+    struct ARM7TDMI *this = (struct ARM7TDMI *)ptr;
+    if (this->regs.IRQ_line && !this->regs.CPSR.I) {
+        do_IRQ(this);
+    }
+}
+
+void ARM7TDMI_schedule_IRQ_check(struct ARM7TDMI *this)
+{
+    if (this->scheduler) {
+        scheduler_add_or_run_abs(this->scheduler, (*this->waitstates)+(*this->master_clock)+1, 0, this, &sch_check_irq, NULL);
+    }
+}
+
+void ARM7TDMI_init(struct ARM7TDMI *this, u64 *clock, u32 *waitstates, struct scheduler_t *scheduler)
 {
     //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));
     ARM7TDMI_fill_arm_table(this);
     this->waitstates = waitstates;
+    this->scheduler = scheduler;
+    this->master_clock = clock;
     for (u32 i = 0; i < 16; i++) {
         this->regmap[i] = &this->regs.R[i];
     }
@@ -83,35 +128,6 @@ void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry*
     jsm_string_quickempty(&entry->dasm);
     jsm_string_quickempty(&entry->context);
     assert(1==0);
-}
-
-static void do_IRQ(struct ARM7TDMI* this)
-{
-    if (this->regs.CPSR.T) {
-        fetch_ins(this, 2);
-    }
-    else {
-        fetch_ins(this, 4);
-    };
-
-
-    this->regs.SPSR_irq = this->regs.CPSR.u;
-    //printf("\nDO IRQ! CURRENT PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
-    this->regs.CPSR.mode = ARM7_irq;
-    ARM7TDMI_fill_regmap(this);
-    this->regs.CPSR.I = 1;
-
-    u32 *r14 = this->regmap[14];
-    if (this->regs.CPSR.T) {
-        this->regs.CPSR.T = 0;
-        *r14 = this->regs.PC;
-    }
-    else {
-        *r14 = this->regs.PC - 4;
-    }
-
-    this->regs.PC = 0x00000018;
-    ARM7TDMI_reload_pipeline(this);
 }
 
 static void do_FIQ(struct ARM7TDMI *this)

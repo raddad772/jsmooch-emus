@@ -381,6 +381,7 @@ void ARM7TDMI_ins_MSR_reg(struct ARM7TDMI *this, u32 opcode)
             mask &= 0xFF000000;
         if (mask & 0xFF)
             imm |= 0x10; // force this bit always
+        ARM7TDMI_schedule_IRQ_check(this);
         this->regs.CPSR.u = (~mask & this->regs.CPSR.u) | (imm & mask);
         if (mask & 0x0F) {
             ARM7TDMI_fill_regmap(this);
@@ -417,6 +418,7 @@ void ARM7TDMI_ins_MSR_imm(struct ARM7TDMI *this, u32 opcode)
             mask &= 0xFF000000;
         if (mask & 0xFF)
             imm |= 0x10; // force this bit always
+        ARM7TDMI_schedule_IRQ_check(this);
         this->regs.CPSR.u = (~mask & this->regs.CPSR.u) | (imm & mask);
         if (mask & 0x0F) {
             ARM7TDMI_fill_regmap(this);
@@ -592,6 +594,7 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     if ((S==1) && (Rdd == 15)) {
         if (this->regs.CPSR.mode != ARM7_system) {
             u32 v = *get_SPSR_by_mode(this);
+            ARM7TDMI_schedule_IRQ_check(this);
             this->regs.CPSR.u = v;
         }
         ARM7TDMI_fill_regmap(this);
@@ -638,8 +641,10 @@ void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
 
     if ((S==1) && (Rdd == 15)) {
-        if (this->regs.CPSR.mode != ARM7_system)
+        if (this->regs.CPSR.mode != ARM7_system) {
+            ARM7TDMI_schedule_IRQ_check(this);
             this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        }
         ARM7TDMI_fill_regmap(this);
     }
 }
@@ -675,8 +680,10 @@ void ARM7TDMI_ins_data_proc_immediate(struct ARM7TDMI *this, u32 opcode)
     if (imm_ROR_amount) Rm = ROR(this, Rm, imm_ROR_amount);
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
-        if (this->regs.CPSR.mode != ARM7_system)
+        if (this->regs.CPSR.mode != ARM7_system) {
+            ARM7TDMI_schedule_IRQ_check(this);
             this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        }
         ARM7TDMI_fill_regmap(this);
     }
 }
@@ -897,14 +904,19 @@ void ARM7TDMI_ins_LDM_STM(struct ARM7TDMI *this, u32 opcode)
                     case ARM7_user:
                         break;
                     case ARM7_fiq:
+                        ARM7TDMI_schedule_IRQ_check(this);
                         this->regs.CPSR.u = this->regs.SPSR_fiq; break;
                     case ARM7_irq:
+                        ARM7TDMI_schedule_IRQ_check(this);
                         this->regs.CPSR.u = this->regs.SPSR_irq; break;
                     case ARM7_supervisor:
+                        ARM7TDMI_schedule_IRQ_check(this);
                         this->regs.CPSR.u = this->regs.SPSR_svc; break;
                     case ARM7_abort:
+                        ARM7TDMI_schedule_IRQ_check(this);
                         this->regs.CPSR.u = this->regs.SPSR_abt; break;
                     case ARM7_undefined:
+                        ARM7TDMI_schedule_IRQ_check(this);
                         this->regs.CPSR.u = this->regs.SPSR_und; break;
                     default:
                         break;

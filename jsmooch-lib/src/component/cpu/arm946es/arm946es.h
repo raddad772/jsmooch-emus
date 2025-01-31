@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_ARM946ES_H
 #define JSMOOCH_EMUS_ARM946ES_H
 
+#include "helpers/scheduler.h"
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/debugger/debugger.h"
 #include "helpers/debug.h"
@@ -106,6 +107,7 @@ struct arm9_ins {
 
 struct ARM946ES {
     struct ARM946ES_regs regs;
+    struct scheduler_t *scheduler;
     struct {
         u32 opcode[2];
         u32 addr[2];
@@ -185,6 +187,7 @@ struct ARM946ES {
     u32 carry; // temp for instructions
 
     u32 *waitstates;
+    u64 *master_clock;
     u32 waitstates9; // 66MHz waitstates
 
     struct arm9_ins *arm9_ins;
@@ -220,7 +223,7 @@ struct ARM946ES {
 };
 
 
-void ARM946ES_init(struct ARM946ES *, u32 *waitstates);
+void ARM946ES_init(struct ARM946ES *, u64 *master_clock, u32 *waitstates, struct scheduler_t *scheduler);
 void ARM946ES_delete(struct ARM946ES *);
 
 void ARM946ES_reset(struct ARM946ES *);
@@ -236,5 +239,6 @@ void ARM946ES_NDS_direct_boot(struct ARM946ES *);
 u32 ARM946ES_fetch_ins(struct ARM946ES *, u32 addr, u32 sz, u32 access);
 u32 ARM946ES_read(struct ARM946ES *, u32 addr, u32 sz, u32 access, u32 has_effect);
 void ARM946ES_write(struct ARM946ES *, u32 addr, u32 sz, u32 access, u32 val);
+void ARM946ES_schedule_IRQ_check(struct ARM946ES *);
 
 #endif //JSMOOCH_EMUS_ARM946ES_H

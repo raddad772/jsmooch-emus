@@ -28,12 +28,13 @@ void ARM946ES_flush_pipeline(struct ARM946ES *this)
     this->pipeline.flushed = 1;
 }
 
-void ARM946ES_init(struct ARM946ES *this, u32 *waitstates)
+void ARM946ES_init(struct ARM946ES *this, u64 *master_clock, u32 *waitstates, struct scheduler_t *scheduler)
 {
     //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));
     ARM946ES_fill_arm_table(this);
     this->waitstates = waitstates;
+    this->master_clock = master_clock;
     for (u32 i = 0; i < 16; i++) {
         this->regmap[i] = &this->regs.R[i];
     }
@@ -257,6 +258,21 @@ if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 1);
 void ARM946ES_IRQcheck(struct ARM946ES *this) {
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
+    }
+}
+
+static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
+{
+    struct ARM946ES *this = (struct ARM946ES *)ptr;
+    if (this->regs.IRQ_line && !this->regs.CPSR.I) {
+        do_IRQ(this);
+    }
+}
+
+void ARM946ES_schedule_IRQ_check(struct ARM946ES *this)
+{
+    if (this->scheduler) {
+        scheduler_add_or_run_abs(this->scheduler, (*this->waitstates)+(*this->master_clock)+1, 0, this, &sch_check_irq, NULL);
     }
 }
 

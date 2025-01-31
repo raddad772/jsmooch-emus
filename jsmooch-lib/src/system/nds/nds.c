@@ -140,8 +140,11 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
             this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
             this->waitstates.current_transaction++;
         }
-        else
+        else {
+            this->arm7_ins = 1;
             ARM7TDMI_run_noIRQcheck(&this->arm7);
+            this->arm7_ins = 0;
+        }
     }
     this->clock.master_cycle_count7 += this->waitstates.current_transaction;
 
@@ -151,11 +154,14 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
 static i64 run_arm9(struct NDS *this, i64 num_cycles)
 {
     this->waitstates.current_transaction = 0;
+    this->arm9_ins = 1;
     // Run DMA & CPU
     if (NDS_dma9_go(this)) {
     }
     else {
+        this->arm9_ins = 1;
         ARM946ES_run_noIRQcheck(&this->arm9);
+        this->arm9_ins = 0;
     }
     this->clock.master_cycle_count9 += this->waitstates.current_transaction;
 
@@ -199,7 +205,7 @@ void NDS_new(struct jsm_system *jsm)
     this->scheduler.run.func = &NDS_run_block;
     this->scheduler.run.ptr = this;
 
-    ARM7TDMI_init(&this->arm7, &this->waitstates.current_transaction);
+    ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, NULL);
     this->arm7.read_ptr = this;
     this->arm7.write_ptr = this;
     this->arm7.read = &NDS_mainbus_read7;
@@ -207,7 +213,7 @@ void NDS_new(struct jsm_system *jsm)
     this->arm7.fetch_ptr = this;
     this->arm7.fetch_ins = &NDS_mainbus_fetchins7;
 
-    ARM946ES_init(&this->arm9, &this->waitstates.current_transaction);
+    ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, NULL);
     this->arm9.read_ptr = this;
     this->arm9.read = &NDS_mainbus_read9;
 

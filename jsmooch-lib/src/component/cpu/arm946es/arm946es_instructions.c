@@ -381,6 +381,7 @@ void ARM946ES_ins_MSR_reg(struct ARM946ES *this, u32 opcode)
         if (mask & 0xFF)
             imm |= 0x10; // force this bit always
         u32 old_mode = this->regs.CPSR.mode;
+        ARM946ES_schedule_IRQ_check(this);
         this->regs.CPSR.u = (~mask & this->regs.CPSR.u) | (imm & mask);
         if (mask & 0x0F) {
             ARM946ES_fill_regmap(this);
@@ -420,6 +421,7 @@ void ARM946ES_ins_MSR_imm(struct ARM946ES *this, u32 opcode)
             mask &= 0xFF000000;
         if (mask & 0xFF)
             imm |= 0x10; // force this bit always
+        ARM946ES_schedule_IRQ_check(this);
         this->regs.CPSR.u = (~mask & this->regs.CPSR.u) | (imm & mask);
         if (mask & 0x0F) {
             ARM946ES_fill_regmap(this);
@@ -598,6 +600,7 @@ void ARM946ES_ins_data_proc_immediate_shift(struct ARM946ES *this, u32 opcode)
     if ((S==1) && (Rdd == 15)) {
         if (this->regs.CPSR.mode != ARM9_system) {
             u32 v = *get_SPSR_by_mode(this);
+            ARM946ES_schedule_IRQ_check(this);
             this->regs.CPSR.u = v;
         }
         ARM946ES_fill_regmap(this);
@@ -644,8 +647,10 @@ void ARM946ES_ins_data_proc_register_shift(struct ARM946ES *this, u32 opcode)
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
 
     if ((S==1) && (Rdd == 15)) {
-        if (this->regs.CPSR.mode != ARM9_system)
+        if (this->regs.CPSR.mode != ARM9_system) {
+            ARM946ES_schedule_IRQ_check(this);
             this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        }
         ARM946ES_fill_regmap(this);
     }
 }
@@ -682,8 +687,10 @@ void ARM946ES_ins_data_proc_immediate(struct ARM946ES *this, u32 opcode)
 
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
-        if (this->regs.CPSR.mode != ARM9_system)
+        if (this->regs.CPSR.mode != ARM9_system) {
+            ARM946ES_schedule_IRQ_check(this);
             this->regs.CPSR.u = *get_SPSR_by_mode(this);
+        }
         ARM946ES_fill_regmap(this);
     }
 }
@@ -872,8 +879,10 @@ void ARM946ES_ins_LDM_STM(struct ARM946ES *this, u32 opcode) {
 
     if (S) {
         if (L && pc_moved) {
-            if (this->regs.CPSR.mode != ARM9_system)
+            if (this->regs.CPSR.mode != ARM9_system) {
+                ARM946ES_schedule_IRQ_check(this);
                 this->regs.CPSR.u = *get_SPSR_by_mode(this);
+            }
         } else {
             this->regs.CPSR.mode = mode;
         }
@@ -947,6 +956,7 @@ void ARM946ES_ins_MCR_MRC(struct ARM946ES *this, u32 opcode)
          u32 val = NDS_CP_read(this, Pnd, cp_opc, Cnd, Cmd, CP);
          if (Rdd == 15) {
              // When using MRC with R15: Bit 31-28 of data are copied to Bit 31-28 of CPSR (ie. N,Z,C,V flags), other data bits are ignored, CPSR Bit 27-0 are not affected, R15 (PC) is not affected.     */
+             ARM946ES_schedule_IRQ_check(this);
              this->regs.CPSR.u = (this->regs.CPSR.u & 0x0FFFFFFF) | (val & 0xF0000000);
          }
          else {

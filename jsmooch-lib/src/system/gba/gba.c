@@ -86,7 +86,7 @@ void GBA_new(struct jsm_system *jsm)
 {
     struct GBA* this = (struct GBA*)malloc(sizeof(struct GBA));
     memset(this, 0, sizeof(*this));
-    ARM7TDMI_init(&this->cpu, &this->waitstates.current_transaction);
+    ARM7TDMI_init(&this->cpu, &this->clock.master_cycle_count, &this->waitstates.current_transaction, NULL);
     this->cpu.read_ptr = this;
     this->cpu.write_ptr = this;
     this->cpu.read = &GBA_mainbus_read;
