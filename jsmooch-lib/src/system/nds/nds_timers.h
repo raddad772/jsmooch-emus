@@ -8,12 +8,10 @@
 #include "helpers/int.h"
 
 struct NDS;
-void NDS_tick_timers7(struct NDS*, u32 num_ticks);
-void NDS_tick_timers9(struct NDS*, u32 num_ticks);
 u32 NDS_timer7_enabled(struct NDS *, u32 tn);
 u32 NDS_timer9_enabled(struct NDS *, u32 tn);
-u32 NDS_read_timer7(struct NDS *this, u32 tn);
-u32 NDS_read_timer9(struct NDS *this, u32 tn);
-
-
+u32 NDS_read_timer7(struct NDS *, u32 tn);
+u32 NDS_read_timer9(struct NDS *, u32 tn);
+void NDS_timer7_write_cnt(struct NDS *, u32 tn, u32 val);
+void NDS_timer9_write_cnt(struct NDS *, u32 tn, u32 val);
 #endif //JSMOOCH_EMUS_NDS_TIMERS_H

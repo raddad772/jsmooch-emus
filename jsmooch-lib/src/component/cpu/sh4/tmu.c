@@ -77,10 +77,10 @@ static void sched_chan_tick(struct SH4* this, u32 ch)
 
     if (this->tmu.mask[ch]) {
         i64 tcode = *this->trace.cycles + cycles;
-        scheduler_add_or_run_abs(this->scheduler, tcode, ch, this, &scheduled_tmu_callback);
+        scheduler_add_or_run_abs(this->scheduler, tcode, ch, this, &scheduled_tmu_callback, NULL);
     }
     else {
-        scheduler_add_or_run_abs(this->scheduler, -1, ch, this, &scheduled_tmu_callback);
+        scheduler_add_or_run_abs(this->scheduler, -1, ch, this, &scheduled_tmu_callback, NULL);
     }
 }
 

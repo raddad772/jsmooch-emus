@@ -76,6 +76,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
 {
     // If empty...
     if (this->first_event == NULL) return;
+    if (id == 0) return;
 
     // If first/one...
     struct scheduler_event *e;
@@ -83,6 +84,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
         e = this->first_event;
         this->first_event = e->next;
 
+        if (e->still_sched) *e->still_sched = 0;
         del_event(this, e);
         return;
     }
@@ -93,6 +95,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
         if (e->id == id) {
             // Delete current.
             if (last) last->next = e->next;
+            if (e->still_sched) *e->still_sched = 0;
             del_event(this, e);
             return;
         }
@@ -102,23 +105,26 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
     }
 }
 
-u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key)
+u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched)
 {
     if (!e) {
+        if (still_sched) *still_sched = 0;
         func(ptr, key, timecode, 0);
         return 0;
     }
     else {
+        if (still_sched) *still_sched = 1;
         e->bound_func.ptr = ptr;
         e->bound_func.func = func;
+        e->still_sched = still_sched;
         return e->id;
     }
 }
 
-u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback)
+u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key);
-    return scheduler_bind_or_run(e, ptr, callback, timecode, key);
+    return scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
 }
 
 
@@ -178,7 +184,6 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 
         // If there's no next event...
         if (!e) { // Schedule more!
-            //printf("\nSchedule more...");
             this->schedule_more.func(this->schedule_more.ptr, 0, loop_start_clock, 0);
             continue;
         }
@@ -199,6 +204,7 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         if (jitter < 0) jitter = 0 - jitter;
         this->first_event = e->next;
         //printf("\nRun event id:%lld", e->id);
+        if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
         e->bound_func.func(e->bound_func.ptr, e->key, *this->clock, (u32)jitter);
         e->next = NULL;
 

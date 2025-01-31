@@ -219,7 +219,7 @@ static void SPI_transaction(struct NDS *this, u32 val)
 
     if (SPI.irq_id) scheduler_delete_if_exist(&this->scheduler, SPI.irq_id);
     // Schedule IRQ
-    SPI.irq_id = scheduler_add_or_run_abs(&this->scheduler, SPI.busy_until, 0, this, &SPI_irq);
+    SPI.irq_id = scheduler_add_or_run_abs(&this->scheduler, SPI.busy_until, 0, this, &SPI_irq, NULL);
 }
 
 u32 NDS_SPI_read(struct NDS *this, u32 sz)

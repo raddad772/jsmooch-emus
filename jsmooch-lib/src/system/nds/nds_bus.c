@@ -830,34 +830,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R_TM2CNT_H+0:
         case R_TM3CNT_H+0: {
             u32 tn = (addr >> 2) & 3;
-            struct NDS_TIMER *t = &this->timer7[tn];
-            u32 old_enable = NDS_timer7_enabled(this, tn);
-            t->divider.io = val & 3;
-            switch(val & 3) {
-                case 0: t->shift = 0; break;
-                case 1: t->shift = 6; break;
-                case 2: t->shift = 8; break;
-                case 3: t->shift = 10; break;
-            }
-            u32 new_enable = ((val >> 7) & 1);
-            if (old_enable && !new_enable) { // turn off
-                t->val_at_stop = NDS_read_timer7(this, tn);
-                t->enable_at = 0xFFFFFFFFFFFFFFFF; // the infinite future!
-                t->overflow_at = 0xFFFFFFFFFFFFFFFF;
-            }
-            u32 old_cascade = t->cascade;
-            t->cascade = (val >> 2) & 1;
-            if (old_cascade && !t->cascade && (old_enable == new_enable == 1)) { // update overflow time
-                t->enable_at = NDS_clock_current7(this);
-                t->overflow_at = t->enable_at + (timer_reload_ticks(t->val_at_stop) << t->shift);
-            }
-            if (!old_enable && new_enable) { // turn on
-                t->enable_at = NDS_clock_current7(this) + 1;
-                t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
-                t->overflow_at = t->enable_at + t->reload_ticks;
-                t->val_at_stop = t->reload;
-            }
-            t->irq_on_overflow = (val >> 6) & 1;
+            NDS_timer7_write_cnt(this, tn, val);
             return; }
 
         case R_TM0CNT_L+0: this->timer7[0].reload = (this->timer7[0].reload & 0xFF00) | val; return;
@@ -1448,34 +1421,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R_TM2CNT_H+0:
         case R_TM3CNT_H+0: {
             u32 tn = (addr >> 2) & 3;
-            struct NDS_TIMER *t = &this->timer9[tn];
-            u32 old_enable = NDS_timer9_enabled(this, tn);
-            t->divider.io = val & 3;
-            switch(val & 3) {
-                case 0: t->shift = 0; break;
-                case 1: t->shift = 6; break;
-                case 2: t->shift = 8; break;
-                case 3: t->shift = 10; break;
-            }
-            u32 new_enable = ((val >> 7) & 1);
-            if (old_enable && !new_enable) { // turn off
-                t->val_at_stop = NDS_read_timer9(this, tn);
-                t->enable_at = 0xFFFFFFFFFFFFFFFF; // the infinite future!
-                t->overflow_at = 0xFFFFFFFFFFFFFFFF;
-            }
-            u32 old_cascade = t->cascade;
-            t->cascade = (val >> 2) & 1;
-            if (old_cascade && !t->cascade && (old_enable == new_enable == 1)) { // update overflow time
-                t->enable_at = NDS_clock_current9(this);
-                t->overflow_at = t->enable_at + (timer_reload_ticks(t->val_at_stop) << t->shift);
-            }
-            if (!old_enable && new_enable) { // turn on
-                t->enable_at = NDS_clock_current9(this) + 1;
-                t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
-                t->overflow_at = t->enable_at + t->reload_ticks;
-                t->val_at_stop = t->reload;
-            }
-            t->irq_on_overflow = (val >> 6) & 1;
+            NDS_timer9_write_cnt(this, tn, val);
             return; }
 
         case R_TM0CNT_L+0: this->timer9[0].reload = (this->timer9[0].reload & 0xFF00) | val; return;

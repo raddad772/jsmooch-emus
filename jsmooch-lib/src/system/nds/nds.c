@@ -124,9 +124,9 @@ void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter)
     this->clock.scanline_start_cycle = this->clock.scanline_start_cycle_next;
     this->clock.scanline_start_cycle_next = NDS_clock_current7(this) + MASTER_CYCLES_PER_SCANLINE;
 
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle, evt_SCANLINE_START, this, &NDS_PPU_start_scanline);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_BEFORE_HBLANK, evt_HBLANK_IN, this, &NDS_PPU_hblank);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_PER_SCANLINE, evt_SCANLINE_END, this, &NDS_PPU_finish_scanline);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle, evt_SCANLINE_START, this, &NDS_PPU_start_scanline, NULL);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_BEFORE_HBLANK, evt_HBLANK_IN, this, &NDS_PPU_hblank, NULL);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_PER_SCANLINE, evt_SCANLINE_END, this, &NDS_PPU_finish_scanline, NULL);
 }
 
 static i64 run_arm7(struct NDS *this, i64 num_cycles)
@@ -143,7 +143,6 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
         else
             ARM7TDMI_run(&this->arm7);
     }
-    NDS_tick_timers7(this, this->waitstates.current_transaction);
     this->clock.master_cycle_count7 += this->waitstates.current_transaction;
 
     return this->waitstates.current_transaction;
@@ -158,7 +157,6 @@ static i64 run_arm9(struct NDS *this, i64 num_cycles)
     else {
         ARM946ES_run(&this->arm9);
     }
-    NDS_tick_timers9(this, this->waitstates.current_transaction);
     this->clock.master_cycle_count9 += this->waitstates.current_transaction;
 
     return this->waitstates.current_transaction;

@@ -195,7 +195,7 @@ void NDS_RTC_reset(struct NDS *this)
     this->io.rtc.cmd = 0;
 
     this->io.rtc.divider = 0;
-    scheduler_add_or_run_abs(&this->scheduler, 32768, 0, this, &NDS_RTC_tick);
+    scheduler_add_or_run_abs(&this->scheduler, 32768, 0, this, &NDS_RTC_tick, NULL);
 }
 
 void NDS_RTC_init(struct NDS *this)
@@ -534,7 +534,7 @@ void NDS_RTC_tick(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanli
 {
     struct NDS *this = (struct NDS *)ptr;
     u64 tstamp = (NDS_clock_current7(this) - jitter) + 32768;
-    this->io.rtc.sch_id = scheduler_add_or_run_abs(&this->scheduler, tstamp, 0, this, &NDS_RTC_tick);
+    this->io.rtc.sch_id = scheduler_add_or_run_abs(&this->scheduler, tstamp, 0, this, &NDS_RTC_tick, NULL);
     this->io.rtc.divider++;
     if ((this->io.rtc.divider & 0x7FFF) == 0) {
         this->io.rtc.date_time[6] = bcd_inc(this->io.rtc.date_time[6]);

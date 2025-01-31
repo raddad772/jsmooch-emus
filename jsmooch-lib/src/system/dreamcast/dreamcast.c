@@ -296,10 +296,10 @@ static void DC_schedule_frame(struct DC* this)
     // vblank_out_start @?
     // frame end @200mil
     sched_printf("\nScheduling frame @ %lld", this->clock.frame_start_cycle);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle, evt_FRAME_START, this, &handle_keyed_event);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_in_start, evt_VBLANK_IN, this, &handle_keyed_event);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_out_start, evt_VBLANK_OUT, this, &handle_keyed_event);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle+DC_CYCLES_PER_FRAME, evt_FRAME_END, this, &handle_keyed_event);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle, evt_FRAME_START, this, &handle_keyed_event, NULL);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_in_start, evt_VBLANK_IN, this, &handle_keyed_event, NULL);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle + this->clock.interrupt.vblank_out_start, evt_VBLANK_OUT, this, &handle_keyed_event, NULL);
+    scheduler_add_or_run_abs(&this->scheduler, this->clock.frame_start_cycle+DC_CYCLES_PER_FRAME, evt_FRAME_END, this, &handle_keyed_event, NULL);
 }
 
 u32 DCJ_finish_frame(JSM)

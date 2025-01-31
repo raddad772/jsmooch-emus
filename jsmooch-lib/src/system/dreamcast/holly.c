@@ -138,7 +138,7 @@ void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, 
         u64 key = irq_num;
 
         struct scheduler_event *e = scheduler_add_abs(&this->scheduler, tcode, key);
-        scheduler_bind_or_run(e, this, &holly_delayed_raise_interrupt, tcode, key);
+        scheduler_bind_or_run(e, this, &holly_delayed_raise_interrupt, tcode, key, NULL);
         return;
     }
     u32 imask = 1 << (irq_num & 0xFF);
