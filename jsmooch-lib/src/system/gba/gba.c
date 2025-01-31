@@ -360,13 +360,10 @@ static void cascade_timer_step(struct GBA *this, u32 tn, u64 current_time)
 
 static void overflow_timer(struct GBA *this, u32 tn, u64 current_time) {
     struct GBA_TIMER *t = &this->timer[tn];
-    //printf("\nOVERFLOW: %d", tn);
-    if (!t->cascade) {
-        t->enable_at = current_time;
-        t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
-        t->overflow_at = t->enable_at + t->reload_ticks;
-        //printf("\nNew overflow in %lld cycles", t->overflow_at - t->enable_at);
-    }
+    t->enable_at = current_time;
+    t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
+    t->overflow_at = t->enable_at + t->reload_ticks;
+
     t->val_at_stop = t->reload;
     if (t->irq_on_overflow) {
         //printf("\nIRQ!");
