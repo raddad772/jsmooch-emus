@@ -14,7 +14,7 @@ typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_cl
 struct scheduled_bound_function { scheduler_callback func; void *ptr; u32 saveinfo; };
 
 struct scheduler_event {
-    u64 timecode;    // Timecode can be for instance, cycle in frame
+    i64 timecode;    // Timecode can be for instance, cycle in frame
 
     u64 key; // user-data
     struct scheduled_bound_function bound_func;

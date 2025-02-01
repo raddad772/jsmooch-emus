@@ -121,6 +121,7 @@ static u32 read_trace_cpu7(void *ptr, u32 addr, u32 sz) {
 void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct NDS *this = (struct NDS*)ptr;
+    //printf("\n--schedule more. line:%d cycles left:%lld", this->clock.ppu.y, this->scheduler.cycles_left_to_run);
     this->clock.scanline_start_cycle = this->clock.scanline_start_cycle_next;
     this->clock.scanline_start_cycle_next = NDS_clock_current7(this) + MASTER_CYCLES_PER_SCANLINE;
 
@@ -131,7 +132,6 @@ void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static i64 run_arm7(struct NDS *this, i64 num_cycles)
 {
-    this->waitstates.current_transaction = 0;
     // Run DMA & CPU
     if (NDS_dma7_go(this)) {
     }
@@ -147,13 +147,14 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
         }
     }
     this->clock.master_cycle_count7 += this->waitstates.current_transaction;
+    u32 r = this->waitstates.current_transaction;
+    this->waitstates.current_transaction = 0;
 
-    return this->waitstates.current_transaction;
+    return r;
 }
 
 static i64 run_arm9(struct NDS *this, i64 num_cycles)
 {
-    this->waitstates.current_transaction = 0;
     this->arm9_ins = 1;
     // Run DMA & CPU
     if (NDS_dma9_go(this)) {
@@ -164,8 +165,10 @@ static i64 run_arm9(struct NDS *this, i64 num_cycles)
         this->arm9_ins = 0;
     }
     this->clock.master_cycle_count9 += this->waitstates.current_transaction;
+    u32 r = this->waitstates.current_transaction;
+    this->waitstates.current_transaction = 0;
 
-    return this->waitstates.current_transaction;
+    return r;
 }
 
 static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
@@ -206,6 +209,7 @@ void NDS_new(struct jsm_system *jsm)
     this->scheduler.run.func = &NDS_run_block;
     this->scheduler.run.ptr = this;
 
+    //ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, &this->scheduler);
     ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, NULL);
     this->arm7.read_ptr = this;
     this->arm7.write_ptr = this;
@@ -215,6 +219,7 @@ void NDS_new(struct jsm_system *jsm)
     this->arm7.fetch_ins = &NDS_mainbus_fetchins7;
 
     ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, NULL);
+    //ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, &this->scheduler);
     this->arm9.read_ptr = this;
     this->arm9.read = &NDS_mainbus_read9;
 
@@ -298,7 +303,7 @@ u32 NDSJ_finish_frame(JSM)
         this->clock.frame_start_cycle_next += MASTER_CYCLES_PER_FRAME;
         frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
     }
-    assert(frame_cycle < MASTER_CYCLES_PER_FRAME);
+    assert(frame_cycle < (MASTER_CYCLES_PER_FRAME + 100));
     NDSJ_step_master(jsm, MASTER_CYCLES_PER_FRAME - frame_cycle);
     return this->ppu.display->last_written;
 }
@@ -436,7 +441,7 @@ void NDSJ_reset(JSM)
     this->clock.master_cycle_count9 = 0;
 
     NDS_schedule_more(this, 0, 0, 0);
-
+    this->clock.frame_start_cycle_next = MASTER_CYCLES_PER_FRAME;
     printf("\nNDS reset complete!");
 }
 
@@ -499,7 +504,8 @@ static u32 NDSJ_step_master(JSM, u32 howmany)
     u64 before_frame = this->clock.master_frame;
     scheduler_run_for_cycles(&this->scheduler, howmany);
     u64 after_frame = this->clock.master_frame;
-    //printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
+    printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
+
     return 0;
 }
 

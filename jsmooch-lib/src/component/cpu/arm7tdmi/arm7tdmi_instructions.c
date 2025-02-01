@@ -594,8 +594,9 @@ void ARM7TDMI_ins_data_proc_immediate_shift(struct ARM7TDMI *this, u32 opcode)
     if ((S==1) && (Rdd == 15)) {
         if (this->regs.CPSR.mode != ARM7_system) {
             u32 v = *get_SPSR_by_mode(this);
-            ARM7TDMI_schedule_IRQ_check(this);
+            u32 old_i = this->regs.CPSR.I;
             this->regs.CPSR.u = v;
+            if (old_i && !this->regs.CPSR.I) ARM7TDMI_schedule_IRQ_check(this);
         }
         ARM7TDMI_fill_regmap(this);
     }
@@ -642,8 +643,9 @@ void ARM7TDMI_ins_data_proc_register_shift(struct ARM7TDMI *this, u32 opcode)
 
     if ((S==1) && (Rdd == 15)) {
         if (this->regs.CPSR.mode != ARM7_system) {
-            ARM7TDMI_schedule_IRQ_check(this);
+            u32 old_i = this->regs.CPSR.I;
             this->regs.CPSR.u = *get_SPSR_by_mode(this);
+            if (old_i && !this->regs.CPSR.I) ARM7TDMI_schedule_IRQ_check(this);
         }
         ARM7TDMI_fill_regmap(this);
     }
@@ -681,8 +683,9 @@ void ARM7TDMI_ins_data_proc_immediate(struct ARM7TDMI *this, u32 opcode)
     ALU(this, Rn, Rm, alu_opcode, S, Rd);
     if ((S==1) && (Rdd == 15)) {
         if (this->regs.CPSR.mode != ARM7_system) {
-            ARM7TDMI_schedule_IRQ_check(this);
+            u32 old_i = this->regs.CPSR.I;
             this->regs.CPSR.u = *get_SPSR_by_mode(this);
+            if (old_i && !this->regs.CPSR.I) ARM7TDMI_schedule_IRQ_check(this);
         }
         ARM7TDMI_fill_regmap(this);
     }

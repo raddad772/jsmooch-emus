@@ -103,6 +103,7 @@ struct ARM7_ins {
 
 struct ARM7TDMI {
     struct scheduler_t *scheduler;
+    u32 sch_irq_sch;
     struct ARM7TDMI_regs regs;
     struct {
         u32 opcode[2];

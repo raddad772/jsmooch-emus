@@ -12,10 +12,13 @@
 static void del_event(struct scheduler_t *this, struct scheduler_event *e)
 {
     this->to_delete.items[this->to_delete.num++] = e;
+    e->next = NULL;
     if (this->to_delete.num == SCHEDULER_DELETE_NUM) {
         for (u32 i = 0; i < SCHEDULER_DELETE_NUM; i++) {
-            free(this->to_delete.items[i]);
-            this->to_delete.items[i] = NULL;
+            if (this->to_delete.items[i]) {
+                free(this->to_delete.items[i]);
+                this->to_delete.items[i] = NULL;
+            }
         }
         this->to_delete.num = 0;
     }
@@ -130,10 +133,19 @@ u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, vo
 
 struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key) {
     u32 instant = 0;
-    assert(timecode>=0);
+    assert(timecode>=-2);
     //assert(timecode<50000);
     u64 id = this->id_counter++;
-    if ((timecode <= *this->clock) || (timecode == 0)) {
+    //printf("\nAdd item timecode:%lld id:%lld", timecode, id);
+    if (timecode == -2) {
+        // Insert at first
+        //printf("\nInsert at first!");
+        this->first_event = alloc_event(this, timecode, key, this->first_event, id);
+        return this->first_event;
+    }
+
+    if ((timecode <= ((i64)*this->clock)) || (timecode == 0)) {
+        //printf("\nINSTANT!");
         return NULL;
     }
 
@@ -141,14 +153,17 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
     // No events currently...
     struct scheduler_event *re = NULL;
     if (this->first_event == NULL) {
+        //printf("\nMAKE FIRST!");
         this->first_event = alloc_event(this, timecode, key, NULL, id);
         return this->first_event;
     }
     else if (this->first_event->next == NULL) { // If there's only one item...
         if (timecode <= this->first_event->timecode) {// Insert before first
+            //printf("\n1 there. insert before!");
             re = this->first_event = alloc_event(this, timecode, key, this->first_event, id);
         }
         else { // Insert after first
+            //printf("\n1 there. insert after!");
             re = this->first_event->next = alloc_event(this, timecode, key, NULL, id);
         }
         return re;
@@ -156,6 +171,7 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
 
     // First see if we insert to the first...
     if (this->first_event->timecode > timecode) {
+        //printf("\ninsert first of many!");
         this->first_event = alloc_event(this, timecode, key, this->first_event, id);
         return this->first_event;
     }
@@ -171,6 +187,7 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
     struct scheduler_event *after_after = NULL;
     if (insert_after->next) after_after = insert_after->next->next;
     re = insert_after->next = alloc_event(this, timecode, key, after_after, id);
+    //printf("\nInserted later...");
     return re;
 }
 
@@ -178,9 +195,13 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 {
     this->cycles_left_to_run += (i64)howmany;
     //printf("\nRun %lld. Cycles left to run: %lld", howmany, this->cycles_left_to_run);
-    while((this->cycles_left_to_run > 0) && (!dbg.do_break)) {
+
+    while(!dbg.do_break) {
+        // First, check if there's no events.
+        // Then, discharge any waiting events.
+        // Then, if we hace any, run some cycles.
         struct scheduler_event *e = this->first_event;
-        u64 loop_start_clock = *this->clock;
+        i64 loop_start_clock = *this->clock;
 
         // If there's no next event...
         if (!e) { // Schedule more!
@@ -188,28 +209,35 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
             continue;
         }
 
-        // If we're not yet to the next event...
-        if (*this->clock < e->timecode) {
-            // Run up to that many cycles...
-            u64 num_cycles_to_run = e->timecode - *this->clock;
-            if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
-            this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);
-            i64 cycles_run = *this->clock - loop_start_clock;
-            this->cycles_left_to_run -= (i64)cycles_run;
-            //printf("\nTried:%lld ran:%lld left:%lld", num_cycles_to_run, cycles_run, this->cycles_left_to_run);
-            continue;
+        while(loop_start_clock >= e->timecode) {
+            i64 jitter = loop_start_clock - e->timecode;
+            this->first_event = e->next;
+            //printf("\nRun event id:%lld next:%lld", e->id, e->next ? e->next->id : 0);
+            if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
+            e->next = NULL;
+            e->bound_func.func(e->bound_func.ptr, e->key, *this->clock, (u32) jitter);
+
+            // Add event to discard list
+            del_event(this, e);
+
+            e = this->first_event;
+            if (e == NULL) {
+                break;
+            }
         }
+        if (!e) continue;
 
-        i64 jitter = *this->clock - e->timecode;
-        if (jitter < 0) jitter = 0 - jitter;
-        this->first_event = e->next;
-        //printf("\nRun event id:%lld", e->id);
-        if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
-        e->bound_func.func(e->bound_func.ptr, e->key, *this->clock, (u32)jitter);
-        e->next = NULL;
+        // Run up to that many cycles...
+        if (this->cycles_left_to_run <= 0) break;
 
-        // Add event to discard list
-        del_event(this, e);
+        // Now...Run cycles!
+        u64 num_cycles_to_run = e->timecode - loop_start_clock;
+        assert(num_cycles_to_run > 0);
+        if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
+        this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);
+        i64 cycles_run = *this->clock - loop_start_clock;
+        this->cycles_left_to_run -= (i64)cycles_run;
+        //printf("\nTried:%lld ran:%lld left:%lld", num_cycles_to_run, cycles_run, this->cycles_left_to_run);
     }
 }
 

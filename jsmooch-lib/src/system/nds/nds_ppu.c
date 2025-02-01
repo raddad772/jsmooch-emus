@@ -106,6 +106,7 @@ static void hblank(struct NDS *this, u32 val)
 
 void NDS_PPU_start_scanline(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanline start
 {
+    //printf("\n--start_scanline");
     struct NDS *this = (struct NDS *)ptr;
     if (this->dbg.events.view.vec) {
         debugger_report_line(this->dbg.interface, this->clock.ppu.y);
@@ -999,6 +1000,7 @@ static void draw_line(struct NDS *this, u32 eng_num)
 
 void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hblank time
 {
+    //printf("\n--hblank");
     struct NDS *this = (struct NDS *)ptr;
     // Now draw line!
     if (this->clock.ppu.y < 192) {
@@ -1026,6 +1028,7 @@ static void vblank(struct NDS *this, u32 val)
 #define MASTER_CYCLES_PER_FRAME 570716
 static void new_frame(struct NDS *this)
 {
+    //printf("\n--new frame");
     //debugger_report_frame(this->dbg.interface);
     this->clock.ppu.y = 0;
     this->clock.frame_start_cycle = NDS_clock_current7(this);
@@ -1038,8 +1041,9 @@ static void new_frame(struct NDS *this)
 
 void NDS_PPU_finish_scanline(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanline end, to render and do housekeeping
 {
-    NDS_schedule_more(ptr, key, clock, jitter);
     struct NDS *this = (struct NDS *)ptr;
+    //printf("\n--finish_scanline %d", this->clock.ppu.y);
+    NDS_schedule_more(ptr, key, clock, jitter);
     this->clock.ppu.hblank_active = 0;
     this->clock.ppu.y++;
 
@@ -1052,7 +1056,6 @@ void NDS_PPU_finish_scanline(void *ptr, u64 key, u64 clock, u32 jitter) // Calle
         this->clock.ppu.vblank_active = 0;
         new_frame(this);
     }
-
 }
 
 u32 NDS_PPU_read_2d_bg_palette(struct NDS *this, u32 eng_num, u32 addr, u32 sz)

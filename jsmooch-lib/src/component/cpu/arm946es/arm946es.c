@@ -86,7 +86,6 @@ static void do_IRQ(struct ARM946ES* this)
         fetch_ins(this, 4);
     };
 
-
     this->regs.SPSR_irq = this->regs.CPSR.u;
     //printf("\nDO IRQ! CURRENT PC:%08x T:%d cyc:%lld", this->regs.PC, this->regs.CPSR.T, *this->trace.cycles);
     this->regs.CPSR.mode = ARM9_irq;
@@ -271,8 +270,8 @@ static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
 
 void ARM946ES_schedule_IRQ_check(struct ARM946ES *this)
 {
-    if (this->scheduler) {
-        scheduler_add_or_run_abs(this->scheduler, (*this->waitstates)+(*this->master_clock)+1, 0, this, &sch_check_irq, NULL);
+    if (this->scheduler && !this->sch_irq_sch) {
+        scheduler_add_or_run_abs(this->scheduler, -2, 0, this, &sch_check_irq, &this->sch_irq_sch);
     }
 }
 

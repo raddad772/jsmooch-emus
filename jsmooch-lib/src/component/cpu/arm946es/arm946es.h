@@ -108,6 +108,7 @@ struct arm9_ins {
 struct ARM946ES {
     struct ARM946ES_regs regs;
     struct scheduler_t *scheduler;
+    u32 sch_irq_sch;
     struct {
         u32 opcode[2];
         u32 addr[2];
