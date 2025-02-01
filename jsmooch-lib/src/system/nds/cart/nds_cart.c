@@ -119,6 +119,7 @@ u32 NDS_cart_read_rom(struct NDS *this, u32 addr, u32 sz)
         }
     } else {
         this->cart.after_next_busy = NDANB_after_read;
+        this->cart.rom_busy_until = NDS_clock_current7(this) + rom_transfer_time(this, this->cart.io.romctrl.transfer_clk_rate, 4);
         this->cart.waiting_for_tx_done = 1;
     }
 
