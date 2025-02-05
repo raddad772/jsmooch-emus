@@ -114,7 +114,7 @@ struct arm7_test_struct {
     struct ARM7TDMI cpu;
     struct arm7_test test;
     struct arm7_test_transactions my_transactions;
-    u32 cycles_executing;
+    u64 cycles_executing;
     u64 trace_cycles;
 };
 
@@ -655,7 +655,8 @@ void test_arm7tdmi()
     rt.ptr = &ts;
 
     memset(&ts, 0, sizeof(ts));
-    ARM7TDMI_init(&ts.cpu, &ts.cycles_executing);
+    u32 blah;
+    ARM7TDMI_init(&ts.cpu, &ts.cycles_executing, &blah, NULL);
     ARM7TDMI_setup_tracing(&ts.cpu, &rt, &ts.trace_cycles, 0);
     ts.cpu.read = &read_test_cpu;
     ts.cpu.write = &write_test_cpu;

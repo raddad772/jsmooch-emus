@@ -74,6 +74,7 @@ void scheduler_clear(struct scheduler_t*);
 
 struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key);
 void scheduler_delete_if_exist(struct scheduler_t *this, u64 id);
+u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
 
 void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany);
 u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched);

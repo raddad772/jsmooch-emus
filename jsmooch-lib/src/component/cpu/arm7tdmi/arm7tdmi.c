@@ -65,7 +65,7 @@ static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
 void ARM7TDMI_schedule_IRQ_check(struct ARM7TDMI *this)
 {
     if (this->scheduler && !this->sch_irq_sch) {
-        scheduler_add_or_run_abs(this->scheduler, -2, 0, this, &sch_check_irq, NULL);
+        scheduler_add_next(this->scheduler, 0, this, &sch_check_irq, NULL);
     }
 }
 

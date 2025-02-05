@@ -1228,6 +1228,7 @@ void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 acces
 
 void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
     this->waitstates.current_transaction++;
     if (sz == 4) {
         this->waitstates.current_transaction++;

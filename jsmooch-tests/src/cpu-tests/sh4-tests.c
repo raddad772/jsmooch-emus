@@ -486,7 +486,7 @@ static void test_write(void *ptr, u32 addr, u64 val, u32 sz)
 
 void test_sh4() {
     struct sh4_test_overview test_struct;
-    scheduler_init(&test_struct.scheduler);
+    //scheduler_init(&test_struct.scheduler, &);
     SH4_init(&test_struct.cpu, &test_struct.scheduler);
     dbg_init();
     test_struct.cpu.read = &test_read;

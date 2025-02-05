@@ -187,7 +187,7 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
         }
 
         // We need to use our scheduler...
-        NDS_cart_check_transfer(this);
+        //NDS_cart_check_transfer(this);
         if (dbg.do_break) break;
     }
     // TODO: let this be scheduled.
@@ -201,7 +201,7 @@ void NDS_new(struct jsm_system *jsm)
     memset(this, 0, sizeof(*this));
     this->waitstates.current_transaction = 0;
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count7);
-    this->scheduler.max_block_size = 50;
+    this->scheduler.max_block_size = 25;
 
     this->scheduler.schedule_more.func = &NDS_schedule_more;
     this->scheduler.schedule_more.ptr = this;
@@ -298,7 +298,6 @@ u32 NDSJ_finish_frame(JSM)
 
     u64 frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
     if (frame_cycle >= MASTER_CYCLES_PER_FRAME) {
-        printf("\nOOPSIE...");
         this->clock.frame_start_cycle = this->clock.frame_start_cycle_next;
         this->clock.frame_start_cycle_next += MASTER_CYCLES_PER_FRAME;
         frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;

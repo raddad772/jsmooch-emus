@@ -40,6 +40,8 @@ enum NDS_after_next_busy {
 };
 
 struct NDS_cart {
+    u64 sch_id;
+    u32 sch_sch;
     struct {
         u32 data_in[8];
         u32 pos_in;
@@ -53,8 +55,6 @@ struct NDS_cart {
         u32 input, output;
         u32 block_size;
     } cmd;
-
-    enum NDS_after_next_busy after_next_busy;
 
     struct {
         struct {
@@ -110,5 +110,5 @@ void NDS_cart_write_romctrl(struct NDS *, u32 val);
 void NDS_cart_write_cmd(struct NDS *, u32 addr, u32 val);
 u32 NDS_cart_read_romctrl(struct NDS *);
 u32 NDS_cart_read_rom(struct NDS *, u32 addr, u32 sz);
-void NDS_cart_check_transfer(struct NDS *);
+void NDS_cart_check_transfer(void *ptr, u64 key, u64 clock, u32 jitter);
 #endif //JSMOOCH_EMUS_NDS_CART_H

@@ -715,7 +715,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
+            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
@@ -753,7 +753,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
             //worked = grab_ROM(&ROMs, which, "lunar_legend.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tony_hawk_downhill.gba", nullptr); // works great
-            worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "nfs_most_wanted.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "big_mutha_truckers.gba", nullptr); // way too fast?
             //worked = grab_ROM(&ROMs, which, "kill_switch.gba", nullptr);
@@ -845,7 +845,7 @@ void full_system::load_default_ROM()
 
 
             //worked = grab_ROM(&ROMs, which, "wonder_boy4.md", nullptr); // seems fine
-            //worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // issues!
+            worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // issues!
             //worked = grab_ROM(&ROMs, which, "star_cruiser.bin", nullptr); // seems fine? hard to say
             //worked = grab_ROM(&ROMs, which, "sonic_spinball.md", nullptr); // same sprite priority issue
             //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well

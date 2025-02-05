@@ -2,56 +2,90 @@
 // Created by . on 4/25/24.
 //
 
+#include <string.h>
 #include "stdio.h"
 
 #include "scheduler-tests.h"
 #include "helpers/int.h"
 #include "helpers/scheduler.h"
 
-void print_event(struct scheduler_event* event)
+#define MAXT 10000
+
+struct stester {
+    u64 clock;
+    u32 sch_sch[MAXT];
+    u32 sch_id[MAXT];
+    u32 sch_done[MAXT];
+    u32 num;
+};
+
+static struct scheduler_t scheduler;
+static struct stester st;
+
+static void test_reset()
 {
-    printf("\n\nEVENT timecode:%lld %d kind:%s", event->timecode, event->kind, event->kind == SE_keyed_event ? "KEYED" : "BOUND_FUNC");
-    if (event->kind == SE_keyed_event) printf(": %llu", event->key);
+    memset(&st, 0, sizeof(st));
+
 }
 
-void print_schedule(struct scheduler_t* scheduler)
+static void tstsetkey(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct scheduler_event *evt = scheduler->first_event;
-    printf("\n---Scheduled list start. Cycles til start: %lld", scheduler_til_next_event(scheduler, 0));
-    while (evt) {
-        print_event(evt);
-        evt = evt->next;
-        printf("\nEVT! %016llx", (u64)evt);
+    assert(key < MAXT);
+    assert(st.sch_done[key] == 0);
+    st.sch_done[key] = 1;
+}
+
+static void add_set(i64 timecode)
+{
+    u32 num = st.num++;
+    st.sch_id[num] = scheduler_add_or_run_abs(&scheduler, timecode, num, NULL, &tstsetkey, &st.sch_sch[num]);
+}
+
+static void tst_schedulemore_none(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    printf("\nSchedule more: none. UH OH!");
+    assert(1==0);
+}
+
+static void tst_run(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    printf("\nRUN %lld CYCLES %lld!", key, clock);
+    st.clock += key;
+}
+
+static void testgrp1()
+{
+    test_reset();
+
+    scheduler.schedule_more.func = &tst_schedulemore_none;
+    scheduler.run.func = &tst_run;
+
+    // schedule 100, 10 cycles apart
+    for (u32 i = 0; i < 100; i++) {
+        add_set(i * 10);
     }
-    printf("\n---Scheduled list end\n");
+    scheduler_run_for_cycles(&scheduler, 100 * 10);
+
+    for (u32 i = 0; i < 100; i++) {
+        if (!st.sch_done[i]) {
+            printf("\nNOT DONE:%d", i);
+        }
+        if (st.sch_sch[i]) {
+            printf("\nNOT CLEARED:%d", i);
+        }
+    }
+    printf("\nDONE!");
 }
 
-u32 print_hello(void *r, u64 k, u64 cycles, u32 jitter) {
-    printf("\nhello...");
-    return 0;
-}
 
 void test_scheduler()
 {
-    struct scheduler_t scheduler;
-    scheduler_init(&scheduler);
-    //print_schedule(&scheduler);
+    printf("\nTEST SCHEDULER!");
+    scheduler_init(&scheduler, &st.clock);
+    scheduler.max_block_size = 50;
 
-    scheduler_add(&scheduler, 200, SE_keyed_event, 2, 0);
-    print_schedule(&scheduler);
+    printf("\nTest group1!");
+    testgrp1();
 
-    scheduler_add(&scheduler, -1, SE_keyed_event, 0, 0);
-    print_schedule(&scheduler);
 
-    scheduler_add(&scheduler, -1, SE_keyed_event, 50, 0);
-    scheduler_add(&scheduler, 500, SE_keyed_event, 4, 0);
-    scheduler_add(&scheduler, 150, SE_keyed_event, 1, 0);
-    scheduler_add(&scheduler, 300, SE_keyed_event, 3, 0);
-    print_schedule(&scheduler);
-
-    struct scheduled_bound_function *f = scheduler_bind_function(&print_hello, NULL);
-
-    scheduler_add(&scheduler, -10, SE_bound_function, 0, f);
-
-    scheduler_delete(&scheduler);
 }
