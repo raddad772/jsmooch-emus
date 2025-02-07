@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "z80_drag_race.h"
 #include "jsmooch-tests.h"
 #include "cpu-tests/sm83-tests.h"
 #include "cpu-tests/z80-tests.h"
@@ -84,7 +85,8 @@ int main()
 {
     dbg_init();
     dbg.trace_on = 0;
-    test_scheduler();
+    z80_drag_race();
+    //test_scheduler();
     //test_sm83();
     //test_z80();
     //generate_sh4();

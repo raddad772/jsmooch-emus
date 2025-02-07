@@ -8536,7 +8536,7 @@ void Z80_ins_00_101_RESET(struct Z80_regs* regs, struct Z80_pins* pins)
             regs->IM = 0;
             regs->I = 0;
             regs->R = 0;
-            regs->PC = 0;
+            regs->PC = regs->reset_vector;
             // Following is auto-generated code for instruction finish
             break; }
         case 2: { // cleanup_custom

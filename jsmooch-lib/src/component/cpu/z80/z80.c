@@ -2,8 +2,9 @@
 // Created by Dave on 2/7/2024.
 //
 
-#include "stdio.h"
-#include "assert.h"
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include "helpers/debugger/debugger.h"
 
@@ -40,6 +41,7 @@ void Z80_regs_init(struct Z80_regs* this)
     this->E = this->H = this->L = 0;
     Z80_regs_F_init(&this->F);
     this->I = this->R = 0;
+    this->reset_vector = 0;
 
     this->AF_ = this->BC_ = this->DE_ = this->HL_ = 0;
 
@@ -119,6 +121,7 @@ void Z80_pins_init(struct Z80_pins* this)
 
 void Z80_init(struct Z80* this, u32 CMOS)
 {
+    memset(this, 0, sizeof(*this));
     Z80_regs_init(&this->regs);
     Z80_pins_init(&this->pins);
 

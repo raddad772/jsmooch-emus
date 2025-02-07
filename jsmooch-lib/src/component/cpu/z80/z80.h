@@ -31,6 +31,7 @@ enum Z80P {
 };
 
 struct Z80_regs {
+    u16 reset_vector;
     u32 IR; // Instruction Register
     u32 TCU; // Internal instruction cycle timer register (not on real Z80 under this name)
 
