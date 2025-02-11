@@ -85,8 +85,8 @@ int main()
 {
     dbg_init();
     dbg.trace_on = 0;
-    z80_drag_race();
-    //test_scheduler();
+    //z80_drag_race();
+    test_scheduler();
     //test_sm83();
     //test_z80();
     //generate_sh4();

@@ -354,6 +354,22 @@ add_library(jsmooch-lib
         src/system/nds/nds_spi.h
         src/component/cpu/arm946es/thumb2_disassembler.c
         src/component/cpu/arm946es/thumb2_disassembler.h
+        src/component/cpu/r3000/r3000.c
+        src/component/cpu/r3000/r3000.h
+        src/system/snes/snes.c
+        src/system/snes/snes.h
+        src/system/snes/snes_bus.c
+        src/system/snes/snes_bus.h
+        src/system/ps1/ps1.c
+        src/system/ps1/ps1.h
+        src/system/ps1/ps1_bus.c
+        src/system/ps1/ps1_bus.h
+        src/component/cpu/r3000/gte.c
+        src/component/cpu/r3000/gte.h
+        src/component/cpu/r3000/r3000_multiplier.c
+        src/component/cpu/r3000/r3000_multiplier.h
+        src/component/cpu/r3000/r3000_instructions.c
+        src/component/cpu/r3000/r3000_instructions.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

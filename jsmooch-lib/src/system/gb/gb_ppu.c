@@ -528,9 +528,6 @@ static void GB_PPU_eval_STAT(struct GB_PPU* this) {
     if ((this->io.old_mask == 0) && (mask != 0)) {
         this->bus->cpu->cpu.regs.IF |= 2;
     }
-    //else {
-    //    assert(1 == 0);
-    //}
     this->io.old_mask = mask;
 }
 

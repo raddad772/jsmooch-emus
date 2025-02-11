@@ -133,6 +133,7 @@ u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, vo
 u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     u64 id = this->id_counter++;
+    printf("\nscheduler_add_next(id:%lld)", id-100);
     this->first_event = alloc_event(this, 0, key, this->first_event, id);
     if (still_sched) *still_sched = 1;
     this->first_event->bound_func.ptr = ptr;
@@ -224,7 +225,7 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         while(loop_start_clock >= e->timecode) {
             i64 jitter = loop_start_clock - e->timecode;
             this->first_event = e->next;
-            printf("\nRun event id:%lld next:%lld", e->id, e->next ? e->next->id : 0);
+            printf("\nRun event id:%lld next:%lld", e->id, e->next ? e->next->id-100 : 0);
             if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
             e->next = NULL;
             e->bound_func.func(e->bound_func.ptr, e->key, *this->clock, (u32) jitter);
@@ -246,10 +247,10 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         u64 num_cycles_to_run = e->timecode - loop_start_clock;
         assert(num_cycles_to_run > 0);
         if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
+        if (num_cycles_to_run > this->cycles_left_to_run) num_cycles_to_run = this->cycles_left_to_run;
         this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);
         i64 cycles_run = *this->clock - loop_start_clock;
         this->cycles_left_to_run -= (i64)cycles_run;
-        printf("\nTried:%lld ran:%lld left:%lld", num_cycles_to_run, cycles_run, this->cycles_left_to_run);
     }
 }
 

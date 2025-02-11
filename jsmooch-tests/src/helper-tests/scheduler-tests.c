@@ -28,12 +28,7 @@ static void test_reset()
 
 }
 
-static void tstsetkey(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    assert(key < MAXT);
-    assert(st.sch_done[key] == 0);
-    st.sch_done[key] = 1;
-}
+static void tstsetkey(void *ptr, u64 key, u64 clock, u32 jitter);
 
 static void add_set(i64 timecode)
 {
@@ -41,15 +36,34 @@ static void add_set(i64 timecode)
     st.sch_id[num] = scheduler_add_or_run_abs(&scheduler, timecode, num, NULL, &tstsetkey, &st.sch_sch[num]);
 }
 
+static void add_set_immediate()
+{
+    printf("\nadd_set_immediate()");
+    u32 num = st.num++;
+    st.sch_id[num] = scheduler_add_next(&scheduler, num, NULL, &tstsetkey, &st.sch_sch[num]);
+}
+
+
+static void tstsetkey(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    assert(key < MAXT);
+    printf("\ntstsetkey(%lld)", key);
+    //assert(st.sch_done[key] == 0);
+    st.sch_done[key]++;
+    if (key < 100) {
+        add_set_immediate();
+    }
+}
+
 static void tst_schedulemore_none(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    printf("\nSchedule more: none. UH OH!");
-    assert(1==0);
+    printf("\nSCHEDULE MORE!?!?");
+    add_set(clock+50000000000);
 }
 
 static void tst_run(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    printf("\nRUN %lld CYCLES %lld!", key, clock);
+    printf("\ntst_run(%lld), clock=%lld jitter=%d", key, clock, jitter);
     st.clock += key;
 }
 
@@ -65,9 +79,9 @@ static void testgrp1()
         add_set(i * 10);
     }
     scheduler_run_for_cycles(&scheduler, 100 * 10);
-
-    for (u32 i = 0; i < 100; i++) {
-        if (!st.sch_done[i]) {
+    printf("\n\nEVAL!");
+    for (u32 i = 0; i < 200; i++) {
+        if (st.sch_done[i] != 1) {
             printf("\nNOT DONE:%d", i);
         }
         if (st.sch_sch[i]) {
