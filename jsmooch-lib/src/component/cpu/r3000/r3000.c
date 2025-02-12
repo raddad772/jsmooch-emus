@@ -335,6 +335,8 @@ void R3000_init(struct R3000 *this, u64 *master_clock, u32 *waitstates)
 
     jsm_string_init(&this->console, 200);
     jsm_string_init(&this->trace.str, 100);
+
+    GTE_init(&this->gte);
 }
 
 void R3000_delete(struct R3000 *this)
@@ -342,3 +344,4 @@ void R3000_delete(struct R3000 *this)
     jsm_string_delete(&this->console);
     jsm_string_delete(&this->trace.str);
 }
+

@@ -8,6 +8,7 @@
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "r3000_multiplier.h"
+#include "gte.h"
 
 struct R3000_regs {
     u32 R[32];
@@ -75,12 +76,15 @@ struct R3000 {
         i32 source_id;
     } trace;
 
+    struct R3000_GTE gte;
+
     struct R3000_opcode decode_table[0x7F];
 
-    void *fetch_ptr, *read_ptr, *write_ptr;
+    void *fetch_ptr, *read_ptr, *write_ptr, *update_sr_ptr;
     u32 (*fetch_ins)(void *ptr, u32 addr, u32 sz);
     u32 (*read)(void *ptr, u32 addr, u32 sz, u32 has_effect);
     void (*write)(void *ptr, u32 addr, u32 sz, u32 val);
+    void (*update_sr)(void *ptr, struct R3000 *core, u32 val);
 };
 
 void R3000_init(struct R3000 *, u64 *master_clock, u32 *waitstates);

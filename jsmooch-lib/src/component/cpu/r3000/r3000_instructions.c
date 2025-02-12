@@ -27,7 +27,8 @@ enum R3000_COP0_reg {
 
 static void add_to_console(struct R3000 *this, u32 ch)
 {
-    // TODO: this
+    jsm_string_sprintf(&this->console, "%c", ch);
+    printf("\n\nCONSOLE\n%s", this->console.ptr);
 }
 
 static void COP_write_reg(struct R3000 *core, u32 COP, u32 num, u32 val)
@@ -36,12 +37,12 @@ static void COP_write_reg(struct R3000 *core, u32 COP, u32 num, u32 val)
         case 0:
             // TODO: add 1-cycle delay
             if (num == 12) {
-                update_SR(core, val);
+                if (core->update_sr) core->update_sr(core->update_sr_ptr, core, val);
             }
             core->regs.COP0[num] = val;
             return;
         case 2:
-            GTE_write_reg(core, num, val);
+            GTE_write_reg(&core->gte, num, val);
             return;
         default:
             printf("\nwrite to unimplemented COP %d", COP);
@@ -54,7 +55,7 @@ static u32 COP_read_reg(struct R3000 *core, u32 COP, u32 num)
         case 0:
             return core->regs.COP0[num];
         case 2:
-            return GTE_read_reg(core, num);
+            return GTE_read_reg(&core->gte, num);
         default:
             printf("\nread from unimplemented COP %d", COP);
             return 0xFF;
@@ -672,7 +673,7 @@ void R3000_fCOP(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
             return;
         }
         if (opcode & 0x2000000) {
-            GTE_command(core, opcode);
+            GTE_command(&core->gte, opcode);
             return;
         }
         u32 bits5 = (opcode >> 21) & 0x1F;
@@ -683,16 +684,16 @@ void R3000_fCOP(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
         }
         switch(bits5) {
             case 0: // MFCn rt = dat
-                if (rt != 0) core->regs.R[rt] = GTE_read_reg(core, rd);
+                if (rt != 0) core->regs.R[rt] = GTE_read_reg(&core->gte, rd);
                 return;
             case 2: // CFCn rt = cnt
-                if (rt != 0) core->regs.R[rt] = GTE_read_reg(core, rd+32);
+                if (rt != 0) core->regs.R[rt] = GTE_read_reg(&core->gte, rd+32);
                 return;
             case 4: // MTCn  dat = rt
-                GTE_write_reg(core, rd, core->regs.R[rt]);
+                GTE_write_reg(&core->gte, rd, core->regs.R[rt]);
                 return;
             case 6: // CTCn  cnt = rt
-                GTE_write_reg(core, rd+32, core->regs.R[rt]);
+                GTE_write_reg(&core->gte, rd+32, core->regs.R[rt]);
                 return;
             default:
                 printf("\nUNKNOWN COP INSTRUCTION %08x", opcode);
