@@ -18,8 +18,6 @@
 #define JTHIS struct GBA* this = (struct GBA*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
-#define THIS struct genesis* this
-
 static void GBAJ_play(JSM);
 static void GBAJ_pause(JSM);
 static void GBAJ_stop(JSM);

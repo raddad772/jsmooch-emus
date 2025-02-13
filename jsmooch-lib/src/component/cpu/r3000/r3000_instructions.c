@@ -12,24 +12,6 @@
 #define BADINS printf("\nUNIMPLEMENTED INSTRUCTION!"); assert(1==2)
 
 // ranch_delay and cop0 default to 0
-enum R3000_COP0_reg {
-    RCR_PRId = 15,
-    RCR_SR = 12,
-    RCR_Cause = 13,
-    RCR_EPC = 14,
-    RCR_BadVaddr = 8,
-    RCR_Config = 3,
-    RCR_BusCtrl = 2,
-    RCR_PortSize = 10,
-    RCR_Count = 9,
-    RCR_Compare = 11
-};
-
-static void add_to_console(struct R3000 *this, u32 ch)
-{
-    jsm_string_sprintf(&this->console, "%c", ch);
-    printf("\n\nCONSOLE\n%s", this->console.ptr);
-}
 
 static void COP_write_reg(struct R3000 *core, u32 COP, u32 num, u32 val)
 {
@@ -62,63 +44,6 @@ static u32 COP_read_reg(struct R3000 *core, u32 COP, u32 num)
     }
 }
 
-static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
-{
-    // Load delay slot from instruction before this one
-    if (which->target > 0) {// R0 stays 0
-        this->regs.R[which->target] = which->value;
-        which->target = -1;
-    }
-
-    // Branch delay slot
-    if (which->new_PC != 0) {
-        this->regs.PC = which->new_PC;
-        if (this->regs.PC == 0xB0) {
-            //console.log('B0! ' + this->regs.R[9].toString());
-            if (this->regs.R[9] == 0x3D) {
-                add_to_console(this, this->regs.R[4]);
-            }
-        }
-        which->new_PC = 0;
-    }
-
-}
-
-static void flush_pipe(struct R3000 *this)
-{
-    delay_slots(this, &this->pipe.current);
-    delay_slots(this, &this->pipe.item0);
-    delay_slots(this, &this->pipe.item1);
-    R3000_pipe_move_forward(&this->pipe);
-    R3000_pipe_move_forward(&this->pipe);
-}
-
-void R3000_exception(struct R3000 *this, u32 code, u32 branch_delay, u32 cop0)
-{
-    code <<= 2;
-    u32 vector = 0x80000080;
-    if (this->regs.COP0[RCR_SR] & 0x400000) {
-        vector = 0xBFC00180;
-    }
-   u32 raddr;
-    if (!branch_delay)
-        raddr = this->regs.PC - 4;
-    else
-    {
-        raddr = this->regs.PC;
-        code |= 0x80000000;
-    }
-    this->regs.COP0[RCR_EPC] = raddr;
-    flush_pipe(this);
-
-    if (cop0)
-        vector -= 0x40;
-
-    this->regs.PC = vector;
-    this->regs.COP0[RCR_Cause] = code;
-    u32 lstat = this->regs.COP0[RCR_SR];
-    this->regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
-}
 
 // default link reg to 31
 static inline void R3000_fs_reg_write(struct R3000 *core, u32 target, u32 value)
@@ -673,7 +598,7 @@ void R3000_fCOP(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
             return;
         }
         if (opcode & 0x2000000) {
-            GTE_command(&core->gte, opcode);
+            GTE_command(&core->gte, opcode, R3000_current_clock(core));
             return;
         }
         u32 bits5 = (opcode >> 21) & 0x1F;

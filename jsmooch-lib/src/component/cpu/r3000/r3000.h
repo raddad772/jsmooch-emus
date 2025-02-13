@@ -69,6 +69,10 @@ struct R3000 {
     u32 *waitstates;
 
     struct {
+        u32 IRQ;
+    } pins;
+
+    struct {
         struct jsm_debug_read_trace strct;
         struct jsm_string str;
         u32 ok;
@@ -87,9 +91,13 @@ struct R3000 {
     void (*update_sr)(void *ptr, struct R3000 *core, u32 val);
 };
 
+struct R3000_pipeline_item *R3000_pipe_move_forward(struct R3000_pipeline *);
 void R3000_init(struct R3000 *, u64 *master_clock, u32 *waitstates);
 void R3000_delete(struct R3000 *);
-
-struct R3000_pipeline_item *R3000_pipe_move_forward(struct R3000_pipeline *);
+void R3000_setup_tracing(struct R3000*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
+void R3000_reset(struct R3000*);
+void R3000_exception(struct R3000 *, u32 code, u32 branch_delay, u32 cop0);
+void R3000_flush_pipe(struct R3000 *);
+void R3000_cycle(struct R3000 *, i32 howmany);
 
 #endif //JSMOOCH_EMUS_R3000_H

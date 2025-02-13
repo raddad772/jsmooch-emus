@@ -3,6 +3,7 @@
 //
 #include <stdlib.h>
 #include <string.h>
+#include <printf.h>
 
 #include "r3000_instructions.h"
 #include "r3000.h"
@@ -345,3 +346,134 @@ void R3000_delete(struct R3000 *this)
     jsm_string_delete(&this->trace.str);
 }
 
+void R3000_setup_tracing(struct R3000 *this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+{
+    this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
+    this->trace.strct.ptr = strct->ptr;
+    this->trace.strct.read_trace = strct->read_trace;
+    this->trace.ok = 1;
+    this->trace.source_id = source_id;
+}
+
+void R3000_reset(struct R3000 *this)
+{
+    pipe_clear(&this->pipe);
+    this->regs.PC = 0xBFC00000;
+}
+
+static void add_to_console(struct R3000 *this, u32 ch)
+{
+    jsm_string_sprintf(&this->console, "%c", ch);
+    printf("\n\nCONSOLE\n%s", this->console.ptr);
+}
+
+static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
+{
+    // Load delay slot from instruction before this one
+    if (which->target > 0) {// R0 stays 0
+        this->regs.R[which->target] = which->value;
+        which->target = -1;
+    }
+
+    // Branch delay slot
+    if (which->new_PC != 0) {
+        this->regs.PC = which->new_PC;
+        if (this->regs.PC == 0xB0) {
+            //console.log('B0! ' + this->regs.R[9].toString());
+            if (this->regs.R[9] == 0x3D) {
+                add_to_console(this, this->regs.R[4]);
+            }
+        }
+        which->new_PC = 0;
+    }
+
+}
+
+void R3000_flush_pipe(struct R3000 *this)
+{
+    delay_slots(this, &this->pipe.current);
+    delay_slots(this, &this->pipe.item0);
+    delay_slots(this, &this->pipe.item1);
+    R3000_pipe_move_forward(&this->pipe);
+    R3000_pipe_move_forward(&this->pipe);
+}
+
+void R3000_exception(struct R3000 *this, u32 code, u32 branch_delay, u32 cop0)
+{
+    code <<= 2;
+    u32 vector = 0x80000080;
+    if (this->regs.COP0[RCR_SR] & 0x400000) {
+        vector = 0xBFC00180;
+    }
+    u32 raddr;
+    if (!branch_delay)
+        raddr = this->regs.PC - 4;
+    else
+    {
+        raddr = this->regs.PC;
+        code |= 0x80000000;
+    }
+    this->regs.COP0[RCR_EPC] = raddr;
+    R3000_flush_pipe(this);
+
+    if (cop0)
+        vector -= 0x40;
+
+    this->regs.PC = vector;
+    this->regs.COP0[RCR_Cause] = code;
+    u32 lstat = this->regs.COP0[RCR_SR];
+    this->regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
+}
+
+static inline void decode(struct R3000 *this, u32 IR, struct R3000_pipeline_item *current)
+{
+    u32 p1 = (IR & 0xFC000000) >> 26;
+
+    if (p1 == 0) {
+        current->op = &this->decode_table[0x3F + (IR & 0x3F)];
+    }
+    else {
+        current->op = &this->decode_table[p1];
+    }
+}
+
+static void fetch_and_decode(struct R3000 *this)
+{
+    u32 IR = this->read(this->read_ptr, this->regs.PC, 4, 1);
+    struct R3000_pipeline_item *current = pipe_push(&this->pipe);
+    decode(this, IR, current);
+    current->opcode = IR;
+    current->addr = this->regs.PC;
+    this->regs.PC += 4;
+}
+
+void R3000_cycle(struct R3000 *this, i32 howmany)
+{
+    i32 cycles_left = howmany;
+    while(cycles_left > 0) {
+        *this->clock += 2;
+        if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
+            R3000_exception(this, 0, this->pipe.item0.new_PC != 0, 0);
+        }
+
+        if (this->pipe.num_items < 1)
+            fetch_and_decode(this);
+        struct R3000_pipeline_item *current = R3000_pipe_move_forward(&this->pipe);
+
+        current->op->func(current->opcode, current->op, this);
+
+        delay_slots(this, current);
+
+        if (dbg.trace_on) {
+            //console.log(hex8(this->regs.PC) + ' ' + R3000_disassemble(current.opcode));
+            //dbg.traces.add(D_RESOURCE_TYPES.R3000, this->clock.trace_cycles-1, this->trace_format(R3000_disassemble(current.opcode), current.addr))
+        }
+
+        pipe_item_clear(current);
+
+        fetch_and_decode(this);
+
+        cycles_left -= 2;
+        if (dbg.do_break) break;
+    }
+}

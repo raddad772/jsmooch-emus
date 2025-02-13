@@ -738,7 +738,7 @@ static void cmd_NCCT(struct R3000_GTE *this, struct gte_cmd *config)
     do_ncc(this, config, 2);
 }
 
-void GTE_command(struct R3000_GTE *this, u32 opcode)
+void GTE_command(struct R3000_GTE *this, u32 opcode, u64 current_clock)
 {
     u32 opc = opcode & 0x3F;
     struct gte_cmd *config = &this->config;
@@ -771,9 +771,10 @@ void GTE_command(struct R3000_GTE *this, u32 opcode)
             break;
     }
 
-    //this->flags |= (((this->flags & 0x7f87e000) != 0) ? 1 : 0) << 31;
     u32 msb = ((this->flags & 0x7f87e000) != 0) ? 0x80000000 : 0;
     this->flags |= msb;
+    this->clock_start = current_clock;
+    this->clock_end = current_clock + this->cycle_count;
 }
 
 void GTE_write_reg(struct R3000_GTE *this, u32 reg, u32 val)
