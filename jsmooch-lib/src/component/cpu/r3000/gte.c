@@ -10,33 +10,6 @@
 
 static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_cmd *config, enum gteMatrix mat, u8 vei, enum gteControlVector crv);
 
-enum GTE_reg {
-    GTE_VXY0, GTE_VZ0, GTE_VXY1, GTE_VZ1, GTE_VXY2, GTE_VZ2,
-    GTE_RGBC, GTE_OTZ, GTE_IR0, GTE_IR1, GTE_IR2, GTE_IR3,
-    GTE_SXY, GTE_SXY1, GTE_SXY2, GTE_SXYP,
-    GTE_SZ0, GTE_SZ1, GTE_SZ2, GTE_SZ3,
-    GTE_RGB0, GTE_RGB1, GTE_RGB2,
-    GTE_RES1, GTE_MAC0, GTE_MAC1, GTE_MAC2, GTE_MAC3,
-    GTE_IRGB, GTE_ORGB,
-    GTE_LZCS, GTE_LZCR,
-    GTE_RT11RT12, GTE_RT13RT21,
-    GTE_RT22RT23, GTE_RT31RT32,
-    GTE_RT33, // returns sign-extended 32-bit
-    GTE_TRX, GTE_TRY, GTE_TRZ,
-    GTE_L11L12, GTE_L13L21,
-    GTE_L22L23, GTE_L31L32,
-    GTE_L33,
-    GTE_RBK, GTE_GBK, GTE_BBK,
-    GTE_LR1LR2, GTE_LR3LG1,
-    GTE_LG2LG3, GTE_LB1LB2,
-    GTE_LB3, // returns sign-extended 32-bit
-    GTE_RFC, GTE_GFC, GTE_BFC,
-    GTE_OFX, GTE_OFY,
-    GTE_H, GTE_DQA, GTE_DQB,
-    GTE_ZSF3, GTE_ZSF4,
-    GTE_FLAG
-};
-
 static const u8 UNR_TABLE[257] = {
     0xff, 0xfd, 0xfb, 0xf9, 0xf7, 0xf5, 0xf3, 0xf1,
     0xef, 0xee, 0xec, 0xea, 0xe8, 0xe6, 0xe4, 0xe3,
@@ -377,10 +350,6 @@ static void cmd_from_command(struct gte_cmd *this, u32 cmd) {
     this->vector_add = (cmd >> 13) & 3;
 }
 
-static inline u32 mtx(u32 x, u32 y, u32 z) {
-    return (x*9) + (y*3) + z;
-}
-
 void GTE_init(struct R3000_GTE *this)
 {
     memset(this, 0, sizeof(*this));
@@ -570,7 +539,7 @@ static void cmd_CC(struct R3000_GTE *this, struct gte_cmd *config)
     this->v[3][1] = this->ir[2];
     this->v[3][2] = this->ir[3];
 
-    multiply_matrix_by_vector(config, GTE_Color, 3, GTE_BackgroundColor);
+    multiply_matrix_by_vector(this, config, GTE_Color, 3, GTE_BackgroundColor);
 
     u8 crol[3];
     crol[0] = this->rgb[0];
@@ -581,7 +550,35 @@ static void cmd_CC(struct R3000_GTE *this, struct gte_cmd *config)
         i32 col = ((i32)crol[i]) << 4;
         i32 ir = (i32)this->ir[i + 1];
 
-        this->mac[i + 1] = (col * ir) >> config.shift;
+        this->mac[i + 1] = (col * ir) >> config->shift;
+    }
+
+    mac_to_ir(this, config);
+    mac_to_rgb_fifo(this);
+}
+
+// TODO: what
+static void do_dpc(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    enum gteControlVector fca = GTE_FarColor;
+
+    u8 crol[3];
+    crol[0] = this->rgb_fifo[0][0];
+    crol[1] = this->rgb_fifo[0][1];
+    crol[2] = this->rgb_fifo[0][2];
+
+    for (u32 i = 0; i < 3; i++) {
+        i64 fc = ((i64)this->control_vectors[fca][i]) << 12;
+        i64 col = ((i64)crol[i]) << 16;
+
+        i64 sub = fc - col;
+        i32 tmp = (i32)(i64_to_i44(this, (u8)i, sub) >> config->shift);
+        i64 ir0 = (i64)this->ir[0];
+        i64 sat = (i64)i32_to_i16_saturate(this, &this->config0, (u8)i, tmp);
+
+        i64 res = i64_to_i44(this, (u8)i, col + ir0 * sat);
+
+        this->mac[i + 1] = (i32)(res >> config->shift);
     }
 
     mac_to_ir(this, config);
@@ -626,6 +623,121 @@ static void cmd_NCT(struct R3000_GTE *this, struct gte_cmd *config)
     do_nc(this, config, 2);
 }
 
+static void cmd_SQR(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    for (u32 i = 1; i < 4; i++) {
+        i32 ir = (i32)this->ir[i];
+        this->mac[i] = (ir * ir) >> config->shift;
+    }
+    mac_to_ir(this, config);
+}
+
+static void cmd_DPCT(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    do_dpc(this, config);
+    do_dpc(this, config);
+    do_dpc(this, config);
+}
+
+static inline u16 i64_to_otz(struct R3000_GTE *this, i64 average) {
+    i64 value = average >> 12;
+
+    if (value < 0) {
+        set_flag(this, 18);
+        return 0;
+    } else if (value > 0xFFFF) {
+        set_flag(this, 18);
+        return 0xFFFF;
+    }
+    return (u16)value;
+}
+
+static void cmd_AVSZ3(struct R3000_GTE *this)
+{
+    u32 z1 = this->z_fifo[1];
+    u32 z2 = this->z_fifo[2];
+    u32 z3 = this->z_fifo[3];
+
+    u32 sum = z1 + z2 + z3;
+
+    i64 zsf3 = (i64) this->zsf3;
+    i64 average = zsf3 * (i64)sum;
+
+    check_mac_overflow(this, average);
+
+    this->mac[0] = (i32)average;
+    this->otz = i64_to_otz(this, average);
+}
+
+static void cmd_AVSZ4(struct R3000_GTE *this)
+{
+    u32 z0 = this->z_fifo[0];
+    u32 z1 = this->z_fifo[1];
+    u32 z2 = this->z_fifo[2];
+    u32 z3 = this->z_fifo[3];
+
+    u32 sum = z0 + z1 + z2 + z3;
+
+    i64 zsf4 = (i64)this->zsf4;
+
+    i64 average = zsf4 * (i64)sum;
+
+    check_mac_overflow(this, average);
+
+    this->mac[0] = (i32)average;
+    this->otz = i64_to_otz(this, average);
+}
+
+static void cmd_RTPT(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    do_RTP(this, config, 0);
+    do_RTP(this, config, 1);
+
+    u32 pf = do_RTP(this, config, 2);
+
+    depth_queueing(this, pf);
+}
+
+static void cmd_GPF(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    i32 ir0 = (i32)this->ir[0];
+
+    for (u32 i = 1; i < 4; i++) { // TODO 1?
+        i32 ir = (i32)this->ir[i];
+
+        this->mac[i] = (ir * ir0) >> config->shift;
+    }
+
+    mac_to_ir(this, config);
+    mac_to_rgb_fifo(this);
+}
+
+static void cmd_GPL(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    i32 ir0 = (i32)this->ir[0];
+    u8 shift = config->shift;
+    for (u32 i = 1; i < 4; i++) { // TODO: 1?
+        i32 ir = (i32)this->ir[i];
+
+        i64 ir_prod = (i64)(ir * ir0);
+
+        i64 mac = ((i64)this->mac[i]) << shift;
+
+        i64 sum = i64_to_i44(this, (u8)(i - 1), mac + ir_prod);
+
+        this->mac[i] = (i32)(sum >> shift);
+    }
+    mac_to_ir(this, config);
+    mac_to_rgb_fifo(this);
+}
+
+static void cmd_NCCT(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    do_ncc(this, config, 0);
+    do_ncc(this, config, 1);
+    do_ncc(this, config, 2);
+}
+
 void GTE_command(struct R3000_GTE *this, u32 opcode)
 {
     u32 opc = opcode & 0x3F;
@@ -645,15 +757,15 @@ void GTE_command(struct R3000_GTE *this, u32 opcode)
         case 0x1C: cmd_CC(this, config); this->cycle_count = 10; break;
         case 0x1E: cmd_NCS(this, config); this->cycle_count = 13; break;
         case 0x20: cmd_NCT(this, config); this->cycle_count = 29; break;
-        /*case 0x28: cmd_SQR(this, config); this->cycle_count = 4; break;*/
+        case 0x28: cmd_SQR(this, config); this->cycle_count = 4; break;
         case 0x29: cmd_DCPL(this, config); this->cycle_count = 7; break;
-        /*case 0x2A: cmd_DPCT(this, config); this->cycle_count = 16; break;
+        case 0x2A: cmd_DPCT(this, config); this->cycle_count = 16; break;
         case 0x2D: cmd_AVSZ3(this); this->cycle_count = 4; break;
         case 0x2E: cmd_AVSZ4(this); this->cycle_count = 4; break;
         case 0x30: cmd_RTPT(this, config); this->cycle_count = 22; break;
         case 0x3D: cmd_GPF(this, config); this->cycle_count = 4; break;
         case 0x3E: cmd_GPL(this, config); this->cycle_count = 4; break;
-        case 0x3F: cmd_NCCT(this, config); this->cycle_count = 38; break;*/
+        case 0x3F: cmd_NCCT(this, config); this->cycle_count = 38; break;
         default:
             printf("\nUnsupported GTE opcode %02x", opc);
             break;
