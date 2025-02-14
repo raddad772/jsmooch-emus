@@ -8425,98 +8425,91 @@ void Z80_ins_00_FF_RST_o(struct Z80_regs* regs, struct Z80_pins* pins)
 void Z80_ins_00_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
-        case 1: {
+        case 1: { // Start IACK read
             regs->R = (regs->R + 1) & 0x7F;
-            pins->RD = 0; pins->WR = 0; pins->IO = 0; pins->MRQ = 0;
-            regs->SP = (regs->SP - 1) & 0xFFFF;
+            pins->RD = 0; pins->WR = 0; pins->MRQ = 0; pins->IO = 0;
             break; }
-        case 2: { // write begin
-            pins->Addr = (regs->SP);
+        case 2: { // signal IACK
+            pins->RD = 1; pins->IO = 1;
+            pins->M1 = 1;
             break; }
-        case 3: {
-            pins->D = (((regs->PC) >> 8) & 0xFF);
-            pins->WR = 1; pins->MRQ = 1;
+        case 3: { // wait 1
+            if (pins->WAIT) regs->TCU--;
             break; }
-        case 4: { // write end
-            pins->WR = 0; pins->MRQ = 0;
-            regs->SP = (regs->SP - 1) & 0xFFFF;
+        case 4: { // wait 2
+            if (pins->WAIT) regs->TCU--;
             break; }
-        case 5: { // write begin
-            pins->Addr = (regs->SP);
-            break; }
-        case 6: {
-            pins->D = ((regs->PC) & 0xFF);
-            pins->WR = 1; pins->MRQ = 1;
-            break; }
-        case 7: { // write end
-            pins->WR = 0; pins->MRQ = 0;
-            u32 wait;
-            switch(pins->IRQ_maskable ? regs->IM : 1) {
-            case 0:
-                regs->t[0] = 0;
-                regs->WZ = pins->D;
-                wait = 12 - (((pins->D | 0x38) == 0xFF) ? 6 : 7);
-                regs->TCU += wait;
-                break;
-            case 1:
-                regs->t[0] = 0;
-                regs->WZ = regs->IRQ_vec;
-                wait = 12 - (pins->IRQ_maskable ? 7 : 5);
-                regs->TCU += wait;
-                break;
-            case 2:
-                regs->t[0] = 1;
-                regs->TA = (regs->I << 8) | pins->D;
-                regs->WZ = 0;
-                break;
+        case 5: { // Latch value...
+            pins->M1 = 0;
+            regs->t[0] = pins->D;
+            pins->RD = 0; pins->IO = 0;
+            regs->t[1] = pins->IRQ_maskable ? regs->IM : 1;
+            if (regs->t[1] == 0) {
+                printf("\nOH NO PANIC!!!!");
+                return;
             }
+            regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 8: { // Start read
-            pins->Addr = (regs->TA);
+        case 6: { // write begin
+            pins->Addr = (regs->SP);
             break; }
-        case 9: { // signal
+        case 7: {
+            pins->D = ((regs->PC >> 8) & 0xFF);
+            pins->WR = 1; pins->MRQ = 1;
+            break; }
+        case 8: { // write end
+            pins->WR = 0; pins->MRQ = 0;
+            regs->SP = (regs->SP - 1) & 0xFFFF;
+            break; }
+        case 9: { // push PC lo begin
+            pins->Addr = regs->SP;
+            break; }
+        case 10: {
+            pins->D = regs->PC & 0xFF;
+            pins->WR = 1; pins->MRQ = 1;
+            break; }
+        case 11: { // write end
+            pins->WR = 0; pins->MRQ = 0;
+            if (regs->t[1] == 1) {
+                regs->TCU += 6;
+            }
+            regs->t[2] = (regs->I << 8) | regs->t[0];
+            break; }
+        case 12: { // Start read
+            pins->Addr = (regs->t[2]);
+            break; }
+        case 13: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 10: { // Read end/latch
-            regs->WZ = pins->D;
+        case 14: { // Read end/latch
+            regs->t[3] = pins->D;
             pins->RD = 0; pins->MRQ = 0;
-            regs->TA = (regs->TA + 1) & 0xFFFF;
+            regs->t[2] = (regs->t[2] + 1) & 0xFFFF;
             break; }
-        case 11: { // Start read
-            pins->Addr = (regs->TA);
+        case 15: { // Start read
+            pins->Addr = regs->t[2];
             break; }
-        case 12: { // signal
+        case 16: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 13: { // Read end/latch
-            regs->TR = pins->D;
+        case 17: { // finish read...
             pins->RD = 0; pins->MRQ = 0;
-            if (regs->t[0] == 1) { regs->WZ |= regs->TR << 8; }
+            regs->t[3] |= (pins->D << 8);
             break; }
-        case 14: { // Adding 6 cycles
-            break; }
-        case 15: {
-            break; }
-        case 16: {
-            break; }
-        case 17: {
-            break; }
-        case 18: {
-            break; }
-        case 19: {
-            regs->PC = regs->WZ;
-            regs->IFF1 = 0;
-            if (pins->IRQ_maskable) regs->IFF2 = 0;
-            regs->HALT = 0;
-            if (regs->P) regs->F.PV = 0;
-            regs->P = 0;
-            regs->Q = 0;
-            regs->IRQ_vec = 0;
+        case 18: { // cleanup_custom
+            pins->WR = 0;
+            if (regs->t[1] == 1) { // IM1
+                regs->WZ = regs->IRQ_vec;
+                regs->PC = regs->IRQ_vec;
+            }
+            else { // IM2
+                regs->WZ = 0;
+                regs->PC = regs->t[3];
+            }
             // Following is auto-generated code for instruction finish
-            break; }
-        case 20: { // cleanup_custom
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            pins->RD = 0; pins->MRQ = 0;
             regs->TCU = 0;
             regs->EI = 0;
             regs->P = 0;
@@ -8536,7 +8529,7 @@ void Z80_ins_00_101_RESET(struct Z80_regs* regs, struct Z80_pins* pins)
             regs->IM = 0;
             regs->I = 0;
             regs->R = 0;
-            regs->PC = regs->reset_vector;
+            regs->PC = 0;
             // Following is auto-generated code for instruction finish
             break; }
         case 2: { // cleanup_custom
@@ -24454,98 +24447,91 @@ void Z80_ins_DD_FF_RST_o(struct Z80_regs* regs, struct Z80_pins* pins)
 void Z80_ins_DD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
-        case 1: {
+        case 1: { // Start IACK read
             regs->R = (regs->R + 1) & 0x7F;
-            pins->RD = 0; pins->WR = 0; pins->IO = 0; pins->MRQ = 0;
-            regs->SP = (regs->SP - 1) & 0xFFFF;
+            pins->RD = 0; pins->WR = 0; pins->MRQ = 0; pins->IO = 0;
             break; }
-        case 2: { // write begin
-            pins->Addr = (regs->SP);
+        case 2: { // signal IACK
+            pins->RD = 1; pins->IO = 1;
+            pins->M1 = 1;
             break; }
-        case 3: {
-            pins->D = (((regs->PC) >> 8) & 0xFF);
-            pins->WR = 1; pins->MRQ = 1;
+        case 3: { // wait 1
+            if (pins->WAIT) regs->TCU--;
             break; }
-        case 4: { // write end
-            pins->WR = 0; pins->MRQ = 0;
-            regs->SP = (regs->SP - 1) & 0xFFFF;
+        case 4: { // wait 2
+            if (pins->WAIT) regs->TCU--;
             break; }
-        case 5: { // write begin
-            pins->Addr = (regs->SP);
-            break; }
-        case 6: {
-            pins->D = ((regs->PC) & 0xFF);
-            pins->WR = 1; pins->MRQ = 1;
-            break; }
-        case 7: { // write end
-            pins->WR = 0; pins->MRQ = 0;
-            u32 wait;
-            switch(pins->IRQ_maskable ? regs->IM : 1) {
-            case 0:
-                regs->t[0] = 0;
-                regs->WZ = pins->D;
-                wait = 12 - (((pins->D | 0x38) == 0xFF) ? 6 : 7);
-                regs->TCU += wait;
-                break;
-            case 1:
-                regs->t[0] = 0;
-                regs->WZ = regs->IRQ_vec;
-                wait = 12 - (pins->IRQ_maskable ? 7 : 5);
-                regs->TCU += wait;
-                break;
-            case 2:
-                regs->t[0] = 1;
-                regs->TA = (regs->I << 8) | pins->D;
-                regs->WZ = 0;
-                break;
+        case 5: { // Latch value...
+            pins->M1 = 0;
+            regs->t[0] = pins->D;
+            pins->RD = 0; pins->IO = 0;
+            regs->t[1] = pins->IRQ_maskable ? regs->IM : 1;
+            if (regs->t[1] == 0) {
+                printf("\nOH NO PANIC!!!!");
+                return;
             }
+            regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 8: { // Start read
-            pins->Addr = (regs->TA);
+        case 6: { // write begin
+            pins->Addr = (regs->SP);
             break; }
-        case 9: { // signal
+        case 7: {
+            pins->D = ((regs->PC >> 8) & 0xFF);
+            pins->WR = 1; pins->MRQ = 1;
+            break; }
+        case 8: { // write end
+            pins->WR = 0; pins->MRQ = 0;
+            regs->SP = (regs->SP - 1) & 0xFFFF;
+            break; }
+        case 9: { // push PC lo begin
+            pins->Addr = regs->SP;
+            break; }
+        case 10: {
+            pins->D = regs->PC & 0xFF;
+            pins->WR = 1; pins->MRQ = 1;
+            break; }
+        case 11: { // write end
+            pins->WR = 0; pins->MRQ = 0;
+            if (regs->t[1] == 1) {
+                regs->TCU += 6;
+            }
+            regs->t[2] = (regs->I << 8) | regs->t[0];
+            break; }
+        case 12: { // Start read
+            pins->Addr = (regs->t[2]);
+            break; }
+        case 13: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 10: { // Read end/latch
-            regs->WZ = pins->D;
+        case 14: { // Read end/latch
+            regs->t[3] = pins->D;
             pins->RD = 0; pins->MRQ = 0;
-            regs->TA = (regs->TA + 1) & 0xFFFF;
+            regs->t[2] = (regs->t[2] + 1) & 0xFFFF;
             break; }
-        case 11: { // Start read
-            pins->Addr = (regs->TA);
+        case 15: { // Start read
+            pins->Addr = regs->t[2];
             break; }
-        case 12: { // signal
+        case 16: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 13: { // Read end/latch
-            regs->TR = pins->D;
+        case 17: { // finish read...
             pins->RD = 0; pins->MRQ = 0;
-            if (regs->t[0] == 1) { regs->WZ |= regs->TR << 8; }
+            regs->t[3] |= (pins->D << 8);
             break; }
-        case 14: { // Adding 6 cycles
-            break; }
-        case 15: {
-            break; }
-        case 16: {
-            break; }
-        case 17: {
-            break; }
-        case 18: {
-            break; }
-        case 19: {
-            regs->PC = regs->WZ;
-            regs->IFF1 = 0;
-            if (pins->IRQ_maskable) regs->IFF2 = 0;
-            regs->HALT = 0;
-            if (regs->P) regs->F.PV = 0;
-            regs->P = 0;
-            regs->Q = 0;
-            regs->IRQ_vec = 0;
+        case 18: { // cleanup_custom
+            pins->WR = 0;
+            if (regs->t[1] == 1) { // IM1
+                regs->WZ = regs->IRQ_vec;
+                regs->PC = regs->IRQ_vec;
+            }
+            else { // IM2
+                regs->WZ = 0;
+                regs->PC = regs->t[3];
+            }
             // Following is auto-generated code for instruction finish
-            break; }
-        case 20: { // cleanup_custom
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            pins->RD = 0; pins->MRQ = 0;
             regs->TCU = 0;
             regs->EI = 0;
             regs->P = 0;
@@ -37291,98 +37277,91 @@ void Z80_ins_FD_FF_RST_o(struct Z80_regs* regs, struct Z80_pins* pins)
 void Z80_ins_FD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
-        case 1: {
+        case 1: { // Start IACK read
             regs->R = (regs->R + 1) & 0x7F;
-            pins->RD = 0; pins->WR = 0; pins->IO = 0; pins->MRQ = 0;
-            regs->SP = (regs->SP - 1) & 0xFFFF;
+            pins->RD = 0; pins->WR = 0; pins->MRQ = 0; pins->IO = 0;
             break; }
-        case 2: { // write begin
-            pins->Addr = (regs->SP);
+        case 2: { // signal IACK
+            pins->RD = 1; pins->IO = 1;
+            pins->M1 = 1;
             break; }
-        case 3: {
-            pins->D = (((regs->PC) >> 8) & 0xFF);
-            pins->WR = 1; pins->MRQ = 1;
+        case 3: { // wait 1
+            if (pins->WAIT) regs->TCU--;
             break; }
-        case 4: { // write end
-            pins->WR = 0; pins->MRQ = 0;
-            regs->SP = (regs->SP - 1) & 0xFFFF;
+        case 4: { // wait 2
+            if (pins->WAIT) regs->TCU--;
             break; }
-        case 5: { // write begin
-            pins->Addr = (regs->SP);
-            break; }
-        case 6: {
-            pins->D = ((regs->PC) & 0xFF);
-            pins->WR = 1; pins->MRQ = 1;
-            break; }
-        case 7: { // write end
-            pins->WR = 0; pins->MRQ = 0;
-            u32 wait;
-            switch(pins->IRQ_maskable ? regs->IM : 1) {
-            case 0:
-                regs->t[0] = 0;
-                regs->WZ = pins->D;
-                wait = 12 - (((pins->D | 0x38) == 0xFF) ? 6 : 7);
-                regs->TCU += wait;
-                break;
-            case 1:
-                regs->t[0] = 0;
-                regs->WZ = regs->IRQ_vec;
-                wait = 12 - (pins->IRQ_maskable ? 7 : 5);
-                regs->TCU += wait;
-                break;
-            case 2:
-                regs->t[0] = 1;
-                regs->TA = (regs->I << 8) | pins->D;
-                regs->WZ = 0;
-                break;
+        case 5: { // Latch value...
+            pins->M1 = 0;
+            regs->t[0] = pins->D;
+            pins->RD = 0; pins->IO = 0;
+            regs->t[1] = pins->IRQ_maskable ? regs->IM : 1;
+            if (regs->t[1] == 0) {
+                printf("\nOH NO PANIC!!!!");
+                return;
             }
+            regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 8: { // Start read
-            pins->Addr = (regs->TA);
+        case 6: { // write begin
+            pins->Addr = (regs->SP);
             break; }
-        case 9: { // signal
+        case 7: {
+            pins->D = ((regs->PC >> 8) & 0xFF);
+            pins->WR = 1; pins->MRQ = 1;
+            break; }
+        case 8: { // write end
+            pins->WR = 0; pins->MRQ = 0;
+            regs->SP = (regs->SP - 1) & 0xFFFF;
+            break; }
+        case 9: { // push PC lo begin
+            pins->Addr = regs->SP;
+            break; }
+        case 10: {
+            pins->D = regs->PC & 0xFF;
+            pins->WR = 1; pins->MRQ = 1;
+            break; }
+        case 11: { // write end
+            pins->WR = 0; pins->MRQ = 0;
+            if (regs->t[1] == 1) {
+                regs->TCU += 6;
+            }
+            regs->t[2] = (regs->I << 8) | regs->t[0];
+            break; }
+        case 12: { // Start read
+            pins->Addr = (regs->t[2]);
+            break; }
+        case 13: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 10: { // Read end/latch
-            regs->WZ = pins->D;
+        case 14: { // Read end/latch
+            regs->t[3] = pins->D;
             pins->RD = 0; pins->MRQ = 0;
-            regs->TA = (regs->TA + 1) & 0xFFFF;
+            regs->t[2] = (regs->t[2] + 1) & 0xFFFF;
             break; }
-        case 11: { // Start read
-            pins->Addr = (regs->TA);
+        case 15: { // Start read
+            pins->Addr = regs->t[2];
             break; }
-        case 12: { // signal
+        case 16: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 13: { // Read end/latch
-            regs->TR = pins->D;
+        case 17: { // finish read...
             pins->RD = 0; pins->MRQ = 0;
-            if (regs->t[0] == 1) { regs->WZ |= regs->TR << 8; }
+            regs->t[3] |= (pins->D << 8);
             break; }
-        case 14: { // Adding 6 cycles
-            break; }
-        case 15: {
-            break; }
-        case 16: {
-            break; }
-        case 17: {
-            break; }
-        case 18: {
-            break; }
-        case 19: {
-            regs->PC = regs->WZ;
-            regs->IFF1 = 0;
-            if (pins->IRQ_maskable) regs->IFF2 = 0;
-            regs->HALT = 0;
-            if (regs->P) regs->F.PV = 0;
-            regs->P = 0;
-            regs->Q = 0;
-            regs->IRQ_vec = 0;
+        case 18: { // cleanup_custom
+            pins->WR = 0;
+            if (regs->t[1] == 1) { // IM1
+                regs->WZ = regs->IRQ_vec;
+                regs->PC = regs->IRQ_vec;
+            }
+            else { // IM2
+                regs->WZ = 0;
+                regs->PC = regs->t[3];
+            }
             // Following is auto-generated code for instruction finish
-            break; }
-        case 20: { // cleanup_custom
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
+            pins->RD = 0; pins->MRQ = 0;
             regs->TCU = 0;
             regs->EI = 0;
             regs->P = 0;

@@ -144,11 +144,11 @@ class Z80_switchgen {
         this.write('regs.SP', this.readregL(what));
     }
 
-    push16(what) {
+    push16(what, after_push = null) {
         this.SP_dec();
         this.write('regs.SP', '((' + what + ') >>> 8) & 0xFF');
         this.SP_dec();
-        this.write('regs.SP', '(' + what + ') & 0xFF');
+        this.write('regs.SP', '(' + what + ') & 0xFF', after_push);
     }
 
     addl(what) {
@@ -312,7 +312,7 @@ class Z80_switchgen {
         this.addl(outto + ' = regs.WZ;');
     }
 
-    write(where, val) {
+    write(where, val, after_push=null) {
         this.addcycle('write begin');
         // addr T0-T2
         // MRQ T0-T1
@@ -326,6 +326,7 @@ class Z80_switchgen {
         this.addcycle();
         this.addl('pins.D = (' + val + ');');
         this.RWMIO(0, 1, 1, 0);
+        if (after_push != null) this.addl('regs.TCU = ' + after_push.toString() + '-1;');
 
         this.addcycle('write end');
         this.RWMIO(0, 0, 0, 0);
@@ -397,6 +398,13 @@ class Z80_switchgen {
         this.addl('regs.PC = (regs.PC + 1) & 0xFFFF;');
         this.addl(what + ' |= (regs.t[4] << 8);');
     }
+
+    read16(where, what) {
+        this.read(where, what);
+        this.read('((' + where + ')+1) & 0xFFFF', 'regs.t[4]');
+        this.addl(what + ' |= (regs.t[4] << 8);');
+    }
+
 
     read(where, to) {
         // address T0-2
@@ -1242,63 +1250,95 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
     let replaced;
     switch(opcode_info.ins) {
         case Z80_MN.IRQ: // process IRQ
-            ag.addcycle();
-            //ag.addl('if (pins.IRQ_maskable && (!regs.IFF1 || regs.EI)) { regs.TCU = 19; break;}');
+
+            // So first is the special 5-cycle IAQ cycle
+            // It's the same for all 3 cases.
+            // T1 and T2 happen just like a read, but IORQ is set instead of MRQ
+            // there's 2 wait states,
+            // then T3 of a read happens.
+            // Mode 0 uses this as the first byte of an instruction, hijacking the other decode
+            // Mode 1, just do RST38h. PUSH PC and set to vector. (+8=13cycles)
+            // Mode 2, use this as a pointer to form the vector. PUSH PC, then read new vector, =19 total
+
+            // Mode0 we can mostly ignore.
+
+            // So we do the 5 cycles...
+            ag.addcycle('Start IACK read');
             ag.addl('regs.R = (regs.R + 1) & 0x7F;');
-            ag.addl('pins.RD = 0; pins.WR = 0; pins.IO = 0; pins.MRQ = 0;');
+            ag.addl('pins.RD = 0; pins.WR = 0; pins.MRQ = 0; pins.IO = 0;');
+            ag.RWMIO(0, 0, 0, 0);
 
-            ag.push16('regs.PC');
+            ag.addcycle('signal IACK')
+            ag.RWMIO(1, 0, 0, 1); // IO=1 & M1=1 means "IRQ ack cycle"
+            ag.addl('pins.M1 = 1;');
 
-            // case 0 has 6-7 wait
-            // case 1 has 7-5 wait
-            // case 2 has 6 cycles of reads and a 7-wait, adding up to 13
-            // total 13 required
-            // case 0 should skip 7-6 of them
-            // case 1 should skip 6-8 of them
-            // case 2 should skip none of them
-            // but we've already used 1.
-            if (GENTARGET === 'as') {
-                ag.addl('let wait: u32;')
-            }
-            else if (GENTARGET === 'js') {
-                ag.addl('let wait;')
-            }
-            else if (GENTARGET === 'c') {
-                ag.addl('u32 wait;');
-            }
-            ag.addl('switch(pins.IRQ_maskable ? regs.IM : 1) {');
-            ag.addl('case 0:');
-            ag.addl('    regs.t[0] = 0;')
-            ag.addl('    regs.WZ = pins.D;');
-            ag.addl('    wait = 12 - (((pins.D | 0x38) ' + GENEQO + ' 0xFF) ? 6 : 7);');
-            ag.addl('    regs.TCU += wait;');
-            ag.addl('    break;')
-            ag.addl('case 1:');
-            ag.addl('    regs.t[0] = 0;')
-            ag.addl('    regs.WZ = regs.IRQ_vec;');
-            ag.addl('    wait = 12 - (pins.IRQ_maskable ? 7 : 5);');
-            ag.addl('    regs.TCU += wait;')
-            ag.addl('    break;');
-            ag.addl('case 2:');
-            ag.addl('    regs.t[0] = 1;')
-            ag.addl('    regs.TA = (regs.I << 8) | pins.D;');
-            ag.addl('    regs.WZ = 0;');
-            ag.addl('    break;')
+            ag.addcycle('wait 1');
+            ag.addl('if (pins.WAIT) regs.TCU--;');
+
+            ag.addcycle('wait 2');
+            ag.addl('if (pins.WAIT) regs.TCU--;');
+
+            ag.addcycle('Latch value...');
+            ag.addl('pins.M1 = 0;');
+            ag.addl('regs.t[0] = pins.D;');
+            ag.RWMIO(0, 0, 0, 0);
+
+            // Now we decide what to do.
+            ag.addl('regs.t[1] = pins->IRQ_maskable ? regs->IM : 1;');
+            ag.addl('if (regs.t[1] === 0) {');
+            ag.addl('    printf("\\nOH NO PANIC!!!!");');
+            ag.addl('    return;');
             ag.addl('}');
-            ag.read('regs.TA', 'regs.WZ');
-            ag.addl('regs.TA = (regs.TA + 1) & 0xFFFF;');
-            ag.read('regs.TA', 'regs.TR');
-            ag.addl('if (regs.t[0] ' + GENEQO + ' 1) { regs.WZ |= regs.TR << 8; }');
-            ag.addcycles(6);
 
-            ag.addl('regs.PC = regs.WZ;');
-            ag.addl('regs.IFF1 = 0;');
-            ag.addl('if (pins.IRQ_maskable) regs.IFF2 = 0;');
-            ag.addl('regs.HALT = 0;');
-            ag.addl('if (regs.P) regs.F.PV = 0;');
-            ag.addl('regs.P = 0;');
-            ag.addl('regs.Q = 0;');
-            ag.addl('regs.IRQ_vec = 0;');
+            ag.SP_dec();
+            ag.write('regs.SP', '(regs.PC >>> 8) & 0xFF');
+
+            ag.SP_dec();
+            ag.addcycle('push PC lo begin');
+            // addr T0-T2
+            // MRQ T0-T1
+            // WR T1 only
+
+            ag.RWMIO(0, 0, 0, 0);
+            ag.addl('pins.Addr = regs.SP;');
+
+            ag.addcycle();
+            ag.addl('pins.D = regs.PC & 0xFF;');
+            ag.RWMIO(0, 1, 1, 0);
+
+            ag.addcycle('write end');
+            ag.RWMIO(0, 0, 0, 0);
+            ag.addl('if (regs.t[1] == 1) {');
+            ag.addl('    regs.TCU += 6;');
+            ag.addl('}');
+
+            ag.addl('regs.t[2] = (regs.I << 8) | regs.t[0];')
+
+            // IM2 will now read
+            ag.read('regs.t[2]', 'regs.t[3]');
+            ag.addl('regs.t[2] = (regs.t[2] + 1) & 0xFFFF;');
+
+            ag.addcycle('Start read')
+            ag.addl('pins.Addr = regs.t[2];');
+            ag.RWMIO(0, 0, 0, 0);
+
+            ag.addcycle('signal');
+            ag.RWMIO(1, 0, 1, 0)
+
+            ag.addcycle('finish read...');
+            ag.addl('pins.RD = 0; pins.MRQ = 0;');
+            ag.addl('regs.t[3] |= (pins.D << 8);');
+
+            ag.cleanup();
+            ag.addl('pins.WR = 0;');
+            ag.addl('if (regs.t[1] == 1) { // IM1');
+            ag.addl('    regs.WZ = regs.IRQ_vec;');
+            ag.addl('    regs.PC = regs.IRQ_vec;');
+            ag.addl('}');
+            ag.addl('else { // IM2');
+            ag.addl('    regs.WZ = 0;');
+            ag.addl('    regs.PC = regs.t[3];');
+            ag.addl('}')
             break;
         case Z80_MN.RESET:
             // disables the maskable interrupt, selects interrupt mode 0, zeroes registers I & R and zeroes the program counter (PC)
