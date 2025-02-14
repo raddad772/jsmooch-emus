@@ -70,6 +70,7 @@ void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     }
     struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
     setup_debug_waveform(wf);
+    if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
     this->clock.apu_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
         wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);

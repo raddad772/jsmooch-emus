@@ -378,6 +378,8 @@ add_library(jsmooch-lib
         src/system/galaksija/galaksija.h
         src/system/galaksija/galaksija_bus.c
         src/system/galaksija/galaksija_bus.h
+        src/system/galaksija/galaksija_debugger.c
+        src/system/galaksija/galaksija_debugger.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

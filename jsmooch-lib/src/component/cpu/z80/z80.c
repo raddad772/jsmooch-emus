@@ -272,10 +272,16 @@ void Z80_ins_cycles(struct Z80* this)
             }
             this->pins.RD = 1;
             this->pins.MRQ = 1;
+            this->pins.M1 = 1;
             break;
         case 2: // T2, RD to 0 and data latch, REFRESH and MRQ=1 for REFRESH
+            if (this->pins.WAIT) {
+                this->regs.TCU--;
+                return;
+            }
             this->pins.RD = 0;
             this->pins.MRQ = 0;
+            this->pins.M1 = 0;
             this->regs.t[0] = this->pins.D;
             this->pins.Addr = (this->regs.I << 8) | this->regs.R;
             break;
@@ -374,9 +380,25 @@ void Z80_ins_cycles(struct Z80* this)
     }
 }
 
+
+void Z80_printf_trace(struct Z80* this) {
+    char t[250];
+    t[0] = 0;
+    u32 b = this->read_trace.read_trace(this->read_trace.ptr, this->PCO);
+    u32 mPC = this->PCO;
+    Z80_disassemble(&mPC, b, &this->read_trace, t, sizeof(t));
+    printf(DBGC_Z80 "\nZ80   (%06llu)     %04x  %s   ", *this->trace.cycles, this->PCO, t);
+    //dbg_seek_in_line(TRACE_BRK_POS);
+    printf("PC:%04X A:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X IX:%04X IY:%04X I:%02X R:%02X WZ:%04X F:%02X TCU:%d" DBGC_RST,
+           this->PCO, this->regs.A, this->regs.B, this->regs.C, this->regs.D, this->regs.E,
+           this->regs.H, this->regs.L, this->regs.SP, this->regs.IX, this->regs.IY, this->regs.I, this->regs.R,
+           this->regs.WZ, Z80_regs_F_getbyte(&this->regs.F), this->regs.TCU);
+}
+
 void Z80_trace_format(struct Z80* this)
 {
     char t[250];
+    t[0] = 0;
     if (this->regs.IR == 0x101) {
         dbg_printf(DBGC_Z80 "\nZ80    (%06llu)           RESET" DBGC_RST, *this->trace.cycles);
         return;
@@ -501,6 +523,8 @@ static void serialize_pins(struct Z80_pins* this, struct serialized_state *state
     S(WR);
     S(IO);
     S(MRQ);
+    S(M1);
+    S(WAIT);
 }
 
 void Z80_serialize(struct Z80 *this, struct serialized_state *state)
@@ -579,7 +603,8 @@ static void deserialize_pins(struct Z80_pins* this, struct serialized_state *sta
     L(WR);
     L(IO);
     L(MRQ);
-
+    L(M1);
+    L(WAIT);
 }
 
 void Z80_deserialize(struct Z80* this, struct serialized_state *state)

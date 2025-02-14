@@ -109,16 +109,24 @@ void apple2_present(struct physical_io_device *device, void *out_buf, u32 x_offs
 void galaksija_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->display.output[device->display.last_written];
+    const u32 gwidth = 384;
     u32* imgdata = (u32 *)out_buf;
     for (u32 ry = 0; ry < 320; ry++) {
         u32 y = ry;
-        for (u32 rx = 0; rx < 192; rx++) {
+        for (u32 rx = 0; rx < gwidth; rx++) {
             u32 x = rx;
             u32 di = ((y * out_width) + x);
-            u32 ulai = (y * 192) + x;
+            u32 ulai = (y * gwidth) + x;
 
             u32 color = output[ulai];
             color = 0xFF000000 | (0xFFFFFF * color);
+
+            if ((ry >= 55) && (ry < 264)) {
+                if ((rx == 63) || (rx == 320)) color = 0xFFFF0000;
+            }
+            if ((rx >= 63) && (rx < 320)) {
+                if ((ry == 55) || (ry == 264)) color = 0xFFFF0000;
+            }
 
             imgdata[di] = color;
         }
@@ -505,6 +513,9 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
             break;
         case SYS_APPLEIIe:
             apple2_present(display, out_buf, x_offset, y_offset, out_width, out_height);
+            break;
+        case SYS_GALAKSIJA:
+            galaksija_present(display, out_buf, out_width, out_height);
             break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:

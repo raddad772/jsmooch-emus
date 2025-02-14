@@ -156,9 +156,9 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/galaksija", BASE_PATH);
             mfs_add("CHRGEN_MIPRO.bin", BIOS_PATH, BIOSes);
-            mfs_add("ROM_A_28.bin", BIOS_PATH, BIOSes);
-            //mfs_add("ROM_A_29.bin", BIOS_PATH, BIOSes);
-            //mfs_add("ROM_B.bin", BIOS_PATH, BIOSes);
+            //mfs_add("ROM_A_28.bin", BIOS_PATH, BIOSes);
+            mfs_add("ROM_A_29.bin", BIOS_PATH, BIOSes);
+            mfs_add("ROM_B.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_SG1000:
         case SYS_PSX:
@@ -884,9 +884,11 @@ void full_system::load_default_ROM()
     }
 
     struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
-    printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
-    if (fileioport->cartridge_port.SRAM.requested_size > 0) {
-        setup_persistent_store(&fileioport->cartridge_port.SRAM, &ROMs);
+    if (fileioport != NULL) {
+        printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
+        if (fileioport->cartridge_port.SRAM.requested_size > 0) {
+            setup_persistent_store(&fileioport->cartridge_port.SRAM, &ROMs);
+        }
     }
 }
 

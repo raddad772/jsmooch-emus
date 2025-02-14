@@ -100,6 +100,8 @@ struct Z80_pins {
 
     u32 IRQ_maskable;
     u32 RD, WR, IO, MRQ;
+
+    u32 M1, WAIT; // M1 pin
 };
 
 void Z80_pins_init(struct Z80_pins*);
@@ -141,5 +143,7 @@ void Z80_notify_IRQ(struct Z80*, u32 level);
 void Z80_setup_tracing(struct Z80*, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
 void Z80_serialize(struct Z80*, struct serialized_state *state);
 void Z80_deserialize(struct Z80*, struct serialized_state *state);
+void Z80_trace_format(struct Z80 *);
+void Z80_printf_trace(struct Z80* this);
 
 #endif //JSMOOCH_EMUS_Z80_H

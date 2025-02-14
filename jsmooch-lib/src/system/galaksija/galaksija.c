@@ -8,6 +8,7 @@
 
 #include "galaksija.h"
 #include "galaksija_bus.h"
+#include "galaksija_debugger.h"
 
 #include "helpers/debugger/debugger.h"
 #include "helpers/physical_io.h"
@@ -29,9 +30,10 @@ static void galaksijaJ_describe_io(JSM, struct cvec* IOs);
 
 // 192x320 incl. hblank
 // 128x208 not inc;.
-#define MASTER_CYCLES_PER_FRAME 61440
-#define MASTER_CYCLES_PER_LINE 192
-#define MASTER_CYCLES_PER_SECOND 3072000
+#define MASTER_CYCLES_PER_FRAME 122880
+#define MASTER_CYCLES_PER_LINE 384
+#define MASTER_CYCLES_PER_SECOND 6144000
+#define CRT_WIDTH 384
 
 static u32 timer_reload_ticks(u32 reload)
 {
@@ -106,7 +108,7 @@ void galaksija_new(struct jsm_system *jsm)
     jsm->describe_io = &galaksijaJ_describe_io;
     jsm->set_audiobuf = NULL; //&galaksijaJ_set_audiobuf;
     jsm->sideload = NULL;
-    jsm->setup_debugger_interface = NULL;
+    jsm->setup_debugger_interface = &galaksijaJ_setup_debugger_interface;
     jsm->save_state = NULL;
     jsm->load_state = NULL;
 
@@ -252,20 +254,20 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->fps_override_hint = 50;
     // 240x160, but 308x228 with v and h blanks
 
-    d->pixelometry.cols.left_hblank = 32;
-    d->pixelometry.cols.visible = 128;
-    d->pixelometry.cols.max_visible = 192;
-    d->pixelometry.cols.right_hblank = 32;
+    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.visible = CRT_WIDTH;
+    d->pixelometry.cols.max_visible = CRT_WIDTH;
+    d->pixelometry.cols.right_hblank = 0;
     d->pixelometry.offset.x = 0;
 
-    d->pixelometry.rows.top_vblank = 56;
-    d->pixelometry.rows.visible = 208;
+    d->pixelometry.rows.top_vblank = 0;
+    d->pixelometry.rows.visible = 320;
     d->pixelometry.rows.max_visible = 320;
-    d->pixelometry.rows.bottom_vblank = 56;
+    d->pixelometry.rows.bottom_vblank = 0;
     d->pixelometry.offset.y = 0;
 
-    d->geometry.physical_aspect_ratio.width = 5;
-    d->geometry.physical_aspect_ratio.height = 4;
+    d->geometry.physical_aspect_ratio.width = 1;
+    d->geometry.physical_aspect_ratio.height = 1;
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
@@ -280,15 +282,25 @@ static void setup_audio(struct cvec* IOs)
     chan->low_pass_filter = 24000;
 }
 
-static const u32 galaksija_keyboard_keymap[49] = {
+#define NUMKEYS 53
+static const u32 galaksija_keyboard_keymap[NUMKEYS] = {
       JK_A, JK_B, JK_C, JK_D, JK_E, JK_F, JK_G,
         JK_H, JK_I, JK_J, JK_K, JK_L, JK_M, JK_N, JK_O,
         JK_P, JK_Q, JK_R, JK_S, JK_T, JK_U, JK_V, JK_W,
         JK_X, JK_Y, JK_Z, JK_UP, JK_DOWN, JK_LEFT, JK_RIGHT, JK_SPACE,
         JK_0, JK_1, JK_2, JK_3, JK_4, JK_5, JK_6, JK_7,
-        JK_8, JK_9, JK_SEMICOLON, // dupe that
-        JK_COMMA, JK_EQUALS, JK_DOT, JK_SLASH_FW, JK_ENTER,
-        JK_BACKSPACE, JK_SHIFT
+        JK_8, JK_9, JK_SEMICOLON, //41
+        JK_COMMA, // 42
+        JK_EQUALS, // 43
+        JK_DOT, // 44
+        JK_SLASH_FW, // 45
+        JK_ENTER, // 46
+        JK_BACKSPACE, // 47
+        JK_SHIFT, // 48
+        JK_F1, // 49
+        JK_F2, // 50
+        JK_QUOTE, // 51
+        JK_ESC // 52
 };
 
 static void setup_keyboard(struct galaksija* this)
@@ -303,9 +315,9 @@ static void setup_keyboard(struct galaksija* this)
 
     struct JSM_KEYBOARD* kbd = &d->keyboard;
     memset(kbd, 0, sizeof(struct JSM_KEYBOARD));
-    kbd->num_keys = 40;
+    kbd->num_keys = NUMKEYS;
 
-    for (u32 i = 0; i < 49; i++) {
+    for (u32 i = 0; i < NUMKEYS; i++) {
         kbd->key_defs[i] = galaksija_keyboard_keymap[i];
     }
 }
@@ -341,8 +353,8 @@ static void galaksijaJ_describe_io(JSM, struct cvec* IOs)
     // screen
     struct physical_io_device *d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(192 * 320);
-    d->display.output[1] = malloc(192 * 320);
+    d->display.output[0] = malloc(384 * 320);
+    d->display.output[1] = malloc(384 * 320);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_crt(&d->display);

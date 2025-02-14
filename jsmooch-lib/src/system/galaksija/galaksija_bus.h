@@ -63,7 +63,10 @@ struct galaksija {
         u64 scanline_start;
 
         u8 shift_register;
-        u32 shift_count;
+        i32 shift_count;
+
+        u32 WAIT_on_M1;
+        u32 WAIT_down_on_hblank;
     } crt;
 
     struct {
