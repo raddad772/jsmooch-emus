@@ -16,6 +16,7 @@
 #include "helpers/debug.h"
 #include "helpers/debugger/debugger.h"
 #include "system/gba/gba.h"
+#include "system/galaksija/galaksija.h"
 
 struct jsm_system* new_system(enum jsm_systems which)
 {
@@ -73,6 +74,9 @@ struct jsm_system* new_system(enum jsm_systems which)
             break;
         case SYS_ZX_SPECTRUM_48K:
             ZXSpectrum_new(out, ZXS_spectrum48);
+            break;
+        case SYS_GALAKSIJA:
+            galaksija_new(out);
             break;
         case SYS_ZX_SPECTRUM_128K:
             ZXSpectrum_new(out, ZXS_spectrum128);

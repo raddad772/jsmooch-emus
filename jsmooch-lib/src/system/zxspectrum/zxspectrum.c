@@ -145,7 +145,7 @@ static void new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS 
 }
 
 
-static u32 ZXSpectrum_keyboard_keymap[40] = {
+static const u32 ZXSpectrum_keyboard_keymap[40] = {
         JK_1, JK_2, JK_3, JK_4, JK_5,
         JK_0, JK_9, JK_8, JK_7, JK_6,
         JK_Q, JK_W, JK_E, JK_R, JK_T,

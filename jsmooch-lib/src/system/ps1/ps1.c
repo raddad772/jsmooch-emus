@@ -9,7 +9,7 @@
 
 #include "ps1.h"
 #include "ps1_bus.h"
-#include "ps1_debugger.h"
+//#include "ps1_debugger.h"
 
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/r3000/r3000.h"
@@ -150,13 +150,13 @@ static void run_cycles(struct PS1 *this, i64 num)
     u32 block = 20;
     while (this->cycles_left > 0) {
         if (block < this->cycles_left) block = this->cycles_left;
-        run_controllers(this, block);
+        PS1_run_controllers(this, block);
         R3000_cycle(&this->cpu, block);
         this->clock.cycles_left_this_frame -= block;
 
         if (this->clock.cycles_left_this_frame <= 0) {
             this->clock.cycles_left_this_frame += PS1_CYCLES_PER_FRAME_NTSC;
-            set_irq(this, PS1IRQ_VBlank, 1);
+            //set_irq(this, PS1IRQ_VBlank, 1); // XX
         }
 
 /*
@@ -332,8 +332,8 @@ static void PS1J_describe_io(JSM, struct cvec* IOs)
 
     // controllers
     struct physical_io_device *controller = cvec_push_back(this->jsm.IOs);
-    PS1_controller_setup_pio(controller);
-    this->controller.pio = controller;
+    //PS1_controller_setup_pio(controller); // XX
+    // this->controller.pio = controller; // XX
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -369,5 +369,5 @@ static void PS1J_describe_io(JSM, struct cvec* IOs)
 
     setup_audio(IOs);
 
-    this->gpu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
+    this->gpu.display = &((struct physical_io_device *)cpg(this->gpu.display_ptr))->display;
 }

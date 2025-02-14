@@ -6,6 +6,7 @@
 #define JSMOOCH_EMUS_PS1_BUS_H
 
 #include "component/cpu/r3000/r3000.h"
+#include "helpers/physical_io.h"
 #include "ps1_device.h"
 
 enum PS1_IRQ {
@@ -92,6 +93,12 @@ struct PS1 {
     struct {
         u32 cached_isolated;
     } io;
+
+    struct {
+        u16 *cur_output;
+        struct cvec_ptr display_ptr;
+        struct JSM_DISPLAY *display;
+    } gpu;
 };
 
 

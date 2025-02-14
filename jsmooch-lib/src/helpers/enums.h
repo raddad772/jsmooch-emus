@@ -25,6 +25,7 @@ enum jsm_systems {
     SYS_APPLEIIe,
     SYS_GBA,
     SYS_NDS,
+    SYS_GALAKSIJA,
 };
 
 enum jsm_regions {

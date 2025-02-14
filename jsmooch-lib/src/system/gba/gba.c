@@ -75,7 +75,7 @@ void GBAJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 
 }
 
-u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
+static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
     struct GBA* this = (struct GBA*)ptr;
     return GBA_mainbus_read(this, addr, sz, this->io.cpu.open_bus_data, 0);
 }

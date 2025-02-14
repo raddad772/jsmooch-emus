@@ -374,6 +374,10 @@ add_library(jsmooch-lib
         src/component/cpu/r3000/r3000_disassembler.h
         src/system/ps1/ps1_device.c
         src/system/ps1/ps1_device.h
+        src/system/galaksija/galaksija.c
+        src/system/galaksija/galaksija.h
+        src/system/galaksija/galaksija_bus.c
+        src/system/galaksija/galaksija_bus.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

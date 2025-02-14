@@ -152,6 +152,14 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             mfs_add("biosnds9.bin", BIOS_PATH, BIOSes);
             mfs_add("firmware.bin", BIOS_PATH, BIOSes);
             break;
+        case SYS_GALAKSIJA:
+            has_bios = 1;
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/galaksija", BASE_PATH);
+            mfs_add("CHRGEN_MIPRO.bin", BIOS_PATH, BIOSes);
+            mfs_add("ROM_A_28.bin", BIOS_PATH, BIOSes);
+            //mfs_add("ROM_A_29.bin", BIOS_PATH, BIOSes);
+            //mfs_add("ROM_B.bin", BIOS_PATH, BIOSes);
+            break;
         case SYS_SG1000:
         case SYS_PSX:
         case SYS_GENESIS_JAP:
@@ -218,6 +226,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             break;
         case SYS_APPLEIIe:
             snprintf(out, out_sz, "%s/appleii", BASER_PATH);
+            *worked = 1;
+            break;
+        case SYS_GALAKSIJA:
+            snprintf(out, out_sz, "%s/galaksija", BASER_PATH);
             *worked = 1;
             break;
         case SYS_ZX_SPECTRUM_48K:
@@ -655,6 +667,9 @@ void full_system::load_default_ROM()
         case SYS_MACPLUS_1MB:
             //worked = grab_ROM(&ROMs, which, "system1_1.img", nullptr);
             worked = grab_ROM(&ROMs, which, "fd1.image", nullptr);
+            break;
+        case SYS_GALAKSIJA:
+            worked = 1;
             break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:

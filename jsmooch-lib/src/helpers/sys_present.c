@@ -106,6 +106,25 @@ void apple2_present(struct physical_io_device *device, void *out_buf, u32 x_offs
     }
 }
 
+void galaksija_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
+{
+    u8* output = (u8 *)device->display.output[device->display.last_written];
+    u32* imgdata = (u32 *)out_buf;
+    for (u32 ry = 0; ry < 320; ry++) {
+        u32 y = ry;
+        for (u32 rx = 0; rx < 192; rx++) {
+            u32 x = rx;
+            u32 di = ((y * out_width) + x);
+            u32 ulai = (y * 192) + x;
+
+            u32 color = output[ulai];
+            color = 0xFF000000 | (0xFFFFFF * color);
+
+            imgdata[di] = color;
+        }
+    }
+}
+
 void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)
 {
     u8* output = (u8 *)device->display.output[device->display.last_written];
@@ -124,7 +143,6 @@ void zx_spectrum_present(struct physical_io_device *device, void *out_buf, u32 o
             imgdata[di] = to_RGBA(ZXS_palette[pal][color]);
         }
     }
-
 }
 
 void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height)

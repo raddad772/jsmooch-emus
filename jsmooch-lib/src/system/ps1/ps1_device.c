@@ -41,7 +41,7 @@ static void peripheral_exchange_byte(struct PS1_peripheral *this, u8 cmd, struct
         return;
     }
 
-    device_handle_command(this, this->seq, cmd);
+    // device_handle_command(this, this->seq, cmd); XX
 
     this->active = out->r2.kind != PS1DSK_idle;
     this->seq += 1;
@@ -208,7 +208,7 @@ static void run_dsr(struct PS1 *this, i32 cycles)
     dsr_run(&this->pad_memcard.memcard1_dsr, cycles);
     dsr_run(&this->pad_memcard.memcard2_dsr, cycles);
     pmc_refresh_irq_level(&this->pad_memcard);
-    PS1_set_irq(PS1IRQ_PadMemCardByteRecv, &this->pad_memcard.interrupt);
+    // XX PS1_set_irq(PS1IRQ_PadMemCardByteRecv, &this->pad_memcard.interrupt);
 }
 
 void PS1_run_controllers(struct PS1 *this, u32 numcycles)

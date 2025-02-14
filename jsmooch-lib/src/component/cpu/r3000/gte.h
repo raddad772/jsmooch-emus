@@ -55,7 +55,7 @@ struct R3000_GTE {
 
     i16 matrices[4][3][3];
     i32 control_vectors[4][3];
-    i16 v[3][3];
+    i16 v[4][3];
 
     i16 xy_fifo[4][2];
     u8 rgb_fifo[3][4];
