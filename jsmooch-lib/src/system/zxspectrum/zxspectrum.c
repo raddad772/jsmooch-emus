@@ -626,7 +626,7 @@ static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this)
             }
 
             printif(z80.mem, DBGC_Z80 "\nZXS(%06llu)r   %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
-        } else if (this->cpu.pins.IO) { // read IO port
+        } else if (this->cpu.pins.IO && (this->cpu.pins.M1 == 0)) { // read IO port
             this->cpu.pins.D = ZXSpectrum_ULA_reg_read(this, this->cpu.pins.Addr);
             printif(z80.io, DBGC_Z80"\nZXS(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST, *this->cpu.trace.cycles, this->cpu.pins.Addr, this->cpu.pins.D, this->cpu.regs.TCU);
         }

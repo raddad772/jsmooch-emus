@@ -365,7 +365,7 @@ void genesis_cycle_z80(struct genesis* this)
                 dbg_printf(DBGC_READ "\nr.Z80 (%lld)   %06x  v:%02x" DBGC_RST, this->clock.master_cycle_count, this->z80.pins.Addr, this->z80.pins.D);
             }
         }
-        else if (this->z80.pins.IO) {
+        else if (this->z80.pins.IO && (this->z80.pins.M1 == 0)) {
             // All Z80 IO requests return 0xFF
             this->z80.pins.D = 0xFF;
         }

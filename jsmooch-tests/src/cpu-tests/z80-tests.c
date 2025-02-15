@@ -691,7 +691,7 @@ static void test_z80_automated(struct z80_test_result *out, struct Z80* cpu, str
                 if (test_RAM[cpu->pins.Addr] != 0xFFFFFFFF)
                     cpu->pins.D = test_RAM[cpu->pins.Addr];
             }
-            if (cpu->pins.RD && cpu->pins.IO) {
+            if (cpu->pins.RD && cpu->pins.IO  && (cpu->pins.M1 == 0)) {
                 for (u32 p = 0; p < test->num_ports; p++) {
                     if (test->ports[p].addr == cpu->pins.Addr) {
                         cpu->pins.D = test->ports[p].data;

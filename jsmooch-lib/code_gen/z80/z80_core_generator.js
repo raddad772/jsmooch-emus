@@ -88,6 +88,7 @@ function Z80_get_opc_by_prefix(prfx, i) {
 
 class Z80_switchgen {
     constructor(indent, what, sub, is_C) {
+        this.do_irq = true;
         this.indent1 = indent;
         this.indent2 = '    ' + this.indent1;
         this.indent3 = '    ' + this.indent2;
@@ -198,8 +199,9 @@ class Z80_switchgen {
     }
 
     // This is a final "cycle" only SOME functions use, mostly to get final data read done
-    cleanup() {
+    cleanup(do_irq=true) {
         this.has_footer = true;
+        this.do_irq = do_irq;
         this.addcycle('cleanup_custom');
     }
 
@@ -218,7 +220,7 @@ class Z80_switchgen {
         this.addl('regs.prefix = 0x00;');
         this.addl('regs.rprefix = Z80P.HL;');
         this.addl('regs.IR = Z80_S_DECODE;');
-        this.addl('regs.poll_IRQ = true;');
+        if (this.do_irq) this.addl('regs.poll_IRQ = true;');
         this.addl('break;');
     }
 
@@ -1263,6 +1265,8 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             // Mode0 we can mostly ignore.
 
             // So we do the 5 cycles...
+            ag.addcycle('IRQ processing idle cycle!');
+
             ag.addcycle('Start IACK read');
             ag.addl('regs.R = (regs.R + 1) & 0x7F;');
             ag.addl('pins.RD = 0; pins.WR = 0; pins.MRQ = 0; pins.IO = 0;');
@@ -1329,16 +1333,17 @@ function Z80_generate_instruction_function(indent, opcode_info, sub, CMOS, as=fa
             ag.addl('pins.RD = 0; pins.MRQ = 0;');
             ag.addl('regs.t[3] |= (pins.D << 8);');
 
-            ag.cleanup();
+            ag.cleanup(false);
             ag.addl('pins.WR = 0;');
             ag.addl('if (regs.t[1] == 1) { // IM1');
-            ag.addl('    regs.WZ = regs.IRQ_vec;');
-            ag.addl('    regs.PC = regs.IRQ_vec;');
+            ag.addl('    regs.WZ = regs.PC = regs.IRQ_vec;');
             ag.addl('}');
             ag.addl('else { // IM2');
-            ag.addl('    regs.WZ = 0;');
-            ag.addl('    regs.PC = regs.t[3];');
+            ag.addl('    regs.WZ = regs.PC = regs.t[3];');
             ag.addl('}')
+            ag.addl('regs.IRQ_vec = 0;');
+            ag.addl('regs.IFF1 = 0;');
+            ag.addl('if (pins->IRQ_maskable) regs.IFF2 = 0;');
             break;
         case Z80_MN.RESET:
             // disables the maskable interrupt, selects interrupt mode 0, zeroes registers I & R and zeroes the program counter (PC)

@@ -8425,21 +8425,23 @@ void Z80_ins_00_FF_RST_o(struct Z80_regs* regs, struct Z80_pins* pins)
 void Z80_ins_00_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
-        case 1: { // Start IACK read
+        case 1: { // IRQ processing idle cycle!
+            break; }
+        case 2: { // Start IACK read
             regs->R = (regs->R + 1) & 0x7F;
             pins->RD = 0; pins->WR = 0; pins->MRQ = 0; pins->IO = 0;
             break; }
-        case 2: { // signal IACK
+        case 3: { // signal IACK
             pins->RD = 1; pins->IO = 1;
             pins->M1 = 1;
             break; }
-        case 3: { // wait 1
+        case 4: { // wait 1
             if (pins->WAIT) regs->TCU--;
             break; }
-        case 4: { // wait 2
+        case 5: { // wait 2
             if (pins->WAIT) regs->TCU--;
             break; }
-        case 5: { // Latch value...
+        case 6: { // Latch value...
             pins->M1 = 0;
             regs->t[0] = pins->D;
             pins->RD = 0; pins->IO = 0;
@@ -8450,62 +8452,63 @@ void Z80_ins_00_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
             }
             regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 6: { // write begin
+        case 7: { // write begin
             pins->Addr = (regs->SP);
             break; }
-        case 7: {
+        case 8: {
             pins->D = ((regs->PC >> 8) & 0xFF);
             pins->WR = 1; pins->MRQ = 1;
             break; }
-        case 8: { // write end
+        case 9: { // write end
             pins->WR = 0; pins->MRQ = 0;
             regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 9: { // push PC lo begin
+        case 10: { // push PC lo begin
             pins->Addr = regs->SP;
             break; }
-        case 10: {
+        case 11: {
             pins->D = regs->PC & 0xFF;
             pins->WR = 1; pins->MRQ = 1;
             break; }
-        case 11: { // write end
+        case 12: { // write end
             pins->WR = 0; pins->MRQ = 0;
             if (regs->t[1] == 1) {
                 regs->TCU += 6;
             }
             regs->t[2] = (regs->I << 8) | regs->t[0];
             break; }
-        case 12: { // Start read
+        case 13: { // Start read
             pins->Addr = (regs->t[2]);
             break; }
-        case 13: { // signal
+        case 14: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 14: { // Read end/latch
+        case 15: { // Read end/latch
             regs->t[3] = pins->D;
             pins->RD = 0; pins->MRQ = 0;
             regs->t[2] = (regs->t[2] + 1) & 0xFFFF;
             break; }
-        case 15: { // Start read
+        case 16: { // Start read
             pins->Addr = regs->t[2];
             break; }
-        case 16: { // signal
+        case 17: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 17: { // finish read...
+        case 18: { // finish read...
             pins->RD = 0; pins->MRQ = 0;
             regs->t[3] |= (pins->D << 8);
             break; }
-        case 18: { // cleanup_custom
+        case 19: { // cleanup_custom
             pins->WR = 0;
             if (regs->t[1] == 1) { // IM1
-                regs->WZ = regs->IRQ_vec;
-                regs->PC = regs->IRQ_vec;
+                regs->WZ = regs->PC = regs->IRQ_vec;
             }
             else { // IM2
-                regs->WZ = 0;
-                regs->PC = regs->t[3];
+                regs->WZ = regs->PC = regs->t[3];
             }
+            regs->IRQ_vec = 0;
+            regs->IFF1 = 0;
+            if (pins->IRQ_maskable) regs->IFF2 = 0;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -8516,7 +8519,6 @@ void Z80_ins_00_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
             regs->prefix = 0x00;
             regs->rprefix = Z80P_HL;
             regs->IR = Z80_S_DECODE;
-            regs->poll_IRQ = TRUE;
             break;
     }}
 }
@@ -24447,21 +24449,23 @@ void Z80_ins_DD_FF_RST_o(struct Z80_regs* regs, struct Z80_pins* pins)
 void Z80_ins_DD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
-        case 1: { // Start IACK read
+        case 1: { // IRQ processing idle cycle!
+            break; }
+        case 2: { // Start IACK read
             regs->R = (regs->R + 1) & 0x7F;
             pins->RD = 0; pins->WR = 0; pins->MRQ = 0; pins->IO = 0;
             break; }
-        case 2: { // signal IACK
+        case 3: { // signal IACK
             pins->RD = 1; pins->IO = 1;
             pins->M1 = 1;
             break; }
-        case 3: { // wait 1
+        case 4: { // wait 1
             if (pins->WAIT) regs->TCU--;
             break; }
-        case 4: { // wait 2
+        case 5: { // wait 2
             if (pins->WAIT) regs->TCU--;
             break; }
-        case 5: { // Latch value...
+        case 6: { // Latch value...
             pins->M1 = 0;
             regs->t[0] = pins->D;
             pins->RD = 0; pins->IO = 0;
@@ -24472,62 +24476,63 @@ void Z80_ins_DD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
             }
             regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 6: { // write begin
+        case 7: { // write begin
             pins->Addr = (regs->SP);
             break; }
-        case 7: {
+        case 8: {
             pins->D = ((regs->PC >> 8) & 0xFF);
             pins->WR = 1; pins->MRQ = 1;
             break; }
-        case 8: { // write end
+        case 9: { // write end
             pins->WR = 0; pins->MRQ = 0;
             regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 9: { // push PC lo begin
+        case 10: { // push PC lo begin
             pins->Addr = regs->SP;
             break; }
-        case 10: {
+        case 11: {
             pins->D = regs->PC & 0xFF;
             pins->WR = 1; pins->MRQ = 1;
             break; }
-        case 11: { // write end
+        case 12: { // write end
             pins->WR = 0; pins->MRQ = 0;
             if (regs->t[1] == 1) {
                 regs->TCU += 6;
             }
             regs->t[2] = (regs->I << 8) | regs->t[0];
             break; }
-        case 12: { // Start read
+        case 13: { // Start read
             pins->Addr = (regs->t[2]);
             break; }
-        case 13: { // signal
+        case 14: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 14: { // Read end/latch
+        case 15: { // Read end/latch
             regs->t[3] = pins->D;
             pins->RD = 0; pins->MRQ = 0;
             regs->t[2] = (regs->t[2] + 1) & 0xFFFF;
             break; }
-        case 15: { // Start read
+        case 16: { // Start read
             pins->Addr = regs->t[2];
             break; }
-        case 16: { // signal
+        case 17: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 17: { // finish read...
+        case 18: { // finish read...
             pins->RD = 0; pins->MRQ = 0;
             regs->t[3] |= (pins->D << 8);
             break; }
-        case 18: { // cleanup_custom
+        case 19: { // cleanup_custom
             pins->WR = 0;
             if (regs->t[1] == 1) { // IM1
-                regs->WZ = regs->IRQ_vec;
-                regs->PC = regs->IRQ_vec;
+                regs->WZ = regs->PC = regs->IRQ_vec;
             }
             else { // IM2
-                regs->WZ = 0;
-                regs->PC = regs->t[3];
+                regs->WZ = regs->PC = regs->t[3];
             }
+            regs->IRQ_vec = 0;
+            regs->IFF1 = 0;
+            if (pins->IRQ_maskable) regs->IFF2 = 0;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -24538,7 +24543,6 @@ void Z80_ins_DD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
             regs->prefix = 0x00;
             regs->rprefix = Z80P_HL;
             regs->IR = Z80_S_DECODE;
-            regs->poll_IRQ = TRUE;
             break;
     }}
 }
@@ -37277,21 +37281,23 @@ void Z80_ins_FD_FF_RST_o(struct Z80_regs* regs, struct Z80_pins* pins)
 void Z80_ins_FD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
-        case 1: { // Start IACK read
+        case 1: { // IRQ processing idle cycle!
+            break; }
+        case 2: { // Start IACK read
             regs->R = (regs->R + 1) & 0x7F;
             pins->RD = 0; pins->WR = 0; pins->MRQ = 0; pins->IO = 0;
             break; }
-        case 2: { // signal IACK
+        case 3: { // signal IACK
             pins->RD = 1; pins->IO = 1;
             pins->M1 = 1;
             break; }
-        case 3: { // wait 1
+        case 4: { // wait 1
             if (pins->WAIT) regs->TCU--;
             break; }
-        case 4: { // wait 2
+        case 5: { // wait 2
             if (pins->WAIT) regs->TCU--;
             break; }
-        case 5: { // Latch value...
+        case 6: { // Latch value...
             pins->M1 = 0;
             regs->t[0] = pins->D;
             pins->RD = 0; pins->IO = 0;
@@ -37302,62 +37308,63 @@ void Z80_ins_FD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
             }
             regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 6: { // write begin
+        case 7: { // write begin
             pins->Addr = (regs->SP);
             break; }
-        case 7: {
+        case 8: {
             pins->D = ((regs->PC >> 8) & 0xFF);
             pins->WR = 1; pins->MRQ = 1;
             break; }
-        case 8: { // write end
+        case 9: { // write end
             pins->WR = 0; pins->MRQ = 0;
             regs->SP = (regs->SP - 1) & 0xFFFF;
             break; }
-        case 9: { // push PC lo begin
+        case 10: { // push PC lo begin
             pins->Addr = regs->SP;
             break; }
-        case 10: {
+        case 11: {
             pins->D = regs->PC & 0xFF;
             pins->WR = 1; pins->MRQ = 1;
             break; }
-        case 11: { // write end
+        case 12: { // write end
             pins->WR = 0; pins->MRQ = 0;
             if (regs->t[1] == 1) {
                 regs->TCU += 6;
             }
             regs->t[2] = (regs->I << 8) | regs->t[0];
             break; }
-        case 12: { // Start read
+        case 13: { // Start read
             pins->Addr = (regs->t[2]);
             break; }
-        case 13: { // signal
+        case 14: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 14: { // Read end/latch
+        case 15: { // Read end/latch
             regs->t[3] = pins->D;
             pins->RD = 0; pins->MRQ = 0;
             regs->t[2] = (regs->t[2] + 1) & 0xFFFF;
             break; }
-        case 15: { // Start read
+        case 16: { // Start read
             pins->Addr = regs->t[2];
             break; }
-        case 16: { // signal
+        case 17: { // signal
             pins->RD = 1; pins->MRQ = 1;
             break; }
-        case 17: { // finish read...
+        case 18: { // finish read...
             pins->RD = 0; pins->MRQ = 0;
             regs->t[3] |= (pins->D << 8);
             break; }
-        case 18: { // cleanup_custom
+        case 19: { // cleanup_custom
             pins->WR = 0;
             if (regs->t[1] == 1) { // IM1
-                regs->WZ = regs->IRQ_vec;
-                regs->PC = regs->IRQ_vec;
+                regs->WZ = regs->PC = regs->IRQ_vec;
             }
             else { // IM2
-                regs->WZ = 0;
-                regs->PC = regs->t[3];
+                regs->WZ = regs->PC = regs->t[3];
             }
+            regs->IRQ_vec = 0;
+            regs->IFF1 = 0;
+            if (pins->IRQ_maskable) regs->IFF2 = 0;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -37368,7 +37375,6 @@ void Z80_ins_FD_100_IRQ(struct Z80_regs* regs, struct Z80_pins* pins)
             regs->prefix = 0x00;
             regs->rprefix = Z80P_HL;
             regs->IR = Z80_S_DECODE;
-            regs->poll_IRQ = TRUE;
             break;
     }}
 }

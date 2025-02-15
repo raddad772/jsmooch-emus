@@ -381,7 +381,8 @@ static void cpu_cycle(struct SMSGG* this)
                 //dbg.traces.add(D_RESOURCE_TYPES.Z80, this->cpu.trace_cycles, trace_format_read('Z80', Z80_COLOR, this->cpu.trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D, null, this->cpu.regs.TCU));
             }
 #endif
-        } else if (this->cpu.pins.IO && !(this->cpu.pins.M1)) { // read IO port
+        } else if (this->cpu.pins.IO && (this->cpu.pins.M1 == 0)) { // read IO port
+            //RD=1, IO=1, M1=1 means "IRQ ack" so we ignore that here
             this->cpu.pins.D = this->cpu_in(this, this->cpu.pins.Addr, this->cpu.pins.D, 1);
 #ifndef LYCODER
             if (dbg.trace_on)
