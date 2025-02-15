@@ -121,12 +121,12 @@ void galaksija_present(struct physical_io_device *device, void *out_buf, u32 out
             u32 color = output[ulai];
             color = 0xFF000000 | (0xFFFFFF * color);
 
-            if ((ry >= 55) && (ry < 264)) {
+            /*if ((ry >= 55) && (ry < 264)) {
                 if ((rx == 63) || (rx == 320)) color = 0xFFFF0000;
             }
             if ((rx >= 63) && (rx < 320)) {
                 if ((ry == 55) || (ry == 264)) color = 0xFFFF0000;
-            }
+            }*/
 
             imgdata[di] = color;
         }

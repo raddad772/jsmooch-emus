@@ -64,9 +64,6 @@ struct galaksija {
 
         u8 shift_register;
         i32 shift_count;
-
-        u32 WAIT_on_M1;
-        u32 WAIT_down_on_hblank;
     } crt;
 
     struct {

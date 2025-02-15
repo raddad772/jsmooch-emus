@@ -137,9 +137,11 @@ static void new_scanline(struct galaksija *this)
 Video synchronization
 ; hardware then makes sure (by inserting WAIT states) that the first opcode
 ; starts to execute exactly in sync with the next horizontal sync.     */
+
+    // Schematics show it does this by setting WAIT pin to 1 when M1=1 and IO=1 during IRQ acknowledge cycle.
+    // It supposedly goes down at the next line.
     if (this->crt.y == 56) {
         Z80_notify_IRQ(&this->z80, 1); // draw IRQ
-        this->crt.WAIT_on_M1 = 1;
     }
     this->crt.shift_count = 0;
 }
@@ -182,12 +184,6 @@ static void reload_shift_register(struct galaksija *this)
 static void cpu_cycle (struct galaksija *this)
 {
     Z80_cycle(&this->z80);
-    if ((this->crt.WAIT_on_M1) && (this->z80.pins.M1) && (this->z80.pins.Addr == 0x38)) {
-        this->crt.WAIT_on_M1 = 0;
-        this->crt.WAIT_down_on_hblank = 1;
-        this->z80.pins.WAIT = 1;
-        Z80_notify_IRQ(&this->z80, 0);
-    }
     if (this->z80.pins.RD) {
         if (this->z80.pins.MRQ) {// read ROM/RAM
             this->z80.pins.D = galaksija_mainbus_read(this, this->z80.pins.Addr, this->io.open_bus, 1);
@@ -195,8 +191,13 @@ static void cpu_cycle (struct galaksija *this)
             printif(z80.mem, DBGC_Z80 "\nGAL(%06llu)r   %04x   $%02x         TCU:%d" DBGC_RST,
                     *this->z80.trace.cycles, this->z80.pins.Addr, this->z80.pins.D, this->z80.regs.TCU);
         } else if (this->z80.pins.IO) { // read IO port
-            printif(z80.io, DBGC_Z80"\nGAL(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST,
-                    *this->z80.trace.cycles, this->z80.pins.Addr, this->z80.pins.D, this->z80.regs.TCU);
+            if (this->z80.pins.M1) {
+                this->z80.pins.WAIT = 1;
+                Z80_notify_IRQ(&this->z80, 0);
+            } else {
+                printif(z80.io, DBGC_Z80"\nGAL(%06llu)in  %04x   $%02x         TCU:%d" DBGC_RST,
+                        *this->z80.trace.cycles, this->z80.pins.Addr, this->z80.pins.D, this->z80.regs.TCU);
+            }
         }
     }
     if (this->z80.pins.WR) {
@@ -216,25 +217,23 @@ static void cpu_cycle (struct galaksija *this)
 
 void galaksija_cycle(struct galaksija *this)
 {
-    // Lower IRQ if needed
-    if (this->crt.WAIT_down_on_hblank) {
-        u32 cx = this->ROMB_present ? 2 : 16;
-        if (this->crt.x == cx) {
-            this->z80.pins.WAIT = 0;
-            this->crt.WAIT_down_on_hblank = 0;
-        }
-    }
     // Run CPU at clock divisor of 2
     if (this->clock.z80_divider == 0) {
         cpu_cycle(this);
+    }
+    // Lower WAIT if needed
+    u32 cx = this->ROMB_present ? 380 : 382;
+    if (this->crt.x == cx) {
+        this->z80.pins.WAIT = 0;
     }
     this->clock.z80_divider ^= 1;
 
 
 
     // Draw a pixel if we're in the visible zone
-    if (((this->crt.x >= LEFT_HBLANK_PX) && (this->crt.x < (LEFT_HBLANK_PX+DRAW_PX))) &&
-            ((this->crt.y >= TOP_VBLANK_LINES) && (this->crt.y < (TOP_VBLANK_LINES+DRAW_LINES)))) {
+    /*if (((this->crt.x >= LEFT_HBLANK_PX) && (this->crt.x < (LEFT_HBLANK_PX+DRAW_PX))) &&
+            ((this->crt.y >= TOP_VBLANK_LINES) && (this->crt.y < (TOP_VBLANK_LINES+DRAW_LINES)))) {*/
+    if (true) {
 
         if (this->crt.shift_count == 0) reload_shift_register(this);
 
