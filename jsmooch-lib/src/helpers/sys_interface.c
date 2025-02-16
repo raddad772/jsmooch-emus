@@ -151,6 +151,9 @@ void jsm_delete(struct jsm_system* jsm)
         case SYS_ZX_SPECTRUM_128K:
             ZXSpectrum_delete(jsm);
             break;
+        case SYS_GALAKSIJA:
+            galaksija_delete(jsm);
+            break;
         default:
             printf("DELETE UNKNOWN SYSTEM!");
             break;

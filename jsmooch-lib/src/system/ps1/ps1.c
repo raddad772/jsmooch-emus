@@ -74,6 +74,12 @@ static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz)
     return PS1_mainbus_read(this, addr, sz, 0);
 }
 
+static void PS1_update_SR(void *ptr, struct R3000 *core, u32 val)
+{
+    struct PS1 *this = (struct PS1 *)ptr;
+    this->mem.cache_isolated = (val & 0x10000) == 0x10000;
+}
+
 void PS1_new(struct jsm_system *jsm)
 {
     struct PS1* this = (struct PS1*)malloc(sizeof(struct PS1));
@@ -86,6 +92,8 @@ void PS1_new(struct jsm_system *jsm)
     this->cpu.write = &PS1_mainbus_write;
     this->cpu.fetch_ptr = this;
     this->cpu.fetch_ins = &PS1_mainbus_fetchins;
+    this->cpu.update_sr_ptr = this;
+    this->cpu.update_sr = &PS1_update_SR;
 
     PS1_bus_init(this);
     /*PS1_clock_init(&this->clock);
@@ -143,6 +151,11 @@ void PS1_delete(struct jsm_system *jsm)
     jsm_clearfuncs(jsm);
 }
 
+static void set_irq(struct PS1 *this, enum PS1_IRQ from, u32 level)
+{
+    IRQ_multiplexer_set_level(&this->cpu.io.I_STAT, level, from);
+    R3000_update_I_STAT(&this->cpu);
+}
 
 static void run_cycles(struct PS1 *this, i64 num)
 {
@@ -150,19 +163,14 @@ static void run_cycles(struct PS1 *this, i64 num)
     u32 block = 20;
     while (this->cycles_left > 0) {
         if (block < this->cycles_left) block = this->cycles_left;
-        PS1_run_controllers(this, block);
         R3000_cycle(&this->cpu, block);
         this->clock.cycles_left_this_frame -= block;
 
         if (this->clock.cycles_left_this_frame <= 0) {
             this->clock.cycles_left_this_frame += PS1_CYCLES_PER_FRAME_NTSC;
-            //set_irq(this, PS1IRQ_VBlank, 1); // XX
+            set_irq(this, PS1IRQ_VBlank, 1);
         }
 
-/*
-            this.clock.cpu_frame_cycle += block;
-            this.clock.cpu_master_clock += block;
- */
         this->clock.master_cycle_count += block;
         this->cycles_left -= block;
         if (dbg.do_break) break;
@@ -332,8 +340,8 @@ static void PS1J_describe_io(JSM, struct cvec* IOs)
 
     // controllers
     struct physical_io_device *controller = cvec_push_back(this->jsm.IOs);
-    //PS1_controller_setup_pio(controller); // XX
-    // this->controller.pio = controller; // XX
+    //PS1_controller_setup_pio(controller);
+    //this->controller.pio = controller;
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);

@@ -7,7 +7,7 @@
 
 #include "component/cpu/r3000/r3000.h"
 #include "helpers/physical_io.h"
-#include "ps1_device.h"
+#include "ps1_gpu.h"
 
 enum PS1_IRQ {
     PS1IRQ_VBlank,
@@ -21,6 +21,16 @@ enum PS1_IRQ {
     PS1IRQ_SIO,
     PS1IRQ_SPU,
     PS1IRQ_PIOLightpen
+};
+
+enum PS1_DMA_ports {
+    PS1DP_MDEC_in,
+    PS1DP_MDEC_out,
+    PS1DP_GPU,
+    PS1DP_cdrom,
+    PS1DP_SPU,
+    PS1DP_PIO,
+    PS1DP_OTC
 };
 
 struct PS1_clock {
@@ -51,6 +61,8 @@ struct PS1 {
     struct PS1_clock clock;
     i64 cycles_left;
 
+    struct PS1_GPU gpu;
+
     struct {
         struct cvec* IOs;
         u32 described_inputs;
@@ -63,16 +75,11 @@ struct PS1 {
         //u32 scraptchad, MRAM, VRAM, BIOS;
 
         u8 MRAM[2 * 1024 * 1024];
-        u8 VRAM[1024 * 1024];
         u8 BIOS[512 * 1024];
         u8 BIOS_unpatched[512 * 1024];
         u32 cache_isolated;
 
     } mem;
-
-    struct PS1_pad_memcard pad_memcard;
-    struct PS1_peripheral controller1;
-    struct PS1_peripheral controller2;
 
     struct PS1_DMA {
         u32 control;
@@ -93,12 +100,6 @@ struct PS1 {
     struct {
         u32 cached_isolated;
     } io;
-
-    struct {
-        u16 *cur_output;
-        struct cvec_ptr display_ptr;
-        struct JSM_DISPLAY *display;
-    } gpu;
 };
 
 

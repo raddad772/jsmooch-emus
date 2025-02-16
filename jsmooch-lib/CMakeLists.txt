@@ -372,14 +372,21 @@ add_library(jsmooch-lib
         src/component/cpu/r3000/r3000_instructions.h
         src/component/cpu/r3000/r3000_disassembler.c
         src/component/cpu/r3000/r3000_disassembler.h
-        src/system/ps1/ps1_device.c
-        src/system/ps1/ps1_device.h
         src/system/galaksija/galaksija.c
         src/system/galaksija/galaksija.h
         src/system/galaksija/galaksija_bus.c
         src/system/galaksija/galaksija_bus.h
         src/system/galaksija/galaksija_debugger.c
         src/system/galaksija/galaksija_debugger.h
+        src/helpers/irq_multiplexer.c
+        src/helpers/irq_multiplexer.h
+        src/helpers/irq_multiplexer.c
+        src/helpers/irq_multiplexer.h
+        src/helpers/irq_multiplexer.c
+        src/system/ps1/ps1_dma.c
+        src/system/ps1/ps1_dma.h
+        src/system/ps1/ps1_gpu.c
+        src/system/ps1/ps1_gpu.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

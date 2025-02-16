@@ -5,6 +5,7 @@
 #ifndef JSMOOCH_EMUS_R3000_H
 #define JSMOOCH_EMUS_R3000_H
 
+#include "helpers/irq_multiplexer.h"
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "r3000_multiplier.h"
@@ -14,8 +15,6 @@ struct R3000_regs {
     u32 R[32];
     u32 COP0[32];
     u32 PC;
-
-    u32 I_STAT, I_MASK;
 };
 
 enum R3000_MN {
@@ -80,6 +79,11 @@ struct R3000 {
         i32 source_id;
     } trace;
 
+    struct {
+        struct IRQ_multiplexer I_STAT;
+        u32 I_MASK;
+    } io;
+
     struct R3000_GTE gte;
 
     struct R3000_opcode decode_table[0x7F];
@@ -99,5 +103,7 @@ void R3000_reset(struct R3000*);
 void R3000_exception(struct R3000 *, u32 code, u32 branch_delay, u32 cop0);
 void R3000_flush_pipe(struct R3000 *);
 void R3000_cycle(struct R3000 *, i32 howmany);
-
+void R3000_update_I_STAT(struct R3000 *);
+void R3000_write_reg(struct R3000 *, u32 addr, u32 sz, u32 val);
+u32 R3000_read_reg(struct R3000 *, u32 addr, u32 sz);
 #endif //JSMOOCH_EMUS_R3000_H

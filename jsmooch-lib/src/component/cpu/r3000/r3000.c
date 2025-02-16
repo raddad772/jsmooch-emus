@@ -330,6 +330,8 @@ void R3000_init(struct R3000 *this, u64 *master_clock, u32 *waitstates)
     this->clock = master_clock;
     this->waitstates = waitstates;
 
+    IRQ_multipelxer_init(&this->io.I_STAT);
+
     do_decode_table(this);
 
     pipe_clear(&this->pipe);
@@ -476,4 +478,38 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
         cycles_left -= 2;
         if (dbg.do_break) break;
     }
+}
+
+void R3000_update_I_STAT(struct R3000 *this)
+{
+    this->pins.IRQ = (this->io.I_STAT.IF & this->io.I_MASK) != 0;
+}
+
+void R3000_write_reg(struct R3000 *this, u32 addr, u32 sz, u32 val)
+{
+    switch(addr) {
+        case 0x1F801070: // I_STAT write
+            this->io.I_STAT.IF &= val;
+            R3000_update_I_STAT(this);
+            return;
+        case 0x1F801074: // I_MASK write
+            this->io.I_MASK = val;
+            R3000_update_I_STAT(this);
+            return;
+    }
+    printf("Unhandled CPU write %08x (%d): %08x", addr, sz, val);
+}
+
+u32 R3000_read_reg(struct R3000 *this, u32 addr, u32 sz)
+{
+    switch(addr) {
+        case 0x1F801070: // I_STAT read
+            return this->io.I_STAT.IF;
+        case 0x1F801074: // I_MASK read
+            return this->io.I_MASK;
+    }
+    printf("Unhandled CPU read %08x (%d)", addr, sz);
+    static const u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
+    return mask[sz];
+
 }
