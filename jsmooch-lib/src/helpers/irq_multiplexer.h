@@ -12,7 +12,7 @@ struct IRQ_multiplexer {
     u32 current_level;
 };
 
-void IRQ_multipelxer_init(struct IRQ_multiplexer *);
+void IRQ_multiplexer_init(struct IRQ_multiplexer *);
 u32 IRQ_multiplexer_set_level(struct IRQ_multiplexer *, u32 level, u32 from);
 void IRQ_multiplexer_clear(struct IRQ_multiplexer *);
 

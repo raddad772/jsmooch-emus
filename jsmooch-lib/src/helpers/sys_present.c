@@ -329,6 +329,24 @@ void NDS_present(struct physical_io_device *device, void *out_buf, u32 out_width
     return;
 }
 
+void PS1_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present) {
+    u16 *gbao = (u16 *)device->display.output[device->display.last_written];
+    u32 *img32 = (u32 *) out_buf;
+
+    for (u32 ry = 0; ry < 512; ry++) {
+        u32 y = ry;
+        u32 *line_out_ptr = img32 + (ry * out_width);
+        for (u32 rx = 0; rx < 1024; rx++) {
+            u32 x = rx;
+            u32 di = ((y * 512) + x);
+
+            u32 color = ps1_to_screen(gbao[di]);
+            *line_out_ptr = color;
+            line_out_ptr++;
+        }
+    }
+}
+
 void GBA_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *gbao = (u16 *)device->display.output[device->display.last_written];
@@ -346,7 +364,6 @@ void GBA_present(struct physical_io_device *device, void *out_buf, u32 out_width
             line_out_ptr++;
         }
     }
-    return;
 }
 
 // Thanks to Ares for this table
@@ -472,6 +489,9 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
 void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     switch(which) {
+        case SYS_PS1:
+            PS1_present(display, out_buf, out_width, out_height, is_event_view_present);
+            break;
         case SYS_GBA:
             GBA_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;

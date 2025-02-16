@@ -140,6 +140,11 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/mac", BASE_PATH);
             mfs_add("macplus_1mb.rom", BIOS_PATH, BIOSes);
             break;
+        case SYS_PS1:
+            has_bios = 1;
+            snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/ps1", BASE_PATH);
+            mfs_add("scph1001.bin", BIOS_PATH, BIOSes);
+            break;
         case SYS_GBA:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/gba", BASE_PATH);
@@ -161,7 +166,6 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
             //mfs_add("ROM_B.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_SG1000:
-        case SYS_PSX:
         case SYS_GENESIS_JAP:
         case SYS_GENESIS_USA:
         case SYS_MEGADRIVE_PAL:
@@ -237,6 +241,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/zx_spectrum", BASER_PATH);
             *worked = 1;
             break;
+        case SYS_PS1:
+            snprintf(out, out_sz, "%s/ps1", BASER_PATH);
+            *worked = 1;
+            break;
         case SYS_GBA:
             snprintf(out, out_sz, "%s/gba", BASER_PATH);
             *worked = 1;
@@ -261,7 +269,6 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/gg", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_PSX:
         case SYS_SNES:
         case SYS_BBC_MICRO:
             *worked = 0;
@@ -688,6 +695,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             break;
+        case SYS_PS1:
+            worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr);
+            break;
         case SYS_GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
@@ -883,11 +893,16 @@ void full_system::load_default_ROM()
         return;
     }
 
-    struct physical_io_device* fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
-    if (fileioport != NULL) {
-        printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
-        if (fileioport->cartridge_port.SRAM.requested_size > 0) {
-            setup_persistent_store(&fileioport->cartridge_port.SRAM, &ROMs);
+    if (which == SYS_PS1) {
+        sys->sideload(sys, &ROMs);
+    }
+    else {
+        struct physical_io_device *fileioport = load_ROM_into_emu(sys, IOs, &ROMs);
+        if (fileioport != NULL) {
+            printf("\nSRAM requested size: %lld\n", fileioport->cartridge_port.SRAM.requested_size);
+            if (fileioport->cartridge_port.SRAM.requested_size > 0) {
+                setup_persistent_store(&fileioport->cartridge_port.SRAM, &ROMs);
+            }
         }
     }
 }

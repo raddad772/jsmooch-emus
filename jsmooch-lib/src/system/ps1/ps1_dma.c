@@ -27,7 +27,7 @@ static void do_dma_linked_list(struct PS1 *ps1, struct PS1_DMA_channel *ch)
         while (copies > 0) {
             addr = (addr + 4) & 0x1FFFFC;
             u32 cmd = PS1_mainbus_read(ps1, addr, 4, 1);
-            PS1_GPU_write_gp0(ps1, cmd);
+            PS1_GPU_write_gp0(&ps1->gpu, cmd);
 
             copies--;
         }
@@ -74,7 +74,7 @@ static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
                 src_word = PS1_mainbus_read(ps1, cur_addr, 4, 1);
                 switch(ch->num) {
                     case PS1DP_GPU:
-                        PS1_GPU_write_gp0(ps1, src_word);
+                        PS1_GPU_write_gp0(&ps1->gpu, src_word);
                         break;
                     case PS1DP_MDEC_in: {
                         static u32 e = 0;

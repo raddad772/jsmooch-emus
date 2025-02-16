@@ -8,6 +8,7 @@
 #include "system/nds/nds.h"
 #include "system/sms_gg/sms_gg.h"
 #include "system/dreamcast/dreamcast.h"
+#include "system/ps1/ps1.h"
 #include "system/atari2600/atari2600.h"
 #include "system/zxspectrum/zxspectrum.h"
 #include "system/genesis/genesis.h"
@@ -59,6 +60,9 @@ struct jsm_system* new_system(enum jsm_systems which)
             break;
         case SYS_NES:
             NES_new(out);
+            break;
+        case SYS_PS1:
+            PS1_new(out);
             break;
         case SYS_SG1000:
         case SYS_SMS1:
@@ -134,6 +138,9 @@ void jsm_delete(struct jsm_system* jsm)
             break;
         case SYS_NES:
             NES_delete(jsm);
+            break;
+        case SYS_PS1:
+            PS1_delete(jsm);
             break;
         case SYS_SG1000:
         case SYS_SMS1:

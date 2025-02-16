@@ -6,10 +6,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "ps1.h"
 #include "ps1_bus.h"
-//#include "ps1_debugger.h"
+#include "ps1_debugger.h"
 
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/r3000/r3000.h"
@@ -80,6 +81,76 @@ static void PS1_update_SR(void *ptr, struct R3000 *core, u32 val)
     this->mem.cache_isolated = (val & 0x10000) == 0x10000;
 }
 
+static void BIOS_patch_reset(struct PS1 *this)
+{
+    memcpy(this->mem.BIOS, this->mem.BIOS_unpatched, 512 * 1024);
+}
+
+static void BIOS_patch(struct PS1 *this, u32 addr, u32 val)
+{
+    cW32(this->mem.BIOS, addr, val);
+}
+
+static void PS1J_sideload(JSM, struct multi_file_set *fs) {
+    JTHIS;
+    u8 *r = fs->files[0].buf.ptr;
+    if ((r[0] == 80) && (r[1] == 83) && (r[2] == 45) &&
+        (r[3] == 88) && (r[4] == 32) && (r[5] == 69) &&
+        (r[6] == 88) && (r[7] == 69)) {
+        printf("\nOK EXE!");
+        u32 initial_pc = cR32(r, 0x10);
+        u32 initial_gp = cR32(r, 0x14);
+        u32 load_addr = cR32(r, 0x18);
+        u32 file_size = cR32(r, 0x1C);
+        u32 memfill_start = cR32(r, 0x28);
+        u32 memfill_size = cR32(r, 0x2C);
+        u32 initial_sp_base = cR32(r, 0x30);
+        u32 initial_sp_offset = cR32(r, 0x34);
+        BIOS_patch_reset(this);
+
+        if (file_size >= 4) {
+            u32 address_read = 0x800;
+            u32 address_write = load_addr & 0x1FFFFF;
+            for (u32 i = 0; i < file_size; i+=4) {
+                u32 data = cR32(r, address_read);
+                cW32(this->mem.MRAM, address_write, data);
+                address_read += 4;
+                address_write += 4;
+            }
+        }
+
+        // PC has to  e done first because we can't load it in thedelay slot?
+        BIOS_patch(this, 0x6FF0, 0x3C080000 | (initial_pc >> 16));    // lui $t0, (r_pc >> 16)
+        BIOS_patch(this, 0x6FF4, 0x35080000 | (initial_pc & 0xFFFF));  // ori $t0, $t0, (r_pc & 0xFFFF)
+        BIOS_patch(this, 0x6FF8, 0x3C1C0000 | (initial_gp >> 16));    // lui $gp, (r_gp >> 16)
+        BIOS_patch(this, 0x6FFC, 0x379C0000 | (initial_gp & 0xFFFF));  // ori $gp, $gp, (r_gp & 0xFFFF)
+
+        u32 r_sp = initial_sp_base + initial_sp_offset;
+        if (r_sp != 0) {
+            BIOS_patch(this, 0x7000, 0x3C1D0000 | (r_sp >> 16));   // lui $sp, (r_sp >> 16)
+            BIOS_patch(this, 0x7004, 0x37BD0000 | (r_sp & 0xFFFF)); // ori $sp, $sp, (r_sp & 0xFFFF)
+        } else {
+            BIOS_patch(this, 0x7000, 0); // NOP
+            BIOS_patch(this, 0x7004, 0); // NOP
+        }
+
+        u32 r_fp = r_sp;
+        if (r_fp != 0) {
+            BIOS_patch(this, 0x7008, 0x3C1E0000 | (r_fp >> 16));   // lui $fp, (r_fp >> 16)
+            BIOS_patch(this, 0x700C, 0x01000008);                   // jr $t0
+            BIOS_patch(this, 0x7010, 0x37DE0000 | (r_fp & 0xFFFF)); // // ori $fp, $fp, (r_fp & 0xFFFF)
+        } else {
+            BIOS_patch(this, 0x7008, 0);   // nop
+            BIOS_patch(this, 0x700C, 0x01000008);                   // jr $t0
+            BIOS_patch(this, 0x7010, 0); // // nop
+        }
+        printf("\nBIOS patched!");
+    }
+    else {
+        printf("\nNOT OK EXE!");
+    }
+}
+
 void PS1_new(struct jsm_system *jsm)
 {
     struct PS1* this = (struct PS1*)malloc(sizeof(struct PS1));
@@ -124,8 +195,8 @@ void PS1_new(struct jsm_system *jsm)
     jsm->stop = &PS1J_stop;
     jsm->describe_io = &PS1J_describe_io;
     jsm->set_audiobuf = &PS1J_set_audiobuf;
-    jsm->sideload = NULL;
-    jsm->setup_debugger_interface = NULL;//&PS1J_setup_debugger_interface;
+    jsm->sideload = &PS1J_sideload;
+    jsm->setup_debugger_interface = &PS1J_setup_debugger_interface;
     jsm->save_state = NULL;
     jsm->load_state = NULL;
 
@@ -177,10 +248,19 @@ static void run_cycles(struct PS1 *this, i64 num)
     }
 }
 
+static void copy_vram(struct PS1 *this)
+{
+    memcpy(this->gpu.cur_output, this->gpu.VRAM, 1024*1024);
+    this->gpu.cur_output = ((u16 *)this->gpu.display->output[this->gpu.display->last_written ^ 1]);
+    this->gpu.display->last_written ^= 1;
+    this->clock.master_frame++;
+}
+
 u32 PS1J_finish_frame(JSM)
 {
     JTHIS;
     run_cycles(this, PS1_CYCLES_PER_FRAME_NTSC);
+    copy_vram(this);
     return 0;
 }
 
@@ -365,8 +445,8 @@ static void PS1J_describe_io(JSM, struct cvec* IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(240 * 160 * 2);
-    d->display.output[1] = malloc(240 * 160 * 2);
+    d->display.output[0] = malloc(1024*1024);
+    d->display.output[1] = malloc(1024*1024);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_crt(&d->display);

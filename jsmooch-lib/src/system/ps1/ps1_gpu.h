@@ -25,7 +25,7 @@ struct PS1_GPU_VERTEX2 {
 
 struct PS1_GPU {
     struct {
-        u32 GPUSTAT;
+        u32 GPUSTAT, GPUREAD;
     } io;
     u8 VRAM[1024 * 1024];
 

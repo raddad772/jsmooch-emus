@@ -330,7 +330,7 @@ void R3000_init(struct R3000 *this, u64 *master_clock, u32 *waitstates)
     this->clock = master_clock;
     this->waitstates = waitstates;
 
-    IRQ_multipelxer_init(&this->io.I_STAT);
+    IRQ_multiplexer_init(&this->io.I_STAT);
 
     do_decode_table(this);
 

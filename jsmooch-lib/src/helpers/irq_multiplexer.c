@@ -4,7 +4,7 @@
 
 #include "irq_multiplexer.h"
 
-void IRQ_multipelxer_init(struct IRQ_multiplexer *this)
+void IRQ_multiplexer_init(struct IRQ_multiplexer *this)
 {
     this->IF = 0;
     this->current_level = 0;

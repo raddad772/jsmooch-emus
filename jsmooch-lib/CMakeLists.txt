@@ -387,6 +387,8 @@ add_library(jsmooch-lib
         src/system/ps1/ps1_dma.h
         src/system/ps1/ps1_gpu.c
         src/system/ps1/ps1_gpu.h
+        src/system/ps1/ps1_debugger.c
+        src/system/ps1/ps1_debugger.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

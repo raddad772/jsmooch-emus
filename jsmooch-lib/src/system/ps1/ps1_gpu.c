@@ -25,7 +25,6 @@ static void default_setpix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 tr
 }
 
 
-
 void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 page_y, u32 clut, struct PS1_GPU *ctrl)
 {
     this->page_x = (page_x & 0x0F) << 6;
@@ -1153,4 +1152,13 @@ void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
             printf("\nUnknown GP1 command %08x", cmd);
             break;
     }
+}
+
+u32 PS1_GPU_get_gpuread(struct PS1_GPU *this)
+{
+    return this->io.GPUREAD;
+}
+u32 PS1_GPU_get_gpustat(struct PS1_GPU *this)
+{
+    return this->io.GPUSTAT;
 }

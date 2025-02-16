@@ -72,9 +72,9 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
             return 0x00070777;
         case 0x1F8010A8: // DMA2 GPU thing
         case 0x1F801810: // GP0/GPUREAD
-            return PS1_GPU_get_gpuread(this);
+            return PS1_GPU_get_gpuread(&this->gpu);
         case 0x1F801814: // GPUSTAT Read GPU Status Register
-            return PS1_GPU_get_gpustat(this);
+            return PS1_GPU_get_gpustat(&this->gpu);
         case 0x1F801C0C: // Voice 0..23 ADSR Current Volume
         case 0x1F801C1C: //
         case 0x1F801C2C:
@@ -175,10 +175,10 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
             printf("WRITE POST STATUS! %d", val);
             return;
         case 0x1F801810: // GP0 Send GP0 Commands/Packets (Rendering and VRAM Access)
-            PS1_GPU_write_gp0(this, val);
+            PS1_GPU_write_gp0(&this->gpu, val);
             return;
         case 0x1F801814: // GP1
-            PS1_GPU_write_gp1(this, val);
+            PS1_GPU_write_gp1(&this->gpu, val);
             return;
         case 0x1F801C00: //  Voice 0..23 stuff
         case 0x1F801C02:

@@ -7,6 +7,7 @@
 
 #include "component/cpu/m6502/m6502.h"
 #include "helpers/int.h"
+#include "helpers/irq_multiplexer.h"
 #include "component/controller/nes/nes_joypad.h"
 
 enum NES_controller_devices {
@@ -18,16 +19,6 @@ struct NES_controllerport {
     enum NES_controller_devices kind;
     void *device;
 };
-
-struct IRQ_multiplexer {
-    u32 IF;
-    u32 current_level;
-};
-
-void IRQ_multiplexer_init(struct IRQ_multiplexer*);
-u32 IRQ_multiplexer_set_level(struct IRQ_multiplexer*, u32 level, u32 from);
-void IRQ_multiplexer_clear(struct IRQ_multiplexer*);
-u32 IRQ_multiplexer_query_level(struct IRQ_multiplexer*);
 
 struct r2A03 {
     struct M6502 cpu;
