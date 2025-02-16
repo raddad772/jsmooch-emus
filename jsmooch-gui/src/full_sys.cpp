@@ -696,7 +696,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             break;
         case SYS_PS1:
-            worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/ADD/CPUADD.exe", nullptr);
             break;
         case SYS_GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);

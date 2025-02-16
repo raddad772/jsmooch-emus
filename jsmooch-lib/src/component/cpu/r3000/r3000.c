@@ -455,6 +455,7 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
     while(cycles_left > 0) {
         *this->clock += 2;
         if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
+            printf("\nIRQ!");
             R3000_exception(this, 0, this->pipe.item0.new_PC != 0, 0);
         }
 
@@ -511,5 +512,4 @@ u32 R3000_read_reg(struct R3000 *this, u32 addr, u32 sz)
     printf("Unhandled CPU read %08x (%d)", addr, sz);
     static const u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
     return mask[sz];
-
 }

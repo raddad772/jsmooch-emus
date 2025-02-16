@@ -93,62 +93,8 @@ static void BIOS_patch(struct PS1 *this, u32 addr, u32 val)
 
 static void PS1J_sideload(JSM, struct multi_file_set *fs) {
     JTHIS;
-    u8 *r = fs->files[0].buf.ptr;
-    if ((r[0] == 80) && (r[1] == 83) && (r[2] == 45) &&
-        (r[3] == 88) && (r[4] == 32) && (r[5] == 69) &&
-        (r[6] == 88) && (r[7] == 69)) {
-        printf("\nOK EXE!");
-        u32 initial_pc = cR32(r, 0x10);
-        u32 initial_gp = cR32(r, 0x14);
-        u32 load_addr = cR32(r, 0x18);
-        u32 file_size = cR32(r, 0x1C);
-        u32 memfill_start = cR32(r, 0x28);
-        u32 memfill_size = cR32(r, 0x2C);
-        u32 initial_sp_base = cR32(r, 0x30);
-        u32 initial_sp_offset = cR32(r, 0x34);
-        BIOS_patch_reset(this);
-
-        if (file_size >= 4) {
-            u32 address_read = 0x800;
-            u32 address_write = load_addr & 0x1FFFFF;
-            for (u32 i = 0; i < file_size; i+=4) {
-                u32 data = cR32(r, address_read);
-                cW32(this->mem.MRAM, address_write, data);
-                address_read += 4;
-                address_write += 4;
-            }
-        }
-
-        // PC has to  e done first because we can't load it in thedelay slot?
-        BIOS_patch(this, 0x6FF0, 0x3C080000 | (initial_pc >> 16));    // lui $t0, (r_pc >> 16)
-        BIOS_patch(this, 0x6FF4, 0x35080000 | (initial_pc & 0xFFFF));  // ori $t0, $t0, (r_pc & 0xFFFF)
-        BIOS_patch(this, 0x6FF8, 0x3C1C0000 | (initial_gp >> 16));    // lui $gp, (r_gp >> 16)
-        BIOS_patch(this, 0x6FFC, 0x379C0000 | (initial_gp & 0xFFFF));  // ori $gp, $gp, (r_gp & 0xFFFF)
-
-        u32 r_sp = initial_sp_base + initial_sp_offset;
-        if (r_sp != 0) {
-            BIOS_patch(this, 0x7000, 0x3C1D0000 | (r_sp >> 16));   // lui $sp, (r_sp >> 16)
-            BIOS_patch(this, 0x7004, 0x37BD0000 | (r_sp & 0xFFFF)); // ori $sp, $sp, (r_sp & 0xFFFF)
-        } else {
-            BIOS_patch(this, 0x7000, 0); // NOP
-            BIOS_patch(this, 0x7004, 0); // NOP
-        }
-
-        u32 r_fp = r_sp;
-        if (r_fp != 0) {
-            BIOS_patch(this, 0x7008, 0x3C1E0000 | (r_fp >> 16));   // lui $fp, (r_fp >> 16)
-            BIOS_patch(this, 0x700C, 0x01000008);                   // jr $t0
-            BIOS_patch(this, 0x7010, 0x37DE0000 | (r_fp & 0xFFFF)); // // ori $fp, $fp, (r_fp & 0xFFFF)
-        } else {
-            BIOS_patch(this, 0x7008, 0);   // nop
-            BIOS_patch(this, 0x700C, 0x01000008);                   // jr $t0
-            BIOS_patch(this, 0x7010, 0); // // nop
-        }
-        printf("\nBIOS patched!");
-    }
-    else {
-        printf("\nNOT OK EXE!");
-    }
+    buf_allocate(&this->sideloaded, fs->files[0].buf.size);
+    memcpy(this->sideloaded.ptr, fs->files[0].buf.ptr, fs->files[0].buf.size);
 }
 
 void PS1_new(struct jsm_system *jsm)
@@ -156,7 +102,7 @@ void PS1_new(struct jsm_system *jsm)
     struct PS1* this = (struct PS1*)malloc(sizeof(struct PS1));
     memset(this, 0, sizeof(*this));
     R3000_init(&this->cpu, &this->clock.master_cycle_count, &this->clock.waitstates);
-
+    buf_init(&this->sideloaded);
     this->cpu.read_ptr = this;
     this->cpu.write_ptr = this;
     this->cpu.read = &PS1_mainbus_read;
@@ -207,7 +153,7 @@ void PS1_delete(struct jsm_system *jsm)
     JTHIS;
 
     R3000_delete(&this->cpu);
-
+    buf_delete(&this->sideloaded);
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
         if (pio->kind == HID_DISC_DRIVE) {
@@ -234,8 +180,9 @@ static void run_cycles(struct PS1 *this, i64 num)
     u32 block = 20;
     while (this->cycles_left > 0) {
         if (block < this->cycles_left) block = this->cycles_left;
+        i64 cycles_left_frame_start = this->clock.master_cycle_count;
         R3000_cycle(&this->cpu, block);
-        this->clock.cycles_left_this_frame -= block;
+        this->clock.cycles_left_this_frame -= cycles_left_frame_start - this->clock.master_cycle_count;
 
         if (this->clock.cycles_left_this_frame <= 0) {
             this->clock.cycles_left_this_frame += PS1_CYCLES_PER_FRAME_NTSC;
@@ -289,14 +236,79 @@ static void skip_BIOS(struct PS1* this)
 {
 }
 
+static void sideload_EXE(struct PS1 *this, struct buf *w)
+{
+    u8 *r = w->ptr;
+    if ((r[0] == 80) && (r[1] == 83) && (r[2] == 45) &&
+        (r[3] == 88) && (r[4] == 32) && (r[5] == 69) &&
+        (r[6] == 88) && (r[7] == 69)) {
+        printf("\nOK EXE!");
+        u32 initial_pc = cR32(r, 0x10);
+        u32 initial_gp = cR32(r, 0x14);
+        u32 load_addr = cR32(r, 0x18);
+        u32 file_size = cR32(r, 0x1C);
+        u32 memfill_start = cR32(r, 0x28);
+        u32 memfill_size = cR32(r, 0x2C);
+        u32 initial_sp_base = cR32(r, 0x30);
+        u32 initial_sp_offset = cR32(r, 0x34);
+        BIOS_patch_reset(this);
+
+        if (file_size >= 4) {
+            u32 address_read = 0x800;
+            u32 address_write = load_addr & 0x1FFFFF;
+            printf("\nWrite %d bytes from %08x to %08x", file_size, address_write, address_write+file_size);
+            for (u32 i = 0; i < file_size; i+=4) {
+                u32 data = cR32(r, address_read);
+                cW32(this->mem.MRAM, address_write, data);
+                address_read += 4;
+                address_write += 4;
+            }
+        }
+
+        // PC has to  e done first because we can't load it in thedelay slot?
+        BIOS_patch(this, 0x6FF0, 0x3C080000 | (initial_pc >> 16));    // lui $t0, (r_pc >> 16)
+        BIOS_patch(this, 0x6FF4, 0x35080000 | (initial_pc & 0xFFFF));  // ori $t0, $t0, (r_pc & 0xFFFF)
+        printf("\nInitial PC: %08x", initial_pc);
+        BIOS_patch(this, 0x6FF8, 0x3C1C0000 | (initial_gp >> 16));    // lui $gp, (r_gp >> 16)
+        BIOS_patch(this, 0x6FFC, 0x379C0000 | (initial_gp & 0xFFFF));  // ori $gp, $gp, (r_gp & 0xFFFF)
+
+        u32 r_sp = initial_sp_base + initial_sp_offset;
+        if (r_sp != 0) {
+            BIOS_patch(this, 0x7000, 0x3C1D0000 | (r_sp >> 16));   // lui $sp, (r_sp >> 16)
+            BIOS_patch(this, 0x7004, 0x37BD0000 | (r_sp & 0xFFFF)); // ori $sp, $sp, (r_sp & 0xFFFF)
+        } else {
+            BIOS_patch(this, 0x7000, 0); // NOP
+            BIOS_patch(this, 0x7004, 0); // NOP
+        }
+
+        u32 r_fp = r_sp;
+        if (r_fp != 0) {
+            BIOS_patch(this, 0x7008, 0x3C1E0000 | (r_fp >> 16));   // lui $fp, (r_fp >> 16)
+            BIOS_patch(this, 0x700C, 0x01000008);                   // jr $t0
+            BIOS_patch(this, 0x7010, 0x37DE0000 | (r_fp & 0xFFFF)); // // ori $fp, $fp, (r_fp & 0xFFFF)
+        } else {
+            BIOS_patch(this, 0x7008, 0);   // nop
+            BIOS_patch(this, 0x700C, 0x01000008);                   // jr $t0
+            BIOS_patch(this, 0x7010, 0); // // nop
+        }
+        printf("\nBIOS patched!");
+    }
+    else {
+        printf("\nNOT OK EXE!");
+    }
+}
+
 void PS1J_reset(JSM)
 {
     JTHIS;
     R3000_reset(&this->cpu);
     PS1_bus_init(this);
+    this->mem.cache_isolated = 0;
 
-    skip_BIOS(this);
     printf("\nPS1 reset!");
+    if (this->sideloaded.size > 0) {
+        sideload_EXE(this, &this->sideloaded);
+    }
 }
 
 static void sample_audio(struct PS1* this, u32 num_cycles)
@@ -369,6 +381,7 @@ static void PS1J_load_BIOS(JSM, struct multi_file_set* mfs)
     }
     memcpy(this->mem.BIOS, mfs->files[0].buf.ptr, 512*1024);
     memcpy(this->mem.BIOS_unpatched, mfs->files[0].buf.ptr, 512*1024);
+    printf("\nLOADED BIOS!");
 }
 
 static void setup_crt(struct JSM_DISPLAY *d)

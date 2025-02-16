@@ -13,6 +13,11 @@
 
 // ranch_delay and cop0 default to 0
 
+static inline u64 R3000_current_clock(struct R3000 *core)
+{
+    return *core->clock + *core->waitstates;
+}
+
 static void COP_write_reg(struct R3000 *core, u32 COP, u32 num, u32 val)
 {
     switch(COP) {
@@ -87,7 +92,7 @@ static inline void R3000_fs_reg_delay(struct R3000 *core, i32 target, u32 value)
 
 void R3000_fNA(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
-    printf("BAD INSTRUCTION %08x AT PC(+4) %08x", opcode, core->regs.PC);
+    printf("\nBAD INSTRUCTION %08x AT PC(+4) %08x cycle:%lld", opcode, core->regs.PC, R3000_current_clock(core));
 }
 
 void R3000_fSLL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
@@ -216,11 +221,6 @@ void R3000_fMTLO(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 
     // TODO: interrupt multiplier?
     core->multiplier.lo = core->regs.R[rs];
-}
-
-static inline u64 R3000_current_clock(struct R3000 *core)
-{
-    return *core->clock + *core->waitstates;
 }
 
 void R3000_fMULT(u32 opcode, struct R3000_opcode *op, struct R3000 *core)

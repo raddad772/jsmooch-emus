@@ -61,6 +61,8 @@ struct PS1 {
     struct PS1_clock clock;
     i64 cycles_left;
 
+    struct buf sideloaded;
+
     struct PS1_GPU gpu;
 
     struct {
