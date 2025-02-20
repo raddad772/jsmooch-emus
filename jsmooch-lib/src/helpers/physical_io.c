@@ -67,7 +67,7 @@ void physical_io_device_delete(struct physical_io_device* this)
             cvec_delete(&this->chassis.digital_buttons);
             break;
         case HID_AUDIO_CHANNEL:
-            if (this->audio_channel.samples[0] != NULL) free(this->audio_channel.samples[0]);
+            //if (this->audio_channel.samples[0] != NULL) free(this->audio_channel.samples[0]);
             break;
         case HID_CART_PORT:
             //TODO: this

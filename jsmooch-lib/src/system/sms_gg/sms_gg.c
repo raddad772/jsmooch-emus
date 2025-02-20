@@ -89,6 +89,7 @@ void SMSGG_new(struct jsm_system* jsm, enum jsm_systems variant, enum jsm_region
     SMSGG_clock_init(&this->clock, variant, region);
     SMSGG_VDP_init(&this->vdp, this, variant);
     SMSGG_mapper_sega_init(&this->mapper, variant);
+    SMSGG_io_init(this);
     Z80_init(&this->cpu, 0);
 
     // setup tracing reads

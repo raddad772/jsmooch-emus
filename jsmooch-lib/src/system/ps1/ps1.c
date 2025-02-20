@@ -10,6 +10,7 @@
 
 #include "ps1.h"
 #include "ps1_bus.h"
+#include "ps1_gpu.h"
 #include "ps1_debugger.h"
 
 #include "helpers/debugger/debugger.h"
@@ -113,6 +114,7 @@ void PS1_new(struct jsm_system *jsm)
     this->cpu.update_sr = &PS1_update_SR;
 
     PS1_bus_init(this);
+    PS1_GPU_init(this);
     /*PS1_clock_init(&this->clock);
     PS1_cart_init(&this->cart);
     PS1_PPU_init(this);

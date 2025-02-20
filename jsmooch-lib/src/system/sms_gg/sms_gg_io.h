@@ -29,6 +29,6 @@ struct SMSGG;
 u32 SMSGG_bus_cpu_in_sms1(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);
 void SMSGG_bus_cpu_out_sms1(struct SMSGG*, u32 addr, u32 val);
 u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect);
-
+void SMSGG_io_init(struct SMSGG *);
 
 #endif //JSMOOCH_EMUS_SMS_GG_IO_H

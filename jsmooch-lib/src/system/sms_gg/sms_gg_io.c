@@ -8,6 +8,11 @@
 #include "sms_gg.h"
 #include "component/controller/sms/sms_gamepad.h"
 
+void SMSGG_io_init(struct SMSGG *this)
+{
+    this->io.GGreg = 0xFF;
+}
+
 void SMSGG_controller_port_init(struct SMSGG_controller_port* this, enum jsm_systems variant, u32 which)
 {
     this->attached_device = NULL;
@@ -183,11 +188,15 @@ u32 SMSGG_bus_cpu_in_gg(struct SMSGG* bus, u32 addr, u32 val, u32 has_effect)
         case 2:
             return bus->io.GGreg;
         case 1:
+            return 0x7F;
         case 3:
+            return 0;
         case 4:
+            return 0xFF;
         case 5:
             return 0;
         case 6:
+            return 0xFF;
         case 7:
             return 0;
     }

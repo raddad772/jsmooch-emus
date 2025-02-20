@@ -32,6 +32,7 @@ enum ImGuiKey jk_to_imgui_gp(enum JKEYS key_id) {
         case DBCID_co_shoulder_left:
             return ImGuiKey_GamepadR1;
     }
+    NOGOHERE;
 }
 
 enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {

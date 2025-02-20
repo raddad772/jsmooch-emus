@@ -338,7 +338,7 @@ void PS1_present(struct physical_io_device *device, void *out_buf, u32 out_width
         u32 *line_out_ptr = img32 + (ry * out_width);
         for (u32 rx = 0; rx < 1024; rx++) {
             u32 x = rx;
-            u32 di = ((y * 512) + x);
+            u32 di = ((y * 1024) + x);
 
             u32 color = ps1_to_screen(gbao[di]);
             *line_out_ptr = color;

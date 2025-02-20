@@ -696,8 +696,12 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             break;
         case SYS_PS1:
+            //RenderPolygon16BPP
             //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/ADD/CPUADD.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/ADD/CPUADD.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderPolygon/RenderPolygon16BPP.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTexturePolygon/CLUT4BPP/RenderTexturePolygonCLUT4BPP.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/MemoryTransfer/MemoryTransfer16BPP.exe", nullptr);
             break;
         case SYS_GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);

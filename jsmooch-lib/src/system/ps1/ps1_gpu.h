@@ -5,7 +5,9 @@
 #ifndef JSMOOCH_EMUS_PS1_GPU_H
 #define JSMOOCH_EMUS_PS1_GPU_H
 
+#include "helpers/cvec.h"
 #include "helpers/int.h"
+#include "rasterize_tri.h"
 
 struct PS1_GPU;
 struct PS1_GPU_TEXTURE_SAMPLER;
@@ -13,6 +15,7 @@ typedef u16 (*PS1_GPU_texture_sample_func)(struct PS1_GPU_TEXTURE_SAMPLER *ts, i
 struct PS1_GPU_TEXTURE_SAMPLER {
     u32 page_x, page_y, base_addr, clut_addr;
     u8 *VRAM;
+    u32 semi_mode;
     PS1_GPU_texture_sample_func sample;
 };
 
@@ -97,11 +100,13 @@ struct PS1_GPU {
         i32 r_end, g_end, b_end;
     } color1, color2, color3;
 
-    struct PS1_GPU_VERTEX3 {
-        float x, y, z;
+    struct RT_POINT2D v0, v1, v2, v3, v4, v5, t0, t1, t2, t3, t4;
+
+    struct PS1_GPU_VERTEX3u {
+        u32 x, y, z;
         i32 r, g, b;
         float u, v;
-    } v0, v1, v2, v3, v4, v5, t0, t1, t2, t3, t4;
+    } s0, s1, s2, s3;
 
     struct PS1_GPU_VERTEX2 vert[4];
 
@@ -127,6 +132,7 @@ struct PS1_GPU {
 
 struct PS1;
 
+void PS1_GPU_init(struct PS1 *this);
 void PS1_GPU_write_gp0(struct PS1_GPU *, u32 val);
 void PS1_GPU_write_gp1(struct PS1_GPU *, u32 val);
 u32 PS1_GPU_get_gpuread(struct PS1_GPU *);

@@ -26,11 +26,13 @@ void PS1_bus_reset(struct PS1 *this)
     this->io.cached_isolated = 0;
 }
 
+static const u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
+
 u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
 {
     struct PS1* this = (struct PS1*)ptr;
 
-    addr = deKSEG(addr);
+    addr = deKSEG(addr) & alignmask[sz];
     // 2MB MRAM mirrored 4 times
     if (addr < 0x00800000) {
         return cR[sz](this->mem.MRAM, addr & 0x1FFFFF);
@@ -115,7 +117,10 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
             return 0;
     }
 
+    static u32 e = 0;
     printf("\nUNHANDLED MAINBUS READ sz %d addr %08x", sz, addr);
+    e++;
+    if (e > 10) dbg_break("TOO MANY BAD READ", this->clock.master_cycle_count+this->clock.waitstates);
     switch(sz) {
         case 1:
             return 0xFF;
@@ -131,7 +136,7 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
 {
     struct PS1* this = (struct PS1*)ptr;
     if (this->mem.cache_isolated) return;
-    addr = deKSEG(addr);
+    addr = deKSEG(addr) & alignmask[sz];
     if ((addr < 0x800000) && !this->mem.cache_isolated) {
         cW[sz](this->mem.MRAM, addr & 0x1FFFFF, val);
         return;

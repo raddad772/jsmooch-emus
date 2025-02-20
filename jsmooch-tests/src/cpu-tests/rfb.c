@@ -25,6 +25,7 @@ int open_and_read(char *fname, struct read_file_buf *rfb)
 
     fclose(fil);
     return 0;*/
+    return 0;
 }
 
 void rfb_cleanup(struct read_file_buf *rfb)
