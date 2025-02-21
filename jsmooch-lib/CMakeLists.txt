@@ -385,12 +385,16 @@ add_library(jsmooch-lib
         src/helpers/irq_multiplexer.c
         src/system/ps1/ps1_dma.c
         src/system/ps1/ps1_dma.h
-        src/system/ps1/ps1_gpu.c
-        src/system/ps1/ps1_gpu.h
+        src/system/ps1/gpu/ps1_gpu.c
+        src/system/ps1/gpu/ps1_gpu.h
         src/system/ps1/ps1_debugger.c
         src/system/ps1/ps1_debugger.h
-        src/system/ps1/rasterize_tri.c
-        src/system/ps1/rasterize_tri.h
+        src/system/ps1/gpu/rasterize_tri.c
+        src/system/ps1/gpu/rasterize_tri.h
+        src/system/ps1/gpu/rasterize_line.c
+        src/system/ps1/gpu/rasterize_line.h
+        src/system/ps1/gpu/pixel_helpers.c
+        src/system/ps1/gpu/pixel_helpers.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

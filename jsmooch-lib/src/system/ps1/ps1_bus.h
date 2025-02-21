@@ -7,7 +7,7 @@
 
 #include "component/cpu/r3000/r3000.h"
 #include "helpers/physical_io.h"
-#include "ps1_gpu.h"
+#include "gpu/ps1_gpu.h"
 
 enum PS1_IRQ {
     PS1IRQ_VBlank,

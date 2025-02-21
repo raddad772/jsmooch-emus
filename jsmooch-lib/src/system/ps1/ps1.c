@@ -10,7 +10,7 @@
 
 #include "ps1.h"
 #include "ps1_bus.h"
-#include "ps1_gpu.h"
+#include "gpu/ps1_gpu.h"
 #include "ps1_debugger.h"
 
 #include "helpers/debugger/debugger.h"
