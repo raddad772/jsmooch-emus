@@ -315,11 +315,11 @@ void RT_draw_flat_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT2D
     float v0u = (float)v0->u;
     float v0v = (float)v0->v;
 
-    float v1u = (float)v0->u;
-    float v1v = (float)v0->v;
+    float v1u = (float)v1->u;
+    float v1v = (float)v1->v;
 
-    float v2u = (float)v0->u;
-    float v2v = (float)v0->v;
+    float v2u = (float)v2->u;
+    float v2v = (float)v2->v;
 
     // Initialise our point
     struct RT_POINT2D p;
@@ -370,22 +370,21 @@ void RT_draw_flat_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT2D
                 float v = v0v * weightA + v1v * weightB + v2v * weightC;
 
                 color = ts->sample(ts, (i32)u, (i32)v);
-                float mr = (float)(((color >> 10) & 0x1F)) * r;
+                float mb = (float)(((color >> 10) & 0x1F)) * b;
                 float mg = (float)((color >> 5) & 0x1F) * g;
-                float mb = (float)(color & 0x1F) * b;
-                if (mr > 255.0f) mr = 255.0f;
-                if (mg > 255.0f) mg = 255.0f;
-                if (mb > 255.0f) mb = 255.0f;
+                float mr = (float)(color & 0x1F) * r;
+                if (mr > 31.0f) mr = 31.0f;
+                if (mg > 31.0f) mg = 31.0f;
+                if (mb > 31.0f) mb = 31.0f;
 
                 // Draw the pixe
-                setpix_split(this, p.y, p.x, ((u32)mr) >> 3, ((u32)mg) >> 3, ((u32)mb) >> 3, 0);
+                setpix_split(this, p.y, p.x, (u32)mr, (u32)mg, (u32)mb, 0);
             }
         }
     }
 }
 
-void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color, struct PS1_GPU_TEXTURE_SAMPLER *ts)
-{
+void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color, struct PS1_GPU_TEXTURE_SAMPLER *ts) {
     struct RT_POINT2D *sa;
 
     // Calculate the edge function for the whole triangle (ABC)
@@ -401,18 +400,18 @@ void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_PO
     float ABCr = 1.0f / ABC;
 
     static const float rp = 1.0f / 128.0f;
-    float r = ((float)(color & 0xFF)) * rp;
-    float g = ((float)((color >> 8) & 0xFF)) * rp;
-    float b = ((float)((color >> 16) & 0xFF)) * rp;
+    float r = ((float) (color & 0xFF)) * rp;
+    float g = ((float) ((color >> 8) & 0xFF)) * rp;
+    float b = ((float) ((color >> 16) & 0xFF)) * rp;
 
-    float v0u = (float)v0->u;
-    float v0v = (float)v0->v;
+    float v0u = (float) v0->u;
+    float v0v = (float) v0->v;
 
-    float v1u = (float)v0->u;
-    float v1v = (float)v0->v;
+    float v1u = (float) v1->u;
+    float v1v = (float) v1->v;
 
-    float v2u = (float)v0->u;
-    float v2v = (float)v0->v;
+    float v2u = (float) v2->u;
+    float v2v = (float) v2->v;
 
     // Initialise our point
     struct RT_POINT2D p;
@@ -444,7 +443,6 @@ void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_PO
             float w2 = edge_function(v0, v1, &p); // w2 ABP
 
             // Normalise the edge functions by dividing by the total area to get the barycentric coordinates
-
             u32 overlaps = w1 >= 0 && w0 >= 0 && w2 >= 0;
 
             // If the point is on the edge, test if it is a top or left edge,
@@ -462,16 +460,16 @@ void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_PO
                 float u = v0u * weightA + v1u * weightB + v2u * weightC;
                 float v = v0v * weightA + v1v * weightB + v2v * weightC;
 
-                color = ts->sample(ts, (i32)u, (i32)v);
-                float mr = (float)(((color >> 10) & 0x1F)) * r;
-                float mg = (float)((color >> 5) & 0x1F) * g;
-                float mb = (float)(color & 0x1F) * b;
-                if (mr > 255.0f) mr = 255.0f;
-                if (mg > 255.0f) mg = 255.0f;
-                if (mb > 255.0f) mb = 255.0f;
+                color = ts->sample(ts, (i32) u, (i32) v);
+                float mb = (float) (((color >> 10) & 0x1F)) * b;
+                float mg = (float) ((color >> 5) & 0x1F) * g;
+                float mr = (float) (color & 0x1F) * r;
+                if (mr > 31.0f) mr = 31.0f;
+                if (mg > 31.0f) mg = 31.0f;
+                if (mb > 31.0f) mb = 31.0f;
 
                 // Draw the pixe
-                semipix_split(this, p.y, p.x, ((u32)mr) >> 3, ((u32)mg) >> 3, ((u32)mb) >> 3, (color >> 15) & 1);
+                if ((color >> 15) & 1) semipix_split(this, p.y, p.x, (u32)mr, (u32)mg, (u32)mb, 1);
             }
         }
     }
@@ -509,11 +507,11 @@ void RT_draw_shaded_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_
     float v0u = (float)v0->u;
     float v0v = (float)v0->v;
 
-    float v1u = (float)v0->u;
-    float v1v = (float)v0->v;
+    float v1u = (float)v1->u;
+    float v1v = (float)v1->v;
 
-    float v2u = (float)v0->u;
-    float v2v = (float)v0->v;
+    float v2u = (float)v2->u;
+    float v2v = (float)v2->v;
 
     // Initialise our point
     struct RT_POINT2D p;
@@ -568,18 +566,15 @@ void RT_draw_shaded_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_
                 float b = v0b * weightA + v1b * weightB + v2b * weightC;
 
                 u32 color = ts->sample(ts, (i32)u, (i32)v);
-                float mr = ((color >> 10) & 0x1F);
-                float mg = (color >> 5) & 0x1F;
-                float mb = color & 0x1F;
-                mr *= r;
-                mg *= g;
-                mb *= b;
-                if (mr > 255.0f) mr = 255.0f;
-                if (mg > 255.0f) mg = 255.0f;
-                if (mb > 255.0f) mb = 255.0f;
+                float mb = (float)((color >> 10) & 0x1F) * b;
+                float mg = (float)((color >> 5) & 0x1F) * g;
+                float mr = (float)(color & 0x1F) * r;
+                if (mr > 31.0f) mr = 31.0f;
+                if (mg > 31.0f) mg = 31.0f;
+                if (mb > 31.0f) mb = 31.0f;
 
                 // Draw the pixe
-                semipix_split(this, p.y, p.x, ((u32)mr) >> 3, ((u32)mg) >> 3, ((u32)mb) >> 3, 0);
+                if ((color >> 15) & 1) semipix_split(this, p.y, p.x, (u32)mr, (u32)mg, (u32)mb, 1);
             }
         }
     }
@@ -617,11 +612,11 @@ void RT_draw_shaded_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT
     float v0u = (float)v0->u;
     float v0v = (float)v0->v;
 
-    float v1u = (float)v0->u;
-    float v1v = (float)v0->v;
+    float v1u = (float)v1->u;
+    float v1v = (float)v1->v;
 
-    float v2u = (float)v0->u;
-    float v2v = (float)v0->v;
+    float v2u = (float)v2->u;
+    float v2v = (float)v2->v;
 
     // Initialise our point
     struct RT_POINT2D p;
@@ -676,18 +671,15 @@ void RT_draw_shaded_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT
                 float b = v0b * weightA + v1b * weightB + v2b * weightC;
 
                 u32 color = ts->sample(ts, (i32)u, (i32)v);
-                float mr = ((color >> 10) & 0x1F);
-                float mg = (color >> 5) & 0x1F;
-                float mb = color & 0x1F;
-                mr *= r;
-                mg *= g;
-                mb *= b;
-                if (mr > 255.0f) mr = 255.0f;
-                if (mg > 255.0f) mg = 255.0f;
-                if (mb > 255.0f) mb = 255.0f;
+                float mb = (float)((color >> 10) & 0x1F) * b;
+                float mg = (float)((color >> 5) & 0x1F) * g;
+                float mr = (float)(color & 0x1F) * r;
+                if (mr > 31.0f) mr = 31.0f;
+                if (mg > 31.0f) mg = 31.0f;
+                if (mb > 31.0f) mb = 31.0f;
 
                 // Draw the pixe
-                setpix_split(this, p.y, p.x, ((u32)mr) >> 3, ((u32)mg) >> 3, ((u32)mb) >> 3, 0);
+                if ((color >> 15) & 1) setpix_split(this, p.y, p.x, (u32)mr, (u32)mg, (u32)mb, 0);
             }
         }
     }
@@ -712,11 +704,11 @@ void RT_draw_flat_tex_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, stru
     float v0u = (float)v0->u;
     float v0v = (float)v0->v;
 
-    float v1u = (float)v0->u;
-    float v1v = (float)v0->v;
+    float v1u = (float)v1->u;
+    float v1v = (float)v1->v;
 
-    float v2u = (float)v0->u;
-    float v2v = (float)v0->v;
+    float v2u = (float)v2->u;
+    float v2v = (float)v2->v;
 
     // Initialise our point
     struct RT_POINT2D p;
@@ -769,7 +761,7 @@ void RT_draw_flat_tex_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, stru
                 u16 color = ts->sample(ts, (i32)u, (i32)v);
 
                 // Draw the pixel
-                setpix(this, p.y, p.x, color, 0);
+                if ((color >> 15) & 1) setpix(this, p.y, p.x, color, 0);
             }
         }
     }
@@ -794,11 +786,11 @@ void RT_draw_flat_tex_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0,
     float v0u = (float)v0->u;
     float v0v = (float)v0->v;
 
-    float v1u = (float)v0->u;
-    float v1v = (float)v0->v;
+    float v1u = (float)v1->u;
+    float v1v = (float)v1->v;
 
-    float v2u = (float)v0->u;
-    float v2v = (float)v0->v;
+    float v2u = (float)v2->u;
+    float v2v = (float)v2->v;
 
     // Initialise our point
     struct RT_POINT2D p;
@@ -851,7 +843,8 @@ void RT_draw_flat_tex_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0,
                 u16 color = ts->sample(ts, (i32)u, (i32)v);
 
                 // Draw the pixel
-                semipixm(this, p.y, p.x, color, ts->semi_mode, (color >> 15) & 1);
+                if ((color >> 15) & 1) semipixm(this, p.y, p.x, color, ts->semi_mode, 1);
+                //setpix(this, p.y, p.x, color, 0);
             }
         }
     }

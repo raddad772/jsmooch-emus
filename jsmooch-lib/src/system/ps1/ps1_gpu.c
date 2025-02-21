@@ -55,9 +55,9 @@ static inline void uv_from_cmd(struct RT_POINT2D *this, u32 cmd)
 
 void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 page_y, u32 clut_addr, struct PS1_GPU *ctrl)
 {
-    this->page_x = (page_x & 0x0F) << 6;
-    this->page_y = (page_y & 1) << 8;
-    this->base_addr = (page_y << 11) + (page_x << 1);
+    this->page_x = (page_x & 0x0F) << 6; // * 64
+    this->page_y = (page_y & 1) * 256;
+    this->base_addr = (this->page_y * 2048) + (this->page_x * 2);
     this->clut_addr = clut_addr;
     this->VRAM = ctrl->VRAM;
 }
@@ -186,14 +186,17 @@ static void cmd28_draw_flat4untex(struct PS1_GPU *this)
 
 static u16 sample_tex_4bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
-    u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0xFF) >> 1);
+    u32 addr = ts->base_addr;
+    addr += ((v&0xFF)*2048); // 2048 bytes per line
+    addr += ((u&0xFF) >> 1); // half of x, since we are 4-bit
     u32 d = ts->VRAM[addr & 0xFFFFF];
+    //ts->VRAM[addr & 0xFFFFF] = 0xFF;
     if ((u & 1) == 0) d &= 0x0F;
     else d = (d & 0xF0) >> 4;
+    addr = (ts->clut_addr + (d*2)) & 0xFFFFF;
+    //cW16(ts->VRAM, addr, 0xFFF0);
 
-    cW16(ts->VRAM, (ts->clut_addr + (d*2)) & 0xFFFFF, 0xFF00);
-
-    return cR16(ts->VRAM, (ts->clut_addr + (d*2)) & 0xFFFFF);
+    return cR16(ts->VRAM, addr);
 }
 
 static u16 sample_tex_8bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
@@ -213,9 +216,9 @@ static void get_texture_sampler_from_texpage_and_palette(struct PS1_GPU *this, u
     u32 clx = (palette & 0x3F) << 4;
     u32 cly = (palette >> 6) & 0x1FF;
 
-    u32 clut_addr = (cly << 11) + (clx << 2);
+    u32 clut_addr = (cly * 2048) + (clx * 2);
 
-    u32 tx_x = texpage & 7;
+    u32 tx_x = texpage & 15;
     u32 tx_y = (texpage >> 4) & 1;
     PS1_GPU_texture_sampler_new(ts, tx_x, tx_y, clut_addr, this);
     ts->semi_mode = (texpage >> 5) & 3;
@@ -288,20 +291,19 @@ static void cmd22_tri_flat_semi_transparent(struct PS1_GPU *this)
 static void cmd24_tri_raw_modulated(struct PS1_GPU *this)
 {
     /*
-  0 WRIOW GP0,(0x25<<24)                         ; Write GP0 Command Word (Command) & color
+  0 WRIOW GP0,(0x24<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
   1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
   2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
   3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
   4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-  6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
-     */
+  6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)     */
     xy_from_cmd(&this->v0, this->cmd[1]);
     xy_from_cmd(&this->v1, this->cmd[3]);
     xy_from_cmd(&this->v2, this->cmd[5]);
     uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v0, this->cmd[4]);
-    uv_from_cmd(&this->v0, this->cmd[6]);
+    uv_from_cmd(&this->v1, this->cmd[4]);
+    uv_from_cmd(&this->v2, this->cmd[6]);
     u16 texpage = this->cmd[4] >> 16;
     u16 palette = this->cmd[2] >> 16;
     u32 color = this->cmd[0] & 0xFFFFFF;
@@ -325,8 +327,8 @@ static void cmd25_tri_raw(struct PS1_GPU *this)
     xy_from_cmd(&this->v1, this->cmd[3]);
     xy_from_cmd(&this->v2, this->cmd[5]);
     uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v0, this->cmd[4]);
-    uv_from_cmd(&this->v0, this->cmd[6]);
+    uv_from_cmd(&this->v1, this->cmd[4]);
+    uv_from_cmd(&this->v2, this->cmd[6]);
     u16 texpage = this->cmd[4] >> 16;
     u16 palette = this->cmd[2] >> 16;
     struct PS1_GPU_TEXTURE_SAMPLER ts;
@@ -337,7 +339,7 @@ static void cmd25_tri_raw(struct PS1_GPU *this)
 static void cmd26_tri_modulated_semi_transparent(struct PS1_GPU *this)
 {
     /*
-  0 WRIOW GP0,(0x25<<24)                         ; Write GP0 Command Word (Command)
+  0 WRIOW GP0,(0x26<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
   1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
   2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
   3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
@@ -349,8 +351,8 @@ static void cmd26_tri_modulated_semi_transparent(struct PS1_GPU *this)
     xy_from_cmd(&this->v1, this->cmd[3]);
     xy_from_cmd(&this->v2, this->cmd[5]);
     uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v0, this->cmd[4]);
-    uv_from_cmd(&this->v0, this->cmd[6]);
+    uv_from_cmd(&this->v1, this->cmd[4]);
+    uv_from_cmd(&this->v2, this->cmd[6]);
     u16 texpage = this->cmd[4] >> 16;
     u16 palette = this->cmd[2] >> 16;
     u32 color = this->cmd[0] & 0xFFFFFF;
@@ -362,25 +364,24 @@ static void cmd26_tri_modulated_semi_transparent(struct PS1_GPU *this)
 static void cmd27_tri_raw_semi_transparent(struct PS1_GPU *this)
 {
     /*
-  0 WRIOW GP0,(0x25<<24)                         ; Write GP0 Command Word (Command)
+  0 WRIOW GP0,(0x27<<24)                         ; Write GP0 Command Word (Command)
   1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
   2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
   3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
   4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
   5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-  6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
-     */
+  6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)     */
     xy_from_cmd(&this->v0, this->cmd[1]);
     xy_from_cmd(&this->v1, this->cmd[3]);
     xy_from_cmd(&this->v2, this->cmd[5]);
     uv_from_cmd(&this->v0, this->cmd[2]);
-    uv_from_cmd(&this->v0, this->cmd[4]);
-    uv_from_cmd(&this->v0, this->cmd[6]);
+    uv_from_cmd(&this->v1, this->cmd[4]);
+    uv_from_cmd(&this->v2, this->cmd[6]);
     u16 texpage = this->cmd[4] >> 16;
     u16 palette = this->cmd[2] >> 16;
     struct PS1_GPU_TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
-    RT_draw_flat_tex_triangle(this, &this->v0, &this->v1, &this->v2, &ts);
+    RT_draw_flat_tex_triangle_semi(this, &this->v0, &this->v1, &this->v2, &ts);
 }
 
 
@@ -402,115 +403,124 @@ static void cmd2a_quad_flat_semi_transparent(struct PS1_GPU *this)
 
 static void cmd2c_quad_opaque_flat_textured_modulated(struct PS1_GPU *this) {
     // 0 WRIOW GP0,(0x2C<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
-    u32 col = this->cmd[0] & 0xFFFFFF;
     // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
-    xy_from_cmd(&this->t0, this->cmd[1]);
     // 2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
-    u32 palette = this->cmd[2] >> 16;
-    uv_from_cmd(&this->t1, this->cmd[2]);
     // 3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
-    xy_from_cmd(&this->t2, this->cmd[3]);
     // 4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
-    u32 tx_page = this->cmd[4] >> 16;
-    uv_from_cmd(&this->t2, this->cmd[4]);
     // 5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
-    xy_from_cmd(&this->t3, this->cmd[5]);
     // 6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
-    uv_from_cmd(&this->t3, this->cmd[6]);
     // 7 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
-    xy_from_cmd(&this->t4, this->cmd[7]);
     // 8 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
+    xy_from_cmd(&this->t1, this->cmd[1]);
+    xy_from_cmd(&this->t2, this->cmd[3]);
+    xy_from_cmd(&this->t3, this->cmd[5]);
+    xy_from_cmd(&this->t4, this->cmd[7]);
+    uv_from_cmd(&this->t1, this->cmd[2]);
+    uv_from_cmd(&this->t2, this->cmd[4]);
+    uv_from_cmd(&this->t3, this->cmd[6]);
     uv_from_cmd(&this->t4, this->cmd[8]);
 
+    u32 palette = this->cmd[2] >> 16;
+    u32 tx_page = this->cmd[4] >> 16;
+    u32 col = this->cmd[0] & 0xFFFFFF;
+
     struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_based(this, this->texture_depth, tx_page & 0x1FF, (tx_page >> 1) & 1, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
 
     RT_draw_flat_tex_triangle_modulated(this, &this->t1, &this->t2, &this->t3, col, &ts);
     RT_draw_flat_tex_triangle_modulated(this, &this->t2, &this->t3, &this->t4, col, &ts);
 }
 
 static void cmd2d_quad_opaque_flat_textured(struct PS1_GPU *this) {
-    // 0 WRIOW GP0,(0x2C<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
-    u32 col = this->cmd[0] & 0xFFFFFF;
-    // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
-    xy_from_cmd(&this->t0, this->cmd[1]);
-    // 2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
-    u32 palette = this->cmd[2] >> 16;
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    // 3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
+    /*
+WRIOW GP0,(0x2D<<24)                         ; Write GP0 Command Word (Command)
+  WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
+  WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
+  WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
+  WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
+  WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
+  WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
+  WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
+  WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
+     */
+    xy_from_cmd(&this->t1, this->cmd[1]);
     xy_from_cmd(&this->t2, this->cmd[3]);
-    // 4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
-    u32 tx_page = this->cmd[4] >> 16;
-    uv_from_cmd(&this->t2, this->cmd[4]);
-    // 5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
     xy_from_cmd(&this->t3, this->cmd[5]);
-    // 6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
-    uv_from_cmd(&this->t3, this->cmd[6]);
-    // 7 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     xy_from_cmd(&this->t4, this->cmd[7]);
-    // 8 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
+
+    uv_from_cmd(&this->t1, this->cmd[2]);
+    uv_from_cmd(&this->t2, this->cmd[4]);
+    uv_from_cmd(&this->t3, this->cmd[6]);
     uv_from_cmd(&this->t4, this->cmd[8]);
 
+    u32 palette = this->cmd[2] >> 16;
+    u32 tx_page = this->cmd[4] >> 16;
+
     struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_based(this, this->texture_depth, tx_page & 0x1FF, (tx_page >> 1) & 1, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
 
     RT_draw_flat_tex_triangle(this, &this->t1, &this->t2, &this->t3, &ts);
     RT_draw_flat_tex_triangle(this, &this->t2, &this->t3, &this->t4, &ts);
 }
 
 static void cmd2e_quad_flat_textured_modulated(struct PS1_GPU *this) {
-    // 0 WRIOW GP0,(0x2C<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
-    u32 col = this->cmd[0] & 0xFFFFFF;
-    // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
-    xy_from_cmd(&this->t0, this->cmd[1]);
-    // 2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
-    u32 palette = this->cmd[2] >> 16;
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    // 3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
+/*
+  WRIOW GP0,(0x2E<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
+  WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
+  WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
+  WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
+  WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
+  WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
+  WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
+  WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
+  WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
+ */
+    xy_from_cmd(&this->t1, this->cmd[1]);
     xy_from_cmd(&this->t2, this->cmd[3]);
-    // 4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
-    u32 tx_page = this->cmd[4] >> 16;
-    uv_from_cmd(&this->t2, this->cmd[4]);
-    // 5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
     xy_from_cmd(&this->t3, this->cmd[5]);
-    // 6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
-    uv_from_cmd(&this->t3, this->cmd[6]);
-    // 7 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     xy_from_cmd(&this->t4, this->cmd[7]);
-    // 8 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
+    uv_from_cmd(&this->t1, this->cmd[2]);
+    uv_from_cmd(&this->t2, this->cmd[4]);
+    uv_from_cmd(&this->t3, this->cmd[6]);
     uv_from_cmd(&this->t4, this->cmd[8]);
 
+    u32 col = this->cmd[0] & 0xFFFFFF;
+    u32 palette = this->cmd[2] >> 16;
+    u32 tx_page = this->cmd[4] >> 16;
+
     struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_based(this, this->texture_depth, tx_page & 0x1FF, (tx_page >> 1) & 1, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
 
     RT_draw_flat_tex_triangle_modulated_semi(this, &this->t1, &this->t2, &this->t3, col, &ts);
     RT_draw_flat_tex_triangle_modulated_semi(this, &this->t2, &this->t3, &this->t4, col, &ts);
 }
 
 static void cmd2f_quad_flat_textured_semi(struct PS1_GPU *this) {
-    // 0 WRIOW GP0,(0x2C<<24)+(COLOR&0xFFFFFF)        ; Write GP0 Command Word (Color+Command)
-    u32 col = this->cmd[0] & 0xFFFFFF;
-    // 1 WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
-    xy_from_cmd(&this->t0, this->cmd[1]);
-    // 2 WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
-    u32 palette = this->cmd[2] >> 16;
-    uv_from_cmd(&this->t1, this->cmd[2]);
-    // 3 WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
+/*
+  WRIOW GP0,(0x2F<<24)                         ; Write GP0 Command Word (Command)
+  WRIOW GP0,(Y1<<16)+(X1&0xFFFF)               ; Write GP0  Packet Word (Vertex1)
+  WRIOW GP0,(PAL<<16)+((V1&0xFF)<<8)+(U1&0xFF) ; Write GP0  Packet Word (Texcoord1+Palette)
+  WRIOW GP0,(Y2<<16)+(X2&0xFFFF)               ; Write GP0  Packet Word (Vertex2)
+  WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
+  WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
+  WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
+  WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
+  WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
+  */
+    xy_from_cmd(&this->t1, this->cmd[1]);
     xy_from_cmd(&this->t2, this->cmd[3]);
-    // 4 WRIOW GP0,(TEX<<16)+((V2&0xFF)<<8)+(U2&0xFF) ; Write GP0  Packet Word (Texcoord2+Texpage)
-    u32 tx_page = this->cmd[4] >> 16;
-    uv_from_cmd(&this->t2, this->cmd[4]);
-    // 5 WRIOW GP0,(Y3<<16)+(X3&0xFFFF)               ; Write GP0  Packet Word (Vertex3)
     xy_from_cmd(&this->t3, this->cmd[5]);
-    // 6 WRIOW GP0,((V3&0xFF)<<8)+(U3&0xFF)           ; Write GP0  Packet Word (Texcoord3)
-    uv_from_cmd(&this->t3, this->cmd[6]);
-    // 7 WRIOW GP0,(Y4<<16)+(X4&0xFFFF)               ; Write GP0  Packet Word (Vertex4)
     xy_from_cmd(&this->t4, this->cmd[7]);
-    // 8 WRIOW GP0,((V4&0xFF)<<8)+(U4&0xFF)           ; Write GP0  Packet Word (Texcoord4)
+    uv_from_cmd(&this->t1, this->cmd[2]);
+    uv_from_cmd(&this->t2, this->cmd[4]);
+    uv_from_cmd(&this->t3, this->cmd[6]);
     uv_from_cmd(&this->t4, this->cmd[8]);
 
+    u32 palette = this->cmd[2] >> 16;
+    u32 tx_page = this->cmd[4] >> 16;
+
     struct PS1_GPU_TEXTURE_SAMPLER ts;
-    get_texture_sampler_based(this, this->texture_depth, tx_page & 0x1FF, (tx_page >> 1) & 1, palette, &ts);
+    get_texture_sampler_from_texpage_and_palette(this, tx_page, palette, &ts);
 
     RT_draw_flat_tex_triangle_semi(this, &this->t1, &this->t2, &this->t3, &ts);
     RT_draw_flat_tex_triangle_semi(this, &this->t2, &this->t3, &this->t4, &ts);
@@ -561,11 +571,9 @@ static void cmd34_tri_shaded_opaque_tex_modulated(struct PS1_GPU *this)
     uv_from_cmd(&this->v2, this->cmd[5]);
     uv_from_cmd(&this->v3, this->cmd[8]);
     u16 texpage = this->cmd[5] >> 16;
-    u16 palette = this->cmd[3] >> 16;
-    u32 color = this->cmd[0] & 0xFFFFFF;
+    u16 palette = this->cmd[2] >> 16;
     struct PS1_GPU_TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
-
     RT_draw_shaded_tex_triangle_modulated(this, &this->v1, &this->v2, &this->v3, &ts);
 }
 
@@ -590,8 +598,7 @@ static void cmd36_tri_shaded_opaque_tex_modulated_semi(struct PS1_GPU *this)
     uv_from_cmd(&this->v2, this->cmd[5]);
     uv_from_cmd(&this->v3, this->cmd[8]);
     u16 texpage = this->cmd[5] >> 16;
-    u16 palette = this->cmd[3] >> 16;
-    u32 color = this->cmd[0] & 0xFFFFFF;
+    u16 palette = this->cmd[2] >> 16;
     struct PS1_GPU_TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
 
@@ -717,7 +724,6 @@ static void cmd3c_quad_opaque_shaded_textured_modulated(struct PS1_GPU *this) {
 
     u16 texpage = this->cmd[5] >> 16;
     u16 palette = this->cmd[2] >> 16;
-    u32 color = this->cmd[0] & 0xFFFFFF;
     struct PS1_GPU_TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
 
@@ -755,7 +761,6 @@ static void cmd3e_quad_opaque_shaded_textured_modulated_semi(struct PS1_GPU *thi
 
     u16 texpage = this->cmd[5] >> 16;
     u16 palette = this->cmd[2] >> 16;
-    u32 color = this->cmd[0] & 0xFFFFFF;
     struct PS1_GPU_TEXTURE_SAMPLER ts;
     get_texture_sampler_from_texpage_and_palette(this, texpage, palette, &ts);
 
