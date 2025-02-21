@@ -366,7 +366,7 @@ void R3000_reset(struct R3000 *this)
 static void add_to_console(struct R3000 *this, u32 ch)
 {
     jsm_string_sprintf(&this->console, "%c", ch);
-    //printf("\n\nCONSOLE\n%s", this->console.ptr);
+    printf("\n\nCONSOLE\n%s", this->console.ptr);
 }
 
 static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)

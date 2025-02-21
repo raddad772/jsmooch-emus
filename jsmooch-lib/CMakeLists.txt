@@ -395,6 +395,8 @@ add_library(jsmooch-lib
         src/system/ps1/gpu/rasterize_line.h
         src/system/ps1/gpu/pixel_helpers.c
         src/system/ps1/gpu/pixel_helpers.h
+        src/system/ps1/spu/ps1_spu.c
+        src/system/ps1/spu/ps1_spu.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

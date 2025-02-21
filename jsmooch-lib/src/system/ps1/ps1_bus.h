@@ -8,6 +8,7 @@
 #include "component/cpu/r3000/r3000.h"
 #include "helpers/physical_io.h"
 #include "gpu/ps1_gpu.h"
+#include "spu/ps1_spu.h"
 
 enum PS1_IRQ {
     PS1IRQ_VBlank,
@@ -64,6 +65,7 @@ struct PS1 {
     struct buf sideloaded;
 
     struct PS1_GPU gpu;
+    struct PS1_SPU spu;
 
     struct {
         struct cvec* IOs;

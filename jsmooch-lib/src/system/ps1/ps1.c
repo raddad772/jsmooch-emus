@@ -115,6 +115,7 @@ void PS1_new(struct jsm_system *jsm)
 
     PS1_bus_init(this);
     PS1_GPU_init(this);
+    PS1_SPU_init(this);
     /*PS1_clock_init(&this->clock);
     PS1_cart_init(&this->cart);
     PS1_PPU_init(this);
@@ -309,6 +310,7 @@ void PS1J_reset(JSM)
 
     printf("\nPS1 reset!");
     if (this->sideloaded.size > 0) {
+        return;
         sideload_EXE(this, &this->sideloaded);
     }
 }

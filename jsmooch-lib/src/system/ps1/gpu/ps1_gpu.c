@@ -1060,6 +1060,11 @@ static void cmd80_vram_copy(struct PS1_GPU *this)
         for (u32 ix = 0; ix < width; ix++) {
             u32 get_addr = ((ix+x1) & 1023) * 2;
             get_addr += ((iy+y1) & 511) * 2048; // 2048 bytes per 1024-pixel row
+            if (this->preserve_masked_pixels) {
+                u16 t = cR16(this->VRAM, (((iy + y2) & 511) * 2048) + (((ix + x2) & 1023) * 2));
+                if (t & 0x8000) continue;
+            }
+
             u16 v = cR16(this->VRAM, get_addr & 0xFFFFF);
             setpix(this, iy+y2, ix+x2, v & 0x7FFF, 1, v & 0x8000);
         }
@@ -1452,8 +1457,8 @@ static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
         this->ins_special = 0;
         this->cmd_arg_num = 1;
         u32 cmdr = cmd >> 24;
-        printf("\nCMD %02x", cmdr);
 #ifdef LOG_GP0
+        printf("\nCMD %02x", cmdr);
 #endif
         switch(cmdr) {
             case 0: // NOP
