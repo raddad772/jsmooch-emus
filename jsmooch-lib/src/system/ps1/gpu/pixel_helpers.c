@@ -186,6 +186,35 @@ void semipix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_
     cW16(this->VRAM, addr, color | mask_bit);
 }
 
+void semipixm(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_tex, u32 tex_mask)
+{
+    // VRAM is 512 1024-wide 16-bit words. so 2048 bytes per line
+    i32 ry = (y & 511) + this->draw_y_offset;
+    i32 rx = (x & 1023) + this->draw_x_offset;
+    if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
+    if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
+    u32 addr = (2048*ry)+(rx*2);
+
+    if (this->preserve_masked_pixels) {
+        u16 v = cR16(this->VRAM, addr);
+        if (v & 0x8000) return;
+    }
+
+    if (tex_mask) {
+        // First sample...
+        u32 bg = cR16(this->VRAM, addr);
+
+        // Then blend...
+        color = blend_semi15(mode, bg, color);
+    }
+    else {
+        if (color == 0) return;
+    }
+
+    // Now write...
+    u32 mask_bit = is_tex * (tex_mask | this->force_set_mask_bit);
+    cW16(this->VRAM, addr, color | mask_bit);
+}
 
 void semipix_split(struct PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 is_tex, u32 tex_mask)
 {
