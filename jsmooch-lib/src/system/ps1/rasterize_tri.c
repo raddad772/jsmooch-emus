@@ -378,7 +378,7 @@ void RT_draw_flat_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT2D
                 if (mb > 31.0f) mb = 31.0f;
 
                 // Draw the pixe
-                setpix_split(this, p.y, p.x, (u32)mr, (u32)mg, (u32)mb, 0);
+                if ((color >> 15) & 1) setpix_split(this, p.y, p.x, (u32)mr, (u32)mg, (u32)mb, 0);
             }
         }
     }

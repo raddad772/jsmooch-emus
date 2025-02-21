@@ -207,7 +207,7 @@ static u16 sample_tex_8bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
 
 static u16 sample_tex_15bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
 {
-    u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0x3F)>>1);
+    u32 addr = ts->base_addr + ((v&0xFF)<<11) + ((u&0x7F)<<1);
     return cR16(ts->VRAM, addr & 0xFFFFF);
 }
 
@@ -943,7 +943,7 @@ static void gp0_image_load_continue(struct PS1_GPU *this, u32 cmd)
     }
     this->gp0_transfer_remaining--;
     if (this->gp0_transfer_remaining == 0) {
-        //console.log('TRANSFER COMPLETE!');
+        //printf("\nTRANSFER COMPLETE!");
         this->current_ins = NULL;
         this->handle_gp0 = &gp0_cmd;
         ready_cmd(this);
@@ -965,6 +965,7 @@ static void gp0_image_load_start(struct PS1_GPU *this)
 
     // Get imgsize, round it
     u32 imgsize = ((width * height) + 1) & 0xFFFFFFFE;
+    //printf("\nNEW TRANSFER x,y:%d,%d width,height:%d,%d", x, y, width, height);
 
     this->gp0_transfer_remaining = imgsize/2;
 #ifdef LOG_GP0
