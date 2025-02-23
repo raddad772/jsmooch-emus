@@ -58,8 +58,8 @@ static inline void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
             *lo = -1;
         }
         else if (c == -0x80000000) {
-            *hi = 0;
-            *lo = -0x80000000;
+            *hi = 0x80000000;
+            *lo = 1;
         }
         else {
             *hi = a;

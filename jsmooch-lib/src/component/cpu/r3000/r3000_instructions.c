@@ -198,7 +198,7 @@ void R3000_fSYSCALL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 void R3000_fBREAK(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     printf("\nWARNING FIX BREAK!");
-    R3000_exception(core, 8, 0, 0);
+    R3000_exception(core, 9, 0, 0);
 }
 
 static void wait_for(struct R3000 *core, u64 timecode)
@@ -307,9 +307,12 @@ void R3000_fADD(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
-
-    // TODO: add overflow trap
-    R3000_fs_reg_write(core, rd, core->regs.R[rs] + core->regs.R[rt]);
+    int r;
+    if (__builtin_sadd_overflow (core->regs.R[rs], core->regs.R[rt], &r)) {
+        R3000_exception(core, 0xC, 0, 0);
+        return;
+    }
+    R3000_fs_reg_write(core, rd, r);
 
 }
 
@@ -329,9 +332,13 @@ void R3000_fSUB(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
+    int r;
+    if (__builtin_ssub_overflow (core->regs.R[rs], core->regs.R[rt], &r)) {
+        R3000_exception(core, 0xC, 0, 0);
+        return;
+    }
 
-    // TODO: add overflow trap
-    R3000_fs_reg_write(core, rd, core->regs.R[rs] - core->regs.R[rt]);
+    R3000_fs_reg_write(core, rd, r);
 }
 
 void R3000_fSUBU(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
@@ -486,6 +493,11 @@ void R3000_fADDI(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
+    int r;
+    if (__builtin_sadd_overflow(core->regs.R[rs], imm, &r)) {
+        R3000_exception(core, 0xC, 0, 0);
+        return;
+    }
 
     // TODO: add overflow trap
     R3000_fs_reg_write(core, rt, core->regs.R[rs] + imm);
