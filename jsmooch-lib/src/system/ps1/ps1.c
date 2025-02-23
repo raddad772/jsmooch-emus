@@ -80,7 +80,7 @@ static void PS1_update_SR(void *ptr, struct R3000 *core, u32 val)
 {
     struct PS1 *this = (struct PS1 *)ptr;
     this->mem.cache_isolated = (val & 0x10000) == 0x10000;
-    printf("\nNew SR: %04x", core->regs.COP0[12] & 0xFFFF);
+    //printf("\nNew SR: %04x", core->regs.COP0[12] & 0xFFFF);
 }
 
 static void BIOS_patch_reset(struct PS1 *this)

@@ -106,6 +106,7 @@ static inline void R3000_fs_reg_delay(struct R3000 *core, i32 target, u32 value)
 void R3000_fNA(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     printf("\nBAD INSTRUCTION %08x AT PC(+4) %08x cycle:%lld", opcode, core->regs.PC, R3000_current_clock(core));
+    dbg_break("BAD INSTRUCTIONN", 0);
 }
 
 void R3000_fSLL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)

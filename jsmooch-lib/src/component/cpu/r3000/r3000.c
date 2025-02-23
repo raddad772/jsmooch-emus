@@ -509,7 +509,7 @@ void R3000_trace_format(struct R3000 *this, struct jsm_string *out)
     ct.gte = 0;
     //dbg_printf("\n%08x: %08x cyc:%lld", this->pipe.current.addr, this->pipe.current.opcode, *this->clock);
     R3000_disassemble(this->pipe.current.opcode, out, this->pipe.current.addr, &ct);
-    printf("\n%08x     %s", this->pipe.current.addr, out->ptr);
+    printf("\n%08x  (%08x)   %s", this->pipe.current.addr, this->pipe.current.opcode, out->ptr);
     jsm_string_quickempty(out);
     R3000_print_context(this, &ct, out);
     if ((out->cur - out->ptr) > 1) {
