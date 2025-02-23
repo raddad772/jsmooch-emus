@@ -80,6 +80,7 @@ static void PS1_update_SR(void *ptr, struct R3000 *core, u32 val)
 {
     struct PS1 *this = (struct PS1 *)ptr;
     this->mem.cache_isolated = (val & 0x10000) == 0x10000;
+    printf("\nNew SR: %04x", core->regs.COP0[12] & 0xFFFF);
 }
 
 static void BIOS_patch_reset(struct PS1 *this)
@@ -98,6 +99,19 @@ static void PS1J_sideload(JSM, struct multi_file_set *fs) {
     memcpy(this->sideloaded.ptr, fs->files[0].buf.ptr, fs->files[0].buf.size);
 }
 
+static u32 snoop_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
+{
+    u32 r = PS1_mainbus_read(ptr, addr, sz, has_effect);
+    //printf("\nread %08x (%d): %08x", addr, sz, r);
+    return r;
+}
+
+static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
+{
+    //printf("\nwrite %08x (%d): %08x", addr, sz, val);
+    PS1_mainbus_write(ptr, addr, sz, val);
+}
+
 void PS1_new(struct jsm_system *jsm)
 {
     struct PS1* this = (struct PS1*)malloc(sizeof(struct PS1));
@@ -106,8 +120,10 @@ void PS1_new(struct jsm_system *jsm)
     buf_init(&this->sideloaded);
     this->cpu.read_ptr = this;
     this->cpu.write_ptr = this;
-    this->cpu.read = &PS1_mainbus_read;
-    this->cpu.write = &PS1_mainbus_write;
+    this->cpu.read = &snoop_read;
+    //this->cpu.read = &PS1_mainbus_read;
+    this->cpu.write = &snoop_write;
+    //this->cpu.write = &PS1_mainbus_write;
     this->cpu.fetch_ptr = this;
     this->cpu.fetch_ins = &PS1_mainbus_fetchins;
     this->cpu.update_sr_ptr = this;
@@ -180,12 +196,13 @@ static void set_irq(struct PS1 *this, enum PS1_IRQ from, u32 level)
 static void run_cycles(struct PS1 *this, i64 num)
 {
     this->cycles_left += (i64)num;
-    u32 block = 20;
+    i64 block = 20;
     while (this->cycles_left > 0) {
-        if (block < this->cycles_left) block = this->cycles_left;
-        i64 cycles_left_frame_start = this->clock.master_cycle_count;
+        i64 clock_at_loop_start = this->clock.master_cycle_count;
+        if (block > this->cycles_left) block = this->cycles_left;
         R3000_cycle(&this->cpu, block);
-        this->clock.cycles_left_this_frame -= cycles_left_frame_start - this->clock.master_cycle_count;
+        i64 diff = (i64)this->clock.master_cycle_count - clock_at_loop_start;
+        this->clock.cycles_left_this_frame -= diff;
 
         if (this->clock.cycles_left_this_frame <= 0) {
             this->clock.cycles_left_this_frame += PS1_CYCLES_PER_FRAME_NTSC;
@@ -209,8 +226,18 @@ static void copy_vram(struct PS1 *this)
 u32 PS1J_finish_frame(JSM)
 {
     JTHIS;
+#ifdef LYCODER
+    dbg_enable_trace();
+#endif
     run_cycles(this, PS1_CYCLES_PER_FRAME_NTSC);
     copy_vram(this);
+    if (dbg.do_break) {
+        printf("\nDUMP!");
+        dbg.trace_on += 1;
+        dbg_flush();
+        dbg.trace_on -= 1;
+    }
+    dbg_flush();
     return 0;
 }
 
@@ -307,6 +334,7 @@ void PS1J_reset(JSM)
     R3000_reset(&this->cpu);
     PS1_bus_init(this);
     this->mem.cache_isolated = 0;
+    this->clock.cycles_left_this_frame = PS1_CYCLES_PER_FRAME_NTSC;
 
     printf("\nPS1 reset!");
     if (this->sideloaded.size > 0) {

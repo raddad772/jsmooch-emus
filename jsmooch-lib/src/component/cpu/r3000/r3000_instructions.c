@@ -13,6 +13,18 @@
 
 // ranch_delay and cop0 default to 0
 
+static const char reg_alias_arr[33][12] = {
+        "r0", "at", "v0", "v1",
+        "a0", "a1", "a2", "a3",
+        "t0", "t1", "t2", "t3",
+        "t4", "t5", "t6", "t7",
+        "s0", "s1", "s2", "s3",
+        "s4", "s5", "s6", "s7",
+        "t8", "t9", "k0", "k1",
+        "gp", "sp", "fp", "ra",
+        "unknown reg"
+};
+
 static inline u64 R3000_current_clock(struct R3000 *core)
 {
     return *core->clock + *core->waitstates;
@@ -23,10 +35,10 @@ static void COP_write_reg(struct R3000 *core, u32 COP, u32 num, u32 val)
     switch(COP) {
         case 0:
             // TODO: add 1-cycle delay
+            core->regs.COP0[num] = val;
             if (num == 12) {
                 if (core->update_sr) core->update_sr(core->update_sr_ptr, core, val);
             }
-            core->regs.COP0[num] = val;
             return;
         case 2:
             GTE_write_reg(&core->gte, num, val);
@@ -74,6 +86,7 @@ static inline void R3000_branch(struct R3000 *core, u32 new_addr, u32 doit, u32 
 static inline u32 R3000_fs_reg_delay_read(struct R3000 *core, i32 target) {
     struct R3000_pipeline_item *p = &core->pipe.current;
     if (p->target == target) {
+        printf("\nLoad shortcut %s %08x", reg_alias_arr[p->target], p->value);
         p->target = -1;
         return p->value;
     }
@@ -97,11 +110,14 @@ void R3000_fNA(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 
 void R3000_fSLL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
-    u32 rs = (opcode >> 21) & 0x1F;
+    if (opcode == 0) {
+        return;
+    }
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
+    u32 imm5 = (opcode >> 6) & 0x1F;
 
-    R3000_fs_reg_write(core, rd, core->regs.R[rt] << (core->regs.R[rs] & 0x1F));
+    R3000_fs_reg_write(core, rd, core->regs.R[rt] << imm5);
 }
 
 void R3000_fSRL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
@@ -556,12 +572,12 @@ static void R3000_fCOP0_RFE(u32 opcode, struct R3000_opcode *op, struct R3000 *c
     // move FROM co
     // rt = cop[rd]
     // The RFE opcode moves some bits in cop0r12 (SR): bit2-3 are copied to bit0-1, all other bits (including bit4-5) are left unchanged.
-    u32 r12 = core->regs.COP0[RCR_SR];
+    u32 r12 = COP_read_reg(core, 0, RCR_SR);
     // bit4-5 are copied to bit2-3
     u32 b23 = (r12 >> 2) & 0x0C; // Move from 4-5 to 2-3
     u32 b01 = (r12 >> 2) & 3; // Move from 2-3 to 0-1
-    core->regs.COP0[RCR_SR] = (r12 & 0xFFFFFFF0) | b01 | b23;
-
+    COP_write_reg(core, 0, 12, (r12 & 0xFFFFFFF0) | b01 | b23);
+    if (core->update_sr) core->update_sr(core->update_sr_ptr, core, core->regs.COP0[RCR_SR]);
 }
 
 void R3000_fCOP(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
@@ -691,7 +707,7 @@ void R3000_fLW(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
 
-    //if (rd == 0x02800280) { console.log('LW FROM', hex8(addr)); debugger; }
+    //printf("\nLW imm16:%04x addr:%08x", imm16, addr);
     R3000_fs_reg_delay(core, rt, core->read(core->read_ptr, addr, 4, 1));
 }
 

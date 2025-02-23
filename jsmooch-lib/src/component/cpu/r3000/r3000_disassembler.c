@@ -188,19 +188,19 @@ static void disassemble_COP(u32 opcode, struct jsm_string *out, struct R3000ctxt
                     if ((bits5 == 0x10) && (copnum == 0)) {
                         switch(opcode & 0x1F) {
                             case 1:
-                                jsm_string_sprintf(out, "TLBR");
+                                jsm_string_sprintf(out, "tlbr");
                                 return;
                             case 2:
-                                jsm_string_sprintf(out, "TLBWI");
+                                jsm_string_sprintf(out, "tlbwi");
                                 return;
                             case 6:
-                                jsm_string_sprintf(out, "TLBWR");
+                                jsm_string_sprintf(out, "tlbwr");
                                 return;
                             case 8:
-                                jsm_string_sprintf(out, "TLBP");
+                                jsm_string_sprintf(out, "tlbp");
                                 return;
                             case 0x10:
-                                jsm_string_sprintf(out, "RFE");
+                                jsm_string_sprintf(out, "rfe");
                                 return;
                             default:
                                 jsm_string_sprintf(out, "BADCOP0");
@@ -233,7 +233,6 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
         return;
     }
 
-
     char ostr1[100], ostr2[100];
     memset(ostr1, 0, 100);
     memset(ostr2, 0, 100);
@@ -253,34 +252,55 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
                 case 0x00: // SLL
                     snprintf(ostr1, sizeof(ostr1), "sll");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %d", reg_alias_arr[rd], reg_alias_arr[rt], imm5);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
+                    add_r_context(ct, rs);
                     break;
                 case 0x02: // SRL
                     snprintf(ostr1, sizeof(ostr1), "srl");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %d", reg_alias_arr[rd], reg_alias_arr[rt], imm5);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
+                    add_r_context(ct, rs);
                     break;
                 case 0x03: // SRA
                     snprintf(ostr1, sizeof(ostr1), "sra");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %d", reg_alias_arr[rd], reg_alias_arr[rt], imm5);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
+                    add_r_context(ct, rs);
                     break;
                 case 0x04: // SLLV
                     snprintf(ostr1, sizeof(ostr1), "sllv");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rt], reg_alias_arr[rs]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
+                    add_r_context(ct, rs);
                     break;
                 case 0x06: // SRLV
                     snprintf(ostr1, sizeof(ostr1), "srlv");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rt], reg_alias_arr[rs]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
+                    add_r_context(ct, rs);
                     break;
                 case 0x07: // SRAV
                     snprintf(ostr1, sizeof(ostr1), "srav");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rt], reg_alias_arr[rs]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
+                    add_r_context(ct, rs);
                     break;
                 case 0x08: // JR
                     snprintf(ostr1, sizeof(ostr1), "jr");
                     snprintf(ostr2, sizeof(ostr2), "%s", reg_alias_arr[rs]);
+                    add_r_context(ct, rs);
                     break;
                 case 0x09: // JALR
                     snprintf(ostr1, sizeof(ostr1), "jalr");
-                    snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rt], reg_alias_arr[rs]);
+                    snprintf(ostr2, sizeof(ostr2), "%s, %s", reg_alias_arr[rd], reg_alias_arr[rs]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
                     break;
                 case 0x0C: // SYSCALL
                     snprintf(ostr1, sizeof(ostr1), "syscall");
@@ -293,74 +313,117 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
                 case 0x10: // MFHI
                     snprintf(ostr1, sizeof(ostr1), "mfhi");
                     snprintf(ostr2, sizeof(ostr2), "%s", reg_alias_arr[rd]);
+                    add_r_context(ct, rd);
                     break;
                 case 0x11: // MTHI
                     snprintf(ostr1, sizeof(ostr1), "mthi");
                     snprintf(ostr2, sizeof(ostr2), "%s", reg_alias_arr[rs]);
+                    add_r_context(ct, rs);
                     break;
                 case 0x12: // MFLO
                     snprintf(ostr1, sizeof(ostr1), "mfhi");
                     snprintf(ostr2, sizeof(ostr2), "%s", reg_alias_arr[rd]);
+                    add_r_context(ct, rd);
                     break;
                 case 0x13: // MTLO
                     snprintf(ostr1, sizeof(ostr1), "mfhi");
                     snprintf(ostr2, sizeof(ostr2), "%s", reg_alias_arr[rs]);
+                    add_r_context(ct, rs);
                     break;
                 case 0x18: // MULT
                     snprintf(ostr1, sizeof(ostr1), "mult");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s", reg_alias_arr[rd], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
                     break;
                 case 0x19: // MULTU
                     snprintf(ostr1, sizeof(ostr1), "multu");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s", reg_alias_arr[rd], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
                     break;
                 case 0x1A: // DIV
                     snprintf(ostr1, sizeof(ostr1), "div");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s", reg_alias_arr[rd], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
                     break;
                 case 0x1B: // DIVU
                     snprintf(ostr1, sizeof(ostr1), "divu");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s", reg_alias_arr[rd], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rt);
                     break;
                 case 0x20: // ADD
                     snprintf(ostr1, sizeof(ostr1), "add");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x21: // ADDU
                     snprintf(ostr1, sizeof(ostr1), "addu");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x22: // SUB
                     snprintf(ostr1, sizeof(ostr1), "sub");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x23: // SUBU
                     snprintf(ostr1, sizeof(ostr1), "subu");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x24: // AND
                     snprintf(ostr1, sizeof(ostr1), "and");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x25: // OR
                     snprintf(ostr1, sizeof(ostr1), "or");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x26: // XOR
                     snprintf(ostr1, sizeof(ostr1), "xor");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x27: // NOR
                     snprintf(ostr1, sizeof(ostr1), "nor");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);;
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
+
                     break;
                 case 0x2A: // SLT
                     snprintf(ostr1, sizeof(ostr1), "slt");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 case 0x2B: // SLTU
                     snprintf(ostr1, sizeof(ostr1), "sltu");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    add_r_context(ct, rd);
+                    add_r_context(ct, rs);
+                    add_r_context(ct, rt);
                     break;
                 default:
                     snprintf(ostr1, sizeof(ostr1), "UNKNOWN.b %02x %08x", s_op, opcode);
@@ -386,6 +449,7 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
                     break;
             }
             snprintf(ostr2, sizeof(ostr2), "%s, #$%04x", reg_alias_arr[rs], imm16);
+            add_r_context(ct, rs);
             break;
         case 0x02: // J
             snprintf(ostr1, sizeof(ostr1), "j");
@@ -397,51 +461,71 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
             break;
         case 0x04: // BEQ
             snprintf(ostr1, sizeof(ostr1), "beq");
-            snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16);
+            snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16*4);
+            add_r_context(ct, rs);
             break;
         case 0x05: // BNE
             snprintf(ostr1, sizeof(ostr1), "bne");
-            snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16);
+            snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16*4);
+            add_r_context(ct, rs);
+            add_r_context(ct, rt);
             break;
         case 0x06: // BLEZ
             snprintf(ostr1, sizeof(ostr1), "blez");
-            snprintf(ostr2, sizeof(ostr2), "%s, #$%04x", reg_alias_arr[rs], imm16);
+            snprintf(ostr2, sizeof(ostr2), "%s, #$%04x", reg_alias_arr[rs], imm16*4);
+            add_r_context(ct, rs);
             break;
         case 0x07: // BGTZ
             snprintf(ostr1, sizeof(ostr1), "bgtz");
-            snprintf(ostr2, sizeof(ostr2), "%s, #$%04x", reg_alias_arr[rs], imm16);
+            snprintf(ostr2, sizeof(ostr2), "%s, #$%04x", reg_alias_arr[rs], imm16*4);
+            add_r_context(ct, rs);
             break;
         case 0x08: // ADDI
             snprintf(ostr1, sizeof(ostr1), "addi");
             snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rt], reg_alias_arr[rs], imm16);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x09: // ADDIU
             snprintf(ostr1, sizeof(ostr1), "addiu");
             snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rt], reg_alias_arr[rs], imm16);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x0A: // SLTI
             snprintf(ostr1, sizeof(ostr1), "setlt slti");
             snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rt], reg_alias_arr[rs], imm16);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x0B: // SLTIU
             snprintf(ostr1, sizeof(ostr1), "setb sltiu");
             snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rt], reg_alias_arr[rs], imm16);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x0C: // ANDI
             snprintf(ostr1, sizeof(ostr1), "andi");
             snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rt], reg_alias_arr[rs], imm16);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x0D: // ORI
             snprintf(ostr1, sizeof(ostr1), "ori");
             snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rt], reg_alias_arr[rs], imm16);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x0E: // XORI
             snprintf(ostr1, sizeof(ostr1), "xori");
             snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rt], reg_alias_arr[rs], imm16);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x0F: // LUI
             snprintf(ostr1, sizeof(ostr1), "lui");
             snprintf(ostr2, sizeof(ostr2), "%s, $%04x0000", reg_alias_arr[rt], imm16);
+            add_r_context(ct, rt);
             break;
         case 0x13: // COP3
         case 0x12: // COP2
@@ -452,50 +536,74 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
         case 0x20: // LB
             snprintf(ostr1, sizeof(ostr1), "lb");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x21: // LH
             snprintf(ostr1, sizeof(ostr1), "lh");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x22: // LWL
             snprintf(ostr1, sizeof(ostr1), "lwl");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x23: // LW
             snprintf(ostr1, sizeof(ostr1), "lw");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x24: // LBU
             snprintf(ostr1, sizeof(ostr1), "lbu");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x25: // LHU
             snprintf(ostr1, sizeof(ostr1), "lhu");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x26: // LWR
             snprintf(ostr1, sizeof(ostr1), "lwr");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x28: // SB
             snprintf(ostr1, sizeof(ostr1), "sb");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x29: // SH
             snprintf(ostr1, sizeof(ostr1), "sh");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x2A: // SWL
             snprintf(ostr1, sizeof(ostr1), "swl");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x2B: // SW
             snprintf(ostr1, sizeof(ostr1), "sw");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x2E: // SWR
             snprintf(ostr1, sizeof(ostr1), "swr");
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x33: // LWC3
         case 0x32: // LWC2
@@ -503,6 +611,8 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
         case 0x30: // LWC0
             snprintf(ostr1, sizeof(ostr1), "lwc%d", num);
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
         case 0x3B: // SWC3
         case 0x3A: // SWC2
@@ -510,6 +620,8 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
         case 0x38: // SWC0
             snprintf(ostr1, sizeof(ostr1), "swc%d", num);
             snprintf(ostr2, sizeof(ostr2), "%s, %04x(%s)", reg_alias_arr[rt], imm16, reg_alias_arr[rs]);
+            add_r_context(ct, rt);
+            add_r_context(ct, rs);
             break;
     }
 
@@ -518,6 +630,7 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
     while(s1l < 11) {
         *ptr = ' ';
         ptr++;
+        s1l++;
     }
     *ptr = 0;
 

@@ -11,7 +11,7 @@
 #include "spu/ps1_spu.h"
 
 enum PS1_IRQ {
-    PS1IRQ_VBlank,
+    PS1IRQ_VBlank = 0,
     PS1IRQ_GPU,
     PS1IRQ_CDROM,
     PS1IRQ_DMA,

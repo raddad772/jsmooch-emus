@@ -129,7 +129,7 @@ void dbg_flush()
 #endif
 #ifdef DBG_LOG_TO_FILE
     char fpath[250];
-    construct_path(fpath, sizeof(fpath), "m68k.log");
+    construct_path(fpath, sizeof(fpath), "r3000.txt");
     if (dbg.first_flush) {
         dbg.first_flush = 0;
         remove(fpath);

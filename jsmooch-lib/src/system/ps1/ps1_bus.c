@@ -41,6 +41,10 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
     if ((addr >= 0x1F800000) && (addr < 0x1F800400)) {
         return cR[sz](this->mem.scratchpad, addr & 0x3FF);
     }
+    /*if ((addr >= 0x1F800000) && (addr < 0x1F803000)) {
+        // TODO: stub: IO area
+        return 0;
+    }*/
     // 1FC00000h 512kb BIOS
     if ((addr >= 0x1FC00000) && (addr < 0x1FC80000)) {
         return cR[sz](this->mem.BIOS, addr & 0x7FFFF);
@@ -68,6 +72,9 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
     }
 
     switch(addr) {
+        case 0x1f801110:
+            // expansion area poll
+            return 0;
         case 0x00FF1F00: // Invalid addresses?
         case 0x00FF1F04:
         case 0x00FF1F08:
@@ -106,7 +113,11 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
     struct PS1* this = (struct PS1*)ptr;
     if (this->mem.cache_isolated) return;
     addr = deKSEG(addr) & alignmask[sz];
-    if ((addr < 0x800000) && !this->mem.cache_isolated) {
+    /*if (addr == 0) {
+        printf("\nWRITE %08x:%08x ON cycle %lld", addr, val, ((struct PS1 *)ptr)->clock.master_cycle_count);
+        dbg_break("GHAHA", 0);
+    }*/
+    if ((addr < 0x00800000) && !this->mem.cache_isolated) {
         cW[sz](this->mem.MRAM, addr & 0x1FFFFF, val);
         return;
     }
@@ -192,5 +203,6 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
 
 u32 PS1_mainbus_fetchins(void *ptr, u32 addr, u32 sz)
 {
+    struct PS1 *this = (struct PS1 *)ptr;
     return PS1_mainbus_read(ptr, addr, sz, 1);
 }

@@ -7,6 +7,20 @@
 
 #include "r3000_instructions.h"
 #include "r3000.h"
+#include "r3000_disassembler.h"
+
+static const char reg_alias_arr[33][12] = {
+        "r0", "at", "v0", "v1",
+        "a0", "a1", "a2", "a3",
+        "t0", "t1", "t2", "t3",
+        "t4", "t5", "t6", "t7",
+        "s0", "s1", "s2", "s3",
+        "s4", "s5", "s6", "s7",
+        "t8", "t9", "k0", "k1",
+        "gp", "sp", "fp", "ra",
+        "unknown reg"
+};
+
 
 static struct R3000_pipeline_item *pipe_push(struct R3000_pipeline *this)
 {
@@ -365,8 +379,12 @@ void R3000_reset(struct R3000 *this)
 
 static void add_to_console(struct R3000 *this, u32 ch)
 {
-    jsm_string_sprintf(&this->console, "%c", ch);
-    printf("\n\nCONSOLE\n%s", this->console.ptr);
+    if (ch == '\n') {
+        printf("\n%s", this->console.ptr);
+        jsm_string_quickempty(&this->console);
+    }
+    else
+        jsm_string_sprintf(&this->console, "%c", ch);
 }
 
 static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
@@ -374,12 +392,14 @@ static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
     // Load delay slot from instruction before this one
     if (which->target > 0) {// R0 stays 0
         this->regs.R[which->target] = which->value;
+        //printf("\nDelay slot %s set to %08x", reg_alias_arr[which->target], which->value);
         which->target = -1;
     }
 
     // Branch delay slot
     if (which->new_PC != 0) {
         this->regs.PC = which->new_PC;
+        //printf("\nDelay slot PC new %08x", this->regs.PC);
         if ((this->regs.PC == 0xA0 && this->regs.R[9] == 0x3C) || (this->regs.PC == 0xB0 && this->regs.R[9] == 0x3D)) {
         //if (this->regs.PC == 0xB0) {
             //printf("B0! %08x", this->regs.R[9]);
@@ -450,13 +470,60 @@ static void fetch_and_decode(struct R3000 *this)
     this->regs.PC += 4;
 }
 
+static void R3000_print_context(struct R3000 *this, struct R3000ctxt *ct, struct jsm_string *out)
+{
+    jsm_string_quickempty(out);
+    u32 needs_commaspace = 0;
+    for (u32 i = 1; i < 32; i++) {
+        if (ct->regs & (1 << i)) {
+            if (needs_commaspace) {
+                jsm_string_sprintf(out, ", ");
+            }
+            needs_commaspace = 1;
+            jsm_string_sprintf(out, "%s:%08x", reg_alias_arr[i], this->regs.R[i]);
+        }
+    }
+}
+
+static void lycoder_trace_format(struct R3000 *this, struct jsm_string *out)
+{
+    struct R3000ctxt ct;
+    ct.cop = 0;
+    ct.regs = 0;
+    ct.gte = 0;
+    dbg_printf("\n%08x: %08x cyc:%lld", this->pipe.current.addr, this->pipe.current.opcode, *this->clock);
+    R3000_disassemble(this->pipe.current.opcode, out, this->pipe.current.addr, &ct);
+    dbg_printf("     %s", out->ptr);
+    jsm_string_quickempty(out);
+    R3000_print_context(this, &ct, out);
+    if ((out->cur - out->ptr) > 1) {
+        dbg_printf("             \t; %s", out->ptr);
+    }
+}
+
+void R3000_trace_format(struct R3000 *this, struct jsm_string *out)
+{
+    struct R3000ctxt ct;
+    ct.cop = 0;
+    ct.regs = 0;
+    ct.gte = 0;
+    //dbg_printf("\n%08x: %08x cyc:%lld", this->pipe.current.addr, this->pipe.current.opcode, *this->clock);
+    R3000_disassemble(this->pipe.current.opcode, out, this->pipe.current.addr, &ct);
+    printf("\n%08x     %s", this->pipe.current.addr, out->ptr);
+    jsm_string_quickempty(out);
+    R3000_print_context(this, &ct, out);
+    if ((out->cur - out->ptr) > 1) {
+        printf("           \t%s", out->ptr);
+    }
+}
+
 void R3000_cycle(struct R3000 *this, i32 howmany)
 {
     i32 cycles_left = howmany;
     while(cycles_left > 0) {
         *this->clock += 2;
         if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
-            printf("\nIRQ!");
+            printf("\nDO IRQ!");
             R3000_exception(this, 0, this->pipe.item0.new_PC != 0, 0);
         }
 
@@ -464,14 +531,19 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
             fetch_and_decode(this);
         struct R3000_pipeline_item *current = R3000_pipe_move_forward(&this->pipe);
 
-        current->op->func(current->opcode, current->op, this);
-
-        delay_slots(this, current);
-
+#ifdef LYCODER
+        lycoder_trace_format(this, &this->trace.str);
+#else
+        R3000_trace_format(this, &this->trace.str);
         if (dbg.trace_on) {
             //console.log(hex8(this->regs.PC) + ' ' + R3000_disassemble(current.opcode));
             //dbg.traces.add(D_RESOURCE_TYPES.R3000, this->clock.trace_cycles-1, this->trace_format(R3000_disassemble(current.opcode), current.addr))
         }
+#endif
+        current->op->func(current->opcode, current->op, this);
+
+        delay_slots(this, current);
+
 
         pipe_item_clear(current);
 
@@ -496,6 +568,7 @@ void R3000_write_reg(struct R3000 *this, u32 addr, u32 sz, u32 val)
             return;
         case 0x1F801074: // I_MASK write
             this->io.I_MASK = val;
+            printf("\nI_MASK: %08x", val);
             R3000_update_I_STAT(this);
             return;
     }

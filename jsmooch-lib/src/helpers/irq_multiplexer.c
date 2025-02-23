@@ -2,6 +2,7 @@
 // Created by . on 2/15/25.
 //
 
+#include <printf.h>
 #include "irq_multiplexer.h"
 
 void IRQ_multiplexer_init(struct IRQ_multiplexer *this)
