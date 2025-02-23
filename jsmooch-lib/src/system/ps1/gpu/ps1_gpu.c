@@ -77,7 +77,7 @@ static inline void unready_cmd(struct PS1_GPU *this)
 
 static inline void unready_recv_dma(struct PS1_GPU *this)
 {
-    //printf("\nUNREADY DMA");
+    dbg_printf("\nUNREADY DMA");
     this->io.GPUSTAT &= 0xEFFFFFFF;
 }
 
@@ -102,7 +102,7 @@ static inline void ready_cmd(struct PS1_GPU *this)
 
 static inline void ready_recv_dma(struct PS1_GPU *this)
 {
-    //printf("\nREADY DMA");
+    dbg_printf("\nREADY DMA");
     this->io.GPUSTAT |= 0x10000000;
 }
 
@@ -1651,7 +1651,7 @@ static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
 #ifdef DBG_GP0
                 printf("GP0 E1 set draw mode");
 #endif
-                printf("\nSET DRAW MODE %08x", cmd);
+                //printf("\nSET DRAW MODE %08x", cmd);
                 this->page_base_x = cmd & 15;
                 this->page_base_y = (cmd >> 4) & 1;
                 this->semi_transparency = (cmd >> 5) & 3;
@@ -1828,5 +1828,5 @@ u32 PS1_GPU_get_gpuread(struct PS1_GPU *this)
 }
 u32 PS1_GPU_get_gpustat(struct PS1_GPU *this)
 {
-    return this->io.GPUSTAT;
+    return this->io.GPUSTAT | 0x10000000;
 }

@@ -521,9 +521,9 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
 {
     i32 cycles_left = howmany;
     while(cycles_left > 0) {
-        *this->clock += 2;
+        *this->clock += 1;
         if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
-            printf("\nDO IRQ!");
+            //printf("\nDO IRQ!");
             R3000_exception(this, 0, this->pipe.item0.new_PC != 0, 0);
         }
 
@@ -534,8 +534,8 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
 #ifdef LYCODER
         lycoder_trace_format(this, &this->trace.str);
 #else
-        R3000_trace_format(this, &this->trace.str);
         if (dbg.trace_on) {
+            R3000_trace_format(this, &this->trace.str);
             //console.log(hex8(this->regs.PC) + ' ' + R3000_disassemble(current.opcode));
             //dbg.traces.add(D_RESOURCE_TYPES.R3000, this->clock.trace_cycles-1, this->trace_format(R3000_disassemble(current.opcode), current.addr))
         }
@@ -568,7 +568,7 @@ void R3000_write_reg(struct R3000 *this, u32 addr, u32 sz, u32 val)
             return;
         case 0x1F801074: // I_MASK write
             this->io.I_MASK = val;
-            printf("\nI_MASK: %08x", val);
+            //printf("\nI_MASK: %08x", val);
             R3000_update_I_STAT(this);
             return;
     }

@@ -209,7 +209,7 @@ static void run_cycles(struct PS1 *this, i64 num)
             set_irq(this, PS1IRQ_VBlank, 1);
         }
 
-        this->clock.master_cycle_count += block;
+        //this->clock.master_cycle_count += block;
         this->cycles_left -= block;
         if (dbg.do_break) break;
     }

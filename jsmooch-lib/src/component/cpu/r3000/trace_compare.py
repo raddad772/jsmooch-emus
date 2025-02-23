@@ -16,6 +16,7 @@ def compare_files(good_file, my_file):
                 if (my_line_num % 1000000) == 0:
                     print('Line ' + str(int(my_line_num / 1000000)) + ' million')
                 if my_line is None: break
+                if my_line == 'READY DMA\n' or my_line == 'UNREADY DMA\n': continue
                 if len(my_line) < 3:
                     break
                 mls = my_line.split(':')

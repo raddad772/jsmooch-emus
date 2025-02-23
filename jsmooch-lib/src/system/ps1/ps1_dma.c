@@ -65,7 +65,7 @@ static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
         printf("\nCouldn't decide DMA transfer size");
         return;
     }
-    printf("\nDMA ch:%d direction:%d copies:%d", ch->num, ch->direction, copies);
+    //printf("\nDMA ch:%d direction:%d copies:%d base_addr:%05x", ch->num, ch->direction, copies, ch->base_addr);
 
     while (copies > 0) {
         u32 cur_addr = addr & 0x1FFFFC;
