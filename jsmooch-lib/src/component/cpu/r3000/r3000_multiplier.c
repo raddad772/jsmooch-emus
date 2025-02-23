@@ -15,7 +15,7 @@ void R3000_multiplier_set(struct R3000_multiplier *this, u32 hi, u32 lo, u32 op1
     this->op_going = 1;
     this->op_kind = op_kind;
     this->clock_start = current_clock;
-    this->clock_end = current_clock + cycles;
+    this->clock_end = (current_clock + cycles) - 1;
 }
 
 static inline void u32_multiply(u32 a, u32 b, u32 *hi, u32 *lo)
@@ -39,8 +39,8 @@ static inline void i32_multiply(u32 a, u32 b, u32 *hi, u32 *lo)
 static inline void u32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
 {
     if (b == 0) {
-        *lo = 0;
-        *hi = 0;
+        *hi = a;
+        *lo = 0xFFFFFFFF;
     }
     else {
         *lo = (a / b);
@@ -53,8 +53,18 @@ static inline void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
     i32 c = (i32)a;
     i32 d = (i32)b;
     if (d == 0) {
-        *lo = 0;
-        *hi = 0;
+        if (c >= 0) {
+            *hi = a;
+            *lo = -1;
+        }
+        else if (c == -0x80000000) {
+            *hi = 0;
+            *lo = -0x80000000;
+        }
+        else {
+            *hi = a;
+            *lo = 1;
+        }
     }
     else {
         *lo = (c / d) & 0xFFFFFFFF;

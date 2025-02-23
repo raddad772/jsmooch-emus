@@ -338,7 +338,6 @@ void PS1J_reset(JSM)
 
     printf("\nPS1 reset!");
     if (this->sideloaded.size > 0) {
-        return;
         sideload_EXE(this, &this->sideloaded);
     }
 }

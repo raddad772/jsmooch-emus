@@ -521,7 +521,7 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
 {
     i32 cycles_left = howmany;
     while(cycles_left > 0) {
-        *this->clock += 1;
+        *this->clock += 2;
         if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
             //printf("\nDO IRQ!");
             R3000_exception(this, 0, this->pipe.item0.new_PC != 0, 0);

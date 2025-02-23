@@ -100,6 +100,10 @@ static inline void R3000_fs_reg_delay(struct R3000 *core, i32 target, u32 value)
     struct R3000_pipeline_item *p = &core->pipe.item0;
     p->target = target;
     p->value = value;
+
+    if (core->pipe.current.target == target) {
+        core->pipe.current.target = -1;
+    }
 }
 
 
