@@ -86,7 +86,6 @@ static inline void R3000_branch(struct R3000 *core, u32 new_addr, u32 doit, u32 
 static inline u32 R3000_fs_reg_delay_read(struct R3000 *core, i32 target) {
     struct R3000_pipeline_item *p = &core->pipe.current;
     if (p->target == target) {
-        printf("\nLoad shortcut %s %08x", reg_alias_arr[p->target], p->value);
         p->target = -1;
         return p->value;
     }
@@ -184,9 +183,6 @@ void R3000_fJALR(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     u32 a = core->regs.R[rs];
-    if ((a & 3) != 0) {
-        printf("\nADDRESS EXCEPTION2, HANDLE?");
-    }
     R3000_branch(core, a, 1, 1, rd);
 }
 
@@ -197,7 +193,6 @@ void R3000_fSYSCALL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 
 void R3000_fBREAK(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
-    printf("\nWARNING FIX BREAK!");
     R3000_exception(core, 9, 0, 0);
 }
 
@@ -412,27 +407,25 @@ void R3000_fBcondZ(u32 opcode, struct R3000_opcode *op, struct R3000 *core) {
      000001 | rs   | 10001| <--immediate16bit--> | bgezal
     */
     u32 rs = (opcode >> 21) & 0x1F;
-    u32 w = (opcode >> 16) & 0x1F;
+    u32 w = (opcode >> 16) & 0x11;
     i32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
-    u32 take = false;
+    u32 take = core->regs.R[rs] >> 31;
     switch (w) {
         case 0: // BLTZ
-            take = ((i32) core->regs.R[rs]) < 0;
             break;
         case 1: // BGEZ
-            take = ((i32) core->regs.R[rs]) >= 0;
+            take ^= 1;
             break;
         case 0x10: // BLTZAL
-            take = ((i32) core->regs.R[rs]) < 0;
             R3000_fs_reg_write(core, 31, core->regs.PC + 4);
             break;
         case 0x11: // BGEZAL
-            take = ((i32) core->regs.R[rs]) >= 0;
+            take ^= 1;
             R3000_fs_reg_write(core, 31, core->regs.PC + 4);
             break;
         default:
-            printf("Bad B..Z instruction! %08x", opcode);
+            printf("\nBad B..Z instruction! %08x", opcode);
             return;
     }
     R3000_branch(core, core->regs.PC + (imm * 4), take, 0, DEFAULT_LINKREG);
@@ -667,8 +660,8 @@ void R3000_fLB(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
 
-    u32 rd = (i32)core->read(core->read_ptr, addr, 1, 1);
-    rd = (rd << 24) >> 24;
+    u32 rd = core->read(core->read_ptr, addr, 1, 1) & 0xFF;
+    rd = SIGNe8to32(rd);
     R3000_fs_reg_delay(core, rt, (u32)rd);
 }
 
@@ -680,7 +673,13 @@ void R3000_fLH(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
 
-    u32 rd = (u32)((i16)core->read(core->read_ptr, addr, 2, 1));
+    if (addr & 1) {
+        R3000_exception(core, 4, 0, 0);
+        return;
+    }
+
+    u32 rd = core->read(core->read_ptr, addr, 2, 1) & 0xFFFF;
+    rd = SIGNe16to32(rd);
 
     //rd = (u32)((rd << 16) >> 16);
     R3000_fs_reg_delay(core, rt, rd);
@@ -724,6 +723,11 @@ void R3000_fLW(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
 
+    if (addr & 3) {
+        R3000_exception(core, 4, 0, 0);
+        return;
+    }
+
     //printf("\nLW imm16:%04x addr:%08x", imm16, addr);
     R3000_fs_reg_delay(core, rt, core->read(core->read_ptr, addr, 4, 1));
 }
@@ -745,6 +749,10 @@ void R3000_fLHU(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
+    if (addr & 1) {
+        R3000_exception(core, 4, 0, 0);
+        return;
+    }
 
     u32 rd = core->read(core->read_ptr, addr, 2, 1);
     R3000_fs_reg_delay(core, rt, rd&0xFFFF);
@@ -798,6 +806,10 @@ void R3000_fSH(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
+    if (addr & 1) {
+        R3000_exception(core, 5, 0, 0);
+        return;
+    }
 
     core->write(core->write_ptr, addr, 2, core->regs.R[rt] & 0xFFFF);
 }
@@ -838,6 +850,11 @@ void R3000_fSW(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
+
+    if (addr & 3) {
+        R3000_exception(core, 5, 0, 0);
+        return;
+    }
 
     core->write(core->write_ptr, addr, 4, core->regs.R[rt]);
 }

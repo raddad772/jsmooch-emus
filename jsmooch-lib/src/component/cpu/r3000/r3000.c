@@ -462,6 +462,9 @@ static inline void decode(struct R3000 *this, u32 IR, struct R3000_pipeline_item
 
 static void fetch_and_decode(struct R3000 *this)
 {
+    if (this->regs.PC & 3) {
+        R3000_exception(this, 4, 0, 0);
+    }
     u32 IR = this->read(this->read_ptr, this->regs.PC, 4, 1);
     struct R3000_pipeline_item *current = pipe_push(&this->pipe);
     decode(this, IR, current);

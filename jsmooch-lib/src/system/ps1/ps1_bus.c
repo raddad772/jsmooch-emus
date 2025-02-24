@@ -163,7 +163,7 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
         case 0x00FF1F7C:
             return;
         case 0x1F802041: // F802041h 1 PSX: POST (external 7 segment display, indicate BIOS boot status
-            printf("\nWRITE POST STATUS! %d", val);
+            //printf("\nWRITE POST STATUS! %d", val);
             return;
         case 0x1F801810: // GP0 Send GP0 Commands/Packets (Rendering and VRAM Access)
             PS1_GPU_write_gp0(&this->gpu, val);
