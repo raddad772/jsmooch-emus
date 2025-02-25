@@ -26,6 +26,7 @@ struct PS1_GPU_VERTEX2 {
     u32 r, g, b;
 };
 
+struct PS1;
 struct PS1_GPU {
     struct {
         u32 GPUSTAT, GPUREAD;
@@ -40,6 +41,7 @@ struct PS1_GPU {
 
     u32 cmd[16];
     u32 cmd_arg_num, cmd_arg_index;
+    struct PS1 *bus;
     u32 ins_special;
 
     u8 recv_gp0[1024 * 1024];

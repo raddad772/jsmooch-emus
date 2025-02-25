@@ -13,7 +13,7 @@ void setpix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_m
     i32 rx = (x & 1023) + this->draw_x_offset;
     if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
     if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
-    u32 addr = (2048*ry)+(rx*2);
+    u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
     if (this->preserve_masked_pixels) {
         u16 v = cR16(this->VRAM, addr);
@@ -163,7 +163,7 @@ void semipix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_
     i32 rx = (x & 1023) + this->draw_x_offset;
     if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
     if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
-    u32 addr = (2048*ry)+(rx*2);
+    u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
     if (this->preserve_masked_pixels) {
         u16 v = cR16(this->VRAM, addr);
@@ -193,7 +193,7 @@ void semipixm(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 mode, u32 is_te
     i32 rx = (x & 1023) + this->draw_x_offset;
     if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
     if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
-    u32 addr = (2048*ry)+(rx*2);
+    u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
     if (this->preserve_masked_pixels) {
         u16 v = cR16(this->VRAM, addr);
@@ -223,7 +223,7 @@ void semipix_split(struct PS1_GPU *this, i32 y, i32 x, u32 r, u32 g, u32 b, u32 
     i32 rx = (x & 1023) + this->draw_x_offset;
     if ((ry < this->draw_area_top) || (ry > this->draw_area_bottom)) return;
     if ((rx < this->draw_area_left) || (rx > this->draw_area_right)) return;
-    u32 addr = (2048*ry)+(rx*2);
+    u32 addr = ((2048*ry)+(rx*2)) & 0xFFFFF;
 
     if (this->preserve_masked_pixels) {
         u16 v = cR16(this->VRAM, addr);

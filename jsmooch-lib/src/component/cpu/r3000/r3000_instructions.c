@@ -401,13 +401,17 @@ void R3000_fSLTU(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 
 void R3000_fBcondZ(u32 opcode, struct R3000_opcode *op, struct R3000 *core) {
     /*
-     000001 | rs   | 00000| <--immediate16bit--> | bltz
-     000001 | rs   | 00001| <--immediate16bit--> | bgez
-     000001 | rs   | 10000| <--immediate16bit--> | bltzal
-     000001 | rs   | 10001| <--immediate16bit--> | bgezal
-    */
+        000001 | rs   | xxxx0| <--immediate16bit--> | bltz
+        000001 | rs   | xxxx1| <--immediate16bit--> | bgez
+        000001 | rs   | 10000| <--immediate16bit--> | bltzal
+        000001 | rs   | 10001| <--immediate16bit--> | bgezal
+     */
     u32 rs = (opcode >> 21) & 0x1F;
-    u32 w = (opcode >> 16) & 0x11;
+    u32 w = (opcode >> 16) & 0x1F;
+    // cases
+    // 0x10  bltzal
+    // 0x11  bgezal
+    if ((w < 0x10) || (w > 0x11)) w &= 1;
     i32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
     u32 take = core->regs.R[rs] >> 31;

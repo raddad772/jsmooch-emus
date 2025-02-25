@@ -1443,13 +1443,21 @@ void PS1_GPU_write_gp0(struct PS1_GPU *this, u32 cmd) {
 static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
     this->gp0_buffer[this->recv_gp0_len] = cmd;
     this->recv_gp0_len++;
+    assert(this->recv_gp0_len < 256);
 
     // Check if we have an instruction..
+    if (this->bus->clock.master_cycle_count == 50246640) {
+        printf("\nWait a second...");
+    }
+    fflush(stdout);
     if (this->current_ins) {
         this->cmd[this->cmd_arg_index++] = cmd;
         if (this->cmd_arg_index == this->cmd_arg_num) {
+            // Execute instruction!
             this->current_ins(this);
             this->current_ins = NULL;
+            this->recv_gp0_len = 0;
+            this->cmd_arg_index = 0;
         }
     } else {
         this->cmd[0] = cmd;

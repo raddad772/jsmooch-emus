@@ -131,6 +131,7 @@ void PS1_new(struct jsm_system *jsm)
 
     PS1_bus_init(this);
     PS1_GPU_init(this);
+    this->gpu.bus = this;
     PS1_SPU_init(this);
     /*PS1_clock_init(&this->clock);
     PS1_cart_init(&this->cart);
