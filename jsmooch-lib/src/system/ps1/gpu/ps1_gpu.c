@@ -1755,6 +1755,10 @@ void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
             this->display_line_start = 0x10;
             this->display_line_end = 0x100;
             this->display_depth = PS1e_d15bits;
+            this->recv_gp0_len = 0;
+            this->handle_gp0 = &gp0_cmd;
+            this->current_ins = NULL;
+            this->cmd_arg_index = 0;
             //this->clear_FIFO();
             GPUSTAT_update(this);
             ready_cmd(this);
