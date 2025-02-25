@@ -697,7 +697,7 @@ void full_system::load_default_ROM()
             break;
         case SYS_PS1:
             //RenderPolygon16BPP
-            worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);

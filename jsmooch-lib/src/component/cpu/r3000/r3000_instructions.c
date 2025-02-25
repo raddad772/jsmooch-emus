@@ -74,14 +74,27 @@ static inline void R3000_fs_reg_write(struct R3000 *core, u32 target, u32 value)
     if (p->target == target) p->target = -1;
 }
 
-static inline void R3000_branch(struct R3000 *core, u32 new_addr, u32 doit, u32 link, u32 link_reg)
+static inline void R3000_branch(struct R3000 *core, i64 rel, u32 doit, u32 link, u32 link_reg)
 {
-    if (doit)
-        core->pipe.item0.new_PC = new_addr;
+    if (doit) {
+        if (core->pipe.current.new_PC != 0xFFFFFFFF)
+            core->pipe.item0.new_PC = core->pipe.current.new_PC + rel;
+        else
+            core->pipe.item0.new_PC = core->regs.PC + rel;
+    }
 
     if (link)
         R3000_fs_reg_write(core, link_reg, core->regs.PC+4);
 }
+
+static inline void R3000_jump(struct R3000 *core, u32 new_addr, u32 doit, u32 link, u32 link_reg)
+{
+    core->pipe.item0.new_PC = new_addr;
+
+    if (link)
+        R3000_fs_reg_write(core, link_reg, core->regs.PC+4);
+}
+
 
 static inline u32 R3000_fs_reg_delay_read(struct R3000 *core, i32 target) {
     struct R3000_pipeline_item *p = &core->pipe.current;
@@ -174,16 +187,14 @@ void R3000_fSRAV(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 void R3000_fJR(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     u32 rs = (opcode >> 21) & 0x1F;
-    u32 a = core->regs.R[rs];
-    R3000_branch(core, a, 1, 0, DEFAULT_LINKREG);
+    R3000_jump(core, core->regs.R[rs], 1, 0, DEFAULT_LINKREG);
 }
 
 void R3000_fJALR(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     u32 rs = (opcode >> 21) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
-    u32 a = core->regs.R[rs];
-    R3000_branch(core, a, 1, 1, rd);
+    R3000_jump(core, core->regs.R[rs], 1, 1, rd);
 }
 
 void R3000_fSYSCALL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
@@ -432,26 +443,26 @@ void R3000_fBcondZ(u32 opcode, struct R3000_opcode *op, struct R3000 *core) {
             printf("\nBad B..Z instruction! %08x", opcode);
             return;
     }
-    R3000_branch(core, core->regs.PC + (imm * 4), take, 0, DEFAULT_LINKREG);
+    R3000_branch(core, imm * 4, take, 0, DEFAULT_LINKREG);
 }
 
 void R3000_fJ(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
 //  00001x | <---------immediate26bit---------> | j/jal
-    R3000_branch(core, (core->regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 0, DEFAULT_LINKREG);
+    R3000_jump(core, (core->regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 0, DEFAULT_LINKREG);
 }
 
 void R3000_fJAL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
 
 //  00001x | <---------immediate26bit---------> | j/jal
-    R3000_branch(core, (core->regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 1, DEFAULT_LINKREG);
+    R3000_jump(core, (core->regs.PC & 0xF0000000) + ((opcode & 0x3FFFFFF) << 2), 1, 1, DEFAULT_LINKREG);
 }
 
 void R3000_fBEQ(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     R3000_branch(core,
-                 core->regs.PC + ((u32)((i16)(opcode & 0xFFFF))*4),
+                 ((u32)((i16)(opcode & 0xFFFF))*4),
                  core->regs.R[(opcode >> 21) & 0x1F] == core->regs.R[(opcode >> 16) & 0x1F],
                  0, DEFAULT_LINKREG);
 }
@@ -460,7 +471,7 @@ void R3000_fBNE(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     // 00010x | rs   | rt   | <--immediate16bit--> |
     R3000_branch(core,
-                 core->regs.PC + ((u32)((i16)(opcode & 0xFFFF))*4),
+                 ((u32)((i16)(opcode & 0xFFFF))*4),
                  core->regs.R[(opcode >> 21) & 0x1F] != core->regs.R[(opcode >> 16) & 0x1F],
                  0, DEFAULT_LINKREG);
 }
@@ -469,7 +480,7 @@ void R3000_fBLEZ(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     // 00010x | rs   | rt   | <--immediate16bit--> |
     R3000_branch(core,
-                 core->regs.PC + ((u32)((i16)(opcode & 0xFFFF))*4),
+                 ((u32)((i16)(opcode & 0xFFFF))*4),
                  ((i32)core->regs.R[(opcode >> 21) & 0x1F]) <= 0,
                  0, DEFAULT_LINKREG);
 }
@@ -478,7 +489,7 @@ void R3000_fBGTZ(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 {
     // 00010x | rs   | rt   | <--immediate16bit--> |
     R3000_branch(core,
-                 core->regs.PC + ((u32)((i16)(opcode & 0xFFFF))*4),
+                 ((u32)((i16)(opcode & 0xFFFF))*4),
                  ((i32)core->regs.R[(opcode >> 21) & 0x1F])  > 0,
                  0, DEFAULT_LINKREG);
 }

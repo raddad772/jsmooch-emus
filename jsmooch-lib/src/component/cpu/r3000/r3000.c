@@ -39,7 +39,8 @@ static struct R3000_pipeline_item *pipe_push(struct R3000_pipeline *this)
 static void pipe_item_clear(struct R3000_pipeline_item *this)
 {
     this->target = -1;
-    this->value = this->new_PC = 0;
+    this->value = 0;
+    this->new_PC = 0xFFFFFFFF;
 }
 
 static void pipe_clear(struct R3000_pipeline *this)
@@ -397,17 +398,14 @@ static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
     }
 
     // Branch delay slot
-    if (which->new_PC != 0) {
+    if (which->new_PC != 0xFFFFFFFF) {
         this->regs.PC = which->new_PC;
-        //printf("\nDelay slot PC new %08x", this->regs.PC);
         if ((this->regs.PC == 0xA0 && this->regs.R[9] == 0x3C) || (this->regs.PC == 0xB0 && this->regs.R[9] == 0x3D)) {
-        //if (this->regs.PC == 0xB0) {
-            //printf("B0! %08x", this->regs.R[9]);
             if (this->regs.R[9] == 0x3D) {
                 add_to_console(this, this->regs.R[4]);
             }
         }
-        which->new_PC = 0;
+        which->new_PC = 0xFFFFFFFF;
     }
 
 }
@@ -527,7 +525,7 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
         *this->clock += 2;
         if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
             //printf("\nDO IRQ!");
-            R3000_exception(this, 0, this->pipe.item0.new_PC != 0, 0);
+            R3000_exception(this, 0, this->pipe.item0.new_PC != 0xFFFFFFFF, 0);
         }
 
         if (this->pipe.num_items < 1)
