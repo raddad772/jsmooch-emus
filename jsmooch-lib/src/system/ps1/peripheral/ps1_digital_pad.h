@@ -17,7 +17,6 @@ struct PS1_SIO_digital_gamepad {
     struct physical_io_device *pio;
 
     struct PS1 *bus;
-    u32 num;
 
     struct PS1_SIO_device interface;
 

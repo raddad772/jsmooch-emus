@@ -58,7 +58,7 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
             if (this->interface.ACK) {
                 if (this->still_sched && this->sch_id)
                     scheduler_delete_if_exist(&this->bus->scheduler, this->sch_id);
-                enum PS1_SIO0_port p = this->num == 1 ? PS1S0_controller1 : PS1S0_controller2;
+                enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
                 PS1_SIO0_update_ACKs(this->bus, p, 0);
             }
         }
@@ -70,7 +70,7 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter);
 static void schedule_ack(struct PS1_SIO_digital_gamepad *this, u64 clock_cycle, u64 time, u32 level)
 {
     if (level == 1) {
-        enum PS1_SIO0_port p = this->num == 1 ? PS1S0_controller1 : PS1S0_controller2;
+        enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
         PS1_SIO0_update_ACKs(this->bus, p, 1);
     }
 
@@ -80,7 +80,7 @@ static void schedule_ack(struct PS1_SIO_digital_gamepad *this, u64 clock_cycle, 
 static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
     struct PS1_SIO_digital_gamepad *this = (struct PS1_SIO_digital_gamepad *)ptr;
-    enum PS1_SIO0_port p = this->num == 1 ? PS1S0_controller1 : PS1S0_controller2;
+    enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
     PS1_SIO0_update_ACKs(this->bus, p, key);
 
     if (key) { // Also schedule to de-assert
@@ -110,7 +110,7 @@ static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
         if (this->protocol_step == 1) { // send ID lo, recv Read Command (42h)
             r = 0x41;
             this->cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
-            if (this->cmd == PCMD_unknown) printf("\nUnknown command %02x to controller %d", byte, this->num);
+            if (this->cmd == PCMD_unknown) printf("\nUnknown command %02x to controller %d", byte, this->pio->id);
             do_ack = 1;
         }
         else switch (this->protocol_step) {

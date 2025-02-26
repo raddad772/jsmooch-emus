@@ -216,8 +216,8 @@ void PS1_SIO0_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
 #define R_SIO_STAT 0x1F801044
 #define R_SIO_MODE 0x1F801048
 #define R_SIO_CTRL 0x1F80104A
-#define R_SIO_MISC 0x1F80105C
-#define R_SIO_BAUD 0x1F80105E
+#define R_SIO_MISC 0x1F80104C
+#define R_SIO_BAUD 0x1F80104E
     switch(addr) {
         case R_SIO_CTRL:
             assert(sz==2);

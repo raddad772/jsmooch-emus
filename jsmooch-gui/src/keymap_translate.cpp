@@ -27,10 +27,18 @@ enum ImGuiKey jk_to_imgui_gp(enum JKEYS key_id) {
             return ImGuiKey_GamepadFaceUp;
         case DBCID_co_fire4:
             return ImGuiKey_GamepadFaceLeft;
+        case DBCID_co_fire5: // BAD
+            return ImGuiKey_GamepadFaceUp;
+        case DBCID_co_fire6: // BAD
+            return ImGuiKey_GamepadFaceLeft;
         case DBCID_co_shoulder_right:
-            return ImGuiKey_GamepadR2;
-        case DBCID_co_shoulder_left:
             return ImGuiKey_GamepadR1;
+        case DBCID_co_shoulder_left:
+            return ImGuiKey_GamepadL1;
+        case DBCID_co_shoulder_right2:
+            return ImGuiKey_GamepadR2;
+        case DBCID_co_shoulder_left2:
+            return ImGuiKey_GamepadL2;
     }
     NOGOHERE;
 }
@@ -230,6 +238,8 @@ enum JKEYS dbcid_to_default(enum JKEYS key_id)
         case DBCID_co_fire6: return JK_D;
         case DBCID_co_shoulder_left: return JK_A;
         case DBCID_co_shoulder_right: return JK_S;
+        case DBCID_co_shoulder_left2: return JK_Q;
+        case DBCID_co_shoulder_right2: return JK_W;
         case DBCID_co_start: return JK_ENTER;
         case DBCID_co_select: return JK_TAB;
         case DBCID_ch_power: return JK_Q;
