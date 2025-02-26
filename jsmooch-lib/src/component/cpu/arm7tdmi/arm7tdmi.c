@@ -69,7 +69,7 @@ void ARM7TDMI_schedule_IRQ_check(struct ARM7TDMI *this)
     }
 }
 
-void ARM7TDMI_init(struct ARM7TDMI *this, u64 *clock, u32 *waitstates, struct scheduler_t *scheduler)
+void ARM7TDMI_init(struct ARM7TDMI *this, u64 *clock, u64 *waitstates, struct scheduler_t *scheduler)
 {
     //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));

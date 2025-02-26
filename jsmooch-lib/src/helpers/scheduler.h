@@ -49,7 +49,7 @@ struct scheduler_t {
     struct scheduled_bound_function run;
 
     i64 cycles_left_to_run;
-    u64 *clock;
+    u64 *clock, *waitstates;
 
     u64 id_counter;
 };
@@ -68,7 +68,7 @@ struct scheduler_action_return {
     u64 arg;
 };
 
-void scheduler_init(struct scheduler_t*, u64 *clock);
+void scheduler_init(struct scheduler_t*, u64 *clock, u64 *waitstates);
 void scheduler_delete(struct scheduler_t*);
 void scheduler_clear(struct scheduler_t*);
 

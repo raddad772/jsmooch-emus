@@ -187,7 +187,7 @@ struct ARM946ES {
     u32 *regmap[16];
     u32 carry; // temp for instructions
 
-    u32 *waitstates;
+    u64 *waitstates;
     u64 *master_clock;
     u32 waitstates9; // 66MHz waitstates
 
@@ -224,7 +224,7 @@ struct ARM946ES {
 };
 
 
-void ARM946ES_init(struct ARM946ES *, u64 *master_clock, u32 *waitstates, struct scheduler_t *scheduler);
+void ARM946ES_init(struct ARM946ES *, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler);
 void ARM946ES_delete(struct ARM946ES *);
 
 void ARM946ES_reset(struct ARM946ES *);

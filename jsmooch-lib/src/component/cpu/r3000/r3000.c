@@ -339,13 +339,13 @@ static void do_decode_table(struct R3000 *this) {
     }
 }
 
-void R3000_init(struct R3000 *this, u64 *master_clock, u32 *waitstates)
+void R3000_init(struct R3000 *this, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler, struct IRQ_multiplexer_b *IRQ_multiplexer)
 {
     memset(this, 0, sizeof(*this));
     this->clock = master_clock;
+    this->scheduler = scheduler;
     this->waitstates = waitstates;
-
-    IRQ_multiplexer_init(&this->io.I_STAT);
+    this->io.I_STAT = IRQ_multiplexer;
 
     do_decode_table(this);
 
@@ -518,15 +518,19 @@ void R3000_trace_format(struct R3000 *this, struct jsm_string *out)
     }
 }
 
+void R3000_check_IRQ(struct R3000 *this)
+{
+    if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
+        //printf("\nDO IRQ!");
+        R3000_exception(this, 0, this->pipe.item0.new_PC != 0xFFFFFFFF, 0);
+    }
+}
+
 void R3000_cycle(struct R3000 *this, i32 howmany)
 {
     i32 cycles_left = howmany;
     while(cycles_left > 0) {
-        *this->clock += 2;
-        if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
-            //printf("\nDO IRQ!");
-            R3000_exception(this, 0, this->pipe.item0.new_PC != 0xFFFFFFFF, 0);
-        }
+        (*this->clock) += 2;
 
         if (this->pipe.num_items < 1)
             fetch_and_decode(this);
@@ -545,7 +549,6 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
 
         delay_slots(this, current);
 
-
         pipe_item_clear(current);
 
         fetch_and_decode(this);
@@ -557,19 +560,18 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
 
 void R3000_update_I_STAT(struct R3000 *this)
 {
-    this->pins.IRQ = (this->io.I_STAT.IF & this->io.I_MASK) != 0;
+    this->pins.IRQ = (this->io.I_STAT->IF & this->io.I_MASK) != 0;
 }
 
 void R3000_write_reg(struct R3000 *this, u32 addr, u32 sz, u32 val)
 {
     switch(addr) {
         case 0x1F801070: // I_STAT write
-            this->io.I_STAT.IF &= val;
+            IRQ_multiplexer_b_mask(this->io.I_STAT, val);
             R3000_update_I_STAT(this);
             return;
         case 0x1F801074: // I_MASK write
             this->io.I_MASK = val;
-            //printf("\nI_MASK: %08x", val);
             R3000_update_I_STAT(this);
             return;
     }
@@ -580,7 +582,7 @@ u32 R3000_read_reg(struct R3000 *this, u32 addr, u32 sz)
 {
     switch(addr) {
         case 0x1F801070: // I_STAT read
-            return this->io.I_STAT.IF;
+            return this->io.I_STAT->IF;
         case 0x1F801074: // I_MASK read
             return this->io.I_MASK;
     }

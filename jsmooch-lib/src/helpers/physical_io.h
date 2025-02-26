@@ -131,6 +131,8 @@ enum JKEYS {
     DBCID_co_fire6,
     DBCID_co_shoulder_left,
     DBCID_co_shoulder_right,
+    DBCID_co_shoulder_left2,
+    DBCID_co_shoulder_right2,
     DBCID_co_start,
     DBCID_co_select,
     DBCID_ch_power,

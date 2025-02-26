@@ -160,10 +160,6 @@ static void render_image_view_tilemap(struct debugger_interface *dbgr, struct de
                     u32 c = ((bp0 >> 7) | (bp1 >> 6)) & 3;
                     bp0 <<= 1;
                     bp1 <<= 1;
-                    /*if (tilemap_num == 0)
-                        c *= 0x555555;
-                    else
-                        c *= 0x550055;*/
                     c *= 0x555555;
                     *optr = 0xFF000000 | c;
                     optr++;

@@ -48,7 +48,7 @@ struct NDS {
     } apu;
 
     struct {
-        u32 current_transaction;
+        u64 current_transaction;
     } waitstates;
 
 

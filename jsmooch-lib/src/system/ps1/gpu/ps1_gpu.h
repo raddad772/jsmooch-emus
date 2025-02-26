@@ -8,6 +8,7 @@
 #include "helpers/cvec.h"
 #include "helpers/int.h"
 #include "rasterize_tri.h"
+#include "helpers/scheduler.h"
 
 struct PS1_GPU;
 struct PS1_GPU_TEXTURE_SAMPLER;
@@ -32,6 +33,8 @@ struct PS1_GPU {
         u32 GPUSTAT, GPUREAD;
     } io;
     u8 VRAM[1024 * 1024];
+
+    struct scheduler_t *scheduler;
 
     void (*current_ins)(struct PS1_GPU *);
     u8 mmio_buffer[96];

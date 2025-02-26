@@ -31,7 +31,7 @@ struct GBA {
     } mem;
 
     struct {
-        u32 current_transaction;
+        u64 current_transaction;
         struct {
             u32 sram;
             u32 ws0_n, ws0_s;

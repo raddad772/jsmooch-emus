@@ -5,10 +5,16 @@
 #ifndef JSMOOCH_EMUS_PS1_BUS_H
 #define JSMOOCH_EMUS_PS1_BUS_H
 
-#include "component/cpu/r3000/r3000.h"
 #include "helpers/physical_io.h"
+#include "helpers/better_irq_multiplexer.h"
+
+#include "component/cpu/r3000/r3000.h"
+
 #include "gpu/ps1_gpu.h"
 #include "spu/ps1_spu.h"
+#include "peripheral/ps1_sio.h"
+#include "peripheral/ps1_digital_pad.h"
+#include "helpers/scheduler.h"
 
 enum PS1_IRQ {
     PS1IRQ_VBlank = 0,
@@ -18,8 +24,8 @@ enum PS1_IRQ {
     PS1IRQ_TMR0,
     PS1IRQ_TMR1,
     PS1IRQ_TMR2,
-    PS1IRQ_PadMemCardByteRecv,
-    PS1IRQ_SIO,
+    PS1IRQ_SIO0,
+    PS1IRQ_SIO1,
     PS1IRQ_SPU,
     PS1IRQ_PIOLightpen
 };
@@ -37,8 +43,9 @@ enum PS1_DMA_ports {
 struct PS1_clock {
     u64 master_cycle_count;
     u64 master_frame;
-    u32 waitstates;
+    u64 waitstates;
     i64 cycles_left_this_frame;
+    u32 vblank_scheduled;
 
     struct {
         u32 x, y;
@@ -60,6 +67,11 @@ enum PS1_DMA_e {
 struct PS1 {
     struct R3000 cpu;
     struct PS1_clock clock;
+    struct PS1_SIO0 sio0;
+    struct IRQ_multiplexer_b IRQ_multiplexer;
+
+
+    struct scheduler_t scheduler;
     i64 cycles_left;
 
     struct buf sideloaded;
@@ -103,6 +115,7 @@ struct PS1 {
 
     struct {
         u32 cached_isolated;
+        struct PS1_SIO_digital_gamepad controller1;
     } io;
 };
 
@@ -112,4 +125,8 @@ void PS1_bus_reset(struct PS1 *);
 u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect);
 void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val);
 u32 PS1_mainbus_fetchins(void *ptr, u32 addr, u32 sz);
+void PS1_set_irq(struct PS1 *, enum PS1_IRQ from, u32 level);
+u64 PS1_clock_current(struct PS1 *);
+
 #endif //JSMOOCH_EMUS_PS1_BUS_H
+

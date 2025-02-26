@@ -56,7 +56,7 @@ void DC_new(JSM)
 {
     fflush(stdout);
     struct DC* this = (struct DC*)malloc(sizeof(struct DC));
-    scheduler_init(&this->scheduler, &this->trace_cycles);
+    scheduler_init(&this->scheduler, &this->trace_cycles, &this->waitstates);
     this->scheduler.max_block_size = 150;
     snprintf(jsm->label, sizeof(jsm->label), "Sega Dreamcast");
 

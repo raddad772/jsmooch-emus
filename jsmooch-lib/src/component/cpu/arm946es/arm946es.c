@@ -28,7 +28,7 @@ void ARM946ES_flush_pipeline(struct ARM946ES *this)
     this->pipeline.flushed = 1;
 }
 
-void ARM946ES_init(struct ARM946ES *this, u64 *master_clock, u32 *waitstates, struct scheduler_t *scheduler)
+void ARM946ES_init(struct ARM946ES *this, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler)
 {
     //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));

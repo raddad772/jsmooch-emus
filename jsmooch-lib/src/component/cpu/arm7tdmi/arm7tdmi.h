@@ -115,7 +115,7 @@ struct ARM7TDMI {
     u32 *regmap[16];
     u32 carry; // temp for instructions
 
-    u32 *waitstates;
+    u64 *waitstates;
     u64 *master_clock;
 
     struct ARM7_ins *arm7_ins;
@@ -148,7 +148,7 @@ struct ARM7TDMI {
 };
 
 
-void ARM7TDMI_init(struct ARM7TDMI *, u64 *master_clock, u32 *waitstates, struct scheduler_t *scheduler);
+void ARM7TDMI_init(struct ARM7TDMI *, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler);
 void ARM7TDMI_delete(struct ARM7TDMI *);
 
 void ARM7TDMI_reset(struct ARM7TDMI *);

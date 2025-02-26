@@ -5,10 +5,11 @@
 #ifndef JSMOOCH_EMUS_R3000_H
 #define JSMOOCH_EMUS_R3000_H
 
-#include "helpers/irq_multiplexer.h"
+#include "helpers/better_irq_multiplexer.h"
 #include "helpers/int.h"
 #include "helpers/debug.h"
 #include "r3000_multiplier.h"
+#include "helpers/scheduler.h"
 #include "gte.h"
 
 struct R3000_regs {
@@ -64,8 +65,10 @@ struct R3000 {
     struct R3000_pipeline pipe;
     struct R3000_multiplier multiplier;
     struct jsm_string console;
+
+    struct scheduler_t *scheduler;
     u64 *clock;
-    u32 *waitstates;
+    u64 *waitstates;
 
     struct {
         u32 IRQ;
@@ -80,7 +83,7 @@ struct R3000 {
     } trace;
 
     struct {
-        struct IRQ_multiplexer I_STAT;
+        struct IRQ_multiplexer_b *I_STAT;
         u32 I_MASK;
     } io;
 
@@ -96,13 +99,14 @@ struct R3000 {
 };
 
 struct R3000_pipeline_item *R3000_pipe_move_forward(struct R3000_pipeline *);
-void R3000_init(struct R3000 *, u64 *master_clock, u32 *waitstates);
+void R3000_init(struct R3000 *, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler, struct IRQ_multiplexer_b *IRQ_multiplexer);
 void R3000_delete(struct R3000 *);
 void R3000_setup_tracing(struct R3000*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
 void R3000_reset(struct R3000*);
 void R3000_exception(struct R3000 *, u32 code, u32 branch_delay, u32 cop0);
 void R3000_flush_pipe(struct R3000 *);
 void R3000_cycle(struct R3000 *, i32 howmany);
+void R3000_check_IRQ(struct R3000 *);
 void R3000_update_I_STAT(struct R3000 *);
 void R3000_write_reg(struct R3000 *, u32 addr, u32 sz, u32 val);
 u32 R3000_read_reg(struct R3000 *, u32 addr, u32 sz);

@@ -8,10 +8,14 @@
 #include <string.h>
 #include <math.h>
 
+#include "helpers/scheduler.h"
 #include "ps1.h"
 #include "ps1_bus.h"
 #include "gpu/ps1_gpu.h"
 #include "ps1_debugger.h"
+#include "peripheral/ps1_sio.h"
+#include "peripheral/ps1_digital_pad.h"
+
 
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/r3000/r3000.h"
@@ -35,6 +39,8 @@ static void PS1J_describe_io(JSM, struct cvec* IOs);
 
 // 240x160, but 308x228 with v and h blanks
 #define PS1_CYCLES_PER_FRAME_NTSC 564480
+#define PS1_VBLANK_CYCLE_IN_FRAME ((564480*85)/100)
+#define PS1_CYCLES_INSIDE_VBLANK_IN_FRAME (PS1_CYCLES_PER_FRAME_NTSC - PS1_VBLANK_CYCLE_IN_FRAME)
 #define PS1_CYCLES_PER_FRAME_PAL 677376
 
 
@@ -112,11 +118,78 @@ static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
     PS1_mainbus_write(ptr, addr, sz, val);
 }
 
+//typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_clock, u32 jitter);
+static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
+{
+    struct PS1 *this = (struct PS1 *)bound_ptr;
+    PS1_set_irq(this, PS1IRQ_VBlank, 1);
+
+    //printf("\nSCHEDULE VBLANK FOR %lld. CURRENT IS AT: (mcc):%lld (provided):%lld", current_clock+PS1_CYCLES_PER_FRAME_NTSC, this->clock.master_cycle_count+this->clock.waitstates, current_clock);
+    scheduler_add_or_run_abs(&this->scheduler, current_clock+PS1_CYCLES_PER_FRAME_NTSC, 0, this, &vblank, &this->clock.vblank_scheduled);
+}
+
+static void schedule_frame(struct PS1 *this)
+{
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
+    if (!this->clock.vblank_scheduled) {
+        printf("\nVBLANK NOT SCHEDULED. SCHEDULING...");
+        this->clock.cycles_left_this_frame += PS1_CYCLES_PER_FRAME_NTSC;
+        i64 cycle_num = this->clock.cycles_left_this_frame - PS1_CYCLES_INSIDE_VBLANK_IN_FRAME;
+
+        if (cycle_num > 0) {
+            scheduler_add_or_run_abs(&this->scheduler, this->clock.master_cycle_count+this->clock.waitstates+cycle_num, 0, this, &vblank, &this->clock.vblank_scheduled);
+        }
+    }
+}
+
+
+static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
+{
+    struct PS1 *this = (struct PS1 *)bound_ptr;
+    this->cycles_left += (i64)num;
+    R3000_check_IRQ(&this->cpu);
+    R3000_cycle(&this->cpu, num);
+}
+
+static void schedule_more(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
+{
+    printf("\nSCHEDULE MORE CALLED %lld", current_clock);
+    //schedule_frame((struct PS1 *)bound_ptr);
+}
+
+static void setup_IRQs(struct PS1 *this)
+{
+    IRQ_multiplexer_b_init(&this->IRQ_multiplexer, 11);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 0, "vblank", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 1, "gpu", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 2, "cdrom", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 3, "dma", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 4, "tmr0", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 5, "tmr1", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 6, "tmr2", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 7, "sio0_recv", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 8, "sio", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 9, "spu", IRQMBK_edge_0_to_1);
+    IRQ_multiplexer_b_setup_irq(&this->IRQ_multiplexer, 10, "lightpen_pio_dtl", IRQMBK_edge_0_to_1);
+}
+
 void PS1_new(struct jsm_system *jsm)
 {
     struct PS1* this = (struct PS1*)malloc(sizeof(struct PS1));
     memset(this, 0, sizeof(*this));
-    R3000_init(&this->cpu, &this->clock.master_cycle_count, &this->clock.waitstates);
+    scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.waitstates);
+    this->scheduler.max_block_size = 30;
+    this->scheduler.schedule_more.func = &schedule_more;
+    this->scheduler.schedule_more.ptr = this;
+
+    this->scheduler.run.func = &run_block;
+    this->scheduler.run.ptr = this;
+
+    setup_IRQs(this);
+
+    R3000_init(&this->cpu, &this->clock.master_cycle_count, &this->clock.waitstates, &this->scheduler, &this->IRQ_multiplexer);
     buf_init(&this->sideloaded);
     this->cpu.read_ptr = this;
     this->cpu.write_ptr = this;
@@ -129,10 +202,15 @@ void PS1_new(struct jsm_system *jsm)
     this->cpu.update_sr_ptr = this;
     this->cpu.update_sr = &PS1_update_SR;
 
+    PS1_SIO_digital_gamepad_init(&this->io.controller1, this);
+
     PS1_bus_init(this);
     PS1_GPU_init(this);
     this->gpu.bus = this;
     PS1_SPU_init(this);
+
+    PS1_SIO0_init(this);
+
     /*PS1_clock_init(&this->clock);
     PS1_cart_init(&this->cart);
     PS1_PPU_init(this);
@@ -188,34 +266,6 @@ void PS1_delete(struct jsm_system *jsm)
     jsm_clearfuncs(jsm);
 }
 
-static void set_irq(struct PS1 *this, enum PS1_IRQ from, u32 level)
-{
-    IRQ_multiplexer_set_level(&this->cpu.io.I_STAT, level, from);
-    R3000_update_I_STAT(&this->cpu);
-}
-
-static void run_cycles(struct PS1 *this, i64 num)
-{
-    this->cycles_left += (i64)num;
-    i64 block = 20;
-    while (this->cycles_left > 0) {
-        i64 clock_at_loop_start = this->clock.master_cycle_count;
-        if (block > this->cycles_left) block = this->cycles_left;
-        R3000_cycle(&this->cpu, block);
-        i64 diff = (i64)this->clock.master_cycle_count - clock_at_loop_start;
-        this->clock.cycles_left_this_frame -= diff;
-
-        if (this->clock.cycles_left_this_frame <= 0) {
-            this->clock.cycles_left_this_frame += PS1_CYCLES_PER_FRAME_NTSC;
-            set_irq(this, PS1IRQ_VBlank, 1);
-        }
-
-        //this->clock.master_cycle_count += block;
-        this->cycles_left -= block;
-        if (dbg.do_break) break;
-    }
-}
-
 static void copy_vram(struct PS1 *this)
 {
     memcpy(this->gpu.cur_output, this->gpu.VRAM, 1024*1024);
@@ -230,7 +280,9 @@ u32 PS1J_finish_frame(JSM)
 #ifdef LYCODER
     dbg_enable_trace();
 #endif
-    run_cycles(this, PS1_CYCLES_PER_FRAME_NTSC);
+    schedule_frame(this);
+    scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
+
     copy_vram(this);
     if (dbg.do_break) {
         printf("\nDUMP!");
@@ -383,11 +435,6 @@ static void sample_audio(struct PS1* this, u32 num_cycles)
      */
 }
 
-u64 PS1_clock_current(struct PS1 *this)
-{
-    return this->clock.master_cycle_count + this->clock.waitstates;
-}
-
 u32 PS1J_finish_scanline(JSM)
 {
     JTHIS;
@@ -400,7 +447,7 @@ static u32 PS1J_step_master(JSM, u32 howmany)
 {
     JTHIS;
     this->cycles_left = 0;
-    run_cycles(this, howmany);
+    run_block(this, 1, 0, 0);
     return 0;
 }
 
@@ -465,8 +512,10 @@ static void PS1J_describe_io(JSM, struct cvec* IOs)
 
     // controllers
     struct physical_io_device *controller = cvec_push_back(this->jsm.IOs);
-    //PS1_controller_setup_pio(controller);
-    //this->controller.pio = controller;
+    PS1_SIO_gamepad_setup_pio(controller, 1, "Controller 1", 1);
+    this->io.controller1.pio = controller;
+    this->sio0.io.controller1 = &this->io.controller1.interface;
+
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);

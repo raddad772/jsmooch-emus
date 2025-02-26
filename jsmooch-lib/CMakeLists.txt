@@ -397,6 +397,12 @@ add_library(jsmooch-lib
         src/system/ps1/gpu/pixel_helpers.h
         src/system/ps1/spu/ps1_spu.c
         src/system/ps1/spu/ps1_spu.h
+        src/system/ps1/peripheral/ps1_sio.c
+        src/system/ps1/peripheral/ps1_sio.h
+        src/system/ps1/peripheral/ps1_digital_pad.c
+        src/system/ps1/peripheral/ps1_digital_pad.h
+        src/helpers/better_irq_multiplexer.c
+        src/helpers/better_irq_multiplexer.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

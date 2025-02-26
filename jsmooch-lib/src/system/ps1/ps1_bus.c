@@ -58,13 +58,8 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
         return PS1_DMA_read(this, addr, sz);
     }
 
-    if ((addr >= 0x1F801040) && (addr < 0x1F801060)) {
-        static u32 mre = 0;
-        if (!mre) {
-            mre = 1;
-            printf("\nIMPLEMENT MEMORY CARD AND GAMEPAD SHENANIGANS!");
-        }
-        return 0;
+    if ((addr >= 0x1F801040) && (addr < 0x1F801050)) {
+        return PS1_SIO0_read(this, addr, sz);
     }
 
     if ((addr >= 0x1F801C00) && (addr < 0x1F801E00)) {
@@ -136,10 +131,9 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
         return;
     }
 
-    if ((addr >= 0x1F801040) && (addr < 0x1F801060)) {
-        printf("\nImplement controller BS... %08x", addr);
+    if ((addr >= 0x1F801040) && (addr < 0x1F801050)) {
+        PS1_SIO0_write(this, addr, sz, val);
         return;
-        //return this.pad_memcard.CPU_write(addr - 0x1F801040, size, val, this.ps1!);
     }
 
     if ((addr >= 0x1F801C00) && (addr < 0x1F801E00)) {
@@ -205,4 +199,15 @@ u32 PS1_mainbus_fetchins(void *ptr, u32 addr, u32 sz)
 {
     struct PS1 *this = (struct PS1 *)ptr;
     return PS1_mainbus_read(ptr, addr, sz, 1);
+}
+
+void PS1_set_irq(struct PS1 *this, enum PS1_IRQ from, u32 level)
+{
+    IRQ_multiplexer_b_set_level(&this->IRQ_multiplexer, from, level);
+    R3000_update_I_STAT(&this->cpu);
+}
+
+u64 PS1_clock_current(struct PS1 *this)
+{
+    return this->clock.master_cycle_count + this->clock.waitstates;
 }

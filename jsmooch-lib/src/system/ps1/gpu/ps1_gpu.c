@@ -54,6 +54,7 @@ void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *this, u32 page_
 void PS1_GPU_init(struct PS1 *this)
 {
     memset(this->gpu.VRAM, 0, 1024*1024);
+    this->gpu.scheduler = &this->scheduler;
 
     this->gpu.display_horiz_start = 0x200;
     this->gpu.display_horiz_end = 0xC00;
