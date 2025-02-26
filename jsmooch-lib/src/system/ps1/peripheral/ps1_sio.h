@@ -78,11 +78,11 @@ struct PS1_SIO0 {
 
         union {
             struct {
-                u16 tx_enable : 1; // bit 0
-                u16 dtr_output : 1; // bit 1. this is the CS pin.
-                u16 rx_enable : 1; // bit 2
-                u16 _unused1: 1; // bit 3
-                u16 ack : 1; // bit 4
+                u16 tx_enable : 1; // bit 0   1
+                u16 dtr_output : 1; // bit 1. this is the CS pin.  2
+                u16 rx_enable : 1; // bit 2 4
+                u16 _unused1: 1; // bit 3 8
+                u16 ack : 1; // bit 4 0x10
                 u16 _unused2: 1; // bit 5
                 u16 reset : 1; // bit 6
                 u16 unknown: 1; // bit 7

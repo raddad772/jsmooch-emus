@@ -18,7 +18,7 @@ static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
         struct cvec* bl = &p->controller.digital_buttons;
         struct HID_digital_button* b;
         // buttons are 0=pressed
-#define B_GET(button_num, byte_num, bit_num) { b = cvec_get(bl, button_num); this->buttons[byte_num] |= (1 << bit_num); }
+#define B_GET(button_num, byte_num, bit_num) { b = cvec_get(bl, button_num); this->buttons[byte_num] |= (b->state << bit_num); }
         B_GET(0, 0, 0); // select
         B_GET(1, 0, 3); // start
         B_GET(2, 0, 4); // up
@@ -35,6 +35,7 @@ static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
         B_GET(13, 1, 7); // square
 #undef B_GET
 
+        printf("\nREADING...%02x%02x", this->buttons[1], this->buttons[0]);
         this->buttons[0] ^= 0xFF;
         this->buttons[1] ^= 0xFF;
     }

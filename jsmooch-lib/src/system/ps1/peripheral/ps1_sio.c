@@ -20,11 +20,15 @@ static void update_rx_signal(struct PS1 *this)
 
 static void update_IRQs(struct PS1 *this)
 {
+    u32 old_signal = this->sio0.io.SIO_STAT.irq_request;
     u32 signal = this->sio0.io.SIO_CTRL.rx_irq_enable && this->sio0.irq.rx_signal;
     signal |= this->sio0.io.SIO_CTRL.tx_irq_enable && this->sio0.irq.tx_signal;
     signal |= this->sio0.io.SIO_CTRL.dsr_irq_enable && this->sio0.io.SIO_STAT.dsr_input;
 
-    this->sio0.io.SIO_STAT.irq_request = signal;
+    this->sio0.io.SIO_STAT.irq_request |= signal; // It is only SET by these, not un-set
+    if (!old_signal && this->sio0.io.SIO_STAT.irq_request) {
+        printf("\nSIO0 IRQ 0->1");
+    }
     PS1_set_irq(this, PS1IRQ_SIO0, signal);
 }
 
@@ -93,6 +97,7 @@ static void send_DTR(struct PS1 *this, u32 port, u32 level)
 
 static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
 {
+    printf("\nSIO0 WRITE CTRL %04x", val);
     u32 old_rx_enable = this->sio0.io.SIO_CTRL.rx_enable;
     u32 old_dtr = this->sio0.io.SIO_CTRL.dtr_output;
     u32 old_select = this->sio0.io.SIO_CTRL.sio0_port_sel;
@@ -120,6 +125,7 @@ static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
 
     if (this->sio0.io.SIO_CTRL.ack) {
         this->sio0.io.SIO_CTRL.ack = 0;
+        printf("\nSIO0 ACK!");
         // 3, 4, 5, 9
         this->sio0.io.SIO_STAT.rx_parity_error = 0;
         this->sio0.io.SIO_STAT._unused1 &= 0b100;
