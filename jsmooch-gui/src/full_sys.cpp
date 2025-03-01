@@ -153,8 +153,8 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
         case SYS_NDS:
             has_bios = 1;
             snprintf(BIOS_PATH, sizeof(BIOS_PATH), "%s/nds", BASE_PATH);
-            mfs_add("biosnds7.bin", BIOS_PATH, BIOSes);
-            mfs_add("biosnds9.bin", BIOS_PATH, BIOSes);
+            mfs_add("bios7.bin", BIOS_PATH, BIOSes);
+            mfs_add("bios9.bin", BIOS_PATH, BIOSes);
             mfs_add("firmware.bin", BIOS_PATH, BIOSes);
             break;
         case SYS_GALAKSIJA:

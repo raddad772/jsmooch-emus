@@ -124,7 +124,6 @@ u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callba
 {
     if (!e) {
         if (still_sched) *still_sched = 0;
-        printf("\nRUNNING NOW...");
         func(ptr, key, timecode, 0);
         return 0;
     }
