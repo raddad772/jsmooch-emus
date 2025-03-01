@@ -9,6 +9,8 @@ enum managed_window_kind {
     mwk_playback,
     mwk_opts,
     mwk_other,
+    mwk_debug_console,
+    mwk_debug_log,
     mwk_debug_trace,
     mwk_debug_sound,
     mwk_debug_image,
@@ -41,6 +43,7 @@ struct imgui_jsmooch_app {
     void render_event_view();
     void render_image_views();
     void render_trace_view(bool update_dasm_scroll);
+    void render_console_view(bool update_dasm_scroll);
 
     void render_waveform_view(struct WVIEW &wview, u32 num);
     void render_disassembly_views(bool update_dasm_scroll);

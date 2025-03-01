@@ -403,6 +403,8 @@ add_library(jsmooch-lib
         src/system/ps1/peripheral/ps1_digital_pad.h
         src/helpers/better_irq_multiplexer.c
         src/helpers/better_irq_multiplexer.h
+        src/helpers/debugger/console.c
+        src/helpers/debugger/console.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

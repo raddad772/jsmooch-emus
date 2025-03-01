@@ -29,7 +29,7 @@ enum debugger_view_kinds {
     dview_image,
     dview_waveforms,
     dview_trace,
-    dview_log
+    dview_console
 };
 
 
@@ -178,6 +178,13 @@ struct debugger_event {
 enum ev_timing_kind {
     ev_timing_scanxy,
     ev_timing_master_clock
+};
+
+
+struct console_view {
+    struct jsm_string buffer[2];
+    char name[100];
+    u32 cur_buf;
 };
 
 struct events_view {
@@ -346,6 +353,7 @@ struct debugger_view {
         struct image_view image;
         struct waveform_view waveform;
         struct trace_view trace;
+        struct console_view console;
     };
 };
 
@@ -401,6 +409,12 @@ void trace_view_printf(struct trace_view *, u32 col, char *format, ...);
 void trace_view_startline(struct trace_view *, i32 source);
 void trace_view_endline(struct trace_view *);
 struct trace_line *trace_view_get_line(struct trace_view *, int row);
+
+void events_view_report_line(struct events_view *, i32 line_num);
+
+void console_view_add_char(struct console_view *, u8 c);
+void console_view_add_cstr(struct console_view *, char *s);
+void console_view_render_to_buffer(struct console_view *tv, char *output, u64 sz);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)

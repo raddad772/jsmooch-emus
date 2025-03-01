@@ -15,6 +15,7 @@
 #include "image.h"
 #include "waveform.h"
 #include "trace.h"
+#include "console.h"
 
 enum dvur {
     dvur_frame,
@@ -68,6 +69,7 @@ void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, 
             case dview_image:
             case dview_trace:
             case dview_waveforms:
+            case dview_console:
                 break;
             case dview_disassembly: {
                 struct disassembly_view *dview = &dv->disassembly;
@@ -99,6 +101,9 @@ void debugger_view_init(struct debugger_view *this, enum debugger_view_kinds kin
     switch(this->kind) {
         case dview_null:
             assert(1==2);
+            break;
+        case dview_console:
+            console_view_init(&this->console);
             break;
         case dview_image:
             image_view_init(&this->image);
@@ -229,6 +234,9 @@ void debugger_view_delete(struct debugger_view *this)
             break;
         case dview_events:
             events_view_delete(&this->events);
+            break;
+        case dview_console:
+            console_view_delete(&this->console);
             break;
         case dview_image:
             image_view_delete(&this->image);

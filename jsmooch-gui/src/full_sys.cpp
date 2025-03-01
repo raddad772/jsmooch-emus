@@ -940,6 +940,15 @@ void full_system::add_waveform_view(u32 idx)
     waveform_views.push_back(myv);
 }
 
+void full_system::add_console_view(u32 idx)
+{
+    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    CVIEW myv;
+    myv.view = dview;
+    console_views.push_back(myv);
+}
+
+
 void full_system::add_trace_view(u32 idx)
 {
     auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
@@ -987,6 +996,9 @@ void full_system::setup_debugger_interface()
                 break;
             case dview_trace:
                 add_trace_view(i);
+                break;
+            case dview_console:
+                add_console_view(i);
                 break;
             case dview_image:
                 add_image_view(i);
@@ -1421,4 +1433,10 @@ void full_system::do_frame() {
     else {
         printf("\nCannot do frame with no system.");
     }
+}
+
+void full_system::setup_tracing()
+{
+    dbg.traces.ps1.sio0.irq = 1;
+    dbg.traces.ps1.sio0.rw = 1;
 }

@@ -5,6 +5,8 @@
 #ifndef JSMOOCH_EMUS_R3000_H
 #define JSMOOCH_EMUS_R3000_H
 
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/debugger/debugger.h"
 #include "helpers/better_irq_multiplexer.h"
 #include "helpers/int.h"
 #include "helpers/debug.h"
@@ -96,6 +98,11 @@ struct R3000 {
     u32 (*read)(void *ptr, u32 addr, u32 sz, u32 has_effect);
     void (*write)(void *ptr, u32 addr, u32 sz, u32 val);
     void (*update_sr)(void *ptr, struct R3000 *core, u32 val);
+
+
+    DBG_START
+    struct console_view *console;
+    DBG_END
 };
 
 struct R3000_pipeline_item *R3000_pipe_move_forward(struct R3000_pipeline *);

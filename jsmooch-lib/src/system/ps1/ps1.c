@@ -215,11 +215,6 @@ void PS1_new(struct jsm_system *jsm)
 
     PS1_SIO0_init(this);
 
-    /*PS1_clock_init(&this->clock);
-    PS1_cart_init(&this->cart);
-    PS1_PPU_init(this);
-    PS1_APU_init(this);*/
-
     snprintf(jsm->label, sizeof(jsm->label), "PlayStation");
     struct jsm_debug_read_trace dt;
     dt.read_trace_arm = &read_trace_cpu;

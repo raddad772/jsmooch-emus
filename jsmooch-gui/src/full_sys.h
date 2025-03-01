@@ -78,6 +78,12 @@ public:
     std::vector<class WFORM> waveforms{};
 };
 
+class CVIEW {
+public:
+    bool enabled{};
+    struct debugger_view *view;
+};
+
 class TVIEW {
 public:
     bool enabled{};
@@ -116,6 +122,7 @@ public:
     std::vector<WVIEW> waveform_views;
     std::vector<DVIEW> dasm_views;
     std::vector<TVIEW> trace_views;
+    std::vector<CVIEW> console_views;
 
     struct system_io inputs;
     std::vector<struct JSM_AUDIO_CHANNEL *> audiochans;
@@ -193,6 +200,7 @@ public:
     void step_scanlines(int num);
     void step_cycles(int num);
     void step_frames(int num);
+    void setup_tracing();
 private:
     void debugger_pre_frame();
     void debugger_pre_frame_waveforms(struct waveform_view *wv);
@@ -203,6 +211,7 @@ private:
     void setup_display();
     void setup_debugger_interface();
     void add_trace_view(u32);
+    void add_console_view(u32);
     void add_disassembly_view(u32);
     void add_image_view(u32);
     void add_waveform_view(u32 idx);

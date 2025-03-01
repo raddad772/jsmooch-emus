@@ -126,7 +126,8 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
 #define SOUND_VIEW_DEFAULT_ENABLE 0
-#define TRACE_VIEW_DEFAULT_ENABLE 1
+#define TRACE_VIEW_DEFAULT_ENABLE 0
+#define CONSOLE_VIEW_DEFAULT_ENABLE 1
 
 void imgui_jsmooch_app::render_event_view()
 {
@@ -423,6 +424,24 @@ static void render_debugger_widgets(struct cvec *options)
     }
 }
 
+void imgui_jsmooch_app::render_console_view(bool update_dasm_scroll)
+{
+    u32 wi;
+    static char text[3 * 1024 * 1024];
+    for (auto &myv: fsys.console_views) {
+        struct managed_window *mw = register_managed_window(0xC00 + (wi++), mwk_debug_console, myv.view->console.name, CONSOLE_VIEW_DEFAULT_ENABLE);
+        struct console_view *tv = &myv.view->console;
+        if (mw->enabled) {
+            if (ImGui::Begin(myv.view->console.name)) {
+                console_view_render_to_buffer(tv, text, sizeof(text));
+                static ImGuiInputTextFlags flags = ImGuiInputTextFlags_ReadOnly;
+                ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-FLT_MIN, -FLT_MIN), flags);
+            }
+            ImGui::End();
+        }
+    }
+}
+
 void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
 {
     u32 wi = 0;
@@ -531,6 +550,7 @@ void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll)
     render_disassembly_views(update_dasm_scroll);
     render_image_views();
     render_trace_view(update_dasm_scroll);
+    render_console_view(update_dasm_scroll);
     u32 i = 0;
     for (auto &wv : fsys.waveform_views) {
         render_waveform_view(wv, i++);
@@ -636,6 +656,8 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     setup_wgpu();
 #endif
     fsys.setup_wgpu();
+
+    fsys.setup_tracing();
     return 0;
 }
 

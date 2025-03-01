@@ -7,6 +7,7 @@
 
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 void PS1J_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
 

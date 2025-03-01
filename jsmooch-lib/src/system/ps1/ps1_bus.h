@@ -7,6 +7,7 @@
 
 #include "helpers/physical_io.h"
 #include "helpers/better_irq_multiplexer.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #include "component/cpu/r3000/r3000.h"
 
@@ -15,6 +16,7 @@
 #include "peripheral/ps1_sio.h"
 #include "peripheral/ps1_digital_pad.h"
 #include "helpers/scheduler.h"
+#include "helpers/debugger/debugger.h"
 
 enum PS1_IRQ {
     PS1IRQ_VBlank = 0,
@@ -117,6 +119,10 @@ struct PS1 {
         u32 cached_isolated;
         struct PS1_SIO_digital_gamepad controller1;
     } io;
+
+    DBG_START
+        struct cvec_ptr console_view;
+    DBG_END
 };
 
 
