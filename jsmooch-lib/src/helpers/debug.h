@@ -50,6 +50,8 @@ extern "C" {
 #define M6502_DBG_SUPPORT
 #define SM83_DBG_SUPPORT
 
+#define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
+
 #include "helpers/int.h"
 #include "helpers/jsm_string.h"
 
@@ -95,6 +97,16 @@ struct jsm_debug_struct {
         struct cpu_trace_struct z80;
         struct cpu_trace_struct m68000;
         struct cpu_trace_struct arm7tdmi;
+
+        struct DBG_TRACE_PS1_STRUCT {
+            struct {
+                u32 irq;
+                u32 ack;
+                u32 rw;
+            } sio0;
+        } ps1;
+
+        u32 better_irq_multiplexer;
 
         u32 dma;
         u32 ram;

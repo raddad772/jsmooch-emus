@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "better_irq_multiplexer.h"
+#include "helpers/debug.h"
 
 void IRQ_multiplexer_b_init(struct IRQ_multiplexer_b *this, u32 max_IRQ)
 {
@@ -24,6 +25,7 @@ void IRQ_multiplexer_b_set_level(struct IRQ_multiplexer_b *this, u32 num, u32 ne
             irq->IF = new_level;
             break;
         case IRQMBK_edge_0_to_1:
+            printif(better_irq_multiplexer, "\nEdge trigger %d to %d", old_input, irq->input);
             irq->IF |= (!old_input) && irq->input;
             break;
         case IRQMBK_edge_1_to_0:
@@ -31,7 +33,7 @@ void IRQ_multiplexer_b_set_level(struct IRQ_multiplexer_b *this, u32 num, u32 ne
             break;
     }
     this->IF |= irq->IF << num;
-    printf("\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, this->IF);
+    printif(better_irq_multiplexer, "\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, this->IF);
 }
 
 void IRQ_multiplexer_b_reset(struct IRQ_multiplexer_b *this)
@@ -51,7 +53,7 @@ void IRQ_multiplexer_b_mask(struct IRQ_multiplexer_b *this, u64 val)
         u64 bit = (val >> i) & 1;
         this->irqs[i].IF &= bit;
     }
-    printf("\nIRQs masked to %02llx", this->IF);
+    //printf("\nIRQs masked to %02llx", this->IF);
 }
 
 void IRQ_multiplexer_b_setup_irq(struct IRQ_multiplexer_b *this, u32 num, const char *name, enum IRQ_multiplexer_b_kind kind)

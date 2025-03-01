@@ -21,7 +21,7 @@ struct IRQ_multiplexer_b {
 
     struct IRQ_multiplexer_b_irq {
         u32 input;
-        u32 IF; // output signal
+        u64 IF; // output signal
         u32 kind;
         char name[50];
     } irqs[MAX_IRQS_MULTIPLEXED];

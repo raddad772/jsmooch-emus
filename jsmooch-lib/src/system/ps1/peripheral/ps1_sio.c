@@ -20,16 +20,16 @@ static void update_rx_signal(struct PS1 *this)
 
 static void update_IRQs(struct PS1 *this)
 {
-    printf("\npor: update IRQs. RX.e:%d RX.s:%d DSR.e:%d DSR.s:%d", this->sio0.io.SIO_CTRL.rx_irq_enable, this->sio0.irq.rx_signal, this->sio0.io.SIO_CTRL.dsr_irq_enable, this->sio0.io.SIO_STAT.dsr_input);
+    printif(ps1.sio0.irq, "\nport: update IRQs. RX.e:%d RX.s:%d DSR.e:%d DSR.s:%d", this->sio0.io.SIO_CTRL.rx_irq_enable, this->sio0.irq.rx_signal, this->sio0.io.SIO_CTRL.dsr_irq_enable, this->sio0.io.SIO_STAT.dsr_input);
     u32 old_signal = this->sio0.io.SIO_STAT.irq_request;
     u32 signal = this->sio0.io.SIO_CTRL.rx_irq_enable && this->sio0.irq.rx_signal;
     signal |= this->sio0.io.SIO_CTRL.tx_irq_enable && this->sio0.irq.tx_signal;
     signal |= this->sio0.io.SIO_CTRL.dsr_irq_enable && this->sio0.io.SIO_STAT.dsr_input;
 
     this->sio0.io.SIO_STAT.irq_request |= signal; // It is only SET by these, not un-set
-    printf("\nport: old IRQ signal:%d new signal:%d", old_signal, this->sio0.io.SIO_STAT.irq_request);
+    printif(ps1.sio0.irq, "\nport: old IRQ signal:%d new signal:%d", old_signal, this->sio0.io.SIO_STAT.irq_request);
     if (!old_signal && this->sio0.io.SIO_STAT.irq_request) {
-        printf("\nSIO0 IRQ 0->1");
+        printif(ps1.sio0.irq, "\nSIO0 IRQ 0->1");
     }
     PS1_set_irq(this, PS1IRQ_SIO0, signal);
 }
@@ -99,7 +99,7 @@ static void send_DTR(struct PS1 *this, u32 port, u32 level)
 
 static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
 {
-    printf("\nport: SIO0 WRITE CTRL %04x", val);
+    printif(ps1.sio0.rw, "\nport: SIO0 WRITE CTRL %04x", val);
     u32 old_rx_enable = this->sio0.io.SIO_CTRL.rx_enable;
     u32 old_dtr = this->sio0.io.SIO_CTRL.dtr_output;
     u32 old_select = this->sio0.io.SIO_CTRL.sio0_port_sel;
@@ -127,7 +127,7 @@ static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
 
     if (this->sio0.io.SIO_CTRL.ack) {
         this->sio0.io.SIO_CTRL.ack = 0;
-        printf("\nprogram: SIO0 ACK!");
+        printif(ps1.sio0.rw, "\nprogram: SIO0 ACK!");
         // 3, 4, 5, 9
         this->sio0.io.SIO_STAT.rx_parity_error = 0;
         this->sio0.io.SIO_STAT._unused1 &= 0b100;
@@ -157,7 +157,7 @@ static u8 do_exchange_byte(struct PS1 *this, u8 tx_byte)
     // Determine which port...
     u8 rx_byte = 0;
     if (port.controller) {
-        printf("\npad: XCHG!");
+        printif(ps1.sio0.rw,"\npad: XCHG!");
         rx_byte |= port.controller->exchange_byte(port.controller->device_ptr, tx_byte, PS1_clock_current(this));
     }
     if (port.memcard) {
@@ -172,9 +172,9 @@ static u8 do_exchange_byte(struct PS1 *this, u8 tx_byte)
 
 static void push_rx_FIFO(struct PS1_SIO0_RX_FIFO *this, u8 byte)
 {
-    printf("\nPush %02x to FIFO!", byte);
+    printif(ps1.sio0.rw, "\nPush %02x to FIFO!", byte);
     if (this->num == 8) {
-        printf("\nWARNING SIO0 RX FIFO OVERFLOW");
+        printif(ps1.sio0.rw, "\nWARNING SIO0 RX FIFO OVERFLOW");
         this->tail = (this->tail - 1) & 7;
         this->num--;
     }
@@ -280,7 +280,7 @@ static u32 read_rx_data(struct PS1 *this, u32 sz)
 {
     // POP a value from FIFO
     u32 out_val = this->sio0.io.RX_FIFO.buf[this->sio0.io.RX_FIFO.head];
-    printf("\nPop %02x from FIFO!", out_val);
+    printif(ps1.sio0.rw, "\nPop %02x from FIFO!", out_val);
     u32 num = (this->sio0.io.RX_FIFO.head + 1) & 7;
     if (this->sio0.io.RX_FIFO.num > 0) {
         this->sio0.io.RX_FIFO.head = num;
@@ -299,7 +299,7 @@ static u32 read_rx_data(struct PS1 *this, u32 sz)
 
     update_rx_signal(this);
     update_IRQs(this);
-    printf("\nprogram: read RX data %02x", out_val);
+    printif(ps1.sio0.rw, "\nprogram: read RX data %02x", out_val);
     return out_val;
 }
 

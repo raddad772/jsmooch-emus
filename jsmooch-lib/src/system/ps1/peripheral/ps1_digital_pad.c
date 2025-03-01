@@ -39,7 +39,8 @@ static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
 
         this->buttons[0] ^= 0xFF;
         this->buttons[1] ^= 0xFF;
-        printf("\npad: READING BUTTONS...%02x%02x", this->buttons[1], this->buttons[0]);
+        //u32 r = this->buttons[1] | (this->buttons[0] << 8);
+        //if (r != 0xFFFF) printf("\npad: READING BUTTONS...%04x", r);
     }
     else {
         this->buttons[0] = 0xFF;
@@ -88,7 +89,7 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
     struct PS1_SIO_digital_gamepad *this = (struct PS1_SIO_digital_gamepad *)ptr;
     enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
-    printf("\ncyc:%lld Callback execute ack: %lld", current_clock, key);
+    //printf("\ncyc:%lld Callback execute ack: %lld", current_clock, key);
     PS1_SIO0_update_ACKs(this->bus, p, key);
 
     if (key) { // Also schedule to de-assert
