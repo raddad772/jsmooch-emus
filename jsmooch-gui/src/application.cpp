@@ -614,13 +614,13 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_APPLEIIe;
     //which = SYS_GENESIS_USA;
     //which = SYS_DMG;
-    //which = SYS_PS1;
+    which = SYS_PS1;
     //which = SYS_SMS2;
     //which = SYS_GG;
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
     //which = SYS_GBA;
-    which = SYS_NDS;
+    //which = SYS_NDS;
     //which = SYS_GALAKSIJA;
     //dbg_enable_trace();
 #endif
@@ -691,6 +691,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         static int steps[4] = { 100, 1, 1, 1 };
         bool play_pause = false;
         bool step_clocks = false, step_scanlines = false, step_seconds = false, step_frames = false;
+        bool trace_enabled = dbg.trace_on;
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
         if (ImGui::BeginChild("Playback Controls", ImVec2(200, 150), ImGuiChildFlags_Border, window_flags)) {
@@ -719,6 +720,18 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::InputInt("seconds", &steps[3]);
+
+            ImGui::PushID(5);
+            ImGui::Checkbox("Trace enabled", &trace_enabled);
+            ImGui::PopID();
+            if (dbg.trace_on != trace_enabled) {
+                if (trace_enabled) {
+                    dbg_enable_trace();
+                }
+                else {
+                    dbg_disable_trace();
+                }
+            }
         }
         ImGui::EndChild(); // end sub-window
         ImGui::PopStyleVar();

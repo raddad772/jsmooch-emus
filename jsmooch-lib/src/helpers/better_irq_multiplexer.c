@@ -31,7 +31,7 @@ void IRQ_multiplexer_b_set_level(struct IRQ_multiplexer_b *this, u32 num, u32 ne
             break;
     }
     this->IF |= irq->IF << num;
-    //if (num != 1) printf("\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, this->IF);
+    printf("\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, this->IF);
 }
 
 void IRQ_multiplexer_b_reset(struct IRQ_multiplexer_b *this)
@@ -51,6 +51,7 @@ void IRQ_multiplexer_b_mask(struct IRQ_multiplexer_b *this, u64 val)
         u64 bit = (val >> i) & 1;
         this->irqs[i].IF &= bit;
     }
+    printf("\nIRQs masked to %02llx", this->IF);
 }
 
 void IRQ_multiplexer_b_setup_irq(struct IRQ_multiplexer_b *this, u32 num, const char *name, enum IRQ_multiplexer_b_kind kind)

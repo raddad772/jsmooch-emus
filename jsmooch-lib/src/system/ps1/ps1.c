@@ -122,7 +122,7 @@ static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
 static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
     struct PS1 *this = (struct PS1 *)bound_ptr;
-    //printf("\n\n\nVBlank IRQ raise and new frame!");
+    printf("\n\nVBlank IRQ raise and new frame!");
     PS1_set_irq(this, PS1IRQ_VBlank, 1);
 
     //printf("\nSCHEDULE VBLANK FOR %lld. CURRENT IS AT: (mcc):%lld (provided):%lld", current_clock+PS1_CYCLES_PER_FRAME_NTSC, this->clock.master_cycle_count+this->clock.waitstates, current_clock);
@@ -450,7 +450,7 @@ static u32 PS1J_step_master(JSM, u32 howmany)
 {
     JTHIS;
     this->cycles_left = 0;
-    run_block(this, 1, 0, 0);
+    scheduler_run_for_cycles(&this->scheduler, howmany);
     return 0;
 }
 

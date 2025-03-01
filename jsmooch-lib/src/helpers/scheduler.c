@@ -283,6 +283,9 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         i64 cycles_run = current_time(this) - loop_start_clock;
         this->cycles_left_to_run -= (i64)cycles_run;
     }
+    if (dbg.do_break) {
+        this->cycles_left_to_run = 0;
+    }
 }
 
 /*
