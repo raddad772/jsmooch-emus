@@ -17,6 +17,8 @@ static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
     if (p->connected) {
         struct cvec* bl = &p->controller.digital_buttons;
         struct HID_digital_button* b;
+        this->buttons[0] = 0;
+        this->buttons[1] = 0;
         // buttons are 0=pressed
 #define B_GET(button_num, byte_num, bit_num) { b = cvec_get(bl, button_num); this->buttons[byte_num] |= (b->state << bit_num); }
         B_GET(0, 0, 0); // select
@@ -35,9 +37,9 @@ static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
         B_GET(13, 1, 7); // square
 #undef B_GET
 
-        printf("\nREADING...%02x%02x", this->buttons[1], this->buttons[0]);
         this->buttons[0] ^= 0xFF;
         this->buttons[1] ^= 0xFF;
+        printf("\npad: READING BUTTONS...%02x%02x", this->buttons[1], this->buttons[0]);
     }
     else {
         this->buttons[0] = 0xFF;
@@ -53,12 +55,14 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
         this->selected = 0;
         this->protocol_step = 0;
         if (this->interface.CS) {
+            //printf("\npad: CS 0->1");
             latch_buttons(this);
         }
         else {
+            //printf("\npad: CS 1->0");
             if (this->interface.ACK) {
-                if (this->still_sched && this->sch_id)
-                    scheduler_delete_if_exist(&this->bus->scheduler, this->sch_id);
+                //if (this->still_sched && this->sch_id)
+                //    scheduler_delete_if_exist(&this->bus->scheduler, this->sch_id);
                 enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
                 PS1_SIO0_update_ACKs(this->bus, p, 0);
             }
@@ -70,9 +74,11 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter);
 
 static void schedule_ack(struct PS1_SIO_digital_gamepad *this, u64 clock_cycle, u64 time, u32 level)
 {
+    //printf("\ncycle:%lld Schedule ack: %d", clock_cycle, level);
     if (level == 1) {
         enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
         PS1_SIO0_update_ACKs(this->bus, p, 1);
+        level = 0;
     }
 
     this->sch_id = scheduler_add_or_run_abs(&this->bus->scheduler, clock_cycle + time, level, this, &scheduler_call, &this->still_sched);
@@ -82,6 +88,7 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
     struct PS1_SIO_digital_gamepad *this = (struct PS1_SIO_digital_gamepad *)ptr;
     enum PS1_SIO0_port p = this->pio->id == 1 ? PS1S0_controller1 : PS1S0_controller2;
+    printf("\ncyc:%lld Callbakc execute ack: %lld", current_clock, key);
     PS1_SIO0_update_ACKs(this->bus, p, key);
 
     if (key) { // Also schedule to de-assert
@@ -99,6 +106,7 @@ static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
             this->selected = 1;
             this->protocol_step++;
 
+            //printf("\nSELECT PAD, DO ACK.");
             schedule_ack(this, clock_cycle, 1023, 1);
             return 0;
         }

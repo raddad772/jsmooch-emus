@@ -122,10 +122,12 @@ static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
 static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
     struct PS1 *this = (struct PS1 *)bound_ptr;
+    //printf("\n\n\nVBlank IRQ raise and new frame!");
     PS1_set_irq(this, PS1IRQ_VBlank, 1);
 
     //printf("\nSCHEDULE VBLANK FOR %lld. CURRENT IS AT: (mcc):%lld (provided):%lld", current_clock+PS1_CYCLES_PER_FRAME_NTSC, this->clock.master_cycle_count+this->clock.waitstates, current_clock);
-    scheduler_add_or_run_abs(&this->scheduler, current_clock+PS1_CYCLES_PER_FRAME_NTSC, 0, this, &vblank, &this->clock.vblank_scheduled);
+    u64 id = scheduler_add_or_run_abs(&this->scheduler, current_clock+PS1_CYCLES_PER_FRAME_NTSC, 0, this, &vblank, &this->clock.vblank_scheduled);
+    //printf("\nSCHEDULED ID FOR VBLANK, %lld", id);
 }
 
 static void schedule_frame(struct PS1 *this)
@@ -157,6 +159,7 @@ static void schedule_more(void *bound_ptr, u64 key, u64 current_clock, u32 jitte
 {
     printf("\nSCHEDULE MORE CALLED %lld", current_clock);
     //schedule_frame((struct PS1 *)bound_ptr);
+    assert(1==2);
 }
 
 static void setup_IRQs(struct PS1 *this)

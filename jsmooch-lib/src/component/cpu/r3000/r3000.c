@@ -521,7 +521,7 @@ void R3000_trace_format(struct R3000 *this, struct jsm_string *out)
 void R3000_check_IRQ(struct R3000 *this)
 {
     if (this->pins.IRQ && (this->regs.COP0[12] & 0x400) && (this->regs.COP0[12] & 1)) {
-        //printf("\nDO IRQ!");
+        printf("\nDO IRQ!");
         R3000_exception(this, 0, this->pipe.item0.new_PC != 0xFFFFFFFF, 0);
     }
 }
@@ -567,15 +567,18 @@ void R3000_write_reg(struct R3000 *this, u32 addr, u32 sz, u32 val)
 {
     switch(addr) {
         case 0x1F801070: // I_STAT write
+            //printf("\nwrite I_STAT %04x current:%04llx", val, this->io.I_STAT->IF);
             IRQ_multiplexer_b_mask(this->io.I_STAT, val);
             R3000_update_I_STAT(this);
+            //printf("\nnew I_STAT: %04llx", this->io.I_STAT->IF);
             return;
         case 0x1F801074: // I_MASK write
             this->io.I_MASK = val;
+            //printf("\nwrite I_MASK %04x", val);
             R3000_update_I_STAT(this);
             return;
     }
-    printf("Unhandled CPU write %08x (%d): %08x", addr, sz, val);
+    printf("\nUnhandled CPU write %08x (%d): %08x", addr, sz, val);
 }
 
 u32 R3000_read_reg(struct R3000 *this, u32 addr, u32 sz)
@@ -586,7 +589,7 @@ u32 R3000_read_reg(struct R3000 *this, u32 addr, u32 sz)
         case 0x1F801074: // I_MASK read
             return this->io.I_MASK;
     }
-    printf("Unhandled CPU read %08x (%d)", addr, sz);
+    printf("\nUnhandled CPU read %08x (%d)", addr, sz);
     static const u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
     return mask[sz];
 }

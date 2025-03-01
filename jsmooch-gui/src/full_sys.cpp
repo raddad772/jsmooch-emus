@@ -699,8 +699,9 @@ void full_system::load_default_ROM()
             //RenderPolygon16BPP
             //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
+            //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/ADD/CPUADD.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderPolygon/RenderPolygon16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/JOY/Joypad/Joypad.exe", nullptr);

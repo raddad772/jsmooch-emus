@@ -17,6 +17,10 @@ static inline i64 current_time(struct scheduler_t *this) {
 static void del_event(struct scheduler_t *this, struct scheduler_event *e)
 {
     this->to_delete.items[this->to_delete.num++] = e;
+    //printf("\nDELETE EVENT ID %lld", e->id);
+    //if (e->id == 110) {
+
+    //}
     e->next = NULL;
     if (this->to_delete.num == SCHEDULER_DELETE_NUM) {
         for (u32 i = 0; i < SCHEDULER_DELETE_NUM; i++) {
@@ -94,6 +98,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
         this->first_event = e->next;
 
         if (e->still_sched) *e->still_sched = 0;
+        printf("\n\n\nSCHED:Deleting first event!");
         del_event(this, e);
         return;
     }
@@ -109,6 +114,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
             return;
         }
 
+        printf("\n\n\nSCHED:Deleting event!");
         last = e;
         e = e->next;
     }
@@ -130,10 +136,24 @@ u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callba
     return e->id;
 }
 
+static void pprint_list(char *s, struct scheduler_t *this)
+{
+    return;
+    printf("\n\nScheduled tasks %s:", s);
+    struct scheduler_event *e = this->first_event;
+    u32 i = 0;
+    while(e) {
+        printf("\n%d. %lld", i++, e->id);
+        e = e->next;
+    }
+    printf("\n");
+}
+
 u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     //printf("\ncyc:%lld add_or_run at %lld", current_time(this), timecode);
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key);
+    //pprint_list("after shchedule", this);
     return scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
 }
 
@@ -165,7 +185,7 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
 
     i64 curtime = current_time(this);
     if ((timecode <= curtime) || (timecode == 0)) {
-        printf("\nINSTANT!");
+        //printf("\nINSTANT!");
         return NULL;
     }
 
@@ -173,7 +193,7 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
     // No events currently...
     struct scheduler_event *re = NULL;
     if (this->first_event == NULL) {
-        //printf("\nMAKE FIRST!");
+        //printf("\nMAKE FIRST %lld!", id);
         this->first_event = alloc_event(this, timecode, key, NULL, id);
         return this->first_event;
     }
@@ -205,7 +225,7 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
     }
 
     struct scheduler_event *after_after = NULL;
-    if (insert_after->next) after_after = insert_after->next->next;
+    if (insert_after->next) after_after = insert_after->next;
     re = insert_after->next = alloc_event(this, timecode, key, after_after, id);
     //printf("\nInserted later after %lld", insert_after->id);
     return re;
@@ -233,14 +253,18 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         while(loop_start_clock >= e->timecode) {
             i64 jitter = loop_start_clock - e->timecode;
             this->first_event = e->next;
-            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id-100 : 0, e->timecode, loop_start_clock, current_time(this));
+            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, loop_start_clock, current_time(this));
             if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
             e->next = NULL;
+            u64 idn = e->id;
             e->bound_func.func(e->bound_func.ptr, e->key, current_time(this), (u32) jitter);
 
             // Add event to discard list
             del_event(this, e);
 
+            char ww[50];
+            snprintf(ww, sizeof(ww), "after run %lld", idn);
+            //pprint_list(ww, this);
             e = this->first_event;
             if (e == NULL) {
                 break;

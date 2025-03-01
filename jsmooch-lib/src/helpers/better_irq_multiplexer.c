@@ -24,13 +24,14 @@ void IRQ_multiplexer_b_set_level(struct IRQ_multiplexer_b *this, u32 num, u32 ne
             irq->IF = new_level;
             break;
         case IRQMBK_edge_0_to_1:
-            irq->IF = (!old_input) && irq->input;
+            irq->IF |= (!old_input) && irq->input;
             break;
         case IRQMBK_edge_1_to_0:
-            irq->IF = old_input && (!irq->input);
+            irq->IF |= old_input && (!irq->input);
             break;
     }
     this->IF |= irq->IF << num;
+    //if (num != 1) printf("\nirq_multiplexer: %d set to %d, new IF: %lld", num, new_level, this->IF);
 }
 
 void IRQ_multiplexer_b_reset(struct IRQ_multiplexer_b *this)

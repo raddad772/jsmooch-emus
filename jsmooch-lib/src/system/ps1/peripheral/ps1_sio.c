@@ -20,15 +20,17 @@ static void update_rx_signal(struct PS1 *this)
 
 static void update_IRQs(struct PS1 *this)
 {
+    //printf("\nUpdate IRQs. RX.e:%d RX.s:%d DSR.e:%d DSR.s:%d", this->sio0.io.SIO_CTRL.rx_irq_enable, this->sio0.irq.rx_signal, this->sio0.io.SIO_CTRL.dsr_irq_enable, this->sio0.io.SIO_STAT.dsr_input);
     u32 old_signal = this->sio0.io.SIO_STAT.irq_request;
     u32 signal = this->sio0.io.SIO_CTRL.rx_irq_enable && this->sio0.irq.rx_signal;
     signal |= this->sio0.io.SIO_CTRL.tx_irq_enable && this->sio0.irq.tx_signal;
     signal |= this->sio0.io.SIO_CTRL.dsr_irq_enable && this->sio0.io.SIO_STAT.dsr_input;
 
     this->sio0.io.SIO_STAT.irq_request |= signal; // It is only SET by these, not un-set
-    if (!old_signal && this->sio0.io.SIO_STAT.irq_request) {
-        printf("\nSIO0 IRQ 0->1");
-    }
+    //printf("\nport: old IRQ signal:%d new signal:%d", old_signal, this->sio0.io.SIO_STAT.irq_request);
+    //if (!old_signal && this->sio0.io.SIO_STAT.irq_request) {
+    //    printf("\nSIO0 IRQ 0->1");
+    //}
     PS1_set_irq(this, PS1IRQ_SIO0, signal);
 }
 
@@ -97,7 +99,7 @@ static void send_DTR(struct PS1 *this, u32 port, u32 level)
 
 static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
 {
-    printf("\nSIO0 WRITE CTRL %04x", val);
+    //printf("\ncyc:%lld SIO0 WRITE CTRL %04x", PS1_clock_current(this), val);
     u32 old_rx_enable = this->sio0.io.SIO_CTRL.rx_enable;
     u32 old_dtr = this->sio0.io.SIO_CTRL.dtr_output;
     u32 old_select = this->sio0.io.SIO_CTRL.sio0_port_sel;
@@ -156,11 +158,15 @@ static u8 do_exchange_byte(struct PS1 *this, u8 tx_byte)
     // Determine which port...
     u8 rx_byte = 0;
     if (port.controller) {
+        //printf("\nController XCHG!");
         rx_byte |= port.controller->exchange_byte(port.controller->device_ptr, tx_byte, PS1_clock_current(this));
     }
     if (port.memcard) {
+        //printf("\nMemcard XCHG!");
         rx_byte |= port.memcard->exchange_byte(port.memcard->device_ptr, tx_byte, PS1_clock_current(this));
     }
+
+    //printf("\nEXCH BYTE. TX:%02x, RX:%02x", tx_byte, rx_byte);
 
     return rx_byte;
 }
@@ -176,10 +182,11 @@ static void push_rx_FIFO(struct PS1_SIO0_RX_FIFO *this, u8 byte)
     u32 num = this->tail;
     this->buf[num] = byte;
     num++;
-    while(num != this->head) {
-        this->buf[num] = byte;
+    while((num & 7) != this->head) {
+        this->buf[(num++) & 7] = byte;
     }
 
+    this->num++;
     this->tail = (this->tail + 1) & 7;
 }
 
@@ -188,10 +195,12 @@ static void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
     struct PS1 *this = (struct PS1 *)ptr;
 
     // Check which port
+    //printf("\ncyc:%lld do byte exchange. RX ENABLE: %d", clock, this->sio0.io.SIO_CTRL.rx_enable);
     u8 inbyte = do_exchange_byte(this, key);
 
-    if (this->sio0.io.SIO_CTRL.rx_enable) {
+    if (this->sio0.io.SIO_CTRL.rx_enable || this->sio0.io.SIO_CTRL.dtr_output) {
         // Push to FIFO
+        //printf("\nPUSH TO FIFO!");
         push_rx_FIFO(&this->sio0.io.RX_FIFO, inbyte);
 
         // Trigger IRQ if necessary
@@ -208,6 +217,7 @@ static void write_tx_data(struct PS1 *this, u32 sz, u32 val)
     if (!this->sio0.io.SIO_CTRL.tx_enable) return;
     // schedule exchange_byte() for 1023 cycles out!
     this->sio0.io.SIO_STAT.tx_fifo_not_full = 1;
+    //printf("\n!!!!Write TX %02x. Schedule exch. byte @ %lld", val & 0xFF, PS1_clock_current(this) + 1023);
 
     if (this->sio0.still_sched) {
         printf("\nWARNING MULTIPLE EXCH BYTE SCHEDULED!?");
@@ -288,7 +298,7 @@ static u32 read_rx_data(struct PS1 *this, u32 sz)
 
     update_rx_signal(this);
     update_IRQs(this);
-
+    //printf("\nSIO0 read RX data");
     return out_val;
 }
 
