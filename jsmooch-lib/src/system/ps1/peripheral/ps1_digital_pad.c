@@ -40,8 +40,6 @@ static void latch_buttons(struct PS1_SIO_digital_gamepad *this)
 
         this->buttons[0] ^= 0xFF;
         this->buttons[1] ^= 0xFF;
-        //u32 r = this->buttons[1] | (this->buttons[0] << 8);
-        //if (r != 0xFFFF) printf("\npad: READING BUTTONS...%04x", r);
     }
     else {
         this->buttons[0] = 0xFF;
@@ -101,7 +99,7 @@ static void scheduler_call(void *ptr, u64 key, u64 current_clock, u32 jitter)
 
 static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
     struct PS1_SIO_digital_gamepad *this = (struct PS1_SIO_digital_gamepad *)ptr;
-    if (!this->interface.CS) return 0;
+    if (!this->interface.CS) return 0xFF;
 
     if (this->protocol_step == 0) {
         if (byte == 0x01) {
@@ -109,15 +107,16 @@ static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
             this->protocol_step++;
 
             //printf("\nSELECT PAD, DO ACK.");
-            schedule_ack(this, clock_cycle, 1023, 1);
-            return 0;
+            schedule_ack(this, clock_cycle, 100, 1);
+            return 0xFF;
         }
     }
 
-    u8 r = 0;
+    u8 r = 0xFF;
 
     if (this->selected) {
         u32 do_ack = 0;
+        printf("\nSTEP %d", this->protocol_step);
         if (this->protocol_step == 1) { // send ID lo, recv Read Command (42h)
             r = 0x41;
             this->cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
@@ -137,7 +136,7 @@ static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
                     if (this->cmd == PCMD_read) r = this->buttons[1];
                     break;
             }
-        if (do_ack) schedule_ack(this, clock_cycle, 1023, 1);
+        if (do_ack) schedule_ack(this, clock_cycle, 100, 1);
     }
 
     this->protocol_step++;

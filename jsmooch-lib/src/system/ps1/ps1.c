@@ -122,7 +122,7 @@ static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
 static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
 {
     struct PS1 *this = (struct PS1 *)bound_ptr;
-    //printf("\n\nVBlank IRQ raise and new frame!");
+    printf("\n\nVBlank IRQ raise and new frame!");
     PS1_set_irq(this, PS1IRQ_VBlank, 1);
     PS1_set_irq(this, PS1IRQ_VBlank, 0);
 

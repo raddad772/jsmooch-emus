@@ -299,6 +299,9 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
                 case 0x09: // JALR
                     snprintf(ostr1, sizeof(ostr1), "jalr");
                     snprintf(ostr2, sizeof(ostr2), "%s, %s", reg_alias_arr[rd], reg_alias_arr[rs]);
+                    // rs is addr to jump to
+                    // rd is yeah
+                    if (reg_alias_arr[rd])
                     add_r_context(ct, rd);
                     add_r_context(ct, rs);
                     break;
@@ -362,11 +365,17 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
                     add_r_context(ct, rt);
                     break;
                 case 0x21: // ADDU
-                    snprintf(ostr1, sizeof(ostr1), "addu");
-                    snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                    if (rt == 0) {
+                        snprintf(ostr1, sizeof(ostr1), "move");
+                        snprintf(ostr2, sizeof(ostr2), "%s, %s", reg_alias_arr[rd], reg_alias_arr[rs]);
+                    }
+                    else {
+                        snprintf(ostr1, sizeof(ostr1), "addu");
+                        snprintf(ostr2, sizeof(ostr2), "%s, %s, %s", reg_alias_arr[rd], reg_alias_arr[rs], reg_alias_arr[rt]);
+                        add_r_context(ct, rt);
+                    }
                     add_r_context(ct, rd);
                     add_r_context(ct, rs);
-                    add_r_context(ct, rt);
                     break;
                 case 0x22: // SUB
                     snprintf(ostr1, sizeof(ostr1), "sub");
@@ -460,15 +469,32 @@ void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
             snprintf(ostr2, sizeof(ostr2), "$%08x", 0xF0000000 + ((opcode & 0x3FFFFFF) * 4));
             break;
         case 0x04: // BEQ
-            snprintf(ostr1, sizeof(ostr1), "beq");
-            snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16*4);
+            if ((rs == 0) && (rt == 0)) {
+                snprintf(ostr1, sizeof(ostr1), "b");
+                snprintf(ostr2, sizeof(ostr2), "#$%04x", imm16*4);
+            }
+            else if (rt == 0) {
+                snprintf(ostr1, sizeof(ostr1), "beqz");
+                snprintf(ostr2, sizeof(ostr2), "%s, #$%04x", reg_alias_arr[rs], imm16*4);
+            }
+            else {
+                snprintf(ostr1, sizeof(ostr1), "beq");
+                snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16*4);
+                add_r_context(ct, rt);
+            }
             add_r_context(ct, rs);
             break;
         case 0x05: // BNE
-            snprintf(ostr1, sizeof(ostr1), "bne");
-            snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16*4);
+            if (rt == 0) {
+                snprintf(ostr1, sizeof(ostr1), "bnez");
+                snprintf(ostr2, sizeof(ostr2), "%s, #$%04x", reg_alias_arr[rs], imm16*4);
+            }
+            else {
+                snprintf(ostr1, sizeof(ostr1), "bne");
+                snprintf(ostr2, sizeof(ostr2), "%s, %s, #$%04x", reg_alias_arr[rs], reg_alias_arr[rt], imm16*4);
+                add_r_context(ct, rt);
+            }
             add_r_context(ct, rs);
-            add_r_context(ct, rt);
             break;
         case 0x06: // BLEZ
             snprintf(ostr1, sizeof(ostr1), "blez");

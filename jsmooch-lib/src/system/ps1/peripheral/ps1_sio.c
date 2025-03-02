@@ -16,6 +16,7 @@ static void update_rx_signal(struct PS1 *this)
 {
     static const u8 num[4] = { 1, 2, 4, 8};
     this->sio0.irq.rx_signal = this->sio0.io.RX_FIFO.num >= num[this->sio0.io.SIO_CTRL.rx_irq_mode];
+    this->sio0.io.SIO_STAT.rx_fifo_not_empty = this->sio0.io.RX_FIFO.num > 0;
 }
 
 static void update_IRQs(struct PS1 *this)
@@ -107,6 +108,14 @@ static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
     val &= ~0b1010000;
     this->sio0.io.SIO_CTRL.u = val & 0xFFFF;
 
+    if (this->sio0.io.SIO_CTRL.reset) {
+        this->sio0.io.SIO_CTRL.u = 0;
+        this->sio0.io.SIO_STAT.u = 0;
+        this->sio0.io.SIO_MODE.u = 0;
+        this->sio0.io.RX_FIFO.num = 0;
+        this->sio0.io.RX_FIFO.head = this->sio0.io.RX_FIFO.tail = 0;
+    }
+
     u32 new_dtr = this->sio0.io.SIO_CTRL.dtr_output;
     u32 new_select = this->sio0.io.SIO_CTRL.sio0_port_sel;
 
@@ -123,6 +132,7 @@ static void write_ctrl(struct PS1 *this, u32 sz, u32 val)
         // Clear FIFO
         this->sio0.io.RX_FIFO.head = this->sio0.io.RX_FIFO.tail = this->sio0.io.RX_FIFO.num = 0;
         memset(this->sio0.io.RX_FIFO.buf, 0, 8);
+        printif(ps1.sio0.rw, "\nCLEAR FIFO!");
     }
 
     if (this->sio0.io.SIO_CTRL.ack) {
@@ -155,20 +165,34 @@ static u8 do_exchange_byte(struct PS1 *this, u8 tx_byte)
     get_select_port(this, this->sio0.io.SIO_CTRL.sio0_port_sel, &port);
 
     // Determine which port...
-    u8 rx_byte = 0;
+    u8 rx_byte = 0xFF;
     if (port.controller) {
-        printif(ps1.sio0.rw,"\npad: XCHG!");
-        rx_byte |= port.controller->exchange_byte(port.controller->device_ptr, tx_byte, PS1_clock_current(this));
+        printif(ps1.sio0.rw, "\npad: XCHG!");
+        rx_byte &= port.controller->exchange_byte(port.controller->device_ptr, tx_byte, PS1_clock_current(this));
     }
     if (port.memcard) {
-        //printf("\nMemcard XCHG!");
-        rx_byte |= port.memcard->exchange_byte(port.memcard->device_ptr, tx_byte, PS1_clock_current(this));
+        printif(ps1.sio0.rw, "\nMemcard XCHG!");
+        rx_byte &= port.memcard->exchange_byte(port.memcard->device_ptr, tx_byte, PS1_clock_current(this));
     }
 
-    //printf("\nEXCH BYTE. TX:%02x, RX:%02x", tx_byte, rx_byte);
+    printif(ps1.sio0.rw, "\nEXCH BYTE. TX:%02x, RX:%02x", tx_byte, rx_byte);
 
     return rx_byte;
 }
+
+static void pprint_fifo(struct PS1_SIO0_RX_FIFO *this)
+{
+    dbg_printf("\n\nFIFO! %d", this->num);
+    for (u32 i = 0; i < 7; i++) {
+        u32 num = i;
+        dbg_printf("\n");
+        if (num == this->head) dbg_printf("(head) ");
+        else if (num == this->tail) dbg_printf("(tail) ");
+        else dbg_printf("       ");
+        dbg_printf("%02x", this->buf[num]);
+    }
+}
+
 
 static void push_rx_FIFO(struct PS1_SIO0_RX_FIFO *this, u8 byte)
 {
@@ -188,6 +212,7 @@ static void push_rx_FIFO(struct PS1_SIO0_RX_FIFO *this, u8 byte)
 
     this->num++;
     this->tail = (this->tail + 1) & 7;
+    //pprint_fifo(this);
 }
 
 static void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -209,6 +234,7 @@ static void scheduled_exchange_byte(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 
     // Set SIO_STAT bit
+    this->sio0.io.SIO_STAT.tx_idle = 1;
     this->sio0.io.SIO_STAT.rx_fifo_not_empty = this->sio0.io.RX_FIFO.num != 0;
 }
 
@@ -217,12 +243,13 @@ static void write_tx_data(struct PS1 *this, u32 sz, u32 val)
     if (!this->sio0.io.SIO_CTRL.tx_enable) return;
     // schedule exchange_byte() for 1023 cycles out!
     this->sio0.io.SIO_STAT.tx_fifo_not_full = 1;
-    //printf("\n!!!!Write TX %02x. Schedule exch. byte @ %lld", val & 0xFF, PS1_clock_current(this) + 1023);
+    this->sio0.io.SIO_STAT.tx_idle = 0;
+    printif(ps1.sio0.rw, "\nprogram: write tx %02x. Schedule exch. byte @ %lld", val & 0xFF, PS1_clock_current(this) + 1023);
 
     if (this->sio0.still_sched) {
         printf("\nWARNING MULTIPLE EXCH BYTE SCHEDULED!?");
     }
-    this->sio0.sch_id = scheduler_add_or_run_abs(&this->scheduler, PS1_clock_current(this) + 1023, val & 0xFF, this, &scheduled_exchange_byte, &this->sio0.still_sched);
+    this->sio0.sch_id = scheduler_add_or_run_abs(&this->scheduler, PS1_clock_current(this) + (this->sio0.io.baud * 8), val & 0xFF, this, &scheduled_exchange_byte, &this->sio0.still_sched);
 }
 
 void PS1_SIO0_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
@@ -255,7 +282,7 @@ void PS1_SIO0_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
             return;
         case R_SIO_BAUD:
             assert(sz==2);
-            this->sio0.io.baud = val;
+            this->sio0.io.baud = val & 0xFFFF;
             return;
     }
     printf("\nUnhandled SIO write to %08x (%d): %08x", addr, sz, val);
@@ -273,23 +300,26 @@ static u32 read_mode(struct PS1 *this, u32 sz)
 
 static u32 read_stat(struct PS1 *this, u32 sz)
 {
+    printf("\nREAD STAT:%04x", this->sio0.io.SIO_STAT.u);
     return this->sio0.io.SIO_STAT.u;
 }
+
 
 static u32 read_rx_data(struct PS1 *this, u32 sz)
 {
     // POP a value from FIFO
     u32 out_val = this->sio0.io.RX_FIFO.buf[this->sio0.io.RX_FIFO.head];
-    printif(ps1.sio0.rw, "\nport: read RX. pop %02x from FIFO!", out_val);
     u32 num = (this->sio0.io.RX_FIFO.head + 1) & 7;
+
     if (this->sio0.io.RX_FIFO.num > 0) {
         this->sio0.io.RX_FIFO.head = num;
 
         this->sio0.io.RX_FIFO.num--;
     }
+    printif(ps1.sio0.rw, "\nport: read RX. pop %02x from FIFO now at len:%d!", out_val, this->sio0.io.RX_FIFO.num);
 
     // Now preview the next 3...
-    for (u32 i = 1; i < 4; i++) {
+    for (u32 i = 1; i < sz; i++) {
         out_val |= this->sio0.io.RX_FIFO.buf[num] << (8 * i);
         num = (num + 1) & 7;
     }
@@ -300,6 +330,7 @@ static u32 read_rx_data(struct PS1 *this, u32 sz)
     update_rx_signal(this);
     update_IRQs(this);
     printif(ps1.sio0.rw, "\nprogram: read RX data %02x", out_val);
+    //pprint_fifo(&this->sio0.io.RX_FIFO);
     return out_val;
 }
 

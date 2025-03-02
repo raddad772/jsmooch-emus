@@ -11,6 +11,7 @@
 #include "build.h"
 #include "application.h"
 
+#include "imgui_internal.h"
 #include <SDL3/SDL.h>
 #ifdef JSM_OPENGL
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -436,6 +437,12 @@ void imgui_jsmooch_app::render_console_view(bool update_dasm_scroll)
                 console_view_render_to_buffer(tv, text, sizeof(text));
                 static ImGuiInputTextFlags flags = ImGuiInputTextFlags_ReadOnly;
                 ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-FLT_MIN, -FLT_MIN), flags);
+
+                ImGuiContext& g = *GImGui;
+                const char* child_window_name = NULL;
+                ImFormatStringToTempBuffer(&child_window_name, NULL, "%s/%s_%08X", g.CurrentWindow->Name, "##source", ImGui::GetID("##source"));
+                ImGuiWindow* child_window = ImGui::FindWindowByName(child_window_name);
+                ImGui::SetScrollY(child_window, child_window->ScrollMax.y);
             }
             ImGui::End();
         }
@@ -634,13 +641,13 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_APPLEIIe;
     //which = SYS_GENESIS_USA;
     //which = SYS_DMG;
-    //which = SYS_PS1;
+    which = SYS_PS1;
     //which = SYS_SMS2;
     //which = SYS_GG;
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
     //which = SYS_GBA;
-    which = SYS_NDS;
+    //which = SYS_NDS;
     //which = SYS_GALAKSIJA;
     //dbg_enable_trace();
 #endif

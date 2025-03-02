@@ -701,7 +701,6 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
-            //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
             worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/ADD/CPUADD.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderPolygon/RenderPolygon16BPP.exe", nullptr);
@@ -758,7 +757,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
@@ -1438,9 +1437,9 @@ void full_system::do_frame() {
 
 void full_system::setup_tracing()
 {
-    dbg.traces.ps1.sio0.irq = 1;
-    dbg.traces.ps1.sio0.rw = 1;
-    dbg.traces.ps1.sio0.ack = 1;
-    dbg.traces.ps1.pad = 1;
+    dbg.traces.ps1.sio0.irq = 0;
+    dbg.traces.ps1.sio0.rw = 0;
+    dbg.traces.ps1.sio0.ack = 0;
+    dbg.traces.ps1.pad = 0;
     dbg_enable_trace();
 }
