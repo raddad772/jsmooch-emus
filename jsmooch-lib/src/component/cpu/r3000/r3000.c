@@ -383,13 +383,11 @@ static void add_to_console(struct R3000 *this, u32 ch)
     if (this->dbg.console) {
         console_view_add_char(this->dbg.console, ch);
     }
-    else {
-        if (ch == '\n') {
-            printf("\n%s", this->console.ptr);
-            jsm_string_quickempty(&this->console);
-        } else
-            jsm_string_sprintf(&this->console, "%c", ch);
-    }
+    if (ch == '\n') {
+        printf("\n%s", this->console.ptr);
+        jsm_string_quickempty(&this->console);
+    } else
+        jsm_string_sprintf(&this->console, "%c", ch);
 }
 
 static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
@@ -545,7 +543,7 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
 #ifdef LYCODER
         lycoder_trace_format(this, &this->trace.str);
 #else
-        if (dbg.trace_on) {
+        if (dbg.trace_on && dbg.traces.r3000.instruction) {
             R3000_trace_format(this, &this->trace.str);
             //console.log(hex8(this->regs.PC) + ' ' + R3000_disassemble(current.opcode));
             //dbg.traces.add(D_RESOURCE_TYPES.R3000, this->clock.trace_cycles-1, this->trace_format(R3000_disassemble(current.opcode), current.addr))

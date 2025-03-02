@@ -97,6 +97,7 @@ struct jsm_debug_struct {
         struct cpu_trace_struct z80;
         struct cpu_trace_struct m68000;
         struct cpu_trace_struct arm7tdmi;
+        struct cpu_trace_struct r3000;
 
         struct DBG_TRACE_PS1_STRUCT {
             struct {
@@ -104,6 +105,8 @@ struct jsm_debug_struct {
                 u32 ack;
                 u32 rw;
             } sio0;
+
+            u32 pad;
         } ps1;
 
         u32 better_irq_multiplexer;

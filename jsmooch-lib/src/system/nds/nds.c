@@ -503,7 +503,7 @@ static u32 NDSJ_step_master(JSM, u32 howmany)
     u64 before_frame = this->clock.master_frame;
     scheduler_run_for_cycles(&this->scheduler, howmany);
     u64 after_frame = this->clock.master_frame;
-    printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
+    //printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
 
     return 0;
 }

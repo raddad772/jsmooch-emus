@@ -280,7 +280,7 @@ static u32 read_rx_data(struct PS1 *this, u32 sz)
 {
     // POP a value from FIFO
     u32 out_val = this->sio0.io.RX_FIFO.buf[this->sio0.io.RX_FIFO.head];
-    printif(ps1.sio0.rw, "\nPop %02x from FIFO!", out_val);
+    printif(ps1.sio0.rw, "\nport: read RX. pop %02x from FIFO!", out_val);
     u32 num = (this->sio0.io.RX_FIFO.head + 1) & 7;
     if (this->sio0.io.RX_FIFO.num > 0) {
         this->sio0.io.RX_FIFO.head = num;

@@ -98,7 +98,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
         this->first_event = e->next;
 
         if (e->still_sched) *e->still_sched = 0;
-        printf("\n\n\nSCHED:Deleting first event!");
+        //printf("\n\n\nSCHED:Deleting first event!");
         del_event(this, e);
         return;
     }
@@ -114,7 +114,7 @@ void scheduler_delete_if_exist(struct scheduler_t *this, u64 id)
             return;
         }
 
-        printf("\n\n\nSCHED:Deleting event!");
+        //printf("\n\n\nSCHED:Deleting event!");
         last = e;
         e = e->next;
     }
@@ -138,14 +138,14 @@ u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callba
 static void pprint_list(char *s, struct scheduler_t *this)
 {
     return;
-    printf("\n\nScheduled tasks %s:", s);
+    //printf("\n\nScheduled tasks %s:", s);
     struct scheduler_event *e = this->first_event;
     u32 i = 0;
     while(e) {
-        printf("\n%d. %lld", i++, e->id);
+        //printf("\n%d. %lld", i++, e->id);
         e = e->next;
     }
-    printf("\n");
+    //printf("\n");
 }
 
 u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)

@@ -5,6 +5,7 @@
 #include <string.h>
 #include "ps1_digital_pad.h"
 #include "../ps1_bus.h"
+#include "helpers/debug.h"
 
 enum cmd_kinds {
     PCMD_read,
@@ -56,11 +57,11 @@ static void set_CS(void *ptr, u32 level, u64 clock_cycle) {
         this->selected = 0;
         this->protocol_step = 0;
         if (this->interface.CS) {
-            //printf("\npad: CS 0->1");
+            printif(ps1.pad, "\npad: CS 0->1");
             latch_buttons(this);
         }
         else {
-            //printf("\npad: CS 1->0");
+            printif(ps1.pad, "\npad: CS 1->0");
             if (this->interface.ACK) {
                 //if (this->still_sched && this->sch_id)
                 //    scheduler_delete_if_exist(&this->bus->scheduler, this->sch_id);
