@@ -137,7 +137,7 @@ void holly_raise_interrupt(struct DC* this, enum holly_interrupt_masks irq_num, 
         i64 tcode = (i64)*this->sh4.trace.cycles + delay;
         u64 key = irq_num;
 
-        struct scheduler_event *e = scheduler_add_abs(&this->scheduler, tcode, key);
+        struct scheduler_event *e = scheduler_add_abs(&this->scheduler, tcode, key, 1);
         scheduler_bind_or_run(e, this, &holly_delayed_raise_interrupt, tcode, key, NULL);
         return;
     }

@@ -72,7 +72,8 @@ void scheduler_init(struct scheduler_t*, u64 *clock, u64 *waitstates);
 void scheduler_delete(struct scheduler_t*);
 void scheduler_clear(struct scheduler_t*);
 
-struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key);
+u64 scheduler_only_add_abs(struct scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
+struct scheduler_event *scheduler_add_abs(struct scheduler_t*, i64 timecode, u64 key, u32 do_instant);
 void scheduler_delete_if_exist(struct scheduler_t *this, u64 id);
 u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
 

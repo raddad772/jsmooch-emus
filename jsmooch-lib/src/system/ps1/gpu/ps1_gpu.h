@@ -79,7 +79,7 @@ struct PS1_GPU {
         PS1e_bottom
     } field;
     u32 texture_disable;
-    u32 hres;
+    u32 hr1, hr2, hres;
     enum PS1GPUVRES {
         PS1e_y240lines, PS1e_y480lines
     } vres;
@@ -137,7 +137,8 @@ struct PS1_GPU {
 
 struct PS1;
 
-void PS1_GPU_init(struct PS1 *this);
+void PS1_GPU_init(struct PS1 *);
+void PS1_GPU_reset(struct PS1_GPU *);
 void PS1_GPU_write_gp0(struct PS1_GPU *, u32 val);
 void PS1_GPU_write_gp1(struct PS1_GPU *, u32 val);
 u32 PS1_GPU_get_gpuread(struct PS1_GPU *);

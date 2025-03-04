@@ -150,9 +150,13 @@ static void pprint_list(char *s, struct scheduler_t *this)
 
 u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
-    //printf("\ncyc:%lld add_or_run at %lld", current_time(this), timecode);
-    struct scheduler_event *e = scheduler_add_abs(this, timecode, key);
-    //pprint_list("after shchedule", this);
+    struct scheduler_event *e = scheduler_add_abs(this, timecode, key, 1);
+    return scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
+}
+
+u64 scheduler_only_add_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
+{
+    struct scheduler_event *e = scheduler_add_abs(this, timecode, key, 0);
     return scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
 }
 
@@ -168,7 +172,7 @@ u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_c
     return id;
 }
 
-struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key) {
+struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key, u32 do_instant) {
     u32 instant = 0;
     assert(timecode>=-2);
     //assert(timecode<50000);
@@ -184,8 +188,13 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
 
     i64 curtime = current_time(this);
     if ((timecode <= curtime) || (timecode == 0)) {
-        //printf("\nINSTANT!");
-        return NULL;
+        if (do_instant) {
+            return NULL;
+        }
+        else {
+            this->first_event = alloc_event(this, timecode, key, this->first_event, id);
+            return this->first_event;
+        }
     }
 
     // Insert into linked list at correct place
@@ -261,8 +270,8 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
             // Add event to discard list
             del_event(this, e);
 
-            char ww[50];
-            snprintf(ww, sizeof(ww), "after run %lld", idn);
+            //char ww[50];
+            //snprintf(ww, sizeof(ww), "after run %lld", idn);
             //pprint_list(ww, this);
             e = this->first_event;
             if (e == NULL) {

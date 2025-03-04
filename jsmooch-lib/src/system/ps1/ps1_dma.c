@@ -93,7 +93,7 @@ static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
                         }
                         break; }
                     default:
-                        printf("UNHANDLED DMA PORT! %d", ch->num);
+                        printf("\nUNHANDLED DMA PORT! %d", ch->num);
                         return;
                 }
                 break;
@@ -103,7 +103,7 @@ static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
                         src_word = (copies == 1) ? 0xFFFFFF : ((addr - 4) & 0x1FFFFF);
                         break;
                     case PS1DP_GPU:
-                        printf("unimplemented DMA GPU read");
+                        printf("\nunimplemented DMA GPU read");
                         src_word = 0;
                         break;
                     case PS1DP_cdrom: {
@@ -118,7 +118,7 @@ static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
                         src_word = 0;
                         break;
                     default:
-                        printf("UNKNOWN DMA PORT %d", ch->num);
+                        printf("\nUNKNOWN DMA PORT %d", ch->num);
                         src_word = 0;
                         break;
                 }
@@ -212,7 +212,7 @@ u32 PS1_DMA_read(struct PS1 *this, u32 addr, u32 sz)
                 case 8:
                     return get_control(ch);
                 default:
-                    printf("Unimplemented per-channel DMA register: %d %d %08x", ch_num, reg, addr);
+                    printf("\nUnimplemented per-channel DMA register: %d %d %08x", ch_num, reg, addr);
                     return 0xFFFFFFFF;
             }
             break; }
@@ -224,12 +224,12 @@ u32 PS1_DMA_read(struct PS1 *this, u32 addr, u32 sz)
                     return this->dma.unknown1 | (this->dma.irq_force << 15) | (this->dma.irq_enable_ch << 16) |
                            (this->dma.irq_enable << 23) | (this->dma.irq_flags_ch << 24) | (irq_status(this) << 31);
                 default:
-                    printf("Unimplemented per-channel DMA register read2 %d %d %08x", ch_num, reg, addr);
+                    printf("\nUnimplemented per-channel DMA register read2 %d %d %08x", ch_num, reg, addr);
                     return 0xFFFFFFFF;
             }
 
         default:
-            printf("Unhandled DMA read %08x", addr);
+            printf("\nUnhandled DMA read %08x", addr);
     }
     return 0xFFFFFFFF;
 }
@@ -261,7 +261,7 @@ void PS1_DMA_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
                     set_control(ch, val);
                     break;
                 default:
-                    printf("Unimplemented per-channel DMA register write: %d %d %08x: %08x", ch_num, reg, addr, val);
+                    printf("\nUnimplemented per-channel DMA register write: %d %d %08x: %08x", ch_num, reg, addr, val);
                     return;
             }
             if (active(ch)) do_dma(this, ch);
@@ -281,7 +281,7 @@ void PS1_DMA_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
                     this->dma.irq_flags_ch &= (to_ack ^ 0x3F);
                     return;
                 default:
-                    printf("Unhandled DMA write: %d %d %08x", ch_num, reg, addr);
+                    printf("\nUnhandled DMA write: %d %d %08x", ch_num, reg, addr);
                     return;
             }
     }

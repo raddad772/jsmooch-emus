@@ -116,7 +116,6 @@ static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
 
     if (this->selected) {
         u32 do_ack = 0;
-        printf("\nSTEP %d", this->protocol_step);
         if (this->protocol_step == 1) { // send ID lo, recv Read Command (42h)
             r = 0x41;
             this->cmd = (byte == 0x42) ? PCMD_read : PCMD_unknown;
@@ -169,9 +168,9 @@ void PS1_SIO_gamepad_setup_pio(struct physical_io_device *d, u32 num, const char
     pio_new_button(cnt, "select", DBCID_co_select);
     pio_new_button(cnt, "start", DBCID_co_start);
     pio_new_button(cnt, "up", DBCID_co_up);
+    pio_new_button(cnt, "right", DBCID_co_right);
     pio_new_button(cnt, "down", DBCID_co_down);
     pio_new_button(cnt, "left", DBCID_co_left);
-    pio_new_button(cnt, "right", DBCID_co_right);
     pio_new_button(cnt, "L2", DBCID_co_shoulder_left2);
     pio_new_button(cnt, "R2", DBCID_co_shoulder_right2);
     pio_new_button(cnt, "L1", DBCID_co_shoulder_left);

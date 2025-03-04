@@ -7,6 +7,7 @@
 
 #include "pixel_helpers.h"
 #include "../ps1_bus.h"
+#include "../timers/ps1_timers.h"
 #include "ps1_gpu.h"
 #include "rasterize_line.h"
 
@@ -78,7 +79,7 @@ static inline void unready_cmd(struct PS1_GPU *this)
 
 static inline void unready_recv_dma(struct PS1_GPU *this)
 {
-    dbg_printf("\nUNREADY DMA");
+    //dbg_printf("\nUNREADY DMA");
     this->io.GPUSTAT &= 0xEFFFFFFF;
 }
 
@@ -103,7 +104,7 @@ static inline void ready_cmd(struct PS1_GPU *this)
 
 static inline void ready_recv_dma(struct PS1_GPU *this)
 {
-    dbg_printf("\nREADY DMA");
+    //dbg_printf("\nREADY DMA");
     this->io.GPUSTAT |= 0x10000000;
 }
 
@@ -1447,10 +1448,6 @@ static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
     assert(this->recv_gp0_len < 256);
 
     // Check if we have an instruction..
-    if (this->bus->clock.master_cycle_count == 50246640) {
-        printf("\nWait a second...");
-    }
-    fflush(stdout);
     if (this->current_ins) {
         this->cmd[this->cmd_arg_index++] = cmd;
         if (this->cmd_arg_index == this->cmd_arg_num) {
@@ -1729,6 +1726,38 @@ static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
     }
 }
 
+static void setup_dotclock(struct PS1 *this)
+{
+    if (this->gpu.hr2) {
+        this->gpu.hres = 368;
+    }
+    else {
+        static const u32 table[4] =  {256, 320, 512, 640};
+        this->gpu.hres = table[this->gpu.hr1];
+    }
+    float cycles_per_line = ((float)this->clock.timing.gpu.hz / this->clock.timing.fps) / (float)this->clock.timing.frame.lines;
+    float cycles_per_px = cycles_per_line / (float)this->gpu.hres;
+
+    this->clock.dot.horizontal_px = (((this->gpu.display_horiz_end-this->gpu.display_horiz_start)/(u32)cycles_per_px)+2) & ~3;
+    this->clock.dot.vertical_px = this->clock.timing.frame.lines - this->clock.timing.frame.vblank.start_on_line;
+
+    this->clock.dot.ratio.cpu_to_gpu = (float)this->clock.timing.gpu.hz / (float)this->clock.timing.cpu.hz;
+    this->clock.dot.ratio.cpu_to_dotclock = this->clock.dot.ratio.cpu_to_gpu / cycles_per_px;
+}
+
+static void dotclock_change(struct PS1 *this)
+{
+    this->clock.dot.start.value = PS1_dotclock(this);
+    this->clock.dot.start.time = PS1_clock_current(this);
+    setup_dotclock(this);
+}
+
+
+void PS1_GPU_reset(struct PS1_GPU *this)
+{
+    dotclock_change(this->bus);
+}
+
 void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
 {
     switch(cmd >> 24) {
@@ -1773,7 +1802,6 @@ void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
             ready_cmd(this);
             ready_recv_dma(this);
             ready_vram_to_CPU(this);
-
             // TODO: remember to flush GPU texture cache
             break;
         case 0x01: // reset CMD FIFO
@@ -1810,6 +1838,7 @@ void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
         case 0x06: // Display horizontal range, in output coordinates
             this->display_horiz_start = cmd & 0xFFF;
             this->display_horiz_end = (cmd >> 12) & 0xFFF;
+            dotclock_change(this->bus);
             break;
         case 0x07: // Display vertical range, in output coordinates
             this->display_line_start = cmd & 0x3FF;
@@ -1817,10 +1846,9 @@ void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
             break;
         case 0x08: {// Display mode
             //console.log('GP1 display mode');
-            u32 hr1 = cmd & 3;
-            u32 hr2 = ((cmd >> 6) & 1);
+            this->hr1 = cmd & 3;
+            this->hr2 = ((cmd >> 6) & 1);
 
-            this->hres = (hr2 & 1) | ((hr1 & 3) << 1);
             this->vres = (cmd & 4) ? PS1e_y480lines : PS1e_y240lines;
             this->vmode = (cmd & 8) ? PS1e_pal : PS1e_ntsc;
             this->display_depth = (cmd & 16) ? PS1e_d15bits : PS1e_d24bits;
@@ -1828,6 +1856,7 @@ void PS1_GPU_write_gp1(struct PS1_GPU *this, u32 cmd)
             if ((cmd & 0x80) != 0) {
                 printf("\nUnsupported display mode!");
             }
+            dotclock_change(this->bus);
             break; }
         default:
             printf("\nUnknown GP1 command %08x", cmd);

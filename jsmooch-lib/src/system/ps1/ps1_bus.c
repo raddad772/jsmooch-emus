@@ -88,6 +88,8 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
             return 0;
     }
 
+    if ((addr >= 0x1F801100) && (addr < 0x1F801130)) return PS1_timers_read(this, addr, sz);
+
     static u32 e = 0;
     printf("\nUNHANDLED MAINBUS READ sz %d addr %08x", sz, addr);
     e++;
@@ -190,6 +192,11 @@ void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
         case 0x1F801D86: // ... R
         case 0x1FFE0130: // Cache control
             return;
+    }
+
+    if ((addr >= 0x1F801100) && (addr < 0x1F801130)) {
+        PS1_timers_write(this, addr, sz, val);
+        return;
     }
 
     printf("\nUNHANDLED MAINBUS WRITE %08x: %08x", addr, val);

@@ -11,12 +11,15 @@
 
 #include "component/cpu/r3000/r3000.h"
 
+#include "helpers/scheduler.h"
+#include "helpers/debugger/debugger.h"
+
+#include "ps1_clock.h"
 #include "gpu/ps1_gpu.h"
 #include "spu/ps1_spu.h"
 #include "peripheral/ps1_sio.h"
 #include "peripheral/ps1_digital_pad.h"
-#include "helpers/scheduler.h"
-#include "helpers/debugger/debugger.h"
+#include "timers/ps1_timers.h"
 
 enum PS1_IRQ {
     PS1IRQ_VBlank = 0,
@@ -42,20 +45,6 @@ enum PS1_DMA_ports {
     PS1DP_OTC
 };
 
-struct PS1_clock {
-    u64 master_cycle_count;
-    u64 master_frame;
-    u64 waitstates;
-    i64 cycles_left_this_frame;
-    u32 vblank_scheduled;
-
-    struct {
-        u32 x, y;
-        u64 scanline_start;
-        u32 hblank_active, vblank_active;
-    } crt;
-};
-
 enum PS1_DMA_e {
     PS1D_to_ram,
     PS1D_from_ram,
@@ -71,8 +60,9 @@ struct PS1 {
     struct PS1_clock clock;
     struct PS1_SIO0 sio0;
     struct IRQ_multiplexer_b IRQ_multiplexer;
+    struct PS1_TIMERS timers[3];
 
-
+    u32 already_scheduled;
     struct scheduler_t scheduler;
     i64 cycles_left;
 

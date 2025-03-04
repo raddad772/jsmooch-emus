@@ -405,6 +405,10 @@ add_library(jsmooch-lib
         src/helpers/better_irq_multiplexer.h
         src/helpers/debugger/console.c
         src/helpers/debugger/console.h
+        src/system/ps1/timers/ps1_timers.c
+        src/system/ps1/timers/ps1_timers.h
+        src/system/ps1/ps1_clock.c
+        src/system/ps1/ps1_clock.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

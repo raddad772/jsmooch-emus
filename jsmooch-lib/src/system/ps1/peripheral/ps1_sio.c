@@ -300,7 +300,6 @@ static u32 read_mode(struct PS1 *this, u32 sz)
 
 static u32 read_stat(struct PS1 *this, u32 sz)
 {
-    printf("\nREAD STAT:%04x", this->sio0.io.SIO_STAT.u);
     return this->sio0.io.SIO_STAT.u;
 }
 

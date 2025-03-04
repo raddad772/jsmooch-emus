@@ -38,10 +38,63 @@ static void PS1J_load_BIOS(JSM, struct multi_file_set* mfs);
 static void PS1J_describe_io(JSM, struct cvec* IOs);
 
 // 240x160, but 308x228 with v and h blanks
-#define PS1_CYCLES_PER_FRAME_NTSC 564480
-#define PS1_VBLANK_CYCLE_IN_FRAME ((564480*85)/100)
-#define PS1_CYCLES_INSIDE_VBLANK_IN_FRAME (PS1_CYCLES_PER_FRAME_NTSC - PS1_VBLANK_CYCLE_IN_FRAME)
-#define PS1_CYCLES_PER_FRAME_PAL 677376
+
+
+//typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_clock, u32 jitter);
+static void schedule_frame(struct PS1 *this, u64 start_clock, u32 is_first);
+
+static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
+{
+    // First function call on a new frame
+    struct PS1 *this = (struct PS1 *)bound_ptr;
+    PS1_set_irq(this, PS1IRQ_VBlank, key);
+    this->clock.in_vblank = key;
+    PS1_timers_vblank(this, key);
+}
+
+static void hblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
+{
+    // Do what here?
+    struct PS1 *this = (struct PS1 *)bound_ptr;
+    this->clock.in_hblank = key;
+    this->clock.hblank_clock += key;
+    PS1_timers_hblank(this, key);
+}
+
+static void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
+{
+    struct PS1 *this = (struct PS1 *)bound_ptr;
+    schedule_frame(this, current_clock-jitter, 0);
+}
+
+
+static void schedule_frame(struct PS1 *this, u64 start_clock, u32 is_first)
+{
+    if (!is_first) {
+        this->clock.master_frame++;
+        this->clock.frame_cycle_start = start_clock;
+    }
+    // Schedule out a frame!
+    i64 cur_clock = start_clock;
+    this->clock.cycles_left_this_frame += this->clock.timing.frame.cycles;
+
+    // End VBlank
+    scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &vblank, NULL);
+
+    // x lines of end hblank, start hblank
+    // somewhere in there, start vblank
+    for (u32 line = 0; line < this->clock.timing.frame.lines; line++) {
+        scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &hblank, NULL);
+        if (line == this->clock.timing.frame.vblank.start_on_line) {
+            scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &vblank, NULL);
+        }
+
+        cur_clock += this->clock.timing.scanline.cycles;
+        scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &hblank, NULL);
+    }
+
+    scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
+}
 
 
 static void setup_debug_waveform(struct debug_waveform *dw)
@@ -118,36 +171,6 @@ static void snoop_write(void *ptr, u32 addr, u32 sz, u32 val)
     PS1_mainbus_write(ptr, addr, sz, val);
 }
 
-//typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_clock, u32 jitter);
-static void vblank(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
-{
-    struct PS1 *this = (struct PS1 *)bound_ptr;
-    printf("\n\nVBlank IRQ raise and new frame!");
-    PS1_set_irq(this, PS1IRQ_VBlank, 1);
-    PS1_set_irq(this, PS1IRQ_VBlank, 0);
-
-    //printf("\nSCHEDULE VBLANK FOR %lld. CURRENT IS AT: (mcc):%lld (provided):%lld", current_clock+PS1_CYCLES_PER_FRAME_NTSC, this->clock.master_cycle_count+this->clock.waitstates, current_clock);
-    u64 id = scheduler_add_or_run_abs(&this->scheduler, current_clock+PS1_CYCLES_PER_FRAME_NTSC, 0, this, &vblank, &this->clock.vblank_scheduled);
-    //printf("\nSCHEDULED ID FOR VBLANK, %lld", id);
-}
-
-static void schedule_frame(struct PS1 *this)
-{
-#ifndef MIN
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-#endif
-    if (!this->clock.vblank_scheduled) {
-        printf("\nVBLANK NOT SCHEDULED. SCHEDULING...");
-        this->clock.cycles_left_this_frame += PS1_CYCLES_PER_FRAME_NTSC;
-        i64 cycle_num = this->clock.cycles_left_this_frame - PS1_CYCLES_INSIDE_VBLANK_IN_FRAME;
-
-        if (cycle_num > 0) {
-            scheduler_add_or_run_abs(&this->scheduler, this->clock.master_cycle_count+this->clock.waitstates+cycle_num, 0, this, &vblank, &this->clock.vblank_scheduled);
-        }
-    }
-}
-
-
 static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
 {
     struct PS1 *this = (struct PS1 *)bound_ptr;
@@ -192,6 +215,8 @@ void PS1_new(struct jsm_system *jsm)
     this->scheduler.run.ptr = this;
 
     setup_IRQs(this);
+
+    PS1_clock_init(&this->clock, 1);
 
     R3000_init(&this->cpu, &this->clock.master_cycle_count, &this->clock.waitstates, &this->scheduler, &this->IRQ_multiplexer);
     buf_init(&this->sideloaded);
@@ -270,7 +295,6 @@ static void copy_vram(struct PS1 *this)
     memcpy(this->gpu.cur_output, this->gpu.VRAM, 1024*1024);
     this->gpu.cur_output = ((u16 *)this->gpu.display->output[this->gpu.display->last_written ^ 1]);
     this->gpu.display->last_written ^= 1;
-    this->clock.master_frame++;
 }
 
 u32 PS1J_finish_frame(JSM)
@@ -279,7 +303,6 @@ u32 PS1J_finish_frame(JSM)
 #ifdef LYCODER
     dbg_enable_trace();
 #endif
-    schedule_frame(this);
     scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
 
     copy_vram(this);
@@ -309,7 +332,7 @@ void PS1J_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
-    out->x = this->clock.crt.x;
+    out->x = 0;
     out->scanline = this->clock.crt.y;
     out->master_cycle = this->clock.master_cycle_count;
 }
@@ -385,8 +408,13 @@ void PS1J_reset(JSM)
     JTHIS;
     R3000_reset(&this->cpu);
     PS1_bus_init(this);
+    PS1_GPU_reset(&this->gpu);
+    PS1_clock_reset(this);
+    PS1_timers_reset(this);
+    scheduler_clear(&this->scheduler);
     this->mem.cache_isolated = 0;
-    this->clock.cycles_left_this_frame = PS1_CYCLES_PER_FRAME_NTSC;
+    this->clock.cycles_left_this_frame = 0;
+    schedule_frame(this, 0, 1); // Schedule first frame
 
     printf("\nPS1 reset!");
     if (this->sideloaded.size > 0) {

@@ -578,6 +578,7 @@ static void R3000_fMFC(u32 opcode, struct R3000_opcode *op, struct R3000 *core, 
 {
     // move FROM co
     // rt = cop[rd]
+    *core->clock += 6;
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     R3000_fs_reg_delay(core, rt, COP_read_reg(core, copnum, rd));
