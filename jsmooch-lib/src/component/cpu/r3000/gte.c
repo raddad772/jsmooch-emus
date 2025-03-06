@@ -105,10 +105,13 @@ inline static i16 i32_to_i16_saturate(struct R3000_GTE *this, struct gte_cmd *co
 
 static inline i64 i64_to_i44(struct R3000_GTE *this, u8 flag, i64 val)
 {
-    if (val > 0x7FFFFFFFFFF) {
+    printf("\nCompare value %16llx", val);
+    if (val >= (1LL << 43)) {
+        printf("\nYES TOO BIG!");
         set_flag(this, 30 - flag);
     }
-    else if (val < -0x80000000000) {
+    else if (val < -(1LL << 43)) {
+        printf("\nYES TOO SMALL!");
         set_flag(this, 27 - flag);
     }
 
@@ -458,8 +461,10 @@ static inline void do_ncd(struct R3000_GTE *this, struct gte_cmd *config, u8 vec
 
 static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_cmd *config, enum gteMatrix mat, u8 vei, enum gteControlVector crv)
 {
+    printf("\n\nmultiply matrix");
     i32 vector_index = (i32)vei;
     if (mat == GTE_Invalid) {
+        printf("\nINVALID MATRIX!");
         this->matrices[mat][0][0] = (-((i16)this->rgb[0])) << 4;
         this->matrices[mat][0][1] = ((i16)this->rgb[0]) << 4;
         this->matrices[mat][0][2] = this->ir[0];
@@ -480,6 +485,7 @@ static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_
             i32 product = v * m;
 
             if (far_color && (c == 0)) {
+                i64_to_i44(this, (u8)r, res + (i64)product);
                 i32_to_i16_saturate(this, &this->config, r, (i32)((res + product) >> (i64)config->shift));
                 res = 0;
             }
@@ -531,6 +537,17 @@ static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config) {
 static void cmd_NCDS(struct R3000_GTE *this, struct gte_cmd *config)
 {
     do_ncd(this, config, 0);
+}
+
+static void cmd_CDP(struct R3000_GTE *this, struct gte_cmd *config)
+{
+    this->v[3][0] = this->ir[1];
+    this->v[3][1] = this->ir[2];
+    this->v[3][2] = this->ir[3];
+
+    multiply_matrix_by_vector(this, config, GTE_Color, 3, GTE_BackgroundColor);
+
+    cmd_DCPL(this, config);
 }
 
 static void cmd_NCDT(struct R3000_GTE *this, struct gte_cmd *config)
@@ -612,14 +629,6 @@ static void do_nc(struct R3000_GTE *this, struct gte_cmd *config, u8 vector_inde
     crol[1] = this->rgb[1];
     crol[2] = this->rgb[2];
 
-    for (u32 i = 0; i < 3; i++) {
-        i32 col = ((i32)crol[i]) << 4;
-        i32 ir = (i32)this->ir[i + 1];
-
-        this->mac[i + 1] = (col * ir) >> config->shift;
-    }
-
-    mac_to_ir(this, config);
     mac_to_rgb_fifo(this);
 }
 
@@ -764,6 +773,7 @@ void GTE_command(struct R3000_GTE *this, u32 opcode, u64 current_clock)
         case 0x11: cmd_INTPL(this, config); this->cycle_count = 7; break;
         case 0x12: cmd_MVMVA(this, config); this->cycle_count = 7; break;
         case 0x13: cmd_NCDS(this, config); this->cycle_count = 18; break;
+        case 0x14: cmd_CDP(this, config); this->cycle_count = 13; break;
         case 0x16: cmd_NCDT(this, config); this->cycle_count = 43; break;
         case 0x1B: cmd_NCCS(this, config); this->cycle_count = 16; break;
         case 0x1C: cmd_CC(this, config); this->cycle_count = 10; break;
