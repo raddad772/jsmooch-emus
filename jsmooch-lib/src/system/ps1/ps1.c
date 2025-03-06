@@ -93,7 +93,7 @@ static void schedule_frame(struct PS1 *this, u64 start_clock, u32 is_first)
         scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &hblank, NULL);
     }
 
-    scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
+    u64 id = scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
 }
 
 
@@ -303,7 +303,10 @@ u32 PS1J_finish_frame(JSM)
 #ifdef LYCODER
     dbg_enable_trace();
 #endif
+    u64 old_clock = this->clock.master_cycle_count;
     scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
+    u64 diff = this->clock.master_cycle_count - old_clock;
+    this->clock.cycles_left_this_frame -= diff;
 
     copy_vram(this);
     if (dbg.do_break) {
