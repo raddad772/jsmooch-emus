@@ -523,7 +523,7 @@ static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config) {
     this->v[3][1] = this->ir[2];
     this->v[3][2] = this->ir[3];
 
-    printf("\nMVMVA matrix:%d far_color:%d", config->matrix, config->vector_add == GTE_FarColor);
+    printf("\nMVMVA matrix:%d far_color:%d==3?", config->matrix, config->vector_add);
 
     multiply_matrix_by_vector(this, config, config->matrix, config->vector_mul, config->vector_add);
 }

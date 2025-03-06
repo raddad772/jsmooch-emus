@@ -178,7 +178,7 @@ static void update_irqs(struct PS1 *this)
 u32 PS1_timers_read(struct PS1 *this, u32 addr, u32 sz)
 {
     u32 timer_num = (addr >> 4) & 3;
-    switch(addr & 0x1FFFFFCF) {
+    switch(addr & 0x1FFFFFEF) {
         case 0x1F801100: // current counter value
             return read_timer(this, timer_num) & 0xFFFF;
         case 0x1F801104: { // timer0...2 mode

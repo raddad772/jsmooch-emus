@@ -131,13 +131,12 @@ void PS1J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 
 static void amidog_print_console(struct PS1 *this)
 {
-    static const char args[3][15] = {"console", "auto", "release"};
+    static const char args[3][15] = {"auto", "console", "release"};
     int argLen = 2;
     int len = 0;
 
     for (int i = 0; i < argLen; i++) {
-        PS1_mainbus_write(this, (u32)(0x1f8e00004+i*4), 4, (u32)(0x1f800044+len));
-
+        PS1_mainbus_write(this, (u32)(0x1f800004+i*4), 4, (u32)(0x1f800044+len));
         int x;
         unsigned long n = strlen(args[i]) + 1;
         for (x = len; x < len + n; x++) {
