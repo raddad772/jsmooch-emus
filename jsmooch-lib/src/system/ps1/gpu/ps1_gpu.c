@@ -1318,12 +1318,12 @@ static void load_buffer_reset(struct PS1_GPU *this, u32 x, u32 y, u32 width, u32
 
 static void gp0_image_load_continue(struct PS1_GPU *this, u32 cmd)
 {
-    this->recv_gp0[this->recv_gp0_len] = cmd>>0;
+    /*this->recv_gp0[this->recv_gp0_len] = cmd;
     this->recv_gp0_len++;
     if (this->recv_gp0_len >= (1024*1024)) {
         printf("\nWARNING GP0 TRANSFER OVERFLOW!");
         this->recv_gp0_len--;
-    }
+    }*/
     // Put in 2 16-bit pixels
     //console.log('TRANSFERRING!', this->gp0_transfer_remaining);
     for (u32 i = 0; i < 2; i++) {
@@ -1450,6 +1450,7 @@ static void gp0_cmd(struct PS1_GPU *this, u32 cmd) {
     // Check if we have an instruction..
     if (this->current_ins) {
         this->cmd[this->cmd_arg_index++] = cmd;
+        assert(this->cmd_arg_index<32);
         if (this->cmd_arg_index == this->cmd_arg_num) {
             // Execute instruction!
             this->current_ins(this);

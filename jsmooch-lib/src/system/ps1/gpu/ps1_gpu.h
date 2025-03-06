@@ -42,13 +42,13 @@ struct PS1_GPU {
     u32 gp1_buffer[256];
     u32 IRQ_bit;
 
-    u32 cmd[16];
+    u32 cmd[32];
     u32 cmd_arg_num, cmd_arg_index;
     struct PS1 *bus;
     u32 ins_special;
 
-    u8 recv_gp0[1024 * 1024];
-    u8 recv_gp1[1024 * 1024];
+    u32 recv_gp0[1024 * 1024];
+    u32 recv_gp1[1024 * 1024];
     u32 recv_gp0_len;
     u32 recv_gp1_len;
 

@@ -13,6 +13,8 @@
 
 #include "imgui_internal.h"
 #include <SDL3/SDL.h>
+#define FRAME_MULTI 10
+
 #ifdef JSM_OPENGL
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL3/SDL_opengles2.h>
@@ -118,7 +120,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
         ImGui::SameLine();
         ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
         ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
-        ImGui::Text("FPS: %.1f", io.Framerate);
+        ImGui::Text("FPS: %.1f", io.Framerate * FRAME_MULTI);
     }
     ImGui::End();
 }
@@ -710,7 +712,9 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         fsys.load_state();
     }
     if (fsys.state == FSS_play) {
-        fsys.do_frame();
+        for (u32 i = 0; i < FRAME_MULTI; i++) {
+            fsys.do_frame();
+        }
         last_frame_was_whole = true;
         //fsys.events_view_present();
         fsys.has_played_once = true;

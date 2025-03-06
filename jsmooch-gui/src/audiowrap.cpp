@@ -187,7 +187,7 @@ int audiowrap::init_wrapper(u32 in_num_channels, u32 in_sample_rate, u32 low_pas
 struct audiobuf *audiowrap::get_buf_for_emu()
 {
     if (bufs.emu.len >= MAX_AUDIO_BUFS) {
-        printf("\nOut of audio buffers for emulation!");
+        //printf("\nOut of audio buffers for emulation!");
         return nullptr;
     }
     u32 pos = (bufs.emu.head + bufs.emu.len) % MAX_AUDIO_BUFS;

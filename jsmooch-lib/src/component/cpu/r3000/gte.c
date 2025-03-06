@@ -105,13 +105,10 @@ inline static i16 i32_to_i16_saturate(struct R3000_GTE *this, struct gte_cmd *co
 
 static inline i64 i64_to_i44(struct R3000_GTE *this, u8 flag, i64 val)
 {
-    printf("\nCompare value %16llx", val);
     if (val >= (1LL << 43)) {
-        printf("\nYES TOO BIG!");
         set_flag(this, 30 - flag);
     }
     else if (val < -(1LL << 43)) {
-        printf("\nYES TOO SMALL!");
         set_flag(this, 27 - flag);
     }
 
@@ -258,7 +255,6 @@ static inline void depth_queueing(struct R3000_GTE *this, u32 pf)
 
 static void cmd_RTPS(struct R3000_GTE *this, struct gte_cmd *config)
 {
-    printf("\nRTPS!");
     u32 pf = do_RTP(this, config, 0);
     depth_queueing(this, pf);
 }
@@ -461,10 +457,8 @@ static inline void do_ncd(struct R3000_GTE *this, struct gte_cmd *config, u8 vec
 
 static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_cmd *config, enum gteMatrix mat, u8 vei, enum gteControlVector crv)
 {
-    printf("\n\nmultiply matrix");
     i32 vector_index = (i32)vei;
     if (mat == GTE_Invalid) {
-        printf("\nINVALID MATRIX!");
         this->matrices[mat][0][0] = (-((i16)this->rgb[0])) << 4;
         this->matrices[mat][0][1] = ((i16)this->rgb[0]) << 4;
         this->matrices[mat][0][2] = this->ir[0];
@@ -473,8 +467,6 @@ static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_
     }
 
     u32 far_color = crv == GTE_FarColor;
-    if (far_color) printf("\nWARN FAR COLOR BUGGY");
-    else printf("\nNO FAR COLOR!");
 
     for (u32 r = 0; r < 3; r++) {
         i64 res = ((i64)this->control_vectors[crv][r]) << 12;
@@ -530,6 +522,8 @@ static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config) {
     this->v[3][0] = this->ir[1];
     this->v[3][1] = this->ir[2];
     this->v[3][2] = this->ir[3];
+
+    printf("\nMVMVA matrix:%d far_color:%d", config->matrix, config->vector_add == GTE_FarColor);
 
     multiply_matrix_by_vector(this, config, config->matrix, config->vector_mul, config->vector_add);
 }
@@ -843,8 +837,8 @@ void GTE_write_reg(struct R3000_GTE *this, u32 reg, u32 val)
             this->xy_fifo[1][1] = (i16)(val >> 16);
             break;
         case 14:
-            this->xy_fifo[2][0] = (i16)val;
-            this->xy_fifo[2][1] = (i16)(val >> 16);
+            this->xy_fifo[2][0] = this->xy_fifo[3][0] = (i16)val;
+            this->xy_fifo[2][1] = this->xy_fifo[3][1] = (i16)(val >> 16);
             break;
         case 15:
             this->xy_fifo[0][0] = this->xy_fifo[1][0];
@@ -894,7 +888,7 @@ void GTE_write_reg(struct R3000_GTE *this, u32 reg, u32 val)
             this->lzcr = (u8)__builtin_clz(tmp);
             break;
         case 31:
-            printf("\nWrite to read-only GTE reg 31");
+            //printf("\nWrite to read-only GTE reg 31");
             break;
         case 32: // 0
             this->matrices[0][0][0] = (i16)val;
@@ -1013,7 +1007,10 @@ u32 GTE_read_reg(struct R3000_GTE *this, u32 reg)
         case 12: return (u32)(u16)this->xy_fifo[0][0] | ((u32)(u16)this->xy_fifo[0][1] << 16);
         case 13: return (u32)(u16)this->xy_fifo[1][0] | ((u32)(u16)this->xy_fifo[1][1] << 16);
         case 14: return (u32)(u16)this->xy_fifo[2][0] | ((u32)(u16)this->xy_fifo[2][1] << 16);
-        case 15: return (u32)(u16)this->xy_fifo[3][0] | ((u32)(u16)this->xy_fifo[3][1] << 16);
+        case 15: {
+            u32 v = (u32)(u16)this->xy_fifo[3][0] | ((u32)(u16)this->xy_fifo[3][1] << 16);
+            return v;
+        }
         case 16: return (u32)this->z_fifo[0];
         case 17: return (u32)this->z_fifo[1];
         case 18: return (u32)this->z_fifo[2];

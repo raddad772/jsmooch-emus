@@ -129,6 +129,27 @@ void PS1J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     */
 }
 
+static void amidog_print_console(struct PS1 *this)
+{
+    static const char args[3][15] = {"console", "auto", "release"};
+    int argLen = 2;
+    int len = 0;
+
+    for (int i = 0; i < argLen; i++) {
+        PS1_mainbus_write(this, (u32)(0x1f8e00004+i*4), 4, (u32)(0x1f800044+len));
+
+        int x;
+        unsigned long n = strlen(args[i]) + 1;
+        for (x = len; x < len + n; x++) {
+            PS1_mainbus_write(this, (u32)(0x1f800044+ x), 1, args[i][x-len]);
+        }
+
+        len = x;
+    }
+
+    PS1_mainbus_write(this, 0x1f800000, 4, argLen);
+}
+
 static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz)
 {
     struct PS1 *this = (struct PS1 *)ptr;
@@ -422,6 +443,7 @@ void PS1J_reset(JSM)
     printf("\nPS1 reset!");
     if (this->sideloaded.size > 0) {
         sideload_EXE(this, &this->sideloaded);
+        amidog_print_console(this);
     }
 }
 
