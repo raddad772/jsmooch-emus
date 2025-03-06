@@ -700,6 +700,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "psxtest_cpu.exe", nullptr); // slammin'!
             //worked = grab_ROM(&ROMs, which, "psxtest_cpx.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "psxtest_gte.exe", nullptr);
+            worked = grab_ROM(&ROMs, which, "ps1-tests-built/gte/test-all/test-all.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "redux_cpu.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "pad.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/CPUTest/CPU/ADD/CPUADD.exe", nullptr);
@@ -712,8 +713,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/RenderTextureRectangle/CLUT4BPP/RenderTextureRectangleCLUT4BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/GPU/16BPP/MemoryTransfer/MemoryTransfer16BPP.exe", nullptr);
             //worked = grab_ROM(&ROMs, which, "PSX/HelloWorld/16BPP/HelloWorld16BPP.exe", nullptr);
-            worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
-
+            //worked = grab_ROM(&ROMs, which, "PSX/GTE/GTETransfer/GTETransfer.exe", nullptr);
             break;
         case SYS_GBA:
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);

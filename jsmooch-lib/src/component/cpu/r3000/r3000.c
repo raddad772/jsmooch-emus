@@ -21,7 +21,6 @@ static const char reg_alias_arr[33][12] = {
         "unknown reg"
 };
 
-
 static struct R3000_pipeline_item *pipe_push(struct R3000_pipeline *this)
 {
     if (this->num_items == 2) return &this->empty_item;
@@ -532,10 +531,9 @@ void R3000_check_IRQ(struct R3000 *this)
 
 void R3000_cycle(struct R3000 *this, i32 howmany)
 {
-    i32 cycles_left = howmany;
+    i64 cycles_left = howmany;
+    assert(this->regs.R[0] == 0);
     while(cycles_left > 0) {
-        (*this->clock) += 2;
-
         if (this->pipe.num_items < 1)
             fetch_and_decode(this);
         struct R3000_pipeline_item *current = R3000_pipe_move_forward(&this->pipe);
@@ -557,7 +555,10 @@ void R3000_cycle(struct R3000 *this, i32 howmany)
 
         fetch_and_decode(this);
 
-        cycles_left -= 2;
+        cycles_left -= *this->waitstates;
+        (*this->clock) += *(this->waitstates);
+        (*this->waitstates) = 0;
+
         if (dbg.do_break) break;
     }
 }
@@ -596,4 +597,9 @@ u32 R3000_read_reg(struct R3000 *this, u32 addr, u32 sz)
     printf("\nUnhandled CPU read %08x (%d)", addr, sz);
     static const u32 mask[5] = {0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
     return mask[sz];
+}
+
+void R3000_idle(struct R3000 *this, u32 howlong)
+{
+    (*this->waitstates) += howlong;
 }

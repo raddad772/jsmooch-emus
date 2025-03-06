@@ -914,6 +914,7 @@ void R3000_fLWC(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rd = core->read(core->read_ptr, addr, 4, 1);
     // TODO: add the 1-cycle delay to this
     COP_write_reg(core, op->arg, rt, rd);
+    R3000_idle(core, 1);
 }
 
 void R3000_fSWC(u32 opcode, struct R3000_opcode *op, struct R3000 *core)

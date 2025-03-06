@@ -438,11 +438,14 @@ void imgui_jsmooch_app::render_console_view(bool update_dasm_scroll)
                 static ImGuiInputTextFlags flags = ImGuiInputTextFlags_ReadOnly;
                 ImGui::InputTextMultiline("##source", text, IM_ARRAYSIZE(text), ImVec2(-FLT_MIN, -FLT_MIN), flags);
 
-                ImGuiContext& g = *GImGui;
-                const char* child_window_name = NULL;
-                ImFormatStringToTempBuffer(&child_window_name, NULL, "%s/%s_%08X", g.CurrentWindow->Name, "##source", ImGui::GetID("##source"));
-                ImGuiWindow* child_window = ImGui::FindWindowByName(child_window_name);
-                ImGui::SetScrollY(child_window, child_window->ScrollMax.y);
+                if (tv->updated) {
+                    tv->updated = 0;
+                    ImGuiContext& g = *GImGui;
+                    const char* child_window_name = NULL;
+                    ImFormatStringToTempBuffer(&child_window_name, NULL, "%s/%s_%08X", g.CurrentWindow->Name, "##source", ImGui::GetID("##source"));
+                    ImGuiWindow* child_window = ImGui::FindWindowByName(child_window_name);
+                    ImGui::SetScrollY(child_window, child_window->ScrollMax.y);
+                }
             }
             ImGui::End();
         }

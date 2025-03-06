@@ -30,6 +30,7 @@ void console_view_add_char(struct console_view *this, u8 c)
         jsm_string_quickempty(cb);
     }
     jsm_string_sprintf(cb, "%c", c);
+    this->updated = 1;
 }
 
 void console_view_add_cstr(struct console_view *this, char *s)
@@ -43,6 +44,7 @@ void console_view_add_cstr(struct console_view *this, char *s)
         jsm_string_quickempty(cb);
     }
     jsm_string_sprintf(cb, "%s", s);
+    this->updated = 1;
 }
 
 void console_view_render_to_buffer(struct console_view *tv, char *output, u64 sz)

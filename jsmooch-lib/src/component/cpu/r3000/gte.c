@@ -77,12 +77,18 @@ static inline u32 saturate5s(i16 v) {
 
 inline static void set_flag(struct R3000_GTE *this, int num)
 {
+    /*static int c = 0;
+    if (num == 15)  {
+        c++;
+        if (c == 5)
+            printf("\nHEY! %d", c);
+    }*/
     this->flags |= (1 << num);
 }
 
 inline static i16 i32_to_i16_saturate(struct R3000_GTE *this, struct gte_cmd *config, u8 flag, i32 val)
 {
-    i32 min = config->clamp_negative ? 0 : -32768;
+   i32 min = config->clamp_negative ? 0 : -32768;
     i32 max = 32767;
 
     if (val > max) {
@@ -125,9 +131,9 @@ static inline i16 i32_to_i11_saturate(struct R3000_GTE *this, u8 flag, i32 val)
 
 static inline void check_mac_overflow(struct R3000_GTE *this, i64 val)
 {
-    if (val < -0x80000000) {
+    if (val < -0x80000000L) {
         set_flag(this, 15);
-    } else if (val > 0x7fffffff) {
+    } else if (val > 0x7fffffffL) {
         set_flag(this, 16);
     }
 }
@@ -249,6 +255,7 @@ static inline void depth_queueing(struct R3000_GTE *this, u32 pf)
 
 static void cmd_RTPS(struct R3000_GTE *this, struct gte_cmd *config)
 {
+    printf("\nRTPS!");
     u32 pf = do_RTP(this, config, 0);
     depth_queueing(this, pf);
 }
@@ -344,7 +351,7 @@ static void cmd_OP(struct R3000_GTE *this, struct gte_cmd *config)
 
 static void cmd_from_command(struct gte_cmd *this, u32 cmd) {
     this->shift = ((cmd & (1 << 19)) != 0) ? 12 : 0;
-    this->clamp_negative = +((cmd & (1 << 10)) != 0);
+    this->clamp_negative = (cmd >> 10) & 1;
     this->matrix = (cmd >> 17) & 3;
     this->vector_mul = (u8)((cmd >> 15) & 3);
     this->vector_add = (cmd >> 13) & 3;
@@ -354,6 +361,7 @@ void GTE_init(struct R3000_GTE *this)
 {
     memset(this, 0, sizeof(*this));
     cmd_from_command(&this->config0, 0);
+    this->config1.clamp_negative = 1;
 }
 
 static void cmd_DPCS(struct R3000_GTE *this, struct gte_cmd *config)
@@ -460,19 +468,24 @@ static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_
     }
 
     u32 far_color = crv == GTE_FarColor;
+    if (far_color) printf("\nWARN FAR COLOR BUGGY");
+    else printf("\nNO FAR COLOR!");
 
     for (u32 r = 0; r < 3; r++) {
         i64 res = ((i64)this->control_vectors[crv][r]) << 12;
-        if (far_color) res = 0;
-
         for (u32 c = 0; c < 3; c++) {
             i32 v = (i32)this->v[vector_index][c];
             i32 m = (i32)this->matrices[mat][r][c];
 
             i32 product = v * m;
 
-            if ((!far_color && (c < 1)) || (c >= 1))
+            if (far_color && (c == 0)) {
+                i32_to_i16_saturate(this, &this->config, r, (i32)((res + product) >> (i64)config->shift));
+                res = 0;
+            }
+            else {
                 res = i64_to_i44(this, (u8)r, res + (i64)product);
+            }
         }
 
         this->mac[r + 1] = (i32)(res >> config->shift);
@@ -507,8 +520,7 @@ static void do_ncc(struct R3000_GTE *this, struct gte_cmd *config, u8 vector_ind
     mac_to_rgb_fifo(this);
 }
 
-static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config)
-{
+static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config) {
     this->v[3][0] = this->ir[1];
     this->v[3][1] = this->ir[2];
     this->v[3][2] = this->ir[3];
@@ -1038,12 +1050,19 @@ u32 GTE_read_reg(struct R3000_GTE *this, u32 reg)
             return (u32)this->control_vectors[2][reg - 53];
         case 56: return (u32)this->ofx;
         case 57: return (u32)this->ofy;
-        case 58: return (u32)((i16)this->h << 16); // H reads back as signed even though unsigned
+        case 58: return (u32)(i32)(i16)this->h; // H reads back as signed even though unsigned
         case 59: return (u32)this->dqa;
         case 60: return (u32)this->dqb;
         case 61: return (u32)this->zsf3;
         case 62: return (u32)this->zsf4;
-        case 63: return this->flags;
+        case 63: {
+            this->flags &= 0x7FFFF000;
+            //30...23, 18..13
+            //   7F80FC00
+            // 0x7f87e00
+            if (this->flags & 0x7F87E000) this->flags |= 0x80000000;
+            return this->flags;
+        }
     }
     NOGOHERE;
     return 0;

@@ -184,6 +184,7 @@ enum ev_timing_kind {
 struct console_view {
     struct jsm_string buffer[2];
     char name[100];
+    u32 updated;
     u32 cur_buf;
 };
 

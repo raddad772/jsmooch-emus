@@ -32,7 +32,7 @@ struct gte_cmd {
 
 struct R3000;
 struct R3000_GTE {
-    struct gte_cmd config, config0;
+    struct gte_cmd config, config0, config1;
     u32 op_going;
     u32 op_kind; // opcode
     u64 clock_start;

@@ -117,4 +117,5 @@ void R3000_check_IRQ(struct R3000 *);
 void R3000_update_I_STAT(struct R3000 *);
 void R3000_write_reg(struct R3000 *, u32 addr, u32 sz, u32 val);
 u32 R3000_read_reg(struct R3000 *, u32 addr, u32 sz);
+void R3000_idle(struct R3000 *this, u32 howlong);
 #endif //JSMOOCH_EMUS_R3000_H
