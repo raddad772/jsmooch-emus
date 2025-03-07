@@ -382,11 +382,11 @@ static void add_to_console(struct R3000 *this, u32 ch)
     if (this->dbg.console) {
         console_view_add_char(this->dbg.console, ch);
     }
-    if (ch == '\n') {
+    /*if (ch == '\n') {
         printf("\n%s", this->console.ptr);
         jsm_string_quickempty(&this->console);
     } else
-        jsm_string_sprintf(&this->console, "%c", ch);
+        jsm_string_sprintf(&this->console, "%c", ch);*/
 }
 
 static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)

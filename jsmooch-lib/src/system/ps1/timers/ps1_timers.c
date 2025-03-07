@@ -25,6 +25,7 @@ void PS1_timers_reset(struct PS1 *this)
         deschedule(this, t);
         t->start.cycle = 0;
         t->start.value = 0;
+        t->running = 1;
     }
 }
 
@@ -127,6 +128,7 @@ static u32 read_timer_clk(struct PS1_TIMERS *t, u64 clk)
 static u64 get_clock_source(struct PS1 *this, u32 timer_num)
 {
     struct PS1_TIMERS *t = &this->timers[timer_num];
+    printf("\nTimer %d on system clock: %d. master count:%lld", timer_num, t->on_system_clock, this->clock.master_cycle_count);
     if (t->on_system_clock) return this->clock.master_cycle_count;
     switch(timer_num) {
         case 0:
@@ -142,7 +144,9 @@ static u64 get_clock_source(struct PS1 *this, u32 timer_num)
 
 static u32 read_timer(struct PS1 *this, u32 timer_num) {
     struct PS1_TIMERS *t = &this->timers[timer_num];
-    return read_timer_clk(t, get_clock_source(this, timer_num));
+    u32 v = read_timer_clk(t, get_clock_source(this, timer_num));
+    printf("\nREAD timer %d: %04x", timer_num, v);
+    return v;
 }
 
 static void timer_irq_down(void *ptr, u64 key, u64 clock, u32 jitter)

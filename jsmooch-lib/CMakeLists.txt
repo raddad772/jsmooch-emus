@@ -409,6 +409,8 @@ add_library(jsmooch-lib
         src/system/ps1/timers/ps1_timers.h
         src/system/ps1/ps1_clock.c
         src/system/ps1/ps1_clock.h
+        src/system/ps1/cdrom/ps1_cdrom.c
+        src/system/ps1/cdrom/ps1_cdrom.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

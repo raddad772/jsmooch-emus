@@ -476,13 +476,10 @@ static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_
 
             i32 product = v * m;
 
+            res = i64_to_i44(this, (u8)r, res + (i64)product);
             if (far_color && (c == 0)) {
-                i64_to_i44(this, (u8)r, res + (i64)product);
-                i32_to_i16_saturate(this, &this->config, r, (i32)((res + product) >> (i64)config->shift));
+                i32_to_i16_saturate(this, &this->config, r, (i32)(res >> config->shift));
                 res = 0;
-            }
-            else {
-                res = i64_to_i44(this, (u8)r, res + (i64)product);
             }
         }
 
@@ -522,8 +519,6 @@ static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config) {
     this->v[3][0] = this->ir[1];
     this->v[3][1] = this->ir[2];
     this->v[3][2] = this->ir[3];
-
-    printf("\nMVMVA matrix:%d far_color:%d==3?", config->matrix, config->vector_add);
 
     multiply_matrix_by_vector(this, config, config->matrix, config->vector_mul, config->vector_add);
 }

@@ -9,6 +9,8 @@
 #include "helpers/multisize_memaccess.c"
 
 #define deKSEG(addr) ((addr) & 0x1FFFFFFF)
+#define DEFAULT_WAITSTATES 1
+
 
 void PS1_bus_init(struct PS1 *this)
 {
@@ -31,7 +33,7 @@ static const u32 alignmask[5] = { 0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC };
 u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
 {
     struct PS1* this = (struct PS1*)ptr;
-    this->clock.waitstates += 2;
+    this->clock.waitstates += DEFAULT_WAITSTATES;
 
     addr = deKSEG(addr) & alignmask[sz];
     // 2MB MRAM mirrored 4 times
@@ -109,7 +111,7 @@ u32 PS1_mainbus_read(void *ptr, u32 addr, u32 sz, u32 has_effect)
 void PS1_mainbus_write(void *ptr, u32 addr, u32 sz, u32 val)
 {
     struct PS1* this = (struct PS1*)ptr;
-    this->clock.waitstates += 2;
+    this->clock.waitstates += DEFAULT_WAITSTATES;
     if (this->mem.cache_isolated) return;
     addr = deKSEG(addr) & alignmask[sz];
     /*if (addr == 0) {

@@ -442,7 +442,7 @@ void PS1J_reset(JSM)
     printf("\nPS1 reset!");
     if (this->sideloaded.size > 0) {
         sideload_EXE(this, &this->sideloaded);
-        amidog_print_console(this);
+        //amidog_print_console(this);
     }
 }
 
