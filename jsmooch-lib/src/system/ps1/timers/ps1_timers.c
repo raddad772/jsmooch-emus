@@ -128,7 +128,7 @@ static u32 read_timer_clk(struct PS1_TIMERS *t, u64 clk)
 static u64 get_clock_source(struct PS1 *this, u32 timer_num)
 {
     struct PS1_TIMERS *t = &this->timers[timer_num];
-    printf("\nTimer %d on system clock: %d. master count:%lld", timer_num, t->on_system_clock, this->clock.master_cycle_count);
+    if (timer_num == 1) printf("\nTimer %d on system clock: %d. master count:%lld", timer_num, t->on_system_clock, this->clock.master_cycle_count);
     if (t->on_system_clock) return this->clock.master_cycle_count;
     switch(timer_num) {
         case 0:
@@ -145,7 +145,7 @@ static u64 get_clock_source(struct PS1 *this, u32 timer_num)
 static u32 read_timer(struct PS1 *this, u32 timer_num) {
     struct PS1_TIMERS *t = &this->timers[timer_num];
     u32 v = read_timer_clk(t, get_clock_source(this, timer_num));
-    printf("\nREAD timer %d: %04x", timer_num, v);
+    if (timer_num == 1) printf("\nREAD timer %d: %04x", timer_num, v);
     return v;
 }
 
@@ -182,6 +182,7 @@ static void update_irqs(struct PS1 *this)
 u32 PS1_timers_read(struct PS1 *this, u32 addr, u32 sz)
 {
     u32 timer_num = (addr >> 4) & 3;
+    printf("\nREAD FROM %08x: %d", addr, timer_num);
     switch(addr & 0x1FFFFFCF) {
         case 0x1F801100: // current counter value
             return read_timer(this, timer_num) & 0xFFFF;
@@ -447,7 +448,7 @@ static void write_mode(struct PS1 *this, u32 timer_num, u32 val, u32 sz)
 void PS1_timers_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
 {
     u32 timer_num = (addr >> 4) & 3;
-    switch(addr & 0x1FFFFFEF) {
+    switch(addr & 0x1FFFFFCF) {
         case 0x1F801100: // current counter value
             write_timer(this, timer_num, val, sz);
             return;
