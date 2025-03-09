@@ -113,7 +113,7 @@ u32 NDS_cart_read_rom(struct NDS *this, u32 addr, u32 sz)
     this->cart.io.romctrl.data_ready = 0;
 
     if (this->cart.cmd.pos_out == this->cart.cmd.sz_out) {
-        dbgloglog(NDS_CAT_CART_READ_COMPLETE, DBGLS_INFO, "Finish read of %d words", this->cart.cmd.sz_out);
+        if (this->cart.cmd.data_in[0] == 0xB7) dbgloglog(NDS_CAT_CART_READ_COMPLETE, DBGLS_INFO, "Finish read of %d words %d %d", this->cart.cmd.sz_out, this->cart.cmd.pos_out, this->cart.cmd.sz_out);
         this->cart.io.romctrl.busy = 0;
         this->cart.cmd.pos_out = 0;
         this->cart.cmd.sz_out = 0;
@@ -163,8 +163,6 @@ static void handle_cmd(struct NDS *this)
     this->cart.cmd.pos_out = 0;
     this->cart.cmd.sz_out = 0;
     this->cart.io.romctrl.data_ready = 0;
-
-    //u32 data_block_size = this->cart.io.romctrl.data_block_size;
 
     this->cart.cmd.sz_out = get_block_size(this);
     switch(this->cart.cmd.data_in[0]) {
