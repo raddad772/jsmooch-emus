@@ -6,10 +6,21 @@
 
 void NDS_clock_init(struct NDS_clock *this)
 {
-    this->scanline_start_cycle = this->scanline_start_cycle_next = 0;
+    this->ppu.scanline_start = 0;
     this->master_cycle_count7 = 0;
     this->master_cycle_count9 = 0;
+
+    this->timing.arm7.hz = 33000000;
+    this->timing.frame.per_second = 60;
+    this->timing.frame.cycles = (u64)((float)this->timing.arm7.hz / this->timing.frame.per_second);
+    this->timing.scanline.number = 263;
+    this->timing.scanline.cycles_total = this->timing.frame.cycles / this->timing.scanline.number;
+    this->timing.scanline.cycle_of_hblank = this->timing.scanline.cycles_total - 594;
+
+    this->timing.frame.vblank_up_on = 192;
+    this->timing.frame.vblank_down_on = 262;
 }
 
 void NDS_clock_reset(struct NDS_clock *this)
-{}
+{
+}

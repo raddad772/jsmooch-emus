@@ -8,8 +8,8 @@
 #include "helpers/int.h"
 
 struct NDS_clock {
-    u64 scanline_start_cycle, scanline_start_cycle_next;
-    u64 frame_start_cycle, frame_start_cycle_next;
+    u64 frame_start_cycle;
+    i64 cycles_left_this_frame;
     u64 master_cycle_count7;
     u64 master_cycle_count9;
     u64 master_frame;
@@ -22,6 +22,26 @@ struct NDS_clock {
         u64 scanline_start;
         u32 hblank_active, vblank_active;
     } ppu;
+
+    struct {
+        struct {
+            u64 hz;
+        } arm7;
+
+        struct {
+            u64 cycles;
+            float per_second;
+
+            u64 vblank_down_on;
+            u64 vblank_up_on;
+        } frame;
+
+        struct {
+            u64 cycles_total;
+            u64 cycle_of_hblank;
+            u64 number;
+        } scanline;
+    } timing;
 };
 
 

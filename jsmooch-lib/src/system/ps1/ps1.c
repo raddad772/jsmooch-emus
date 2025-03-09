@@ -93,7 +93,7 @@ static void schedule_frame(struct PS1 *this, u64 start_clock, u32 is_first)
         scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &hblank, NULL);
     }
 
-    u64 id = scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
+    scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
 }
 
 

@@ -92,71 +92,6 @@ static u32 read_oam(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
     return cR[sz](eng->mem.oam, addr & 0x3FF);
 }
 
-static void hblank(struct NDS *this, u32 val)
-{
-    this->clock.ppu.hblank_active = 1;
-    if (val == 0) { // beginning of scanline
-        if ((this->ppu.io.vcount_at7 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable7) NDS_update_IF7(this, NDS_IRQ_VMATCH);
-        if ((this->ppu.io.vcount_at9 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VMATCH);
-    }
-    else {
-        if (this->ppu.io.hblank_irq_enable7) NDS_update_IF7(this, NDS_IRQ_HBLANK);
-        if (this->ppu.io.hblank_irq_enable9) NDS_update_IF9(this, NDS_IRQ_HBLANK);
-    }
-}
-
-void NDS_PPU_start_scanline(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanline start
-{
-    //printf("\n--start_scanline");
-    struct NDS *this = (struct NDS *)ptr;
-    if (this->dbg.events.view.vec) {
-        debugger_report_line(this->dbg.interface, this->clock.ppu.y);
-    }
-    hblank(this, 0);
-    this->clock.ppu.scanline_start = this->clock.master_cycle_count7;
-    struct NDS_PPU_bg *bg;
-
-    if (this->clock.ppu.y == 0) { // Reset some mosaic counter
-        for (u32 pn = 0; pn < 2; pn++) {
-            struct NDSENG2D *p = &this->ppu.eng2d[pn];
-            for (u32 i = 0; i < 4; i++) {
-                bg = &p->bg[i];
-                bg->mosaic_y = 0;
-                bg->last_y_rendered = 159;
-            }
-            this->ppu.mosaic.bg.y_counter = 0;
-            this->ppu.mosaic.bg.y_current = 0;
-            this->ppu.mosaic.obj.y_counter = 0;
-            this->ppu.mosaic.obj.y_current = 0;
-
-            for (u32 bgnum = 0; bgnum < 4; bgnum++) {
-                for (u32 line = 0; line < 1024; line++) {
-                    memset(&this->dbg_info.bg_scrolls[bgnum].lines[0], 0, 1024 * 128);
-                }
-            }
-        }
-    }
-    if (this->clock.ppu.y < 192) {
-        /*struct NDS_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
-        for (u32 i = 2; i < 4; i++) {
-            bg = &this->ppu.bg[i];
-            struct NDS_DBG_line_bg *dbgbg = &dbgl->bg[i];
-            if ((this->clock.ppu.y == 0) || bg->x_written) {
-                bg->x_lerp = bg->x;
-                dbgbg->reset_x = 1;
-            }
-            dbgbg->x_lerp = bg->x_lerp;
-
-            if ((this->clock.ppu.y == 0) || (bg->y_written)) {
-                bg->y_lerp = bg->y;
-                dbgbg->reset_y = 1;
-            }
-            dbgbg->y_lerp = bg->y_lerp;
-            bg->x_written = bg->y_written = 0;
-        }*/
-    }
-}
-
 #define OUT_WIDTH 256
 
 static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
@@ -999,63 +934,87 @@ static void draw_line(struct NDS *this, u32 eng_num)
     }
 }
 
+static void new_frame(struct NDS *this);
+
 void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hblank time
 {
-    //printf("\n--hblank");
     struct NDS *this = (struct NDS *)ptr;
-    // Now draw line!
-    if (this->clock.ppu.y < 192) {
-        draw_line(this, 0);
-        draw_line(this, 1);
+    this->clock.ppu.hblank_active = key;
+    if (key == 0) { // end hblank...new line!
+        this->clock.ppu.scanline_start = clock - jitter;
+
+        this->clock.ppu.y++;
+        //printf("\nhblank %lld: line %d  cyc:%lld", key, this->clock.ppu.y, this->clock.master_cycle_count7);
+
+        if (this->clock.ppu.y >= 263) {
+            new_frame(this);
+        }
+
+        if (this->dbg.events.view.vec) {
+            debugger_report_line(this->dbg.interface, this->clock.ppu.y);
+        }
+
+        if ((this->ppu.io.vcount_at7 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable7) NDS_update_IF7(this, NDS_IRQ_VMATCH);
+        if ((this->ppu.io.vcount_at9 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VMATCH);
     }
     else {
-        calculate_windows_vflags(this, &this->ppu.eng2d[0]);
-        calculate_windows_vflags(this, &this->ppu.eng2d[1]);
-    }
-    hblank(this, 1);
-    
-    NDS_check_dma9_at_hblank(this);
-}
-
-static void vblank(struct NDS *this, u32 val)
-{
-    this->clock.ppu.vblank_active = val;
-    if (val) {
-        if (this->ppu.io.vblank_irq_enable7) NDS_update_IF7(this, NDS_IRQ_VBLANK);
-        if (this->ppu.io.vblank_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VBLANK);
+        // Now draw line!
+        if (this->clock.ppu.y < 192) {
+            draw_line(this, 0);
+            draw_line(this, 1);
+        } else {
+            calculate_windows_vflags(this, &this->ppu.eng2d[0]);
+            calculate_windows_vflags(this, &this->ppu.eng2d[1]);
+        }
+        if (this->ppu.io.hblank_irq_enable7) NDS_update_IF7(this, NDS_IRQ_HBLANK);
+        if (this->ppu.io.hblank_irq_enable9) NDS_update_IF9(this, NDS_IRQ_HBLANK);
+        NDS_check_dma9_at_hblank(this);
     }
 }
 
 #define MASTER_CYCLES_PER_FRAME 570716
-static void new_frame(struct NDS *this)
-{
+static void new_frame(struct NDS *this) {
     //printf("\n--new frame");
     //debugger_report_frame(this->dbg.interface);
     this->clock.ppu.y = 0;
     this->clock.frame_start_cycle = NDS_clock_current7(this);
-    this->clock.frame_start_cycle_next = this->clock.frame_start_cycle + MASTER_CYCLES_PER_FRAME;
-    this->ppu.cur_output = ((u16 *)this->ppu.display->output[this->ppu.display->last_written ^ 1]);
+    this->ppu.cur_output = ((u16 *) this->ppu.display->output[this->ppu.display->last_written ^ 1]);
     this->ppu.display->last_written ^= 1;
     this->clock.master_frame++;
-    vblank(this, 0);
+    struct NDS_PPU_bg *bg;
+
+    for (u32 pn = 0; pn < 2; pn++) {
+        struct NDSENG2D *p = &this->ppu.eng2d[pn];
+        for (u32 i = 0; i < 4; i++) {
+            bg = &p->bg[i];
+            bg->mosaic_y = 0;
+            bg->last_y_rendered = 191;
+        }
+        this->ppu.mosaic.bg.y_counter = 0;
+        this->ppu.mosaic.bg.y_current = 0;
+        this->ppu.mosaic.obj.y_counter = 0;
+        this->ppu.mosaic.obj.y_current = 0;
+
+        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+            for (u32 line = 0; line < 1024; line++) {
+                memset(&this->dbg_info.bg_scrolls[bgnum].lines[0], 0, 1024 * 128);
+            }
+        }
+    }
 }
 
-void NDS_PPU_finish_scanline(void *ptr, u64 key, u64 clock, u32 jitter) // Called on scanline end, to render and do housekeeping
+
+void NDS_PPU_vblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct NDS *this = (struct NDS *)ptr;
-    //printf("\n--finish_scanline %d", this->clock.ppu.y);
-    NDS_schedule_more(ptr, key, clock, jitter);
-    this->clock.ppu.hblank_active = 0;
-    this->clock.ppu.y++;
+    //printf("\nvblank %lld: line %d cyc:%lld", key, this->clock.ppu.y, NDS_clock_current7(this));
 
-    if (this->clock.ppu.y == 192) {
-        vblank(this, 1);
+    this->clock.ppu.vblank_active = key;
+    if (key) {
+        if (this->ppu.io.vblank_irq_enable7) NDS_update_IF7(this, NDS_IRQ_VBLANK);
+        if (this->ppu.io.vblank_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VBLANK);
         NDS_check_dma7_at_vblank(this);
         NDS_check_dma9_at_vblank(this);
-    }
-    if (this->clock.ppu.y == 263) {
-        this->clock.ppu.vblank_active = 0;
-        new_frame(this);
     }
 }
 

@@ -36,13 +36,6 @@ static u32 NDSJ_step_master(JSM, u32 howmany);
 static void NDSJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void NDSJ_describe_io(JSM, struct cvec* IOs);
 
-
-// in ARM7 (33MHz) cycles.
-#define MASTER_CYCLES_PER_SCANLINE 2132
-#define HBLANK_CYCLES 594
-#define MASTER_CYCLES_BEFORE_HBLANK 1538
-#define MASTER_CYCLES_PER_FRAME 570716
-
 enum NDS_frame_events {
     evt_EMPTY=0,
     evt_SCANLINE_START,
@@ -80,7 +73,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.cycle_stride = ((float)(33000000 / 60) / (float)dw->samples_requested);
     dw->user.buf_pos = 0;
 }
 
@@ -118,16 +111,51 @@ static u32 read_trace_cpu7(void *ptr, u32 addr, u32 sz) {
     return NDS_mainbus_read7(this, addr, sz, 0, 0);
 }
 
+static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first);
+
+static void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
+{
+    struct NDS *this = (struct NDS *)bound_ptr;
+    schedule_frame(this, current_clock-jitter, 0);
+}
+
+static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
+{
+    //printf("\nSCHEDULE FRAME START AT CYCLE %lld CUR:%lld LINE CYCLES:%lld LINE:%d!", start_clock, NDS_clock_current7(this), this->clock.timing.scanline.cycles_total, this->clock.ppu.y);
+    // Schedule out a frame!
+    i64 cur_clock = start_clock;
+    this->clock.cycles_left_this_frame += this->clock.timing.frame.cycles;
+
+    //this->clock.cycles_left_this_frame += this->clock.timing.frame.cycles;
+
+    // x lines of end hblank, start hblank
+    // somewhere in there, start vblank
+    for (u32 line = 0; line < 263; line++) {
+        // vblank start
+        if (line == this->clock.timing.frame.vblank_up_on) {
+            scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &NDS_PPU_vblank, NULL);
+        }
+        // vblank end
+        if (line == this->clock.timing.frame.vblank_down_on) {
+            scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &NDS_PPU_vblank, NULL);
+        }
+
+        // hblank down...
+        scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &NDS_PPU_hblank, NULL);
+        // hblank up...
+        scheduler_only_add_abs(&this->scheduler, cur_clock+this->clock.timing.scanline.cycle_of_hblank, 1, this, NDS_PPU_hblank, NULL);
+
+        // Advance clock
+        cur_clock += this->clock.timing.scanline.cycles_total;
+    }
+
+    //printf("\nSCHEDULE NEW FRAME SET FOR CYCLE %lld", start_clock+this->clock.timing.frame.cycles);
+    scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
+}
+
 void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct NDS *this = (struct NDS*)ptr;
-    //printf("\n--schedule more. line:%d cycles left:%lld", this->clock.ppu.y, this->scheduler.cycles_left_to_run);
-    this->clock.scanline_start_cycle = this->clock.scanline_start_cycle_next;
-    this->clock.scanline_start_cycle_next = NDS_clock_current7(this) + MASTER_CYCLES_PER_SCANLINE;
-
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle, evt_SCANLINE_START, this, &NDS_PPU_start_scanline, NULL);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_BEFORE_HBLANK, evt_HBLANK_IN, this, &NDS_PPU_hblank, NULL);
-    scheduler_add_or_run_abs(&this->scheduler, this->clock.scanline_start_cycle + MASTER_CYCLES_PER_SCANLINE, evt_SCANLINE_END, this, &NDS_PPU_finish_scanline, NULL);
+    assert(1==0);
 }
 
 static i64 run_arm7(struct NDS *this, i64 num_cycles)
@@ -229,8 +257,8 @@ void NDS_new(struct jsm_system *jsm)
     this->arm9.fetch_ptr = this;
     this->arm9.fetch_ins = &NDS_mainbus_fetchins9;
 
-    NDS_bus_init(this);
     NDS_clock_init(&this->clock);
+    NDS_bus_init(this);
     NDS_cart_init(this);
     NDS_PPU_init(this);
     //NDS_APU_init(this);
@@ -296,15 +324,12 @@ u32 NDSJ_finish_frame(JSM)
 {
     JTHIS;
 
-    u64 frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
-    if (frame_cycle >= MASTER_CYCLES_PER_FRAME) {
-        this->clock.frame_start_cycle = this->clock.frame_start_cycle_next;
-        this->clock.frame_start_cycle_next += MASTER_CYCLES_PER_FRAME;
-        frame_cycle = NDS_clock_current7(this) - this->clock.frame_start_cycle;
-    }
-    assert(frame_cycle < (MASTER_CYCLES_PER_FRAME + 100));
-    NDSJ_step_master(jsm, MASTER_CYCLES_PER_FRAME - frame_cycle);
-    return this->ppu.display->last_written;
+    u64 old_clock = NDS_clock_current7(this);
+    scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
+    u64 diff = NDS_clock_current7(this) - old_clock;
+    this->clock.cycles_left_this_frame -= (i64)diff;
+    return 0;
+
 }
 
 void NDSJ_play(JSM)
@@ -439,8 +464,9 @@ void NDSJ_reset(JSM)
     this->clock.master_cycle_count7 = 0;
     this->clock.master_cycle_count9 = 0;
 
-    NDS_schedule_more(this, 0, 0, 0);
-    this->clock.frame_start_cycle_next = MASTER_CYCLES_PER_FRAME;
+    scheduler_clear(&this->scheduler);
+    this->clock.cycles_left_this_frame = 0;
+    schedule_frame(this, 0, 1); // Schedule first frame
     printf("\nNDS reset complete!");
 }
 
@@ -491,21 +517,23 @@ u32 NDSJ_finish_scanline(JSM)
 {
     JTHIS;
 
-    u64 scanline_cycle = NDS_clock_current7(this) - this->clock.scanline_start_cycle;
-    assert(scanline_cycle < MASTER_CYCLES_PER_SCANLINE);
-    NDSJ_step_master(jsm, MASTER_CYCLES_PER_SCANLINE - scanline_cycle);
+    u64 scanline_cycle = NDS_clock_current7(this) - this->clock.ppu.scanline_start;
+    assert(scanline_cycle < this->clock.timing.scanline.cycles_total);
+
+    u64 old_clock = NDS_clock_current7(this);
+
+
+    NDSJ_step_master(jsm, this->clock.timing.scanline.cycles_total - scanline_cycle);
+    u64 diff = NDS_clock_current7(this) - old_clock;
+    this->clock.cycles_left_this_frame -= diff;
     return this->ppu.display->last_written;
 }
 
 static u32 NDSJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    u64 before_frame = this->clock.master_frame;
     scheduler_run_for_cycles(&this->scheduler, howmany);
-    u64 after_frame = this->clock.master_frame;
-    //printf("\nStep begun on frame:%lld ended on frame:%lld", before_frame, after_frame);
-
-    return 0;
+    return this->ppu.display->last_written;
 }
 
 static void NDSJ_load_BIOS(JSM, struct multi_file_set* mfs)
