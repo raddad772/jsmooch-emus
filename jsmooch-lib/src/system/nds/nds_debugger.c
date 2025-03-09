@@ -1167,6 +1167,32 @@ static void setup_cpu_trace(struct debugger_interface *dbgr, struct NDS *this)
     this->arm9.dbg.tvptr = tv;
 }
 
+static void setup_dbglog(struct debugger_interface *dbgr, struct NDS *this)
+{
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
+    struct debugger_view *dview = cpg(p);
+    struct dbglog_view *dv = &dview->dbglog;
+    snprintf(dv->name, sizeof(dv->name), "Trace");
+    dv->has_extra = 1;
+
+    struct dbglog_category_node *root = dbglog_category_get_root(dv);
+    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", NULL, 0, 0);
+    dbglog_category_add_node(dv, arm7, "Instruction Trace", "ARM7", NDS_CAT_ARM7_INSTRUCTION, 0x80FF80);
+    this->arm7.trace.dbglog.view = dv;
+    this->arm7.trace.dbglog.id = NDS_CAT_ARM7_INSTRUCTION;
+
+    struct dbglog_category_node *arm9 = dbglog_category_add_node(dv, root, "ARM946ES", NULL, 0, 0);
+    dbglog_category_add_node(dv, arm9, "Instruction Trace", "ARM9", NDS_CAT_ARM9_INSTRUCTION, 0x8080FF);
+    this->arm9.dbg.dvptr = dv;
+    this->arm9.dbg.dv_id = NDS_CAT_ARM9_INSTRUCTION;
+
+    struct dbglog_category_node *ppu = dbglog_category_add_node(dv, root, "PPU", NULL, 0, 0);
+    dbglog_category_add_node(dv, ppu, "Register Writes", "PPU.regw", NDS_CAT_PPU_REG_WRITE, 0xFFFFFF);
+    dbglog_category_add_node(dv, ppu, "BG mode changes", "PPU.BG+", NDS_CAT_PPU_BG_MODE, 0xFFFFFF);
+    dbglog_category_add_node(dv, ppu, "Misc.", "PPU.misc", NDS_CAT_PPU_MISC, 0xFFFFFF);
+}
+
+
 void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
@@ -1174,7 +1200,8 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
     setup_image_view_palettes(this, dbgr);
-    setup_cpu_trace(dbgr, this);
+    //setup_cpu_trace(dbgr, this);
+    setup_dbglog(dbgr, this);
 }
 /*
     //setup_ARM7TDMI_disassembly(dbgr, this);

@@ -16,6 +16,8 @@ extern "C" {
 #include "helpers/buf.h"
 #include "helpers/jsm_string.h"
 
+#define MAX_DBGLOG_IDS 200
+#define MAX_DBGLOG_LINES 1000
 
 #define TRACEC_WHITE 0
 #define TRACEC_DEFAULT TRACEC_WHITE
@@ -29,7 +31,8 @@ enum debugger_view_kinds {
     dview_image,
     dview_waveforms,
     dview_trace,
-    dview_console
+    dview_console,
+    dview_dbglog
 };
 
 
@@ -186,6 +189,50 @@ struct console_view {
     char name[100];
     u32 updated;
     u32 cur_buf;
+};
+
+enum dbglog_severity {
+    DBGLS_FATAL,
+    DBGLS_ERROR,
+    DBGLS_WARN,
+    DBGLS_INFO,
+    DBGLS_DEBUG,
+    DBGLS_TRACE
+};
+
+struct dbglog_entry {
+    u32 category_id;
+    u64 timecode;
+    enum dbglog_severity severity;
+    struct jsm_string text, extra;
+};
+
+struct dbglog_category_node {
+    char name[100];
+    char short_name[20];
+    u32 category_id;
+    u32 enabled;
+
+    struct cvec children;
+};
+
+struct dbglog_view {
+    char name[100];
+
+    u32 ids_enabled[MAX_DBGLOG_IDS];
+    struct dbglog_category_node *id_to_category[MAX_DBGLOG_IDS];
+    u32 id_to_color[MAX_DBGLOG_IDS];
+    u32 updated;
+    u32 has_extra;
+
+    struct {
+        struct dbglog_entry data[MAX_DBGLOG_LINES];
+        u32 first_entry, next_entry, len;
+    } items;
+
+    struct dbglog_entry *last_added;
+
+    struct dbglog_category_node category_root;
 };
 
 struct events_view {
@@ -355,6 +402,7 @@ struct debugger_view {
         struct waveform_view waveform;
         struct trace_view trace;
         struct console_view console;
+        struct dbglog_view dbglog;
     };
 };
 
@@ -416,6 +464,16 @@ void events_view_report_line(struct events_view *, i32 line_num);
 void console_view_add_char(struct console_view *, u8 c);
 void console_view_add_cstr(struct console_view *, char *s);
 void console_view_render_to_buffer(struct console_view *tv, char *output, u64 sz);
+
+struct dbglog_category_node *dbglog_category_get_root(struct dbglog_view *);
+struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, struct dbglog_category_node *, const char *name, const char *short_name, u32 id, u32 color);
+void dbglog_view_add_item(struct dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *txt);
+void dbglog_view_add_printf(struct dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *format, ...);
+void dbglog_view_extra_printf(struct dbglog_view *, const char *format, ...);
+void dbglog_view_render_to_buffer(struct dbglog_view *, char *output, u64 sz);
+u32 dbglog_count_visible_lines(struct dbglog_view *);
+u32 dbglog_get_nth_visible(struct dbglog_view *, u32 n);
+u32 dbglog_get_next_visible(struct dbglog_view *, u32 start);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)

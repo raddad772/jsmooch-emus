@@ -97,6 +97,12 @@ public:
     struct my_texture texture;
 };
 
+class DLVIEW {
+public:
+    bool enabled{};
+    struct debugger_view *view{};
+};
+
 class DVIEW {
 public:
     struct debugger_view *view{};
@@ -176,6 +182,7 @@ public:
     } events;
 
     std::vector<IVIEW> images;
+    std::vector<DLVIEW> dlviews;
 
     [[nodiscard]] ImVec2 output_size() const;
     [[nodiscard]] ImVec2 output_uv0() const;
@@ -211,6 +218,7 @@ private:
     void setup_display();
     void setup_debugger_interface();
     void add_trace_view(u32);
+    void add_dbglog_view(u32);
     void add_console_view(u32);
     void add_disassembly_view(u32);
     void add_image_view(u32);

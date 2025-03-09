@@ -411,6 +411,10 @@ add_library(jsmooch-lib
         src/system/ps1/ps1_clock.h
         src/system/ps1/cdrom/ps1_cdrom.c
         src/system/ps1/cdrom/ps1_cdrom.h
+        src/system/nds/nds_ge.c
+        src/system/nds/nds_ge.h
+        src/helpers/debugger/dbglog.c
+        src/helpers/debugger/dbglog.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

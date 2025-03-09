@@ -128,6 +128,11 @@ struct ARM7TDMI {
         u64 *cycles;
         u32 ins_PC;
         i32 source_id;
+
+        struct {
+            struct dbglog_view *view;
+            u32 id;
+        } dbglog;
     } trace;
 
 

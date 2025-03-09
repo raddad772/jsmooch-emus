@@ -13,7 +13,7 @@
 
 #include "imgui_internal.h"
 #include <SDL3/SDL.h>
-#define FRAME_MULTI 10
+#define FRAME_MULTI 1
 
 #ifdef JSM_OPENGL
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -28,7 +28,7 @@
 #endif // jsm_opengl
 
 #ifdef JSM_WEBGPU
-#include <stdio.h>
+#include <cstdio>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -128,6 +128,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
 #define EVENT_VIEWER_DEFAULT_ENABLE 0
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
+#define DBGLOG_VIEW_DEFAULT_ENABLE 1
 #define SOUND_VIEW_DEFAULT_ENABLE 0
 #define TRACE_VIEW_DEFAULT_ENABLE 0
 #define CONSOLE_VIEW_DEFAULT_ENABLE 1
@@ -167,6 +168,130 @@ void imgui_jsmooch_app::render_event_view()
         ImGui::End(); // end window
     }
 }
+
+static bool rn_checkboxes[5000];
+
+static void render_node(struct dbglog_view *view, struct dbglog_category_node *node, u32 *id_ptr) {
+    // If we're a leaf...
+    u32 id = (*id_ptr)++;
+    u32 id2 = 0;
+
+    if (cvec_len(&node->children) == 0) {
+        // We are a leaf
+        rn_checkboxes[id] = node->enabled;
+        ImGui::Checkbox(node->name, &rn_checkboxes[id]);
+        node->enabled = rn_checkboxes[id];
+        view->ids_enabled[node->category_id] = rn_checkboxes[id];
+    } else {
+        // We are a further branch
+        ImGui::SetNextItemOpen(true);
+        ImGui::PushID(id);
+        if (ImGui::TreeNodeEx(node->name)) {
+            for (u32 i = 0; i < cvec_len(&node->children); i++) {
+                struct dbglog_category_node *e = (struct dbglog_category_node *) cvec_get(&node->children, i);
+                render_node(view, e, id_ptr);
+            }
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+}
+
+static ImVec4 get_iv4(u32 color)
+{
+    return {float((color >> 16) & 0xFF) / 255.0f,
+                  float((color >> 8) & 0xFF) / 255.0f,
+                  float((color) & 0xFF) / 255.0f,
+                  1.0f};
+}
+
+void imgui_jsmooch_app::render_dbglog_view(struct DLVIEW &dview, bool update_dasm_scroll) {
+    // 2 views
+    char wname[100];
+    struct debugger_view *mydv = dview.view;
+    struct dbglog_view *dlv = &mydv->dbglog;
+    snprintf(wname, sizeof(wname), "%s (visibility tree)", dlv->name);
+    if (ImGui::Begin(wname)) {
+        // Now do a tree of checkboxes!!!
+        u32 bid = 0;
+        struct dbglog_category_node *root = dbglog_category_get_root(dlv);
+        for (u32 i = 0; i < cvec_len(&root->children); i++) {
+            struct dbglog_category_node *c = (struct dbglog_category_node *) cvec_get(&root->children, i);
+            render_node(dlv, c, &bid);
+        }
+    }
+    ImGui::End();
+
+    snprintf(wname, sizeof(wname), "%s", dlv->name);
+    static char text[8 * 1024 * 1024];
+    static int first = 1;
+    if (first) {
+        first = 0;
+        memset(text, 0, 10);
+    }
+    if (ImGui::Begin(wname)) {
+        static ImGuiTableFlags flags =
+                ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
+                ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+        if (ImGui::BeginTable("tabley_table", dlv->has_extra ? 4 : 3, flags)) {
+            ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+            ImGui::TableSetupColumn("Kind", ImGuiTableColumnFlags_None, 1);
+            ImGui::TableSetupColumn("Timecode", ImGuiTableColumnFlags_None, 1);
+            ImGui::TableSetupColumn("Entry", ImGuiTableColumnFlags_None, 5);
+            if (dlv->has_extra)
+                ImGui::TableSetupColumn("Extra", ImGuiTableColumnFlags_None, 5);
+
+            ImGui::TableHeadersRow();
+
+            ImGuiListClipper clipper;
+            u32 num_items = dbglog_count_visible_lines(dlv);
+
+            /*if (dlv->updated) {
+                dlv->updated = 0;
+                float scrl = clipper.ItemsHeight * num_items;
+                float cur_scroll = ImGui::GetScrollY();
+                printf("\nUPDATED! cur_scroll:%f scrl:%f IH:%f", cur_scroll, scrl, clipper.ItemsHeight * 8);
+                //if ((cur_scroll > scrl) || (scrl < (cur_scroll + (clipper.ItemsHeight * 8))))
+                    ImGui::SetScrollY(10);
+            }*/
+
+            clipper.Begin(num_items);
+            while (clipper.Step()) {
+                u32 idx = dbglog_get_nth_visible(dlv, clipper.DisplayStart);
+                for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                    ImGui::TableNextRow();
+
+                    ImGui::TableSetColumnIndex(0);
+                    struct dbglog_entry *e = &dlv->items.data[idx];
+
+                    ImGui::TextColored(get_iv4(dlv->id_to_color[e->category_id]), "%s", dlv->id_to_category[e->category_id]->short_name);
+
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("%lld", e->timecode);
+
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::TextColored(get_iv4(dlv->id_to_color[e->category_id]), "%s", e->text.ptr);
+
+                    if (dlv->has_extra) {
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::TextColored(get_iv4(dlv->id_to_color[e->category_id]), "%s", e->extra.ptr);
+                    }
+                    idx = dbglog_get_next_visible(dlv, idx);
+                }
+                if (dlv->updated) {
+                    dlv->updated--;
+                    ImGuiContext& g = *GImGui;
+                    ImGuiWindow* window = g.CurrentWindow;
+                    ImGui::SetScrollY(window, window->ScrollMax.y);
+                }
+            }
+            ImGui::EndTable();
+
+        }
+    }
+    ImGui::End();
+}
+
 
 void imgui_jsmooch_app::render_disassembly_view(struct DVIEW &dview, bool update_dasm_scroll, u32 num)
 {
@@ -526,6 +651,17 @@ void imgui_jsmooch_app::render_trace_view(bool update_dasm_scroll)
     }
 }
 
+void imgui_jsmooch_app::render_dbglog_views(bool update_dasm_scroll)
+{
+    u32 i = 0;
+    for (auto &myv : fsys.dlviews) {
+        struct managed_window *mw = register_managed_window(0x2500 + (i++), mwk_debug_dbglog, myv.view->dbglog.name, DBGLOG_VIEW_DEFAULT_ENABLE);
+        if (mw->enabled) {
+            render_dbglog_view(myv, update_dasm_scroll);
+        }
+    }
+}
+
 void imgui_jsmooch_app::render_image_views()
 {
     u32 i=0;
@@ -560,6 +696,7 @@ void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll)
 {
     render_event_view();
     render_disassembly_views(update_dasm_scroll);
+    render_dbglog_views(update_dasm_scroll);
     render_image_views();
     render_trace_view(update_dasm_scroll);
     render_console_view(update_dasm_scroll);
@@ -646,13 +783,13 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_APPLEIIe;
     //which = SYS_GENESIS_USA;
     //which = SYS_DMG;
-    which = SYS_PS1;
+    //which = SYS_PS1;
     //which = SYS_SMS2;
     //which = SYS_GG;
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
     //which = SYS_GBA;
-    //which = SYS_NDS;
+    which = SYS_NDS;
     //which = SYS_GALAKSIJA;
     //dbg_enable_trace();
 #endif

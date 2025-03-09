@@ -7,6 +7,7 @@
 
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
+#include "nds_ge.h"
 
 enum NDS_SCREEN_KINDS {
     SK_none = 0,
@@ -58,6 +59,8 @@ struct NDS_PPU {
     u16 *cur_output;
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
+
+    struct NDS_GE ge;
 
     struct {
         u32 vblank_irq_enable7, hblank_irq_enable7, vcount_irq_enable7;

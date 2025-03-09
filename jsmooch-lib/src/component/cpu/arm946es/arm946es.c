@@ -194,6 +194,8 @@ static void print_context(struct ARM946ES *this, struct ARMctxt *ct, struct jsm_
 
 static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 T, u32 taken)
 {
+#ifdef TRACE
+    printf("\nARM9: %08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
     struct ARMctxt ct;
     ct.regs = 0;
     if (T) {
@@ -203,28 +205,50 @@ static void armv5_trace_format(struct ARM946ES *this, u32 opcode, u32 addr, u32 
         ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
     }
     print_context(this, &ct, &this->trace.str2, taken);
-#ifdef TRACE
-    printf("\nARM9: %08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
 #else
-    u64 tc;
-    if (!this->trace.cycles) tc = 0;
-    else tc = *this->trace.cycles;
-    tc += *this->waitstates;
-    struct trace_view *tv = this->dbg.tvptr;
-    trace_view_startline(tv, this->trace.source_id);
-    if (T) {
-        trace_view_printf(tv, 0, "THUMB9");
-        trace_view_printf(tv, 3, "%04x", opcode);
+    u32 do_dbglog = 0;
+    if (this->dbg.dvptr) {
+        do_dbglog = this->dbg.dvptr->ids_enabled[this->dbg.dv_id];
     }
-    else {
-        trace_view_printf(tv, 0, "ARM9");
-        trace_view_printf(tv, 3, "%08x", opcode);
+    u32 do_tracething = (this->dbg.tvptr && dbg.trace_on && dbg.traces.arm946es.instruction);
+    if (do_dbglog || do_tracething) {
+        struct ARMctxt ct;
+        ct.regs = 0;
+        if (T) {
+            ARM946ES_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        } else {
+            ARMv5_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        }
+        print_context(this, &ct, &this->trace.str2, taken);
+
+        u64 tc;
+        if (!this->trace.cycles) tc = 0;
+        else tc = *this->trace.cycles;
+        tc += *this->waitstates;
+
+        if (do_dbglog) {
+            struct dbglog_view *dv = this->dbg.dvptr;
+            dbglog_view_add_printf(dv, this->dbg.dv_id, tc, DBGLS_TRACE, "%08x  %s", addr, this->trace.str.ptr);
+            dbglog_view_extra_printf(dv, "%s", this->trace.str2.ptr);
+        }
+
+        if (do_tracething) {
+            struct trace_view *tv = this->dbg.tvptr;
+            trace_view_startline(tv, this->trace.source_id);
+            if (T) {
+                trace_view_printf(tv, 0, "THUMB9");
+                trace_view_printf(tv, 3, "%04x", opcode);
+            } else {
+                trace_view_printf(tv, 0, "ARM9");
+                trace_view_printf(tv, 3, "%08x", opcode);
+            }
+            trace_view_printf(tv, 1, "%lld", tc);
+            trace_view_printf(tv, 2, "%08x", addr);
+            trace_view_printf(tv, 4, "%s", this->trace.str.ptr);
+            trace_view_printf(tv, 5, "%s", this->trace.str2.ptr);
+            trace_view_endline(tv);
+        }
     }
-    trace_view_printf(tv, 1, "%lld", tc);
-    trace_view_printf(tv, 2, "%08x", addr);
-    trace_view_printf(tv, 4, "%s", this->trace.str.ptr);
-    trace_view_printf(tv, 5, "%s", this->trace.str2.ptr);
-    trace_view_endline(tv);
 #endif
 }
 
@@ -233,7 +257,7 @@ static void decode_and_exec_thumb(struct ARM946ES *this, u32 opcode, u32 opcode_
 #ifdef TRACE
     armv5_trace_format(this, opcode, opcode_addr, 1, 1);
 #else
-    if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 1, 1);
+    armv5_trace_format(this, opcode, opcode_addr, 1, 1);
 #endif
     struct thumb2_instruction *ins = &this->opcode_table_thumb[opcode];
     ins->func(this, ins);
@@ -247,7 +271,7 @@ static void decode_and_exec_arm(struct ARM946ES *this, u32 opcode, u32 opcode_ad
 #ifdef TRACE
     armv5_trace_format(this, opcode, opcode_addr, 0, 1);
 #else
-if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+    armv5_trace_format(this, opcode, opcode_addr, 0, 1);
 #endif
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     this->arm9_ins = &this->opcode_table_arm[decode];
@@ -311,7 +335,7 @@ void ARM946ES_run_noIRQcheck(struct ARM946ES*this)
 #ifdef TRACE
                 armv5_trace_format(this, opcode, opcode_addr, 0, 1);
 #else
-                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 1);
+                armv5_trace_format(this, opcode, opcode_addr, 0, 1);
 #endif
                 u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
                 this->arm9_ins = &this->opcode_table_arm_never[decode];
@@ -327,7 +351,7 @@ void ARM946ES_run_noIRQcheck(struct ARM946ES*this)
 #ifdef TRACE
                 armv5_trace_format(this, opcode, opcode_addr, 0, 0);
 #else
-                if (dbg.trace_on) armv5_trace_format(this, opcode, opcode_addr, 0, 0);
+                armv5_trace_format(this, opcode, opcode_addr, 0, 0);
 #endif
                 this->pipeline.access = ARM9P_code | ARM9P_sequential;
                 this->regs.PC += 4;

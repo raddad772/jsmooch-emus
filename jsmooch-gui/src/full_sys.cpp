@@ -689,8 +689,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-2.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
@@ -960,6 +961,15 @@ void full_system::add_trace_view(u32 idx)
     trace_views.push_back(myv);
 }
 
+void full_system::add_dbglog_view(u32 idx)
+{
+    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    DLVIEW myv;
+    myv.view = dview;
+    dlviews.push_back(myv);
+}
+
+
 void full_system::add_disassembly_view(u32 idx)
 {
     auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
@@ -999,6 +1009,9 @@ void full_system::setup_debugger_interface()
                 break;
             case dview_trace:
                 add_trace_view(i);
+                break;
+            case dview_dbglog:
+                add_dbglog_view(i);
                 break;
             case dview_console:
                 add_console_view(i);

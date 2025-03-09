@@ -218,9 +218,10 @@ struct ARM946ES {
     struct thumb2_instruction opcode_table_thumb[65536];
 
     DBG_START
-            DBG_EVENT_VIEW
-    DBG_TRACE_VIEW
-            DBG_END
+        DBG_EVENT_VIEW
+        DBG_TRACE_VIEW
+        DBG_LOG_VIEW
+    DBG_END
 };
 
 

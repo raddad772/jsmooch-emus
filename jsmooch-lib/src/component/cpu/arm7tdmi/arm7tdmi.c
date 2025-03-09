@@ -239,38 +239,62 @@ static void print_context(struct ARM7TDMI *this, struct ARMctxt *ct, struct jsm_
 
 static void armv4_trace_format(struct ARM7TDMI *this, u32 opcode, u32 addr, u32 T)
 {
-    struct ARMctxt ct;
-    ct.regs = 0;
-    if (T) {
-        ARM7TDMI_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
-    }
-    else {
-        ARMv4_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
-    }
-    print_context(this, &ct, &this->trace.str2);
 #ifdef TRACE
+    struct ARMctxt ct;
+        ct.regs = 0;
+        if (T) {
+            ARM7TDMI_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        } else {
+            ARMv4_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        }
+        print_context(this, &ct, &this->trace.str2);
     printf("\nARM7: %08x  %s  /  %s    / %08x", addr, this->trace.str.ptr, this->trace.str2.ptr, this->regs.R[15]);
 #else
+    u32 do_dbglog = 0;
+    if (this->trace.dbglog.view) {
+        do_dbglog = this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id];
+        //if (this->trace.dbglog.view->ids_enabled[this->trace.dbglog.id]) printf("\nID ENABLED? %d", do_dbglog);
+    }
+    u32 do_tracething = (this->dbg.tvptr && dbg.trace_on && dbg.traces.arm7tdmi.instruction);
 
-    u64 tc;
-    if (!this->trace.cycles) tc = 0;
-    else tc = *this->trace.cycles;
-    tc += *this->waitstates;
-    struct trace_view *tv = this->dbg.tvptr;
-    trace_view_startline(tv, this->trace.source_id);
-    if (T) {
-        trace_view_printf(tv, 0, "THUMB7");
-        trace_view_printf(tv, 3, "%04x", opcode);
+    if (do_dbglog || do_tracething) {
+        struct ARMctxt ct;
+        ct.regs = 0;
+        if (T) {
+            ARM7TDMI_thumb_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        } else {
+            ARMv4_disassemble(opcode, &this->trace.str, (i64) addr, &ct);
+        }
+        print_context(this, &ct, &this->trace.str2);
+
+        u64 tc;
+        if (!this->trace.cycles) tc = 0;
+        else tc = *this->trace.cycles;
+        tc += *this->waitstates;
+
+        if (do_dbglog) {
+            struct dbglog_view *dv = this->trace.dbglog.view;
+            dbglog_view_add_printf(dv, this->trace.dbglog.id, tc, DBGLS_TRACE, "%08x  %s", addr, this->trace.str.ptr);
+            dbglog_view_extra_printf(dv, "%s", this->trace.str2.ptr);
+        }
+
+        if (do_tracething) {
+            struct trace_view *tv = this->dbg.tvptr;
+            trace_view_startline(tv, this->trace.source_id);
+            if (T) {
+                trace_view_printf(tv, 0, "THUMB7");
+                trace_view_printf(tv, 3, "%04x", opcode);
+            } else {
+                trace_view_printf(tv, 0, "ARM7");
+                trace_view_printf(tv, 3, "%08x", opcode);
+            }
+            trace_view_printf(tv, 1, "%lld", tc);
+            trace_view_printf(tv, 2, "%08x", addr);
+            trace_view_printf(tv, 4, "%s", this->trace.str.ptr);
+            trace_view_printf(tv, 5, "%s", this->trace.str2.ptr);
+            trace_view_endline(tv);
+        }
     }
-    else {
-        trace_view_printf(tv, 0, "ARM7");
-        trace_view_printf(tv, 3, "%08x", opcode);
-    }
-    trace_view_printf(tv, 1, "%lld", tc);
-    trace_view_printf(tv, 2, "%08x", addr);
-    trace_view_printf(tv, 4, "%s", this->trace.str.ptr);
-    trace_view_printf(tv, 5, "%s", this->trace.str2.ptr);
-    trace_view_endline(tv);
 #endif
 }
 
@@ -279,7 +303,7 @@ static void decode_and_exec_thumb(struct ARM7TDMI *this, u32 opcode, u32 opcode_
 #ifdef TRACE
     armv4_trace_format(this, opcode, opcode_addr, 1);
 #else
-    if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 1);
+    armv4_trace_format(this, opcode, opcode_addr, 1);
 #endif
     struct thumb_instruction *ins = &this->opcode_table_thumb[opcode];
     ins->func(this, ins);
@@ -293,7 +317,7 @@ static void decode_and_exec_arm(struct ARM7TDMI *this, u32 opcode, u32 opcode_ad
 #ifdef TRACE
     armv4_trace_format(this, opcode, opcode_addr, 0);
 #else
-    if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
+    armv4_trace_format(this, opcode, opcode_addr, 0);
 #endif
     u32 decode = ((opcode >> 4) & 15) | ((opcode >> 16) & 0xFF0);
     this->arm7_ins = &this->opcode_table_arm[decode];
@@ -340,7 +364,7 @@ void ARM7TDMI_run_noIRQcheck(struct ARM7TDMI*this)
 #ifdef TRACE
             armv4_trace_format(this, opcode, opcode_addr, 0);
 #else
-            if (dbg.trace_on) armv4_trace_format(this, opcode, opcode_addr, 0);
+            armv4_trace_format(this, opcode, opcode_addr, 0);
 #endif
             this->pipeline.access = ARM7P_code | ARM7P_sequential;
             this->regs.PC += 4;

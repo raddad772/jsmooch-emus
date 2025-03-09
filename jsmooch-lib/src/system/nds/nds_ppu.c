@@ -9,6 +9,7 @@
 #include "nds_dma.h"
 #include "nds_regs.h"
 #include "nds_irq.h"
+#include "nds_debugger.h"
 #include "helpers/color.h"
 
 #define NDS_WIN0 0
@@ -1342,7 +1343,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
         case R9_DISPCNT+0:
             if ((val & 7) != eng->io.bg_mode) {
-                printf("\neng%d NEW BG MODE:%d", en, val & 7);
+                dbgloglog(NDS_CAT_PPU_BG_MODE, DBGLS_INFO, "eng%d new BG mode:%d", en, eng->io.bg_mode);
             }
             eng->io.bg_mode = val & 7;
             if (en == 0) eng->bg[0].do3d = (val >> 3) & 1;
@@ -1367,6 +1368,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
         case R9_DISPCNT+2:
             if (eng->io.display_mode != (val & 3)) {
+                dbgloglog(NDS_CAT_PPU_BG_MODE, DBGLS_INFO, "eng%d NEW DISPLAY MODE: %d", en, val & 3);
                 printf("\neng%d NEW DISPLAY MODE: %d", en, val & 3);
             }
             eng->io.display_mode = val & 3;
@@ -1390,7 +1392,6 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             eng->io.bg_extended_palettes = (val >> 6) & 1;
             eng->io.obj_extended_palettes = (val >> 7) & 1;
             return;
-
         case R9_BG0CNT+0:
         case R9_BG1CNT+0:
         case R9_BG2CNT+0:
