@@ -689,7 +689,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             // Edge-sensitive trigger...
             if (this->io.ipc.arm7.irq_on_send_fifo_empty & !old_bits) {
-                NDS_update_IF7(this, 17);
+                NDS_update_IF7(this, NDS_IRQ_IPC_SEND_EMPTY);
             }
             return; }
         case R_IPCFIFOCNT+1: {
@@ -699,7 +699,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->io.ipc.arm7.fifo_enable = (val >> 7) & 1;
             u32 new_bits = this->io.ipc.arm7.irq_on_recv_fifo_not_empty & NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7);
             if (!old_bits && new_bits) {
-                NDS_update_IF7(this, 18);
+                NDS_update_IF7(this, NDS_IRQ_IPC_RECV_NOT_EMPTY);
             }
             return; }
 
@@ -712,7 +712,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
             u32 send_irq = (val >> 5) & 1;
             if (send_irq && this->io.ipc.arm9sync.enable_irq_from_remote) {
-                NDS_update_IF9(this, 16);
+                NDS_update_IF9(this, NDS_IRQ_IPC_SYNC);
             }
             this->io.ipc.arm7sync.enable_irq_from_remote = (val >> 6) & 1;
             return;
@@ -814,7 +814,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             if ((ch->io.enable == 1) && (old_enable == 0)) {
                 ch->op.first_run = 1;
                 if (ch->io.start_timing == 0) {
-                    NDS_dma7_start(ch, chnum);
+                    NDS_dma7_start(this, ch, chnum);
                 }
             }
             return;}
@@ -1180,7 +1180,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             // Edge-sensitive trigger...
             if (this->io.ipc.arm9.irq_on_send_fifo_empty & !old_bits) {
-                NDS_update_IF9(this, 17);
+                NDS_update_IF9(this, NDS_IRQ_IPC_SEND_EMPTY);
             }
             return; }
         case R_IPCFIFOCNT+1: {
@@ -1190,7 +1190,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->io.ipc.arm9.fifo_enable = (val >> 7) & 1;
             u32 new_bits = this->io.ipc.arm9.irq_on_recv_fifo_not_empty & NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9);
             if (!old_bits && new_bits) {
-                NDS_update_IF9(this, 18);
+                NDS_update_IF9(this, NDS_IRQ_IPC_RECV_NOT_EMPTY);
             }
             return; }
 
@@ -1202,7 +1202,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->io.ipc.arm7sync.dinput = this->io.ipc.arm9sync.doutput = val & 15;
             u32 send_irq = (val >> 5) & 1;
             if (send_irq && this->io.ipc.arm7sync.enable_irq_from_remote) {
-                NDS_update_IF7(this, 16);
+                NDS_update_IF7(this, NDS_IRQ_IPC_SYNC);
             }
             this->io.ipc.arm9sync.enable_irq_from_remote = (val >> 6) & 1;
             return;
@@ -1365,7 +1365,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             if ((ch->io.enable == 1) && (old_enable == 0)) {
                 ch->op.first_run = 1;
                 if (ch->io.start_timing == 0) {
-                    NDS_dma9_start(ch, chnum);
+                    NDS_dma9_start(this, ch, chnum);
                 }
             }
             return;}
@@ -1532,7 +1532,7 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
                     v = NDS_IPC_fifo_pop(&this->io.ipc.to_arm9);
                     u32 new_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm7.irq_on_send_fifo_empty;
                     if (!old_bits && new_bits) { // arm7 send is empty
-                        NDS_update_IF7(this, 17);
+                        NDS_update_IF7(this, NDS_IRQ_IPC_SEND_EMPTY);
                     }
                 }
             }
@@ -1629,7 +1629,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
                 if (!old_bits && new_bits) {
                     // Trigger ARM7 recv not empty
-                    NDS_update_IF7(this, 18);
+                    NDS_update_IF7(this, NDS_IRQ_IPC_RECV_NOT_EMPTY);
                 }
             }
             return;
@@ -1698,7 +1698,7 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
                     v = NDS_IPC_fifo_pop(&this->io.ipc.to_arm7);
                     u32 new_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm9.irq_on_send_fifo_empty;
                     if (!old_bits && new_bits) { // arm7 send is empty
-                        NDS_update_IF9(this, 17);
+                        NDS_update_IF9(this, NDS_IRQ_IPC_SEND_EMPTY);
                     }
                 }
             }
@@ -1777,7 +1777,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (!old_bits && new_bits) {
                     // Trigger ARM9 recv not empty
-                    NDS_update_IF9(this, 18);
+                    NDS_update_IF9(this, NDS_IRQ_IPC_RECV_NOT_EMPTY);
                 }
             }
             return;

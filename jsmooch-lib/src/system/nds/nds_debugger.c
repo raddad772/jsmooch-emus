@@ -1172,6 +1172,7 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct NDS *this)
     struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
     struct debugger_view *dview = cpg(p);
     struct dbglog_view *dv = &dview->dbglog;
+    this->dbg.dvptr = dv;
     snprintf(dv->name, sizeof(dv->name), "Trace");
     dv->has_extra = 1;
 
@@ -1186,6 +1187,13 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct NDS *this)
     this->arm9.dbg.dvptr = dv;
     this->arm9.dbg.dv_id = NDS_CAT_ARM9_INSTRUCTION;
 
+    struct dbglog_category_node *cart = dbglog_category_add_node(dv, root, "Cart", NULL, 0, 0);
+    dbglog_category_add_node(dv, cart, "Read Start", "Cart.read", NDS_CAT_CART_READ_START, 0xFFFFFF);
+    dbglog_category_add_node(dv, cart, "Read Complete", "Cart.read.", NDS_CAT_CART_READ_COMPLETE, 0xFFFFFF);
+
+    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", NULL, 0, 0);
+    dbglog_category_add_node(dv, dma, "DMA Start", "dma.start", NDS_CAT_DMA_START, 0xFFFFFF);
+
     struct dbglog_category_node *ppu = dbglog_category_add_node(dv, root, "PPU", NULL, 0, 0);
     dbglog_category_add_node(dv, ppu, "Register Writes", "PPU.regw", NDS_CAT_PPU_REG_WRITE, 0xFFFFFF);
     dbglog_category_add_node(dv, ppu, "BG mode changes", "PPU.BG+", NDS_CAT_PPU_BG_MODE, 0xFFFFFF);
@@ -1199,8 +1207,11 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
 
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
+    cvec_lock_reallocs(&dbgr->views);
+
     setup_image_view_palettes(this, dbgr);
     //setup_cpu_trace(dbgr, this);
+
     setup_dbglog(dbgr, this);
 }
 /*

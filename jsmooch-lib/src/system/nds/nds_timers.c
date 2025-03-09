@@ -57,7 +57,7 @@ static void overflow_timer7(struct NDS *this, u32 tn, u64 current_time) {
     t->val_at_stop = t->reload;
     if (t->irq_on_overflow) {
         //printf("\nIRQ!");
-        NDS_update_IF7(this, 3 + tn);
+        NDS_update_IF7(this, NDS_IRQ_TIMER0 + tn);
     }
 
     if (tn < 3) {
@@ -79,7 +79,7 @@ static void overflow_timer9(struct NDS *this, u32 tn, u64 current_time)
 
     t->val_at_stop = t->reload;
     if (t->irq_on_overflow) {
-        NDS_update_IF9(this, 3 + tn);
+        NDS_update_IF9(this, NDS_IRQ_TIMER0 + tn);
     }
 
     if (tn < 3) {

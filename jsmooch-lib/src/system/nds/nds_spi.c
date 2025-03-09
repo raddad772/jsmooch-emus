@@ -185,7 +185,7 @@ static void SPI_irq(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 {
     struct NDS *this = (struct NDS *)ptr;
     this->spi.irq_id = 0;
-    NDS_update_IF7(this, 23);
+    NDS_update_IF7(this, NDS_IRQ_SPI);
 }
 
 

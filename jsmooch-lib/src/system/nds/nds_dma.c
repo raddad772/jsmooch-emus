@@ -2,9 +2,11 @@
 // Created by . on 1/20/25.
 //
 
+#include "helpers/debugger/debugger.h"
 #include "nds_dma.h"
 #include "nds_bus.h"
 #include "nds_irq.h"
+#include "nds_debugger.h"
 
 // TODO
 // 1. make gbatek DMA9 noted changes
@@ -15,19 +17,19 @@
 
 static void raise_irq_for_dma7(struct NDS *this, u32 num)
 {
-    NDS_update_IF7(this, 8 + num);
+    NDS_update_IF7(this, NDS_IRQ_DMA0 + num);
 }
 
 static void raise_irq_for_dma9(struct NDS *this, u32 num)
 {
-    NDS_update_IF9(this, 8 + num);
+    NDS_update_IF9(this, NDS_IRQ_DMA0 + num);
 }
 
 static u32 dma7_go_ch(struct NDS *this, u32 num) {
     struct NDS_DMA_ch *ch = &this->dma7[num];
     if (ch->run_counter && ch->io.enable) {
         ch->run_counter--;
-        if (ch->run_counter == 0) NDS_dma7_start(ch, num);
+        if (ch->run_counter == 0) NDS_dma7_start(this, ch, num);
         else return 0;
     }
     if ((ch->io.enable) && (ch->op.started)) {
@@ -115,8 +117,9 @@ u32 NDS_dma7_go(struct NDS *this) {
     return 0;
 }
 
-void NDS_dma7_start(struct NDS_DMA_ch *ch, u32 i)
+void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
+    dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA7 %d start", i);
     ch->op.started = 1;
     u32 mask = ch->io.transfer_size ? ~3 : ~1;
     mask &= 0x0FFFFFFF;
@@ -141,7 +144,7 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
     struct NDS_DMA_ch *ch = &this->dma9[num];
     if (ch->run_counter && ch->io.enable) {
         ch->run_counter--;
-        if (ch->run_counter == 0) NDS_dma9_start(ch, num);
+        if (ch->run_counter == 0) NDS_dma9_start(this, ch, num);
         else return 0;
     }
     if ((ch->io.enable) && (ch->op.started)) {
@@ -223,8 +226,9 @@ u32 NDS_dma9_go(struct NDS *this) {
     return 0;
 }
 
-void NDS_dma9_start(struct NDS_DMA_ch *ch, u32 i)
+void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
+    dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA9 %d start", i);
     ch->op.started = 1;
     u32 mask = ch->io.transfer_size ? ~3 : ~1;
     mask &= 0x0FFFFFFF;
@@ -250,7 +254,7 @@ void NDS_check_dma7_at_vblank(struct NDS *this)
     for (u32 i = 0; i < 4; i++) {
         struct NDS_DMA_ch *ch = &this->dma7[i];
         if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
-            NDS_dma7_start(ch, i);
+            NDS_dma7_start(this, ch, i);
         }
     }
 }
@@ -261,7 +265,7 @@ void NDS_check_dma9_at_vblank(struct NDS *this)
     for (u32 i = 0; i < 4; i++) {
         struct NDS_DMA_ch *ch = &this->dma9[i];
         if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
-            NDS_dma9_start(ch, i);
+            NDS_dma9_start(this, ch, i);
         }
     }
 }
@@ -272,7 +276,7 @@ void NDS_check_dma9_at_hblank(struct NDS *this)
     for (u32 i = 0; i < 4; i++) {
         struct NDS_DMA_ch *ch = &this->dma9[i];
         if (ch->io.enable && !ch->op.started && (ch->io.start_timing == 2)) {
-            NDS_dma9_start(ch, i);
+            NDS_dma9_start(this, ch, i);
         }
     }
 }
@@ -283,7 +287,7 @@ void NDS_trigger_dma7_if(struct NDS *this, u32 start_timing)
     for (u32 i = 0; i < 4; i++) {
         ch = &this->dma7[i];
         if (ch->io.enable && ch->io.start_timing == start_timing)
-            NDS_dma7_start(ch, i);
+            NDS_dma7_start(this, ch, i);
     }
 }
 
@@ -293,6 +297,6 @@ void NDS_trigger_dma9_if(struct NDS *this, u32 start_timing)
     for (u32 i = 0; i < 4; i++) {
         ch = &this->dma9[i];
         if (ch->io.enable && ch->io.start_timing == start_timing)
-            NDS_dma9_start(ch, i);
+            NDS_dma9_start(this, ch, i);
     }
 }

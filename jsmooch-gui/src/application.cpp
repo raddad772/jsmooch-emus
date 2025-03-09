@@ -169,12 +169,11 @@ void imgui_jsmooch_app::render_event_view()
     }
 }
 
-static bool rn_checkboxes[5000];
+static bool rn_checkboxes[MAX_DBGLOG_IDS*4];
 
 static void render_node(struct dbglog_view *view, struct dbglog_category_node *node, u32 *id_ptr) {
     // If we're a leaf...
     u32 id = (*id_ptr)++;
-    u32 id2 = 0;
 
     if (cvec_len(&node->children) == 0) {
         // We are a leaf

@@ -75,7 +75,7 @@ static void set_irq(struct NDS *this, u32 which)
 
     if ((!(oldstat & 0x30) && (this->io.rtc.irq_flag & 0x30))) {
         if ((this->io.sio.rcnt & 0xC100) == 0x8100) {
-            NDS_update_IF7(this, 7);
+            NDS_update_IF7(this, NDS_IRQ_SERIAL);
         }
     }
 }

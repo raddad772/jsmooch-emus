@@ -93,7 +93,6 @@ struct NDS_cart {
 
     u64 spi_busy_until;
     u64 rom_busy_until;
-    u32 waiting_for_tx_done;
     enum NDS_cart_data_modes data_mode;
 
     struct buf ROM;

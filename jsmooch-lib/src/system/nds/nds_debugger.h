@@ -25,12 +25,17 @@ enum NDS_DBLOG_CATEGORIES {
     NDS_CAT_ARM7_INSTRUCTION = 1,
     NDS_CAT_ARM9_INSTRUCTION,
 
+    NDS_CAT_CART_READ_START,
+    NDS_CAT_CART_READ_COMPLETE,
+
+    NDS_CAT_DMA_START,
+
     NDS_CAT_PPU_REG_WRITE,
     NDS_CAT_PPU_MISC,
     NDS_CAT_PPU_BG_MODE,
 };
 
-#define dbgloglog(r_cat, r_severity, r_format, r_str, ...) if (this->dbg.dvptr->ids_enabled[r_cat]) dbglog_view_add_printf(this->dbg.dvptr, r_cat, this->clock.master_cycle_count9+this->waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
+#define dbgloglog(r_cat, r_severity, r_format, ...) if (this->dbg.dvptr->ids_enabled[r_cat]) dbglog_view_add_printf(this->dbg.dvptr, r_cat, this->clock.master_cycle_count9+this->waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
 
 void NDSJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
 

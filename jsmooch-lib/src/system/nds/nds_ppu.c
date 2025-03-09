@@ -96,12 +96,12 @@ static void hblank(struct NDS *this, u32 val)
 {
     this->clock.ppu.hblank_active = 1;
     if (val == 0) { // beginning of scanline
-        if ((this->ppu.io.vcount_at7 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable7) NDS_update_IF7(this, 2);
-        if ((this->ppu.io.vcount_at9 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable9) NDS_update_IF9(this, 2);
+        if ((this->ppu.io.vcount_at7 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable7) NDS_update_IF7(this, NDS_IRQ_VMATCH);
+        if ((this->ppu.io.vcount_at9 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VMATCH);
     }
     else {
-        if (this->ppu.io.hblank_irq_enable7) NDS_update_IF7(this, 1);
-        if (this->ppu.io.hblank_irq_enable9) NDS_update_IF9(this, 1);
+        if (this->ppu.io.hblank_irq_enable7) NDS_update_IF7(this, NDS_IRQ_HBLANK);
+        if (this->ppu.io.hblank_irq_enable9) NDS_update_IF9(this, NDS_IRQ_HBLANK);
     }
 }
 
@@ -1021,8 +1021,8 @@ static void vblank(struct NDS *this, u32 val)
 {
     this->clock.ppu.vblank_active = val;
     if (val) {
-        if (this->ppu.io.vblank_irq_enable7) NDS_update_IF7(this, 0);
-        if (this->ppu.io.vblank_irq_enable9) NDS_update_IF9(this, 0);
+        if (this->ppu.io.vblank_irq_enable7) NDS_update_IF7(this, NDS_IRQ_VBLANK);
+        if (this->ppu.io.vblank_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VBLANK);
     }
 }
 

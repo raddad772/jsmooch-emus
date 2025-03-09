@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 #include "helpers/physical_io.h"
 #include "helpers/multisize_memaccess.c"
 
@@ -15,6 +16,7 @@
 #include "nds_cart.h"
 #include "../nds_irq.h"
 #include "../nds_dma.h"
+#include "../nds_debugger.h"
 
 void NDS_cart_init(struct NDS* this)
 {
@@ -69,7 +71,7 @@ u32 NDS_cart_read_romctrl(struct NDS *this)
 }
 
 static void raise_transfer_irq(struct NDS *this) {
-    NDS_update_IFs(this, 19);
+    NDS_update_IFs(this, NDS_IRQ_CART_DATA_READY);
     printf("\nRAISE TRANSFER IRQ...");
 }
 
@@ -103,27 +105,26 @@ u32 NDS_cart_read_rom(struct NDS *this, u32 addr, u32 sz)
     }
 
     if (this->cart.cmd.sz_out != 0) {
-        output = this->cart.cmd.data_out[this->cart.cmd.pos_out % this->cart.cmd.sz_out];
+        output = this->cart.cmd.data_out[this->cart.cmd.pos_out++ % this->cart.cmd.sz_out];
     }
-    this->cart.cmd.pos_out++;
+    else
+        this->cart.cmd.pos_out++;
 
     this->cart.io.romctrl.data_ready = 0;
 
     if (this->cart.cmd.pos_out == this->cart.cmd.sz_out) {
+        dbgloglog(NDS_CAT_CART_READ_COMPLETE, DBGLS_INFO, "Finish read of %d words", this->cart.cmd.sz_out);
         this->cart.io.romctrl.busy = 0;
         this->cart.cmd.pos_out = 0;
         this->cart.cmd.sz_out = 0;
 
         if (this->cart.io.transfer_ready_irq) {
-            NDS_update_IFs(this, 19);
+            NDS_update_IFs(this, NDS_IRQ_CART_DATA_READY);
         }
     } else {
-
         this->cart.rom_busy_until = NDS_clock_current7(this) + rom_transfer_time(this, this->cart.io.romctrl.transfer_clk_rate, 4);
         if (this->cart.sch_sch) scheduler_delete_if_exist(&this->scheduler, this->cart.sch_id);
         scheduler_add_or_run_abs(&this->scheduler, this->cart.rom_busy_until, NDANB_after_read, this, &NDS_cart_check_transfer, &this->cart.sch_sch);
-
-        this->cart.waiting_for_tx_done = 1;
     }
 
     return output;
@@ -184,6 +185,8 @@ static void handle_cmd(struct NDS *this)
 #endif
             this->cart.cmd.sz_out = MIN(0x80, this->cart.cmd.sz_out);
 
+            dbgloglog(NDS_CAT_CART_READ_START, DBGLS_INFO, "Start read of %d words from cart:%06x", this->cart.cmd.sz_out, address);
+
             memcpy(this->cart.cmd.data_out, this->cart.ROM.ptr+address, this->cart.cmd.sz_out * 4);
             //pprint_mem(this->cart.cmd.data_out, 4, address);
             break;
@@ -206,11 +209,9 @@ static void handle_cmd(struct NDS *this)
         this->cart.rom_busy_until = NDS_clock_current7(this) + rom_transfer_time(this, this->cart.io.romctrl.transfer_clk_rate, 4);
         if (this->cart.sch_sch) scheduler_delete_if_exist(&this->scheduler, this->cart.sch_id);
         scheduler_add_or_run_abs(&this->scheduler, this->cart.rom_busy_until, NDANB_after_read, this, &NDS_cart_check_transfer, &this->cart.sch_sch);
-
-        this->cart.waiting_for_tx_done = 1;
     }
     else if(this->cart.io.transfer_ready_irq) {
-        NDS_update_IFs(this, 19);
+        NDS_update_IFs(this, NDS_IRQ_CART_DATA_READY);
     }
 }
 
@@ -225,7 +226,6 @@ static void after_read(struct NDS *this)
 void NDS_cart_check_transfer(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct NDS *this = (struct NDS *)ptr;
-    this->cart.waiting_for_tx_done = 0;
     switch(key) {
         case NDANB_none:
             return;
@@ -281,8 +281,6 @@ void NDS_cart_write_romctrl(struct NDS *this, u32 val)
         this->cart.rom_busy_until = NDS_clock_current7(this) + rom_transfer_time(this, this->cart.io.romctrl.transfer_clk_rate, 8);
         if (this->cart.sch_sch) scheduler_delete_if_exist(&this->scheduler, this->cart.sch_id);
         scheduler_add_or_run_abs(&this->scheduler, this->cart.rom_busy_until, NDANB_handle_cmd, this, &NDS_cart_check_transfer, &this->cart.sch_sch);
-
-        this->cart.waiting_for_tx_done = 1;
     }
 }
 
