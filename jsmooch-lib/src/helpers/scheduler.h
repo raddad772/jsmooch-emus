@@ -34,7 +34,7 @@ struct scheduler_event {
  * Completely ignore the past, use a circular buffer
  * Schedule in the future with insertion
  */
-#define SCHEDULER_DELETE_NUM 50
+#define SCHEDULER_DELETE_NUM 1000
 struct scheduler_t {
     u64 max_block_size;
 

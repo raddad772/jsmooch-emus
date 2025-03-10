@@ -173,7 +173,7 @@ static void get_affine_sprite_pixel(struct NDS *this, struct NDSENG2D *eng, u32 
                 }
                 break; }
             case 2: {
-                w->inside[screen_x] = 1;
+                w->sprites_inside[screen_x] = 1;
                 break; }
         }
     }
@@ -261,59 +261,6 @@ static void calculate_windows_vflags(struct NDS *this, struct NDSENG2D *eng)
     }
 }
 
-static void calculate_windows(struct NDS *this, struct NDSENG2D *eng, u32 in_vblank)
-{
-    //if (!force && !this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[NDS_WINOBJ].enable) return;
-
-    // Calculate windows...
-    calculate_windows_vflags(this, eng);
-    if (this->clock.ppu.y >= 160) return;
-    for (u32 wn = 0; wn < 2; wn++) {
-        struct NDS_PPU_window *w = &eng->window[wn];
-        if (!w->enable) {
-            memset(&w->inside, 0, sizeof(w->inside));
-            continue;
-        }
-        u32 r = w->right;
-        if (r == 0) r = 256;
-        if ((w->left == 0) && (r == 256)) {
-            memset(w->inside, 1, 256);
-        }
-        else
-        {
-            for (u32 x = 0; x < 256; x++) {
-                if (x == w->left) w->h_flag = 1;
-                if (x == r) w->h_flag = 0;
-
-                w->inside[x] = w->h_flag & w->v_flag;
-            }
-        }
-    }
-
-    // Now take care of the outside window
-    struct NDS_PPU_window *w0 = &eng->window[NDS_WIN0];
-    struct NDS_PPU_window *w1 = &eng->window[NDS_WIN1];
-    struct NDS_PPU_window *ws = &eng->window[NDS_WINOBJ];
-    u32 w0r = w0->enable;
-    u32 w1r = w1->enable;
-    u32 wsr = ws->enable;
-    struct NDS_PPU_window *w = &eng->window[NDS_WINOUTSIDE];
-    memset(w->inside, 0, sizeof(w->inside));
-    for (u32 x = 0; x < 256; x++) {
-        u32 w0i = w0r & w0->inside[x];
-        u32 w1i = w1r & w1->inside[x];
-        u32 wsi = wsr & ws->inside[x];
-        w->inside[x] = !(w0i || w1i || wsi);
-    }
-
-    struct NDS_PPU_window *wo = &eng->window[NDS_WINOUTSIDE];
-    struct NDS_DBG_line *l = &this->dbg_info.line[this->clock.ppu.y];
-    for (u32 x = 0; x < 256; x++) {
-        l->window_coverage[x] = w0->inside[x] | (w1->inside[x] << 1) | (ws->inside[x] << 2) | (wo->inside[x] << 3);
-    }
-}
-
-
 static u32 get_sprite_tile_addr(struct NDS *this, struct NDSENG2D *eng, u32 tile_num, u32 htiles, u32 block_y, u32 line_in_tile, u32 bpp8, u32 d1)
 {
     if (d1) {
@@ -360,7 +307,7 @@ static void output_sprite_8bpp(struct NDS *this, struct NDSENG2D *eng, u32 tile_
                         opx->mosaic_sprite = mosaic;
                         break;
                     case 2: { // OBJ window
-                        if (c != 0) w->inside[sx] = 1;
+                        if (c != 0) w->sprites_inside[sx] = 1;
                         break;
                     }
                 }
@@ -397,7 +344,7 @@ static void output_sprite_4bpp(struct NDS *this, struct NDSENG2D *eng, u32 addr,
                             break;
                         }
                         case 2: {
-                            if (c != 0) w->inside[sx] = 1;
+                            if (c != 0) w->sprites_inside[sx] = 1;
                             break;
                         }
                     }
@@ -487,7 +434,7 @@ static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
 
     memset(eng->obj.line, 0, sizeof(eng->obj.line));
     struct NDS_PPU_window *w = &eng->window[NDS_WINOBJ];
-    memset(&w->inside, 0, sizeof(w->inside));
+    memset(&w->sprites_inside, 0, sizeof(w->sprites_inside));
 
     if (!eng->obj.enable) return;
     // (GBA) Each OBJ takes:
@@ -577,7 +524,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
-    if (!bg->enable) return;
+    if (!bg->enable) { return; }
     // first do a fetch for fine scroll -1
     u32 hpos = bg->hscroll & bg->hpixels_mask;
     u32 vpos = (bg->vscroll + bg->mosaic_y) & bg->vpixels_mask;
@@ -586,8 +533,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     struct NDS_PX bgpx[8];
     //hpos = ((hpos >> 3) - 1) << 3;
     fetch_bg_slice(this, eng, bg, bgnum, hpos >> 3, vpos, bgpx, 0);
-    struct NDS_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
-    // TODO HERE
+    //struct NDS_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
     u8 *scroll_line = &this->dbg_info.bg_scrolls[bgnum].lines[((bg->vscroll + this->clock.ppu.y) & bg->vpixels_mask) * 128];
     u32 startx = fine_x;
     for (u32 i = startx; i < 8; i++) {
@@ -668,11 +614,11 @@ static void get_affine_bg_pixel(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
-    memset(bg->line, 0, sizeof(bg->line));
 
     i32 fx, fy;
     affine_line_start(this, eng, bg, &fx, &fy);
-    if (!bg->enable) return;
+    memset(bg->line, 0, sizeof(bg->line));
+    if (!bg->enable) { return; }
 
     struct NDS_DBG_tilemap_line_bg *dtl = &this->dbg_info.bg_scrolls[bgnum];
 
@@ -758,14 +704,14 @@ static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
 
 #define NDSCTIVE_SFX 5
 
-static struct NDS_PPU_window *get_active_window(struct NDS *this, struct NDSENG2D *eng, u32 x)
+static inline struct NDS_PPU_window *get_active_window(struct NDS *this, struct NDSENG2D *eng, u32 x)
 {
     struct NDS_PPU_window *active_window = NULL;
     if (eng->window[NDS_WIN0].enable || eng->window[NDS_WIN1].enable || eng->window[NDS_WINOBJ].enable) {
         active_window = &eng->window[NDS_WINOUTSIDE];
-        if (eng->window[NDS_WINOBJ].enable && eng->window[NDS_WINOBJ].inside[x]) active_window = &eng->window[NDS_WINOBJ];
-        if (eng->window[NDS_WIN1].enable && eng->window[NDS_WIN1].inside[x]) active_window = &eng->window[NDS_WIN1];
-        if (eng->window[NDS_WIN0].enable && eng->window[NDS_WIN0].inside[x]) active_window = &eng->window[NDS_WIN0];
+        if (eng->window[NDS_WINOBJ].enable && eng->window[NDS_WINOBJ].is_inside) active_window = &eng->window[NDS_WINOBJ];
+        if (eng->window[NDS_WIN1].enable && eng->window[NDS_WIN1].is_inside) active_window = &eng->window[NDS_WIN1];
+        if (eng->window[NDS_WIN0].enable && eng->window[NDS_WIN0].is_inside) active_window = &eng->window[NDS_WIN0];
     }
     return active_window;
 }
@@ -788,11 +734,33 @@ static void find_targets_and_priorities(u32 bg_enables[6], struct NDS_PX *layers
     *layer_b_out = lbout;
 }
 
+static inline void calculate_windows_h(struct NDS *this, struct NDSENG2D *eng, u32 x)
+{
+    struct NDS_PPU_window *w0 = &eng->window[NDS_WIN0];
+    struct NDS_PPU_window *w1 = &eng->window[NDS_WIN1];
+    struct NDS_PPU_window *ws = &eng->window[NDS_WINOBJ];
+    struct NDS_PPU_window *wo = &eng->window[NDS_WINOUTSIDE];
+
+    for (u32 i = 0; i < 2; i++) {
+        struct NDS_PPU_window *w = &eng->window[i];
+        w->h_flag |= x == w->left;
+        w->h_flag &= (x == w->right) ^ 1;
+        w->is_inside = w->h_flag & w->v_flag;
+    }
+
+    ws->is_inside = ws->sprites_inside[x];
+    //wo->is_inside = (w0->is_inside | w1->is_inside | ws->is_inside) ^ 1;
+}
+
 static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_enable, u32 bg_enables[4]) {
     // Find which window applies to us.
     u32 default_active[6] = {1, 1, 1, 1, 1, 1}; // Default to active if no window.
 
     u32 *actives = default_active;
+
+    // Calculate windows....we do this at each pixel...
+    calculate_windows_h(this, eng, x);
+
     struct NDS_PPU_window *active_window = get_active_window(this, eng, x);
     if (active_window) actives = active_window->active;
 
@@ -857,9 +825,8 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     draw_bg_line_normal(this, eng, 2);
     draw_bg_line_normal(this, eng, 3);
     apply_mosaic(this, eng);
-    calculate_windows(this, eng, 0);
+    calculate_windows_vflags(this, eng);
     u32 bg_enables[4] = {eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, eng->bg[3].enable};
-    memset(eng->line_px, 0x50, sizeof(eng->line_px));
     for (u32 x = 0; x < 256; x++) {
         output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
     }
@@ -874,9 +841,9 @@ static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     apply_mosaic(this, eng);
     memset(eng->bg[3].line, 0, sizeof(eng->bg[3].line));
 
-    calculate_windows(this, eng, 0);
+    calculate_windows_vflags(this, eng);
     u32 bg_enables[4] = {eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, 0};
-    memset(eng->line_px, 0x50, sizeof(eng->line_px));
+    //memset(eng->line_px, 0x50, sizeof(eng->line_px));
     for (u32 x = 0; x < 256; x++) {
         output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
     }
@@ -995,11 +962,11 @@ static void new_frame(struct NDS *this) {
         this->ppu.mosaic.obj.y_counter = 0;
         this->ppu.mosaic.obj.y_current = 0;
 
-        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+        /*for (u32 bgnum = 0; bgnum < 4; bgnum++) {
             for (u32 line = 0; line < 1024; line++) {
                 memset(&this->dbg_info.bg_scrolls[bgnum].lines[0], 0, 1024 * 128);
             }
-        }
+        }*/
     }
 }
 

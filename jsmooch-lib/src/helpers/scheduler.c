@@ -23,6 +23,7 @@ static void del_event(struct scheduler_t *this, struct scheduler_event *e)
     //}
     e->next = NULL;
     if (this->to_delete.num == SCHEDULER_DELETE_NUM) {
+        printf("\nFILLED UP!");
         for (u32 i = 0; i < SCHEDULER_DELETE_NUM; i++) {
             if (this->to_delete.items[i]) {
                 free(this->to_delete.items[i]);
@@ -264,7 +265,6 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
             //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, loop_start_clock, current_time(this));
             if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
             e->next = NULL;
-            u64 idn = e->id;
             e->bound_func.func(e->bound_func.ptr, e->key, current_time(this), (u32) jitter);
 
             // Add event to discard list
@@ -285,7 +285,6 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 
         // Now...Run cycles!
         u64 num_cycles_to_run = e->timecode - loop_start_clock;
-        assert(num_cycles_to_run > 0);
         if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
         if (num_cycles_to_run > this->cycles_left_to_run) num_cycles_to_run = this->cycles_left_to_run;
         this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);

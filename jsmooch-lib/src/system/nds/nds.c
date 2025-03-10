@@ -229,7 +229,7 @@ void NDS_new(struct jsm_system *jsm)
     memset(this, 0, sizeof(*this));
     this->waitstates.current_transaction = 0;
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count7, &this->waitstates.current_transaction);
-    this->scheduler.max_block_size = 25;
+    this->scheduler.max_block_size = 45;
 
     this->scheduler.schedule_more.func = &NDS_schedule_more;
     this->scheduler.schedule_more.ptr = this;
