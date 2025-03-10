@@ -113,14 +113,42 @@ static void update_input(struct full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
     //}
 }
 
+struct mouse_emu_struct {
+    u32 is_in_frame;
+    i32 x, y;
+    u32 button_down;
+};
+
+static void get_mouse_coords(ImGuiIO& io, struct mouse_emu_struct &a)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+    a.x = (i32)(io.MousePos.x - window->Pos.x) - 8;
+    a.y = (i32)(io.MousePos.y - window->Pos.y) - 52;
+    a.button_down = ImGui::IsMouseDown(0);
+}
+
 static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
 {
+    //ImVec2 window_origin = ImGui::GetCursorPos();
     if (ImGui::Begin(fsys.sys->label)) {
         ImGui::Checkbox("2x Zoom", &fsys.output.zoom);
         ImGui::SameLine();
         ImGui::Checkbox("Hide Overscan", &fsys.output.hide_overscan);
-        ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
+        //ImGui::InvisibleButton("hidey screen!", fsys.output_size());
+        //ImGui::Image(fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
+        //ImVec2 origin_pos = ImGui::GetCursorPos();
+        /*origin_pos.x -= window_origin.x;
+        origin_pos.y -= window_origin.y;*/
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0,0});
+        ImGui::ImageButton("RENDER GAME", fsys.output.backbuffer_texture.for_image(), fsys.output_size(), fsys.output_uv0(), fsys.output_uv1());
+        ImGui::PopStyleVar();
+
+        struct mouse_emu_struct a;
+        get_mouse_coords(io, a);
+        fsys.update_touch(a.x, a.y, a.button_down);
         ImGui::Text("FPS: %.1f", io.Framerate * FRAME_MULTI);
+        ImGui::Text("CORDS: %d %d", a.x, a.y);
     }
     ImGui::End();
 }

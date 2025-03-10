@@ -19,6 +19,8 @@ void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES ki
     this->output = output;
     this->id = 0;
     switch(kind) {
+        case HID_TOUCHSCREEN:
+            break;
         case HID_CONTROLLER:
             cvec_init(&this->controller.analog_axes, sizeof(struct HID_analog_axis), 2);
             cvec_init(&this->controller.digital_buttons, sizeof(struct HID_digital_button), 12);
@@ -49,6 +51,8 @@ void physical_io_device_init(struct physical_io_device* this, enum IO_CLASSES ki
 void physical_io_device_delete(struct physical_io_device* this)
 {
     switch(this->kind) {
+        case HID_TOUCHSCREEN:
+            break;
         case HID_CONTROLLER:
             cvec_delete(&this->controller.analog_axes);
             cvec_delete(&this->controller.digital_buttons);

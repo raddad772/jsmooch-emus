@@ -263,10 +263,11 @@ struct NDS {
             u32 hold;
         } firmware;
 
-        struct {
+        struct NDS_SPI_TOUCHSCREEN {
             union {
                 struct {
-                    u8 power_down_mode : 2;
+                    u8 penirq : 1;
+                    u8 modemsb: 1;
                     u8 ref_select : 1;
                     u8 conversion_mode : 1;
                     u8 chan_select : 3;
@@ -278,6 +279,13 @@ struct NDS {
             u32 pos;
             u32 touch_x, touch_y;
             u32 hold;
+
+            struct physical_io_device *pio;
+
+            i32 adc_x_top_left, adc_y_top_left;
+            i32 adc_x_delta, adc_y_delta;
+            i32 screen_x_top_left, screen_y_top_left;
+            i32 screen_x_delta, screen_y_delta;
 
         } touchscr;
 

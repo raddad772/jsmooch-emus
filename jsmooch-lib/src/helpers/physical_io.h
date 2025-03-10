@@ -155,7 +155,8 @@ enum IO_CLASSES {
     HID_AUDIO_CHANNEL,
     HID_CART_PORT,
     HID_DISC_DRIVE,
-    HID_AUDIO_CASSETTE
+    HID_AUDIO_CASSETTE,
+    HID_TOUCHSCREEN
 };
 
 enum DIGITAL_BUTTON_KIND {
@@ -277,6 +278,16 @@ struct JSM_AUDIO_CHANNEL {
     u32 last_written;
 };
 
+struct JSM_TOUCHSCREEN {
+    struct {
+        i32 x, y, down;
+    } touch;
+    struct {
+        i32 width, height;
+        i32 x_offset, y_offset;
+    } params;
+};
+
 struct JSM_CARTRIDGE_PORT {
     void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct physical_io_device *whichpio);
     void (*unload_cart)(struct jsm_system *ptr);
@@ -321,6 +332,7 @@ struct physical_io_device {
         struct JSM_CARTRIDGE_PORT cartridge_port;
         struct JSM_DISC_DRIVE disc_drive;
         struct JSM_AUDIO_CASSETTE audio_cassette;
+        struct JSM_TOUCHSCREEN touchscreen;
     };
 };
 

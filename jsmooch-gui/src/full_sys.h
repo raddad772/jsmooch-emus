@@ -150,6 +150,7 @@ public:
     enum full_system_states state;
 
     struct fsio {
+        struct cvec_ptr touchscreen{};
         struct cvec_ptr controller1{};
         struct cvec_ptr controller2{};
         struct cvec_ptr display{};
@@ -189,6 +190,7 @@ public:
     [[nodiscard]] ImVec2 output_uv1() const;
     void setup_persistent_store(struct persistent_store *ps, struct multi_file_set *mfs);
     void sync_persistent_storage();
+    void update_touch(i32 x, i32 y, i32 button_down);
     struct persistent_store *my_ps{};
     void setup_system(enum jsm_systems which);
     void destroy_system();

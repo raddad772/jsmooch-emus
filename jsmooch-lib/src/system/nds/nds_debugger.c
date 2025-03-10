@@ -1181,6 +1181,7 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct NDS *this)
     dbglog_category_add_node(dv, arm7, "Instruction Trace", "ARM7", NDS_CAT_ARM7_INSTRUCTION, 0x80FF80);
     this->arm7.trace.dbglog.view = dv;
     this->arm7.trace.dbglog.id = NDS_CAT_ARM7_INSTRUCTION;
+    dbglog_category_add_node(dv, arm7, "Halt", "ARM7.H", NDS_CAT_ARM7_HALT, 0xA0AF80);
 
     struct dbglog_category_node *arm9 = dbglog_category_add_node(dv, root, "ARM946ES", NULL, 0, 0);
     dbglog_category_add_node(dv, arm9, "Instruction Trace", "ARM9", NDS_CAT_ARM9_INSTRUCTION, 0x8080FF);

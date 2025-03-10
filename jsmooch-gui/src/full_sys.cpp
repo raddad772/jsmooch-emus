@@ -403,6 +403,11 @@ void full_system::setup_ios()
     for (u32 i = 0; i < cvec_len(IOs); i++) {
         struct physical_io_device* pio = (struct physical_io_device*)cvec_get(IOs, i);
         switch(pio->kind) {
+            case HID_TOUCHSCREEN:
+                if (io.touchscreen.vec == nullptr) {
+                    io.touchscreen = make_cvec_ptr(IOs, i);
+                }
+                continue;
             case HID_CONTROLLER: {
                 if (io.controller1.vec == nullptr) {
                     io.controller1 = make_cvec_ptr(IOs, i);
@@ -690,11 +695,13 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "libnds/touch_area.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             break;
         case SYS_PS1:
             //RenderPolygon16BPP
@@ -1058,6 +1065,22 @@ void full_system::setup_system(enum jsm_systems which)
 
     setup_debugger_interface();
     sys->reset(sys);
+}
+
+void full_system::update_touch(i32 x, i32 y, i32 button_down)
+{
+    if (io.touchscreen.vec) {
+        struct physical_io_device *pio = (struct physical_io_device *)cpg(io.touchscreen);
+        struct JSM_TOUCHSCREEN *ts = &pio->touchscreen;
+        x += ts->params.x_offset;
+        y += ts->params.y_offset;
+        u32 in_screen =  (x >= 0) && (x < ts->params.width) && (y >= 0) && (y < ts->params.height);
+        ts->touch.down = in_screen && button_down;
+        if (in_screen) {
+            ts->touch.x = x;
+            ts->touch.y = y;
+        }
+    }
 }
 
 void full_system::get_savestate_filename(char *pth, size_t sz)

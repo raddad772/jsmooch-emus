@@ -2,11 +2,14 @@
 // Created by . on 12/4/24.
 //
 
+#include "nds_bus.h"
 #include "nds_controller.h"
 
-u32 NDS_get_controller_state(struct physical_io_device *d, u32 byte)
+u32 NDS_get_controller_state(struct NDS *this, u32 byte)
 {
-    struct JSM_CONTROLLER* cnt = &d->controller;
+
+    struct JSM_CONTROLLER *cnt = &this->controller.pio->controller;
+    struct JSM_TOUCHSCREEN *tsc = &this->spi.touchscr.pio->touchscreen;
     struct cvec* bl = &cnt->digital_buttons;
     struct HID_digital_button *b;
     u32 v = 0;
@@ -24,10 +27,15 @@ u32 NDS_get_controller_state(struct physical_io_device *d, u32 byte)
     B_GET(16, 10); // X button
     B_GET(17, 11); // Y button
 #undef B_GET
+    // pen down bit 22
+    v |= (tsc->touch.down << 22);
     v ^= 0x7FFFFF;
+
     if (byte == 0) return v & 0xFF;
     if (byte == 1) return (v >> 8) & 0xFF;
-    if (byte == 2) return (v >> 16) & 0xFF;
+    if (byte == 2) {
+        return (v >> 16) & 0xFF;
+    }
     if (byte == 3) return 0;
     printf("\nWHAT!?!?!?!?");
     return v;

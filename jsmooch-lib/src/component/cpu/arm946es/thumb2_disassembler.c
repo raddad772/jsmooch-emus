@@ -510,7 +510,7 @@ static void dasm_BL_BLX_prefix(u16 opc, struct jsm_string *out, i64 ins_addr, st
     u32 imm = BITS(11, 0);
     imm = (i32)SIGNe11to32(imm); // now SHL 11...
     imm <<= 12;
-    ostr("bl/blx1");
+    ostr("bl/blx1 ");
     odec(imm);
 }
 

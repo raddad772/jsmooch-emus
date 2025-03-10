@@ -14,6 +14,7 @@
 #include "nds_rtc.h"
 #include "nds_irq.h"
 #include "nds_regs.h"
+#include "nds_spi.h"
 
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
@@ -166,6 +167,10 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
     else {
         if (this->io.arm7.halted) {
             this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
+            if (!this->io.arm7.halted) {
+                //printf("\nIF:%08x IE:%08x", this->io.arm7.IF, this->io.arm7.IE);
+                dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "ARM7 RESUME! cyc:%lld", NDS_clock_current7(this));
+            }
             this->waitstates.current_transaction++;
         }
         else {
@@ -439,6 +444,7 @@ void NDSJ_reset(JSM)
     ARM946ES_reset(&this->arm9);
     NDS_CP_reset(&this->arm9);
     NDS_clock_reset(&this->clock);
+    NDS_SPI_reset(this);
     NDS_PPU_reset(this);
     NDS_mainbus_write9(this, R9_VRAMCNT+0, 1, 0, 0);
     NDS_mainbus_write9(this, R9_VRAMCNT+1, 1, 0, 0);
@@ -639,6 +645,14 @@ static void NDSJ_describe_io(JSM, struct cvec* IOs)
     this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
     this->ppu.cur_output = (u16 *)(d->display.output[0]);
+
+    struct physical_io_device *t = cvec_push_back(IOs);
+    physical_io_device_init(t, HID_TOUCHSCREEN, 1, 1, 1, 0);
+    t->touchscreen.params.width = 256;
+    t->touchscreen.params.height = 192;
+    t->touchscreen.params.x_offset = 0;
+    t->touchscreen.params.y_offset = -192;
+    this->spi.touchscr.pio = t;
 
     setup_audio(IOs);
 

@@ -12,6 +12,7 @@
 #include "nds_rtc.h"
 #include "nds_spi.h"
 #include "nds_timers.h"
+#include "nds_debugger.h"
 #include "helpers/multisize_memaccess.c"
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
@@ -299,11 +300,11 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return 0;
 
         case R_KEYINPUT+0: // buttons!!!
-            return NDS_get_controller_state(this->controller.pio, 0);
+            return NDS_get_controller_state(this, 0);
         case R_KEYINPUT+1: // buttons!!!
-            return NDS_get_controller_state(this->controller.pio, 1);
+            return NDS_get_controller_state(this, 1);
         case R_EXTKEYIN+0:
-            return NDS_get_controller_state(this->controller.pio, 2);
+            return NDS_get_controller_state(this, 2);
         case R_EXTKEYIN+1:
             return 0;
 
@@ -629,9 +630,11 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 NDS_SPI_release_hold(this);
             }
             // Don't change device while chipsel is hi?
-            if (this->spi.cnt.chipselect_hold) val = (val & 0b11111100) | this->spi.cnt.device;
+            //if (this->spi.cnt.chipselect_hold)
+            if (false)
+                val = (val & 0b11111100) | this->spi.cnt.device;
 
-            this->spi.cnt.u = (this->spi.cnt.u | 0xFF) | ((val & 0b11001111) << 8);
+            this->spi.cnt.u = (this->spi.cnt.u & 0xFF) | ((val & 0b11001111) << 8);
             return; }
 
         case R_POSTFLG:
@@ -653,6 +656,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                     printf("\nWARNING GBA MODE ATTEMPT");
                     return;
                 case 2:
+                    dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "HALT ARM7 cyc:%lld", NDS_clock_current7(this));
                     this->io.arm7.halted = 1;
                     return;
                 case 3:
@@ -879,11 +883,11 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return v;
 
         case R_KEYINPUT+0: // buttons!!!
-            return NDS_get_controller_state(this->controller.pio, 0);
+            return NDS_get_controller_state(this, 0);
         case R_KEYINPUT+1: // buttons!!!
-            return NDS_get_controller_state(this->controller.pio, 1);
+            return NDS_get_controller_state(this, 1);
         case R_EXTKEYIN+0:
-            return NDS_get_controller_state(this->controller.pio, 2);
+            return NDS_get_controller_state(this, 2);
         case R_EXTKEYIN+1:
             return 0;
 
@@ -1118,6 +1122,10 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return v;
         }
 
+        case 0x04000240: // These next 4 are write-only
+        case 0x04000241:
+        case 0x04000242:
+        case 0x04000243:
         case 0x04004008: // new DSi stuff libnds cares about?
         case 0x04004009:
         case 0x0400400A:
