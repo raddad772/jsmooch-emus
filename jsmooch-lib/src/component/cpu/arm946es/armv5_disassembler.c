@@ -710,13 +710,20 @@ static void dasm_MCR_MRC(u32 opcode, struct jsm_string *out, i64 instruction_add
     ostr("P%d, %d, R%d, %d, %d, %d", Pnd, copcode, Rdd, Cn, Cm, CP);
 }
 
+static void dasm_BKPT(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
+{
+    if ((opcode >> 28) != 14) {
+        ostr("BAD ");
+    }
+    ostr("bkpt (opc: ");
+    ohex(opcode, 8);
+    ostr(")");
+}
+
 static void dasm_SWI(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
 {
-    if ((opcode >> 28) == 14) ostr("bkpt");
-    else {
-        ostr("swi #");
-        ohex(opcode & 0xFF, 2);
-    }
+    ostr("swi #$");
+    ohex(opcode & 0xFF, 2);
 }
 
 static void dasm_INVALID(u32 opcode, struct jsm_string *out, i64 instruction_addr, struct ARMctxt *ct)
@@ -926,6 +933,8 @@ void ARMv5_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct 
         dasm_BLX(opcode, out, ins_addr, ct);
     else if ((opc & 0b111110011111) == 0b000100000101) // .... 000'10..0 0101  QADD, QSUB, QDADD, QDSUB
         dasm_QADD_QSUB_QDADD_QDSUB(opcode, out, ins_addr, ct);
+    else if ((opc & 0b111111111111) == 0b000100100111) //000'10010 0111  BKPT
+        dasm_BKPT(opcode, out, ins_addr, ct);
     else if ((opc & 0b111000000001) == 0b000000000000) //000'..... ...0  Data Processing (immediate shift)
         dasm_data_proc_immediate_shift(opcode, out, ins_addr, ct);
     else if ((opc & 0b111000001001) == 0b000000000001) //000'..... 0..1  Data Processing (register shift)

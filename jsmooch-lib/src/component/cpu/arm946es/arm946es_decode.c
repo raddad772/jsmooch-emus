@@ -69,6 +69,7 @@ static enum ARM_ins_kind decode_arm(u32 opc)
     OPCd(CLZ,                       OB(11111111,1111), OB(00010110,0001)); // .... 000'10110 0001  CLZ
     OPCd(BLX_reg,                   OB(11111111,1111), OB(00010010,0011)); // .... 000'10010 0011  BLX (register)
     OPCd(QADD_QSUB_QDADD_QDSUB,     OB(11111001,1111), OB(00010000,0101)); // .... 000'10..0 0101  QADD, QSUB, QDADD, QDSUB
+    OPCd(BKPT,                      OB(11111111,1111), OB(00010010,0111)); // .... 000'10010 0111  BKPT
     OPCd(data_proc_immediate_shift, OB(11100000,0001), OB(00000000,0000)); // .... 000'..... ...0  Data Processing (immediate shift)
     OPCd(data_proc_register_shift,  OB(11100000,1001), OB(00000000,0001)); // .... 000'..... 0..1  Data Processing (register shift)
     OPCd(data_proc_undefined,       OB(11111011,0000), OB(00110000,0000)); // .... 001'10.00 ....  Undefined instructions in Data Processing
@@ -126,6 +127,7 @@ void ARM946ES_fill_arm_table(struct ARM946ES *this)
             I(STC_LDC)
             I(CDP)
             I(MCR_MRC)
+            I(BKPT)
             I(SWI)
             I(INVALID)
             I(PLD)

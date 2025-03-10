@@ -972,7 +972,7 @@ void ARM946ES_ins_MCR_MRC(struct ARM946ES *this, u32 opcode)
     ARM946ES_idle(this, 1);
 }
 
-void ARM946ES_ins_SWI(struct ARM946ES *this, u32 opcode)
+void ARM946ES_ins_BKPT(struct ARM946ES *this, u32 opcode)
 {
     if ((opcode >> 28) == 14) { // BKPT
         this->regs.R_abt[1] = this->regs.PC - 4;
@@ -982,8 +982,15 @@ void ARM946ES_ins_SWI(struct ARM946ES *this, u32 opcode)
         this->regs.CPSR.I = 1;
         this->regs.PC = this->regs.EBR | 0x0000000C;
         ARM946ES_flush_pipeline(this);
-        return;
+        printf("\nARM9 BKPT!?");
     }
+    else {
+        ARM946ES_ins_undefined_instruction(this, opcode);
+    }
+}
+
+void ARM946ES_ins_SWI(struct ARM946ES *this, u32 opcode)
+{
     this->regs.R_svc[1] = this->regs.PC - 4;
     this->regs.SPSR_svc = this->regs.CPSR.u;
     this->regs.CPSR.mode = ARM9_supervisor;
