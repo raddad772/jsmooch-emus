@@ -45,6 +45,7 @@ u32 NDS_IPC_fifo_peek_last(struct NDS_CPU_FIFO *this)
 
 u32 NDS_IPC_fifo_pop(struct NDS_CPU_FIFO *this)
 {
+    if (this->len == 0) return this->last;
     this->last = this->data[this->head];
     this->len--;
     this->head = (this->head + 1) & 15;

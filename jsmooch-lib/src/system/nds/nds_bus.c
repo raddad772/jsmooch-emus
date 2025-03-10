@@ -1528,12 +1528,13 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
                     v = NDS_IPC_fifo_peek_last(&this->io.ipc.to_arm9);
                 }
                 else {
-                    u32 old_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm7.irq_on_send_fifo_empty;
+                    u32 old_bits7 = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm7.irq_on_send_fifo_empty;
                     v = NDS_IPC_fifo_pop(&this->io.ipc.to_arm9);
-                    u32 new_bits = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm7.irq_on_send_fifo_empty;
-                    if (!old_bits && new_bits) { // arm7 send is empty
+                    u32 new_bits7 = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm7.irq_on_send_fifo_empty;
+                    if (!old_bits7 && new_bits7) { // arm7 send is empty
                         NDS_update_IF7(this, NDS_IRQ_IPC_SEND_EMPTY);
                     }
+
                 }
             }
             else {
