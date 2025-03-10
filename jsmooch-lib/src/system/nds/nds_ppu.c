@@ -534,7 +534,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     //hpos = ((hpos >> 3) - 1) << 3;
     fetch_bg_slice(this, eng, bg, bgnum, hpos >> 3, vpos, bgpx, 0);
     //struct NDS_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
-    u8 *scroll_line = &this->dbg_info.bg_scrolls[bgnum].lines[((bg->vscroll + this->clock.ppu.y) & bg->vpixels_mask) * 128];
+    //u8 *scroll_line = &this->dbg_info.bg_scrolls[bgnum].lines[((bg->vscroll + this->clock.ppu.y) & bg->vpixels_mask) * 128];
     u32 startx = fine_x;
     for (u32 i = startx; i < 8; i++) {
         bg->line[screen_x].color = bgpx[i].color;
@@ -542,19 +542,19 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
         bg->line[screen_x].priority = bgpx[i].priority;
         screen_x++;
         hpos = (hpos + 1) & bg->hpixels_mask;
-        scroll_line[hpos >> 3] |= 1 << (hpos & 7);
+        //scroll_line[hpos >> 3] |= 1 << (hpos & 7);
     }
 
     while (screen_x < 256) {
         fetch_bg_slice(this, eng, bg, bgnum, hpos >> 3, vpos, &bg->line[screen_x], screen_x);
-        if (screen_x <= 248) {
+/*        if (screen_x <= 248) {
             scroll_line[hpos >> 3] = 0xFF;
         }
         else {
             for (u32 rx = screen_x; rx < 256; rx++) {
                 scroll_line[hpos >> 3] |= 1 << (rx - screen_x);
             }
-        }
+        }*/
         screen_x += 8;
         hpos = (hpos + 8) & bg->hpixels_mask;
     }
@@ -620,7 +620,7 @@ static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     memset(bg->line, 0, sizeof(bg->line));
     if (!bg->enable) { return; }
 
-    struct NDS_DBG_tilemap_line_bg *dtl = &this->dbg_info.bg_scrolls[bgnum];
+    //struct NDS_DBG_tilemap_line_bg *dtl = &this->dbg_info.bg_scrolls[bgnum];
 
     for (i64 screen_x = 0; screen_x < 256; screen_x++) {
         i32 px = fx >> 8;
@@ -638,7 +638,7 @@ static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
             if (py >= bg->vpixels) continue;
         }
         get_affine_bg_pixel(this, eng, bgnum, bg, px, py, &bg->line[screen_x]);
-        dtl->lines[(py << 7) + (px >> 3)] |= 1 << (px & 7);
+        //dtl->lines[(py << 7) + (px >> 3)] |= 1 << (px & 7);
     }
     affine_line_end(this, eng, bg);
 }
