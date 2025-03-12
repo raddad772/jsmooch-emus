@@ -29,6 +29,7 @@ void NDS_PPU_init(struct NDS *this)
         p->bg[2].pa = 1 << 8; p->bg[2].pd = 1 << 8;
         p->bg[3].pa = 1 << 8; p->bg[3].pd = 1 << 8;
     }
+    this->ppu.eng2d[0].io.do_3d = 1;
 }
 
 void NDS_PPU_delete(struct NDS *this)
@@ -925,7 +926,7 @@ void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hbla
         if ((this->ppu.io.vcount_at9 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VMATCH);
     }
     else {
-        // Now draw line!
+        // Start of hblank. Now draw line!
         if (this->clock.ppu.y < 192) {
             draw_line(this, 0);
             draw_line(this, 1);
@@ -968,6 +969,8 @@ static void new_frame(struct NDS *this) {
             }
         }*/
     }
+
+    NDS_trigger_dma9_if(this, NDS_DMA_START_OF_DISPLAY);
 }
 
 
@@ -982,6 +985,7 @@ void NDS_PPU_vblank(void *ptr, u64 key, u64 clock, u32 jitter)
         if (this->ppu.io.vblank_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VBLANK);
         NDS_check_dma7_at_vblank(this);
         NDS_check_dma9_at_vblank(this);
+        NDS_GE_vblank_up(this);
     }
 }
 
@@ -1198,27 +1202,23 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     }
     struct NDSENG2D *eng = &this->ppu.eng2d[en];
     switch(addr) {
+        case R9_DISP3DCNT+0:
+            this->re.io.DISP3DCNT.u = (this->re.io.DISP3DCNT.u & 0xFF00) | (val & 0xFF);
+            return;
+        case R9_DISP3DCNT+1:
+            // bits 5 and 6 are acks
+            if (val & 0x10) { // ack rdlines underflow
+                this->re.io.DISP3DCNT.rdlines_underflow = 0;
+            }
+            if (val & 0x20) {
+                this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 0;
+            }
+            this->re.io.DISP3DCNT.u = (this->re.io.DISP3DCNT.u & 0xFF) | ((val & 0b01001111) << 8);
+            return;
+
         case R_VCOUNT+0: // read-only register...
         case R_VCOUNT+1:
             return;
-        case R9_DISP3DCNT+0:
-            this->ppu.eng3d.io.texture_mapping = val & 1;
-            this->ppu.eng3d.io.polygon_attr_shading = (val >> 1) & 1;
-            this->ppu.eng3d.io.alpha_test = (val >> 2) & 1;
-            this->ppu.eng3d.io.alpha_blending = (val >> 3) & 1;
-            this->ppu.eng3d.io.anti_aliasing = (val >> 4) & 1;
-            this->ppu.eng3d.io.edge_marking = (val >> 5) & 1;
-            this->ppu.eng3d.io.fog_color_alpha_mode = (val >> 6) & 1;
-            this->ppu.eng3d.io.fog_master_enable = (val >> 7) & 1;
-            return;
-        case R9_DISP3DCNT+1:
-            this->ppu.eng3d.io.fog_depth_shift = val & 15;
-            // These two are acknowledge
-            if ((val >> 4) & 1) this->ppu.eng3d.io.color_buffer_rdlines_underflow = 0;
-            if ((val >> 5) & 1) this->ppu.eng3d.io.polygon_vertex_ram_overflow = 0;
-            this->ppu.eng3d.io.rear_plane_mode  = (val >> 6) & 1;
-            return;
-
         case R9_DISP3DCNT+2:
         case R9_DISP3DCNT+3: return;
 
@@ -1252,12 +1252,6 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 doit = 1;
             }
             return; }
-        case R9_SWAP_BUFFERS:
-            this->ppu.eng3d.swap_buffers.on_next_vblank = 1;
-            this->ppu.eng3d.swap_buffers.translucent_poly_y_sorting = val & 1;
-            this->ppu.eng3d.swap_buffers.depth_buffering = (val >> 1) & 1;
-            return;
-
         case R_DISPSTAT+0:
             this->ppu.io.vblank_irq_enable9 = (val >> 3) & 1;
             this->ppu.io.hblank_irq_enable9 = (val >> 4) & 1;
@@ -1269,8 +1263,14 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
         case R9_DISPCNT+0:
             if ((val & 7) != eng->io.bg_mode) {
+                printf("\neng%d NEW BG MODE: %d", en, val & 7);
                 dbgloglog(NDS_CAT_PPU_BG_MODE, DBGLS_INFO, "eng%d new BG mode:%d", en, eng->io.bg_mode);
             }
+            if (eng == 0) {
+                eng->io.do_3d = (val >> 3) & 1;
+                printf("\n2d/3d: %d", eng->io.do_3d);
+            }
+
             eng->io.bg_mode = val & 7;
             if (en == 0) eng->bg[0].do3d = (val >> 3) & 1;
             eng->io.tile_obj_map_1d = (val >> 4) & 1;
@@ -1523,6 +1523,11 @@ u32 NDS_PPU_read9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     u32 v;
 
     switch(addr) {
+        case R9_DISP3DCNT+0:
+            return this->re.io.DISP3DCNT.u & 0xFF;
+        case R9_DISP3DCNT+1:
+            return (this->re.io.DISP3DCNT.u >> 8) & 0xFF;
+
         case R9_DISPCNT+0:
             v = eng->io.bg_mode;
             v |= eng->bg[0].do3d << 3;

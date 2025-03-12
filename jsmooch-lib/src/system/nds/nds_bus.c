@@ -812,6 +812,9 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             ch->io.repeat = (val >> 1) & 1;
             ch->io.transfer_size = (val >> 2) & 1;
             ch->io.start_timing = (val >> 4) & 3;
+            if (ch->io.start_timing >= 2) {
+                printf("\nWARN START TIMING %d NOT IMPLEMENT FOR ARM7 DMA!", ch->io.start_timing);
+            }
             ch->io.irq_on_end = (val >> 6) & 1;
             u32 old_enable = ch->io.enable;
             ch->io.enable = (val >> 7) & 1;
@@ -871,11 +874,14 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     }
     u32 v;
     switch(addr) {
+        case 0x04004000:
+            // NDS thing
+            return 0;
         case R9_POWCNT1+0:
             v = this->io.powcnt.lcd_enable;
             v |= this->ppu.eng2d[0].enable << 1;
-            v |= this->ppu.eng3d.render_enable << 2;
-            v |= this->ppu.eng3d.geometry_enable << 3;
+            v |= this->re.enable << 2;
+            v |= this->ge.enable << 3;
             return v;
         case R9_POWCNT1+1:
             v = this->ppu.eng2d[1].enable << 1;
@@ -1157,8 +1163,8 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R9_POWCNT1+0:
             this->io.powcnt.lcd_enable = val & 1;
             this->ppu.eng2d[0].enable = (val >> 1) & 1;
-            this->ppu.eng3d.render_enable = (val >> 2) & 1;
-            this->ppu.eng3d.geometry_enable = (val >> 3) & 1;
+            this->re.enable = (val >> 2) & 1;
+            this->ge.enable = (val >> 3) & 1;
             return;
         case R9_POWCNT1+1:
             this->ppu.eng2d[1].enable = (val >> 1) & 1;
@@ -1510,6 +1516,9 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return NDS_PPU_read9_io(this, addr, sz, access, has_effect);
     }
+    if ((addr >= 0x04000320) && (addr < 0x04000700)) {
+        return NDS_GE_read(this, addr, sz);
+    }
     if ((addr >= 0x04000400) && (addr < 0x04000520)) return busrd9_apu(this, addr, sz, access, has_effect);
     switch(addr) {
         case R_ROMCTRL:
@@ -1593,6 +1602,11 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         NDS_PPU_write9_io(this, addr, sz, access, val);
         return;
     }
+    if ((addr >= 0x04000320) && (addr < 0x04000700)) {
+        NDS_GE_write(this, addr, sz, val);
+        return;
+    }
+
     if ((addr >= 0x04000400) && (addr < 0x04000520)) return buswr9_apu(this, addr, sz, access, val);
     switch(addr) {
         case R_AUXSPICNT: {

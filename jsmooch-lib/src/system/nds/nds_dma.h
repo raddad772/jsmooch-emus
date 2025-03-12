@@ -7,6 +7,27 @@
 
 #include "helpers/int.h"
 
+/*
+0  Start Immediately
+  1  Start at V-Blank
+  2  Start at H-Blank (paused during V-Blank)
+  3  Synchronize to start of display
+  4  Main memory display
+  5  DS Cartridge Slot
+  6  GBA Cartridge Slot
+  7  Geometry Command FIFO */
+
+enum NDS_DMA_start_timings {
+    NDS_DMA_IMMEDIATE=0,
+    NDS_DMA_VBLANK,
+    NDS_DMA_HBLANK,
+    NDS_DMA_START_OF_DISPLAY,
+    NDS_DMA_MAIN_MEMORY_DISPLAY,
+    NDS_DMA_DS_CART_SLOT,
+    NDS_DMA_GBA_CART_SLOT,
+    NDS_DMA_GE_FIFO
+};
+
 struct NDS_DMA_ch;
 struct NDS;
 void NDS_dma7_start(struct NDS *, struct NDS_DMA_ch *ch, u32 i);

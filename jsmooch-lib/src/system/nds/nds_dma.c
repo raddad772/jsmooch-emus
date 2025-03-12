@@ -253,7 +253,7 @@ void NDS_check_dma7_at_vblank(struct NDS *this)
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
         struct NDS_DMA_ch *ch = &this->dma7[i];
-        if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
+        if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == NDS_DMA_VBLANK)) {
             NDS_dma7_start(this, ch, i);
         }
     }
@@ -275,7 +275,7 @@ void NDS_check_dma9_at_hblank(struct NDS *this)
     if (this->clock.ppu.y >= 192) return;
     for (u32 i = 0; i < 4; i++) {
         struct NDS_DMA_ch *ch = &this->dma9[i];
-        if (ch->io.enable && !ch->op.started && (ch->io.start_timing == 2)) {
+        if (ch->io.enable && !ch->op.started && (ch->io.start_timing == NDS_DMA_HBLANK)) {
             NDS_dma9_start(this, ch, i);
         }
     }
@@ -284,6 +284,15 @@ void NDS_check_dma9_at_hblank(struct NDS *this)
 void NDS_trigger_dma7_if(struct NDS *this, u32 start_timing)
 {
     struct NDS_DMA_ch *ch;
+    assert(start_timing <= 3);
+    if (start_timing >= 2) {
+        static int a = 1;
+        if (a) {
+            a = 0;
+            printf("\nWARN DMA MODE %d for ARM7 NOT IMPLEMENTED", start_timing);
+        }
+        return;
+    }
     for (u32 i = 0; i < 4; i++) {
         ch = &this->dma7[i];
         if (ch->io.enable && ch->io.start_timing == start_timing)

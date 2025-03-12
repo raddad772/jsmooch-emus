@@ -13,6 +13,8 @@
 #include "nds_controller.h"
 #include "cart/nds_cart.h"
 #include "nds_ipc.h"
+#include "nds_ge.h"
+#include "nds_re.h"
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm946es/arm946es.h"
@@ -29,6 +31,8 @@ struct NDS {
     struct ARM946ES arm9;
     struct NDS_clock clock;
     struct NDS_PPU ppu;
+    struct NDS_GE ge;
+    struct NDS_RE re;
     u32 arm9_ins, arm7_ins;
     struct NDS_controller controller;
 

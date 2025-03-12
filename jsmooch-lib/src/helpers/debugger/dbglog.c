@@ -27,7 +27,7 @@ void dbglog_view_init(struct dbglog_view *this)
     category_node_init(&this->category_root);
     for (u32 i = 0; i < MAX_DBGLOG_LINES; i++) {
         jsm_string_init(&this->items.data[i].text, 200);
-        jsm_string_init(&this->items.data[i].extra, 50);
+        jsm_string_init(&this->items.data[i].extra, 250);
     }
 }
 

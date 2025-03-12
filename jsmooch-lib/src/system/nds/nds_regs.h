@@ -136,14 +136,15 @@
 #define R9_EDGE_COLOR       0x04000330
 #define R9_ALPHA_TEST_REF   0x04000340
 #define R9_CLEAR_COLOR      0x04000350
+#define R9_CLEAR_DEPTH      0x04000354
 #define R9_CLRIMG_OFFSET    0x04000356
 #define R9_FOG_COLOR        0x04000358
 #define R9_FOG_OFFSET       0x0400035C
 #define R9_TOON_TABLE       0x04000380
 
 // geometry engine
-#define R9_GFXFIFO          0x04000400
-#define R9_GFXSTAT          0x04000600
+#define R9_GXFIFO           0x04000400
+#define R9_GXSTAT           0x04000600
 #define R9_RAM_COUNT        0x04000604
 #define R9_DISP_1DOT_DEPTH  0x04000610
 #define R9_POS_RESULT       0x04000620
@@ -170,13 +171,13 @@
 #define R9_G_CMD_VTX_16         0x0400048C
 #define R9_G_CMD_VTX_10         0x04000490
 #define R9_G_CMD_VTX_XY         0x04000494
-#define R9_G_CMD_XZ             0x04000498
-#define R9_G_CMD_YZ             0x0400049C
+#define R9_G_CMD_VTX_XZ         0x04000498
+#define R9_G_CMD_VTX_YZ         0x0400049C
 #define R9_G_CMD_VTX_DIFF       0x040004A0
 #define R9_G_CMD_POLYGON_ATTR   0x040004A4
 #define R9_G_CMD_TEXIMAGE_PARAM 0x040004A8
 #define R9_G_CMD_PLTT_BASE      0x040004AC
-#define R9_G_CMD_DIF_AMB        0x040004C0
+#define R9_G_CMD_DIFF_AMB       0x040004C0
 #define R9_G_CMD_SPE_EMI        0x040004C4
 #define R9_G_CMD_LIGHT_VECTOR   0x040004C8
 #define R9_G_CMD_LIGHT_COLOR    0x040004CC

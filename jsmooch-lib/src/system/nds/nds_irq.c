@@ -12,6 +12,9 @@ void NDS_eval_irqs_7(struct NDS *this)
 
 void NDS_eval_irqs_9(struct NDS *this)
 {
+    // Bit 21 can't go down while certain conditions are true
+    if (!(this->io.arm9.IF & (1 << 21)))
+        this->io.arm9.IF |= NDS_GE_check_irq(this) << 21;
     this->arm9.regs.IRQ_line = (!!(this->io.arm9.IE & this->io.arm9.IF)) & this->io.arm9.IME;
 }
 

@@ -695,7 +695,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "libnds/simple_tri.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/touch_area.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);

@@ -158,7 +158,9 @@ u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, vo
 u64 scheduler_only_add_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key, 0);
-    return scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
+    u64 id = scheduler_bind_or_run(e, ptr, callback, timecode, key, still_sched);
+    //printf("\n%lld %lld", id, key);
+    return id;
 }
 
 u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)

@@ -61,8 +61,6 @@ struct NDS_PPU {
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 
-    struct NDS_GE ge;
-
     struct {
         u32 vblank_irq_enable7, hblank_irq_enable7, vcount_irq_enable7;
         u32 vcount_at7;
@@ -96,6 +94,7 @@ struct NDS_PPU {
         } blend;
 
         struct {
+            u32 do_3d;
             u32 bg_mode;
             u32 force_blank;
             u32 frame, hblank_free;
@@ -162,32 +161,7 @@ struct NDS_PPU {
             u8 *texture[4];
             u8 *palette[6];
         } slots;
-
-        struct {
-            u32 texture_mapping;
-            u32 polygon_attr_shading;
-            u32 alpha_test;
-            u32 alpha_blending;
-            u32 anti_aliasing;
-            u32 edge_marking;
-            u32 fog_color_alpha_mode;
-            u32 fog_master_enable;
-            u32 fog_depth_shift;
-            u32 color_buffer_rdlines_underflow;
-            u32 polygon_vertex_ram_overflow;
-            u32 rear_plane_mode;
-        } io;
-
-        struct {
-            u32 on_next_vblank;
-            u32 translucent_poly_y_sorting;
-            u32 depth_buffering;
-        } swap_buffers;
-
-        u32 geometry_enable;
-        u32 render_enable;
     } eng3d;
-
     struct {
         struct {
             u32 y_counter, y_current;

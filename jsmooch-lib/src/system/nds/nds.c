@@ -13,6 +13,7 @@
 #include "nds_timers.h"
 #include "nds_rtc.h"
 #include "nds_irq.h"
+#include "nds_ge.h"
 #include "nds_regs.h"
 #include "nds_spi.h"
 
@@ -169,7 +170,7 @@ static i64 run_arm7(struct NDS *this, i64 num_cycles)
             this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
             if (!this->io.arm7.halted) {
                 //printf("\nIF:%08x IE:%08x", this->io.arm7.IF, this->io.arm7.IE);
-                dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "ARM7 RESUME! cyc:%lld", NDS_clock_current7(this));
+                dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "ARM7 RESUME! cyc:%lld IF:%08x IE:%08x", NDS_clock_current7(this), this->io.arm7.IF, this->io.arm7.IE);
             }
             this->waitstates.current_transaction++;
         }
@@ -193,9 +194,14 @@ static i64 run_arm9(struct NDS *this, i64 num_cycles)
     if (NDS_dma9_go(this)) {
     }
     else {
-        this->arm9_ins = 1;
-        ARM946ES_run_noIRQcheck(&this->arm9);
-        this->arm9_ins = 0;
+        if (!this->ge.fifo.pausing_cpu) {
+            this->arm9_ins = 1;
+            ARM946ES_run_noIRQcheck(&this->arm9);
+            this->arm9_ins = 0;
+        }
+        else {
+            this->waitstates.current_transaction += 1;
+        }
     }
     this->clock.master_cycle_count9 += this->waitstates.current_transaction;
     u32 r = this->waitstates.current_transaction;
@@ -219,8 +225,6 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
             this->clock.cycles9 -= run_arm9(this, this->clock.cycles9);
         }
 
-        // We need to use our scheduler...
-        //NDS_cart_check_transfer(this);
         if (dbg.do_break) break;
     }
     // TODO: let this be scheduled.
@@ -266,6 +270,7 @@ void NDS_new(struct jsm_system *jsm)
     NDS_bus_init(this);
     NDS_cart_init(this);
     NDS_PPU_init(this);
+    NDS_GE_init(this);
     //NDS_APU_init(this);
 
     snprintf(jsm->label, sizeof(jsm->label), "Nintendo DS");

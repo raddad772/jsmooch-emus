@@ -415,6 +415,8 @@ add_library(jsmooch-lib
         src/system/nds/nds_ge.h
         src/helpers/debugger/dbglog.c
         src/helpers/debugger/dbglog.h
+        src/system/nds/nds_re.c
+        src/system/nds/nds_re.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
