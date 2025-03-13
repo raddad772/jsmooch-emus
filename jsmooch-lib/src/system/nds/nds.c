@@ -155,11 +155,6 @@ static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
     scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
 }
 
-void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    assert(1==0);
-}
-
 static i64 run_arm7(struct NDS *this, i64 num_cycles)
 {
     // Run DMA & CPU
@@ -239,9 +234,6 @@ void NDS_new(struct jsm_system *jsm)
     this->waitstates.current_transaction = 0;
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count7, &this->waitstates.current_transaction);
     this->scheduler.max_block_size = 45;
-
-    this->scheduler.schedule_more.func = &NDS_schedule_more;
-    this->scheduler.schedule_more.ptr = this;
 
     this->scheduler.run.func = &NDS_run_block;
     this->scheduler.run.ptr = this;

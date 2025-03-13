@@ -464,5 +464,4 @@ u32 NDS_open_bus(struct NDS *this, u32 addr, u32 sz);
 u64 NDS_clock_current7(struct NDS *);
 u64 NDS_clock_current9(struct NDS *);
 void NDS_bus_reset(struct NDS *);
-void NDS_schedule_more(void *ptr, u64 key, u64 clock, u32 jitter);
 #endif //JSMOOCH_EMUS_NDS_BUS_H

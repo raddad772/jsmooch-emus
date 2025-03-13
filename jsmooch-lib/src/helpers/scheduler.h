@@ -45,7 +45,6 @@ struct scheduler_t {
         u32 num;
     } to_delete;
 
-    struct scheduled_bound_function schedule_more;
     struct scheduled_bound_function run;
 
     i64 cycles_left_to_run;
@@ -59,7 +58,6 @@ struct scheduler_t {
 enum scheduler_actions {
     SA_run_cycles,
     SA_keyed_function,
-    SA_schedule_more,
     SA_exit_loop
 };
 

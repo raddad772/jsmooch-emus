@@ -199,13 +199,6 @@ static void run_block(void *bound_ptr, u64 num, u64 current_clock, u32 jitter)
     R3000_cycle(&this->cpu, num);
 }
 
-static void schedule_more(void *bound_ptr, u64 key, u64 current_clock, u32 jitter)
-{
-    printf("\nSCHEDULE MORE CALLED %lld", current_clock);
-    //schedule_frame((struct PS1 *)bound_ptr);
-    assert(1==2);
-}
-
 static void setup_IRQs(struct PS1 *this)
 {
     IRQ_multiplexer_b_init(&this->IRQ_multiplexer, 11);
@@ -228,8 +221,6 @@ void PS1_new(struct jsm_system *jsm)
     memset(this, 0, sizeof(*this));
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.waitstates);
     this->scheduler.max_block_size = 30;
-    this->scheduler.schedule_more.func = &schedule_more;
-    this->scheduler.schedule_more.ptr = this;
 
     this->scheduler.run.func = &run_block;
     this->scheduler.run.ptr = this;

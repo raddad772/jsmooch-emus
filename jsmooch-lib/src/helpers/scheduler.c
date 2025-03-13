@@ -246,6 +246,7 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 {
     this->cycles_left_to_run += (i64)howmany;
     //printf("\nRun %lld. Cycles left to run: %lld", howmany, this->cycles_left_to_run);
+    assert(this->first_event);
 
     while(!dbg.do_break) {
         // First, check if there's no events.
@@ -253,13 +254,6 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         // Then, if we hace any, run some cycles.
         struct scheduler_event *e = this->first_event;
         i64 loop_start_clock = current_time(this);
-
-        // If there's no next event...
-        if (!e) { // Schedule more!
-            //printf("\nNo event. Schedule more.");
-            this->schedule_more.func(this->schedule_more.ptr, 0, loop_start_clock, 0);
-            continue;
-        }
 
         while(loop_start_clock >= e->timecode) {
             i64 jitter = loop_start_clock - e->timecode;
@@ -277,10 +271,9 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
             //pprint_list(ww, this);
             e = this->first_event;
             if (e == NULL) {
-                break;
+                return;
             }
         }
-        if (!e) continue;
 
         // Run up to that many cycles...
         if (this->cycles_left_to_run <= 0) break;

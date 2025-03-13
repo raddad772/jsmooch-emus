@@ -71,7 +71,6 @@ static void testgrp1()
 {
     test_reset();
 
-    scheduler.schedule_more.func = &tst_schedulemore_none;
     scheduler.run.func = &tst_run;
 
     // schedule 100, 10 cycles apart
