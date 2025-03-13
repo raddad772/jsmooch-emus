@@ -1052,6 +1052,9 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     // For any unprocessed vertices, add to polygorm RAM.
     out->first_vertex_ptr = finalize_verts_and_get_first_addr(this);
     out->num_vertices = count_leafs(&VTX_ROOT, 0);
+    if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
+        b->polygon_index--;
+    }
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);
 }
 
