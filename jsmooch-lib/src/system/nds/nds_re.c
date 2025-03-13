@@ -25,13 +25,17 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *buf, i32 line_num)
 
 void NDS_RE_render_frame(struct NDS *this)
 {
-    printf("\n\nRE render frame!");
     struct NDS_GE_BUFFERS *buf = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
     for (u32 i = 0; i < 192; i++)
         render_line(this, buf, i);
 }
 
 void NDS_RE_init(struct NDS *this)
+{
+
+}
+
+void NDS_RE_reset(struct NDS *this)
 {
 
 }

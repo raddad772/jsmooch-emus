@@ -53,16 +53,6 @@ struct NDS_GE_matrix {
     i32 m[16];
 };
 
-struct NDS_GE_BUFFERS {
-    u8 polygon[1024 * 104];
-    u8 vertex[1024 * 144];
-    u32 polygon_index;
-    u32 vertex_index;
-
-    u32 translucent_y_sorting_manual;
-    u32 depth_buffering_w;
-};
-
 struct NDS_GE_FIFO_entry {
     u8 cmd;
     u32 data;
@@ -98,6 +88,25 @@ enum NDS_TEX_COORD_TRANSFORM_MODE {
     NDS_TCTM_normal,
     NDS_TCTM_vertex
 };
+
+
+struct NDS_GE_VTX_node {
+    i32 xyzw[4];
+
+    u32 processed; // =0 not processed. =1 processed
+    u16 vram_ptr;
+
+    // a processed vertex will have finished RE info
+    // If processed and no children, then it is already at final coords.
+    // If processed && children, this vertex itself is not useful for final, but the child vertex is
+    u32 num_children;
+    struct NDS_GE_VTX_node *children[4];
+    struct NDS_GE_VTX_node *parent;
+
+    i32 uv[2];
+    u32 color;
+};
+
 
 union NDS_GE_TEX_PARAM {
     struct {
@@ -136,19 +145,31 @@ union NDS_GE_POLY_ATTR {
     u32 u;
 };
 
-struct NDS_GE_VTX {
-    i32 xyzw[4];
+struct __attribute__((packed)) NDS_RE_POLY  {
+    union NDS_GE_POLY_ATTR attr; // 32 bits
+    union NDS_GE_TEX_PARAM tex_param;
 
+    u16 first_vertex_ptr;
+    u32 num_vertices;
+    u8 lines_on_bitfield[24];
+    u16 edge_l_or_r_bitfield;
+};
+
+struct NDS_RE_VERTEX { // 24 bytes
+    u16 xx, yy;
+    i32 ww, zz;
     i32 uv[2];
     u32 color;
 };
 
-struct __attribute__((packed)) NDS_GE_RE_POLY  {
-    union NDS_GE_POLY_ATTR attr; // 32 bits
+struct NDS_GE_BUFFERS {
+    struct NDS_RE_POLY polygon[2048];
+    struct NDS_RE_VERTEX vertex[6144];
+    u32 polygon_index;
+    u32 vertex_index;
 
-    u16 first_vertex_ptr;
-    u8 lines_on_bitfield[24];
-    u16 edge_l_or_r_bitfield;
+    u32 translucent_y_sorting_manual;
+    u32 depth_buffering_w;
 };
 
 struct NDS_RE_LINEBUFFER {
@@ -188,12 +209,18 @@ struct NDS_RE {
             u32 u;
         } DISP3DCNT;
 
+        struct {
+            i32 x0, y0, x1, y1, width, height;
+        } viewport;
+
     } io;
 
     struct {
         struct NDS_RE_LINEBUFFER linebuffer[192];
     } out;
 };
+
+#define NDS_GE_VTX_LIST_MAX 100
 
 struct NDS_GE {
     struct NDS_GE_BUFFERS buffers[2];
@@ -229,6 +256,7 @@ struct NDS_GE {
             struct NDS_GE_matrix projection[2];
             struct NDS_GE_matrix texture[2];
         } stacks;
+        struct NDS_GE_matrix coordinate, texture, projection, direction;
         struct NDS_GE_matrix clip;
     } matrices;
 
@@ -295,18 +323,21 @@ struct NDS_GE {
             struct {
                 union NDS_GE_POLY_ATTR attr;
                 u32 num_lights; // set from attr when attr is latched
+                union NDS_GE_TEX_PARAM tex_param;
             } current;
         } poly;
 
         struct {
             u32 color; // 6-bit R, 6-bit G, 6-bit B
             i32 S, T;
-            union NDS_GE_TEX_PARAM tex_param;
 
-            struct {
-                struct NDS_GE_VTX items[4];
-                u32 head, tail, len;
-            } cache;
+            struct NDS_GE_VTX_node root;
+
+            struct NDS_GE_ALLOC_LIST {
+                struct NDS_GE_VTX_node pool[NDS_GE_VTX_LIST_MAX];
+                struct NDS_GE_VTX_node *items[NDS_GE_VTX_LIST_MAX];
+                u32 list_len;
+            } alloc_list;
         } vtx;
 
         struct {
@@ -318,11 +349,17 @@ struct NDS_GE {
             } mode;
         } vtx_strip;
     } params;
+
+    struct {
+        u32 pos_test[4];
+        u32 vector[2];
+    } results;
+    u32 winding_order;
 };
 
 struct NDS;
 void NDS_GE_init(struct NDS *);
-
+void NDS_GE_reset(struct NDS *);
 void NDS_GE_FIFO_write(struct NDS *, u32 val);
 u32 NDS_GE_check_irq(struct NDS *);
 void NDS_GE_write(struct NDS *, u32 addr, u32 sz, u32 val);

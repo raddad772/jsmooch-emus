@@ -9,12 +9,28 @@
 #include "nds_irq.h"
 #include "nds_regs.h"
 #include "nds_dma.h"
+#include "helpers/multisize_memaccess.c"
+
+#define printfcd(...) (void)0
 
 static u32 tbl_num_params[0xFF];
 static i32 tbl_num_cycles[0xFF];
 static u32 tbl_cmd_good[0xFF];
 
-#define VTX_CACHE this->ge.params.vtx.cache
+static float vtx_to_float(i32 v)
+{
+    return ((float)v) / 4096.0f;
+}
+
+static void pprint_matrix(const char *n, i32 *s) {
+    printfcd("\nMatrix %s", n);
+    for (u32 y = 0; y < 16; y+=4) {
+        printfcd("\n%f %f %f %f", vtx_to_float(s[y+0]), vtx_to_float(s[y+1]), vtx_to_float((s[y+2])), vtx_to_float(s[y+3]));
+    }
+}
+
+#define VTX_ROOT this->ge.params.vtx.root
+#define VTX_ALIST this->ge.params.vtx.alloc_list
 #define MS_COORD_DIR_PTR this->ge.matrices.stacks.coordinate_direction_ptr
 #define MS_TEXTURE_PTR this->ge.matrices.stacks.texture_ptr
 #define MS_PROJECTION_PTR this->ge.matrices.stacks.projection_ptr
@@ -22,22 +38,22 @@ static u32 tbl_cmd_good[0xFF];
 #define MS_TEXTURE this->ge.matrices.stacks.texture
 #define MS_PROJECTION this->ge.matrices.stacks.projection
 #define MS_DIR this->ge.matrices.stacks.direction
-#define M_COORD MS_COORD[MS_COORD_DIR_PTR & 31]
-#define M_TEXTURE MS_TEXTURE[MS_TEXTURE_PTR & 1]
-#define M_PROJECTION MS_PROJECTION[MS_PROJECTION_PTR & 1]
-#define M_DIR MS_DIR[MS_COORD_DIR_PTR & 31]
+#define M_COORD this->ge.matrices.coordinate
+#define M_TEXTURE this->ge.matrices.texture
+#define M_PROJECTION this->ge.matrices.projection
+#define M_DIR this->ge.matrices.direction
 #define M_CLIP this->ge.matrices.clip
 #define M_SZ sizeof(struct NDS_GE_matrix)
 #define GXSTAT this->ge.io.GXSTAT
 
-
-static float vtx_to_float(i32 v)
+static void identity_matrix(i32 *m)
 {
-    return ((float)v) / 4096.0f;
+    memset(m, 0, sizeof(i32)*16);
+    m[0] = m[5] = m[10] = m[15] = 1 << 12;
 }
 
-void NDS_GE_init(struct NDS *this)
-{
+
+void NDS_GE_init(struct NDS *this) {
     this->ge.ge_has_buffer = 0;
     for (u32 i = 0; i < 0xFF; i++) {
         tbl_num_params[i] = 0;
@@ -85,6 +101,23 @@ void NDS_GE_init(struct NDS *this)
     SCMD(POS_TEST, 2, 9);
     SCMD(VEC_TEST, 1, 5);
 #undef SCMD
+
+    NDS_GE_reset(this);
+}
+
+void NDS_GE_reset(struct NDS *this)
+{
+    // Load identity matrices everywhere
+    identity_matrix(M_PROJECTION.m);
+    identity_matrix(M_CLIP.m);
+    identity_matrix(M_COORD.m);
+    identity_matrix(M_TEXTURE.m);
+    identity_matrix(M_DIR.m);
+    memset(&this->ge.params.vtx.alloc_list, 0, sizeof(struct NDS_GE_ALLOC_LIST));
+    this->ge.params.vtx.alloc_list.list_len = NDS_GE_VTX_LIST_MAX - 1;
+    for (u32 i = 0; i < NDS_GE_VTX_LIST_MAX; i++) {
+        this->ge.params.vtx.alloc_list.items[i] = &this->ge.params.vtx.alloc_list.pool[i];
+    }
 }
 
 static void set_GXSTAT_fifo(struct NDS *this)
@@ -226,7 +259,7 @@ static void ge_handle_cmd(struct NDS *this);
 static void cmd_MTX_MODE(struct NDS *this)
 {
     this->ge.io.MTX_MODE = DATA[0] & 3;
-    printf("\nNew matrix mode: %d", this->ge.io.MTX_MODE);
+    printfcd("\nMTX_MODE(%d);", this->ge.io.MTX_MODE);
 }
 
 /*
@@ -245,6 +278,10 @@ static void calculate_clip_matrix(struct NDS *this)
     // ClipMatrix = PositionMatrix * ProjectionMatrix
 #define A M_COORD.m
 #define B M_PROJECTION.m
+    //printfcd("\n\n----CALCULATE CLIP MATRIX. COORD:");
+    //pprint_matrix(A);
+    //printfcd("\nPROJECTION:");
+    //pprint_matrix(B);
     for (u32 x = 0; x < 4; x++) {
         for (u32 y = 0; y < 16; y+=4) {
             //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
@@ -257,36 +294,48 @@ static void calculate_clip_matrix(struct NDS *this)
     }
 #undef A
 #undef B
+    //printfcd("\nOUTPUT MATRIX:");
+    //pprint_matrix( this->ge.matrices.clip.m);
 }
 
 static void cmd_MTX_PUSH(struct NDS *this)
 {
     // ClipMatrix = PositionMatrix * ProjectionMatrix
-    printf("\nMTX_PUSH");
     u32 old_ptr;
     switch(this->ge.io.MTX_MODE) {
         case 0:
             old_ptr = MS_PROJECTION_PTR;
+            memcpy(&MS_PROJECTION[MS_PROJECTION_PTR], &M_PROJECTION, M_SZ);
             MS_PROJECTION_PTR = (MS_PROJECTION_PTR + 1) & 1;
             GXSTAT.matrix_stack_over_or_underflow_error |= MS_PROJECTION_PTR == 1;
             GXSTAT.projection_matrix_stack_level = MS_PROJECTION_PTR;
-            memcpy(&M_PROJECTION, &MS_PROJECTION[old_ptr], M_SZ);
+            printfcd("\nMTX_PUSH(PROJ, old:%d new:%d);", old_ptr, MS_PROJECTION_PTR);
+            //printfcd("\nPushed projection matrix:");
+            //pprint_matrix(M_PROJECTION.m);
             break;
         case 1:
         case 2:
             old_ptr = MS_COORD_DIR_PTR;
 
+            memcpy(&MS_COORD[MS_COORD_DIR_PTR], &M_COORD, M_SZ);
+            memcpy(&MS_DIR[MS_COORD_DIR_PTR], &M_DIR, M_SZ);
             MS_COORD_DIR_PTR = (MS_COORD_DIR_PTR + 1) & 63;
             GXSTAT.matrix_stack_over_or_underflow_error |= (MS_COORD_DIR_PTR & 31) == 31;
             GXSTAT.position_vector_matrix_stack_level = MS_COORD_DIR_PTR;
-            memcpy(&M_COORD, &MS_COORD[old_ptr], M_SZ);
-            memcpy(&M_DIR, &MS_DIR[old_ptr], M_SZ);
+            printfcd("\nMTX_PUSH(COORD&DIR, old:%d new:%d);", old_ptr, MS_COORD_DIR_PTR);
+            //printfcd("\nMTX_PUSH COORD&DIR old:%d new:%d", old_ptr, MS_COORD_DIR_PTR);
+            //printfcd("\nPushed coord matrix:");
+            //pprint_matrix(M_COORD.m);
+            //printfcd("\nPushed dir matrix:");
+            //pprint_matrix(M_DIR.m);
             break;
         case 3:
             old_ptr = MS_TEXTURE_PTR;
+            memcpy(&MS_TEXTURE[MS_TEXTURE_PTR], &M_TEXTURE, M_SZ);
             MS_TEXTURE_PTR = (MS_TEXTURE_PTR + 1) & 1;
             GXSTAT.matrix_stack_over_or_underflow_error |= MS_TEXTURE_PTR == 1;
-            memcpy(&M_TEXTURE, &MS_TEXTURE[old_ptr], M_SZ);
+            //printfcd("\nPushed texture matrix:");
+            //pprint_matrix(M_TEXTURE.m);
             // no texture matrix GXSTAT bits
             break;
     }
@@ -294,26 +343,36 @@ static void cmd_MTX_PUSH(struct NDS *this)
 
 static void cmd_MTX_POP(struct NDS *this)
 {
-    printf("\nMTX_POP");
     i32 n = DATA[0];
     n = SIGNe6to32(n);
+    u32 old_ptr;
     switch(this->ge.io.MTX_MODE) {
         case 0:
+            old_ptr = MS_PROJECTION_PTR;
             MS_PROJECTION_PTR = (MS_PROJECTION_PTR - n) & 1;
             GXSTAT.matrix_stack_over_or_underflow_error |= MS_PROJECTION_PTR == 0;
             GXSTAT.projection_matrix_stack_level = MS_PROJECTION_PTR;
+            memcpy(&M_PROJECTION, &MS_PROJECTION[MS_PROJECTION_PTR], M_SZ);
+            printfcd("\nMTX_POP(PROJECTION, n:%d old:%d new:%d);", n, old_ptr, MS_PROJECTION_PTR);
             calculate_clip_matrix(this);
             break;
         case 1:
         case 2:
+            old_ptr = MS_COORD_DIR_PTR;
             MS_COORD_DIR_PTR = (MS_COORD_DIR_PTR - n) & 63;
             GXSTAT.matrix_stack_over_or_underflow_error |= (MS_COORD_DIR_PTR & 31) == 0;
             GXSTAT.position_vector_matrix_stack_level = MS_COORD_DIR_PTR;
+            memcpy(&M_COORD, &MS_COORD[MS_COORD_DIR_PTR], M_SZ);
+            memcpy(&M_DIR, &MS_DIR[MS_COORD_DIR_PTR], M_SZ);
+            printfcd("\nMTX_POP(COORD&DIR, n:%d old:%d new:%d);", n, old_ptr, MS_COORD_DIR_PTR);
             calculate_clip_matrix(this);
             break;
         case 3:
+            old_ptr = MS_TEXTURE_PTR;
             MS_TEXTURE_PTR = (MS_TEXTURE_PTR - n) & 1;
             GXSTAT.matrix_stack_over_or_underflow_error |= MS_TEXTURE_PTR == 0;
+            printfcd("\nMTX_POP(TEXTURE, n:%d old:%d new:%d);", n, old_ptr, MS_TEXTURE_PTR);
+            memcpy(&M_TEXTURE, &MS_TEXTURE[MS_TEXTURE_PTR], M_SZ);
             // no texture matrix GXSTAT bits
             break;
     }
@@ -322,6 +381,7 @@ static void cmd_MTX_POP(struct NDS *this)
 static void cmd_MTX_STORE(struct NDS *this)
 {
     // bit 0..4 is stack address. copy stack[S] to stack[N]
+    printfcd("\nMTX_STORE();");
     u32 n = DATA[0] & 0x1F;
     GXSTAT.matrix_stack_over_or_underflow_error |= n == 1;
     switch(this->ge.io.MTX_MODE) {
@@ -344,6 +404,7 @@ static void cmd_MTX_STORE(struct NDS *this)
 static void cmd_MTX_RESTORE(struct NDS *this)
 {
     // bit 0..4 is stack address. copy stack[N] to stack[S]
+    printfcd("\nMTX_RESTORE();");
     u32 n = DATA[0] & 0x1F;
     GXSTAT.matrix_stack_over_or_underflow_error |= n == 1;
     switch(this->ge.io.MTX_MODE) {
@@ -365,62 +426,100 @@ static void cmd_MTX_RESTORE(struct NDS *this)
     }
 }
 
-static inline struct NDS_GE_matrix *get_matrix_struct_for_mode(struct NDS *this)
-{
-    switch(this->ge.io.MTX_MODE) {
-        case 0:
-            return &M_PROJECTION;
-        case 1:
-            return &M_COORD;
-        case 2:
-            return &M_DIR;
-        case 3:
-            return &M_TEXTURE;
-    }
-    NOGOHERE;
-}
-
-static inline i32 *get_matrix_for_mode(struct NDS *this)
-{
-    switch(this->ge.io.MTX_MODE) {
-        case 0:
-            return M_PROJECTION.m;
-        case 1:
-            return M_COORD.m;
-        case 2:
-            return M_DIR.m;
-        case 3:
-            return M_TEXTURE.m;
-    }
-    NOGOHERE;
-}
-
 static void cmd_MTX_IDENTITY(struct NDS *this)
 {
-    struct NDS_GE_matrix *m = get_matrix_struct_for_mode(this);
-    *m = (struct NDS_GE_matrix){{1 << 12, 0, 0, 0,
-                                 0, 1 << 12, 0, 0,
-                                 0, 0, 1 << 12, 0,
-                                 0, 0, 0, 1 << 12
-                                }};
+    switch(this->ge.io.MTX_MODE) {
+        case 0:
+            identity_matrix(M_PROJECTION.m);
+            printfcd("\nMTX_IDENTITY(projection);");
+            //pprint_matrix("projection", M_TEXTURE.m);
+            calculate_clip_matrix(this);
+            return;
+        case 1:
+            identity_matrix(M_COORD.m);
+            printfcd("\nMTX_IDENTITY(coord);");
+            //pprint_matrix("coord", M_COORD.m);
+            calculate_clip_matrix(this);
+            return;
+        case 2:
+            identity_matrix(M_COORD.m);
+            identity_matrix(M_DIR.m);
+            printfcd("\nMTX_IDENTITY(coord&dir);");
+            //pprint_matrix("coord", M_COORD.m);
+            //pprint_matrix("dir", M_DIR.m);
+            calculate_clip_matrix(this);
+            return;
+        case 3:
+            identity_matrix(M_TEXTURE.m);
+            printfcd("\nMTX_IDENTITY(texture);");
+            //pprint_matrix("texture", M_TEXTURE.m);
+            return;
+    }
+}
+
+static void load_4x4(i32 *dest, i32 *src)
+{
+    for (u32 i = 0; i < 16; i++) {
+        dest[i] = src[i];
+    }
+}
+
+static void load_4x3(i32 *dest, i32 *src)
+{
+    for (u32 i = 0; i < 12; i++) {
+        dest[i] = src[i];
+    }
+    dest[12] = dest[13] = dest[14] = 0;
+    dest[15] = 1 << 12;
 }
 
 static void cmd_MTX_LOAD_4x4(struct NDS *this)
 {
-    i32 *m = get_matrix_for_mode(this);
-    for (u32 i = 0; i < 16; i++) {
-        m[i] = (i32)DATA[i];
+    switch(this->ge.io.MTX_MODE) {
+        case 0:
+            load_4x4(M_PROJECTION.m, (i32 *)DATA);
+            printfcd("\nMTX_LOAD_4x4(PROJ);");
+            calculate_clip_matrix(this);
+            return;
+        case 1:
+            load_4x4(M_COORD.m, (i32 *)DATA);
+            printfcd("\nMTX_LOAD_4x4(COORD);");
+            calculate_clip_matrix(this);
+            return;
+        case 2:
+            load_4x4(M_COORD.m, (i32 *)DATA);
+            load_4x4(M_DIR.m, (i32 *)DATA);
+            printfcd("\nMTX_LOAD_4x4(COORD&DIR);");
+            calculate_clip_matrix(this);
+            return;
+        case 3:
+            load_4x4(M_TEXTURE.m, (i32 *)DATA);
+            printfcd("\nMTX_LOAD_4x4(TEXTURE);");
+            return;
     }
 }
 
 static void cmd_MTX_LOAD_4x3(struct NDS *this)
 {
-    i32 *m = get_matrix_for_mode(this);
-    for (u32 i = 0; i < 12; i++) {
-        m[i] = (i32)DATA[i];
+    printfcd("\nMTX_LOAD_4x3");
+    switch(this->ge.io.MTX_MODE) {
+        case 0:
+            load_4x3(M_PROJECTION.m, (i32 *)DATA);
+            calculate_clip_matrix(this);
+            return;
+        case 1:
+            load_4x3(M_COORD.m, (i32 *)DATA);
+            calculate_clip_matrix(this);
+            return;
+        case 2:
+            load_4x3(M_COORD.m, (i32 *)DATA);
+            load_4x3(M_DIR.m, (i32 *)DATA);
+            calculate_clip_matrix(this);
+            return;
+        case 3:
+            load_4x3(M_TEXTURE.m, (i32 *)DATA);
+            return;
     }
-    m[12] = m[13] = m[14] = 0;
-    m[15] = 1 << 12;
 }
 
 // B = A * B
@@ -444,27 +543,28 @@ static void matrix_multiply_4x4(i32 *A, i32 *B)
 static void matrix_multiply_4x3(i32 *A, i32 *B)
 {
     // B = A(4x3) * B(4x4)
-    // note this modifies A
+    i32 tmp_A[16];
     i32 tmp_B[16];
     memcpy(tmp_B, B, sizeof(tmp_B));
-    A[12] = A[13] = A[14] = 0;
-    A[15] = 1 << 12;
+    memset(tmp_A, 0, sizeof(tmp_A));
+
+    u32 i = 0;
+    for (u32 y = 0; y < 16; y+=4) {
+        for (u32 x = 0; x < 3; x++) {
+            tmp_A[y+x] = A[i++];
+        }
+    }
+    tmp_A[15] = 1 << 12;
 
     for (u32 x = 0; x < 4; x++) {
         for (u32 y = 0; y < 16; y+=4) {
             //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
-            i64 out = ((i64)A[y+0] * (i64)tmp_B[x]) >> 12;
-            out += ((i64)A[y+1] * (i64)tmp_B[4+x]) >> 12;
-            out += ((i64)A[y+2] * (i64)tmp_B[8+x]) >> 12;
-            out += ((i64)A[y+3] * (i64)tmp_B[12+x]) >> 12;
+            i64 out = ((i64)tmp_A[y+0] * (i64)tmp_B[x]) >> 12;
+            out += ((i64)tmp_A[y+1] * (i64)tmp_B[4+x]) >> 12;
+            out += ((i64)tmp_A[y+2] * (i64)tmp_B[8+x]) >> 12;
+            out += ((i64)tmp_A[y+3] * (i64)tmp_B[12+x]) >> 12;
             B[x+y] = (i32)out;
         }
-    }
-}
-
-static void pprint_matrix(i32 *s) {
-    for (u32 y = 0; y < 16; y+=4) {
-        printf("\n%f %f %f %f", vtx_to_float(s[y+0]), vtx_to_float(s[y+1]), vtx_to_float((s[y+2])), vtx_to_float(s[y+3]));
     }
 }
 
@@ -476,18 +576,15 @@ static void matrix_multiply_3x3(i32 *A, i32 *B)
     memcpy(tmp_B, B, sizeof(tmp_B));
 
     u32 i =0;
-    for (u32 x = 0; x < 3; x++) {
-        for (u32 y = 0; y < 12; y+=4) {
-            tmp_A[y+x] = A[i];
+    for (u32 y = 0; y < 12; y+=4) {
+        for (u32 x = 0; x < 3; x++) {
+            tmp_A[y + x] = A[i++];
         }
     }
     tmp_A[3] = tmp_A[7] = tmp_A[11] = 0;
     tmp_A[12] = tmp_A[13] = tmp_A[14] = 0;
     tmp_A[15] = 1 << 12;
-    printf("\n\nMatrix 3x3. Matrix A: ");
-    pprint_matrix(tmp_A);
-    printf("\nMatrix B:");
-    pprint_matrix(tmp_B);
+
 
     for (u32 x = 0; x < 4; x++) {
         for (u32 y = 0; y < 16; y+=4) {
@@ -500,8 +597,8 @@ static void matrix_multiply_3x3(i32 *A, i32 *B)
         }
     }
 
-    printf("\nOut matrix:");
-    pprint_matrix(B);
+    //printfcd("\nOut matrix:");
+    //pprint_matrix(B);
 }
 
 
@@ -509,19 +606,26 @@ static void cmd_MTX_MULT_4x4(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
+            printfcd("\nMTX_MULT_4x4(proj);");
+            //pprint_matrix("projection before", M_PROJECTION.m);
+            //pprint_matrix("input matrix", (i32 *)DATA);
             matrix_multiply_4x4((i32 *)DATA, M_PROJECTION.m);
+            //pprint_matrix("projection result", M_PROJECTION.m);
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
+            printfcd("\nMTX_MULT_4x4(coord);");
             matrix_multiply_4x4((i32 *)DATA, M_COORD.m);
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
+            printfcd("\nMTX_MULT_4x4(coord&dir);");
             matrix_multiply_4x4((i32 *)DATA, M_COORD.m);
             matrix_multiply_4x4((i32 *)DATA, M_DIR.m);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
+            printfcd("\nMTX_MULT_4x4(texture);");
             matrix_multiply_4x4((i32 *)DATA, M_TEXTURE.m);
             return;
     }
@@ -560,6 +664,11 @@ static void matrix_translate(i32 *B, i32 *A)
     tmp_A[12] = A[0];
     tmp_A[13] = A[1];
     tmp_A[14] = A[2];
+    //printfcd("\n\n---Matrix translate. Tranlsation matrix:");
+    //pprint_matrix(tmp_A);
+
+    //printfcd("\n\nMatrix to multiply by:");
+    //pprint_matrix(tmp_B);
 
     for (u32 x = 0; x < 4; x++) {
         for (u32 y = 0; y < 16; y+=4) {
@@ -571,6 +680,8 @@ static void matrix_translate(i32 *B, i32 *A)
             B[x+y] = (i32)out;
         }
     }
+    //printfcd("\nResult matrix:");
+    //pprint_matrix(B);
 }
 
 
@@ -579,19 +690,25 @@ static void cmd_MTX_MULT_4x3(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
             matrix_multiply_4x3((i32 *)DATA, M_PROJECTION.m);
+            printfcd("\nMTX_MULT_4x3(Projection);");
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
             matrix_multiply_4x3((i32 *)DATA, M_COORD.m);
+            printfcd("\nMTX_MULT_4x3(Coord);");
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
+            printfcd("\nMTX_MULT_4x3(coord&dir);");
+            pprint_matrix("coord before", M_COORD.m);
             matrix_multiply_4x3((i32 *)DATA, M_COORD.m);
             matrix_multiply_4x3((i32 *)DATA, M_DIR.m);
+            pprint_matrix("coord after", M_COORD.m);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
             matrix_multiply_4x3((i32 *)DATA, M_TEXTURE.m);
+            printfcd("\nMTX_MULT_4x3(texture);");
             return;
     }
 }
@@ -601,18 +718,22 @@ static void cmd_MTX_MULT_3x3(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
             matrix_multiply_3x3((i32 *)DATA, M_PROJECTION.m);
+            printfcd("\nMULT_3x3 Projection");
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
             matrix_multiply_3x3((i32 *)DATA, M_COORD.m);
+            printfcd("\nMULT_3x3 Pos/Coord");
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
+            printfcd("\nMULT_3x3 Pos/Coord and dir/vector");
             matrix_multiply_3x3((i32 *)DATA, M_COORD.m);
             matrix_multiply_3x3((i32 *)DATA, M_DIR.m);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
+            printfcd("\nMULT_3x3 Texture and dir/vector");
             matrix_multiply_3x3((i32 *)DATA, M_TEXTURE.m);
             return;
     }
@@ -623,14 +744,17 @@ static void cmd_MTX_SCALE(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_scale(M_PROJECTION.m, (i32 *)DATA);
+            printfcd("\nMTX_SCALE proj");
             calculate_clip_matrix(this);
             return;
         case 1:
         case 2:
             matrix_scale(M_COORD.m, (i32 *)DATA);
+            printfcd("\nMTX_SCALE COORD proj");
             calculate_clip_matrix(this);
             return;
         case 3:
+            printfcd("\nMTX_SCALE texture");
             matrix_scale(M_TEXTURE.m, (i32 *)DATA);
             return;
     }
@@ -641,18 +765,22 @@ static void cmd_MTX_TRANS(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_translate(M_PROJECTION.m, (i32 *)DATA);
+            printfcd("\nMTX_TRANS projection");
             calculate_clip_matrix(this);
             return;
         case 1:
             matrix_translate(M_COORD.m, (i32 *)DATA);
+            printfcd("\nMTX_TRANS coordinate");
             calculate_clip_matrix(this);
             return;
         case 2:
             matrix_translate(M_COORD.m, (i32 *)DATA);
             matrix_translate(M_DIR.m, (i32 *)DATA);
+            printfcd("\nMTX_TRANS coord/dir");
             calculate_clip_matrix(this);
             return;
         case 3:
+            printfcd("\nMTX_TRANS texture");
             matrix_translate(M_TEXTURE.m, (i32 *)DATA);
             return;
     }
@@ -667,7 +795,7 @@ static void cmd_COLOR(struct NDS *this)
     if (r) r = (r << 1) + 1;
     if (g) g = (g << 1) + 1;
     if (b) b = (b << 1) + 1;
-    printf("\nCOLOR r:%d g:%d b:%d", r, g, b);
+    printfcd("\nCOLOR r:%d g:%d b:%d", r, g, b);
     this->ge.params.vtx.color = r | (g << 6) | (b << 12);
 }
 
@@ -699,7 +827,7 @@ static void cmd_NORMAL(struct NDS *this)
 
 static void cmd_TEXCOORD(struct NDS *this)
 {
-    printf("\nTEXCOORD");
+    printfcd("\nTEXCOORD");
     // 1bit sign, 11bit integer, 4bit fraction
     this->ge.params.vtx.S = (i32)(i16)(DATA[0] & 0xFFFF);
     this->ge.params.vtx.T = (i32)(i16)(DATA[0] >> 16);
@@ -710,110 +838,326 @@ static void cmd_TEXCOORD(struct NDS *this)
 
 static void matrix_multiply_by_vector(i32 *dest, i32 *matrix, i32 *src)
 {
+    //printfcd("\nMultiply matrix by vector.");
+    //printfcd("\nVector: %f %f %f %f", vtx_to_float(src[0]), vtx_to_float(src[1]), vtx_to_float(src[2]), vtx_to_float(src[3]));
+    //printfcd("\nmatrix: ");
+    //pprint_matrix(matrix);
     // c[x] = a[x]*b1x + a[y]*b2x + a[y]*b3x + a[y]*b4x
     for (u32 x = 0; x < 4; x++) {
-        dest[x] = src[x]*matrix[0+x];
-        dest[x] += src[x]*matrix[4+x];
-        dest[x] += src[x]*matrix[8+x];
-        dest[x] += src[x]*matrix[12+x];
+        i64 out = ((i64)src[0]*(i64)matrix[0+x])>>12;
+        out += ((i64)src[1]*(i64)matrix[4+x])>>12;
+        out += ((i64)src[2]*(i64)matrix[8+x])>>12;
+        out += ((i64)src[3]*(i64)matrix[12+x])>>12;
+        dest[x] = (i32)out;
     }
+    //printfcd("\nVector after: %f %f %f %f", vtx_to_float(dest[0]), vtx_to_float(dest[1]), vtx_to_float(dest[2]), vtx_to_float(dest[3]));
 }
 
-static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX *dest, struct NDS_GE_VTX *src)
+static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_node *node)
 {
-    dest->color = this->ge.params.vtx.color;
+    node->color = this->ge.params.vtx.color;
+    node->uv[0] = this->ge.params.vtx.S;
+    node->uv[1] = this->ge.params.vtx.T;
+    node->processed = 0;
+    //printfcd("\nVtx in: %f %f %f", vtx_to_float(src->xyzw[0]), vtx_to_float(src->xyzw[1]), vtx_to_float(src->xyzw[2]));
 
     // TODO: add any I missed first pass
-    if (this->ge.params.vtx.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
+    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
         for (u32 i = 0; i < 2; i++) {
-            i64 x = src->xyzw[0] * M_TEXTURE.m[i*4]; // TODO: May have got x/y wrong here
-            i64 y = src->xyzw[1] * M_TEXTURE.m[(i*4)+1];
-            i64 z = src->xyzw[2] * M_TEXTURE.m[(i*4)+2];
+            i64 x = node->xyzw[0] * M_TEXTURE.m[i*4]; // TODO: May have got x/y wrong here
+            i64 y = node->xyzw[1] * M_TEXTURE.m[(i*4)+1];
+            i64 z = node->xyzw[2] * M_TEXTURE.m[(i*4)+2];
 
-            dest->uv[i] = (i16)(((x + y + z) >> 24) + src->uv[i]);
+            node->uv[i] = (i16)(((x + y + z) >> 24) + node->uv[i]);
         }
     }
-    matrix_multiply_by_vector(dest->xyzw, M_CLIP.m, src->xyzw);
-    printf("\nTransformed vertex: %f %f %f", vtx_to_float(dest->xyzw[0]), vtx_to_float(dest->xyzw[1]), vtx_to_float(dest->xyzw[2]));
+    i32 tmp[4];
+    memcpy(tmp, node->xyzw, sizeof(i32)*4);
+    matrix_multiply_by_vector(node->xyzw, M_CLIP.m, tmp);
+    //printfcd("\nTransformed vertex: %f %f %f %f", vtx_to_float(dest->xyzw[0]), vtx_to_float(dest->xyzw[1]), vtx_to_float(dest->xyzw[2]), vtx_to_float(dest->xyzw[3]));
 }
 
-static void ingest_poly(struct NDS *this, u32 starting_sides) {
-    struct NDS_GE_RE_POLY out;
-    printf("\nRecv poly with %d sides", starting_sides);
-    out.attr.u = this->ge.params.poly.current.attr.u;
-    // TODO: add all relavent attributes to structure here
+static void clip_verts(struct NDS *this)
+{
+    // TODO: this
+}
 
-    // Get vertices
-    // Transform them
-    struct NDS_GE_VTX in_vertices[10]; // Max 10 vertices!
-    for (u32 i = 0; i < starting_sides; i++) {
-        transform_vertex_on_ingestion(this, &in_vertices[i], &VTX_CACHE.items[(VTX_CACHE.head + i) & 3]);
+static u32 determine_needs_clipping(struct NDS_GE_VTX_node *v)
+{
+    if (v->processed) return 0;
+    if (v->num_children > 0) {
+        for (u32 i = 0; i < v->num_children; i++) {
+            if (determine_needs_clipping(v->children[i])) return 1;
+        }
+        return 0;
     }
+
+    i32 w = v->xyzw[3];
+
+    for (int i = 0; i < 3; i++) {
+        if (v->xyzw[i] < -w || v->xyzw[i] > w) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+static struct NDS_GE_VTX_node *find_first_leaf(struct NDS_GE_VTX_node *node)
+{
+    // Go down children[0] until there are none!
+    while(node->num_children > 0) {
+        node = node->children[0];
+    }
+    return node;
+}
+
+static struct NDS_GE_VTX_node *next_leaf(struct NDS_GE_VTX_node *node)
+{
+    // When given a leaf...
+    // Seek up.
+    // Determine our posiiton in list
+    // Recurse down next child if available using find_first_leaf,
+    // Else go up to parent.
+    // If no parent. return NULL
+    while (node->parent != NULL) {
+        struct NDS_GE_VTX_node *child = node;
+        node = node->parent;
+        // Determine if we have any more children left...
+        for (u32 i = 0; i < node->num_children; i++) {
+            if (node->children[i] == child) { // We want to seek the next...
+                u32 seek_down = i + 1;
+                if (seek_down >= node->num_children) break; // We were the last child!
+
+                // We were not the last child. So return the next leaf...
+                return find_first_leaf(node->children[seek_down]);
+            }
+        }
+    }
+
+    return NULL; // We were given the last leaf!
+}
+
+static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 color)
+{
+    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
+    u32 addr = b->vertex_index;
+
+    b->vertex_index++;
+    if (b->vertex_index >= 6144) {
+        this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 1;
+    }
+
+    struct NDS_RE_VERTEX *v = &b->vertex[addr];
+
+    // We need...xx, yy, zz, ww, uv, and color
+    // 32 bits each = 24 bytes...
+    v->xx = xx;
+    v->yy = yy;
+    v->zz = zz;
+    v->ww = ww;
+    v->uv[0] = uv[0];
+    v->uv[1] = uv[1];
+    v->color = color;
+
+    return addr;
+}
+
+static u32 finalize_verts_and_get_first_addr(struct NDS *this)
+{
+    // Final transform to screen and write into vertex buffer
+
+    // Go thru verts...
+    struct NDS_GE_VTX_node *first_node = find_first_leaf(&VTX_ROOT);
+    struct NDS_GE_VTX_node *node = first_node;
+    while(node != NULL) {
+        if (!node->processed) {
+            node->processed = 1;
+
+            i32 x = node->xyzw[0];
+            i32 y = node->xyzw[1];
+            i32 z = node->xyzw[2];
+            i32 w = node->xyzw[3];
+
+            w &= 0xFFFFFF;
+            i32 scrX, scrY;
+            if (w > 0) {
+                scrX = x + w;
+                scrY = -y + w;
+                i32 den = w;
+
+                // According to melonDS, the NDS uses a 32-bit divider.
+                // If the W coordinate is larger than 16 bits, the hardware seems to sacrifice some precision to fit the numbers
+                // in the divider.
+                if (w > 0xFFFF) {
+                    scrX >>= 1;
+                    scrY >>= 1;
+                    den >>= 1;
+                }
+
+                den <<= 1;
+                scrX = ((scrX * this->re.io.viewport.width) / den) + this->re.io.viewport.x0;
+                scrY = ((scrY * this->re.io.viewport.height) / den) + this->re.io.viewport.y0;
+                scrX &= 0x1FF;
+                scrY &= 0xFF;
+            } else {
+                scrX = 0;
+                scrY = 0;
+            }
+            node->vram_ptr = commit_vertex(this, scrX, scrY, node->xyzw[2], node->xyzw[3], node->uv, node->color);
+        }
+        node = next_leaf(node);
+    }
+    return first_node->vram_ptr;
+}
+
+static u32 count_leafs(struct NDS_GE_VTX_node *node, u32 total_so_far)
+{
+    if (node->num_children == 0) return total_so_far+1;
+
+    for (u32 i = 0; i < node->num_children; i++) {
+        total_so_far = count_leafs(node->children[i], total_so_far);
+    }
+    return total_so_far;
+}
+
+static void ingest_poly(struct NDS *this, u32 winding_order) {
+    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
+    u32 addr = b->polygon_index;
+
+    b->polygon_index++;
+    if (b->polygon_index >= 2048) {
+        this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 1;
+    }
+
+    struct NDS_RE_POLY *out = &b->polygon[addr];
+    out->attr.u = this->ge.params.poly.current.attr.u;
+    out->tex_param.u = this->ge.params.poly.current.tex_param.u;
+    // TODO: add all relavent attributes to structure here
 
     // Now clip...
     u32 needs_clipping = 0;
-    for(u32 vn = 0; vn < starting_sides; vn++) {
-        struct NDS_GE_VTX *v = &in_vertices[vn];
-        i32 w = v->xyzw[3];
-
-        for (int i = 0; i < 3; i++) {
-            if (v->xyzw[i] < -w || v->xyzw[i] > w) {
-                needs_clipping = 1;
-                break;
-            }
-        }
+    for (u32 vn = 0; vn < VTX_ROOT.num_children; vn++) {
+        struct NDS_GE_VTX_node *v = VTX_ROOT.children[vn];
+        needs_clipping = determine_needs_clipping(v);
         if (needs_clipping) break;
     }
 
+    // Clip vertices!
+    if (needs_clipping) {
+        clip_verts(this);
+    }
 
-    // Add vertices...
+    // GO through leafs.
+    // For any unprocessed vertices, add to polygorm RAM.
+    out->first_vertex_ptr = finalize_verts_and_get_first_addr(this);
+    out->num_vertices = count_leafs(&VTX_ROOT, 0);
+    printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);
 }
 
-static void ingest_vertex(struct NDS *this, i32 x, i32 y, i32 z)
+static struct NDS_GE_VTX_node *node_list_alloc(struct NDS *this)
 {
+    assert(VTX_ALIST.list_len > 0);
+    struct NDS_GE_VTX_node *o = VTX_ALIST.items[VTX_ALIST.list_len];
+    VTX_ALIST.list_len--;
+    return o;
+}
+
+static void node_list_free(struct NDS *this, struct NDS_GE_VTX_node *node)
+{
+    // Put vertex back onto list
+    node->num_children = 0;
+    node->processed = 0;
+    VTX_ALIST.list_len++;
+    assert(VTX_ALIST.list_len < NDS_GE_VTX_LIST_MAX);
+    VTX_ALIST.items[VTX_ALIST.list_len] = node;
+}
+
+static void delete_node_children(struct NDS *this, struct NDS_GE_VTX_node *node);
+
+static void delete_node_children(struct NDS *this, struct NDS_GE_VTX_node *node)
+{
+    for (u32 i = 0; i < node->num_children; i++) {
+        struct NDS_GE_VTX_node *n = node->children[i];
+        delete_node_children(this, n);
+    }
+    node_list_free(this, node);
+}
+
+static void delete_vtx_cache(struct NDS *this)
+{
+    for (u32 i = 0; i < VTX_ROOT.num_children; i++) {
+        struct NDS_GE_VTX_node *n = VTX_ROOT.children[i];
+        delete_node_children(this, n);
+    }
+    VTX_ROOT.num_children = 0;
+}
+
+static void pop1_vtx_cache(struct NDS *this)
+{
+    // Just pop 1 off of it...
+    assert(VTX_ROOT.num_children>0);
+    delete_node_children(this, VTX_ROOT.children[0]);
+    VTX_ROOT.children[0] = VTX_ROOT.children[1];
+    VTX_ROOT.children[1] = VTX_ROOT.children[2];
+    VTX_ROOT.children[2] = VTX_ROOT.children[3];
+    VTX_ROOT.children[3] = NULL;
+    VTX_ROOT.num_children--;
+}
+
+static struct NDS_GE_VTX_node *vertex_add_child(struct NDS *this, struct NDS_GE_VTX_node *node)
+{
+    struct NDS_GE_VTX_node *o = node_list_alloc(this);
+    o->parent = node;
+    node->children[node->num_children++] = o;
+    assert(node->num_children < 4);
+    return o;
+}
+
+static void ingest_vertex(struct NDS *this, i32 x, i32 y, i32 z) {
+    if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
+        printf("\nVTX OVERFLOW...");
+        return;
+    }
     // Add to vertex cache
-    struct NDS_GE_VTX *o = &VTX_CACHE.items[VTX_CACHE.tail];
+    struct NDS_GE_VTX_node *o = vertex_add_child(this, &VTX_ROOT);
     o->xyzw[0] = x;
     o->xyzw[1] = y;
     o->xyzw[2] = z;
+    o->xyzw[3] = 1 << 12;
+    o->processed = 0;
     o->uv[0] = this->ge.params.vtx.S;
     o->uv[1] = this->ge.params.vtx.T;
-
-    VTX_CACHE.tail = (VTX_CACHE.tail + 1) & 3;
-    VTX_CACHE.len++;
+    transform_vertex_on_ingestion(this, o);
 
     switch(this->ge.params.vtx_strip.mode) {
         case NDS_GEM_SEPERATE_TRIANGLES:
-            if (VTX_CACHE.len >= 3) {
-                printf("\nDO POLY SEPARATE TRI");
-                ingest_poly(this, 3);
+            if (VTX_ROOT.num_children >= 3) {
+                printfcd("\nDO POLY SEPARATE TRI");
+                ingest_poly(this, CCW);
                 // clear the cache
-                VTX_CACHE.tail = VTX_CACHE.head = 0;
-                VTX_CACHE.len = 0;
+                delete_vtx_cache(this);
             }
             break;
         case NDS_GEM_SEPERATE_QUADS:
-            if (VTX_CACHE.len >= 4) {
-                printf("\nDO POLY SEPARATE QUAD");
-                ingest_poly(this, 4);
-                VTX_CACHE.tail = VTX_CACHE.head = 0;
-                VTX_CACHE.len = 0;
+            if (VTX_ROOT.num_children >= 4) {
+                printfcd("\nDO POLY SEPARATE QUAD");
+                ingest_poly(this, CCW);
+                delete_vtx_cache(this);
             }
             break;
         case NDS_GEM_TRIANGLE_STRIP:
-            if (VTX_CACHE.len >= 3) {
-                printf("\nDO POLY TRI STRIP");
-                ingest_poly(this, 3);
-                VTX_CACHE.head = (VTX_CACHE.head + 1) & 3;
-                VTX_CACHE.len--;
+            if (VTX_ROOT.num_children >= 3) {
+                ingest_poly(this, this->ge.winding_order);
+                this->ge.winding_order ^= 1;
+                pop1_vtx_cache(this);
             }
             break;
         case NDS_GEM_QUAD_STRIP:
-            if (VTX_CACHE.len >= 4) {
-                printf("\nDO POLY QUAD STRIP");
-                ingest_poly(this, 4);
-                VTX_CACHE.head = (VTX_CACHE.head + 1) & 3;
-                VTX_CACHE.len--;
+            if (VTX_ROOT.num_children >= 4) {
+                ingest_poly(this, this->ge.winding_order);
+                this->ge.winding_order ^= 1;
+                pop1_vtx_cache(this);
             }
             break;
     }
@@ -825,7 +1169,7 @@ static void cmd_VTX_16(struct NDS *this)
     //0-15 is X
     //16-31 is Y
     //next parm 0-15 Z
-    printf("\nVTX_16: %f %f %f", vtx_to_float((i32)(i16)(DATA[0] & 0xFFFF)), vtx_to_float((i32)(i16)(DATA[0] >> 16)), vtx_to_float((i32)(i16)(DATA[1] & 0xFFFF)));
+    printfcd("\nVTX_16: %f %f %f", vtx_to_float((i32)(i16)(DATA[0] & 0xFFFF)), vtx_to_float((i32)(i16)(DATA[0] >> 16)), vtx_to_float((i32)(i16)(DATA[1] & 0xFFFF)));
     ingest_vertex(this, (i32)(i16)(DATA[0] & 0xFFFF), (i32)(i16)(DATA[0] >> 16), (i32)(i16)(DATA[1] & 0xFFFF));
     //i32 x = DATA[0] &
 }
@@ -833,6 +1177,7 @@ static void cmd_VTX_16(struct NDS *this)
 
 static void cmd_SWAP_BUFFERS(struct NDS *this)
 {
+    printfcd("\n\n---------------------------\nSWAP_BUFFERS!");
     this->ge.io.swap_buffers = 1;
     this->ge.buffers[this->ge.ge_has_buffer].translucent_y_sorting_manual = DATA[0] & 1;
     this->ge.buffers[this->ge.ge_has_buffer].depth_buffering_w = (DATA[0] >> 1) & 1;
@@ -840,20 +1185,44 @@ static void cmd_SWAP_BUFFERS(struct NDS *this)
 
 static void cmd_POLYGON_ATTR(struct NDS *this)
 {
-    printf("\nPOLYGON_ATTR");
+    printfcd("\nPOLYGON_ATTR");
     this->ge.params.poly.on_vtx_start.attr.u = DATA[0];
 }
 
 static void terminate_poly_strip(struct NDS *this)
 {
-    // TODO: ??
-    VTX_CACHE.tail = VTX_CACHE.head = 0;
-    VTX_CACHE.len = 0;
+    for (u32 i = 0; i < VTX_ROOT.num_children; i++) {
+        delete_node_children(this, VTX_ROOT.children[i]);
+    }
+    VTX_ROOT.num_children = 0;
+    this->ge.winding_order = 0;
+}
+
+static void cmd_VIEWPORT(struct NDS *this)
+{
+    u32 x0 = DATA[0] & 0xFF;
+    u32 y0 = (DATA[0] >> 8) & 0xFF;
+    u32 x1 = (DATA[0] >> 16) & 0xFF;
+    u32 y1 = (DATA[0] >> 24) & 0xFF;
+
+    printfcd("\nVIEWPORT(%d, %d, %d, %d)", x0, y0, x1, y1);
+    this->re.io.viewport.x0 = x0;
+    this->re.io.viewport.y0 = y0;
+    this->re.io.viewport.x1 = x1;
+    this->re.io.viewport.y1 = y1;
+    this->re.io.viewport.width = 1 + x1 - x0;
+    this->re.io.viewport.height = 1 +y1 - y0;
+}
+
+static void cmd_TEXIMAGE_PARAM(struct NDS *this)
+{
+    printfcd("\nTEXIMAGE_PARAM");
+    this->ge.params.poly.current.tex_param.u = DATA[0];
 }
 
 static void cmd_BEGIN_VTXS(struct NDS *this)
 {
-    printf("\nBEGIN_VTXS");
+    printfcd("\nBEGIN_VTXS");
     // Empty vertex cache, terminate strip...
     terminate_poly_strip(this);
 
@@ -868,6 +1237,7 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
     GXSTAT.ge_busy = 0;
 
     // Handle command!
+    printfcd("\n");
     switch(cmd) {
 #define dcmd(label) case NDS_GE_CMD_##label: cmd_##label(this); break
         dcmd(MTX_MODE);
@@ -890,6 +1260,8 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
         dcmd(SWAP_BUFFERS);
         dcmd(POLYGON_ATTR);
         dcmd(BEGIN_VTXS);
+        dcmd(TEXIMAGE_PARAM);
+        dcmd(VIEWPORT);
 #undef dcmd
         default:
             printf("\nUnhandled GE cmd %02llx", cmd);
@@ -905,7 +1277,7 @@ static void ge_handle_cmd(struct NDS *this)
     // Pop a command!
     // Schedule it to be completed in N cycles!
     if (this->ge.io.swap_buffers) {
-        //printf("\nSWAP BUFFERS PUSHEd, IGNORING FURTHER...");
+        //printfcd("\nSWAP BUFFERS PUSHEd, IGNORING FURTHER...");
         //return; // GE is locked up!
     }
 
@@ -924,8 +1296,6 @@ static void ge_handle_cmd(struct NDS *this)
             assert(tbl_cmd_good[cmd]);
         }
     }
-
-    printf("\nHAndle cmd %02x", cmd);
 
     GXSTAT.ge_busy = 1;
     i32 num_cycles = get_num_cycles(this, cmd);
@@ -1084,6 +1454,42 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
     printf("\nUnhandled write to GE addr:%08x sz:%d val:%08x", addr, sz, val);
 }
 
+static u32 read_results(struct NDS *this, u32 addr, u32 sz)
+{
+    if ((addr >= 0x04000620) && (addr < 0x04000630)) {
+        u32 which = (addr - 0x04000620) >> 2;
+        assert(which<4);
+        return this->ge.results.pos_test[which];
+    }
+    if ((addr >= 0x04000630) && (addr < 0x04000638)) {
+        u32 which = (addr - 0x04000630) >> 2;
+        assert(which<2);
+        return this->ge.results.vector[which];
+    }
+    if ((addr >= 0x04000640) && (addr < 0x04000680)) {
+        u32 which = (addr - 0x04000640) >> 2;
+        assert(which<16);
+        return this->ge.matrices.clip.m[which];
+    }
+    if ((addr >= 0x04000680) && (addr < 0x040006A4)) {
+        u32 which = (addr - 0x04000680) >> 2;
+        assert(which<9);
+        switch(which) {
+            case 0: return this->ge.matrices.direction.m[0];
+            case 1: return this->ge.matrices.direction.m[1];
+            case 2: return this->ge.matrices.direction.m[2];
+            case 3: return this->ge.matrices.direction.m[4];
+            case 4: return this->ge.matrices.direction.m[5];
+            case 5: return this->ge.matrices.direction.m[6];
+            case 6: return this->ge.matrices.direction.m[8];
+            case 7: return this->ge.matrices.direction.m[9];
+            case 8: return this->ge.matrices.direction.m[10];
+        }
+    }
+    printf("\nUNHANDLED READ FROM RESULTS AT %08x", addr);
+    return 0;
+}
+
 u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
 {
     u32 v;
@@ -1091,6 +1497,10 @@ u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
         case R9_GXSTAT:
             assert(sz==4);
             return GXSTAT.u;
+    }
+    if (addr >= 0x04000620) {
+        assert(sz==4);
+        return read_results(this, addr, sz);
     }
     printf("\nUnhandled read from GE addr:%08x sz:%d", addr, sz);
     return 0;
@@ -1102,10 +1512,9 @@ static void do_swap_buffers(void *ptr, u64 key, u64 current_clock, u32 jitter)
     this->ge.io.swap_buffers = 0;
     // TODO: this!
     this->ge.ge_has_buffer ^= 1;
-    memset(this->ge.buffers[this->ge.ge_has_buffer].polygon, 0, sizeof(this->ge.buffers[this->ge.ge_has_buffer].polygon));
-    memset(this->ge.buffers[this->ge.ge_has_buffer].vertex, 0, sizeof(this->ge.buffers[this->ge.ge_has_buffer].vertex));
     this->ge.buffers[this->ge.ge_has_buffer].polygon_index = 0;
     this->ge.buffers[this->ge.ge_has_buffer].vertex_index = 0;
+    this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 0;
     NDS_RE_render_frame(this);
 }
 

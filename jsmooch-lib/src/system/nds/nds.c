@@ -271,6 +271,7 @@ void NDS_new(struct jsm_system *jsm)
     NDS_cart_init(this);
     NDS_PPU_init(this);
     NDS_GE_init(this);
+    NDS_RE_init(this);
     //NDS_APU_init(this);
 
     snprintf(jsm->label, sizeof(jsm->label), "Nintendo DS");
@@ -469,6 +470,8 @@ void NDSJ_reset(JSM)
 
     // Components such as RTC...
     NDS_bus_reset(this);
+    NDS_GE_reset(this);
+    NDS_RE_reset(this);
 
     skip_BIOS(this);
     this->waitstates.current_transaction = 0;

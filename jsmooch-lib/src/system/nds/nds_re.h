@@ -8,5 +8,6 @@
 #include "nds_ge.h"
 
 void NDS_RE_init(struct NDS *);
+void NDS_RE_reset(struct NDS *);
 void NDS_RE_render_frame(struct NDS *);
 #endif //JSMOOCH_EMUS_NDS_RE_H

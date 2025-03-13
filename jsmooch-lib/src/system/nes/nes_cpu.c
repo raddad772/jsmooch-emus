@@ -102,7 +102,7 @@ void r2A03_run_cycle(RT) {
         }
         return;
     }
-    // TODO: put both of these either before or after the cycle, and re-do emu sync issues if any occur
+
     M6502_cycle(&this->cpu);
     if (this->cpu.pins.RW) {
         NES_bus_CPU_write(this->nes, this->cpu.pins.Addr, this->cpu.pins.D);
