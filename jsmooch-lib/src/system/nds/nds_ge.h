@@ -163,6 +163,8 @@ struct NDS_RE_VERTEX { // 24 bytes
     i32 ww, zz;
     i32 uv[2];
     u32 color;
+
+    i32 lr, lg, lb;
 };
 
 struct NDS_GE_BUFFERS {

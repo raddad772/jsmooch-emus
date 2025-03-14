@@ -11,7 +11,8 @@
 #include "nds_dma.h"
 #include "helpers/multisize_memaccess.c"
 
-#define printfcd(...) (void)0
+//#define printfcd(...) (void)0
+#define printfcd(...) printf(__VA_ARGS__)
 
 static u32 tbl_num_params[0xFF];
 static i32 tbl_num_cycles[0xFF];
@@ -1049,7 +1050,7 @@ static u32 determine_highest_vertex(struct NDS_RE_VERTEX *vertices, u32 num_vert
 {
     u32 highest = 0;
     for (u32 i = 1; i < num_vertices; i++) {
-        if (vertices[i].yy > vertices[highest].yy) highest = i;
+        if (vertices[i].yy < vertices[highest].yy) highest = i;
     }
     return highest;
 }
@@ -1064,9 +1065,9 @@ static u32 determine_winding_order(struct NDS_RE_VERTEX *vertices, u32 num_verti
         i32 diff = (i32)cmp->xx - cx;
         if (diff == 0) continue;
         if (diff > 0) { // Positive X-slope from least y-point means CW
-            return CCW;
+            return CW;
         }
-        else return CW;
+        else return CCW;
     }
     // If we got here, we are a vertical line and it doesn't really matter?
     return CCW;
@@ -1082,7 +1083,6 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
 
     for (u32 i = 0; i < poly->num_vertices; i++) {
         struct NDS_RE_VERTEX *pver = &b->vertex[poly->first_vertex_ptr + i];
-        printf("\nVertex %d %d", pver->xx, pver->yy);
     }
     poly->highest_vertex = determine_highest_vertex(v[1], poly->num_vertices);
     u32 winding_order = determine_winding_order(v[1], poly->num_vertices, poly->highest_vertex);
@@ -1090,24 +1090,21 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     poly->winding_order = winding_order;
     poly->edge_r_bitfield = 0;
     poly->front_facing = 0;
-    printf("\nPOLY WINDING ORDER: %d", poly->winding_order);
 
     for (u32 i = 1; i <= poly->num_vertices; i++) {
         v[0] = v[1];
         v[1] = &b->vertex[(poly->first_vertex_ptr + i) % poly->num_vertices];
         u32 top_to_bottom = set_bitmask_for_edge(poly, v) ^ 1;
 
-        printf("\nV0 %d,%d V1 %d,%d top_to_bottom:%d", v[0]->xx, v[0]->yy, v[1]->xx, v[1]->yy, top_to_bottom);
-
+        //printf("\nV0 %d,%d V1 %d,%d top_to_bottom:%d", v[0]->xx, v[0]->yy, v[1]->xx, v[1]->yy, top_to_bottom);
         if (poly->winding_order == CCW) {
             //printf("\nTOP TO BOTTOM? %d")
             // top to bottom means left edge on CCW
-            // but remember Y is reversed...
-            if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+            if (!top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
         }
         else {
             // top to bottom means right edge on CW
-            if (!top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+            if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
         }
         edgenum++;
     }
@@ -1222,7 +1219,7 @@ static struct NDS_GE_VTX_node *vertex_add_child(struct NDS *this, struct NDS_GE_
     struct NDS_GE_VTX_node *o = node_list_alloc(this);
     o->parent = node;
     node->children[node->num_children++] = o;
-    assert(node->num_children < 4);
+    assert(node->num_children <= 4);
     return o;
 }
 
@@ -1335,12 +1332,13 @@ static void cmd_TEXIMAGE_PARAM(struct NDS *this)
 
 static void cmd_BEGIN_VTXS(struct NDS *this)
 {
-    printfcd("\nBEGIN_VTXS");
     // Empty vertex cache, terminate strip...
     terminate_poly_strip(this);
 
     // Latch parameters. TODO: did I do them all?
     this->ge.params.poly.current.attr.u = this->ge.params.poly.on_vtx_start.attr.u;
+    this->ge.params.vtx_strip.mode = DATA[0] & 3;
+    printfcd("\nBEGIN_VTXS(%d);", this->ge.params.poly.current.attr.mode);
 }
 #undef DATA
 
