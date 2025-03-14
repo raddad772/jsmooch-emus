@@ -521,6 +521,21 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
     }
 }
 
+static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+{
+    u32 line_num = this->clock.ppu.y;
+    if (line_num > 191) return;
+    // Copy line over
+    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+    memset(bg->line, 0, sizeof(bg->line));
+    struct NDS_RE_LINEBUFFER *re_line = &this->re.out.linebuffer[line_num];
+    for (u32 x = 0; x < 256; x++) {
+        bg->line[x].color = re_line->rgb_top[x];
+        bg->line[x].has = 1;
+        bg->line[x].priority = bg->priority;
+    }
+}
+
 static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
@@ -820,8 +835,14 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
 
 static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
+    printf("\nDraw_line0 %d %d", eng->num, eng->io.do_3d);
     draw_obj_line(this, eng);
-    draw_bg_line_normal(this, eng, 0);
+    if ((eng->num == 0) && (eng->io.do_3d)) {
+        draw_3d_line(this, eng, 0);
+    }
+    else {
+        draw_bg_line_normal(this, eng, 0);
+    }
     draw_bg_line_normal(this, eng, 1);
     draw_bg_line_normal(this, eng, 2);
     draw_bg_line_normal(this, eng, 3);
@@ -836,6 +857,7 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
+    printf("\nDraw_line1 %d", eng->num);
     draw_bg_line_normal(this, eng, 0);
     draw_bg_line_normal(this, eng, 1);
     draw_bg_line_affine(this, eng, 2);

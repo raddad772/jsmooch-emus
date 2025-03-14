@@ -953,7 +953,7 @@ static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *
     // We need...xx, yy, zz, ww, uv, and color
     // 32 bits each = 24 bytes...
     v->xx = xx;
-    v->yy = yy;
+    v->yy = (192 - yy) & 0xFF;
     v->zz = zz;
     v->ww = ww;
     v->uv[0] = uv[0];
