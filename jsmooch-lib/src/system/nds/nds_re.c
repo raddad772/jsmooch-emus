@@ -33,13 +33,13 @@ struct NDS_RE_EDGE {
 void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, struct NDS_RE_POLY *p, u32 comp_y, u32 marked_as, struct NDS_RE_EDGE *edges)
 {
     struct NDS_RE_VERTEX *first_vertex = &b->vertex[p->first_vertex_ptr + p->highest_vertex];
-    printf("\nHIGHEST VERTEX %d: %d, %d", p->highest_vertex, first_vertex->xx, first_vertex->yy);
+    /*printf("\nHIGHEST VERTEX %d: %d, %d", p->highest_vertex, first_vertex->xx, first_vertex->yy);
     printf("\nAll vertices of polygon:");
     for (u32 i = 0; i < p->num_vertices; i++) {
         struct NDS_RE_VERTEX *yv = &b->vertex[p->first_vertex_ptr+i];
         printf("\n%d: %d %d", i, yv->xx, yv->yy);
     }
-    printf("\n...");
+    printf("\n...");*/
 
     edges[0].num[1] = p->highest_vertex;
     edges[0].v[1] = first_vertex;
@@ -60,10 +60,9 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
             edges[j].num[1] = (edges[j].num[1] + edges[j].dir) % (i32)p->num_vertices;
             edges[j].v[1] = &b->vertex[edges[j].num[1] + p->first_vertex_ptr];
 
-            printf("\nEdge check %d: %d,%d to %d,%d", j, edges[j].v[0]->xx, edges[j].v[0]->yy, edges[j].v[1]->xx, edges[j].v[1]->yy);
+            //printf("\nEdge check %d: %d,%d to %d,%d", j, edges[j].v[0]->xx, edges[j].v[0]->yy, edges[j].v[1]->xx, edges[j].v[1]->yy);
             // TODO: verify vs. winding order if slope is positive or negative properly?
-            // original though was just to verify direction but that doesn't work...
-            //if (edges[j].v[0]->yy > edges[j].v[1]->yy) continue;
+            // original though twas just to verify direction but that doesn't work...
 
             // Check if edge intersects scanline
             i32 min_y = edges[j].v[0]->yy;
@@ -75,18 +74,22 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
             }
 
             if ((min_y > comp_y) || (max_y < comp_y)) {
-                if (j == 0) {
-                    printf("\nRejected because %d >= %d > %d not true!", min_y, comp_y, max_y);
-                }
+                //printf("\nEdge %d: rejected because %d >= %d > %d not true!", j, min_y, comp_y, max_y);
                 continue;
             }
+
+            if (min_y == max_y) {
+                //printf("\nEdge %d: rejected because horizontal", j);
+                continue; // TODO: breaks horizontal lines!?
+            }
             //if (j == 0)
-                printf("\nFound edge %d: %d,%d to %d,%d", j, edges[j].v[0]->xx, edges[j].v[0]->yy, edges[j].v[1]->xx, edges[j].v[1]->yy);
+                //printf("\nFound edge %d: %d,%d to %d,%d", j, edges[j].v[0]->xx, edges[j].v[0]->yy, edges[j].v[1]->xx, edges[j].v[1]->yy);
             total_found++;
             edges[j].found = 1;
         }
         if (total_found == 2) break;
     }
+    if (total_found < 2) printf("\nFAILED to find one of the edges!!");
     for (u32 j = 0; j < 2; j++) {
         if (edges[j].v[0]->yy > edges[j].v[1]->yy) {
             struct NDS_RE_VERTEX *t = edges[j].v[0];
@@ -149,7 +152,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     printf("\n\nLine num %d", line_num);
     clear_line(this, line);
     u32 test_byte = line_num >> 3;
-    u32 test_bit = line_num & 7;
+    u32 test_bit = 1 << (line_num & 7);
 
     struct NDS_RE_EDGE edges[2];
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
@@ -157,7 +160,8 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         //if (poly_num > 0) break;
 
         // Polygon does not intersect this line
-        if (!(p->lines_on_bitfield[test_byte] & (1 << test_bit))) {
+        if (!(p->lines_on_bitfield[test_byte] & test_bit)) {
+            printf("\nSkip poly %d", poly_num);
             continue;
         }
 
@@ -172,10 +176,10 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         struct NDS_RE_VERTEX *left = &lerped[0 ^ xorby];
         struct NDS_RE_VERTEX *right = &lerped[1 ^ xorby];
 
-        printf("\nTop left   : %d %d    Top right   : %d %d", edges[0 ^ xorby].v[0]->xx, edges[0 ^ xorby].v[0]->yy, edges[1 ^ xorby].v[0]->xx, edges[1 ^ xorby].v[0]->yy);
+        /*printf("\nTop left   : %d %d    Top right   : %d %d", edges[0 ^ xorby].v[0]->xx, edges[0 ^ xorby].v[0]->yy, edges[1 ^ xorby].v[0]->xx, edges[1 ^ xorby].v[0]->yy);
         printf("\nTLRGB: %04x           TRRGB: %04x", edges[0 ^ xorby].v[0]->color, edges[0 ^ xorby].v[1]->color);
         printf("\nBottom left: %d %d    Bottom right: %d %d ", edges[0 ^ xorby].v[1]->xx, edges[0 ^ xorby].v[1]->yy, edges[1 ^ xorby].v[1]->xx, edges[1 ^ xorby].v[1]->yy);
-        printf("\nleft %d, right %d %d %d", left->xx, right->xx, left->lb, right->lb);
+        printf("\nleft %d, right %d %d %d", left->xx, right->xx, left->lb, right->lb);*/
 
         i32 x_steps = right->xx - left->xx;
         i32 r_steps = right->lr - left->lr;

@@ -11,8 +11,8 @@
 #include "nds_dma.h"
 #include "helpers/multisize_memaccess.c"
 
-//#define printfcd(...) (void)0
-#define printfcd(...) printf(__VA_ARGS__)
+#define printfcd(...) (void)0
+//#define printfcd(...) printf(__VA_ARGS__)
 
 static u32 tbl_num_params[0xFF];
 static i32 tbl_num_cycles[0xFF];
@@ -1078,12 +1078,12 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     struct NDS_RE_VERTEX *v[2];
     v[1] = &b->vertex[poly->first_vertex_ptr];
-    memset(poly->lines_on_bitfield, 0, sizeof(poly->lines_on_bitfield));
+    memset(poly->lines_on_bitfield, 0, 24);
     u32 edgenum = 0;
 
-    for (u32 i = 0; i < poly->num_vertices; i++) {
-        struct NDS_RE_VERTEX *pver = &b->vertex[poly->first_vertex_ptr + i];
-    }
+    //for (u32 i = 0; i < poly->num_vertices; i++) {
+    //    struct NDS_RE_VERTEX *pver = &b->vertex[poly->first_vertex_ptr + i];
+    //}
     poly->highest_vertex = determine_highest_vertex(v[1], poly->num_vertices);
     u32 winding_order = determine_winding_order(v[1], poly->num_vertices, poly->highest_vertex);
     poly->front_facing = winding_order == expected_winding_order;
@@ -1093,7 +1093,9 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
 
     for (u32 i = 1; i <= poly->num_vertices; i++) {
         v[0] = v[1];
-        v[1] = &b->vertex[(poly->first_vertex_ptr + i) % poly->num_vertices];
+        u32 addr = poly->first_vertex_ptr + (i % poly->num_vertices);
+        printf("\nVertices including %d", addr);
+        v[1] = &b->vertex[addr];
         u32 top_to_bottom = set_bitmask_for_edge(poly, v) ^ 1;
 
         //printf("\nV0 %d,%d V1 %d,%d top_to_bottom:%d", v[0]->xx, v[0]->yy, v[1]->xx, v[1]->yy, top_to_bottom);
@@ -1159,6 +1161,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
 
     out->num_vertices = count_leafs(&VTX_ROOT, 0);
 
+    //printf("\n\nEvaluate for poly %d", addr);
     evaluate_edges(this, out, winding_order);
 
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);
