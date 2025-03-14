@@ -151,8 +151,11 @@ struct __attribute__((packed)) NDS_RE_POLY  {
 
     u16 first_vertex_ptr;
     u32 num_vertices;
+    u32 front_facing;
+    u32 winding_order;
+    u32 highest_vertex;
     u8 lines_on_bitfield[24];
-    u16 edge_l_or_r_bitfield;
+    u16 edge_r_bitfield;
 };
 
 struct NDS_RE_VERTEX { // 24 bytes

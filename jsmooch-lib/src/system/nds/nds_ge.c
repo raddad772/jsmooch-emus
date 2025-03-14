@@ -1021,6 +1021,105 @@ static u32 count_leafs(struct NDS_GE_VTX_node *node, u32 total_so_far)
     return total_so_far;
 }
 
+static u32 set_bitmask_for_edge(struct NDS_RE_POLY *poly, struct NDS_RE_VERTEX *v[])
+{
+    u32 y1, y2;
+    if (v[0]->yy > v[1]->yy) {
+        y1 = v[1]->yy;
+        y2 = v[0]->yy;
+    }
+    else {
+        y1 = v[0]->yy;
+        y2 = v[1]->yy;
+    }
+    for (u32 y = y1; y < y2; y++) {
+        if (y > 192) {
+            printf("\nDONE EFFED UP!");
+            break;
+        }
+        u32 bytenum = y >> 3;
+        u32 bitnum = y & 7;
+        poly->lines_on_bitfield[bytenum] |= 1 << bitnum;
+    }
+    return v[0]->yy < v[1]->yy;
+}
+
+static u32 determine_highest_vertex(struct NDS_RE_VERTEX *vertices, u32 num_vertices)
+{
+    u32 highest = 0;
+    for (u32 i = 1; i < num_vertices; i++) {
+        if (vertices[i].yy > vertices[highest].yy) highest = i;
+    }
+    return highest;
+}
+
+static u32 determine_winding_order(struct NDS_RE_VERTEX *vertices, u32 num_vertices, u32 highest)
+{
+    // OK, now progress in order until we have a y-delta of >0.
+    i32 cx = vertices[highest].xx;
+    for (u32 i = 1; i < num_vertices; i++) {
+        u32 index_to_compare = (i + highest) % num_vertices;
+        struct NDS_RE_VERTEX *cmp = &vertices[index_to_compare];
+        i32 diff = (i32)cmp->xx - cx;
+        if (diff == 0) continue;
+        if (diff > 0) { // Positive X-slope from least y-point means CW
+            return CW;
+        }
+        else return CCW;
+    }
+    // If we got here, we are a vertical line and it doesn't really matter?
+    return CCW;
+}
+
+static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expected_winding_order)
+{
+    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
+    struct NDS_RE_VERTEX *v[2];
+    v[1] = &b->vertex[poly->first_vertex_ptr];
+    memset(poly->lines_on_bitfield, 0, sizeof(poly->lines_on_bitfield));
+    u32 edgenum = 0;
+
+    poly->highest_vertex = determine_highest_vertex(v[1], poly->num_vertices);
+    u32 winding_order = determine_winding_order(v[1], poly->num_vertices, poly->highest_vertex);
+    poly->front_facing = winding_order == expected_winding_order;
+    poly->winding_order = winding_order;
+    poly->edge_r_bitfield = 0;
+    poly->front_facing = 0;
+    printf("\nPOLY WINDING ORDER: %d", poly->winding_order);
+
+    for (u32 i = 1; i <= poly->num_vertices; i++) {
+        v[0] = v[1];
+        v[1] = &b->vertex[(poly->first_vertex_ptr + i) % poly->num_vertices];
+        u32 top_to_bottom = set_bitmask_for_edge(poly, v) ^ 1;
+
+        printf("\nV0 %d,%d V1 %d,%d top_to_bottom:%d", v[0]->xx, v[0]->yy, v[1]->xx, v[1]->yy, top_to_bottom);
+
+        if (poly->winding_order == CCW) {
+            //printf("\nTOP TO BOTTOM? %d")
+            // top to bottom means left edge on CCW
+            // but remember Y is reversed...
+            if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+        }
+        else {
+            // top to bottom means right edge on CW
+            if (!top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+        }
+        edgenum++;
+    }
+
+    v[0] = v[1];
+    v[1] = &b->vertex[poly->first_vertex_ptr];
+    u32 top_to_bottom = set_bitmask_for_edge(poly, v);
+    if (poly->winding_order == CCW) {
+        // top to bottom means left edge on CCW
+        if (!top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+    }
+    else {
+        // top to bottom means right edge on CW
+        if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+    }
+}
+
 static void ingest_poly(struct NDS *this, u32 winding_order) {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     u32 addr = b->polygon_index;
@@ -1051,10 +1150,15 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     // GO through leafs.
     // For any unprocessed vertices, add to polygorm RAM.
     out->first_vertex_ptr = finalize_verts_and_get_first_addr(this);
-    out->num_vertices = count_leafs(&VTX_ROOT, 0);
     if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
         b->polygon_index--;
+        return;
     }
+
+    out->num_vertices = count_leafs(&VTX_ROOT, 0);
+
+    evaluate_edges(this, out, winding_order);
+
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);
 }
 
@@ -1160,6 +1264,7 @@ static void ingest_vertex(struct NDS *this, i32 x, i32 y, i32 z) {
             if (VTX_ROOT.num_children >= 4) {
                 ingest_poly(this, this->ge.winding_order);
                 this->ge.winding_order ^= 1;
+                pop1_vtx_cache(this);
                 pop1_vtx_cache(this);
             }
             break;
