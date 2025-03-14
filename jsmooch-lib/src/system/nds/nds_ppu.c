@@ -835,7 +835,6 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
 
 static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
-    printf("\nDraw_line0 %d %d", eng->num, eng->io.do_3d);
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.do_3d)) {
         draw_3d_line(this, eng, 0);
@@ -857,7 +856,6 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
-    printf("\nDraw_line1 %d", eng->num);
     draw_bg_line_normal(this, eng, 0);
     draw_bg_line_normal(this, eng, 1);
     draw_bg_line_affine(this, eng, 2);

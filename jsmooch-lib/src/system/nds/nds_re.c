@@ -114,8 +114,12 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
 
+
+        line->rgb_top[10] = 0x1F;
         // Polygon does not intersect this line
-        if (!(p->lines_on_bitfield[test_byte] & test_bit)) continue;
+        if (!(p->lines_on_bitfield[test_byte] & (1 << test_bit))) {
+            continue;
+        }
 
         // Find the correct points to lerp
         find_closest_points_marked(this, b, p, line_num, 0, edges);

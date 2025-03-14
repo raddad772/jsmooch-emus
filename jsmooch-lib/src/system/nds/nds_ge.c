@@ -983,7 +983,8 @@ static u32 finalize_verts_and_get_first_addr(struct NDS *this)
             i32 scrX, scrY;
             if (w > 0) {
                 scrX = x + w;
-                scrY = -y + w;
+                //scrY = -y + w;
+                scrY = y + w;
                 i32 den = w;
 
                 // According to melonDS, the NDS uses a 32-bit divider.
@@ -1063,9 +1064,9 @@ static u32 determine_winding_order(struct NDS_RE_VERTEX *vertices, u32 num_verti
         i32 diff = (i32)cmp->xx - cx;
         if (diff == 0) continue;
         if (diff > 0) { // Positive X-slope from least y-point means CW
-            return CW;
+            return CCW;
         }
-        else return CCW;
+        else return CW;
     }
     // If we got here, we are a vertical line and it doesn't really matter?
     return CCW;
@@ -1079,6 +1080,10 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     memset(poly->lines_on_bitfield, 0, sizeof(poly->lines_on_bitfield));
     u32 edgenum = 0;
 
+    for (u32 i = 0; i < poly->num_vertices; i++) {
+        struct NDS_RE_VERTEX *pver = &b->vertex[poly->first_vertex_ptr + i];
+        printf("\nVertex %d %d", pver->xx, pver->yy);
+    }
     poly->highest_vertex = determine_highest_vertex(v[1], poly->num_vertices);
     u32 winding_order = determine_winding_order(v[1], poly->num_vertices, poly->highest_vertex);
     poly->front_facing = winding_order == expected_winding_order;
