@@ -149,7 +149,7 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
 void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 {
     struct NDS_RE_LINEBUFFER *line = &this->re.out.linebuffer[line_num];
-    printf("\n\nLine num %d", line_num);
+    //printf("\n\nLine num %d", line_num);
     clear_line(this, line);
     u32 test_byte = line_num >> 3;
     u32 test_bit = 1 << (line_num & 7);
@@ -161,7 +161,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
         // Polygon does not intersect this line
         if (!(p->lines_on_bitfield[test_byte] & test_bit)) {
-            printf("\nSkip poly %d", poly_num);
+            //printf("\nSkip poly %d", poly_num);
             continue;
         }
 

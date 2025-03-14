@@ -1094,7 +1094,6 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     for (u32 i = 1; i <= poly->num_vertices; i++) {
         v[0] = v[1];
         u32 addr = poly->first_vertex_ptr + (i % poly->num_vertices);
-        printf("\nVertices including %d", addr);
         v[1] = &b->vertex[addr];
         u32 top_to_bottom = set_bitmask_for_edge(poly, v) ^ 1;
 
