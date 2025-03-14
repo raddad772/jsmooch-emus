@@ -960,7 +960,6 @@ static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *
     v->uv[0] = uv[0];
     v->uv[1] = uv[1];
     v->color = color;
-
     return addr;
 }
 
@@ -1006,7 +1005,7 @@ static u32 finalize_verts_and_get_first_addr(struct NDS *this)
                 scrX = 0;
                 scrY = 0;
             }
-            node->vram_ptr = commit_vertex(this, scrX, scrY, node->xyzw[2], node->xyzw[3], node->uv, node->color);
+            node->vram_ptr = commit_vertex(this, scrX, scrY, node->xyzw[2], node->xyzw[3] & 0xFFFFFF, node->uv, node->color);
         }
         node = next_leaf(node);
     }
@@ -1505,8 +1504,9 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
             assert(sz==2);
             val &= 0x7FFF;
             // The 15bit Depth is expanded to 24bit as "X=(X*200h)+((X+1)/8000h)*1FFh".
-            this->re.io.clear.z = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
-            printf("\nCLEAR VALUE SET %d:", this->re.io.clear.z);
+            this->re.io.clear.depth = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
+            this->re.io.clear.depth = SIGNe24to32(this->re.io.clear.depth);
+            printf("\nCLEAR VALUE SET %08x %f", this->re.io.clear.depth, vtx_to_float(this->re.io.clear.depth));
             return;
         case R9_GXFIFO:
             NDS_GE_FIFO_write(this, val);

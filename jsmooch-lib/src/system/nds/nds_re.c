@@ -14,7 +14,7 @@ static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l)
         l->rgb_top[x] = this->re.io.clear.color;
         l->rgb_bottom[x] = this->re.io.clear.color;
         l->alpha[x] = this->re.io.clear.alpha;
-        l->depth[x] = this->re.io.clear.z;
+        l->depth[x] = INT32_MAX; //this->re.io.clear.depth;
     }
 }
 
@@ -111,6 +111,7 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
     float y_diff = e->v[1]->yy - e->v[0]->yy;
     float x_diff = e->v[1]->xx - e->v[0]->xx;
     float w_diff = e->v[1]->ww - e->v[0]->ww;
+    float z_diff = e->v[1]->zz - e->v[0]->zz;
 
     //printf("\nEXTRACT V0 %05x", e->v[0]->color);
     float rstart = EXTRACTR(e->v[0]->color);
@@ -127,10 +128,8 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
     float r_loc = (r_diff * yrec) + rstart;
     float g_loc = (g_diff * yrec) + gstart;
     float b_loc = (b_diff * yrec) + bstart;
-    // y_diff = 10 lines
-    // x from 1 to 5
-    // (4/10 * 4) + 1 = 2.6
-    // (
+    float w_loc = (w_diff * yrec) + e->v[0]->ww;
+    float z_loc = (w_diff * yrec) + e->v[0]->ww;
 
     v->yy = y;
     v->xx = (u32)x_loc;
@@ -143,8 +142,16 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
     v->lb = (u32)b_loc;
     if (v->lb > 63) v->lb = 63;
     if (v->lb < 0) v->lb = 0;
+    v->ww = (i32)w_loc;
+    v->zz = (i32)z_loc;
     //printf("\nLRGB: %d, %d, %d", v->lr, v->lg, v->lb);
 }
+
+static float vtx_to_float(i32 v)
+{
+    return ((float)v) / 4096.0f;
+}
+
 
 void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 {
@@ -193,28 +200,42 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         i32 r_steps = right->lr - left->lr;
         i32 g_steps = right->lg - left->lg;
         i32 b_steps = right->lb - left->lb;
-        i32 z_steps = right->ww - left->ww;
         float r_step = (float)r_steps * x_steps;
         float g_step = (float)g_steps * x_steps;
         float b_step = (float)b_steps * x_steps;
-        float z_step = (float)z_steps * x_steps;
         float cr = left->lr;
         float cg = left->lg;
         float cb = left->lb;
-        float w = left->ww;
+        float depth_step, depth;
+        i32 depth_r, depth_l;
+        if (b->depth_buffering_w) {
+            depth_r = right->ww;
+            depth_l = left->ww;
+        }
+        else {
+            depth_r = right->zz;
+            depth_l = left->zz;
+        }
+        i32 depth_steps = depth_r - depth_l;
+        depth_step = (float)depth_steps * x_steps;
+        depth = depth_l;
         u32 rside = right->xx > 255 ? 255 : right->xx;
 
         for (u32 x = left->xx; x < rside; x++) {
             if (x < 256) {
                 // Test Z and early-out
-                //if (line->depth[x] < w) {
-                    u32 pix_r = ((u32) cr) >> 1;
-                    u32 pix_g = ((u32) cg) >> 1;
-                    u32 pix_b = ((u32) cb) >> 1;
+                u32 comparison;
+                //printf("\n!%08x %f", (i32)depth, vtx_to_float((i32)depth));
+                if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
+                else comparison = (u32)depth == line->depth[x];
+                if (comparison) {
+                    u32 pix_r = ((u32)cr) >> 1;
+                    u32 pix_g = ((u32)cg) >> 1;
+                    u32 pix_b = ((u32)cb) >> 1;
                     line->rgb_top[x] = pix_r | (pix_g << 5) | (pix_b << 10);
-                    line->depth[x] = w;
-                //}
-                w += z_step;
+                    line->depth[x] = (u32)depth;
+                }
+                depth += depth_step;
                 cr += r_step;
                 cg += g_step;
                 cb += b_step;
