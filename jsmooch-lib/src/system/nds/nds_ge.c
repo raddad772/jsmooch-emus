@@ -1089,7 +1089,6 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     poly->front_facing = winding_order == expected_winding_order;
     poly->winding_order = winding_order;
     poly->edge_r_bitfield = 0;
-    poly->front_facing = 0;
 
     for (u32 i = 1; i <= poly->num_vertices; i++) {
         v[0] = v[1];
@@ -1163,6 +1162,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     //printf("\n\nEvaluate for poly %d", addr);
     evaluate_edges(this, out, winding_order);
 
+    //printf("\npoly %d sides:%d front_facing:%d", addr, out->num_vertices, out->front_facing);
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);
 }
 
@@ -1506,6 +1506,7 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
             val &= 0x7FFF;
             // The 15bit Depth is expanded to 24bit as "X=(X*200h)+((X+1)/8000h)*1FFh".
             this->re.io.clear.z = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
+            printf("\nCLEAR VALUE SET %d:", this->re.io.clear.z);
             return;
         case R9_GXFIFO:
             NDS_GE_FIFO_write(this, val);

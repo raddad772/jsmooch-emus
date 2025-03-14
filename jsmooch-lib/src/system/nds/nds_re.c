@@ -14,7 +14,7 @@ static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l)
         l->rgb_top[x] = this->re.io.clear.color;
         l->rgb_bottom[x] = this->re.io.clear.color;
         l->alpha[x] = this->re.io.clear.alpha;
-        l->z[x] = this->re.io.clear.z;
+        l->depth[x] = this->re.io.clear.z;
     }
 }
 
@@ -158,6 +158,14 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
         //if (poly_num > 0) break;
+        if (!p->attr.render_back && !p->front_facing) {
+            printf("\nPOLY %d SKIPPED FOR BACK RENDER NOT ENABLE", poly_num);
+            continue;
+        }
+        if (!p->attr.render_front && p->front_facing) {
+            printf("\nPOLY %d SKIPPED FOR FRONT RENDER NOT ENABLE", poly_num);
+            continue;
+        }
 
         // Polygon does not intersect this line
         if (!(p->lines_on_bitfield[test_byte] & test_bit)) {
@@ -181,26 +189,32 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         printf("\nBottom left: %d %d    Bottom right: %d %d ", edges[0 ^ xorby].v[1]->xx, edges[0 ^ xorby].v[1]->yy, edges[1 ^ xorby].v[1]->xx, edges[1 ^ xorby].v[1]->yy);
         printf("\nleft %d, right %d %d %d", left->xx, right->xx, left->lb, right->lb);*/
 
-        i32 x_steps = right->xx - left->xx;
+        float x_steps = 1.0f / (float)(right->xx - left->xx);
         i32 r_steps = right->lr - left->lr;
         i32 g_steps = right->lg - left->lg;
         i32 b_steps = right->lb - left->lb;
-        float r_step = (float)r_steps / (float)x_steps;
-        float g_step = (float)g_steps / (float)x_steps;
-        float b_step = (float)b_steps / (float)x_steps;
+        i32 z_steps = right->ww - left->ww;
+        float r_step = (float)r_steps * x_steps;
+        float g_step = (float)g_steps * x_steps;
+        float b_step = (float)b_steps * x_steps;
+        float z_step = (float)z_steps * x_steps;
         float cr = left->lr;
         float cg = left->lg;
         float cb = left->lb;
+        float w = left->ww;
+        u32 rside = right->xx > 255 ? 255 : right->xx;
 
-        for (u32 x = left->xx; x < right->xx; x++) {
+        for (u32 x = left->xx; x < rside; x++) {
             if (x < 256) {
-                u32 pix_r = ((u32)cr) >> 1;
-                assert(pix_r <= 0x1F);
-                u32 pix_g = ((u32)cg) >> 1;
-                assert(pix_g <= 0x1F);
-                u32 pix_b = ((u32)cb) >> 1;
-                assert(pix_b <= 0x1F);
-                line->rgb_top[x] = pix_r | (pix_g << 5) | (pix_b << 10);
+                // Test Z and early-out
+                //if (line->depth[x] < w) {
+                    u32 pix_r = ((u32) cr) >> 1;
+                    u32 pix_g = ((u32) cg) >> 1;
+                    u32 pix_b = ((u32) cb) >> 1;
+                    line->rgb_top[x] = pix_r | (pix_g << 5) | (pix_b << 10);
+                    line->depth[x] = w;
+                //}
+                w += z_step;
                 cr += r_step;
                 cg += g_step;
                 cb += b_step;

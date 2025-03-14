@@ -182,7 +182,7 @@ struct NDS_RE_LINEBUFFER {
     u16 rgb_bottom[256];
     u16 alpha[256];
     u16 poly_id[256];
-    u32 z[256];
+    u32 depth[256];
 };
 
 struct NDS_RE {
