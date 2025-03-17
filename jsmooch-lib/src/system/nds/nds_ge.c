@@ -18,6 +18,12 @@ static u32 tbl_num_params[0xFF];
 static i32 tbl_num_cycles[0xFF];
 static u32 tbl_cmd_good[0xFF];
 
+static float uv_to_float(i32 v)
+{
+    return ((float)v) / 16.0f;
+}
+
+
 static float vtx_to_float(i32 v)
 {
     return ((float)v) / 4096.0f;
@@ -850,15 +856,11 @@ static void cmd_TEXCOORD(struct NDS *this)
     this->ge.params.vtx.T = (i32)(i16)(DATA[0] >> 16);
 
     // Now transfrom?
-    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == 1) {
-        i32 x = this->ge.params.vtx.S << 8;
-        i32 y = this->ge.params.vtx.T << 8;
-
-        i32 t_x = M_TEXTURE.m[8] + M_TEXTURE.m[12] * 256;
-        i32 t_y = M_TEXTURE.m[9] + M_TEXTURE.m[10] * 256;
-
-        this->ge.params.vtx.S = (i16)((x * M_TEXTURE.m[0] + y * M_TEXTURE.m[4] + t_x) >> 8);
-        this->ge.params.vtx.T = (i16)((x * M_TEXTURE.m[1] + y * M_TEXTURE.m[5] + t_y) >> 8);
+    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_texcoord) {
+        int32_t ts = this->ge.params.vtx.S;
+        int32_t tt = this->ge.params.vtx.T;
+        this->ge.params.vtx.S = (ts * M_TEXTURE.m[0] + tt * M_TEXTURE.m[4] + M_TEXTURE.m[8] + M_TEXTURE.m[12]) >> 12;
+        this->ge.params.vtx.T = (ts * M_TEXTURE.m[1] + tt * M_TEXTURE.m[5] + M_TEXTURE.m[9] + M_TEXTURE.m[13]) >> 12;
     }
 }
 
@@ -1135,9 +1137,11 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     memset(poly->lines_on_bitfield, 0, 24);
     u32 edgenum = 0;
 
-    //for (u32 i = 0; i < poly->num_vertices; i++) {
-    //    struct NDS_RE_VERTEX *pver = &b->vertex[poly->first_vertex_ptr + i];
-    //}
+    /*printf("\n\nPOLY!");
+    for (u32 i = 0; i < poly->num_vertices; i++) {
+        struct NDS_RE_VERTEX *pver = &b->vertex[poly->first_vertex_ptr + i];
+        printf("\nvert: x:%f y:%f color:%04x s:%f t:%f", vtx_to_float(pver->xx), vtx_to_float(pver->yy), pver->color, uv_to_float(pver->uv[0]), uv_to_float(pver->uv[1]));
+    }*/
     poly->highest_vertex = determine_highest_vertex(v[1], poly->num_vertices);
     u32 winding_order = determine_winding_order(v[1], poly->num_vertices, poly->highest_vertex);
     poly->front_facing = winding_order == expected_winding_order;

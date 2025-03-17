@@ -150,14 +150,15 @@ struct NDS_RE_TEX_SAMPLER {
     char *tex_ptr;
     u32 tex_addr;
     u32 s_size, t_size; // total size
+    u32 s_max_fp, t_max_fp;
     u32 s_size_fp, t_size_fp;
-    u32 s_mask, t_mask;
+    u32 s_fp_mask, t_fp_mask;
     u32 s_sub_shift, t_sub_shift;
     u32 s_flip, t_flip; // flip every second
     u32 s_repeat, t_repeat;
     u32 filled_out;
 
-    u32 (*sample)(struct NDS *, struct NDS_RE_TEX_SAMPLER *, u32 s, u32 t);
+    void (*sample)(struct NDS *, struct NDS_RE_TEX_SAMPLER *, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a);
 };
 
 struct NDS_RE_POLY  { // no more __attribute__((packed))

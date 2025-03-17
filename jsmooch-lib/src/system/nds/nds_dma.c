@@ -255,6 +255,10 @@ void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
         printf("\nGE FIFO!");
         ch->op.chunks = 112;
     }
+    if ((ch->io.start_timing == NDS_DMA_START_OF_DISPLAY) && this->clock.ppu.y == 194) {
+        ch->io.enable = 0;
+        return;
+    }
     ch->op.word_mask = 0x1FFFFF;
     ch->op.dest_access = ARM9P_nonsequential | ARM9P_dma;
     ch->op.src_access = ARM9P_nonsequential | ARM9P_dma;

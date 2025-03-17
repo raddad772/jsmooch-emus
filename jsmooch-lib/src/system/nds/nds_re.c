@@ -87,18 +87,17 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
             //if (j == 0)
                 //printf("\nFound edge %d: %d,%d to %d,%d", j, edges[j].v[0]->xx, edges[j].v[0]->yy, edges[j].v[1]->xx, edges[j].v[1]->yy);
             total_found++;
+            if (min_y > max_y) {
+                struct NDS_RE_VERTEX *t = edges[j].v[0];
+                edges[j].v[0] = edges[j].v[1];
+                edges[j].v[1] = t;
+
+            }
             edges[j].found = 1;
         }
         if (total_found == 2) break;
     }
     if (total_found < 2) printf("\nFAILED to find one of the edges!!");
-    for (u32 j = 0; j < 2; j++) {
-        if (edges[j].v[0]->yy > edges[j].v[1]->yy) {
-            struct NDS_RE_VERTEX *t = edges[j].v[0];
-            edges[j].v[0] = edges[j].v[1];
-            edges[j].v[1] = t;
-        }
-    }
 
     //for (u32 j = 0; j < 2; j++)
     //    printf("\nEdge %d vtx 0 %d %d RGB %04x", j, edges[j].v[0]->xx, edges[j].v[0]->yy, edges[j].v[0]->color);
@@ -118,16 +117,16 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
     float s_loc=0, t_loc=0;
 
 
-    float yrec = 1.0f / y_diff;
+    float y_recip = 1.0f / y_diff;
     float yminor = y - e->v[0]->yy;
-    yrec *= yminor;
+    y_recip *= yminor;
     if (do_tex) {
         s_diff = e->v[1]->uv[0] - e->v[0]->uv[0];
-        t_diff = e->v[1]->uv[1] - e->v[1]->uv[1];
+        t_diff = e->v[1]->uv[1] - e->v[0]->uv[1];
         s_start = e->v[0]->uv[0];
-        t_start = e->v[1]->uv[1];
-        s_loc = (s_diff * yrec) + s_start;
-        t_loc = (t_diff * yrec) + t_start;
+        t_start = e->v[0]->uv[1];
+        s_loc = (s_diff * y_recip) + s_start;
+        t_loc = (t_diff * y_recip) + t_start;
         v->uv[0]=(i32)s_loc;
         v->uv[1]=(i32)t_loc;
     }
@@ -141,12 +140,12 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
     float g_diff = EXTRACTG(e->v[1]->color) - gstart;
     float b_diff = EXTRACTB(e->v[1]->color) - bstart;
 
-    float x_loc = (x_diff * yrec) + (float)e->v[0]->xx;
-    float r_loc = (r_diff * yrec) + rstart;
-    float g_loc = (g_diff * yrec) + gstart;
-    float b_loc = (b_diff * yrec) + bstart;
-    float w_loc = (w_diff * yrec) + e->v[0]->ww;
-    float z_loc = (w_diff * yrec) + e->v[0]->ww;
+    float x_loc = (x_diff * y_recip) + (float)e->v[0]->xx;
+    float r_loc = (r_diff * y_recip) + rstart;
+    float g_loc = (g_diff * y_recip) + gstart;
+    float b_loc = (b_diff * y_recip) + bstart;
+    float w_loc = (w_diff * y_recip) + e->v[0]->ww;
+    float z_loc = (w_diff * y_recip) + e->v[0]->ww;
 
     v->yy = y;
     v->xx = (u32)x_loc;
@@ -164,27 +163,58 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
     //printf("\nLRGB: %d, %d, %d", v->lr, v->lg, v->lb);
 }
 
+static float uv_to_float(i32 v)
+{
+    return ((float)v) / 16.0f;
+}
+
 static float vtx_to_float(i32 v)
 {
     return ((float)v) / 4096.0f;
 }
 
-static u32 sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, u32 s, u32 t)
+static void sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     // 16-bit read from VRAM @ ptr ((t * size) + s) * 2
-    return NDS_VRAM_tex_read(this, ((t * ts->t_size) + s) << 1, 2);
+    u32 c = NDS_VRAM_tex_read(this, (((t * ts->t_size) + s) << 1), 2) & 0x7FFF;
+    *r = (c & 0x1F) << 1;
+    *g = ((c >> 5) & 0x1F) << 1;
+    *b = ((c >> 10) & 0x1F) << 1;
+    *a = ((c >> 15) & 1) * 63;
 }
 
-static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, u32 *s, u32 *t)
+static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, i32 *s, i32 *t)
 {
-    u32 ms = *s & ts->s_size_fp;
-    u32 mt = *t & ts->t_size_fp;
+    //printf("\nINPUT S,T: %f, %f", uv_to_float(*s), uv_to_float(*t));
+    i32 ms = (i32)*s;
+    i32 mt = (i32)*t;
+    // Round to nearest!
+    ms += 8;
+    mt += 8;
+    if (ts->s_repeat)
+        ms &= ts->s_fp_mask;
+    else {
+        if (ms < 0) ms = 0;
+        if (ms > ts->s_fp_mask) ms = ts->s_fp_mask;
+    }
+
+    if (ts->t_repeat)
+        mt &= ts->t_fp_mask;
+    else {
+        if (mt < 0) mt = 0;
+        if (mt > ts->t_fp_mask) mt = ts->t_fp_mask;
+    }
+
+    //printf("\nS SIZE:%d T SIZE:%d", ts->s_size_fp, ts->t_size_fp);
     // clamped = repeat 000?
     // TODO: add clamping, mirroring, flipping, etc.
 
     // We wont' do that for now
     *s = ms >> 4;
     *t = mt >> 4;
+
+    //printf("\nFINAL S,T: %d, %d", *s, *t);
+
 }
 
 /*static void get_vram_ptr(struct NDS *this, struct tex_sampler *ts)
@@ -199,10 +229,10 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
     struct NDS_RE_TEX_SAMPLER *ts = &p->sampler;
     ts->s_size = 8 << p->tex_param.sz_s;
     ts->t_size = 8 << p->tex_param.sz_t;
-    ts->s_size_fp = ts->s_size + 4;
-    ts->t_size_fp = ts->t_size + 4;
-    ts->s_mask = (ts->s_size << 4) - 1;
-    ts->t_mask = (ts->t_size << 4) - 1;
+    ts->s_size_fp = (ts->s_size << 4);
+    ts->t_size_fp = (ts->t_size << 4);
+    ts->s_fp_mask = ts->s_size_fp - 1;
+    ts->t_fp_mask = ts->t_size_fp - 1;
     ts->s_sub_shift = (3 + p->tex_param.sz_s) + 4; // 4 in these lines is for the 4-bit fixed point addition
     ts->t_sub_shift = (3 + p->tex_param.sz_t) + 4;
     ts->s_flip = p->tex_param.flip_s;
@@ -280,13 +310,13 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         printf("\nBottom left: %d %d    Bottom right: %d %d ", edges[0 ^ xorby].v[1]->xx, edges[0 ^ xorby].v[1]->yy, edges[1 ^ xorby].v[1]->xx, edges[1 ^ xorby].v[1]->yy);
         printf("\nleft %d, right %d %d %d", left->xx, right->xx, left->lb, right->lb);*/
 
-        float x_steps = 1.0f / (float)(right->xx - left->xx);
+        float x_recip = 1.0f / (float)(right->xx - left->xx);
         i32 r_steps = right->lr - left->lr;
         i32 g_steps = right->lg - left->lg;
         i32 b_steps = right->lb - left->lb;
-        float r_step = (float)r_steps * x_steps;
-        float g_step = (float)g_steps * x_steps;
-        float b_step = (float)b_steps * x_steps;
+        float r_step = (float)r_steps * x_recip;
+        float g_step = (float)g_steps * x_recip;
+        float b_step = (float)b_steps * x_recip;
         float cr = left->lr;
         float cg = left->lg;
         float cb = left->lb;
@@ -316,93 +346,102 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         }
 
         i32 depth_steps = depth_r - depth_l;
-        depth_step = (float)depth_steps * x_steps;
+        depth_step = (float)depth_steps * x_recip;
         depth = depth_l;
 
-        if (global_tex_enable) {
-            s_step = (float)(right->uv[0] - left->uv[0]) * x_steps;
+        if (tex_enable) {
+            s_step = (float)(right->uv[0] - left->uv[0]) * x_recip;
             s = left->uv[0];
-            t_step = (float)(right->uv[1] - left->uv[1]) * x_steps;
+            t_step = (float)(right->uv[1] - left->uv[1]) * x_recip;
             t = left->uv[1];
+            //printf("\nS,T: %f %f", uv_to_float(s), uv_to_float(t));
         }
-
-
         u32 rside = right->xx > 255 ? 255 : right->xx;
 
+        // Factor = (x * W_left) / (((xmax - x) * W_right) + (x * W_left))
+        // where x is x position in span, xmax is number of pixels
+        // w0 and w1 are
+        float xmax = right->xx - left->xx;
+        float lfw = (float)left->ww / 4096.0f;
+        float rfw = (float)right->ww / 4096.0f;
         for (u32 x = left->xx; x < rside; x++) {
             if (x < 256) {
+                float fx = x;
+                float fxl = fx * lfw;
+                //float factor = fxl / (((xmax - fx) * rfw) + fxl);
+                //printf("\nFACTOR: %f", factor);
                 // Test Z and early-out
                 u32 comparison;
                 //printf("\n!%08x %f", (i32)depth, vtx_to_float((i32)depth));
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
                 if (comparison) {
-                    u32 pix_r, pix_g, pix_b, pix_a;
+                    u32 pix_r5, pix_g5, pix_b5, pix_a5;
                     if (tex_enable && p->sampler.sample) {
-                        float tex_r, tex_g, tex_b, tex_af;
-                        u32 tex_a;
-                        u32 final_s = s;
-                        u32 final_t = t;
+                        float tex_rf, tex_gf, tex_bf;
+                        float tex_af;
+                        i32 final_s = (i32)s;
+                        i32 final_t = (i32)t;
                         final_tex_coord(&p->sampler, &final_s, &final_t);
-                        u32 texc = p->sampler.sample(this, &p->sampler, final_s, final_t);
+                        u32 tex_r6, tex_g6, tex_b6, tex_a6;
+                        p->sampler.sample(this, &p->sampler, final_s, final_t, &tex_r6, &tex_g6, &tex_b6, &tex_a6);
 
-                        tex_r = (texc & 0x1F) << 1;
-                        tex_g = ((texc >> 5) & 0x1F) << 1;
-                        tex_b = ((texc >> 10) & 0x1F) << 1;
-                        tex_a = 63;
-                        tex_af = 63.0f;
+                        tex_rf = (float)tex_r6;
+                        tex_gf = (float)tex_g6;
+                        tex_bf = (float)tex_b6;
+                        tex_af = (float)tex_a6;
 
                         // OK we have texture color now...how do we use it!?
                         switch(p->attr.mode) {
                             case 0: // modulation
-                                pix_r = (u32)(((tex_r+1)*(cr+1)-1)) >> 6;
-                                pix_g = (u32)(((tex_g+1)*(cg+1)-1)) >> 6;
-                                pix_b = (u32)(((tex_b+1)*(cb+1)-1)) >> 6;
-                                pix_a = (u32)(((tex_r+1)*(cr+1)-1)) >> 6;
+                                pix_r5 = (u32)(((tex_rf + 1) * (cr + 1) - 1)) >> 7;
+                                pix_g5 = (u32)(((tex_gf + 1) * (cg + 1) - 1)) >> 7;
+                                pix_b5 = (u32)(((tex_bf + 1) * (cb + 1) - 1)) >> 7;
+                                pix_a5 = (u32)(((tex_rf + 1) * (cr + 1) - 1)) >> 6;
                                 break;
                             case 1: // decal
-                                switch(tex_a) {
+                                switch(tex_a6) {
                                     case 0:
-                                        pix_r = ((u32)cr) >> 1;
-                                        pix_g = ((u32)cg) >> 1;
-                                        pix_b = ((u32)cb) >> 1;
+                                        pix_r5 = ((u32)cr) >> 1;
+                                        pix_g5 = ((u32)cg) >> 1;
+                                        pix_b5 = ((u32)cb) >> 1;
                                         break;
                                     case 31:
-                                        pix_r = ((u32)tex_r) >> 1;
-                                        pix_g = ((u32)tex_g) >> 1;
-                                        pix_b = ((u32)tex_b) >> 1;
+                                        pix_r5 = ((u32)tex_r6) >> 1;
+                                        pix_g5 = ((u32)tex_g6) >> 1;
+                                        pix_b5 = ((u32)tex_b6) >> 1;
                                         break;
                                     default:
                                         // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
-                                        pix_r = (u32)(tex_r*tex_af + cr*(63-tex_af)) >> 6;
-                                        pix_g = (u32)(tex_g*tex_af + cg*(63-tex_af)) >> 6;
-                                        pix_b = (u32)(tex_b*tex_af + cb*(63-tex_af)) >> 6;
+                                        pix_r5 = (u32)(tex_rf * tex_af + cr * (63 - tex_af)) >> 7;
+                                        pix_g5 = (u32)(tex_gf * tex_af + cg * (63 - tex_af)) >> 7;
+                                        pix_b5 = (u32)(tex_bf * tex_af + cb * (63 - tex_af)) >> 7;
                                         break;
                                 }
-                                pix_a = tex_a;
+                                pix_a5 = tex_a6 >> 1;
                                 break;
                             case 2: // highlight/toon
                                 // TODO: this
-                                pix_r = 0x31;
-                                pix_g = 0;
-                                pix_b = 0x31;
+                                pix_r5 = 0x1F;
+                                pix_g5 = 0;
+                                pix_b5 = 0x1F;
                                 break;
                             case 3: // shadow
                                 // TODO: this
-                                pix_r = 0x31;
-                                pix_g = 0;
-                                pix_b = 0x31;
+                                pix_r5 = 0x1F;
+                                pix_g5 = 0;
+                                pix_b5 = 0x1F;
                                 break;
                         }
                     }
                     else {
-                        pix_r = ((u32) cr) >> 1;
-                        pix_g = ((u32) cg) >> 1;
-                        pix_b = ((u32) cb) >> 1;
-                        pix_a = p->attr.alpha;
+                        pix_r5 = ((u32) cr) >> 1;
+                        pix_g5 = ((u32) cg) >> 1;
+                        pix_b5 = ((u32) cb) >> 1;
+                        pix_a5 = p->attr.alpha;
                     }
 
-                    line->rgb_top[x] = pix_r | (pix_g << 5) | (pix_b << 10);
+                    line->rgb_top[x] = pix_r5 | (pix_g5 << 5) | (pix_b5 << 10);
                     line->depth[x] = (u32)depth;
                 }
                 depth += depth_step;

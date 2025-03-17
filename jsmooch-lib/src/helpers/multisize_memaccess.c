@@ -63,6 +63,19 @@ static u64 (*cR[9])(void *, u32) = {
         &cR64
 };
 
+static u64 (*cR_be[9])(void *, u32) = {
+        NULL,
+        &cR8,
+        &cR16_be,
+        NULL,
+        &cR32_be,
+        NULL,
+        NULL,
+        NULL,
+        &cR64_be
+};
+
+
 static void (*cW[9])(void *, u32, u64) = {
         NULL,
         &cW8,
