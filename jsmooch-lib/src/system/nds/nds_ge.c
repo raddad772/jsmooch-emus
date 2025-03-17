@@ -1186,6 +1186,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     }
 
     struct NDS_RE_POLY *out = &b->polygon[addr];
+    out->sampler.filled_out = 0;
     out->attr.u = this->ge.params.poly.current.attr.u;
     out->tex_param.u = this->ge.params.poly.current.tex_param.u;
     out->pltt_base = this->ge.params.poly.current.pltt_base;

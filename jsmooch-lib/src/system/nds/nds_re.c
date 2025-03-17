@@ -6,6 +6,7 @@
 #include <math.h>
 #include "nds_re.h"
 #include "nds_bus.h"
+#include "nds_vram.h"
 
 static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l)
 {
@@ -107,12 +108,30 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
 #define EXTRACTG(x) (((x) >> 6) & 0x3F)
 #define EXTRACTR(x) ((x) & 0x3F)
 
-static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32 y)
+static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32 y, u32 do_tex)
 {
     float y_diff = e->v[1]->yy - e->v[0]->yy;
     float x_diff = e->v[1]->xx - e->v[0]->xx;
     float w_diff = e->v[1]->ww - e->v[0]->ww;
     float z_diff = e->v[1]->zz - e->v[0]->zz;
+    float s_diff, t_diff, s_start, t_start;
+    float s_loc=0, t_loc=0;
+
+
+    float yrec = 1.0f / y_diff;
+    float yminor = y - e->v[0]->yy;
+    yrec *= yminor;
+    if (do_tex) {
+        s_diff = e->v[1]->uv[0] - e->v[0]->uv[0];
+        t_diff = e->v[1]->uv[1] - e->v[1]->uv[1];
+        s_start = e->v[0]->uv[0];
+        t_start = e->v[1]->uv[1];
+        s_loc = (s_diff * yrec) + s_start;
+        t_loc = (t_diff * yrec) + t_start;
+        v->uv[0]=(i32)s_loc;
+        v->uv[1]=(i32)t_loc;
+    }
+
 
     //printf("\nEXTRACT V0 %05x", e->v[0]->color);
     float rstart = EXTRACTR(e->v[0]->color);
@@ -122,9 +141,6 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
     float g_diff = EXTRACTG(e->v[1]->color) - gstart;
     float b_diff = EXTRACTB(e->v[1]->color) - bstart;
 
-    float yrec = 1.0f / y_diff;
-    float yminor = y - e->v[0]->yy;
-    yrec *= yminor;
     float x_loc = (x_diff * yrec) + (float)e->v[0]->xx;
     float r_loc = (r_diff * yrec) + rstart;
     float g_loc = (g_diff * yrec) + gstart;
@@ -153,6 +169,64 @@ static float vtx_to_float(i32 v)
     return ((float)v) / 4096.0f;
 }
 
+static u32 sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, u32 s, u32 t)
+{
+    // 16-bit read from VRAM @ ptr ((t * size) + s) * 2
+    return NDS_VRAM_tex_read(this, ((t * ts->t_size) + s) << 1, 2);
+}
+
+static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, u32 *s, u32 *t)
+{
+    u32 ms = *s & ts->s_size_fp;
+    u32 mt = *t & ts->t_size_fp;
+    // clamped = repeat 000?
+    // TODO: add clamping, mirroring, flipping, etc.
+
+    // We wont' do that for now
+    *s = ms >> 4;
+    *t = mt >> 4;
+}
+
+/*static void get_vram_ptr(struct NDS *this, struct tex_sampler *ts)
+{
+    u32 addr =
+    ts->tex_ptr
+}*/
+
+
+static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
+{
+    struct NDS_RE_TEX_SAMPLER *ts = &p->sampler;
+    ts->s_size = 8 << p->tex_param.sz_s;
+    ts->t_size = 8 << p->tex_param.sz_t;
+    ts->s_size_fp = ts->s_size + 4;
+    ts->t_size_fp = ts->t_size + 4;
+    ts->s_mask = (ts->s_size << 4) - 1;
+    ts->t_mask = (ts->t_size << 4) - 1;
+    ts->s_sub_shift = (3 + p->tex_param.sz_s) + 4; // 4 in these lines is for the 4-bit fixed point addition
+    ts->t_sub_shift = (3 + p->tex_param.sz_t) + 4;
+    ts->s_flip = p->tex_param.flip_s;
+    ts->t_flip = p->tex_param.flip_t;
+    ts->s_repeat = p->tex_param.repeat_s;
+    ts->t_repeat = p->tex_param.repeat_t;
+    ts->tex_addr = p->tex_param.vram_offset << 3;
+    ts->filled_out = 1;
+    switch(p->tex_param.format) {
+        case 0: // none!
+            ts->sample = NULL;
+            ts->tex_ptr = NULL;
+            return;
+        case 7: // direct!
+            ts->sample = &sample_texture_direct;
+            //get_vram_info(this, ts);
+            break;
+        default:
+            printf("\nUNIMPL. TEX. FMT. %d", p->tex_param.format);
+            ts->sample = NULL;
+            ts->tex_ptr = NULL;
+            break;
+    }
+}
 
 void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 {
@@ -165,9 +239,11 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     u32 global_tex_enable = this->re.io.DISP3DCNT.texture_mapping;
 
     struct NDS_RE_EDGE edges[2];
+    struct tex_sampler;
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
-
+        u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
+        if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
         if (p->attr.alpha == 0) {
             printf("\nskip poly %d as hidden alpha", poly_num);
             continue;
@@ -193,8 +269,8 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
         struct NDS_RE_VERTEX lerped[2];
 
-        lerp_edge_to_vtx(&edges[0], &lerped[0], line_num);
-        lerp_edge_to_vtx(&edges[1], &lerped[1], line_num);
+        lerp_edge_to_vtx(&edges[0], &lerped[0], line_num, tex_enable);
+        lerp_edge_to_vtx(&edges[1], &lerped[1], line_num, tex_enable);
         u32 xorby = lerped[0].xx > lerped[1].xx ? 1 : 0;
         struct NDS_RE_VERTEX *left = &lerped[0 ^ xorby];
         struct NDS_RE_VERTEX *right = &lerped[1 ^ xorby];
@@ -261,13 +337,71 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
                 if (comparison) {
-                    u32 pix_r = ((u32)cr) >> 1;
-                    u32 pix_g = ((u32)cg) >> 1;
-                    u32 pix_b = ((u32)cb) >> 1;
+                    u32 pix_r, pix_g, pix_b, pix_a;
+                    if (tex_enable && p->sampler.sample) {
+                        float tex_r, tex_g, tex_b, tex_af;
+                        u32 tex_a;
+                        u32 final_s = s;
+                        u32 final_t = t;
+                        final_tex_coord(&p->sampler, &final_s, &final_t);
+                        u32 texc = p->sampler.sample(this, &p->sampler, final_s, final_t);
 
-                    if (global_tex_enable) {
-                        // Sample texture-map
+                        tex_r = (texc & 0x1F) << 1;
+                        tex_g = ((texc >> 5) & 0x1F) << 1;
+                        tex_b = ((texc >> 10) & 0x1F) << 1;
+                        tex_a = 63;
+                        tex_af = 63.0f;
+
+                        // OK we have texture color now...how do we use it!?
+                        switch(p->attr.mode) {
+                            case 0: // modulation
+                                pix_r = (u32)(((tex_r+1)*(cr+1)-1)) >> 6;
+                                pix_g = (u32)(((tex_g+1)*(cg+1)-1)) >> 6;
+                                pix_b = (u32)(((tex_b+1)*(cb+1)-1)) >> 6;
+                                pix_a = (u32)(((tex_r+1)*(cr+1)-1)) >> 6;
+                                break;
+                            case 1: // decal
+                                switch(tex_a) {
+                                    case 0:
+                                        pix_r = ((u32)cr) >> 1;
+                                        pix_g = ((u32)cg) >> 1;
+                                        pix_b = ((u32)cb) >> 1;
+                                        break;
+                                    case 31:
+                                        pix_r = ((u32)tex_r) >> 1;
+                                        pix_g = ((u32)tex_g) >> 1;
+                                        pix_b = ((u32)tex_b) >> 1;
+                                        break;
+                                    default:
+                                        // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
+                                        pix_r = (u32)(tex_r*tex_af + cr*(63-tex_af)) >> 6;
+                                        pix_g = (u32)(tex_g*tex_af + cg*(63-tex_af)) >> 6;
+                                        pix_b = (u32)(tex_b*tex_af + cb*(63-tex_af)) >> 6;
+                                        break;
+                                }
+                                pix_a = tex_a;
+                                break;
+                            case 2: // highlight/toon
+                                // TODO: this
+                                pix_r = 0x31;
+                                pix_g = 0;
+                                pix_b = 0x31;
+                                break;
+                            case 3: // shadow
+                                // TODO: this
+                                pix_r = 0x31;
+                                pix_g = 0;
+                                pix_b = 0x31;
+                                break;
+                        }
                     }
+                    else {
+                        pix_r = ((u32) cr) >> 1;
+                        pix_g = ((u32) cg) >> 1;
+                        pix_b = ((u32) cb) >> 1;
+                        pix_a = p->attr.alpha;
+                    }
+
                     line->rgb_top[x] = pix_r | (pix_g << 5) | (pix_b << 10);
                     line->depth[x] = (u32)depth;
                 }
@@ -275,6 +409,10 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                 cr += r_step;
                 cg += g_step;
                 cb += b_step;
+                if (tex_enable) {
+                    s += s_step;
+                    t += t_step;
+                }
             }
         }
     }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "helpers/multisize_memaccess.c"
 #include "nds_bus.h"
 #include "nds_vram.h"
 
@@ -432,4 +433,19 @@ void NDS_VRAM_resetup_banks(struct NDS *this) {
     setbank(H,NVH);
     setbank(I,NVI);
 #undef setbank
+}
+
+u32 NDS_VRAM_tex_read(struct NDS *this, u32 addr, u32 sz)
+{
+    // 128KB * up to 4, in up to 4 slots
+    // A B C D always occupy one of the slots if it's occupied
+
+    // So first determine bank
+    u32 bank = addr >> 17;
+    if (!this->ppu.eng3d.slots.texture[bank]) {
+        printf("\nMiss VRAM read at %06x", addr);
+        return 0;
+    }
+
+    return cR[sz](this->ppu.eng3d.slots.texture[bank], addr & 0x1FFFF);
 }

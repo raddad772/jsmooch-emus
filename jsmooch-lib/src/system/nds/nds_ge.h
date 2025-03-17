@@ -145,7 +145,22 @@ union NDS_GE_POLY_ATTR {
     u32 u;
 };
 
-struct __attribute__((packed)) NDS_RE_POLY  {
+struct NDS;
+struct NDS_RE_TEX_SAMPLER {
+    char *tex_ptr;
+    u32 tex_addr;
+    u32 s_size, t_size; // total size
+    u32 s_size_fp, t_size_fp;
+    u32 s_mask, t_mask;
+    u32 s_sub_shift, t_sub_shift;
+    u32 s_flip, t_flip; // flip every second
+    u32 s_repeat, t_repeat;
+    u32 filled_out;
+
+    u32 (*sample)(struct NDS *, struct NDS_RE_TEX_SAMPLER *, u32 s, u32 t);
+};
+
+struct NDS_RE_POLY  { // no more __attribute__((packed))
     union NDS_GE_POLY_ATTR attr; // 32 bits
     union NDS_GE_TEX_PARAM tex_param;
 
@@ -159,6 +174,8 @@ struct __attribute__((packed)) NDS_RE_POLY  {
     u32 highest_vertex;
     u8 lines_on_bitfield[24];
     u16 edge_r_bitfield;
+
+    struct NDS_RE_TEX_SAMPLER sampler;
 };
 
 struct NDS_RE_VERTEX { // 24 bytes

@@ -19,4 +19,5 @@
 
 struct NDS;
 void NDS_VRAM_resetup_banks(struct NDS *);
+u32 NDS_VRAM_tex_read(struct NDS *, u32 addr, u32 sz);
 #endif //JSMOOCH_EMUS_NDS_VRAM_H
