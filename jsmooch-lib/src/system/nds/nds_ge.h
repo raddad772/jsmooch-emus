@@ -34,7 +34,7 @@ enum NDS_GE_cmds {
     NDS_GE_CMD_POLYGON_ATTR = 0x29,
     NDS_GE_CMD_TEXIMAGE_PARAM = 0x2A,
     NDS_GE_CMD_PLTT_BASE = 0x2B,
-    NDS_GE_CMD_DIFF_AMB = 0x30,
+    NDS_GE_CMD_DIF_AMB = 0x30,
     NDS_GE_CMD_SPE_EMI = 0x31,
     NDS_GE_CMD_LIGHT_VECTOR = 0x32,
     NDS_GE_CMD_LIGHT_COLOR = 0x33,
@@ -149,6 +149,9 @@ struct __attribute__((packed)) NDS_RE_POLY  {
     union NDS_GE_POLY_ATTR attr; // 32 bits
     union NDS_GE_TEX_PARAM tex_param;
 
+    u32 pltt_base;
+    u32 w_normalization_left;
+    u32 w_normalization_right;
     u16 first_vertex_ptr;
     u32 num_vertices;
     u32 front_facing;
@@ -329,6 +332,7 @@ struct NDS_GE {
                 union NDS_GE_POLY_ATTR attr;
                 u32 num_lights; // set from attr when attr is latched
                 union NDS_GE_TEX_PARAM tex_param;
+                u32 pltt_base;
             } current;
         } poly;
 
@@ -345,6 +349,8 @@ struct NDS_GE {
             } alloc_list;
         } vtx;
 
+        i32 shininess[128];
+
         struct {
             enum {
                 NDS_GEM_SEPERATE_TRIANGLES,
@@ -354,6 +360,22 @@ struct NDS_GE {
             } mode;
         } vtx_strip;
     } params;
+
+    struct {
+        struct NDS_GE_LIGHT {
+            i32 direction[4];
+            i32 halfway[4];
+            u32 color;
+        } light[4];
+
+        u32 shininess_enable;
+        struct {
+            u32 diffuse;
+            u32 ambient;
+            u32 specular_reflection;
+            u32 specular_emission;
+        } material_color;
+    }lights;
 
     struct {
         u32 pos_test[4];

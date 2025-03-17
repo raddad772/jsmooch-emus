@@ -1116,6 +1116,24 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
         case R_TM3CNT_H+1:
             return 0;
 
+        case R9_VRAMCNT+0:
+        case R9_VRAMCNT+1:
+        case R9_VRAMCNT+2:
+        case R9_VRAMCNT+3:
+        case R9_VRAMCNT+4:
+        case R9_VRAMCNT+5:
+        case R9_VRAMCNT+6:
+        case R9_VRAMCNT+8:
+        case R9_VRAMCNT+9: {
+            assert(sz==1);
+            u32 bank_num = addr - R9_VRAMCNT;
+            if (bank_num >= 8) bank_num--;
+
+            v = this->mem.vram.io.bank[bank_num].mst;
+            v |= this->mem.vram.io.bank[bank_num].ofs << 3;
+            v |= this->mem.vram.io.bank[bank_num].enable << 7;
+            return v; }
+
         case R_TM0CNT_H+0:
         case R_TM1CNT_H+0:
         case R_TM2CNT_H+0:
@@ -1128,10 +1146,6 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return v;
         }
 
-        case 0x04000240: // These next 4 are write-only
-        case 0x04000241:
-        case 0x04000242:
-        case 0x04000243:
         case 0x04004008: // new DSi stuff libnds cares about?
         case 0x04004009:
         case 0x0400400A:

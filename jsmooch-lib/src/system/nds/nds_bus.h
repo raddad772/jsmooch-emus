@@ -332,6 +332,8 @@ struct NDS {
             u32 sz;
             u32 first_run;
             u32 is_sound;
+            i32 chunks;
+            // for mode GE_FIFO
         } op;
         u32 run_counter;
     } dma7[4], dma9[4];

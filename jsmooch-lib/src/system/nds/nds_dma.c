@@ -203,6 +203,11 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
         }
 
         ch->op.word_count = (ch->op.word_count - 1) & ch->op.word_mask;
+        ch->op.chunks = (ch->op.chunks - 1);
+        if ((ch->io.start_timing == NDS_DMA_GE_FIFO) && (ch->op.chunks <= 0) && (ch->op.word_count != 0)) {
+            ch->op.started = 0;
+            printf("\nPAUSE GE FIFO");
+        }
         if (ch->op.word_count == 0) {
             ch->op.started = 0; // Disable
             ch->op.first_run = 0;
@@ -236,11 +241,20 @@ void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
         ch->op.dest_addr = ch->io.dest_addr & mask;
         ch->op.src_addr = ch->io.src_addr & mask;
     }
-    else if (ch->io.dest_addr_ctrl == 3) {
+    else if (ch->io.dest_addr_ctrl == NDS_DMA_HBLANK) {
         ch->op.dest_addr = ch->io.dest_addr & mask;
     }
     ch->op.word_count = ch->io.word_count;
     ch->op.sz = ch->io.transfer_size ? 4 : 2;
+    if (ch->io.start_timing == NDS_DMA_GE_FIFO) {
+        if (ch->op.word_count == 0) {
+            ch->op.started = 0;
+            printf("\nABT GE FIFO!");
+            return;
+        }
+        printf("\nGE FIFO!");
+        ch->op.chunks = 112;
+    }
     ch->op.word_mask = 0x1FFFFF;
     ch->op.dest_access = ARM9P_nonsequential | ARM9P_dma;
     ch->op.src_access = ARM9P_nonsequential | ARM9P_dma;

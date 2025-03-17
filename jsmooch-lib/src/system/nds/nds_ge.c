@@ -63,6 +63,7 @@ void NDS_GE_init(struct NDS *this) {
     }
 
 #define SCMD(cmd_id, np, ncyc) tbl_num_params[NDS_GE_CMD_##cmd_id] = np; tbl_num_cycles[NDS_GE_CMD_##cmd_id] = ncyc; tbl_cmd_good[NDS_GE_CMD_##cmd_id] = 1
+    SCMD(NOP, 0, 0);
     SCMD(MTX_MODE, 1, 1);
     SCMD(MTX_PUSH, 0, 17);
     SCMD(MTX_POP, 1, 36);
@@ -89,7 +90,7 @@ void NDS_GE_init(struct NDS *this) {
     SCMD(TEXIMAGE_PARAM, 1, 1);
     SCMD(SWAP_BUFFERS, 0, 1);
     SCMD(PLTT_BASE, 1, 1);
-    SCMD(DIFF_AMB, 1, 4);
+    SCMD(DIF_AMB, 1, 4);
     SCMD(SPE_EMI, 1, 4);
     SCMD(LIGHT_VECTOR, 1, 6);
     SCMD(LIGHT_COLOR, 1, 1);
@@ -523,6 +524,21 @@ static void cmd_MTX_LOAD_4x3(struct NDS *this)
     }
 }
 
+static void cmd_SHININESS(struct NDS *this) {
+    u32 i = 0;
+    for (u32 p = 0; p < 32; p++) {
+        u32 word = DATA[p];
+        for (u32 w = 0; w < 4; w++) {
+            u32 data = word & 0xFF;
+            word >>= 8;
+
+            data = SIGNe8to32(data) << 4;
+            // Traditional 12-bit fixed point
+            this->ge.params.shininess[i++] = data;
+        }
+    }
+};
+
 // B = A * B
 static void matrix_multiply_4x4(i32 *A, i32 *B)
 {
@@ -832,6 +848,18 @@ static void cmd_TEXCOORD(struct NDS *this)
     // 1bit sign, 11bit integer, 4bit fraction
     this->ge.params.vtx.S = (i32)(i16)(DATA[0] & 0xFFFF);
     this->ge.params.vtx.T = (i32)(i16)(DATA[0] >> 16);
+
+    // Now transfrom?
+    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == 1) {
+        i32 x = this->ge.params.vtx.S << 8;
+        i32 y = this->ge.params.vtx.T << 8;
+
+        i32 t_x = M_TEXTURE.m[8] + M_TEXTURE.m[12] * 256;
+        i32 t_y = M_TEXTURE.m[9] + M_TEXTURE.m[10] * 256;
+
+        this->ge.params.vtx.S = (i16)((x * M_TEXTURE.m[0] + y * M_TEXTURE.m[4] + t_x) >> 8);
+        this->ge.params.vtx.T = (i16)((x * M_TEXTURE.m[1] + y * M_TEXTURE.m[5] + t_y) >> 8);
+    }
 }
 
 #define CCW 0
@@ -961,6 +989,33 @@ static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *
     v->uv[1] = uv[1];
     v->color = color;
     return addr;
+}
+
+static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
+{
+    out->w_normalization_left = 0;
+    out->w_normalization_right = 0;
+    u32 longest_one = 0;
+    struct NDS_GE_VTX_node *leaf = find_first_leaf(&VTX_ROOT);
+    for (u32 i = 0; i < out->num_vertices; i++) {
+        u32 w = leaf->xyzw[3];
+        u32 leading = __builtin_clrsb(w);
+        u32 how_many_significant = 32 - leading;
+        if (how_many_significant > longest_one) longest_one = how_many_significant;
+        leaf = next_leaf(leaf);
+    }
+
+    // We either need to cut them down so the longest one is only 16 bits,
+    // or boost them up so the shortest one is 16 bits
+    if (longest_one > 16) {
+        // Rown UP
+        out->w_normalization_right = (((longest_one - 16) + 3) >> 2) << 2;
+    }
+    else {
+        // round UP
+        out->w_normalization_left = (((16 - longest_one) + 3) >> 2) << 2;
+
+    }
 }
 
 static u32 finalize_verts_and_get_first_addr(struct NDS *this)
@@ -1133,6 +1188,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     struct NDS_RE_POLY *out = &b->polygon[addr];
     out->attr.u = this->ge.params.poly.current.attr.u;
     out->tex_param.u = this->ge.params.poly.current.tex_param.u;
+    out->pltt_base = this->ge.params.poly.current.pltt_base;
     // TODO: add all relavent attributes to structure here
 
     // Now clip...
@@ -1150,13 +1206,20 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
 
     // GO through leafs.
     // For any unprocessed vertices, add to polygorm RAM.
+    out->num_vertices = count_leafs(&VTX_ROOT, 0);
+    if (out->num_vertices > 10) {
+        printf("\nABORT FOR >10 VERTS IN A POLY?!");
+        b->polygon_index--;
+        return;
+    }
+
     out->first_vertex_ptr = finalize_verts_and_get_first_addr(this);
+    normalize_w(this, out);
     if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
         b->polygon_index--;
         return;
     }
 
-    out->num_vertices = count_leafs(&VTX_ROOT, 0);
 
     //printf("\n\nEvaluate for poly %d", addr);
     evaluate_edges(this, out, winding_order);
@@ -1341,6 +1404,61 @@ static void cmd_BEGIN_VTXS(struct NDS *this)
     this->ge.params.vtx_strip.mode = DATA[0] & 3;
     printfcd("\nBEGIN_VTXS(%d);", this->ge.params.poly.current.attr.mode);
 }
+
+static void cmd_PLTT_BASE(struct NDS *this)
+{
+    this->ge.params.poly.current.pltt_base = DATA[0] & 0x1FFF;
+}
+
+static void cmd_LIGHT_VECTOR(struct NDS *this)
+{
+    u32 xyz = DATA[0];
+
+
+    i32 light_direction_tmp[4];
+    light_direction_tmp[0] = (i32)(xyz & (0x3FFu <<  0)) << 22 >> 19;
+    light_direction_tmp[1] = (i32)(xyz & (0x3FFu << 10)) << 12 >> 19;
+    light_direction_tmp[2] = (i32)(xyz & (0x3FFu << 20)) <<  2 >> 19;
+    light_direction_tmp[3] = 0;
+
+    i32 light_direction[4];
+
+    struct NDS_GE_LIGHT *light = &this->ge.lights.light[((u32)xyz) >> 30];
+    matrix_multiply_by_vector(light->direction, M_DIR.m, light_direction_tmp);
+
+    light->halfway[0] = light->direction[0] >> 1;
+    light->halfway[1] = light->direction[1] >> 1;
+    light->halfway[2] = (light->direction[2] - (1 << 12)) >> 1;
+}
+
+static u32 C15to18(u32 c)
+{
+    u32 r = c & 0x1F;
+    u32 g = (c >> 5) & 0x1F;
+    u32 b = (c >> 10) & 0x1F;
+    return r | (g << 6) | (b << 10);
+}
+
+static void cmd_DIF_AMB(struct NDS *this)
+{
+    this->ge.lights.material_color.diffuse = C15to18(DATA[0] & 0x7FFF);
+    this->ge.lights.material_color.ambient = C15to18((DATA[0] >> 16) & 0x7FFF);
+    if (DATA[0] & 0x8000) this->ge.params.vtx.color = this->ge.lights.material_color.diffuse;
+}
+
+static void cmd_SPE_EMI(struct NDS *this)
+{
+    this->ge.lights.material_color.specular_reflection = C15to18(DATA[0] & 0x7FFF);
+    this->ge.lights.material_color.specular_emission = C15to18((DATA[0] >> 16) & 0x7FFF);
+    this->ge.lights.shininess_enable = (DATA[0] >> 15) & 1;
+
+}
+
+static void cmd_LIGHT_COLOR(struct NDS *this)
+{
+    u32 light_num = DATA[0] >> 30;
+    this->ge.lights.light[light_num].color = C15to18(DATA[0] & 0x7FFF);
+}
 #undef DATA
 
 static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
@@ -1374,6 +1492,12 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
         dcmd(BEGIN_VTXS);
         dcmd(TEXIMAGE_PARAM);
         dcmd(VIEWPORT);
+        dcmd(SHININESS);
+        dcmd(PLTT_BASE);
+        dcmd(LIGHT_VECTOR);
+        dcmd(DIF_AMB);
+        dcmd(SPE_EMI);
+        dcmd(LIGHT_COLOR);
 #undef dcmd
         default:
             printf("\nUnhandled GE cmd %02llx", cmd);
@@ -1430,17 +1554,23 @@ void NDS_GE_FIFO_write2(struct NDS *this, u8 cmd, u32 val)
 void NDS_GE_FIFO_write(struct NDS *this, u32 val)
 {
     struct NDS_GE *ge = &this->ge;
-    u32 pos = ge->io.fifo_in.pos++;
+    // Refactor this to be seperately in "waiting on FIFO CMD" and "waiting for params," current way is too confusing
+    u32 pos = ge->io.fifo_in.pos;
     ge->io.fifo_in.buf[pos] = val;
+    ge->io.fifo_in.pos++;
     assert(pos<160);
     if (pos == 0) { // Parse command!
         ge->io.fifo_in.num_cmds = 0;
+        u32 highest_cmd = 0;
         for (u32 i = 0; i < 4; i++) {
             ge->io.fifo_in.cmds[i] = val & 0xFF;
-            if (val & 0xFF) ge->io.fifo_in.num_cmds = i+1;
+            if (val & 0xFF) {
+                ge->io.fifo_in.num_cmds = i+1;
+            }
             val >>= 8;
         }
         if (ge->io.fifo_in.num_cmds == 0) { // empty command...
+            ge->io.fifo_in.pos = 0;
             return;
         }
 
@@ -1450,7 +1580,7 @@ void NDS_GE_FIFO_write(struct NDS *this, u32 val)
             u32 cmd = ge->io.fifo_in.cmds[i];
             if (tbl_cmd_good[cmd]) {
                 ge->io.fifo_in.cmd_num_params[i] = tbl_num_params[cmd];
-                if ((i == 0) && (ge->io.fifo_in.cmd_num_params[i] == 0)) ge->io.fifo_in.cmd_num_params[i] = 1;
+                if ((i == 0) && (ge->io.fifo_in.cmd_num_params[0] == 0)) ge->io.fifo_in.cmd_num_params[0] = 1;
             }
             total_params += ge->io.fifo_in.cmd_num_params[i];
             ge->io.fifo_in.cmd_pos[i] = fifo_pos;
@@ -1493,6 +1623,11 @@ u32 NDS_GE_check_irq(struct NDS *this)
 
 void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
+    if ((addr >= R9_GXFIFO) && (addr < (R9_GXFIFO + 0x40))) {
+        printf("\nAddr %08x val %08x", addr, val);
+        NDS_GE_FIFO_write(this, val);
+        return;
+    }
     switch(addr) {
         case R9_CLEAR_COLOR:
             this->re.io.clear.color = val & 0x7FFF;
@@ -1507,9 +1642,6 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
             this->re.io.clear.depth = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
             this->re.io.clear.depth = SIGNe24to32(this->re.io.clear.depth);
             printf("\nCLEAR VALUE SET %08x %f", this->re.io.clear.depth, vtx_to_float(this->re.io.clear.depth));
-            return;
-        case R9_GXFIFO:
-            NDS_GE_FIFO_write(this, val);
             return;
         case R9_GXSTAT:
             assert(sz==4);
@@ -1551,7 +1683,7 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
         gcmd(POLYGON_ATTR);
         gcmd(TEXIMAGE_PARAM);
         gcmd(PLTT_BASE);
-        gcmd(DIFF_AMB);
+        gcmd(DIF_AMB);
         gcmd(SPE_EMI);
         gcmd(LIGHT_VECTOR);
         gcmd(LIGHT_COLOR);
