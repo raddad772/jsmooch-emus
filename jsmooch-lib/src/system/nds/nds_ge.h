@@ -123,6 +123,7 @@ union NDS_GE_TEX_PARAM {
     };
     u32 u;
 };
+
 union NDS_GE_POLY_ATTR {
     struct {
         u32 light0_enable : 1;
@@ -146,9 +147,11 @@ union NDS_GE_POLY_ATTR {
 };
 
 struct NDS;
+struct NDS_RE_POLY;
 struct NDS_RE_TEX_SAMPLER {
     char *tex_ptr;
     u32 tex_addr;
+    u32 pltt_base;
     u32 s_size, t_size; // total size
     u32 s_max_fp, t_max_fp;
     u32 s_size_fp, t_size_fp;
@@ -158,8 +161,9 @@ struct NDS_RE_TEX_SAMPLER {
     u32 s_repeat, t_repeat;
     u32 filled_out;
 
-    void (*sample)(struct NDS *, struct NDS_RE_TEX_SAMPLER *, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a);
+    void (*sample)(struct NDS *, struct NDS_RE_TEX_SAMPLER *, struct NDS_RE_POLY *, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a);
 };
+
 
 struct NDS_RE_POLY  { // no more __attribute__((packed))
     union NDS_GE_POLY_ATTR attr; // 32 bits
@@ -357,6 +361,7 @@ struct NDS_GE {
         struct {
             u32 color; // 6-bit R, 6-bit G, 6-bit B
             i32 S, T;
+            i32 x,y,z,w;
 
             struct NDS_GE_VTX_node root;
 

@@ -94,16 +94,15 @@ void NDS_GE_init(struct NDS *this) {
     SCMD(VTX_DIFF, 1, 8);
     SCMD(POLYGON_ATTR, 1, 1);
     SCMD(TEXIMAGE_PARAM, 1, 1);
-    SCMD(SWAP_BUFFERS, 0, 1);
-    SCMD(PLTT_BASE, 1, 1);
-    SCMD(DIF_AMB, 1, 4);
-    SCMD(SPE_EMI, 1, 4);
-    SCMD(LIGHT_VECTOR, 1, 6);
-    SCMD(LIGHT_COLOR, 1, 1);
-    SCMD(SHININESS, 32, 32);
-    SCMD(BEGIN_VTXS, 1, 1);
-    SCMD(END_VTXS, 0, 1);
-    SCMD(SWAP_BUFFERS, 1, 1);
+    SCMD(PLTT_BASE, 1, 1); // 2B
+    SCMD(DIF_AMB, 1, 4); // 30
+    SCMD(SPE_EMI, 1, 4); //31
+    SCMD(LIGHT_VECTOR, 1, 6); //32
+    SCMD(LIGHT_COLOR, 1, 1); // 33
+    SCMD(SHININESS, 32, 32); // 34
+    SCMD(BEGIN_VTXS, 1, 1); // 40
+    SCMD(END_VTXS, 0, 1); // 41
+    SCMD(SWAP_BUFFERS, 1, 1); // 50
     SCMD(VIEWPORT, 1, 1);
     SCMD(BOX_TEST, 3, 103);
     SCMD(POS_TEST, 2, 9);
@@ -972,6 +971,9 @@ static struct NDS_GE_VTX_node *next_leaf(struct NDS_GE_VTX_node *node)
 static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 color)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
+    if (this->ge.ge_has_buffer > 1) {
+        printf("\nWOAH! cyc:%lld", this->clock.master_cycle_count7+this->waitstates.current_transaction);
+    }
     u32 addr = b->vertex_index;
 
     b->vertex_index++;
@@ -1091,7 +1093,7 @@ static u32 set_bitmask_for_edge(struct NDS_RE_POLY *poly, struct NDS_RE_VERTEX *
         y2 = v[1]->yy;
     }
     for (u32 y = y1; y < y2; y++) {
-        if (y > 192) {
+        if (y > 191) {
             printf("\nDONE EFFED UP!");
             break;
         }
@@ -1297,6 +1299,12 @@ static void ingest_vertex(struct NDS *this, i32 x, i32 y, i32 z) {
         printf("\nVTX OVERFLOW...");
         return;
     }
+
+    this->ge.params.vtx.x = x;
+    this->ge.params.vtx.y = y;
+    this->ge.params.vtx.z = z;
+    this->ge.params.vtx.w = 1 << 12;
+
     // Add to vertex cache
     struct NDS_GE_VTX_node *o = vertex_add_child(this, &VTX_ROOT);
     o->xyzw[0] = x;
@@ -1351,6 +1359,49 @@ static void cmd_VTX_16(struct NDS *this)
     printfcd("\nVTX_16: %f %f %f", vtx_to_float((i32)(i16)(DATA[0] & 0xFFFF)), vtx_to_float((i32)(i16)(DATA[0] >> 16)), vtx_to_float((i32)(i16)(DATA[1] & 0xFFFF)));
     ingest_vertex(this, (i32)(i16)(DATA[0] & 0xFFFF), (i32)(i16)(DATA[0] >> 16), (i32)(i16)(DATA[1] & 0xFFFF));
     //i32 x = DATA[0] &
+}
+
+static void cmd_VTX_DIFF(struct NDS *this)
+{
+    i32 xd = DATA[0] & 1023;
+    i32 yd = (DATA[0] >> 10) & 1023;
+    i32 zd = (DATA[0] >> 20) & 1023;
+    xd = SIGNe10to32(xd);
+    yd = SIGNe10to32(yd);
+    zd = SIGNe10to32(zd);
+    xd <<= 3;
+    yd <<= 3;
+    zd <<= 3;
+    ingest_vertex(this, this->ge.params.vtx.x+xd, this->ge.params.vtx.y+yd, this->ge.params.vtx.z+zd);
+}
+
+static void cmd_VTX_XY(struct NDS *this)
+{
+    i32 x = (i32)(i16)(DATA[0] & 0xFFFF);
+    i32 y = (i32)(i16)(DATA[0] >> 16);
+    ingest_vertex(this, x, y, this->ge.params.vtx.z);
+}
+
+static void cmd_VTX_XZ(struct NDS *this)
+{
+    i32 x = (i32)(i16)(DATA[0] & 0xFFFF);
+    i32 z = (i32)(i16)(DATA[0] >> 16);
+    ingest_vertex(this, x, this->ge.params.vtx.y, z);
+}
+
+static void cmd_VTX_YZ(struct NDS *this)
+{
+    i32 y = (i32)(i16)(DATA[0] & 0xFFFF);
+    i32 z = (i32)(i16)(DATA[0] >> 16);
+    ingest_vertex(this, this->ge.params.vtx.x, y, z);
+}
+
+static void cmd_VTX_10(struct NDS *this)
+{
+    i32 x = (i32)(i16)(DATA[0] & 0xFFFF);
+    i32 y = (i32)(i16)(DATA[0] >> 16);
+    i32 z = (i32)(i16)(DATA[1] & 0xFFFF);
+    ingest_vertex(this, x << 6, y << 6, z << 6);
 }
 //static void cmd_MTX_POP(struct NDS *this)
 
@@ -1503,6 +1554,11 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
         dcmd(DIF_AMB);
         dcmd(SPE_EMI);
         dcmd(LIGHT_COLOR);
+        dcmd(VTX_DIFF);
+        dcmd(VTX_XY);
+        dcmd(VTX_XZ);
+        dcmd(VTX_10);
+        dcmd(VTX_YZ);
 #undef dcmd
         default:
             printf("\nUnhandled GE cmd %02llx", cmd);
@@ -1585,15 +1641,18 @@ void NDS_GE_FIFO_write(struct NDS *this, u32 val)
             u32 cmd = ge->io.fifo_in.cmds[i];
             if (tbl_cmd_good[cmd]) {
                 ge->io.fifo_in.cmd_num_params[i] = tbl_num_params[cmd];
-                if ((i == 0) && (ge->io.fifo_in.cmd_num_params[0] == 0)) ge->io.fifo_in.cmd_num_params[0] = 1;
+                //if ((i == 0) && (ge->io.fifo_in.cmd_num_params[0] == 0)) ge->io.fifo_in.cmd_num_params[0] = 1;
             }
             total_params += ge->io.fifo_in.cmd_num_params[i];
             ge->io.fifo_in.cmd_pos[i] = fifo_pos;
             fifo_pos += total_params;
         }
+        if (total_params == 0) total_params = 1;
+        //printf("\nTotal params: %d", total_params);
         ge->io.fifo_in.total_len = total_params + 1;
     }
     if (ge->io.fifo_in.pos >= ge->io.fifo_in.total_len) {
+        //printf("\nCMD FINISH!");
         // Commands finish. Now add them to the FIFO...
         for (u32 i = 0; i < ge->io.fifo_in.num_cmds; i++) {
             u32 first_param = ge->io.fifo_in.buf[ge->io.fifo_in.cmd_pos[i]];
@@ -1629,7 +1688,7 @@ u32 NDS_GE_check_irq(struct NDS *this)
 void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if ((addr >= R9_GXFIFO) && (addr < (R9_GXFIFO + 0x40))) {
-        printf("\nAddr %08x val %08x", addr, val);
+        //printf("\nAddr %08x val %08x", addr, val);
         NDS_GE_FIFO_write(this, val);
         return;
     }

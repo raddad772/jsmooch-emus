@@ -173,7 +173,38 @@ static float vtx_to_float(i32 v)
     return ((float)v) / 4096.0f;
 }
 
-static void sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    u32 addr = ((t * ts->t_size) + s);
+    u32 c = NDS_VRAM_tex_read(this, addr >> 1, 1) & 0xFF;
+    if (addr & 1) c >>= 4;
+    c &= 0x0F;
+    c = NDS_VRAM_pal_read(this, ts->pltt_base + c, 2);
+
+    *r = (c & 0x1F) << 1;
+    *g = ((c >> 5) & 0x1F) << 1;
+    *b = ((c >> 10) & 0x1F) << 1;
+    *a = ((c >> 15) & 1) * 63;
+}
+
+static void sample_texture_palette_2bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    u32 addr = ((t * ts->t_size) + s);
+    u32 c = NDS_VRAM_tex_read(this, addr >> 2, 1) & 0xFF;
+    for (u32 i = 0; i < (addr & 3); i++) {
+        c >>= 2;
+    }
+    c &= 3;
+    c = NDS_VRAM_pal_read(this, ts->pltt_base + c, 2);
+
+    *r = (c & 0x1F) << 1;
+    *g = ((c >> 5) & 0x1F) << 1;
+    *b = ((c >> 10) & 0x1F) << 1;
+    *a = ((c >> 15) & 1) * 63;
+}
+
+
+static void sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     // 16-bit read from VRAM @ ptr ((t * size) + s) * 2
     u32 c = NDS_VRAM_tex_read(this, (((t * ts->t_size) + s) << 1), 2) & 0x7FFF;
@@ -229,6 +260,7 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
     struct NDS_RE_TEX_SAMPLER *ts = &p->sampler;
     ts->s_size = 8 << p->tex_param.sz_s;
     ts->t_size = 8 << p->tex_param.sz_t;
+    ts->pltt_base = p->tex_param.format == 2 ? p->pltt_base << 3 : p->pltt_base << 4;
     ts->s_size_fp = (ts->s_size << 4);
     ts->t_size_fp = (ts->t_size << 4);
     ts->s_fp_mask = ts->s_size_fp - 1;
@@ -246,6 +278,11 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
             ts->sample = NULL;
             ts->tex_ptr = NULL;
             return;
+        case 2:
+            ts->sample = &sample_texture_palette_2bpp;
+        case 3: // 4-bit palette!
+            ts->sample = &sample_texture_palette_4bpp;
+            break;
         case 7: // direct!
             ts->sample = &sample_texture_direct;
             //get_vram_info(this, ts);
@@ -274,17 +311,17 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
-        if (p->attr.alpha == 0) {
+        /*if (p->attr.alpha == 0) {
             printf("\nskip poly %d as hidden alpha", poly_num);
             continue;
-        }
+        }*/
         //if (poly_num > 0) break;
         if (!p->attr.render_back && !p->front_facing) {
-            printf("\nPOLY %d SKIPPED FOR BACK RENDER NOT ENABLE", poly_num);
+            //printf("\nPOLY %d SKIPPED FOR BACK RENDER NOT ENABLE", poly_num);
             continue;
         }
         if (!p->attr.render_front && p->front_facing) {
-            printf("\nPOLY %d SKIPPED FOR FRONT RENDER NOT ENABLE", poly_num);
+            //printf("\nPOLY %d SKIPPED FOR FRONT RENDER NOT ENABLE", poly_num);
             continue;
         }
 
@@ -375,6 +412,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                 //printf("\n!%08x %f", (i32)depth, vtx_to_float((i32)depth));
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
+                comparison = 1;
                 if (comparison) {
                     u32 pix_r5, pix_g5, pix_b5, pix_a5;
                     if (tex_enable && p->sampler.sample) {
@@ -384,7 +422,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         i32 final_t = (i32)t;
                         final_tex_coord(&p->sampler, &final_s, &final_t);
                         u32 tex_r6, tex_g6, tex_b6, tex_a6;
-                        p->sampler.sample(this, &p->sampler, final_s, final_t, &tex_r6, &tex_g6, &tex_b6, &tex_a6);
+                        p->sampler.sample(this, &p->sampler, p, final_s, final_t, &tex_r6, &tex_g6, &tex_b6, &tex_a6);
 
                         tex_rf = (float)tex_r6;
                         tex_gf = (float)tex_g6;

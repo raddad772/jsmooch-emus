@@ -449,3 +449,16 @@ u32 NDS_VRAM_tex_read(struct NDS *this, u32 addr, u32 sz)
 
     return cR[sz](this->ppu.eng3d.slots.texture[bank], addr & 0x1FFFF);
 }
+
+u32 NDS_VRAM_pal_read(struct NDS *this, u32 addr, u32 sz)
+{
+    // 96k accross 6 slots
+    u32 bank = (addr >> 14) & 7;
+    if (bank >= 6) bank -= 6;
+    if (!this->ppu.eng3d.slots.palette[bank]) {
+        printf("\nMiss VRAM palette read at %05x", addr);
+        return 0;
+    }
+
+    return cR[sz](this->ppu.eng3d.slots.palette[bank], addr & 0x3FFF);
+}
