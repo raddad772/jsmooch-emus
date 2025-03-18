@@ -172,12 +172,13 @@ struct NDS_RE_POLY  { // no more __attribute__((packed))
     u32 pltt_base;
     u32 w_normalization_left;
     u32 w_normalization_right;
-    u16 first_vertex_ptr;
+    u16 vertex_pointers[11];
     u32 num_vertices;
     u32 front_facing;
     u32 winding_order;
+
     u32 highest_vertex;
-    u8 lines_on_bitfield[24];
+    i32 min_y, max_y;
     u16 edge_r_bitfield;
 
     struct NDS_RE_TEX_SAMPLER sampler;

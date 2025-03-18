@@ -1022,13 +1022,15 @@ static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
     }
 }
 
-static u32 finalize_verts_and_get_first_addr(struct NDS *this)
+static u32 finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_POLY *poly)
 {
     // Final transform to screen and write into vertex buffer
+    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
 
     // Go thru verts...
     struct NDS_GE_VTX_node *first_node = find_first_leaf(&VTX_ROOT);
     struct NDS_GE_VTX_node *node = first_node;
+    u32 num = 0;
     while(node != NULL) {
         if (!node->processed) {
             node->processed = 1;
@@ -1066,7 +1068,9 @@ static u32 finalize_verts_and_get_first_addr(struct NDS *this)
             }
             node->vram_ptr = commit_vertex(this, scrX, scrY, node->xyzw[2], node->xyzw[3] & 0xFFFFFF, node->uv, node->color);
         }
+        poly->vertex_pointers[num++] = node->vram_ptr;
         node = next_leaf(node);
+
     }
     return first_node->vram_ptr;
 }
@@ -1081,7 +1085,7 @@ static u32 count_leafs(struct NDS_GE_VTX_node *node, u32 total_so_far)
     return total_so_far;
 }
 
-static u32 set_bitmask_for_edge(struct NDS_RE_POLY *poly, struct NDS_RE_VERTEX *v[])
+static u32 edge_is_top_or_bottom(struct NDS_RE_POLY *poly, struct NDS_RE_VERTEX *v[])
 {
     u32 y1, y2;
     if (v[0]->yy > v[1]->yy) {
@@ -1092,34 +1096,30 @@ static u32 set_bitmask_for_edge(struct NDS_RE_POLY *poly, struct NDS_RE_VERTEX *
         y1 = v[0]->yy;
         y2 = v[1]->yy;
     }
-    for (u32 y = y1; y < y2; y++) {
-        if (y > 191) {
-            printf("\nDONE EFFED UP!");
-            break;
-        }
-        u32 bytenum = y >> 3;
-        u32 bitnum = y & 7;
-        poly->lines_on_bitfield[bytenum] |= 1 << bitnum;
-    }
     return v[0]->yy < v[1]->yy;
 }
 
-static u32 determine_highest_vertex(struct NDS_RE_VERTEX *vertices, u32 num_vertices)
+static u32 determine_highest_vertex(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
 {
     u32 highest = 0;
-    for (u32 i = 1; i < num_vertices; i++) {
-        if (vertices[i].yy < vertices[highest].yy) highest = i;
+    poly->min_y = 512;
+    poly->max_y = 0;
+    for (u32 i = 0; i < poly->num_vertices; i++) {
+        struct NDS_RE_VERTEX *v = &b->vertex[poly->vertex_pointers[i]];
+        if (v->yy < b->vertex[poly->vertex_pointers[highest]].yy) highest = i;
+        if (v->yy < poly->min_y) poly->min_y = v->yy;
+        if (v->yy > poly->max_y) poly->max_y = v->yy;
     }
     return highest;
 }
 
-static u32 determine_winding_order(struct NDS_RE_VERTEX *vertices, u32 num_vertices, u32 highest)
+static u32 determine_winding_order(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
 {
     // OK, now progress in order until we have a y-delta of >0.
-    i32 cx = vertices[highest].xx;
-    for (u32 i = 1; i < num_vertices; i++) {
-        u32 index_to_compare = (i + highest) % num_vertices;
-        struct NDS_RE_VERTEX *cmp = &vertices[index_to_compare];
+    i32 cx = b->vertex[poly->vertex_pointers[poly->highest_vertex]].xx;
+    for (u32 i = 1; i < poly->num_vertices; i++) {
+        u32 index_to_compare = (i + poly->highest_vertex) % poly->num_vertices;
+        struct NDS_RE_VERTEX *cmp = &b->vertex[poly->vertex_pointers[index_to_compare]];
         i32 diff = (i32)cmp->xx - cx;
         if (diff == 0) continue;
         if (diff > 0) { // Positive X-slope from least y-point means CW
@@ -1135,26 +1135,26 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     struct NDS_RE_VERTEX *v[2];
-    v[1] = &b->vertex[poly->first_vertex_ptr];
-    memset(poly->lines_on_bitfield, 0, 24);
+    v[1] = &b->vertex[poly->vertex_pointers[0]];
     u32 edgenum = 0;
 
     /*printf("\n\nPOLY!");
     for (u32 i = 0; i < poly->num_vertices; i++) {
-        struct NDS_RE_VERTEX *pver = &b->vertex[poly->first_vertex_ptr + i];
-        printf("\nvert: x:%f y:%f color:%04x s:%f t:%f", vtx_to_float(pver->xx), vtx_to_float(pver->yy), pver->color, uv_to_float(pver->uv[0]), uv_to_float(pver->uv[1]));
+        struct NDS_RE_VERTEX *pver = &b->vertex[poly->vertex_pointers[i]];
+        printf("\nvert%d: x:%f y:%f color:%04x s:%f t:%f", poly->vertex_pointers[i], vtx_to_float(pver->xx), vtx_to_float(pver->yy), pver->color, uv_to_float(pver->uv[0]), uv_to_float(pver->uv[1]));
     }*/
-    poly->highest_vertex = determine_highest_vertex(v[1], poly->num_vertices);
-    u32 winding_order = determine_winding_order(v[1], poly->num_vertices, poly->highest_vertex);
+
+    poly->highest_vertex = determine_highest_vertex(poly, b);
+    u32 winding_order = determine_winding_order(poly, b);
     poly->front_facing = winding_order == expected_winding_order;
     poly->winding_order = winding_order;
     poly->edge_r_bitfield = 0;
 
     for (u32 i = 1; i <= poly->num_vertices; i++) {
         v[0] = v[1];
-        u32 addr = poly->first_vertex_ptr + (i % poly->num_vertices);
-        v[1] = &b->vertex[addr];
-        u32 top_to_bottom = set_bitmask_for_edge(poly, v) ^ 1;
+        u32 addr = i % poly->num_vertices;
+        v[1] = &b->vertex[poly->vertex_pointers[addr]];
+        u32 top_to_bottom = edge_is_top_or_bottom(poly, v) ^ 1;
 
         //printf("\nV0 %d,%d V1 %d,%d top_to_bottom:%d", v[0]->xx, v[0]->yy, v[1]->xx, v[1]->yy, top_to_bottom);
         if (poly->winding_order == CCW) {
@@ -1170,8 +1170,8 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     }
 
     v[0] = v[1];
-    v[1] = &b->vertex[poly->first_vertex_ptr];
-    u32 top_to_bottom = set_bitmask_for_edge(poly, v);
+    v[1] = &b->vertex[poly->vertex_pointers[0]];
+    u32 top_to_bottom = edge_is_top_or_bottom(poly, v);
     if (poly->winding_order == CCW) {
         // top to bottom means left edge on CCW
         if (!top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
@@ -1220,7 +1220,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
         return;
     }
 
-    out->first_vertex_ptr = finalize_verts_and_get_first_addr(this);
+    finalize_verts_and_get_first_addr(this, out);
     normalize_w(this, out);
     if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
         b->polygon_index--;

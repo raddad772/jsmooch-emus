@@ -34,7 +34,7 @@ struct NDS_RE_EDGE {
 
 void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, struct NDS_RE_POLY *p, u32 comp_y, struct NDS_RE_EDGE *edges)
 {
-    struct NDS_RE_VERTEX *first_vertex = &b->vertex[p->first_vertex_ptr + p->highest_vertex];
+    struct NDS_RE_VERTEX *first_vertex = &b->vertex[p->vertex_pointers[p->highest_vertex]];
     /*printf("\nHIGHEST VERTEX %d: %d, %d", p->highest_vertex, first_vertex->xx, first_vertex->yy);
     printf("\nAll vertices of polygon:");
     for (u32 i = 0; i < p->num_vertices; i++) {
@@ -60,7 +60,7 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
             edges[j].v[0] = edges[j].v[1];
 
             edges[j].num[1] = (edges[j].num[1] + edges[j].dir) % (i32)p->num_vertices;
-            edges[j].v[1] = &b->vertex[edges[j].num[1] + p->first_vertex_ptr];
+            edges[j].v[1] = &b->vertex[p->vertex_pointers[edges[j].num[1]]];
 
             //printf("\nEdge check %d: %d,%d to %d,%d", j, edges[j].v[0]->xx, edges[j].v[0]->yy, edges[j].v[1]->xx, edges[j].v[1]->yy);
             // TODO: verify vs. winding order if slope is positive or negative properly?
@@ -317,17 +317,17 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         }*/
         //if (poly_num > 0) break;
         if (!p->attr.render_back && !p->front_facing) {
-            //printf("\nPOLY %d SKIPPED FOR BACK RENDER NOT ENABLE", poly_num);
+            printf("\nPOLY %d SKIPPED FOR BACK RENDER NOT ENABLE", poly_num);
             continue;
         }
         if (!p->attr.render_front && p->front_facing) {
-            //printf("\nPOLY %d SKIPPED FOR FRONT RENDER NOT ENABLE", poly_num);
+            printf("\nPOLY %d SKIPPED FOR FRONT RENDER NOT ENABLE", poly_num);
             continue;
         }
 
         // Polygon does not intersect this line
-        if (!(p->lines_on_bitfield[test_byte] & test_bit)) {
-            //printf("\nSkip poly %d", poly_num);
+        if ((line_num < p->min_y) || (line_num > p->max_y)) {
+            //printf("\nSkip poly %d min:%d max:%d", poly_num, p->min_y, p->max_y);
             continue;
         }
 
@@ -412,7 +412,6 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                 //printf("\n!%08x %f", (i32)depth, vtx_to_float((i32)depth));
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
-                comparison = 1;
                 if (comparison) {
                     u32 pix_r5, pix_g5, pix_b5, pix_a5;
                     if (tex_enable && p->sampler.sample) {

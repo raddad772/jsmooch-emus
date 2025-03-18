@@ -837,7 +837,6 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.do_3d)) {
-        printf("\nDRAW 3D LINE!");
         draw_3d_line(this, eng, 0);
     }
     else {
