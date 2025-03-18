@@ -1068,6 +1068,7 @@ static u32 finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_POL
             }
             node->vram_ptr = commit_vertex(this, scrX, scrY, node->xyzw[2], node->xyzw[3] & 0xFFFFFF, node->uv, node->color);
         }
+        printf("\nVert num %d: %d %d", num, b->vertex[node->vram_ptr].xx, b->vertex[node->vram_ptr].yy);
         poly->vertex_pointers[num++] = node->vram_ptr;
         node = next_leaf(node);
 
@@ -1147,6 +1148,7 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     poly->highest_vertex = determine_highest_vertex(poly, b);
     u32 winding_order = determine_winding_order(poly, b);
     poly->front_facing = winding_order == expected_winding_order;
+
     poly->winding_order = winding_order;
     poly->edge_r_bitfield = 0;
 
@@ -1230,6 +1232,13 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
 
     //printf("\n\nEvaluate for poly %d", addr);
     evaluate_edges(this, out, winding_order);
+    if ((!out->attr.render_back && !out->front_facing) ||
+        (!out->attr.render_front && out->front_facing)) {
+        b->polygon_index--;
+        return;
+    }
+
+
 
     //printf("\npoly %d sides:%d front_facing:%d", addr, out->num_vertices, out->front_facing);
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);

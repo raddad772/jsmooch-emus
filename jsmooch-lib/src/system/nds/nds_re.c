@@ -316,15 +316,6 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
             continue;
         }*/
         //if (poly_num > 0) break;
-        if (!p->attr.render_back && !p->front_facing) {
-            printf("\nPOLY %d SKIPPED FOR BACK RENDER NOT ENABLE", poly_num);
-            continue;
-        }
-        if (!p->attr.render_front && p->front_facing) {
-            printf("\nPOLY %d SKIPPED FOR FRONT RENDER NOT ENABLE", poly_num);
-            continue;
-        }
-
         // Polygon does not intersect this line
         if ((line_num < p->min_y) || (line_num > p->max_y)) {
             //printf("\nSkip poly %d min:%d max:%d", poly_num, p->min_y, p->max_y);
