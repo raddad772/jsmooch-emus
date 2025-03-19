@@ -98,7 +98,7 @@ struct NDS_GE_VTX_list_node
         u32 vtx_parent;
 
         i32 uv[2];
-        u32 color;
+        u32 color[3];
     } data;
 
 
@@ -198,7 +198,7 @@ struct NDS_RE_VERTEX { // 24 bytes
     u16 xx, yy;
     i32 ww, zz;
     i32 uv[2];
-    u32 color;
+    u32 color[3]; // RGB!
 
     i32 lr, lg, lb;
 };
@@ -368,7 +368,7 @@ struct NDS_GE {
         } poly;
 
         struct {
-            u32 color; // 6-bit R, 6-bit G, 6-bit B
+            u32 color[3]; // 6-bit R, 6-bit G, 6-bit B
             i32 S, T;
             i32 x,y,z,w;
 
@@ -391,15 +391,15 @@ struct NDS_GE {
         struct NDS_GE_LIGHT {
             i32 direction[4];
             i32 halfway[4];
-            u32 color;
+            u32 color[3];
         } light[4];
 
         u32 shininess_enable;
         struct {
-            u32 diffuse;
-            u32 ambient;
-            u32 specular_reflection;
-            u32 specular_emission;
+            u32 diffuse[3];
+            u32 ambient[3];
+            u32 specular_reflection[3];
+            u32 specular_emission[3];
         } material_color;
     }lights;
 

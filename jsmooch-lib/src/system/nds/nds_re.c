@@ -138,12 +138,12 @@ static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32
 
 
     //printf("\nEXTRACT V0 %05x", e->v[0]->color);
-    float rstart = EXTRACTR(e->v[0]->data.color);
-    float gstart = EXTRACTG(e->v[0]->data.color);
-    float bstart = EXTRACTB(e->v[0]->data.color);
-    float r_diff = EXTRACTR(e->v[1]->data.color) - rstart;
-    float g_diff = EXTRACTG(e->v[1]->data.color) - gstart;
-    float b_diff = EXTRACTB(e->v[1]->data.color) - bstart;
+    float rstart = e->v[0]->data.color[0];
+    float gstart = e->v[0]->data.color[1];
+    float bstart = e->v[0]->data.color[2];
+    float r_diff = e->v[1]->data.color[0] - rstart;
+    float g_diff = e->v[1]->data.color[1] - gstart;
+    float b_diff = e->v[1]->data.color[2] - bstart;
 
     float x_loc = (x_diff * y_recip) + (float)e->v[0]->data.xyzw[0];
     float r_loc = (r_diff * y_recip) + rstart;

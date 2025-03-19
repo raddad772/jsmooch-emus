@@ -903,7 +903,9 @@ static void cmd_COLOR(struct NDS *this)
     if (g) g = (g << 1) + 1;
     if (b) b = (b << 1) + 1;
     printfcd("\nCOLOR r:%d g:%d b:%d", r, g, b);
-    this->ge.params.vtx.color = r | (g << 6) | (b << 12);
+    this->ge.params.vtx.color[0] = r;
+    this->ge.params.vtx.color[1] = g;
+    this->ge.params.vtx.color[2] = b;
 }
 
 static void cmd_NORMAL(struct NDS *this)
@@ -970,7 +972,9 @@ static void matrix_multiply_by_vector(i32 *dest, i32 *matrix, i32 *src)
 
 static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_list_node *node)
 {
-    node->data.color = this->ge.params.vtx.color;
+    node->data.color[0] = this->ge.params.vtx.color[0];
+    node->data.color[1] = this->ge.params.vtx.color[1];
+    node->data.color[2] = this->ge.params.vtx.color[2];
     node->data.uv[0] = this->ge.params.vtx.S;
     node->data.uv[1] = this->ge.params.vtx.T;
     node->data.processed = 0;
@@ -1034,7 +1038,7 @@ static u32 clip_against_plane(struct NDS *this, i32 axis, u32 is_compare_GT, str
 
                     for (u32 k = 0; k < 4; k++) {
                         clipped_vertex->data.xyzw[k] = (v1->data.xyzw[k] * scale_inv + v0->data.xyzw[k] * scale) >> clip_precision;
-                        //clipped_vertex->data.color[k] = (v1->data.color[k] * scale_inv + v0->data.color[k] * scale) >> clip_precision;
+                        clipped_vertex->data.color[k] = (v1->data.color[k] * scale_inv + v0->data.color[k] * scale) >> clip_precision;
                     }
 
                     for (u32 k = 0; k < 2; k++) {
@@ -1095,7 +1099,7 @@ static u32 determine_needs_clipping(struct NDS_GE_VTX_list_node *v)
     return 0;
 }
 
-static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 color)
+static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     if (this->ge.ge_has_buffer > 1) {
@@ -1118,7 +1122,9 @@ static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 x
     v->data.xyzw[3] = ww;
     v->data.uv[0] = uv[0];
     v->data.uv[1] = uv[1];
-    v->data.color = color;
+    v->data.color[0] = cr;
+    v->data.color[1] = cg;
+    v->data.color[2] = cb;
     return addr;
 }
 
@@ -1193,7 +1199,7 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
                 scrX = 0;
                 scrY = 0;
             }
-            node->data.vram_ptr = commit_vertex(this, node, scrX, scrY, node->data.xyzw[2], node->data.xyzw[3] & 0xFFFFFF, node->data.uv, node->data.color);
+            node->data.vram_ptr = commit_vertex(this, node, scrX, scrY, node->data.xyzw[2], node->data.xyzw[3] & 0xFFFFFF, node->data.uv, node->data.color[0], node->data.color[1], node->data.color[2]);
         }
         //printf("\nVert num %d: %d %d", num, node->data.xyzw[0], node->data.xyzw[1]);
         node = node->next;
@@ -1554,33 +1560,35 @@ static void cmd_LIGHT_VECTOR(struct NDS *this)
     light->halfway[2] = (light->direction[2] - (1 << 12)) >> 1;
 }
 
-static u32 C15to18(u32 c)
+static void C15to18(u32 c, u32 *o)
 {
-    u32 r = c & 0x1F;
-    u32 g = (c >> 5) & 0x1F;
-    u32 b = (c >> 10) & 0x1F;
-    return r | (g << 6) | (b << 10);
+    o[0] = (c & 0x1F) << 1;
+    o[1] = ((c >> 5) & 0x1F) << 1;
+    o[2] = ((c >> 10) & 0x1F) << 1;
 }
 
 static void cmd_DIF_AMB(struct NDS *this)
 {
-    this->ge.lights.material_color.diffuse = C15to18(DATA[0] & 0x7FFF);
-    this->ge.lights.material_color.ambient = C15to18((DATA[0] >> 16) & 0x7FFF);
-    if (DATA[0] & 0x8000) this->ge.params.vtx.color = this->ge.lights.material_color.diffuse;
+    C15to18(DATA[0] & 0x7FFF, this->ge.lights.material_color.diffuse);
+    C15to18((DATA[0] >> 16) & 0x7FFF, this->ge.lights.material_color.ambient);
+    if (DATA[0] & 0x8000) {
+        this->ge.params.vtx.color[0] = this->ge.lights.material_color.diffuse[0];
+        this->ge.params.vtx.color[1] = this->ge.lights.material_color.diffuse[1];
+        this->ge.params.vtx.color[2] = this->ge.lights.material_color.diffuse[2];
+    }
 }
 
 static void cmd_SPE_EMI(struct NDS *this)
 {
-    this->ge.lights.material_color.specular_reflection = C15to18(DATA[0] & 0x7FFF);
-    this->ge.lights.material_color.specular_emission = C15to18((DATA[0] >> 16) & 0x7FFF);
+    C15to18(DATA[0] & 0x7FFF, this->ge.lights.material_color.specular_reflection);
+    C15to18((DATA[0] >> 16) & 0x7FFF, this->ge.lights.material_color.specular_emission);
     this->ge.lights.shininess_enable = (DATA[0] >> 15) & 1;
 
 }
 
-static void cmd_LIGHT_COLOR(struct NDS *this)
-{
+static void cmd_LIGHT_COLOR(struct NDS *this) {
     u32 light_num = DATA[0] >> 30;
-    this->ge.lights.light[light_num].color = C15to18(DATA[0] & 0x7FFF);
+    C15to18(DATA[0] & 0x7FFF, this->ge.lights.light[light_num].color);
 }
 #undef DATA
 
