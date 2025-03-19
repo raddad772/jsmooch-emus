@@ -1174,6 +1174,10 @@ static void render_image_view_re_wireframe(struct debugger_interface *dbgr, stru
     memset(outbuf, 0, out_width * 4 * 192);
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
 
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    debugger_widgets_textbox_clear(tb);
+    debugger_widgets_textbox_sprintf(tb, "#poly:%d", b->polygon_index);
+
     for (u32 i = 0; i < b->polygon_index; i++) {
         struct NDS_RE_POLY *p = &b->polygon[i];
         struct NDS_GE_VTX_list_node *v0, *v1;
@@ -1287,7 +1291,11 @@ static void setup_image_view_re_wireframe(struct NDS* this, struct debugger_inte
 
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_re_wireframe;
+
     snprintf(iv->label, sizeof(iv->label), "RE Wireframe");
+
+    debugger_widgets_add_textbox(&dview->options, "# poly:0", 1);
+
 }
 
 static void setup_image_view_re_output(struct NDS* this, struct debugger_interface *dbgr)

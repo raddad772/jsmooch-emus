@@ -303,7 +303,7 @@ void NDS_trigger_dma7_if(struct NDS *this, u32 start_timing)
 {
     struct NDS_DMA_ch *ch;
     assert(start_timing <= 3);
-    if (start_timing >= 2) {
+    if (start_timing >= 3) {
         static int a = 1;
         if (a) {
             a = 0;

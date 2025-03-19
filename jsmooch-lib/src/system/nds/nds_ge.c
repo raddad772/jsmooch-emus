@@ -982,6 +982,7 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
 
     // TODO: add any I missed first pass
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
+        printf("\nVERTEX MULT WATCH OUT!");
         for (u32 i = 0; i < 2; i++) {
             i64 x = node->data.xyzw[0] * M_TEXTURE.m[i*4]; // TODO: May have got x/y wrong here
             i64 y = node->data.xyzw[1] * M_TEXTURE.m[(i*4)+1];
