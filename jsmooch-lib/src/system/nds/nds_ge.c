@@ -1062,7 +1062,6 @@ static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out)
     static struct NDS_GE_VTX_list tmp;
     vertex_list_init(&tmp);
 
-
 #define COMPARE_GT 1
 #define COMPARE_LT 0
 
@@ -1150,7 +1149,17 @@ static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
     }
     else {
         // round UP
-        out->w_normalization_left = (((16 - longest_one) + 3) >> 2) << 2;
+        out->w_normalization_left = (((16 - longest_one) + 0) >> 2) << 2;
+    }
+
+    printf("\n\nW NORMALIZE!");
+    item = out->vertex_list.first;
+    while(item) {
+        if (out->w_normalization_right) item->data.w_normalized = item->data.xyzw[3] >> out->w_normalization_right;
+        else if (out->w_normalization_left) item->data.w_normalized = item->data.xyzw[3] << out->w_normalization_left;
+        else item->data.w_normalized = item->data.xyzw[3];
+        printf("\nORIGINAL W: %04x NEW W:%04x sl:%d sr:%d", item->data.xyzw[3], item->data.w_normalized, out->w_normalization_left, out->w_normalization_right);
+        item = item->next;
     }
 }
 
@@ -1362,11 +1371,11 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
 
     //printf("\n\nEvaluate for poly %d", addr);
     evaluate_edges(this, out, winding_order);
-    if ((!out->attr.render_back && !out->front_facing) ||
+    /*if ((!out->attr.render_back && !out->front_facing) ||
         (!out->attr.render_front && out->front_facing)) {
         b->polygon_index--;
         return;
-    }
+    }*/
 
     //printf("\npoly %d sides:%d front_facing:%d", addr, out->num_vertices, out->front_facing);
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);

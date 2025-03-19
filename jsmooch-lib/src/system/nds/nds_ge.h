@@ -96,6 +96,7 @@ struct NDS_GE_VTX_list_node
         u32 processed;
         u16 vram_ptr;
         u32 vtx_parent;
+        u32 w_normalized;
 
         i32 uv[2];
         u32 color[3];
@@ -198,7 +199,7 @@ struct NDS_RE_VERTEX { // 24 bytes
     u16 xx, yy;
     i32 ww, zz;
     i32 uv[2];
-    u32 color[3]; // RGB!
+    i32 color[3]; // RGB!
 
     i32 lr, lg, lb;
 };

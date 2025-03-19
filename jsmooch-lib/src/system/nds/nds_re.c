@@ -8,8 +8,69 @@
 #include "nds_bus.h"
 #include "nds_vram.h"
 
-static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l)
+/**
+ * This interpolation code is adapted from MelonDS
+ */
+
+struct NDS_RE_interp {
+    i32 x0, x1, xdiff, x;
+
+    u32 shift;
+    u32 linear;
+
+    i32 xrecip_z;
+    i32 w0n, w0d, w1d;
+
+    u32 bit_precision;
+
+    u32 yfactor;
+};
+
+static void NDS_RE_interp_setup(struct NDS_RE_interp *this, u32 bit_precision, i32 x0, i32 x1, i32 w0, i32 w1)
 {
+    this->x0 = x0;
+    this->x1 = x1;
+    this->xdiff = x1 - x0;
+    this->bit_precision = bit_precision;
+
+    if (this->xdiff != 0)
+        this->xrecip_z = (1<<22) / this->xdiff;
+    else
+        this->xrecip_z = 0;
+
+    // linear mode is used if both W values are equal and have low-order bits cleared (0-6 along X, 1-6 along Y)
+    u32 mask = bit_precision ? 0x7E : 0x7F;
+    if ((w0 == w1) && !(w0 & mask) && !(w1 & mask))
+        this->linear = 1;
+    else
+        this->linear = 0;
+
+    if (bit_precision == 9) {
+        if ((w0 & 0x1) && !(w1 & 0x1))
+        {
+            this->w0n = w0 - 1;
+            this->w0d = w0 + 1;
+            this->w1d = w1;
+        }
+        else
+        {
+            this->w0n = w0 & 0xFFFE;
+            this->w0d = w0 & 0xFFFE;
+            this->w1d = w1 & 0xFFFE;
+        }
+
+        this->shift = 9;
+    }
+    else {
+        this->w0n = w0;
+        this->w0d = w0;
+        this->w1d = w1;
+
+        this->shift = 8;
+    }
+}
+
+static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
     for (u32 x = 0; x < 256; x++) {
         l->poly_id[x] = this->re.io.clear.poly_id;
         l->rgb_top[x] = this->re.io.clear.color;
@@ -24,6 +85,7 @@ static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l)
 #define CW 1
 
 struct NDS_RE_EDGE {
+    struct NDS_RE_interp interp;
     struct NDS_GE_VTX_list_node *v[2];
     i32 num[2];
     i32 dir;
@@ -108,64 +170,57 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
     //    printf("\nEdge %d vtx 0 %d %d RGB %04x", j, edges[j].v[0]->data.xyzw[0], edges[j].v[0]->data.xyzw[1], edges[j].v[0]->color);
 }
 
-#define EXTRACTB(x) (((x) >> 12) & 0x3F)
-#define EXTRACTG(x) (((x) >> 6) & 0x3F)
-#define EXTRACTR(x) ((x) & 0x3F)
-
-static void lerp_edge_to_vtx(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32 y, u32 do_tex)
+static void NDS_RE_interp_set_x(struct NDS_RE_interp *this, i32 x)
 {
-    float y_diff = e->v[1]->data.xyzw[1] - e->v[0]->data.xyzw[1];
-    float x_diff = e->v[1]->data.xyzw[0] - e->v[0]->data.xyzw[0];
-    float w_diff = e->v[1]->data.xyzw[3] - e->v[0]->data.xyzw[3];
-    float z_diff = e->v[1]->data.xyzw[2] - e->v[0]->data.xyzw[2];
-    float s_diff, t_diff, s_start, t_start;
-    float s_loc=0, t_loc=0;
+    x -= this->x0;
+    this->x = x;
+    if (this->xdiff != 0 && !this->linear)
+    {
+        i64 num = ((s64)x * this->w0n) << this->shift;
+        i32 den = (x * this->w0d) + ((this->xdiff - x) * this->w1d);
 
-
-    float y_recip = 1.0f / y_diff;
-    float yminor = y - e->v[0]->data.xyzw[1];
-    y_recip *= yminor;
-    if (do_tex) {
-        s_diff = e->v[1]->data.uv[0] - e->v[0]->data.uv[0];
-        t_diff = e->v[1]->data.uv[1] - e->v[0]->data.uv[1];
-        s_start = e->v[0]->data.uv[0];
-        t_start = e->v[0]->data.uv[1];
-        s_loc = (s_diff * y_recip) + s_start;
-        t_loc = (t_diff * y_recip) + t_start;
-        v->uv[0]=(i32)s_loc;
-        v->uv[1]=(i32)t_loc;
+        if (den == 0) this->yfactor = 0;
+        else this->yfactor = (i32)(num / den);
     }
+}
 
+static i32 NDS_RE_interpolate(struct NDS_RE_interp *this, i32 y0, i32 y1)
+{
+    if ((!this->xdiff) || y0 == y1) return y0;
 
-    //printf("\nEXTRACT V0 %05x", e->v[0]->color);
-    float rstart = e->v[0]->data.color[0];
-    float gstart = e->v[0]->data.color[1];
-    float bstart = e->v[0]->data.color[2];
-    float r_diff = e->v[1]->data.color[0] - rstart;
-    float g_diff = e->v[1]->data.color[1] - gstart;
-    float b_diff = e->v[1]->data.color[2] - bstart;
+    if (!this->linear) { // PERP? is that the name?
+        if (y0 < y1)
+            return y0 + (((y1-y0) * this->yfactor) >> this->shift);
+        else
+            return y1 + (((y0-y1) * ((1<<this->shift)-this->yfactor)) >> this->shift);
+    }
+    else { // LERP
+        if (y0 < y1)
+            return y0 + (s64)(y1-y0) * this->x / this->xdiff;
+        else
+            return y1 + (s64)(y0-y1) * (this->xdiff - this->x) / this->xdiff;
+    }
+}
 
-    float x_loc = (x_diff * y_recip) + (float)e->v[0]->data.xyzw[0];
-    float r_loc = (r_diff * y_recip) + rstart;
-    float g_loc = (g_diff * y_recip) + gstart;
-    float b_loc = (b_diff * y_recip) + bstart;
-    float w_loc = (w_diff * y_recip) + e->v[0]->data.xyzw[3];
-    float z_loc = (w_diff * y_recip) + e->v[0]->data.xyzw[3];
+static void interpolate_edge_to_vertex(struct NDS_RE_EDGE *e, struct NDS_RE_VERTEX *v, i32 y, u32 do_tex) {
+    /*struct NDS_GE_VTX_list_node *t = e->v[0];
+    e->v[0] = e->v[1];
+    e->v[1] = t;*/
+    NDS_RE_interp_setup(&e->interp, 9, e->v[0]->data.xyzw[1], e->v[1]->data.xyzw[1], e->v[0]->data.w_normalized, e->v[1]->data.w_normalized);
 
+    NDS_RE_interp_set_x(&e->interp, y);
+
+    v->xx = NDS_RE_interpolate(&e->interp, e->v[0]->data.xyzw[0], e->v[1]->data.xyzw[0]);
     v->yy = y;
-    v->xx = (u32)x_loc;
-    v->lr = (u32)r_loc;
-    if (v->lr > 63) v->lr = 63;
-    if (v->lr < 0) v->lr = 0;
-    v->lg = (u32)g_loc;
-    if (v->lg > 63) v->lg = 63;
-    if (v->lg < 0) v->lg = 0;
-    v->lb = (u32)b_loc;
-    if (v->lb > 63) v->lb = 63;
-    if (v->lb < 0) v->lb = 0;
-    v->ww = (i32)w_loc;
-    v->zz = (i32)z_loc;
-    //printf("\nLRGB: %d, %d, %d", v->lr, v->lg, v->lb);
+    v->zz = NDS_RE_interpolate(&e->interp, e->v[0]->data.xyzw[2], e->v[1]->data.xyzw[2]);
+    v->ww = NDS_RE_interpolate(&e->interp, e->v[0]->data.w_normalized, e->v[1]->data.w_normalized);
+    v->color[0] = NDS_RE_interpolate(&e->interp, e->v[0]->data.color[0], e->v[1]->data.color[0]);
+    v->color[1] = NDS_RE_interpolate(&e->interp, e->v[0]->data.color[1], e->v[1]->data.color[1]);
+    v->color[2] = NDS_RE_interpolate(&e->interp, e->v[0]->data.color[2], e->v[1]->data.color[2]);
+    if (do_tex) {
+        v->uv[0] = NDS_RE_interpolate(&e->interp, e->v[0]->data.uv[0], e->v[1]->data.uv[0]);
+        v->uv[1] = NDS_RE_interpolate(&e->interp, e->v[0]->data.uv[1], e->v[1]->data.uv[1]);
+    }
 }
 
 static float uv_to_float(i32 v)
@@ -307,6 +362,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     clear_line(this, line);
     u32 test_byte = line_num >> 3;
     u32 test_bit = 1 << (line_num & 7);
+    struct NDS_RE_interp interp;
 
     u32 global_tex_enable = this->re.io.DISP3DCNT.texture_mapping;
 
@@ -332,97 +388,51 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
         struct NDS_RE_VERTEX lerped[2];
 
-        lerp_edge_to_vtx(&edges[0], &lerped[0], line_num, tex_enable);
-        lerp_edge_to_vtx(&edges[1], &lerped[1], line_num, tex_enable);
+        interpolate_edge_to_vertex(&edges[0], &lerped[0], line_num, tex_enable);
+        interpolate_edge_to_vertex(&edges[1], &lerped[1], line_num, tex_enable);
+
         u32 xorby = lerped[0].xx > lerped[1].xx ? 1 : 0;
         struct NDS_RE_VERTEX *left = &lerped[0 ^ xorby];
         struct NDS_RE_VERTEX *right = &lerped[1 ^ xorby];
+        NDS_RE_interp_setup(&interp, 8, left->xx, right->xx, left->ww, right->ww);
 
-        /*printf("\nTop left   : %d %d    Top right   : %d %d", edges[0 ^ xorby].v[0]->data.xyzw[0], edges[0 ^ xorby].v[0]->data.xyzw[1], edges[1 ^ xorby].v[0]->data.xyzw[0], edges[1 ^ xorby].v[0]->data.xyzw[1]);
-        printf("\nTLRGB: %04x           TRRGB: %04x", edges[0 ^ xorby].v[0]->color, edges[0 ^ xorby].v[1]->color);
-        printf("\nBottom left: %d %d    Bottom right: %d %d ", edges[0 ^ xorby].v[1]->data.xyzw[0], edges[0 ^ xorby].v[1]->data.xyzw[1], edges[1 ^ xorby].v[1]->data.xyzw[0], edges[1 ^ xorby].v[1]->data.xyzw[1]);
-        printf("\nleft %d, right %d %d %d", left->data.xyzw[0], right->data.xyzw[0], left->lb, right->lb);*/
-
-        float x_recip = 1.0f / (float)(right->xx - left->xx);
-        i32 r_steps = right->lr - left->lr;
-        i32 g_steps = right->lg - left->lg;
-        i32 b_steps = right->lb - left->lb;
-        float r_step = (float)r_steps * x_recip;
-        float g_step = (float)g_steps * x_recip;
-        float b_step = (float)b_steps * x_recip;
-        float cr = left->lr;
-        float cg = left->lg;
-        float cb = left->lb;
-        float depth_step, depth;
-        float s_step, s;
-        float t_step, t;
-        i32 depth_r, depth_l;
-        if (b->depth_buffering_w) {
-            if (p->w_normalization_right) {
-                depth_r = right->ww >> p->w_normalization_right;
-                depth_l = left->ww >> p->w_normalization_right;
-            }
-            else {
-                depth_r = right->ww << p->w_normalization_left;
-                depth_l = left->ww << p->w_normalization_left;
-            }
-        }
-        else {
-            depth_r = right->zz;
-            depth_l = left->zz;
-            //  (((Z * 0x4000) / W) + 0x3FFF) * 0x200
-            //depth_r = (((right->data.xyzw[2] * 0x4000) / right->data.xyzw[3]) + 0x3FFF) * 0x200;
-            //depth_l = (((left->data.xyzw[2] * 0x4000) / right->data.xyzw[3]) + 0x3FFF) * 0x200;
-
-            //depth_r = ((((right->data.xyzw[2] >> 8) * 0x4000) / right->data.xyzw[3]) + 0x3FFF) * 0x200;
-            //depth_l = ((((left->data.xyzw[2] >> 8) * 0x4000) / right->data.xyzw[3]) + 0x3FFF) * 0x200;
-        }
-
-        i32 depth_steps = depth_r - depth_l;
-        depth_step = (float)depth_steps * x_recip;
-        depth = depth_l;
-
-        if (tex_enable) {
-            s_step = (float)(right->uv[0] - left->uv[0]) * x_recip;
-            s = left->uv[0];
-            t_step = (float)(right->uv[1] - left->uv[1]) * x_recip;
-            t = left->uv[1];
-            //printf("\nS,T: %f %f", uv_to_float(s), uv_to_float(t));
-        }
         u32 rside = right->xx > 255 ? 255 : right->xx;
 
-        // Factor = (x * W_left) / (((xmax - x) * W_right) + (x * W_left))
-        // where x is x position in span, xmax is number of pixels
-        // w0 and w1 are
-        float xmax = right->xx - left->xx;
-        float lfw = (float)left->zz / 4096.0f;
-        float rfw = (float)right->zz / 4096.0f;
         for (u32 x = left->xx; x < rside; x++) {
             if (x < 256) {
-                float fx = x;
-                float fxl = fx * lfw;
-                //float factor = fxl / (((xmax - fx) * rfw) + fxl);
-                //printf("\nFACTOR: %f", factor);
-                // Test Z and early-out
-                u32 comparison;
-                //printf("\n!%08x %f", (i32)depth, vtx_to_float((i32)depth));
+                NDS_RE_interp_set_x(&interp, x);
+                u32 comparison, depth;
+                if (b->depth_buffering_w)
+                    depth = NDS_RE_interpolate(&interp, left->ww, right->ww);
+                else
+                    depth = NDS_RE_interpolate(&interp, left->zz, right->zz);
+
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
+
                 if (comparison) {
                     u32 pix_r5, pix_g5, pix_b5, pix_a5;
+                    float cr, cg, cb;
+                    cr = NDS_RE_interpolate(&interp, left->color[0], right->color[0]);
+                    if (cr < 0) cr = 0;
+                    if (cr > 63) cr = 63;
+                    cg = NDS_RE_interpolate(&interp, left->color[1], right->color[1]);
+                    if (cg < 0) cg = 0;
+                    if (cg > 63) cg = 63;
+                    cb = NDS_RE_interpolate(&interp, left->color[2], right->color[2]);
+                    if (cb < 0) cb = 0;
+                    if (cb > 63) cb = 63;
                     if (tex_enable && p->sampler.sample) {
-                        float tex_rf, tex_gf, tex_bf;
-                        float tex_af;
-                        i32 final_s = (i32)s;
-                        i32 final_t = (i32)t;
+                        i32 final_s = NDS_RE_interpolate(&interp, left->uv[0], right->uv[0]);
+                        i32 final_t = NDS_RE_interpolate(&interp, left->uv[1], right->uv[1]);
                         final_tex_coord(&p->sampler, &final_s, &final_t);
                         u32 tex_r6, tex_g6, tex_b6, tex_a6;
                         p->sampler.sample(this, &p->sampler, p, final_s, final_t, &tex_r6, &tex_g6, &tex_b6, &tex_a6);
 
-                        tex_rf = (float)tex_r6;
-                        tex_gf = (float)tex_g6;
-                        tex_bf = (float)tex_b6;
-                        tex_af = (float)tex_a6;
+                        float tex_rf = (float)tex_r6;
+                        float tex_gf = (float)tex_g6;
+                        float tex_bf = (float)tex_b6;
+                        float tex_af = (float)tex_a6;
 
                         // OK we have texture color now...how do we use it!?
                         switch(p->attr.mode) {
@@ -476,14 +486,6 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
                     line->rgb_top[x] = pix_r5 | (pix_g5 << 5) | (pix_b5 << 10);
                     line->depth[x] = (u32)depth;
-                }
-                depth += depth_step;
-                cr += r_step;
-                cg += g_step;
-                cb += b_step;
-                if (tex_enable) {
-                    s += s_step;
-                    t += t_step;
                 }
             }
         }
