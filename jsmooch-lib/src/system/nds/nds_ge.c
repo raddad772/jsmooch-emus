@@ -1152,13 +1152,13 @@ static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
         out->w_normalization_left = (((16 - longest_one) + 0) >> 2) << 2;
     }
 
-    printf("\n\nW NORMALIZE!");
+    //printf("\n\nW NORMALIZE!");
     item = out->vertex_list.first;
     while(item) {
         if (out->w_normalization_right) item->data.w_normalized = item->data.xyzw[3] >> out->w_normalization_right;
         else if (out->w_normalization_left) item->data.w_normalized = item->data.xyzw[3] << out->w_normalization_left;
         else item->data.w_normalized = item->data.xyzw[3];
-        printf("\nORIGINAL W: %04x NEW W:%04x sl:%d sr:%d", item->data.xyzw[3], item->data.w_normalized, out->w_normalization_left, out->w_normalization_right);
+        //printf("\nORIGINAL W: %04x NEW W:%04x sl:%d sr:%d", item->data.xyzw[3], item->data.w_normalized, out->w_normalization_left, out->w_normalization_right);
         item = item->next;
     }
 }

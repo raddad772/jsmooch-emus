@@ -38,7 +38,6 @@ static void NDS_RE_interp_setup(struct NDS_RE_interp *this, u32 bit_precision, i
     else
         this->xrecip_z = 0;
 
-    // linear mode is used if both W values are equal and have low-order bits cleared (0-6 along X, 1-6 along Y)
     u32 mask = bit_precision ? 0x7E : 0x7F;
     if ((w0 == w1) && !(w0 & mask) && !(w1 & mask))
         this->linear = 1;
@@ -206,11 +205,15 @@ static void interpolate_edge_to_vertex(struct NDS_RE_EDGE *e, struct NDS_RE_VERT
     /*struct NDS_GE_VTX_list_node *t = e->v[0];
     e->v[0] = e->v[1];
     e->v[1] = t;*/
+    struct NDS_RE_interp xi;
+    NDS_RE_interp_setup(&xi, 9, e->v[0]->data.xyzw[1], e->v[1]->data.xyzw[1], 10, 10);
+
     NDS_RE_interp_setup(&e->interp, 9, e->v[0]->data.xyzw[1], e->v[1]->data.xyzw[1], e->v[0]->data.w_normalized, e->v[1]->data.w_normalized);
 
     NDS_RE_interp_set_x(&e->interp, y);
+    NDS_RE_interp_set_x(&xi, y);
 
-    v->xx = NDS_RE_interpolate(&e->interp, e->v[0]->data.xyzw[0], e->v[1]->data.xyzw[0]);
+    v->xx = NDS_RE_interpolate(&xi, e->v[0]->data.xyzw[0], e->v[1]->data.xyzw[0]);
     v->yy = y;
     v->zz = NDS_RE_interpolate(&e->interp, e->v[0]->data.xyzw[2], e->v[1]->data.xyzw[2]);
     v->ww = NDS_RE_interpolate(&e->interp, e->v[0]->data.w_normalized, e->v[1]->data.w_normalized);
@@ -425,9 +428,10 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                     if (tex_enable && p->sampler.sample) {
                         i32 final_s = NDS_RE_interpolate(&interp, left->uv[0], right->uv[0]);
                         i32 final_t = NDS_RE_interpolate(&interp, left->uv[1], right->uv[1]);
-                        final_tex_coord(&p->sampler, &final_s, &final_t);
                         u32 tex_r6, tex_g6, tex_b6, tex_a6;
-                        p->sampler.sample(this, &p->sampler, p, final_s, final_t, &tex_r6, &tex_g6, &tex_b6, &tex_a6);
+                        final_tex_coord(&p->sampler, &final_s, &final_t);
+                        p->sampler.sample(this, &p->sampler, p, final_s, final_t, &tex_r6, &tex_g6, &tex_b6,
+                                          &tex_a6);
 
                         float tex_rf = (float)tex_r6;
                         float tex_gf = (float)tex_g6;
