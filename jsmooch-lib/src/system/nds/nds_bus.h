@@ -413,26 +413,28 @@ struct NDS {
             MDBG_IMAGE_VIEW(a_bg1)
             MDBG_IMAGE_VIEW(a_bg2)
             MDBG_IMAGE_VIEW(a_bg3)
-            MDBG_IMAGE_VIEW(a_bg0map)
+            /*MDBG_IMAGE_VIEW(a_bg0map)
             MDBG_IMAGE_VIEW(a_bg1map)
             MDBG_IMAGE_VIEW(a_bg2map)
-            MDBG_IMAGE_VIEW(a_bg3map)
+            MDBG_IMAGE_VIEW(a_bg3map)*/
             MDBG_IMAGE_VIEW(a_sprites)
             MDBG_IMAGE_VIEW(a_tiles)
-            MDBG_IMAGE_VIEW(b_window0)
+            /*MDBG_IMAGE_VIEW(b_window0)
             MDBG_IMAGE_VIEW(b_window1)
             MDBG_IMAGE_VIEW(b_window2)
-            MDBG_IMAGE_VIEW(b_window3)
+            MDBG_IMAGE_VIEW(b_window3)*/
             MDBG_IMAGE_VIEW(b_bg0)
             MDBG_IMAGE_VIEW(b_bg1)
             MDBG_IMAGE_VIEW(b_bg2)
             MDBG_IMAGE_VIEW(b_bg3)
-            MDBG_IMAGE_VIEW(b_bg0map)
+            /*MDBG_IMAGE_VIEW(b_bg0map)
             MDBG_IMAGE_VIEW(b_bg1map)
             MDBG_IMAGE_VIEW(b_bg2map)
-            MDBG_IMAGE_VIEW(b_bg3map)
+            MDBG_IMAGE_VIEW(b_bg3map)*/
             MDBG_IMAGE_VIEW(b_sprites)
             MDBG_IMAGE_VIEW(b_tiles)
+            MDBG_IMAGE_VIEW(re_wireframe)
+            MDBG_IMAGE_VIEW(re_output)
         DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1
             DBG_WAVEFORM_MAIN

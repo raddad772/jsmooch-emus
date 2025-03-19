@@ -1789,7 +1789,8 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
             // The 15bit Depth is expanded to 24bit as "X=(X*200h)+((X+1)/8000h)*1FFh".
             this->re.io.clear.depth = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
             this->re.io.clear.depth = SIGNe24to32(this->re.io.clear.depth);
-            printf("\nCLEAR VALUE SET %08x %f", this->re.io.clear.depth, vtx_to_float(this->re.io.clear.depth));
+            this->re.io.clear.depth = ((u32)this->re.io.clear.depth) >> 8;
+            //printf("\nCLEAR VALUE SET %08x %f", this->re.io.clear.depth, vtx_to_float(this->re.io.clear.depth));
             return;
         case R9_GXSTAT:
             assert(sz==4);

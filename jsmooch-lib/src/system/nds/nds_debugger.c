@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "helpers/color.h"
 #include "nds.h"
@@ -1148,6 +1149,74 @@ static void setup_waveforms_view(struct NDS* this, struct debugger_interface *db
 
 */
 
+static void draw_line(u32 *outbuf, u32 out_width, u32 out_height, i32 x0, i32 y0, i32 x1, i32 y1)
+{
+    i32 dx =  abs (x1 - x0), sx = x0 < x1 ? 1 : -1;
+    i32 dy = -abs (y1 - y0), sy = y0 < y1 ? 1 : -1;
+    i32 err = dx + dy, e2; /* error value e_xy */
+
+    for (;;){  /* loop */
+        if ((x0 >= 0) && (y0 >= 0) && (x0 < out_width) && (y0 < out_height)) outbuf[(out_width * y0) + x0] = 0xFFFFFFFF;
+        if (x0 == x1 && y0 == y1) break;
+        e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+        if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
+    }
+}
+
+static void render_image_view_re_wireframe(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (struct NDS *) ptr;
+    if (this->clock.master_frame == 0) return;
+
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 192);
+    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
+
+    for (u32 i = 0; i < b->polygon_index; i++) {
+        struct NDS_RE_POLY *p = &b->polygon[i];
+        struct NDS_GE_VTX_list_node *v0, *v1;
+        v1 = p->vertex_list.first;
+        for (u32 vn = 1; vn < p->vertex_list.len+1; vn++) {
+            v0 = v1;
+            v1 = v1->next;
+            if (!v1) v1 = p->vertex_list.first;
+
+            struct NDS_GE_VTX_list_node *n0, *n1;
+            if (v0->data.xyzw[1] < v1->data.xyzw[1]) {
+                n0 = v0;
+                n1 = v1;
+            }
+            else {
+                n0 = v1;
+                n1 = v0;
+            }
+            draw_line(outbuf, out_width, 192, n0->data.xyzw[0], n0->data.xyzw[1], n1->data.xyzw[0], n1->data.xyzw[1]);
+        }
+    }
+}
+
+
+static void render_image_view_re_output(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (struct NDS *) ptr;
+    if (this->clock.master_frame == 0) return;
+
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 192);
+    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
+
+    for (u32 y = 0; y < 192; y++) {
+        struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        u32 *out_line = outbuf + (y * out_width);
+        for (u32 x = 0; x < 256; x++) {
+            out_line[x] = gba_to_screen(lbuf->rgb_top[x]);
+        }
+    }
+}
+
 static void setup_cpu_trace(struct debugger_interface *dbgr, struct NDS *this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
@@ -1202,6 +1271,45 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct NDS *this)
 }
 
 
+static void setup_image_view_re_wireframe(struct NDS* this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.re_wireframe);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 256;
+    iv->height = 192;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 192 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_re_wireframe;
+    snprintf(iv->label, sizeof(iv->label), "RE Wireframe");
+}
+
+static void setup_image_view_re_output(struct NDS* this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.re_wireframe);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 256;
+    iv->height = 192;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 192 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_re_output;
+    snprintf(iv->label, sizeof(iv->label), "RE Raw Output");
+}
+
+
 void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
@@ -1214,6 +1322,8 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     //setup_cpu_trace(dbgr, this);
 
     setup_dbglog(dbgr, this);
+    setup_image_view_re_output(this, dbgr);
+    setup_image_view_re_wireframe(this, dbgr);
 }
 /*
     //setup_ARM7TDMI_disassembly(dbgr, this);
