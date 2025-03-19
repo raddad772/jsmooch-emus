@@ -89,22 +89,33 @@ enum NDS_TEX_COORD_TRANSFORM_MODE {
     NDS_TCTM_vertex
 };
 
+struct NDS_GE_VTX_list_node
+{
+    struct NDS_GE_VTX_list_node_data {
+        i32 xyzw[4];
+        u32 processed;
+        u16 vram_ptr;
+        u32 vtx_parent;
 
-struct NDS_GE_VTX_node {
-    i32 xyzw[4];
+        i32 uv[2];
+        u32 color;
+    } data;
 
-    u32 processed; // =0 not processed. =1 processed
-    u16 vram_ptr;
 
-    // a processed vertex will have finished RE info
-    // If processed and no children, then it is already at final coords.
-    // If processed && children, this vertex itself is not useful for final, but the child vertex is
-    u32 num_children;
-    struct NDS_GE_VTX_node *children[4];
-    struct NDS_GE_VTX_node *parent;
+    u32 poolclear;
+    struct NDS_GE_VTX_list_node *prev;
+    struct NDS_GE_VTX_list_node *next;
 
-    i32 uv[2];
-    u32 color;
+};
+
+#define NDS_GE_VTX_LIST_MAX 16
+
+struct NDS_GE_VTX_list {
+    struct NDS_GE_VTX_list_node *first, *last;
+    i32 len;
+
+    struct NDS_GE_VTX_list_node pool[NDS_GE_VTX_LIST_MAX];
+    u16 pool_bitmap;
 };
 
 
@@ -172,12 +183,11 @@ struct NDS_RE_POLY  { // no more __attribute__((packed))
     u32 pltt_base;
     u32 w_normalization_left;
     u32 w_normalization_right;
-    u16 vertex_pointers[11];
-    u32 num_vertices;
+    struct NDS_GE_VTX_list vertex_list;
     u32 front_facing;
     u32 winding_order;
 
-    u32 highest_vertex;
+    struct NDS_GE_VTX_list_node *highest_vertex;
     i32 min_y, max_y;
     u16 edge_r_bitfield;
 
@@ -250,8 +260,6 @@ struct NDS_RE {
         struct NDS_RE_LINEBUFFER linebuffer[192];
     } out;
 };
-
-#define NDS_GE_VTX_LIST_MAX 100
 
 struct NDS_GE {
     struct NDS_GE_BUFFERS buffers[2];
@@ -364,13 +372,7 @@ struct NDS_GE {
             i32 S, T;
             i32 x,y,z,w;
 
-            struct NDS_GE_VTX_node root;
-
-            struct NDS_GE_ALLOC_LIST {
-                struct NDS_GE_VTX_node pool[NDS_GE_VTX_LIST_MAX];
-                struct NDS_GE_VTX_node *items[NDS_GE_VTX_LIST_MAX];
-                u32 list_len;
-            } alloc_list;
+            struct NDS_GE_VTX_list input_list;
         } vtx;
 
         i32 shininess[128];

@@ -36,7 +36,7 @@ static void pprint_matrix(const char *n, i32 *s) {
     }
 }
 
-#define VTX_ROOT this->ge.params.vtx.root
+#define VTX_LIST this->ge.params.vtx.input_list
 #define VTX_ALIST this->ge.params.vtx.alloc_list
 #define MS_COORD_DIR_PTR this->ge.matrices.stacks.coordinate_direction_ptr
 #define MS_TEXTURE_PTR this->ge.matrices.stacks.texture_ptr
@@ -60,7 +60,16 @@ static void identity_matrix(i32 *m)
 }
 
 
+static void vertex_list_init(struct NDS_GE_VTX_list *l)
+{
+    l->pool_bitmap = 0;
+    l->len = 0;
+    l->first = NULL;
+    l->last = NULL;
+}
+
 void NDS_GE_init(struct NDS *this) {
+    vertex_list_init(&VTX_LIST);
     this->ge.ge_has_buffer = 0;
     for (u32 i = 0; i < 0xFF; i++) {
         tbl_num_params[i] = 0;
@@ -120,11 +129,7 @@ void NDS_GE_reset(struct NDS *this)
     identity_matrix(M_COORD.m);
     identity_matrix(M_TEXTURE.m);
     identity_matrix(M_DIR.m);
-    memset(&this->ge.params.vtx.alloc_list, 0, sizeof(struct NDS_GE_ALLOC_LIST));
-    this->ge.params.vtx.alloc_list.list_len = NDS_GE_VTX_LIST_MAX - 1;
-    for (u32 i = 0; i < NDS_GE_VTX_LIST_MAX; i++) {
-        this->ge.params.vtx.alloc_list.items[i] = &this->ge.params.vtx.alloc_list.pool[i];
-    }
+    vertex_list_init(&VTX_LIST);
 }
 
 static void set_GXSTAT_fifo(struct NDS *this)
@@ -883,89 +888,46 @@ static void matrix_multiply_by_vector(i32 *dest, i32 *matrix, i32 *src)
     //printfcd("\nVector after: %f %f %f %f", vtx_to_float(dest[0]), vtx_to_float(dest[1]), vtx_to_float(dest[2]), vtx_to_float(dest[3]));
 }
 
-static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_node *node)
+static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_list_node *node)
 {
-    node->color = this->ge.params.vtx.color;
-    node->uv[0] = this->ge.params.vtx.S;
-    node->uv[1] = this->ge.params.vtx.T;
-    node->processed = 0;
+    node->data.color = this->ge.params.vtx.color;
+    node->data.uv[0] = this->ge.params.vtx.S;
+    node->data.uv[1] = this->ge.params.vtx.T;
+    node->data.processed = 0;
     //printfcd("\nVtx in: %f %f %f", vtx_to_float(src->xyzw[0]), vtx_to_float(src->xyzw[1]), vtx_to_float(src->xyzw[2]));
 
     // TODO: add any I missed first pass
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
         for (u32 i = 0; i < 2; i++) {
-            i64 x = node->xyzw[0] * M_TEXTURE.m[i*4]; // TODO: May have got x/y wrong here
-            i64 y = node->xyzw[1] * M_TEXTURE.m[(i*4)+1];
-            i64 z = node->xyzw[2] * M_TEXTURE.m[(i*4)+2];
+            i64 x = node->data.xyzw[0] * M_TEXTURE.m[i*4]; // TODO: May have got x/y wrong here
+            i64 y = node->data.xyzw[1] * M_TEXTURE.m[(i*4)+1];
+            i64 z = node->data.xyzw[2] * M_TEXTURE.m[(i*4)+2];
 
-            node->uv[i] = (i16)(((x + y + z) >> 24) + node->uv[i]);
+            node->data.uv[i] = (i16)(((x + y + z) >> 24) + node->data.uv[i]);
         }
     }
     i32 tmp[4];
-    memcpy(tmp, node->xyzw, sizeof(i32)*4);
-    matrix_multiply_by_vector(node->xyzw, M_CLIP.m, tmp);
+    memcpy(tmp, node->data.xyzw, sizeof(i32)*4);
+    matrix_multiply_by_vector(node->data.xyzw, M_CLIP.m, tmp);
     //printfcd("\nTransformed vertex: %f %f %f %f", vtx_to_float(dest->xyzw[0]), vtx_to_float(dest->xyzw[1]), vtx_to_float(dest->xyzw[2]), vtx_to_float(dest->xyzw[3]));
 }
 
-static void clip_verts(struct NDS *this)
+static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out)
 {
     // TODO: this
 }
 
-static u32 determine_needs_clipping(struct NDS_GE_VTX_node *v)
+static u32 determine_needs_clipping(struct NDS_GE_VTX_list_node *v)
 {
-    if (v->processed) return 0;
-    if (v->num_children > 0) {
-        for (u32 i = 0; i < v->num_children; i++) {
-            if (determine_needs_clipping(v->children[i])) return 1;
-        }
-        return 0;
-    }
-
-    i32 w = v->xyzw[3];
+    if (v->data.processed) return 0;
+    i32 w = v->data.xyzw[3];
 
     for (int i = 0; i < 3; i++) {
-        if (v->xyzw[i] < -w || v->xyzw[i] > w) {
+        if (v->data.xyzw[i] < -w || v->data.xyzw[i] > w) {
             return 1;
         }
     }
     return 0;
-}
-
-
-static struct NDS_GE_VTX_node *find_first_leaf(struct NDS_GE_VTX_node *node)
-{
-    // Go down children[0] until there are none!
-    while(node->num_children > 0) {
-        node = node->children[0];
-    }
-    return node;
-}
-
-static struct NDS_GE_VTX_node *next_leaf(struct NDS_GE_VTX_node *node)
-{
-    // When given a leaf...
-    // Seek up.
-    // Determine our posiiton in list
-    // Recurse down next child if available using find_first_leaf,
-    // Else go up to parent.
-    // If no parent. return NULL
-    while (node->parent != NULL) {
-        struct NDS_GE_VTX_node *child = node;
-        node = node->parent;
-        // Determine if we have any more children left...
-        for (u32 i = 0; i < node->num_children; i++) {
-            if (node->children[i] == child) { // We want to seek the next...
-                u32 seek_down = i + 1;
-                if (seek_down >= node->num_children) break; // We were the last child!
-
-                // We were not the last child. So return the next leaf...
-                return find_first_leaf(node->children[seek_down]);
-            }
-        }
-    }
-
-    return NULL; // We were given the last leaf!
 }
 
 static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 color)
@@ -1000,13 +962,13 @@ static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
     out->w_normalization_left = 0;
     out->w_normalization_right = 0;
     u32 longest_one = 0;
-    struct NDS_GE_VTX_node *leaf = find_first_leaf(&VTX_ROOT);
-    for (u32 i = 0; i < out->num_vertices; i++) {
-        u32 w = leaf->xyzw[3];
+    struct NDS_GE_VTX_list_node *item = out->vertex_list.first;
+    while(item) {
+        u32 w = item->data.xyzw[3];
         u32 leading = __builtin_clrsb(w);
         u32 how_many_significant = 32 - leading;
         if (how_many_significant > longest_one) longest_one = how_many_significant;
-        leaf = next_leaf(leaf);
+        item = item->next;
     }
 
     // We either need to cut them down so the longest one is only 16 bits,
@@ -1018,27 +980,26 @@ static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
     else {
         // round UP
         out->w_normalization_left = (((16 - longest_one) + 3) >> 2) << 2;
-
     }
 }
 
-static u32 finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_POLY *poly)
+static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_POLY *poly)
 {
     // Final transform to screen and write into vertex buffer
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
 
     // Go thru verts...
-    struct NDS_GE_VTX_node *first_node = find_first_leaf(&VTX_ROOT);
-    struct NDS_GE_VTX_node *node = first_node;
+    struct NDS_GE_VTX_list_node *first_node = VTX_LIST.first;
+    struct NDS_GE_VTX_list_node *node = first_node;
     u32 num = 0;
-    while(node != NULL) {
-        if (!node->processed) {
-            node->processed = 1;
+    while(node) {
+        if (!node->data.processed) {
+            node->data.processed = 1;
 
-            i32 x = node->xyzw[0];
-            i32 y = node->xyzw[1];
-            i32 z = node->xyzw[2];
-            i32 w = node->xyzw[3];
+            i32 x = node->data.xyzw[0];
+            i32 y = node->data.xyzw[1];
+            i32 z = node->data.xyzw[2];
+            i32 w = node->data.xyzw[3];
 
             w &= 0xFFFFFF;
             i32 scrX, scrY;
@@ -1066,67 +1027,56 @@ static u32 finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_POL
                 scrX = 0;
                 scrY = 0;
             }
-            node->vram_ptr = commit_vertex(this, scrX, scrY, node->xyzw[2], node->xyzw[3] & 0xFFFFFF, node->uv, node->color);
+            node->data.vram_ptr = commit_vertex(this, scrX, scrY, node->data.xyzw[2], node->data.xyzw[3] & 0xFFFFFF, node->data.uv, node->data.color);
         }
-        printf("\nVert num %d: %d %d", num, b->vertex[node->vram_ptr].xx, b->vertex[node->vram_ptr].yy);
-        poly->vertex_pointers[num++] = node->vram_ptr;
-        node = next_leaf(node);
-
+        printf("\nVert num %d: %d %d", num, b->vertex[node->data.vram_ptr].xx, b->vertex[node->data.vram_ptr].yy);
+        node = node->next;
     }
-    return first_node->vram_ptr;
 }
 
-static u32 count_leafs(struct NDS_GE_VTX_node *node, u32 total_so_far)
-{
-    if (node->num_children == 0) return total_so_far+1;
-
-    for (u32 i = 0; i < node->num_children; i++) {
-        total_so_far = count_leafs(node->children[i], total_so_far);
-    }
-    return total_so_far;
-}
-
-static u32 edge_is_top_or_bottom(struct NDS_RE_POLY *poly, struct NDS_RE_VERTEX *v[])
+static u32 edge_is_top_or_bottom(struct NDS_RE_POLY *poly, struct NDS_GE_VTX_list_node *v[])
 {
     u32 y1, y2;
-    if (v[0]->yy > v[1]->yy) {
-        y1 = v[1]->yy;
-        y2 = v[0]->yy;
+    if (v[0]->data.xyzw[1] > v[1]->data.xyzw[1]) {
+        y1 = v[1]->data.xyzw[1];
+        y2 = v[0]->data.xyzw[1];
     }
     else {
-        y1 = v[0]->yy;
-        y2 = v[1]->yy;
+        y1 = v[0]->data.xyzw[1];
+        y2 = v[1]->data.xyzw[1];
     }
-    return v[0]->yy < v[1]->yy;
+    return v[0]->data.xyzw[1] < v[1]->data.xyzw[1];
 }
 
-static u32 determine_highest_vertex(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
+static void determine_highest_vertex(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
 {
-    u32 highest = 0;
     poly->min_y = 512;
     poly->max_y = 0;
-    for (u32 i = 0; i < poly->num_vertices; i++) {
-        struct NDS_RE_VERTEX *v = &b->vertex[poly->vertex_pointers[i]];
-        if (v->yy < b->vertex[poly->vertex_pointers[highest]].yy) highest = i;
-        if (v->yy < poly->min_y) poly->min_y = v->yy;
-        if (v->yy > poly->max_y) poly->max_y = v->yy;
+    struct NDS_GE_VTX_list_node *v = poly->vertex_list.first;
+    poly->highest_vertex = v;
+    while(v) {
+        if (v->data.xyzw[1] < poly->highest_vertex->data.xyzw[1]) poly->highest_vertex = v;
+        if (v->data.xyzw[1] < poly->min_y) poly->min_y = v->data.xyzw[1];
+        if (v->data.xyzw[1] > poly->max_y) poly->max_y = v->data.xyzw[1];
+        v = v->next;
     }
-    return highest;
 }
 
 static u32 determine_winding_order(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
 {
     // OK, now progress in order until we have a y-delta of >0.
-    i32 cx = b->vertex[poly->vertex_pointers[poly->highest_vertex]].xx;
-    for (u32 i = 1; i < poly->num_vertices; i++) {
-        u32 index_to_compare = (i + poly->highest_vertex) % poly->num_vertices;
-        struct NDS_RE_VERTEX *cmp = &b->vertex[poly->vertex_pointers[index_to_compare]];
-        i32 diff = (i32)cmp->xx - cx;
+    struct NDS_GE_VTX_list_node *n = poly->highest_vertex;
+    struct NDS_GE_VTX_list_node *n_comp;
+    for (u32 i = 1; i < poly->vertex_list.len; i++) {
+        n_comp = n_comp->next;
+        if (!n_comp) n_comp = poly->vertex_list.first;
+        i32 diff = (i32)n_comp->data.xyzw[0] - n->data.xyzw[0];
         if (diff == 0) continue;
         if (diff > 0) { // Positive X-slope from least y-point means CW
             return CW;
         }
         else return CCW;
+
     }
     // If we got here, we are a vertical line and it doesn't really matter?
     return CCW;
@@ -1135,8 +1085,8 @@ static u32 determine_winding_order(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFE
 static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expected_winding_order)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
-    struct NDS_RE_VERTEX *v[2];
-    v[1] = &b->vertex[poly->vertex_pointers[0]];
+    struct NDS_GE_VTX_list_node *v[2];
+    v[1] = poly->vertex_list.first;
     u32 edgenum = 0;
 
     /*printf("\n\nPOLY!");
@@ -1145,17 +1095,17 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
         printf("\nvert%d: x:%f y:%f color:%04x s:%f t:%f", poly->vertex_pointers[i], vtx_to_float(pver->xx), vtx_to_float(pver->yy), pver->color, uv_to_float(pver->uv[0]), uv_to_float(pver->uv[1]));
     }*/
 
-    poly->highest_vertex = determine_highest_vertex(poly, b);
+    determine_highest_vertex(poly, b);
     u32 winding_order = determine_winding_order(poly, b);
     poly->front_facing = winding_order == expected_winding_order;
 
     poly->winding_order = winding_order;
     poly->edge_r_bitfield = 0;
 
-    for (u32 i = 1; i <= poly->num_vertices; i++) {
+    for (u32 i = 1; i <= poly->vertex_list.len; i++) {
         v[0] = v[1];
-        u32 addr = i % poly->num_vertices;
-        v[1] = &b->vertex[poly->vertex_pointers[addr]];
+        v[1] = v[0]->next;
+        if (!v[1]) v[1] = poly->vertex_list.first;
         u32 top_to_bottom = edge_is_top_or_bottom(poly, v) ^ 1;
 
         //printf("\nV0 %d,%d V1 %d,%d top_to_bottom:%d", v[0]->xx, v[0]->yy, v[1]->xx, v[1]->yy, top_to_bottom);
@@ -1172,7 +1122,7 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     }
 
     v[0] = v[1];
-    v[1] = &b->vertex[poly->vertex_pointers[0]];
+    v[1] = poly->vertex_list.first;
     u32 top_to_bottom = edge_is_top_or_bottom(poly, v);
     if (poly->winding_order == CCW) {
         // top to bottom means left edge on CCW
@@ -1181,6 +1131,84 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     else {
         // top to bottom means right edge on CW
         if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+    }
+}
+
+static struct NDS_GE_VTX_list_node *vertex_list_alloc_node(struct NDS_GE_VTX_list *l, u32 vtx_parent)
+{
+    if (l->len >= NDS_GE_VTX_LIST_MAX) {
+        NOGOHERE;
+        return NULL;
+    }
+    u32 poolbit = 1;
+    u32 poolentry = 0;
+    for (u32 i = 0; i < NDS_GE_VTX_LIST_MAX; i++) {
+        if (!(l->pool_bitmap & poolbit)) break;
+        poolentry += 1;
+        poolbit <<= 1;
+    }
+    l->pool_bitmap |= poolbit;
+
+    struct NDS_GE_VTX_list_node *a = &l->pool[poolentry];
+    a->poolclear = ~poolbit;
+    a->data.processed = 0;
+    a->data.vtx_parent = vtx_parent;
+    a->next = a->prev = NULL;
+    return a;
+}
+
+static void vertex_list_free_node(struct NDS_GE_VTX_list *p, struct NDS_GE_VTX_list_node *n)
+{
+    p->pool_bitmap &= n->poolclear;
+    n->next = n->prev = NULL;
+}
+
+static void vertex_list_delete_first(struct NDS_GE_VTX_list *l)
+{
+    if (l->len == 0) return;
+    if (l->len == 1) {
+        l->first = l->last = NULL;
+        l->pool_bitmap = 0;
+        l->len = 0;
+        return;
+    }
+    struct NDS_GE_VTX_list_node *n = l->last;
+    n->prev->next = NULL;
+    l->last = n->prev;
+    vertex_list_free_node(l, n);
+    l->len--;
+}
+
+
+static struct NDS_GE_VTX_list_node *vertex_list_add_to_end(struct NDS_GE_VTX_list *l, u32 vtx_parent)
+{
+    struct NDS_GE_VTX_list_node *n = vertex_list_alloc_node(l, vtx_parent);
+    if (l->len == 0) {
+        l->first = l->last = n;
+    }
+    else if (l->len == 1) {
+        l->last = n;
+        l->first->next = l->last;
+        l->last->prev = l->first;
+    }
+    else {
+        n->prev = l->last;
+        l->last->next = n;
+        l->last = n;
+    }
+    l->len++;
+    return n;
+}
+
+static void copy_vertex_list_into(struct NDS_GE_VTX_list *dest, struct NDS_GE_VTX_list *src)
+{
+    vertex_list_init(dest);
+    struct NDS_GE_VTX_list_node *src_node = src->first;
+    i32 num = 0;
+    while(src_node) {
+        struct NDS_GE_VTX_list_node *dst_node = vertex_list_add_to_end(dest, num++);
+        memcpy(&dst_node->data, &src_node->data, sizeof(struct NDS_GE_VTX_list_node_data));
+        src_node = src_node->next;
     }
 }
 
@@ -1193,6 +1221,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
         this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 1;
     }
 
+
     struct NDS_RE_POLY *out = &b->polygon[addr];
     out->sampler.filled_out = 0;
     out->attr.u = this->ge.params.poly.current.attr.u;
@@ -1200,23 +1229,25 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     out->pltt_base = this->ge.params.poly.current.pltt_base;
     // TODO: add all relavent attributes to structure here
 
+    copy_vertex_list_into(&out->vertex_list, &VTX_LIST);
+
     // Now clip...
     u32 needs_clipping = 0;
-    for (u32 vn = 0; vn < VTX_ROOT.num_children; vn++) {
-        struct NDS_GE_VTX_node *v = VTX_ROOT.children[vn];
-        needs_clipping = determine_needs_clipping(v);
+    struct NDS_GE_VTX_list_node *n = out->vertex_list.first;
+    while (n) {
+        needs_clipping = determine_needs_clipping(n);
         if (needs_clipping) break;
+        n = n->next;
     }
 
     // Clip vertices!
     if (needs_clipping) {
-        clip_verts(this);
+        clip_verts(this, out);
     }
 
     // GO through leafs.
     // For any unprocessed vertices, add to polygorm RAM.
-    out->num_vertices = count_leafs(&VTX_ROOT, 0);
-    if (out->num_vertices > 10) {
+    if (out->vertex_list.len > 10) {
         printf("\nABORT FOR >10 VERTS IN A POLY?!");
         b->polygon_index--;
         return;
@@ -1238,69 +1269,8 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
         return;
     }
 
-
-
     //printf("\npoly %d sides:%d front_facing:%d", addr, out->num_vertices, out->front_facing);
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);
-}
-
-static struct NDS_GE_VTX_node *node_list_alloc(struct NDS *this)
-{
-    assert(VTX_ALIST.list_len > 0);
-    struct NDS_GE_VTX_node *o = VTX_ALIST.items[VTX_ALIST.list_len];
-    VTX_ALIST.list_len--;
-    return o;
-}
-
-static void node_list_free(struct NDS *this, struct NDS_GE_VTX_node *node)
-{
-    // Put vertex back onto list
-    node->num_children = 0;
-    node->processed = 0;
-    VTX_ALIST.list_len++;
-    assert(VTX_ALIST.list_len < NDS_GE_VTX_LIST_MAX);
-    VTX_ALIST.items[VTX_ALIST.list_len] = node;
-}
-
-static void delete_node_children(struct NDS *this, struct NDS_GE_VTX_node *node);
-
-static void delete_node_children(struct NDS *this, struct NDS_GE_VTX_node *node)
-{
-    for (u32 i = 0; i < node->num_children; i++) {
-        struct NDS_GE_VTX_node *n = node->children[i];
-        delete_node_children(this, n);
-    }
-    node_list_free(this, node);
-}
-
-static void delete_vtx_cache(struct NDS *this)
-{
-    for (u32 i = 0; i < VTX_ROOT.num_children; i++) {
-        struct NDS_GE_VTX_node *n = VTX_ROOT.children[i];
-        delete_node_children(this, n);
-    }
-    VTX_ROOT.num_children = 0;
-}
-
-static void pop1_vtx_cache(struct NDS *this)
-{
-    // Just pop 1 off of it...
-    assert(VTX_ROOT.num_children>0);
-    delete_node_children(this, VTX_ROOT.children[0]);
-    VTX_ROOT.children[0] = VTX_ROOT.children[1];
-    VTX_ROOT.children[1] = VTX_ROOT.children[2];
-    VTX_ROOT.children[2] = VTX_ROOT.children[3];
-    VTX_ROOT.children[3] = NULL;
-    VTX_ROOT.num_children--;
-}
-
-static struct NDS_GE_VTX_node *vertex_add_child(struct NDS *this, struct NDS_GE_VTX_node *node)
-{
-    struct NDS_GE_VTX_node *o = node_list_alloc(this);
-    o->parent = node;
-    node->children[node->num_children++] = o;
-    assert(node->num_children <= 4);
-    return o;
 }
 
 static void ingest_vertex(struct NDS *this, i32 x, i32 y, i32 z) {
@@ -1315,45 +1285,43 @@ static void ingest_vertex(struct NDS *this, i32 x, i32 y, i32 z) {
     this->ge.params.vtx.w = 1 << 12;
 
     // Add to vertex cache
-    struct NDS_GE_VTX_node *o = vertex_add_child(this, &VTX_ROOT);
-    o->xyzw[0] = x;
-    o->xyzw[1] = y;
-    o->xyzw[2] = z;
-    o->xyzw[3] = 1 << 12;
-    o->processed = 0;
-    o->uv[0] = this->ge.params.vtx.S;
-    o->uv[1] = this->ge.params.vtx.T;
+    struct NDS_GE_VTX_list_node *o = vertex_list_add_to_end(&VTX_LIST, 0);
+    o->data.xyzw[0] = x;
+    o->data.xyzw[1] = y;
+    o->data.xyzw[2] = z;
+    o->data.xyzw[3] = 1 << 12;
+    o->data.processed = 0;
     transform_vertex_on_ingestion(this, o);
 
     switch(this->ge.params.vtx_strip.mode) {
         case NDS_GEM_SEPERATE_TRIANGLES:
-            if (VTX_ROOT.num_children >= 3) {
+            if (VTX_LIST.len >= 3) {
                 printfcd("\nDO POLY SEPARATE TRI");
                 ingest_poly(this, CCW);
                 // clear the cache
-                delete_vtx_cache(this);
+                vertex_list_init(&VTX_LIST);
             }
             break;
         case NDS_GEM_SEPERATE_QUADS:
-            if (VTX_ROOT.num_children >= 4) {
+            if (VTX_LIST.len >= 4) {
                 printfcd("\nDO POLY SEPARATE QUAD");
                 ingest_poly(this, CCW);
-                delete_vtx_cache(this);
+                vertex_list_init(&VTX_LIST);
             }
             break;
         case NDS_GEM_TRIANGLE_STRIP:
-            if (VTX_ROOT.num_children >= 3) {
+            if (VTX_LIST.len >= 3) {
                 ingest_poly(this, this->ge.winding_order);
                 this->ge.winding_order ^= 1;
-                pop1_vtx_cache(this);
+                vertex_list_delete_first(&VTX_LIST);
             }
             break;
         case NDS_GEM_QUAD_STRIP:
-            if (VTX_ROOT.num_children >= 4) {
+            if (VTX_LIST.len >= 4) {
                 ingest_poly(this, this->ge.winding_order);
                 this->ge.winding_order ^= 1;
-                pop1_vtx_cache(this);
-                pop1_vtx_cache(this);
+                vertex_list_delete_first(&VTX_LIST);
+                vertex_list_delete_first(&VTX_LIST);
             }
             break;
     }
@@ -1430,10 +1398,7 @@ static void cmd_POLYGON_ATTR(struct NDS *this)
 
 static void terminate_poly_strip(struct NDS *this)
 {
-    for (u32 i = 0; i < VTX_ROOT.num_children; i++) {
-        delete_node_children(this, VTX_ROOT.children[i]);
-    }
-    VTX_ROOT.num_children = 0;
+    vertex_list_init(&VTX_LIST);
     this->ge.winding_order = 0;
 }
 
