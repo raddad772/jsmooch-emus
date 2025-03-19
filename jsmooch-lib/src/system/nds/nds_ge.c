@@ -1067,7 +1067,7 @@ static u32 determine_winding_order(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFE
 {
     // OK, now progress in order until we have a y-delta of >0.
     struct NDS_GE_VTX_list_node *n = poly->highest_vertex;
-    struct NDS_GE_VTX_list_node *n_comp;
+    struct NDS_GE_VTX_list_node *n_comp = n;
     for (u32 i = 1; i < poly->vertex_list.len; i++) {
         n_comp = n_comp->next;
         if (!n_comp) n_comp = poly->vertex_list.first;
