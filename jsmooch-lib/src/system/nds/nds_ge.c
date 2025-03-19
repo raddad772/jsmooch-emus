@@ -930,7 +930,7 @@ static u32 determine_needs_clipping(struct NDS_GE_VTX_list_node *v)
     return 0;
 }
 
-static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 color)
+static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 color)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     if (this->ge.ge_has_buffer > 1) {
@@ -938,22 +938,22 @@ static u32 commit_vertex(struct NDS *this, i32 xx, i32 yy, i32 zz, i32 ww, i32 *
     }
     u32 addr = b->vertex_index;
 
-    b->vertex_index++;
+    /*b->vertex_index++;
     if (b->vertex_index >= 6144) {
         this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 1;
     }
 
-    struct NDS_RE_VERTEX *v = &b->vertex[addr];
+    struct NDS_RE_VERTEX *v = &b->vertex[addr];*/
 
     // We need...xx, yy, zz, ww, uv, and color
     // 32 bits each = 24 bytes...
-    v->xx = xx;
-    v->yy = (192 - yy) & 0xFF;
-    v->zz = zz;
-    v->ww = ww;
-    v->uv[0] = uv[0];
-    v->uv[1] = uv[1];
-    v->color = color;
+    v->data.xyzw[0] = xx;
+    v->data.xyzw[1] = (192 - yy) & 0xFF;
+    v->data.xyzw[2] = zz;
+    v->data.xyzw[3] = ww;
+    v->data.uv[0] = uv[0];
+    v->data.uv[1] = uv[1];
+    v->data.color = color;
     return addr;
 }
 
@@ -988,8 +988,9 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
     // Final transform to screen and write into vertex buffer
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
 
+    //printf("\nFinalzie verts");
     // Go thru verts...
-    struct NDS_GE_VTX_list_node *first_node = VTX_LIST.first;
+    struct NDS_GE_VTX_list_node *first_node = poly->vertex_list.first;
     struct NDS_GE_VTX_list_node *node = first_node;
     u32 num = 0;
     while(node) {
@@ -1027,9 +1028,9 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
                 scrX = 0;
                 scrY = 0;
             }
-            node->data.vram_ptr = commit_vertex(this, scrX, scrY, node->data.xyzw[2], node->data.xyzw[3] & 0xFFFFFF, node->data.uv, node->data.color);
+            node->data.vram_ptr = commit_vertex(this, node, scrX, scrY, node->data.xyzw[2], node->data.xyzw[3] & 0xFFFFFF, node->data.uv, node->data.color);
         }
-        printf("\nVert num %d: %d %d", num, b->vertex[node->data.vram_ptr].xx, b->vertex[node->data.vram_ptr].yy);
+        //printf("\nVert num %d: %d %d", num, node->data.xyzw[0], node->data.xyzw[1]);
         node = node->next;
     }
 }
