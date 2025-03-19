@@ -60,12 +60,92 @@ static void identity_matrix(i32 *m)
 }
 
 
+
 static void vertex_list_init(struct NDS_GE_VTX_list *l)
 {
     l->pool_bitmap = 0;
     l->len = 0;
     l->first = NULL;
     l->last = NULL;
+}
+
+static struct NDS_GE_VTX_list_node *vertex_list_alloc_node(struct NDS_GE_VTX_list *l, u32 vtx_parent)
+{
+    if (l->len >= NDS_GE_VTX_LIST_MAX) {
+        NOGOHERE;
+        return NULL;
+    }
+    u32 poolbit = 1;
+    u32 poolentry = 0;
+    for (u32 i = 0; i < NDS_GE_VTX_LIST_MAX; i++) {
+        if (!(l->pool_bitmap & poolbit)) break;
+        poolentry += 1;
+        poolbit <<= 1;
+    }
+    l->pool_bitmap |= poolbit;
+
+    struct NDS_GE_VTX_list_node *a = &l->pool[poolentry];
+    a->poolclear = ~poolbit;
+    a->data.processed = 0;
+    a->data.vtx_parent = vtx_parent;
+    a->next = a->prev = NULL;
+    return a;
+}
+
+static void vertex_list_free_node(struct NDS_GE_VTX_list *p, struct NDS_GE_VTX_list_node *n)
+{
+    p->pool_bitmap &= n->poolclear;
+    n->next = n->prev = NULL;
+}
+
+static void vertex_list_delete_first(struct NDS_GE_VTX_list *l)
+{
+    if (l->len == 0) return;
+    if (l->len == 1) {
+        l->first = l->last = NULL;
+        l->pool_bitmap = 0;
+        l->len = 0;
+        return;
+    }
+    struct NDS_GE_VTX_list_node *n = l->last;
+    n->prev->next = NULL;
+    l->last = n->prev;
+    vertex_list_free_node(l, n);
+    l->len--;
+}
+
+
+static struct NDS_GE_VTX_list_node *vertex_list_add_to_end(struct NDS_GE_VTX_list *l, u32 vtx_parent)
+{
+    struct NDS_GE_VTX_list_node *n = vertex_list_alloc_node(l, vtx_parent);
+    if (l->len == 0) {
+        l->first = l->last = n;
+    }
+    else if (l->len == 1) {
+        l->last = n;
+        l->first->next = l->last;
+        l->last->prev = l->first;
+    }
+    else {
+        n->prev = l->last;
+        l->last->next = n;
+        l->last = n;
+    }
+    l->len++;
+    assert(l->len < NDS_GE_VTX_LIST_MAX);
+    return n;
+}
+
+static void copy_vertex_list_into(struct NDS_GE_VTX_list *dest, struct NDS_GE_VTX_list *src)
+{
+    vertex_list_init(dest);
+    struct NDS_GE_VTX_list_node *src_node = src->first;
+    i32 num = 0;
+    while(src_node) {
+        struct NDS_GE_VTX_list_node *dst_node = vertex_list_add_to_end(dest, num++);
+        memcpy(&dst_node->data, &src_node->data, sizeof(struct NDS_GE_VTX_list_node_data));
+        src_node = src_node->next;
+    }
 }
 
 void NDS_GE_init(struct NDS *this) {
@@ -912,9 +992,94 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
     //printfcd("\nTransformed vertex: %f %f %f %f", vtx_to_float(dest->xyzw[0]), vtx_to_float(dest->xyzw[1]), vtx_to_float(dest->xyzw[2]), vtx_to_float(dest->xyzw[3]));
 }
 
+static u32 clip_against_plane(struct NDS *this, i32 axis, u32 is_compare_GT, struct NDS_GE_VTX_list *vertex_list_in, struct NDS_GE_VTX_list *vertex_list_out) {
+    const i32 clip_precision = 18;
+
+    const u32 size = vertex_list_in->len;
+    
+    struct NDS_GE_VTX_list_node *v0 = NULL;
+
+    u32 clipped = 0;
+    // LT = x < -w
+    // GT = x > w
+    for (int i = 0; i < size; i++) {
+        if (!v0) v0 = vertex_list_in->first;
+        else v0 = v0->next;
+
+        u32 comp;
+        if (is_compare_GT)
+            comp = v0->data.xyzw[axis] > v0->data.xyzw[3];
+        else
+            comp = v0->data.xyzw[axis] < -v0->data.xyzw[3];
+        if (comp) {
+            struct NDS_GE_VTX_list_node *vlns[2] = {v0->prev, v0->next};
+            if (!vlns[0]) vlns[0] = vertex_list_in->last;
+            if (!vlns[1]) vlns[1] = vertex_list_in->first;
+            for (u32 j = 0; j < 2; j++) {
+                struct NDS_GE_VTX_list_node *v1 = vlns[j];
+
+                if (is_compare_GT)
+                    comp = v1->data.xyzw[axis] > v1->data.xyzw[3];
+                else
+                    comp = v1->data.xyzw[axis] < -v1->data.xyzw[3];
+                if (!comp) {
+                    const i64 sign = v0->data.xyzw[axis] < -v0->data.xyzw[3] ? 1 : -1;
+                    const i64 numer = v1->data.xyzw[axis] + sign * v1->data.xyzw[3];
+                    const i64 denom = (v0->data.xyzw[3] - v1->data.xyzw[3]) +
+                                      (v0->data.xyzw[axis] - v1->data.xyzw[axis]) * sign;
+                    const i64 scale = -sign * ((i64) numer << clip_precision) / denom;
+                    const i64 scale_inv = (1 << clip_precision) - scale;
+
+                    struct NDS_GE_VTX_list_node *clipped_vertex = vertex_list_add_to_end(vertex_list_out, 0);
+
+                    for (u32 k = 0; k < 4; k++) {
+                        clipped_vertex->data.xyzw[k] = (v1->data.xyzw[k] * scale_inv + v0->data.xyzw[k] * scale) >> clip_precision;
+                        //clipped_vertex->data.color[k] = (v1->data.color[k] * scale_inv + v0->data.color[k] * scale) >> clip_precision;
+                    }
+
+                    for (u32 k = 0; k < 2; k++) {
+                        clipped_vertex->data.uv[k] = (v1->data.uv[k] * scale_inv + v0->data.uv[k] * scale) >> clip_precision;
+                    }
+                }
+            }
+            clipped = 1;
+        } else {
+            struct NDS_GE_VTX_list_node *n = vertex_list_add_to_end(vertex_list_out, 0);
+            memcpy(&n->data, &v0->data, sizeof(struct NDS_GE_VTX_list_node_data));
+        }
+    }
+
+    return clipped;
+}
+
 static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out)
 {
     // TODO: this
+    static struct NDS_GE_VTX_list tmp;
+    vertex_list_init(&tmp);
+
+
+#define COMPARE_GT 1
+#define COMPARE_LT 0
+
+    u32 far_plane_intersecting = clip_against_plane(this, 2, COMPARE_GT, &out->vertex_list, &tmp);
+
+    /*    if(!m_polygon_attributes.render_far_plane_intersecting && far_plane_intersecting) {
+        // @todo: test if this is actually working as intended!
+        return {};
+    }*/
+    vertex_list_init(&out->vertex_list);
+    clip_against_plane(this, 2, COMPARE_LT, &tmp, &out->vertex_list);
+    vertex_list_init(&tmp);
+
+    clip_against_plane(this, 1, COMPARE_GT, &out->vertex_list, &tmp);
+    vertex_list_init(&out->vertex_list);
+    clip_against_plane(this, 1, COMPARE_LT, &tmp, &out->vertex_list);
+    vertex_list_init(&tmp);
+
+    clip_against_plane(this, 0, COMPARE_GT, &out->vertex_list, &tmp);
+    vertex_list_init(&out->vertex_list);
+    clip_against_plane(this, 0, COMPARE_LT, &tmp, &out->vertex_list);
 }
 
 static u32 determine_needs_clipping(struct NDS_GE_VTX_list_node *v)
@@ -1135,84 +1300,6 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     }
 }
 
-static struct NDS_GE_VTX_list_node *vertex_list_alloc_node(struct NDS_GE_VTX_list *l, u32 vtx_parent)
-{
-    if (l->len >= NDS_GE_VTX_LIST_MAX) {
-        NOGOHERE;
-        return NULL;
-    }
-    u32 poolbit = 1;
-    u32 poolentry = 0;
-    for (u32 i = 0; i < NDS_GE_VTX_LIST_MAX; i++) {
-        if (!(l->pool_bitmap & poolbit)) break;
-        poolentry += 1;
-        poolbit <<= 1;
-    }
-    l->pool_bitmap |= poolbit;
-
-    struct NDS_GE_VTX_list_node *a = &l->pool[poolentry];
-    a->poolclear = ~poolbit;
-    a->data.processed = 0;
-    a->data.vtx_parent = vtx_parent;
-    a->next = a->prev = NULL;
-    return a;
-}
-
-static void vertex_list_free_node(struct NDS_GE_VTX_list *p, struct NDS_GE_VTX_list_node *n)
-{
-    p->pool_bitmap &= n->poolclear;
-    n->next = n->prev = NULL;
-}
-
-static void vertex_list_delete_first(struct NDS_GE_VTX_list *l)
-{
-    if (l->len == 0) return;
-    if (l->len == 1) {
-        l->first = l->last = NULL;
-        l->pool_bitmap = 0;
-        l->len = 0;
-        return;
-    }
-    struct NDS_GE_VTX_list_node *n = l->last;
-    n->prev->next = NULL;
-    l->last = n->prev;
-    vertex_list_free_node(l, n);
-    l->len--;
-}
-
-
-static struct NDS_GE_VTX_list_node *vertex_list_add_to_end(struct NDS_GE_VTX_list *l, u32 vtx_parent)
-{
-    struct NDS_GE_VTX_list_node *n = vertex_list_alloc_node(l, vtx_parent);
-    if (l->len == 0) {
-        l->first = l->last = n;
-    }
-    else if (l->len == 1) {
-        l->last = n;
-        l->first->next = l->last;
-        l->last->prev = l->first;
-    }
-    else {
-        n->prev = l->last;
-        l->last->next = n;
-        l->last = n;
-    }
-    l->len++;
-    return n;
-}
-
-static void copy_vertex_list_into(struct NDS_GE_VTX_list *dest, struct NDS_GE_VTX_list *src)
-{
-    vertex_list_init(dest);
-    struct NDS_GE_VTX_list_node *src_node = src->first;
-    i32 num = 0;
-    while(src_node) {
-        struct NDS_GE_VTX_list_node *dst_node = vertex_list_add_to_end(dest, num++);
-        memcpy(&dst_node->data, &src_node->data, sizeof(struct NDS_GE_VTX_list_node_data));
-        src_node = src_node->next;
-    }
-}
-
 static void ingest_poly(struct NDS *this, u32 winding_order) {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     u32 addr = b->polygon_index;
@@ -1244,6 +1331,11 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     // Clip vertices!
     if (needs_clipping) {
         clip_verts(this, out);
+    }
+    if (out->vertex_list.len < 3) {
+        // Whole poly outside view...
+        b->polygon_index--;
+        return;
     }
 
     // GO through leafs.
