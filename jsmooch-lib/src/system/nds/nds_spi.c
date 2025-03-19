@@ -184,12 +184,6 @@ static void firmware_transaction(struct NDS *this, u32 val)
 
 static void touchscreen_transaction(struct NDS *this, u32 val)
 {
-    //SPI.output = (TSC.result >> (15 - TSC.pos)) & 1;
-    //SPI.output = 0x20 >> 1; // 0x10's leads to 512, 32
-    // 512 is 0x200
-    // 32 is 0x20
-    // So, I think, return >>5
-    // Then return <<3?
     switch(TSC.pos) {
         case 1:
             SPI.output = (TSC.result >> 5) & 0xFF;
