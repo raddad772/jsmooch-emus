@@ -534,9 +534,16 @@ void full_system::setup_persistent_store(struct persistent_store *ps, struct mul
         fseek(ps->fno, 0, SEEK_SET);
         ps->data = malloc(ps->requested_size);
         fread(ps->data, 1, ps->requested_size, ps->fno);
+        ps->old_requested_size = ps->requested_size;
     }
     else {
         ps->data = malloc(ps->requested_size);
+    }
+
+    if (ps->old_requested_size != ps->requested_size) {
+        printf("\nSIZE CHANGE FROM %lldkB to %lldkB", ps->old_requested_size / 1024, ps->requested_size / 1024);
+        printf("\nRemember to implement this...");
+        ps->requested_size = ps->old_requested_size;
     }
 
     ps->actual_size = ps->requested_size;

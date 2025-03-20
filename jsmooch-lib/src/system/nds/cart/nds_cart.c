@@ -293,7 +293,6 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
 
                 if (this->cart.RAM.data_in_pos == 3) {
                     this->cart.RAM.data_in.b8[3] = 0;
-                    printf("\nADDR RECV: %04x", this->cart.RAM.data_in.u);
                     this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & this->cart.RAM.detect.sz_mask;
                 }
             }
@@ -301,6 +300,11 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
                 this->cart.RAM.data_out.b8[0] = this->cart.RAM.data_out.b8[1] =
                         cR8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr);
                 this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & this->cart.RAM.detect.sz_mask;
+                this->cart.RAM.data_in_pos++;
+                if (this->cart.RAM.data_in_pos > 258) {
+                    //printf("\nQUIT READ NOW!");
+                    this->cart.RAM.cmd = 0;
+                }
             }
             return;
         case 0xA:
@@ -311,13 +315,17 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
 
                 if (this->cart.RAM.data_in_pos == 3) {
                     this->cart.RAM.data_in.b8[3] = 0;
-                    printf("\nWRITE ADDR RECV: %04x", this->cart.RAM.data_in.u);
                     this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & (this->cart.RAM.store->requested_size-1);
                 }
             }
             else {
                 cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
                 this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
+                this->cart.RAM.data_in_pos++;
+                if (this->cart.RAM.data_in_pos > 258) {
+                    //printf("\nQUIT WRITE NOW!");
+                    this->cart.RAM.cmd = 0;
+                }
             }
             return;
 
@@ -414,6 +422,7 @@ void NDS_cart_detect_kind(struct NDS *this, u32 from, u32 val)
             this->cart.RAM.detect.sz = sz;
             this->cart.RAM.detect.sz_mask = sz - 1;
             this->cart.RAM.detect.done = 1;
+            this->cart.RAM.store->requested_size = sz;
         }
         else if ((this->cart.RAM.detect.pos == 1) && (from == 7) && (data == 1)) {
             reset = 0;

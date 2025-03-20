@@ -36,6 +36,7 @@ struct persistent_store {
     // Internal to UI
     char filename[500]; // Filename if present
     FILE *fno;
+    u64 old_requested_size;
 
 };
 
