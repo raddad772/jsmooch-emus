@@ -91,6 +91,33 @@ struct NDS_cart {
         } romctrl;
     } io;
 
+    struct {
+        struct persistent_store *store;
+        u32 is_flash;
+        u32 cmd;
+
+        union {
+            u8 b8[4];
+            u32 u;
+        } data_in;
+        u32 data_in_pos;
+        u32 cmd_addr;
+
+        union {
+            u8 b8[4];
+            u32 b32;
+        } data_out;
+
+        union {
+            struct {
+                u8 busy : 1;
+                u8 write_enable : 1;
+            };
+            u8 u;
+        } status;
+        u32 chipsel;
+    } RAM;
+
     u64 spi_busy_until;
     u64 rom_busy_until;
     enum NDS_cart_data_modes data_mode;
@@ -110,4 +137,7 @@ void NDS_cart_write_cmd(struct NDS *, u32 addr, u32 val);
 u32 NDS_cart_read_romctrl(struct NDS *);
 u32 NDS_cart_read_rom(struct NDS *, u32 addr, u32 sz);
 void NDS_cart_check_transfer(void *ptr, u64 key, u64 clock, u32 jitter);
+u32 NDS_cart_read_spicnt(struct NDS *);
+u32 NDS_cart_read_spi(struct NDS *, u32 bnum);
+
 #endif //JSMOOCH_EMUS_NDS_CART_H

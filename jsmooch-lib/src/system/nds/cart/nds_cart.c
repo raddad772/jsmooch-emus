@@ -44,6 +44,13 @@ void NDS_cart_direct_boot(struct NDS *this)
 u32 NDS_cart_load_ROM_from_RAM(struct NDS_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable) {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);
+
+    if (SRAM_enable) *SRAM_enable = 1;
+    this->RAM.store = &pio->cartridge_port.SRAM;
+    this->RAM.store->fill_value = 0xFF;
+    struct persistent_store *ps = &pio->cartridge_port.SRAM;
+    ps->requested_size = 1 * 1024 * 1024;
+    this->RAM.is_flash = 1;
     return 1;
 }
 
@@ -94,6 +101,11 @@ static u32 rom_transfer_time(struct NDS *this, u32 clk_spd, u32 sz_in_bytes)
 {
     static const u32 cpb[2] = {5, 8};
     return cpb[clk_spd] * sz_in_bytes;
+}
+
+u32 NDS_cart_read_spi(struct NDS *this, u32 bnum)
+{
+    return this->cart.RAM.data_out.b8[bnum];
 }
 
 u32 NDS_cart_read_rom(struct NDS *this, u32 addr, u32 sz)
@@ -254,6 +266,7 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
                 break;
         }
         this->cart.io.spi.next_chipsel = (val >> 6) & 1;
+        if (!this->cart.io.spi.next_chipsel) this->cart.RAM.chipsel = 0;
     }
     else {
         this->cart.io.spi.slot_mode = (val >> 5) & 1;
@@ -262,9 +275,82 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
     }
 }
 
+static void handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
+{
+    /*
+  Set Chip Select LOW to invoke the command
+  Transmit the instruction byte
+  Transmit any parameter bytes
+  Transmit/receive any data bytes
+  Set Chip Select HIGH to finish the command
+     */
+    switch(this->cart.RAM.cmd) {
+        case 3:
+            if (is_cmd) return;
+            if (this->cart.RAM.data_in_pos < 3) {
+                this->cart.RAM.data_in.b8[this->cart.RAM.data_in_pos] = val;
+                this->cart.RAM.data_in_pos++;
+
+                if (this->cart.RAM.data_in_pos == 3) {
+                    this->cart.RAM.data_in.b8[3] = 0;
+                    printf("\nADDR RECV: %04x", this->cart.RAM.data_in.u);
+                    this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & (this->cart.RAM.store->requested_size-1);
+                }
+            }
+            else {
+                this->cart.RAM.data_out.b8[0] = this->cart.RAM.data_out.b8[1] =
+                        cR8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr);
+                this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
+            }
+            return;
+        case 0xA:
+            if (is_cmd) return;
+            if (this->cart.RAM.data_in_pos < 3) {
+                this->cart.RAM.data_in.b8[this->cart.RAM.data_in_pos] = val;
+                this->cart.RAM.data_in_pos++;
+
+                if (this->cart.RAM.data_in_pos == 3) {
+                    this->cart.RAM.data_in.b8[3] = 0;
+                    printf("\nWRITE ADDR RECV: %04x", this->cart.RAM.data_in.u);
+                    this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & (this->cart.RAM.store->requested_size-1);
+                }
+            }
+            else {
+                cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
+                this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
+            }
+            return;
+
+        case 6:
+            this->cart.RAM.status.write_enable = 1;
+            break;
+        case 4:
+            this->cart.RAM.status.write_enable = 0;
+            break;
+        case 5:
+            this->cart.RAM.data_out.b8[0] = this->cart.RAM.status.u;
+            this->cart.RAM.data_out.b8[1] = this->cart.RAM.status.u;
+            this->cart.RAM.data_out.b8[2] = this->cart.RAM.status.u;
+            this->cart.RAM.data_out.b8[3] = this->cart.RAM.status.u;
+            break;
+        default:
+            printf("\nUnhandled SPI cmd %02x", this->cart.RAM.cmd);
+            break;
+    }
+}
+
 void NDS_cart_spi_transaction(struct NDS *this, u32 val)
 {
-    printf("\ncart SPI transaction!?");
+    printf("\nAUXSPIDATA WRITE.");
+    u32 is_cmd = 0;
+    if ((this->cart.io.spi.next_chipsel == 1) && (this->cart.RAM.chipsel == 0)) {
+        printf("\nNEW CMD %02x!", val);
+        is_cmd = 1;
+        this->cart.RAM.cmd = val;
+        this->cart.RAM.data_in_pos = 0;
+    }
+    handle_spi_cmd(this, val, is_cmd);
+    this->cart.RAM.chipsel = this->cart.io.spi.next_chipsel;
 }
 
 void NDS_cart_write_romctrl(struct NDS *this, u32 val)

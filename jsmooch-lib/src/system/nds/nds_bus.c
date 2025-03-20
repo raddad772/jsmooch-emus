@@ -254,6 +254,10 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
 {
     u32 v;
     switch(addr) {
+        case R_AUXSPICNT:
+            return NDS_cart_read_spicnt(this) & 0xFF;
+        case R_AUXSPICNT+1:
+            return NDS_cart_read_spicnt(this) >> 8;
         case R7_SOUNDCNT+0:
             return this->apu.io.master_vol;
         case R7_SOUNDCNT+1:
@@ -1716,6 +1720,12 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
         case R_ROMDATA+3:
             assert(sz==4);
             return NDS_cart_read_rom(this, addr, sz);
+
+        case R_AUXSPIDATA:
+            printf("\nAUXSPIDATA READ!");
+            return NDS_cart_read_spi(this, 0);
+        case R_AUXSPIDATA+1:
+            return NDS_cart_read_spi(this, 1);
 
         case R7_SPIDATA:
             return NDS_SPI_read(this, sz);
