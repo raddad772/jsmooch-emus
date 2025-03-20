@@ -226,12 +226,18 @@ struct NDS_RE {
     u32 enable;
     struct {
         struct {
-            u16 color;
+            u16 COLOR;
             u32 fog_to_rear_plane;
             u16 alpha;
             u16 poly_id;
             u32 depth;
-        } clear;
+        } CLEAR;
+
+        struct {
+            i32 TABLE[32];
+            u32 COLOR_r, COLOR_g, COLOR_b;
+            u32 OFFSET;
+        } FOG;
 
         union {
             struct {
@@ -255,6 +261,15 @@ struct NDS_RE {
             i32 x0, y0, x1, y1, width, height;
         } viewport;
 
+        i32 SHININESS[128];
+        i32 TOON_TABLE_r[32];
+        i32 TOON_TABLE_g[32];
+        i32 TOON_TABLE_b[32];
+        i32 EDGE_TABLE_r[32];
+        i32 EDGE_TABLE_g[32];
+        i32 EDGE_TABLE_b[32];
+        u8 ALPHA_TEST_REF;
+        u32 CLRIMAGE_OFFSET;
     } io;
 
     struct {
@@ -375,8 +390,6 @@ struct NDS_GE {
 
             struct NDS_GE_VTX_list input_list;
         } vtx;
-
-        i32 shininess[128];
 
         struct {
             enum {

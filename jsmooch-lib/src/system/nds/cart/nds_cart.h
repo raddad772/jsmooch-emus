@@ -132,6 +132,7 @@ struct NDS_cart {
             u32 sz;
             u32 arg_buf_addr;
             u32 arg_buf_ptr;
+            u32 addr_bytes;
         } detect;
 
     } RAM;

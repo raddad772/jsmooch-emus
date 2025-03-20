@@ -140,6 +140,8 @@
 #define R9_CLRIMG_OFFSET    0x04000356
 #define R9_FOG_COLOR        0x04000358
 #define R9_FOG_OFFSET       0x0400035C
+#define R9_EDGE_TABLE       0x04000330
+#define R9_FOG_TABLE        0x04000360
 #define R9_TOON_TABLE       0x04000380
 
 // geometry engine

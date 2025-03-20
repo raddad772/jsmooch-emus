@@ -44,7 +44,7 @@ void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
     switch(variant) {
         default:
             printf("\nUnknown ZXSpectrum, defaulting to 48k!");
-            __attribute__ ((fallthrough));;
+            __attribute__ ((fallthrough));
         case ZXS_spectrum48:
             this->ROM_size = 16 * 1024;
             this->RAM_size = 48 * 1024;

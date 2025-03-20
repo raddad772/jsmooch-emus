@@ -624,7 +624,7 @@ static void cmd_SHININESS(struct NDS *this) {
 
             data = SIGNe8to32(data) << 4;
             // Traditional 12-bit fixed point
-            this->ge.params.shininess[i++] = data;
+            this->re.io.SHININESS[i++] = data;
         }
     }
 };
@@ -1770,6 +1770,49 @@ u32 NDS_GE_check_irq(struct NDS *this)
     return 0;
 }
 
+static void write_fog_table(struct NDS *this, u32 addr, u32 sz, u32 val)
+{
+    if (sz >= 2) {
+        write_fog_table(this, addr, 1, val & 0xFF);
+        write_fog_table(this, addr+1, 1, (val >> 8) & 0xFF);
+    }
+    if (sz == 4) {
+        write_fog_table(this, addr+2, 1, (val >> 16) & 0xFF);
+        write_fog_table(this, addr+3, 1, (val >> 24) & 0xFF);
+    }
+    if (sz >= 2) return;
+    this->re.io.FOG.TABLE[addr] = val;
+}
+
+static void write_edge_table(struct NDS *this, u32 addr, u32 sz, u32 val)
+{
+    if (sz == 4) {
+        write_edge_table(this, addr, 1, val & 0xFFFF);
+        write_edge_table(this, addr+2, 1, val >> 16);
+        return;
+    }
+    if (sz >= 2) return;
+    this->re.io.EDGE_TABLE_r[addr] = (val & 0x1F) << 1;
+    this->re.io.EDGE_TABLE_g[addr] = ((val >> 5) & 0x1F) << 1;
+    this->re.io.EDGE_TABLE_b[addr] = ((val >> 10) & 0x1F) << 1;
+
+}
+
+
+static void write_toon_table(struct NDS *this, u32 addr, u32 sz, u32 val)
+{
+    if (sz == 4) {
+        write_toon_table(this, addr, 1, val & 0xFFFF);
+        write_toon_table(this, addr+2, 1, val >> 16);
+        return;
+    }
+    if (sz >= 2) return;
+    this->re.io.TOON_TABLE_r[addr] = (val & 0x1F) << 1;
+    this->re.io.TOON_TABLE_g[addr] = ((val >> 5) & 0x1F) << 1;
+    this->re.io.TOON_TABLE_b[addr] = ((val >> 10) & 0x1F) << 1;
+}
+
+
 void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if ((addr >= R9_GXFIFO) && (addr < (R9_GXFIFO + 0x40))) {
@@ -1778,19 +1821,32 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
         return;
     }
     switch(addr) {
-        case R9_CLEAR_COLOR:
-            this->re.io.clear.color = val & 0x7FFF;
-            this->re.io.clear.fog_to_rear_plane = (val >> 15) & 1;
-            this->re.io.clear.alpha = (val >> 16) & 0x1F;
-            this->re.io.clear.poly_id = (val >> 24) & 0x3F;
+        case R9_ALPHA_TEST_REF:
+            this->re.io.ALPHA_TEST_REF = val & 0xFF;
             return;
+        case R9_CLRIMG_OFFSET:
+            this->re.io.CLRIMAGE_OFFSET = val & 0xFFFF;
+            return;
+        case R9_FOG_OFFSET:
+            this->re.io.FOG.OFFSET = val & 0xFFFF;
+            return;
+        case R9_FOG_COLOR:
+            this->re.io.FOG.COLOR_r = (val & 0x1F) << 1;
+            this->re.io.FOG.COLOR_g = ((val >> 5) & 0x1F) << 1;
+            this->re.io.FOG.COLOR_b = ((val >> 10) & 0x1F) << 1;
+        case R9_CLEAR_COLOR: {
+            this->re.io.CLEAR.COLOR = val & 0x7FFF;
+            this->re.io.CLEAR.fog_to_rear_plane = (val >> 15) & 1;
+            this->re.io.CLEAR.alpha = (val >> 16) & 0x1F;
+            this->re.io.CLEAR.poly_id = (val >> 24) & 0x3F;
+            return; }
         case R9_CLEAR_DEPTH:
             assert(sz==2);
             val &= 0x7FFF;
             // The 15bit Depth is expanded to 24bit as "X=(X*200h)+((X+1)/8000h)*1FFh".
-            this->re.io.clear.depth = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
-            this->re.io.clear.depth = SIGNe24to32(this->re.io.clear.depth);
-            this->re.io.clear.depth = ((u32)this->re.io.clear.depth) >> 8;
+            this->re.io.CLEAR.depth = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
+            this->re.io.CLEAR.depth = SIGNe24to32(this->re.io.CLEAR.depth);
+            this->re.io.CLEAR.depth = ((u32)this->re.io.CLEAR.depth) >> 8;
             //printf("\nCLEAR VALUE SET %08x %f", this->re.io.clear.depth, vtx_to_float(this->re.io.clear.depth));
             return;
         case R9_GXSTAT:
@@ -1847,6 +1903,25 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
         gcmd(VEC_TEST);
 #undef gcmd
     }
+    if ((addr >= R9_EDGE_TABLE) && (addr < (R9_EDGE_TABLE + 0x10))) {
+        addr = (addr - R9_EDGE_TABLE) >> 1;
+        assert(addr<8);
+        write_edge_table(this, addr, sz, val);
+        return;
+    }
+    if ((addr >= R9_FOG_TABLE) && (addr < (R9_FOG_TABLE + 0x20))) {
+        addr = addr - R9_FOG_TABLE;
+        assert(addr<32);
+        write_fog_table(this, addr, sz, val);
+        return;
+    }
+    if ((addr >= R9_TOON_TABLE) && (addr < (R9_TOON_TABLE + 0x40))) {
+        addr = (addr - R9_TOON_TABLE) >> 1;
+        assert(addr<32);
+        write_toon_table(this, addr, sz, val);
+        return;
+    }
+
     printf("\nUnhandled write to GE addr:%08x sz:%d val:%08x", addr, sz, val);
 }
 
@@ -1890,6 +1965,8 @@ u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
 {
     u32 v;
     switch(addr) {
+        case R9_G_CMD_POLYGON_ATTR:
+            return 0;
         case R9_GXSTAT:
             assert(sz==4);
             return GXSTAT.u;

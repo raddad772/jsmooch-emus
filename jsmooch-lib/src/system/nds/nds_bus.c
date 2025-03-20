@@ -1689,20 +1689,24 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 
 static u32 busrd7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x04808000) return cR[sz](this->mem.wifi, addr & 0x1FFF);
-
-    return busrd7_invalid(this, addr, sz, access, has_effect);
+    static int a = 1;
+    if (a) {
+        a = 0;
+        printf("\nWARN read from WIFI!");
+    }
+    return 0;
 }
 
 static void buswr7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     if (addr < 0x04808000) return cW[sz](this->mem.wifi, addr & 0x1FFF, val);
 
-    switch(addr) {
-        case 0x048080ae:
-            printf("\nWarning ignore WIFI WRITE....");
-            return;
+    static int a = 1;
+    if (a) {
+        printf("\nWarning ignore WIFI WRITE(s)....");
+        a = 0;
     }
-    buswr7_invalid(this, addr, sz, access, val);
+    return;
 }
 
 

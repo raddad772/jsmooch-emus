@@ -71,10 +71,10 @@ static void NDS_RE_interp_setup(struct NDS_RE_interp *this, u32 bit_precision, i
 
 static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
     for (u32 x = 0; x < 256; x++) {
-        l->poly_id[x] = this->re.io.clear.poly_id;
-        l->rgb_top[x] = this->re.io.clear.color;
-        l->rgb_bottom[x] = this->re.io.clear.color;
-        l->alpha[x] = this->re.io.clear.alpha;
+        l->poly_id[x] = this->re.io.CLEAR.poly_id;
+        l->rgb_top[x] = this->re.io.CLEAR.COLOR;
+        l->rgb_bottom[x] = this->re.io.CLEAR.COLOR;
+        l->alpha[x] = this->re.io.CLEAR.alpha;
         l->depth[x] = INT32_MAX; //this->re.io.clear.depth;
         //l->depth[x] = this->re.io.clear.depth;
     }

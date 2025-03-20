@@ -719,9 +719,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/touch_area.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             break;
         case SYS_PS1:
             //RenderPolygon16BPP

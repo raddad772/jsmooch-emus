@@ -1971,7 +1971,7 @@ export_M68KINS(MOVE)
                     if (!this->state.op[1].t2) {
                         this->state.op[1].addr = M68k_read_ea_addr(this, 1, ins->sz, NO_HOLD, this->state.op[1].ext_words);
                     }
-                    __attribute__ ((fallthrough));;
+                    __attribute__ ((fallthrough));
                 case M68k_AM_imm16:
                 case M68k_AM_imm32:
                 case M68k_AM_immediate:

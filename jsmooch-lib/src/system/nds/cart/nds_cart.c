@@ -277,13 +277,6 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
 
 static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
 {
-    /*
-  Set Chip Select LOW to invoke the command
-  Transmit the instruction byte
-  Transmit any parameter bytes
-  Transmit/receive any data bytes
-  Set Chip Select HIGH to finish the command
-     */
     switch(this->cart.RAM.cmd) {
         case 3:
             if (is_cmd) return;
@@ -319,7 +312,7 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
                 }
             }
             else {
-                cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
+                if (this->cart.RAM.status.write_enable) cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
                 this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
                 this->cart.RAM.data_in_pos++;
                 if (this->cart.RAM.data_in_pos > 258) {
@@ -342,9 +335,141 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
             this->cart.RAM.data_out.b8[3] = this->cart.RAM.status.u;
             break;
         default:
-            printf("\nUnhandled SPI cmd %02x", this->cart.RAM.cmd);
+            printf("\nUnhandled flash SPI cmd %02x", this->cart.RAM.cmd);
             break;
     }
+}
+
+static void eeprom_get_addr(struct NDS *this, u32 val)
+{
+    this->cart.RAM.data_in.b8[this->cart.RAM.data_in_pos] = val;
+    this->cart.RAM.data_in_pos++;
+
+    if (this->cart.RAM.data_in_pos == this->cart.RAM.detect.addr_bytes) {
+        this->cart.RAM.data_in.b8[3] = 0;
+        switch(this->cart.RAM.detect.addr_bytes) {
+            case 1:
+                this->cart.RAM.cmd_addr = this->cart.RAM.data_in.b8[0];
+                //printf("\nEEPROM r/w addr: %02x", this->cart.RAM.cmd_addr);
+                return;
+            case 2:
+                this->cart.RAM.data_in.b8[2] = 0;
+                        __attribute__ ((fallthrough));
+            case 3:
+                //printf("\nEEPROM r/w addr: %02x", this->cart.RAM.cmd_addr);
+                this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & this->cart.RAM.detect.sz;
+                return;
+            default:
+            NOGOHERE;
+        }
+    }
+}
+
+static void eeprom_read(struct NDS *this)
+{
+    this->cart.RAM.data_out.b8[0] = this->cart.RAM.data_out.b8[1] =
+            cR8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr);
+    this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & this->cart.RAM.detect.sz_mask;
+    this->cart.RAM.data_in_pos++;
+    if (this->cart.RAM.data_in_pos > (255 + this->cart.RAM.detect.addr_bytes)) {
+        //printf("\nQUIT READ NOW!");
+        this->cart.RAM.cmd = 0;
+    }
+}
+
+static void eeprom_write(struct NDS *this, u32 val)
+{
+    if (this->cart.RAM.status.write_enable) cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
+    this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
+    this->cart.RAM.data_in_pos++;
+    if (this->cart.RAM.data_in_pos > (255 + this->cart.RAM.detect.addr_bytes)) {
+        //printf("\nQUIT WRITE NOW!");
+        this->cart.RAM.cmd = 0;
+    }
+}
+
+static void eeprom_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
+{
+    switch(this->cart.RAM.cmd) {
+        case 6:
+            this->cart.RAM.status.write_enable = 1;
+            break;
+        case 4:
+            this->cart.RAM.status.write_enable = 0;
+            break;
+        case 5:
+            this->cart.RAM.data_out.b8[0] = this->cart.RAM.status.u;
+            this->cart.RAM.data_out.b8[1] = this->cart.RAM.status.u;
+            this->cart.RAM.data_out.b8[2] = this->cart.RAM.status.u;
+            this->cart.RAM.data_out.b8[3] = this->cart.RAM.status.u;
+            break;
+
+        case 3: // RDLO
+            if (is_cmd) return;
+            if (this->cart.RAM.data_in_pos < (this->cart.RAM.detect.addr_bytes)) {
+                eeprom_get_addr(this, val);
+            }
+            else {
+                eeprom_read(this);
+            }
+            return;
+        case 0xB: // RDHI
+            if (is_cmd) return;
+            if (this->cart.RAM.detect.addr_bytes > 1) {
+                printf("\nWHAT!? >1");
+                return;
+            }
+
+            if (this->cart.RAM.data_in_pos == 0) {
+                this->cart.RAM.cmd_addr = 0x100 + (val & 0xFF);
+                this->cart.RAM.data_in_pos++;
+            }
+            else {
+                eeprom_read(this);
+            }
+            return;
+        case 0xA: // WRHI
+            if (is_cmd) return;
+            if (this->cart.RAM.detect.addr_bytes > 1) {
+                printf("\nWHAT!? >1_2");
+                return;
+            }
+
+            if (this->cart.RAM.data_in_pos == 0) {
+                this->cart.RAM.cmd_addr = 0x100 + (val & 0xFF);
+                this->cart.RAM.data_in_pos++;
+            }
+            else {
+                eeprom_write(this, val);
+            }
+            return;
+        case 0x2: // WRLO
+            if (is_cmd) return;
+            if (this->cart.RAM.data_in_pos < (this->cart.RAM.detect.addr_bytes)) {
+                eeprom_get_addr(this, val);
+            }
+            else {
+                eeprom_write(this, val);
+            }
+            return;
+
+        default:
+            printf("\nUnhandled eeprom SPI cmd %02x", this->cart.RAM.cmd);
+            break;
+    }
+
+}
+
+static void eeprom_spi_transaction(struct NDS *this, u32 val)
+{
+    u32 is_cmd = 0;
+    if ((this->cart.io.spi.next_chipsel == 1) && (this->cart.RAM.chipsel == 0)) {
+        is_cmd = 1;
+        this->cart.RAM.cmd = val;
+        this->cart.RAM.data_in_pos = 0;
+    }
+    eeprom_handle_spi_cmd(this, val, is_cmd);
+    this->cart.RAM.chipsel = this->cart.io.spi.next_chipsel;
 }
 
 static void flash_spi_transaction(struct NDS *this, u32 val)
@@ -369,7 +494,7 @@ void NDS_cart_spi_transaction(struct NDS *this, u32 val)
             flash_spi_transaction(this, val);
             return;
         case NDSBK_eeprom:
-            printf("\nEEPROM not implement!");
+            eeprom_spi_transaction(this, val);
             return;
         case NDSBK_fram:
             printf("\nFRAM not implement!");
@@ -417,6 +542,14 @@ void NDS_cart_detect_kind(struct NDS *this, u32 from, u32 val)
             // bits 8-15 encode the backup size in a shift amount - i.e. the size in bytes is (1 << n)
             u32 kind = second_word & 3;
             u32 sz = 1 << ((second_word >> 8) & 0xFF);
+            if (kind == NDSBK_eeprom) {
+                if (sz <= 512)
+                    this->cart.RAM.detect.addr_bytes = 1;
+                else if (sz < 131072)
+                    this->cart.RAM.detect.addr_bytes = 2;
+                else
+                    this->cart.RAM.detect.addr_bytes = 3;
+            }
             printf("\nDETECT CART SAVE KIND:%d SZ:%d bytes", kind, sz);
             this->cart.RAM.detect.kind = kind;
             this->cart.RAM.detect.sz = sz;
