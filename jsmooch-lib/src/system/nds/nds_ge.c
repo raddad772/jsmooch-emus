@@ -36,8 +36,8 @@ static void pprint_matrix(const char *n, i32 *s) {
     }
 }
 
+#define FIFO this->ge.fifo
 #define VTX_LIST this->ge.params.vtx.input_list
-#define VTX_ALIST this->ge.params.vtx.alloc_list
 #define MS_COORD_DIR_PTR this->ge.matrices.stacks.coordinate_direction_ptr
 #define MS_TEXTURE_PTR this->ge.matrices.stacks.texture_ptr
 #define MS_PROJECTION_PTR this->ge.matrices.stacks.projection_ptr
@@ -210,115 +210,31 @@ void NDS_GE_reset(struct NDS *this)
     identity_matrix(M_TEXTURE.m);
     identity_matrix(M_DIR.m);
     vertex_list_init(&VTX_LIST);
+    FIFO.head = FIFO.tail = FIFO.len = 0;
+    FIFO.pausing_cpu = 0;
+    FIFO.waiting_for_cmd = 1;
 }
 
-static void set_GXSTAT_fifo(struct NDS *this)
+static void fifo_update_len(struct NDS *this, u32 from_dma, u32 did_add)
 {
     u32 old_bit = 0;
     if (GXSTAT.cmd_fifo_irq_mode) {
         old_bit = NDS_GE_check_irq(this);
     }
 
-    GXSTAT.cmd_fifo_len = this->ge.fifo.len > 255 ? 255 : this->ge.fifo.len;
-    GXSTAT.cmd_fifo_less_than_half_full = this->ge.fifo.len < 128;
-    GXSTAT.cmd_fifo_empty = this->ge.fifo.len == 0;
+    FIFO.pausing_cpu = FIFO.len > 255;
+    GXSTAT.cmd_fifo_len = FIFO.len > 255 ? 255 : FIFO.len;
+    GXSTAT.cmd_fifo_less_than_half_full = FIFO.len < 128;
+    GXSTAT.cmd_fifo_empty = FIFO.len == 0;
 
     if (GXSTAT.cmd_fifo_irq_mode) {
         u32 new_bit = NDS_GE_check_irq(this);
         if ((old_bit != new_bit) && new_bit)
             NDS_update_IF9(this, NDS_IRQ_GXFIFO);
     }
-}
 
-static void check_cpu_lock(struct NDS *this)
-{
-    this->ge.fifo.pausing_cpu = this->ge.fifo.len >= 256;
-}
-
-static u32 fifo_pop_full_cmd(struct NDS *this, u32 *cmd, u32 *data)
-{
-    if ((this->ge.pipe.len == 0) && (this->ge.fifo.len == 0)) {
-        // Failure! We're fully empty!
-        return 0;
-    }
-
-    u32 old_len = this->ge.fifo.len;
-
-    // Only complete commands are pushed, so we can easily grab them out!
-    if (this->ge.pipe.len > 0) {
-        *cmd = this->ge.pipe.items[this->ge.pipe.head].cmd;
-        data[0] = this->ge.pipe.items[this->ge.pipe.head].data;
-        this->ge.pipe.head = (this->ge.pipe.head + 1) & 3;
-        this->ge.pipe.len--;
-    }
-    else {
-        *cmd = this->ge.fifo.items[this->ge.fifo.head].cmd;
-        data[0] = this->ge.fifo.items[this->ge.fifo.head].data;
-        this->ge.fifo.head = (this->ge.fifo.head + 1) & 511;
-        this->ge.fifo.len--;
-    }
-
-    u32 num_params = tbl_num_params[*cmd];
-    u32 params_left = num_params ? num_params - 1 : 0;
-    u32 idx = 1;
-    while(params_left != 0) {
-        if (this->ge.pipe.len > 0) {
-            data[idx] = this->ge.pipe.items[this->ge.pipe.head].data;
-            this->ge.pipe.head = (this->ge.pipe.head + 1) & 3;
-            this->ge.pipe.len--;
-        }
-        else {
-            assert(this->ge.fifo.len > 0);
-            data[idx] = this->ge.fifo.items[this->ge.fifo.head].data;
-            this->ge.fifo.head = (this->ge.fifo.head + 1) & 511;
-            this->ge.fifo.len--;
-        }
-        params_left--;
-        idx++;
-    }
-
-    // Now refill the pipeline by popping from FIFO and pushing into pipe
-    while ((this->ge.pipe.len < 4) && (this->ge.fifo.len > 0)) {
-        this->ge.pipe.items[this->ge.pipe.tail].cmd = this->ge.fifo.items[this->ge.fifo.head].cmd;
-        this->ge.pipe.items[this->ge.pipe.tail].data = this->ge.fifo.items[this->ge.fifo.head].data;
-        this->ge.pipe.tail = (this->ge.pipe.tail + 1) & 3;
-        this->ge.fifo.head = (this->ge.fifo.head + 1) & 511;
-        this->ge.pipe.len++;
-        this->ge.fifo.len--;
-    }
-
-    set_GXSTAT_fifo(this);
-    check_cpu_lock(this);
-    if (this->ge.fifo.len < 112) {
+    if (!did_add && !from_dma && (FIFO.len < 128))
         NDS_trigger_dma9_if(this, NDS_DMA_GE_FIFO);
-    }
-
-    return 1;
-}
-
-static void fifo_push(struct NDS *this, u8 cmd, u32 data)
-{
-    // Determine to go to pipe or FIFO
-    // Push there
-    // Run DMA if FIFO less than half full
-    // Update bitflags
-    // Add to "FIFO done timing," reschedule event
-    if ((this->ge.fifo.len == 0) && (this->ge.pipe.len < 4)) {
-        this->ge.pipe.items[this->ge.pipe.tail].cmd = cmd;
-        this->ge.pipe.items[this->ge.pipe.tail].data = data;
-        this->ge.pipe.len++;
-        this->ge.pipe.tail = (this->ge.pipe.tail + 1) & 3;
-        return;
-    }
-
-    // OK add to actual FIFO
-    this->ge.fifo.items[this->ge.fifo.tail].cmd = cmd;
-    this->ge.fifo.items[this->ge.fifo.tail].data = data;
-    this->ge.fifo.len++;
-    this->ge.fifo.tail = (this->ge.fifo.tail + 1) & 511;
-
-    set_GXSTAT_fifo(this);
-    check_cpu_lock(this);
 }
 
 static i32 get_num_cycles(struct NDS *this, u32 cmd)
@@ -1688,71 +1604,6 @@ static void ge_handle_cmd(struct NDS *this)
     scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + num_cycles, cmd, this, &do_cmd, NULL);
 }
 
-void NDS_GE_FIFO_write2(struct NDS *this, u8 cmd, u32 val)
-{
-    struct NDS_GE *ge = &this->ge;
-    if (ge->io.fifo_in.pos == 0) {
-        NDS_GE_FIFO_write(this, cmd);
-    }
-    NDS_GE_FIFO_write(this, val);
-}
-
-void NDS_GE_FIFO_write(struct NDS *this, u32 val)
-{
-    struct NDS_GE *ge = &this->ge;
-    // Refactor this to be seperately in "waiting on FIFO CMD" and "waiting for params," current way is too confusing
-    u32 pos = ge->io.fifo_in.pos;
-    ge->io.fifo_in.buf[pos] = val;
-    ge->io.fifo_in.pos++;
-    assert(pos<160);
-    if (pos == 0) { // Parse command!
-        ge->io.fifo_in.num_cmds = 0;
-        u32 highest_cmd = 0;
-        for (u32 i = 0; i < 4; i++) {
-            ge->io.fifo_in.cmds[i] = val & 0xFF;
-            if (val & 0xFF) {
-                ge->io.fifo_in.num_cmds = i+1;
-            }
-            val >>= 8;
-        }
-        if (ge->io.fifo_in.num_cmds == 0) { // empty command...
-            ge->io.fifo_in.pos = 0;
-            return;
-        }
-
-        u32 total_params = 0;
-        u32 fifo_pos = 1;
-        for (u32 i = 0; i < ge->io.fifo_in.num_cmds; i++) {
-            u32 cmd = ge->io.fifo_in.cmds[i];
-            if (tbl_cmd_good[cmd]) {
-                ge->io.fifo_in.cmd_num_params[i] = tbl_num_params[cmd];
-                //if ((i == 0) && (ge->io.fifo_in.cmd_num_params[0] == 0)) ge->io.fifo_in.cmd_num_params[0] = 1;
-            }
-            total_params += ge->io.fifo_in.cmd_num_params[i];
-            ge->io.fifo_in.cmd_pos[i] = fifo_pos;
-            fifo_pos += total_params;
-        }
-        if (total_params == 0) total_params = 1;
-        //printf("\nTotal params: %d", total_params);
-        ge->io.fifo_in.total_len = total_params + 1;
-    }
-    if (ge->io.fifo_in.pos >= ge->io.fifo_in.total_len) {
-        //printf("\nCMD FINISH!");
-        // Commands finish. Now add them to the FIFO...
-        for (u32 i = 0; i < ge->io.fifo_in.num_cmds; i++) {
-            u32 first_param = ge->io.fifo_in.buf[ge->io.fifo_in.cmd_pos[i]];
-            fifo_push(this, ge->io.fifo_in.cmds[i], first_param);
-            if (ge->io.fifo_in.cmd_num_params[i] > 1) {
-                for (u32 j = 1; j < ge->io.fifo_in.cmd_num_params[i]; j++) {
-                    fifo_push(this, 0, ge->io.fifo_in.buf[ge->io.fifo_in.cmd_pos[i] + j]);
-                }
-            }
-            ge->io.fifo_in.pos = 0;
-        }
-    }
-    if (!GXSTAT.ge_busy) ge_handle_cmd(this);
-}
-
 u32 NDS_GE_check_irq(struct NDS *this)
 {
     switch(GXSTAT.cmd_fifo_irq_mode)
@@ -1812,12 +1663,102 @@ static void write_toon_table(struct NDS *this, u32 addr, u32 sz, u32 val)
     this->re.io.TOON_TABLE_b[addr] = ((val >> 10) & 0x1F) << 1;
 }
 
+static void fifo_push(struct NDS *this, u32 cmd, u32 val, u32 from_dma)
+{
+    struct NDS_GE_FIFO_entry *e = &FIFO.items[FIFO.head];
+    FIFO.head = (FIFO.head + 1) & 511;
+    FIFO.len++;
+
+    e->cmd = cmd;
+    e->data = val;
+}
+
+static void fifo_parse_cmd(struct NDS *this, u32 val, u32 from_dma) {
+    // parse 0-3 commands and how many args each has
+    // push them to cmd_queue
+    FIFO.cmd_queue.len = 0;
+    FIFO.cmd_queue.head = 0;
+    for (u32 i = 0; i < 4; i++) {
+        if (val & 0xFF) {
+            if (val != NDS_GE_CMD_END_VTXS)
+                FIFO.cmd_queue.items[FIFO.cmd_queue.len++].cmd = val & 0xFF;
+        }
+        val >>= 8;
+    }
+
+    if (FIFO.cmd_queue.len == 0) {
+        FIFO.waiting_for_cmd = 1;
+        return;
+    }
+
+    for (u32 i = 0; i < FIFO.cmd_queue.len; i++) {
+        u32 cmd = FIFO.cmd_queue.items[i].cmd;
+        assert(tbl_cmd_good[cmd]);
+        FIFO.cmd_queue.items[i].num_params_left = tbl_num_params[cmd];
+    }
+
+    FIFO.waiting_for_cmd = 0;
+    while(FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left == 0) {
+        fifo_push(this, FIFO.cmd_queue.items[FIFO.cmd_queue.head].cmd, 0, from_dma);
+        FIFO.cmd_queue.len--;
+        FIFO.cmd_queue.head++;
+        FIFO.total_complete_cmds++;
+    }
+
+    if (FIFO.cmd_queue.len == 0) {
+        FIFO.waiting_for_cmd = 1;
+        return;
+    }
+    FIFO.cur_cmd = FIFO.cmd_queue.items[FIFO.cmd_queue.head].cmd;
+}
+
+static void fifo_drain_cmd_queue(struct NDS *this, u32 from_dma)
+{
+    while(FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left == 0) {
+        FIFO.cmd_queue.head++;
+        FIFO.cmd_queue.len--;
+        if (FIFO.cmd_queue.len > 0) {// If there are items left...
+            FIFO.cur_cmd = FIFO.cmd_queue.items[FIFO.cmd_queue.head].cmd;
+            if (FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left == 0) {
+                fifo_push(this, FIFO.cur_cmd, 0, from_dma);
+            }
+        }
+        else {
+            // All parameters have been passed...
+            FIFO.waiting_for_cmd = 1;
+            return;
+        }
+    }
+}
+
+static void fifo_write_direct(struct NDS *this, u32 val, u32 from_dma)
+{
+    if (FIFO.waiting_for_cmd) {
+        fifo_parse_cmd(this, val, 0);
+    }
+    else {
+        // add parameters!
+        // if parameter # = 0, destroy and move to next cmd!
+        // if no cmd available, set wait for cmd to 1!
+        fifo_push(this, FIFO.cur_cmd, val, from_dma);
+        FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left--;
+        fifo_drain_cmd_queue(this, from_dma);
+    }
+
+    fifo_update_len(this, from_dma, 1);
+}
+
+static void fifo_write_from_addr(struct NDS *this, enum NDS_GE_cmds cmd, u32 val)
+{
+    if (FIFO.waiting_for_cmd) fifo_write_direct(this, cmd, 0);
+    fifo_write_direct(this, val, 0);
+}
 
 void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if ((addr >= R9_GXFIFO) && (addr < (R9_GXFIFO + 0x40))) {
         //printf("\nAddr %08x val %08x", addr, val);
-        NDS_GE_FIFO_write(this, val);
+        fifo_write_direct(this, val, 0);
         return;
     }
     switch(addr) {
@@ -1863,7 +1804,7 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
             return;
 
 
-#define gcmd(label) case R9_G_CMD_##label: NDS_GE_FIFO_write2(this, NDS_GE_CMD_##label, val); return
+#define gcmd(label) case R9_G_CMD_##label: fifo_write_from_addr(this, NDS_GE_CMD_##label, val); return
         gcmd(MTX_MODE);
         gcmd(MTX_PUSH);
         gcmd(MTX_POP);

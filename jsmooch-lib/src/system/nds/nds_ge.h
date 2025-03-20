@@ -277,6 +277,12 @@ struct NDS_RE {
     } out;
 };
 
+struct  NDS_GE_CMD_QUEUE_entry
+{
+    u32 cmd;
+    u32 num_params_left;
+};
+
 struct NDS_GE {
     struct NDS_GE_BUFFERS buffers[2];
     u32 enable;
@@ -290,15 +296,18 @@ struct NDS_GE {
         struct NDS_GE_FIFO_entry items[512]; // real FIFO is 256, but we want more for reasons.
         // If we go over 256 items, we'll lock the CPU until we're under 256
         u32 head, tail, len;
+        u32 total_complete_cmds; // +1 every time we finish a command, -1 every time we take one
         u32 pausing_cpu;
+
+        u32 waiting_for_cmd;
+        u32 cur_cmd;
+
+        struct  {
+            struct NDS_GE_CMD_QUEUE_entry items[4];
+            u32 head;
+            u32 len;
+        }cmd_queue;
     } fifo;
-    // when PIPE goes down to <3, data is pulled from FIFO
-    // when FIFO reaches <112, DMA starts if it is there to do 112 words
-    struct {
-        struct NDS_GE_FIFO_entry items[4];
-        u32 head, tail;
-        u32 len;
-    } pipe;
 
     struct {
         struct {
@@ -427,7 +436,6 @@ struct NDS_GE {
 struct NDS;
 void NDS_GE_init(struct NDS *);
 void NDS_GE_reset(struct NDS *);
-void NDS_GE_FIFO_write(struct NDS *, u32 val);
 u32 NDS_GE_check_irq(struct NDS *);
 void NDS_GE_write(struct NDS *, u32 addr, u32 sz, u32 val);
 u32 NDS_GE_read(struct NDS *, u32 addr, u32 sz);

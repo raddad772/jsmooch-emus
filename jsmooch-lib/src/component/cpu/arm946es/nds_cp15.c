@@ -255,6 +255,11 @@ void NDS_CP_write(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u3
         default:
             break;
     }
+    if ((opcode == 0) && (Cn==6) && (Cm == 7) && (CP==0)) {
+        // IGNORE!
+        // this'll never bite me in the butt!
+        return;
+    }
     printf("\nUNHANDLED CP.w:15 opcode:%d Cn:%d Cm:%d CP:%d val:%08x", opcode, Cn, Cm, CP, val);
 
 }
