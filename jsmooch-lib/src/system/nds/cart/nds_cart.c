@@ -275,7 +275,7 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
     }
 }
 
-static void handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
+static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
 {
     /*
   Set Chip Select LOW to invoke the command
@@ -294,13 +294,13 @@ static void handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
                 if (this->cart.RAM.data_in_pos == 3) {
                     this->cart.RAM.data_in.b8[3] = 0;
                     printf("\nADDR RECV: %04x", this->cart.RAM.data_in.u);
-                    this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & (this->cart.RAM.store->requested_size-1);
+                    this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & this->cart.RAM.detect.sz_mask;
                 }
             }
             else {
                 this->cart.RAM.data_out.b8[0] = this->cart.RAM.data_out.b8[1] =
                         cR8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr);
-                this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
+                this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & this->cart.RAM.detect.sz_mask;
             }
             return;
         case 0xA:
@@ -339,18 +339,34 @@ static void handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
     }
 }
 
-void NDS_cart_spi_transaction(struct NDS *this, u32 val)
+static void flash_spi_transaction(struct NDS *this, u32 val)
 {
-    printf("\nAUXSPIDATA WRITE.");
     u32 is_cmd = 0;
     if ((this->cart.io.spi.next_chipsel == 1) && (this->cart.RAM.chipsel == 0)) {
-        printf("\nNEW CMD %02x!", val);
         is_cmd = 1;
         this->cart.RAM.cmd = val;
         this->cart.RAM.data_in_pos = 0;
     }
-    handle_spi_cmd(this, val, is_cmd);
+    flash_handle_spi_cmd(this, val, is_cmd);
     this->cart.RAM.chipsel = this->cart.io.spi.next_chipsel;
+}
+
+void NDS_cart_spi_transaction(struct NDS *this, u32 val)
+{
+    switch(this->cart.RAM.detect.kind) {
+        case NDSBK_none:
+            printf("\nSPI transactions with no backup!?");
+            return;
+        case NDSBK_flash:
+            flash_spi_transaction(this, val);
+            return;
+        case NDSBK_eeprom:
+            printf("\nEEPROM not implement!");
+            return;
+        case NDSBK_fram:
+            printf("\nFRAM not implement!");
+            return;
+    }
 }
 
 void NDS_cart_write_romctrl(struct NDS *this, u32 val)
@@ -370,4 +386,51 @@ void NDS_cart_write_romctrl(struct NDS *this, u32 val)
 void NDS_cart_write_cmd(struct NDS *this, u32 addr, u32 val)
 {
     this->cart.cmd.data_in[addr] = val;
+}
+
+
+#define FS_SUBSYS 0xB
+void NDS_cart_detect_kind(struct NDS *this, u32 from, u32 val)
+{
+    // subsystem tag (bits 0-4) and the data portion (bits 6-31)
+    u32 subsystem = val & 0x1F;
+    u32 reset = 1;
+    if (subsystem == FS_SUBSYS) {
+        u32 data = val >> 6;
+        if ((this->cart.RAM.detect.pos == 0) && (from == 9) && (data == 0)) {
+            reset = 0;
+        }
+        else if ((this->cart.RAM.detect.pos < 3) && (from == 9) && (!this->cart.RAM.detect.done)) {
+            reset = 0;
+            this->cart.RAM.detect.arg_buf_addr = data;
+            u32 second_word = cR32(this->mem.RAM, (this->cart.RAM.detect.arg_buf_addr + 4) & 0x3FFFFF);
+            // bits 0-1 encode the savedata type (0=none, 1=EEPROM, 2=flash, 3=fram
+            // - never seen fram used), and
+            // bits 8-15 encode the backup size in a shift amount - i.e. the size in bytes is (1 << n)
+            u32 kind = second_word & 3;
+            u32 sz = 1 << ((second_word >> 8) & 0xFF);
+            printf("\nDETECT CART SAVE KIND:%d SZ:%d bytes", kind, sz);
+            this->cart.RAM.detect.kind = kind;
+            this->cart.RAM.detect.sz = sz;
+            this->cart.RAM.detect.sz_mask = sz - 1;
+            this->cart.RAM.detect.done = 1;
+        }
+        else if ((this->cart.RAM.detect.pos == 1) && (from == 7) && (data == 1)) {
+            reset = 0;
+        }
+        /*if ((this->cart.RAM.detect.pos == 3) && (from == 7) && (data == 1)) {
+            reset = 0;
+            printf("\nSTEP 4");
+        }
+        if ((this->cart.RAM.detect.pos == 4) && (from == 9)) {
+            printf("\nSTEP 5?");
+        }*/
+    }
+
+    if (reset) {
+        this->cart.RAM.detect.pos = 0;
+    }
+    else {
+        this->cart.RAM.detect.pos++;
+    }
 }

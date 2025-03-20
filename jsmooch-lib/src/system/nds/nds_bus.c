@@ -1666,7 +1666,11 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 }
                 // ARM9 writes to_arm7
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
-                if (this->io.ipc.arm9.fifo_enable) this->io.ipc.arm9.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm7, val);
+                if (this->io.ipc.arm9.fifo_enable) {
+                    this->io.ipc.arm9.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm7, val);
+                    if (!this->cart.RAM.detect.done) NDS_cart_detect_kind(this, 9, val);
+                }
+
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
                 if (!old_bits && new_bits) {
                     // Trigger ARM7 recv not empty
@@ -1722,7 +1726,6 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
             return NDS_cart_read_rom(this, addr, sz);
 
         case R_AUXSPIDATA:
-            printf("\nAUXSPIDATA READ!");
             return NDS_cart_read_spi(this, 0);
         case R_AUXSPIDATA+1:
             return NDS_cart_read_spi(this, 1);
@@ -1820,7 +1823,10 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 }
                 // ARM7 writes to_arm9
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
-                if (this->io.ipc.arm7.fifo_enable) this->io.ipc.arm7.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm9, val);
+                if (this->io.ipc.arm7.fifo_enable) {
+                    this->io.ipc.arm7.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm9, val);
+                    if (!this->cart.RAM.detect.done) NDS_cart_detect_kind(this, 7, val);
+                }
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (!old_bits && new_bits) {
                     // Trigger ARM9 recv not empty

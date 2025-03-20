@@ -39,6 +39,14 @@ enum NDS_after_next_busy {
     NDANB_after_read
 };
 
+
+enum NDS_BACKUP_KIND {
+    NDSBK_none=0,
+    NDSBK_eeprom=1,
+    NDSBK_flash=2,
+    NDSBK_fram
+};
+
 struct NDS_cart {
     u64 sch_id;
     u32 sch_sch;
@@ -116,6 +124,16 @@ struct NDS_cart {
             u8 u;
         } status;
         u32 chipsel;
+        struct {
+            u32 done;
+            u32 pos;
+            enum NDS_BACKUP_KIND kind;
+            u32 sz_mask;
+            u32 sz;
+            u32 arg_buf_addr;
+            u32 arg_buf_ptr;
+        } detect;
+
     } RAM;
 
     u64 spi_busy_until;
@@ -139,5 +157,6 @@ u32 NDS_cart_read_rom(struct NDS *, u32 addr, u32 sz);
 void NDS_cart_check_transfer(void *ptr, u64 key, u64 clock, u32 jitter);
 u32 NDS_cart_read_spicnt(struct NDS *);
 u32 NDS_cart_read_spi(struct NDS *, u32 bnum);
+void NDS_cart_detect_kind(struct NDS *, u32 from, u32 val);
 
 #endif //JSMOOCH_EMUS_NDS_CART_H
