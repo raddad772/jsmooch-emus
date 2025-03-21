@@ -33,6 +33,7 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 void NDS_cart_reset(struct NDS *this)
 {
     // TODO: this
+    this->cart.RAM.status.busy = 0;
 }
 
 void NDS_cart_direct_boot(struct NDS *this)
@@ -266,6 +267,7 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
                 break;
         }
         this->cart.io.spi.next_chipsel = (val >> 6) & 1;
+        //printf("\nNEXT CHIPSEL:%d", this->cart.io.spi.next_chipsel);
         if (!this->cart.io.spi.next_chipsel) this->cart.RAM.chipsel = 0;
     }
     else {
@@ -287,9 +289,11 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
                 if (this->cart.RAM.data_in_pos == 3) {
                     this->cart.RAM.data_in.b8[3] = 0;
                     this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & this->cart.RAM.detect.sz_mask;
+                    //printf("\nREAD DATA ADDR:%04x", this->cart.RAM.cmd_addr);
                 }
             }
             else {
+                //printf("\nREAD BYTE FROM %04x", this->cart.RAM.cmd_addr);
                 this->cart.RAM.data_out.b8[0] = this->cart.RAM.data_out.b8[1] =
                         cR8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr);
                 this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & this->cart.RAM.detect.sz_mask;
@@ -307,12 +311,14 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
                 this->cart.RAM.data_in_pos++;
 
                 if (this->cart.RAM.data_in_pos == 3) {
+                    //printf("\nWRITE DATA ADDR:%04x", this->cart.RAM.cmd_addr);
                     this->cart.RAM.data_in.b8[3] = 0;
                     this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & (this->cart.RAM.store->requested_size-1);
                 }
             }
             else {
-                if (this->cart.RAM.status.write_enable) cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
+                //printf("\nWRITE IF %d", this->cart.RAM.status.write_enable);
+                cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
                 this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
                 this->cart.RAM.data_in_pos++;
                 if (this->cart.RAM.data_in_pos > 258) {
@@ -329,6 +335,7 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
             this->cart.RAM.status.write_enable = 0;
             break;
         case 5:
+            //printf("\nRD STATUS REG!");
             this->cart.RAM.data_out.b8[0] = this->cart.RAM.status.u;
             this->cart.RAM.data_out.b8[1] = this->cart.RAM.status.u;
             this->cart.RAM.data_out.b8[2] = this->cart.RAM.status.u;
@@ -476,6 +483,7 @@ static void flash_spi_transaction(struct NDS *this, u32 val)
 {
     u32 is_cmd = 0;
     if ((this->cart.io.spi.next_chipsel == 1) && (this->cart.RAM.chipsel == 0)) {
+        //printf("\nChipsel, so new cmd: %02x", val);
         is_cmd = 1;
         this->cart.RAM.cmd = val;
         this->cart.RAM.data_in_pos = 0;
@@ -491,9 +499,11 @@ void NDS_cart_spi_transaction(struct NDS *this, u32 val)
             printf("\nSPI transactions with no backup!?");
             return;
         case NDSBK_flash:
+            //printf("\nflash transact: %02x", val);
             flash_spi_transaction(this, val);
             return;
         case NDSBK_eeprom:
+            //printf("\neeprom transact...");
             eeprom_spi_transaction(this, val);
             return;
         case NDSBK_fram:
