@@ -1251,12 +1251,6 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     u32 addr = b->polygon_index;
 
-    b->polygon_index++;
-    if (b->polygon_index >= 2048) {
-        this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 1;
-    }
-
-
     struct NDS_RE_POLY *out = &b->polygon[addr];
     out->sampler.filled_out = 0;
     out->attr.u = this->ge.params.poly.current.attr.u;
@@ -1265,6 +1259,36 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     // TODO: add all relavent attributes to structure here
 
     copy_vertex_list_into(&out->vertex_list, &VTX_LIST);
+    struct NDS_GE_VTX_list_node *v0 = out->vertex_list.first;
+    struct NDS_GE_VTX_list_node *v1 = v0->next;
+    struct NDS_GE_VTX_list_node *v2 = v1->next;
+
+    i64 normalX = ((s64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[3] - v1->data.xyzw[3]))
+                  - ((s64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[1] - v1->data.xyzw[1]));
+    i64 normalY = ((s64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[0] - v1->data.xyzw[0]))
+                  - ((s64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[3] - v1->data.xyzw[3]));
+    i64 normalZ = ((s64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[1] - v1->data.xyzw[1]))
+                  - ((s64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[0] - v1->data.xyzw[0]));
+
+    // shift until both zero or 1
+    while ((((normalX >> 31) ^ (normalX >> 63)) != 0) ||
+           (((normalY >> 31) ^ (normalY >> 63)) != 0) ||
+           (((normalZ >> 31) ^ (normalZ >> 63)) != 0)) {
+        normalX >>= 4;
+        normalY >>= 4;
+        normalZ >>= 4;
+    }
+
+    i64 dot = ((i64) v1->data.xyzw[0] * normalX) + ((i64) v1->data.xyzw[1] * normalY) +
+              ((i64) v1->data.xyzw[3] * normalZ);
+
+    out->front_facing = (dot <= 0);
+
+    if ((dot < 0) && (!out->attr.render_front)) {
+        return;
+    } else if ((dot > 0) && (!out->attr.render_back)) {
+        return;
+    }
 
     // Now clip...
     u32 needs_clipping = 0;
@@ -1281,7 +1305,6 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     }
     if (out->vertex_list.len < 3) {
         // Whole poly outside view...
-        b->polygon_index--;
         return;
     }
 
@@ -1289,14 +1312,12 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     // For any unprocessed vertices, add to polygorm RAM.
     if (out->vertex_list.len > 10) {
         printf("\nABORT FOR >10 VERTS IN A POLY?!");
-        b->polygon_index--;
         return;
     }
 
     finalize_verts_and_get_first_addr(this, out);
     normalize_w(this, out);
     if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
-        b->polygon_index--;
         return;
     }
 
@@ -1309,6 +1330,10 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
         return;
     }*/
 
+    b->polygon_index++;
+    if (b->polygon_index >= 2048) {
+        this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 1;
+    }
     //printf("\npoly %d sides:%d front_facing:%d", addr, out->num_vertices, out->front_facing);
     printfcd("\nOUTPUT POLY HAS %d SIDES", out->vertex_list.len);
 }
