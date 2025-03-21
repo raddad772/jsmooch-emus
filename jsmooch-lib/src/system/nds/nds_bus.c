@@ -88,7 +88,7 @@ static void buswr7_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     u32 bank = (addr >> 17) & 1;
     if (this->mem.vram.map.arm7[bank]) return cW[sz](this->mem.vram.map.arm7[bank], addr & 0x1FFFF, val);
 
-    printf("\nWarning write7 to unmapped VRAM:%08x sz:%d data:%08x", addr, sz, val);
+    //printf("\nWarning write7 to unmapped VRAM:%08x sz:%d data:%08x", addr, sz, val);
 }
 
 static u32 busrd7_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect)

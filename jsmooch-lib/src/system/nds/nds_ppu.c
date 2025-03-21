@@ -536,6 +536,26 @@ static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
     }
 }
 
+static void draw_bg_line_extended(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+{
+    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+    memset(bg->line, 0, sizeof(bg->line));
+    if (!bg->enable) { return; }
+
+    u32 bpp;
+    if (!bg->bpp8) bpp = 4;
+    else {
+        if ((bg->character_base_block >> 14) & 1) {
+            bpp = 16;
+        }
+        else {
+            bpp = 8;
+        }
+    }
+
+    printf("\nIMPLEMENT EXTENDED BG...");
+}
+
 static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
@@ -856,7 +876,12 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
-    draw_bg_line_normal(this, eng, 0);
+    if ((eng->num == 0) && (eng->io.do_3d)) {
+        draw_3d_line(this, eng, 0);
+    }
+    else {
+        draw_bg_line_normal(this, eng, 0);
+    }
     draw_bg_line_normal(this, eng, 1);
     draw_bg_line_affine(this, eng, 2);
     apply_mosaic(this, eng);
@@ -868,6 +893,51 @@ static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     for (u32 x = 0; x < 256; x++) {
         output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
     }
+}
+
+static void draw_line3(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+{
+    draw_obj_line(this, eng);
+    if ((eng->num == 0) && (eng->io.do_3d)) {
+        draw_3d_line(this, eng, 0);
+    }
+    else {
+        draw_bg_line_normal(this, eng, 0);
+    }
+    draw_bg_line_normal(this, eng, 1);
+    draw_bg_line_affine(this, eng, 2);
+    draw_bg_line_extended(this, eng, 3);
+    apply_mosaic(this, eng);
+
+    calculate_windows_vflags(this, eng);
+    u32 bg_enables[4] = {eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, 0};
+    //memset(eng->line_px, 0x50, sizeof(eng->line_px));
+    for (u32 x = 0; x < 256; x++) {
+        output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
+    }
+}
+
+static void draw_line5(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+{
+    draw_obj_line(this, eng);
+    if ((eng->num == 0) && (eng->io.do_3d)) {
+        draw_3d_line(this, eng, 0);
+    }
+    else {
+        draw_bg_line_normal(this, eng, 0);
+    }
+    draw_bg_line_normal(this, eng, 1);
+    draw_bg_line_extended(this, eng, 2);
+    draw_bg_line_extended(this, eng, 3);
+    apply_mosaic(this, eng);
+
+    calculate_windows_vflags(this, eng);
+    u32 bg_enables[4] = {eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, 0};
+    //memset(eng->line_px, 0x50, sizeof(eng->line_px));
+    for (u32 x = 0; x < 256; x++) {
+        output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
+    }
+
 }
 
 static void draw_line(struct NDS *this, u32 eng_num)

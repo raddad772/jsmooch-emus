@@ -142,7 +142,7 @@ union NDS_GE_POLY_ATTR {
         u32 light1_enable : 1;
         u32 light2_enable : 1;
         u32 light3_enable : 1;
-        enum NDS_GE_POLY_MODE mode : 2;
+        enum NDS_GE_POLY_MODE mode : 2; // 0 modulation, 1 decal, 2 toon/hightlight, 3 shadow
         u32 render_back : 1; // line segments are always rendered
         u32 render_front : 1;
         u32 _un1 : 3;
@@ -397,7 +397,7 @@ struct NDS_GE {
         struct {
             u32 color[3]; // 6-bit R, 6-bit G, 6-bit B
             i32 S, T;
-            i32 x,y,z,w;
+            i16 x,y,z,w;
 
             struct NDS_GE_VTX_list input_list;
         } vtx;

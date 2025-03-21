@@ -163,7 +163,7 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
         }
         if (total_found == 2) break;
     }
-    if (total_found < 2) printf("\nFAILED to find one of the edges!!");
+    //if (total_found < 2) printf("\nFAILED to find one of the edges!!");
 
     //for (u32 j = 0; j < 2; j++)
     //    printf("\nEdge %d vtx 0 %d %d RGB %04x", j, edges[j].v[0]->data.xyzw[0], edges[j].v[0]->data.xyzw[1], edges[j].v[0]->color);
@@ -375,6 +375,8 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
+        if (p->attr.mode > 1) continue;
+        if (p->attr.alpha < 30) continue;
         /*if (p->attr.alpha == 0) {
             printf("\nskip poly %d as hidden alpha", poly_num);
             continue;

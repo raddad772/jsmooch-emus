@@ -594,7 +594,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //NROM
             //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
 
             // MMC3
             //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
@@ -616,7 +616,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doraemon.nes", nullptr);
 
             //MMC1
-            //worked = grab_ROM(&ROMs, which, "zelda.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "zelda.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
@@ -713,15 +713,20 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/lesson06.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson06.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson10.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "libnds/lesson11.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "libnds/lesson11.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "libnds/256colorTilemap.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/simple_tri.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/touch_area.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            // NEXT: basic PPU mode 3, 5
+            // better FIFO
+            // NORMAL mode
+
             break;
         case SYS_PS1:
             //RenderPolygon16BPP
