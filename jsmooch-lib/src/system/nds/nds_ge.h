@@ -295,9 +295,11 @@ struct NDS_GE {
     struct {
         struct NDS_GE_FIFO_entry items[512]; // real FIFO is 256, but we want more for reasons.
         // If we go over 256 items, we'll lock the CPU until we're under 256
-        u32 head, tail, len;
+        u32 head, tail;
+        i32 len;
         u32 total_complete_cmds; // +1 every time we finish a command, -1 every time we take one
         u32 pausing_cpu;
+        u32 cmd_scheduled;
 
         u32 waiting_for_cmd;
         u32 cur_cmd;

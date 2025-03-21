@@ -708,7 +708,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/lesson03.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson04.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson05.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "libnds/lesson06.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "libnds/lesson06.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson07.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson06.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/lesson06.nds", nullptr);

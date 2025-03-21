@@ -11,6 +11,8 @@
 #include "nds_dma.h"
 #include "helpers/multisize_memaccess.c"
 
+#define printfifo(...) (void)0
+//#define printffifo(...) printf(__VA_ARGS__)
 #define printfcd(...) (void)0
 //#define printfcd(...) printf(__VA_ARGS__)
 
@@ -35,6 +37,8 @@ static void pprint_matrix(const char *n, i32 *s) {
         printfcd("\n%f %f %f %f", vtx_to_float(s[y+0]), vtx_to_float(s[y+1]), vtx_to_float((s[y+2])), vtx_to_float(s[y+3]));
     }
 }
+
+#define DATA this->ge.cur_cmd.data
 
 #define FIFO this->ge.fifo
 #define VTX_LIST this->ge.params.vtx.input_list
@@ -212,6 +216,7 @@ void NDS_GE_reset(struct NDS *this)
     vertex_list_init(&VTX_LIST);
     FIFO.head = FIFO.tail = FIFO.len = 0;
     FIFO.pausing_cpu = 0;
+    printfifo("\nWAITING CMD=1 (reset)");
     FIFO.waiting_for_cmd = 1;
 }
 
@@ -261,8 +266,6 @@ static i32 get_num_cycles(struct NDS *this, u32 cmd)
 }
 
 static void ge_handle_cmd(struct NDS *this);
-
-#define DATA this->ge.cur_cmd.data
 
 static void cmd_MTX_MODE(struct NDS *this)
 {
@@ -1295,7 +1298,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     }*/
 
     //printf("\npoly %d sides:%d front_facing:%d", addr, out->num_vertices, out->front_facing);
-    printfcd("\nOUTPUT POLY HAS %d SIDES", out->num_vertices);
+    printfcd("\nOUTPUT POLY HAS %d SIDES", out->vertex_list.len);
 }
 
 static void ingest_vertex(struct NDS *this, i32 x, i32 y, i32 z) {
@@ -1409,7 +1412,7 @@ static void cmd_VTX_10(struct NDS *this)
 
 static void cmd_SWAP_BUFFERS(struct NDS *this)
 {
-    printfcd("\n\n---------------------------\nSWAP_BUFFERS!");
+    printfcd("\n\n---------------------------\ncmd_SWAP_BUFFERS()");
     this->ge.io.swap_buffers = 1;
     this->ge.buffers[this->ge.ge_has_buffer].translucent_y_sorting_manual = DATA[0] & 1;
     this->ge.buffers[this->ge.ge_has_buffer].depth_buffering_w = (DATA[0] >> 1) & 1;
@@ -1516,15 +1519,12 @@ static void cmd_LIGHT_COLOR(struct NDS *this) {
     u32 light_num = DATA[0] >> 30;
     C15to18(DATA[0] & 0x7FFF, this->ge.lights.light[light_num].color);
 }
-#undef DATA
 
 static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
 {
     struct NDS *this = (struct NDS *)ptr;
-    GXSTAT.ge_busy = 0;
-
     // Handle command!
-    printfcd("\n");
+    printfcd("\ndo_cmd %02llx", cmd);
     switch(cmd) {
 #define dcmd(label) case NDS_GE_CMD_##label: cmd_##label(this); break
         dcmd(MTX_MODE);
@@ -1570,38 +1570,66 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
     ge_handle_cmd(this);
 }
 
+static u32 fifo_pop_full_cmd(struct NDS *this)
+{
+    if (!FIFO.total_complete_cmds) {
+        printfifo("\nFIFO POP FAIL NO CMDS!");
+        return 0;
+    }
+    FIFO.total_complete_cmds--;
+    struct NDS_GE_FIFO_entry *e = &FIFO.items[FIFO.head];
+    u32 cmd = e->cmd;
+    u32 num_params = tbl_num_params[cmd];
+    printfifo("\nPOP THE HEAD & FIRST PARAM (CMD:%02x) FROM HEAD %d", cmd, FIFO.head);
+    FIFO.head = (FIFO.head + 1) & 511;
+    FIFO.len--;
+    DATA[0] = e->data;
+    u32 dpos = 1;
+    for (u32 i = 1; i < num_params; i++) {
+        printfifo("\nPOP A PARAMETER...");
+        assert(FIFO.len>0);
+        e = &FIFO.items[FIFO.head];
+        DATA[dpos++] = e->data;
+        FIFO.head = (FIFO.head + 1) & 511;
+        FIFO.len--;
+    }
+    printfifo("\nFIFO POP RETURN %02x", cmd);
+    return cmd;
+}
+
 static void ge_handle_cmd(struct NDS *this)
 {
     // Pop a command!
     // Schedule it to be completed in N cycles!
-    if (this->ge.io.swap_buffers) {
-        //printfcd("\nSWAP BUFFERS PUSHEd, IGNORING FURTHER...");
-        //return; // GE is locked up!
-    }
-
-    u32 cmd = 0;
+    printfifo("\nGE_HANDLE_CMD!");
+    u32 cmd;
     // Drain the FIFO looking for a good command!
-    while(cmd == 0) {
-        u32 a = fifo_pop_full_cmd(this, &cmd, this->ge.cur_cmd.data);
-        if (!a) {
-            return;
-        }
-
-        // END_VTXs is NOOP
-        if (cmd == NDS_GE_CMD_END_VTXS) cmd = 0;
-
-        if (cmd != 0) {
-            assert(tbl_cmd_good[cmd]);
-        }
+    if (this->ge.io.swap_buffers) {
+        printfifo("\nWAITING ON SWAP_BUFFERS");
+        return;
+    }
+    GXSTAT.ge_busy = 0;
+    if (FIFO.total_complete_cmds == 0) {
+        printfifo("\nGE_HANDLE_CMD: NO COMPLETE CMDS!");
+        return;
     }
 
+    cmd = fifo_pop_full_cmd(this);
+    if (!cmd) {
+        printfifo("\nGE_HANDLE_CMD: FIFO POP FULL FAILED!?");
+        return;
+    }
+    printfifo("\nGE_HANDLE_CMD: HANDLE CMD %02x", cmd);
     GXSTAT.ge_busy = 1;
     i32 num_cycles = get_num_cycles(this, cmd);
     if (cmd == NDS_GE_CMD_SWAP_BUFFERS) {
         num_cycles = 1;
     }
 
-    scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + num_cycles, cmd, this, &do_cmd, NULL);
+    fifo_update_len(this, 0, 0);
+    assert(FIFO.cmd_scheduled == 0);
+    printfifo("\nSCHEDULING GE CMD %02x FOR %d CYCLES!", cmd, num_cycles);
+    scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + num_cycles, cmd, this, &do_cmd, &FIFO.cmd_scheduled);
 }
 
 u32 NDS_GE_check_irq(struct NDS *this)
@@ -1665,8 +1693,9 @@ static void write_toon_table(struct NDS *this, u32 addr, u32 sz, u32 val)
 
 static void fifo_push(struct NDS *this, u32 cmd, u32 val, u32 from_dma)
 {
-    struct NDS_GE_FIFO_entry *e = &FIFO.items[FIFO.head];
-    FIFO.head = (FIFO.head + 1) & 511;
+    printfifo("\nFIFO PUSH cmd:%02x val:%08x", cmd, val);
+    struct NDS_GE_FIFO_entry *e = &FIFO.items[FIFO.tail];
+    FIFO.tail = (FIFO.tail + 1) & 511;
     FIFO.len++;
 
     e->cmd = cmd;
@@ -1687,6 +1716,7 @@ static void fifo_parse_cmd(struct NDS *this, u32 val, u32 from_dma) {
     }
 
     if (FIFO.cmd_queue.len == 0) {
+        printfifo("\nWAITING FOR CMD=1 (cmd was NOPs)");
         FIFO.waiting_for_cmd = 1;
         return;
     }
@@ -1695,20 +1725,27 @@ static void fifo_parse_cmd(struct NDS *this, u32 val, u32 from_dma) {
         u32 cmd = FIFO.cmd_queue.items[i].cmd;
         assert(tbl_cmd_good[cmd]);
         FIFO.cmd_queue.items[i].num_params_left = tbl_num_params[cmd];
+        printfifo("\nCMD QUEUE %d cmd:%02x params:%d", i, cmd, FIFO.cmd_queue.items[i].num_params_left);
     }
 
-    FIFO.waiting_for_cmd = 0;
     while(FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left == 0) {
+        printfifo("\nCMD WITH 0 PARAMS EARLY PUSH....");
         fifo_push(this, FIFO.cmd_queue.items[FIFO.cmd_queue.head].cmd, 0, from_dma);
         FIFO.cmd_queue.len--;
         FIFO.cmd_queue.head++;
         FIFO.total_complete_cmds++;
+        if (!FIFO.cmd_queue.len) break;
     }
 
     if (FIFO.cmd_queue.len == 0) {
+        printfifo("\nWAITING FOR CMD=0 (all cmds pushed to FIFO)");
         FIFO.waiting_for_cmd = 1;
         return;
     }
+
+    printfifo("\nWAITING FOR CMD=0 (waiting for %d params)", FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left);
+    FIFO.waiting_for_cmd = 0;
+
     FIFO.cur_cmd = FIFO.cmd_queue.items[FIFO.cmd_queue.head].cmd;
 }
 
@@ -1717,7 +1754,8 @@ static void fifo_drain_cmd_queue(struct NDS *this, u32 from_dma)
     while(FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left == 0) {
         FIFO.cmd_queue.head++;
         FIFO.cmd_queue.len--;
-        if (FIFO.cmd_queue.len > 0) {// If there are items left...
+        FIFO.total_complete_cmds++;
+        if (FIFO.cmd_queue.len > 0) {// If there are commands left...
             FIFO.cur_cmd = FIFO.cmd_queue.items[FIFO.cmd_queue.head].cmd;
             if (FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left == 0) {
                 fifo_push(this, FIFO.cur_cmd, 0, from_dma);
@@ -1725,15 +1763,17 @@ static void fifo_drain_cmd_queue(struct NDS *this, u32 from_dma)
         }
         else {
             // All parameters have been passed...
+            printfifo("\nWAITING FOR CMD = 1 (all params passed, num cmds: %d)", FIFO.total_complete_cmds);
             FIFO.waiting_for_cmd = 1;
             return;
         }
     }
 }
 
-static void fifo_write_direct(struct NDS *this, u32 val, u32 from_dma)
+static void fifo_write_direct(struct NDS *this, u32 val, u32 from_dma, u32 from_addr)
 {
     if (FIFO.waiting_for_cmd) {
+        printfifo("\nPARSE CMD %02x", val);
         fifo_parse_cmd(this, val, 0);
     }
     else {
@@ -1742,23 +1782,27 @@ static void fifo_write_direct(struct NDS *this, u32 val, u32 from_dma)
         // if no cmd available, set wait for cmd to 1!
         fifo_push(this, FIFO.cur_cmd, val, from_dma);
         FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left--;
+        printfifo("\nPUSH PARAM %08x. NUM_LEFT: %d. FIFO_LEN:%d", val, FIFO.cmd_queue.items[FIFO.cmd_queue.head].num_params_left, FIFO.len);
         fifo_drain_cmd_queue(this, from_dma);
     }
 
     fifo_update_len(this, from_dma, 1);
+    if (!from_addr && !GXSTAT.ge_busy) ge_handle_cmd(this);
 }
 
 static void fifo_write_from_addr(struct NDS *this, enum NDS_GE_cmds cmd, u32 val)
 {
-    if (FIFO.waiting_for_cmd) fifo_write_direct(this, cmd, 0);
-    fifo_write_direct(this, val, 0);
+    printfifo("\nADDR_CMD cmd:%02x val:%08x waiting:%d", cmd, val, FIFO.waiting_for_cmd);
+    if (FIFO.waiting_for_cmd) fifo_write_direct(this, cmd, 0, 1);
+    fifo_write_direct(this, val, 0, 1);
+    if (!GXSTAT.ge_busy) ge_handle_cmd(this);
 }
 
 void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
     if ((addr >= R9_GXFIFO) && (addr < (R9_GXFIFO + 0x40))) {
         //printf("\nAddr %08x val %08x", addr, val);
-        fifo_write_direct(this, val, 0);
+        fifo_write_direct(this, val, 0, 0);
         return;
     }
     switch(addr) {
@@ -1922,14 +1966,15 @@ u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
 
 static void do_swap_buffers(void *ptr, u64 key, u64 current_clock, u32 jitter)
 {
+    printfifo("\n\ndo_swap_buffers()!!");
     struct NDS *this = (struct NDS *)ptr;
     this->ge.io.swap_buffers = 0;
-    // TODO: this!
     this->ge.ge_has_buffer ^= 1;
     this->ge.buffers[this->ge.ge_has_buffer].polygon_index = 0;
     this->ge.buffers[this->ge.ge_has_buffer].vertex_index = 0;
     this->re.io.DISP3DCNT.poly_vtx_ram_overflow = 0;
     NDS_RE_render_frame(this);
+    ge_handle_cmd(this);
 }
 
 void NDS_GE_vblank_up(struct NDS *this)
