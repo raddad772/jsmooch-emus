@@ -228,6 +228,9 @@ static void fifo_update_len(struct NDS *this, u32 from_dma, u32 did_add)
     }
 
     FIFO.pausing_cpu = FIFO.len > 255;
+    if (FIFO.pausing_cpu) {
+        printf("\nFIFO PAUSE CPU");
+    }
     GXSTAT.cmd_fifo_len = FIFO.len > 255 ? 255 : FIFO.len;
     GXSTAT.cmd_fifo_less_than_half_full = FIFO.len < 128;
     GXSTAT.cmd_fifo_empty = FIFO.len == 0;
@@ -266,6 +269,11 @@ static i32 get_num_cycles(struct NDS *this, u32 cmd)
 }
 
 static void ge_handle_cmd(struct NDS *this);
+
+static void cmd_END_VTXS(struct NDS *this)
+{
+
+}
 
 static void cmd_MTX_MODE(struct NDS *this)
 {
@@ -1528,6 +1536,7 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
     switch(cmd) {
 #define dcmd(label) case NDS_GE_CMD_##label: cmd_##label(this); break
         dcmd(MTX_MODE);
+        dcmd(END_VTXS);
         dcmd(MTX_PUSH);
         dcmd(MTX_POP);
         dcmd(MTX_STORE);
@@ -1709,8 +1718,7 @@ static void fifo_parse_cmd(struct NDS *this, u32 val, u32 from_dma) {
     FIFO.cmd_queue.head = 0;
     for (u32 i = 0; i < 4; i++) {
         if (val & 0xFF) {
-            if (val != NDS_GE_CMD_END_VTXS)
-                FIFO.cmd_queue.items[FIFO.cmd_queue.len++].cmd = val & 0xFF;
+            FIFO.cmd_queue.items[FIFO.cmd_queue.len++].cmd = val & 0xFF;
         }
         val >>= 8;
     }
