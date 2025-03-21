@@ -1409,9 +1409,9 @@ static void cmd_VTX_DIFF(struct NDS *this)
     xd <<= 6;
     yd <<= 6;
     zd <<= 6;
-    xd >>= 9;
-    yd >>= 9;
-    zd >>= 9;
+    xd >>= 6;
+    yd >>= 6;
+    zd >>= 6;
     this->ge.params.vtx.x += xd;
     this->ge.params.vtx.y += yd;
     this->ge.params.vtx.z += zd;
@@ -1529,9 +1529,9 @@ static void cmd_LIGHT_VECTOR(struct NDS *this)
 
 static void C15to18(u32 c, u32 *o)
 {
-    o[0] = (c & 0x1F) << 1;
-    o[1] = ((c >> 5) & 0x1F) << 1;
-    o[2] = ((c >> 10) & 0x1F) << 1;
+    o[0] = ((c & 0x1F) << 1) + 1;
+    o[1] = (((c >> 5) & 0x1F) << 1) + 1;
+    o[2] = (((c >> 10) & 0x1F) << 1) + 1;
 }
 
 static void cmd_DIF_AMB(struct NDS *this)

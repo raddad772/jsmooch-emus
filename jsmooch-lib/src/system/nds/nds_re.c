@@ -236,6 +236,11 @@ static float vtx_to_float(i32 v)
     return ((float)v) / 4096.0f;
 }
 
+static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+
+}
+
 static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->t_size) + s);
@@ -244,9 +249,9 @@ static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMP
     c &= 0x0F;
     c = NDS_VRAM_pal_read(this, ts->pltt_base + c, 2);
 
-    *r = (c & 0x1F) << 1;
-    *g = ((c >> 5) & 0x1F) << 1;
-    *b = ((c >> 10) & 0x1F) << 1;
+    *r = ((c & 0x1F) << 1) + 1;
+    *g = (((c >> 5) & 0x1F) << 1) + 1;
+    *b = (((c >> 10) & 0x1F) << 1) + 1;
     *a = ((c >> 15) & 1) * 63;
 }
 
@@ -260,9 +265,9 @@ static void sample_texture_palette_2bpp(struct NDS *this, struct NDS_RE_TEX_SAMP
     c &= 3;
     c = NDS_VRAM_pal_read(this, ts->pltt_base + c, 2);
 
-    *r = (c & 0x1F) << 1;
-    *g = ((c >> 5) & 0x1F) << 1;
-    *b = ((c >> 10) & 0x1F) << 1;
+    *r = ((c & 0x1F) << 1) + 1;
+    *g = (((c >> 5) & 0x1F) << 1) + 1;
+    *b = (((c >> 10) & 0x1F) << 1) + 1;
     *a = ((c >> 15) & 1) * 63;
 }
 
@@ -271,9 +276,9 @@ static void sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *t
 {
     // 16-bit read from VRAM @ ptr ((t * size) + s) * 2
     u32 c = NDS_VRAM_tex_read(this, (((t * ts->t_size) + s) << 1), 2) & 0x7FFF;
-    *r = (c & 0x1F) << 1;
-    *g = ((c >> 5) & 0x1F) << 1;
-    *b = ((c >> 10) & 0x1F) << 1;
+    *r = ((c & 0x1F) << 1) + 1;
+    *g = (((c >> 5) & 0x1F) << 1) + 1;
+    *b = (((c >> 10) & 0x1F) << 1) + 1;
     *a = ((c >> 15) & 1) * 63;
 }
 
@@ -346,6 +351,9 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
         case 3: // 4-bit palette!
             ts->sample = &sample_texture_palette_4bpp;
             break;
+        case 5:
+            ts->sample = &sample_texture_compressed;
+            break;
         case 7: // direct!
             ts->sample = &sample_texture_direct;
             //get_vram_info(this, ts);
@@ -374,6 +382,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
+        tex_enable = 0;
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
         if (p->attr.mode > 1) continue;
         if (p->attr.alpha < 30) continue;
@@ -446,7 +455,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                                 pix_r5 = (u32)(((tex_rf + 1) * (cr + 1) - 1)) >> 7;
                                 pix_g5 = (u32)(((tex_gf + 1) * (cg + 1) - 1)) >> 7;
                                 pix_b5 = (u32)(((tex_bf + 1) * (cb + 1) - 1)) >> 7;
-                                pix_a5 = (u32)(((tex_rf + 1) * (cr + 1) - 1)) >> 6;
+                                pix_a5 = (u32)(((tex_af + 1) * ((p->attr.alpha << 1) + 1) - 1)) >> 7;
                                 break;
                             case 1: // decal
                                 switch(tex_a6) {
