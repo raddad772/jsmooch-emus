@@ -224,6 +224,7 @@ struct NDS_RE_LINEBUFFER {
     u16 rgb_bottom[256];
     u16 alpha[256];
     u16 poly_id[256];
+    union NDS_GE_TEX_PARAM tex_param[256];
     i32 depth[256];
 };
 

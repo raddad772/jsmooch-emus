@@ -76,6 +76,7 @@ static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
         l->rgb_bottom[x] = this->re.io.CLEAR.COLOR;
         l->alpha[x] = this->re.io.CLEAR.alpha;
         l->depth[x] = INT32_MAX; //this->re.io.clear.depth;
+        l->tex_param[x].u = 0;
         //l->depth[x] = this->re.io.clear.depth;
     }
 }
@@ -358,8 +359,9 @@ static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLE
 static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
-    u32 c = NDS_VRAM_tex_read(this, ts->tex_addr+ (addr >> 1), 1) & 0xFF;
+    u32 c = NDS_VRAM_tex_read(this, ts->tex_addr + (addr >> 1), 1) & 0xFF;
     c >>= ((addr & 1) << 2);
+    c &= 0x0F;
     if ((ts->color0_is_transparent) && (c == 0)) {
         *a = 0;
         return;
@@ -661,6 +663,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                     }
                     if (pix_a5) {
                         line->rgb_top[x] = pix_r5 | (pix_g5 << 5) | (pix_b5 << 10);
+                        line->tex_param[x] = p->tex_param;
                         line->depth[x] = (u32) depth;
                     }
                 }

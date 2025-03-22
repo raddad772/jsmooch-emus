@@ -1222,6 +1222,40 @@ static void render_image_view_re_output(struct debugger_interface *dbgr, struct 
     }
 }
 
+static void render_image_view_re_attr(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (struct NDS *) ptr;
+    if (this->clock.master_frame == 0) return;
+
+    u32 tm_colors[8] = {
+            0xFF000000, // no texture
+            0xFFFF0000, // color 1, blue
+            0xFF0000FF, // color 2, red
+            0xFF00FF00, // color 3, green
+            0xFFFFFF00, // color 4, yellow
+            0xFFFF00FF, // color 5, purple
+            0xFF00FFFF, // color 6, teal
+            0xFFFFFFFF, // color 7, white
+    };
+    u32 color0 = 0xFF000000; // no tex
+    u32 color1 = 0xFFFF0000; // tex mode 1
+
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 192);
+    struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
+
+    for (u32 y = 0; y < 192; y++) {
+        struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        u32 *out_line = outbuf + (y * out_width);
+        for (u32 x = 0; x < 256; x++) {
+            union NDS_GE_TEX_PARAM tp = lbuf->tex_param[x];
+            out_line[x] = tm_colors[tp.format];
+        }
+    }
+}
+
+
 static void setup_cpu_trace(struct debugger_interface *dbgr, struct NDS *this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
@@ -1299,6 +1333,27 @@ static void setup_image_view_re_wireframe(struct NDS* this, struct debugger_inte
 
 }
 
+static void setup_image_view_re_attr(struct NDS* this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.re_wireframe);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 256;
+    iv->height = 192;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 192 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_re_attr;
+
+    snprintf(iv->label, sizeof(iv->label), "RE Attr View");
+}
+
+
 static void setup_image_view_re_output(struct NDS* this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
@@ -1333,6 +1388,7 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     setup_dbglog(dbgr, this);
     setup_image_view_re_output(this, dbgr);
     setup_image_view_re_wireframe(this, dbgr);
+    setup_image_view_re_attr(this, dbgr);
 }
 /*
     //setup_ARM7TDMI_disassembly(dbgr, this);
