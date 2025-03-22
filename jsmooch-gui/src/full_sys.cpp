@@ -718,7 +718,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/simple_tri.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/touch_area.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "3d_demos/libnds3d/3d_billboards.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "3d_demos/libnds3d/3d_ortho_projection.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "3d_demos/gl2d/gl2d_spriteset.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "3d_demos/nitro-engine/paletted_texture.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "3d_compressed_texture.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);

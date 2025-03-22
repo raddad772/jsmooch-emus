@@ -277,6 +277,23 @@ static void ct_blend5(u32 color, u32 balance, u32 *r, u32 *g, u32 *b, u32 *a)
     *a = 63;
 }
 
+static void sample_texture_a3i5(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    //Alpha=(Alpha*4)+(Alpha/2).
+    u8 sample = NDS_VRAM_tex_read(this, ts->tex_addr+((t*ts->s_size)+s), 1);
+    if (ts->color0_is_transparent && ((sample & 31) == 0)) {
+        *a = 0;
+        return;
+    }
+    u32 color = NDS_VRAM_pal_read(this, ts->pltt_base+((sample & 31) * 2), 2);
+    *r = ((color & 0x1F) << 1) + 1;
+    *g = (((color >> 5) & 0x1F) << 1) + 1;
+    *b = (((color >> 10) & 0x1F) << 1) + 1;
+    u32 ma = (sample >> 5) & 7;
+    ma = (ma << 2) + (ma << 1);
+    *a = (ma << 1) + 1;
+}
+
 static void sample_texture_a5i3(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     //Each Texel occupies 8bit, the 1st Texel is located in 1st byte.
@@ -284,6 +301,10 @@ static void sample_texture_a5i3(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts,
     //  Bit3-7: Alpha       (0..31; 0=Transparent, 31=Solid)
     // y*width bytes + x
     u8 sample = NDS_VRAM_tex_read(this, ts->tex_addr+((t*ts->s_size)+s), 1);
+    if (ts->color0_is_transparent && ((sample & 7) == 0)) {
+        *a = 0;
+        return;
+    }
     u32 color = NDS_VRAM_pal_read(this, ts->pltt_base+((sample & 7) * 2), 2);
     *r = ((color & 0x1F) << 1) + 1;
     *g = (((color >> 5) & 0x1F) << 1) + 1;
@@ -459,8 +480,12 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
             ts->sample = NULL;
             ts->tex_ptr = NULL;
             return;
+        case 1:
+            ts->sample = &sample_texture_a3i5;
+            break;
         /*case 2:
             ts->sample = &sample_texture_palette_2bpp;
+            break;
         case 3: // 4-bit palette!
             ts->sample = &sample_texture_palette_4bpp;
             break;*/
@@ -477,9 +502,9 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
         case 4:
             ts->sample = &sample_texture_palette_8bpp;
             break;
-        /*case 6:
+        case 6:
             ts->sample = &sample_texture_a5i3;
-            break;*/
+            break;
         case 7: // direct!
             ts->sample = &sample_texture_direct;
             //get_vram_info(this, ts);

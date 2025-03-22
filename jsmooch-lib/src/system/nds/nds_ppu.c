@@ -553,7 +553,11 @@ static void draw_bg_line_extended(struct NDS *this, struct NDSENG2D *eng, u32 bg
         }
     }
 
-    printf("\nIMPLEMENT EXTENDED BG...");
+    static int a = 1;
+    if (a) {
+        printf("\nWARN IMPLEMENT EXTENDED BG...");
+        a = 0;
+    }
 }
 
 static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
