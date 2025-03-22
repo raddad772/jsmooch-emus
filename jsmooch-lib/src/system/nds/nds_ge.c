@@ -1411,7 +1411,7 @@ static void ingest_vertex(struct NDS *this) {
         case NDS_GEM_QUAD_STRIP:
             if (VTX_LIST.len >= 4) {
                 ingest_poly(this, this->ge.winding_order);
-                this->ge.winding_order ^= 1;
+                //this->ge.winding_order ^= 1;
                 vertex_list_delete_first(&VTX_LIST);
                 vertex_list_delete_first(&VTX_LIST);
             }
