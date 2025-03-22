@@ -1387,9 +1387,6 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             ch->io.repeat = (val >> 1) & 1;
             ch->io.transfer_size = (val >> 2) & 1;
             ch->io.start_timing = (val >> 3) & 7;
-            if (ch->io.start_timing > 3) {
-                printf("\nwarn DMA9 Start timing:%d", ch->io.start_timing);
-            }
             ch->io.irq_on_end = (val >> 6) & 1;
 
             u32 old_enable = ch->io.enable;
@@ -1399,6 +1396,16 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 if (ch->io.start_timing == 0) {
                     NDS_dma9_start(this, ch, chnum);
                 }
+            }
+
+            if (ch->io.start_timing == NDS_DMA_GE_FIFO) {
+                ch->op.first_run = 1;
+                if (this->ge.fifo.len < 128) {
+                    NDS_dma9_start(this, ch, chnum);
+                }
+            }
+            else if (ch->io.start_timing > 3) {
+                printf("\nwarn DMA9 Start timing:%d", ch->io.start_timing);
             }
             return;}
 

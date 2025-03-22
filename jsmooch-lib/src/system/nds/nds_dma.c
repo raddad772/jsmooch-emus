@@ -206,7 +206,6 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
         ch->op.chunks = (ch->op.chunks - 1);
         if ((ch->io.start_timing == NDS_DMA_GE_FIFO) && (ch->op.chunks <= 0) && (ch->op.word_count != 0)) {
             ch->op.started = 0;
-            printf("\nPAUSE GE FIFO");
         }
         if (ch->op.word_count == 0) {
             ch->op.started = 0; // Disable
@@ -234,6 +233,30 @@ u32 NDS_dma9_go(struct NDS *this) {
 void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA9 %d start", i);
+    if (ch->io.start_timing == NDS_DMA_GE_FIFO) {
+        ch->op.started = 1;
+        if (ch->op.first_run) {
+            ch->op.first_run = 0;
+            u32 mask = ch->io.transfer_size ? ~3 : ~1;
+            mask &= 0x0FFFFFFF;
+            ch->op.dest_addr = ch->io.dest_addr & mask;
+            ch->op.src_addr = ch->io.src_addr & mask;
+            ch->op.word_count = ch->io.word_count;
+            ch->op.sz = 4;
+            ch->op.word_mask = 0x1FFFFF;
+        }
+        if (ch->op.word_count == 0) {
+            ch->op.started = 0;
+            printf("\nABT GE FIFO!");
+            return;
+        }
+        ch->op.dest_access = ARM9P_nonsequential | ARM9P_dma;
+        ch->op.src_access = ARM9P_nonsequential | ARM9P_dma;
+
+        ch->op.chunks = 112;
+        return;
+    }
+
     ch->op.started = 1;
     u32 mask = ch->io.transfer_size ? ~3 : ~1;
     mask &= 0x0FFFFFFF;
@@ -246,15 +269,6 @@ void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
     }
     ch->op.word_count = ch->io.word_count;
     ch->op.sz = ch->io.transfer_size ? 4 : 2;
-    if (ch->io.start_timing == NDS_DMA_GE_FIFO) {
-        if (ch->op.word_count == 0) {
-            ch->op.started = 0;
-            printf("\nABT GE FIFO!");
-            return;
-        }
-        printf("\nGE FIFO!");
-        ch->op.chunks = 112;
-    }
     if ((ch->io.start_timing == NDS_DMA_START_OF_DISPLAY) && this->clock.ppu.y == 194) {
         ch->io.enable = 0;
         return;
