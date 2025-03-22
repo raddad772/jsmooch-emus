@@ -1285,9 +1285,9 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     out->front_facing = (dot <= 0);
 
     if ((dot < 0) && (!out->attr.render_front)) {
-        return;
+        //return;
     } else if ((dot > 0) && (!out->attr.render_back)) {
-        return;
+        //return;
     }
 
     // Now clip...

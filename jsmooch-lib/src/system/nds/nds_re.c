@@ -217,6 +217,7 @@ static void interpolate_edge_to_vertex(struct NDS_RE_EDGE *e, struct NDS_RE_VERT
     v->yy = y;
     v->zz = NDS_RE_interpolate(&e->interp, e->v[0]->data.xyzw[2], e->v[1]->data.xyzw[2]);
     v->ww = NDS_RE_interpolate(&e->interp, e->v[0]->data.w_normalized, e->v[1]->data.w_normalized);
+    v->original_w = NDS_RE_interpolate(&e->interp, e->v[0]->data.xyzw[3], e->v[1]->data.xyzw[3]);
     v->color[0] = NDS_RE_interpolate(&e->interp, e->v[0]->data.color[0], e->v[1]->data.color[0]);
     v->color[1] = NDS_RE_interpolate(&e->interp, e->v[0]->data.color[1], e->v[1]->data.color[1]);
     v->color[2] = NDS_RE_interpolate(&e->interp, e->v[0]->data.color[2], e->v[1]->data.color[2]);
@@ -483,9 +484,9 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
         case 1:
             ts->sample = &sample_texture_a3i5;
             break;
-        /*case 2:
+        case 2:
             ts->sample = &sample_texture_palette_2bpp;
-            break;*/
+            break;
         case 3: // 4-bit palette!
             ts->sample = &sample_texture_palette_4bpp;
             break;
@@ -534,8 +535,8 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
-        if (p->attr.mode > 1) continue;
-        if (p->attr.alpha < 30) continue;
+        if (p->attr.mode > 2) continue;
+        //if (p->attr.alpha < 30) continue;
         /*if (p->attr.alpha == 0) {
             printf("\nskip poly %d as hidden alpha", poly_num);
             continue;
@@ -561,20 +562,27 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         struct NDS_RE_VERTEX *right = &lerped[1 ^ xorby];
         NDS_RE_interp_setup(&interp, 8, left->xx, right->xx, left->ww, right->ww);
 
+        i32 depth_l, depth_r;
+        if (b->depth_buffering_w) {
+            depth_l = left->original_w;
+            depth_r = right->original_w;
+        }
+        else {
+            depth_l = left->zz;
+            depth_r = right->zz;
+        }
+
+
         u32 rside = right->xx > 255 ? 255 : right->xx;
 
         for (u32 x = left->xx; x < rside; x++) {
             if (x < 256) {
                 NDS_RE_interp_set_x(&interp, x);
                 u32 comparison, depth;
-                if (b->depth_buffering_w)
-                    depth = NDS_RE_interpolate(&interp, left->ww, right->ww);
-                else
-                    depth = NDS_RE_interpolate(&interp, left->zz, right->zz);
+                depth = NDS_RE_interpolate(&interp, depth_l, depth_r);
 
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
-                comparison = 1;
                 if (comparison) {
                     u32 pix_r5, pix_g5, pix_b5, pix_a5;
                     float cr, cg, cb;

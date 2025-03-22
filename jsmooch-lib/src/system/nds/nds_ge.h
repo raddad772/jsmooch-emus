@@ -204,6 +204,8 @@ struct NDS_RE_VERTEX { // 24 bytes
     i32 uv[2];
     i32 color[3]; // RGB!
 
+    i32 original_w;
+
     i32 lr, lg, lb;
 };
 
