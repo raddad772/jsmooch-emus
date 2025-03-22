@@ -102,6 +102,21 @@ static void vertex_list_free_node(struct NDS_GE_VTX_list *p, struct NDS_GE_VTX_l
     n->next = n->prev = NULL;
 }
 
+static void vertex_list_swap_last_two(struct NDS_GE_VTX_list *l)
+{
+    struct NDS_GE_VTX_list_node *next_to_last = l->last->prev;
+    struct NDS_GE_VTX_list_node *last = l->last;
+    assert(l->first!=l->last);
+    assert(l->first!=next_to_last);
+    assert(l->last->next == NULL);
+    next_to_last->prev->next = last;
+    last->prev = next_to_last->prev;
+    last->next = next_to_last;
+    next_to_last->prev = last;
+    next_to_last->next = NULL;
+    l->last = next_to_last;
+}
+
 static void vertex_list_delete_first(struct NDS_GE_VTX_list *l)
 {
     if (l->len == 0) return;
@@ -111,10 +126,17 @@ static void vertex_list_delete_first(struct NDS_GE_VTX_list *l)
         l->len = 0;
         return;
     }
-    struct NDS_GE_VTX_list_node *n = l->last;
-    n->prev->next = NULL;
-    l->last = n->prev;
-    vertex_list_free_node(l, n);
+    if (l->len == 2) {
+        vertex_list_free_node(l, l->first);
+        l->first = l->last;
+        l->last->prev = NULL;
+        l->len--;
+        return;
+    }
+    struct NDS_GE_VTX_list_node *next = l->first->next;
+    next->prev = NULL;
+    vertex_list_free_node(l, l->first);
+    l->first = next;
     l->len--;
 }
 
@@ -1209,13 +1231,13 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     }*/
 
     determine_highest_vertex(poly, b);
-    u32 winding_order = determine_winding_order(poly, b);
-    poly->front_facing = winding_order == expected_winding_order;
+    //u32 winding_order = determine_winding_order(poly, b);
+    //poly->front_facing = winding_order == expected_winding_order;
 
-    poly->winding_order = winding_order;
+    //poly->winding_order = winding_order;
     poly->edge_r_bitfield = 0;
 
-    for (u32 i = 1; i <= poly->vertex_list.len; i++) {
+    /*for (u32 i = 1; i <= poly->vertex_list.len; i++) {
         v[0] = v[1];
         v[1] = v[0]->next;
         if (!v[1]) v[1] = poly->vertex_list.first;
@@ -1232,7 +1254,7 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
             if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
         }
         edgenum++;
-    }
+    }*/
 
     v[0] = v[1];
     v[1] = poly->vertex_list.first;
@@ -1259,6 +1281,10 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     // TODO: add all relavent attributes to structure here
 
     copy_vertex_list_into(&out->vertex_list, &VTX_LIST);
+    if (this->ge.params.vtx_strip.mode == NDS_GEM_QUAD_STRIP) {
+        vertex_list_swap_last_two(&out->vertex_list);
+    }
+
     struct NDS_GE_VTX_list_node *v0 = out->vertex_list.first;
     struct NDS_GE_VTX_list_node *v1 = v0->next;
     struct NDS_GE_VTX_list_node *v2 = v1->next;
@@ -1284,10 +1310,13 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
 
     out->front_facing = (dot <= 0);
 
-    if ((dot < 0) && (!out->attr.render_front)) {
-        //return;
-    } else if ((dot > 0) && (!out->attr.render_back)) {
-        //return;
+    u32 frontface = (dot < 0) ^ winding_order;
+    u32 backface = (dot > 0) ^ winding_order;
+
+    if (frontface && (!out->attr.render_front)) {
+        return;
+    } else if (backface && (!out->attr.render_back)) {
+        return;
     }
 
     // Now clip...
@@ -1357,6 +1386,7 @@ static void ingest_vertex(struct NDS *this) {
         case NDS_GEM_SEPERATE_TRIANGLES:
             if (VTX_LIST.len >= 3) {
                 printfcd("\nDO POLY SEPARATE TRI");
+                this->ge.winding_order = 0;
                 ingest_poly(this, CCW);
                 // clear the cache
                 vertex_list_init(&VTX_LIST);
@@ -1365,6 +1395,7 @@ static void ingest_vertex(struct NDS *this) {
         case NDS_GEM_SEPERATE_QUADS:
             if (VTX_LIST.len >= 4) {
                 printfcd("\nDO POLY SEPARATE QUAD");
+                this->ge.winding_order = 0;
                 ingest_poly(this, CCW);
                 vertex_list_init(&VTX_LIST);
             }
