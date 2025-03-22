@@ -357,8 +357,8 @@ static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLE
 static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
-    u32 c = NDS_VRAM_tex_read(this, addr >> 1, 1) & 0xFF;
-    if (addr & 1) c >>= 4;
+    u32 c = NDS_VRAM_tex_read(this, ts->tex_addr+ (addr >> 1), 1) & 0xFF;
+    c >>= ((addr & 1) << 2);
     if ((ts->color0_is_transparent) && (c == 0)) {
         *a = 0;
         return;
@@ -374,7 +374,7 @@ static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMP
 static void sample_texture_palette_2bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
-    u32 c = NDS_VRAM_tex_read(this, addr >> 2, 1) & 0xFF;
+    u32 c = NDS_VRAM_tex_read(this, ts->tex_addr + (addr >> 2), 1) & 0xFF;
     c = (c >> (2 * (addr & 3))) & 3;
     if ((ts->color0_is_transparent) && (c == 0)) {
         *a = 0;
@@ -391,7 +391,7 @@ static void sample_texture_palette_2bpp(struct NDS *this, struct NDS_RE_TEX_SAMP
 static void sample_texture_palette_8bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
-    u32 c = NDS_VRAM_tex_read(this, addr, 1) & 0xFF;
+    u32 c = NDS_VRAM_tex_read(this, ts->tex_addr+addr, 1) & 0xFF;
     if ((ts->color0_is_transparent) && (c == 0)) {
         *a = 0;
         return;
@@ -485,10 +485,10 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
             break;
         /*case 2:
             ts->sample = &sample_texture_palette_2bpp;
-            break;
+            break;*/
         case 3: // 4-bit palette!
             ts->sample = &sample_texture_palette_4bpp;
-            break;*/
+            break;
         case 5:
             ts->tex_slot = (ts->tex_addr >> 17);
             if (ts->tex_slot == 0) {
@@ -574,7 +574,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
-
+                comparison = 1;
                 if (comparison) {
                     u32 pix_r5, pix_g5, pix_b5, pix_a5;
                     float cr, cg, cb;
