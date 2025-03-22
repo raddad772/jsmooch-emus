@@ -236,46 +236,158 @@ static float vtx_to_float(i32 v)
     return ((float)v) / 4096.0f;
 }
 
+static void ct_basic_read(u32 color, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    *r = ((color & 0x1F) << 1) + 1;
+    *g = (((color >> 5) & 0x1F) << 1) + 1;
+    *b = (((color >> 10) & 0x1F) << 1) + 1;
+    //*a = ((color >> 15) & 1) * 63;
+    *a = 63;
+}
+
+static void ct_transparent(u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    *r = *b = *g = *a = 0;
+}
+
+static void ct_blend1(u32 color, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    u32 color0 = color & 0xFFFF;
+    u32 color1 = color >> 16;
+    *r = ((((color0 & 0x1F) << 1) + 1) + (((color1 & 0x1F) << 1) + 1)) >> 1;
+    *g = (((((color0 >> 5) & 0x1F) << 1) + 1) + ((((color1 >> 5) & 0x1F) << 1) + 1)) >> 1;
+    *b = (((((color0 >> 10) & 0x1F) << 1) + 1) + ((((color1 >> 10) & 0x1F) << 1) + 1)) >> 1;
+    //*a = (((color0 >> 15) * 63) + ((color1 >> 15) * 63)) >> 1;
+    *a = 63;
+}
+
+static void ct_blend5(u32 color, u32 balance, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    u32 color0 = color & 0xFFFF;
+    u32 color1 = color >> 16;
+    u32 mul0, mul1;
+    if (balance) mul0=3;
+    else mul0=5;
+    // (Color0*5+Color1*3)/8
+    mul1 = 8 - mul0;
+    *r = (((((color & 0x1F) << 1) + 1) * mul0) + ((((color1 & 0x1F) << 1) + 1) * mul1)) >> 3;
+    *g = ((((((color >> 5) & 0x1F) << 1) + 1) * mul0) + (((((color1 >> 5) & 0x1F) << 1) + 1) * mul1)) >> 3;
+    *b = ((((((color >> 10) & 0x1F) << 1) + 1) * mul0) + (((((color1 >> 10) & 0x1F) << 1) + 1) * mul1)) >> 3;
+    //*a = (((color0 >> 15) * 63 * mul0) + ((color1 >> 15) * 63 * mul1)) >> 1;
+    *a = 63;
+}
+
+static void sample_texture_a5i3(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    //Each Texel occupies 8bit, the 1st Texel is located in 1st byte.
+    //  Bit0-2: Color Index (0..7) of a 8-color Palette
+    //  Bit3-7: Alpha       (0..31; 0=Transparent, 31=Solid)
+    // y*width bytes + x
+    u8 sample = NDS_VRAM_tex_read(this, ts->tex_addr+((t*ts->s_size)+s), 1);
+    u32 color = NDS_VRAM_pal_read(this, ts->pltt_base+((sample & 7) * 2), 2);
+    *r = ((color & 0x1F) << 1) + 1;
+    *g = (((color >> 5) & 0x1F) << 1) + 1;
+    *b = (((color >> 10) & 0x1F) << 1) + 1;
+    *a = ((sample >> 3) << 1) + 1;
+}
+
 static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
+    u32 block_x = s >> 2;
+    u32 block_y = t >> 2;
+    u32 sample_addr = (block_y * ts->s_size) + (block_x * 4);
+
+    u16 slot1_word = NDS_VRAM_tex_read(this, ts->tex_slot1_addr + (sample_addr>>1), 2);
+    u32 sub_x = s & 3;
+    u32 sub_y = t & 3;
+    // each block_y adds width bytes.
+    // each block_x adds 4 bytes.
+    u32 sample = NDS_VRAM_tex_read(this, ts->tex_addr+sample_addr, 4);
+
+    u32 shift = (sub_y * 8) + (sub_x * 2);
+    u32 texel = (sample >> shift) & 3;
+    u32 pal_addr = ts->pltt_base + ((slot1_word & 0x3FFF) << 2);
+    switch((slot1_word >> 14) & 3) {
+        case 0: //
+            if (texel < 3) ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
+            else ct_transparent(r, g, b, a);
+            break;
+        case 1:
+            if (texel < 2) ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
+            else if (texel == 2)
+                ct_blend1(NDS_VRAM_pal_read(this, pal_addr, 4), r, g, b, a);
+            else
+                ct_transparent(r, g, b, a);
+            break;
+        case 2:
+            ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
+            break;
+        case 3:
+            if (texel < 2) ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
+            else {
+                if (texel == 2) ct_blend5(NDS_VRAM_pal_read(this, pal_addr, 4), 0, r, g, b, a);
+                else ct_blend5(NDS_VRAM_pal_read(this, pal_addr, 4), 1, r, g, b, a);
+            }
+            break;
+    }
 
 }
 
 static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
-    u32 addr = ((t * ts->t_size) + s);
+    u32 addr = ((t * ts->s_size) + s);
     u32 c = NDS_VRAM_tex_read(this, addr >> 1, 1) & 0xFF;
     if (addr & 1) c >>= 4;
-    c &= 0x0F;
-    c = NDS_VRAM_pal_read(this, ts->pltt_base + c, 2);
+    if ((ts->color0_is_transparent) && (c == 0)) {
+        *a = 0;
+        return;
+    }
+    c = NDS_VRAM_pal_read(this, ts->pltt_base + (c*2), 2);
 
     *r = ((c & 0x1F) << 1) + 1;
     *g = (((c >> 5) & 0x1F) << 1) + 1;
     *b = (((c >> 10) & 0x1F) << 1) + 1;
-    *a = ((c >> 15) & 1) * 63;
+    *a = 63;
 }
 
 static void sample_texture_palette_2bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
-    u32 addr = ((t * ts->t_size) + s);
+    u32 addr = ((t * ts->s_size) + s);
     u32 c = NDS_VRAM_tex_read(this, addr >> 2, 1) & 0xFF;
-    for (u32 i = 0; i < (addr & 3); i++) {
-        c >>= 2;
+    c = (c >> (2 * (addr & 3))) & 3;
+    if ((ts->color0_is_transparent) && (c == 0)) {
+        *a = 0;
+        return;
     }
-    c &= 3;
-    c = NDS_VRAM_pal_read(this, ts->pltt_base + c, 2);
+    c = NDS_VRAM_pal_read(this, ts->pltt_base + (c*2), 2);
 
     *r = ((c & 0x1F) << 1) + 1;
     *g = (((c >> 5) & 0x1F) << 1) + 1;
     *b = (((c >> 10) & 0x1F) << 1) + 1;
-    *a = ((c >> 15) & 1) * 63;
+    *a = 63;
+}
+
+static void sample_texture_palette_8bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
+{
+    u32 addr = ((t * ts->s_size) + s);
+    u32 c = NDS_VRAM_tex_read(this, addr, 1) & 0xFF;
+    if ((ts->color0_is_transparent) && (c == 0)) {
+        *a = 0;
+        return;
+    }
+    c = NDS_VRAM_pal_read(this, ts->pltt_base + (c*2), 2);
+
+    *r = ((c & 0x1F) << 1) + 1;
+    *g = (((c >> 5) & 0x1F) << 1) + 1;
+    *b = (((c >> 10) & 0x1F) << 1) + 1;
+    *a = 63;
 }
 
 
 static void sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     // 16-bit read from VRAM @ ptr ((t * size) + s) * 2
-    u32 c = NDS_VRAM_tex_read(this, (((t * ts->t_size) + s) << 1), 2) & 0x7FFF;
+    u32 c = NDS_VRAM_tex_read(this, ts->tex_addr+(((t * ts->s_size) + s) << 1), 2) & 0xFFFF;
     *r = ((c & 0x1F) << 1) + 1;
     *g = (((c >> 5) & 0x1F) << 1) + 1;
     *b = (((c >> 10) & 0x1F) << 1) + 1;
@@ -328,6 +440,7 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
     struct NDS_RE_TEX_SAMPLER *ts = &p->sampler;
     ts->s_size = 8 << p->tex_param.sz_s;
     ts->t_size = 8 << p->tex_param.sz_t;
+    ts->color0_is_transparent = p->tex_param.color0_is_transparent;
     ts->pltt_base = p->tex_param.format == 2 ? p->pltt_base << 3 : p->pltt_base << 4;
     ts->s_size_fp = (ts->s_size << 4);
     ts->t_size_fp = (ts->t_size << 4);
@@ -346,14 +459,27 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
             ts->sample = NULL;
             ts->tex_ptr = NULL;
             return;
-        case 2:
+        /*case 2:
             ts->sample = &sample_texture_palette_2bpp;
         case 3: // 4-bit palette!
             ts->sample = &sample_texture_palette_4bpp;
-            break;
+            break;*/
         case 5:
+            ts->tex_slot = (ts->tex_addr >> 17);
+            if (ts->tex_slot == 0) {
+                ts->tex_slot1_addr = (ts->tex_addr >> 1) + (128 * 1024);
+            }
+            else {
+                ts->tex_slot1_addr = ((ts->tex_addr & 0x1FFFF) >> 1) + (128 * 1024) + 0x10000;
+            }
             ts->sample = &sample_texture_compressed;
             break;
+        case 4:
+            ts->sample = &sample_texture_palette_8bpp;
+            break;
+        /*case 6:
+            ts->sample = &sample_texture_a5i3;
+            break;*/
         case 7: // direct!
             ts->sample = &sample_texture_direct;
             //get_vram_info(this, ts);
@@ -382,7 +508,6 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
         struct NDS_RE_POLY *p = &b->polygon[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
-        tex_enable = 0;
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
         if (p->attr.mode > 1) continue;
         if (p->attr.alpha < 30) continue;
@@ -405,6 +530,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         interpolate_edge_to_vertex(&edges[0], &lerped[0], line_num, tex_enable);
         interpolate_edge_to_vertex(&edges[1], &lerped[1], line_num, tex_enable);
 
+        u32 color0_is_transparent = p->tex_param.color0_is_transparent;
         u32 xorby = lerped[0].xx > lerped[1].xx ? 1 : 0;
         struct NDS_RE_VERTEX *left = &lerped[0 ^ xorby];
         struct NDS_RE_VERTEX *right = &lerped[1 ^ xorby];
@@ -483,12 +609,14 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                                 pix_r5 = 0x1F;
                                 pix_g5 = 0;
                                 pix_b5 = 0x1F;
+                                pix_a5 = 0x1F;
                                 break;
                             case 3: // shadow
                                 // TODO: this
                                 pix_r5 = 0x1F;
                                 pix_g5 = 0;
                                 pix_b5 = 0x1F;
+                                pix_a5 = 0x1F;
                                 break;
                         }
                     }
@@ -498,9 +626,10 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         pix_b5 = ((u32) cb) >> 1;
                         pix_a5 = p->attr.alpha;
                     }
-
-                    line->rgb_top[x] = pix_r5 | (pix_g5 << 5) | (pix_b5 << 10);
-                    line->depth[x] = (u32)depth;
+                    if (pix_a5) {
+                        line->rgb_top[x] = pix_r5 | (pix_g5 << 5) | (pix_b5 << 10);
+                        line->depth[x] = (u32) depth;
+                    }
                 }
             }
         }

@@ -163,6 +163,9 @@ struct NDS_RE_POLY;
 struct NDS_RE_TEX_SAMPLER {
     char *tex_ptr;
     u32 tex_addr;
+    u32 tex_slot;
+    u32 color0_is_transparent;
+    u32 tex_slot1_addr;
     u32 pltt_base;
     u32 s_size, t_size; // total size
     u32 s_max_fp, t_max_fp;

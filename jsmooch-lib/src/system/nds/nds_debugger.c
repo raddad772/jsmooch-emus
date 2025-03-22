@@ -1180,6 +1180,7 @@ static void render_image_view_re_wireframe(struct debugger_interface *dbgr, stru
 
     for (u32 i = 0; i < b->polygon_index; i++) {
         struct NDS_RE_POLY *p = &b->polygon[i];
+        if (p->attr.mode > 2) continue;
         struct NDS_GE_VTX_list_node *v0, *v1;
         v1 = p->vertex_list.first;
         for (u32 vn = 1; vn < p->vertex_list.len+1; vn++) {

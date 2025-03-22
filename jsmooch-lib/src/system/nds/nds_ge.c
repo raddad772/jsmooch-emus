@@ -1142,7 +1142,7 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
             }
             node->data.vram_ptr = commit_vertex(this, node, scrX, scrY, node->data.xyzw[2], node->data.xyzw[3] & 0xFFFFFF, node->data.uv, node->data.color[0], node->data.color[1], node->data.color[2]);
         }
-        //printf("\nVert num %d: %d %d", num, node->data.xyzw[0], node->data.xyzw[1]);
+        //printf("\nVert num %d: %d %d, s:%d/%f t:%d/%f", num++, node->data.xyzw[0], node->data.xyzw[1], node->data.uv[0], uv_to_float(node->data.uv[0]), node->data.uv[1], uv_to_float(node->data.uv[1]));
         node = node->next;
     }
 }
