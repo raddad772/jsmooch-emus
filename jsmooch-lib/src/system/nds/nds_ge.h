@@ -187,6 +187,7 @@ struct NDS_RE_POLY  { // no more __attribute__((packed))
     u32 pltt_base;
     u32 w_normalization_left;
     u32 w_normalization_right;
+    u32 vertex_mode;
     struct NDS_GE_VTX_list vertex_list;
     u32 front_facing;
     u32 winding_order;
@@ -219,11 +220,19 @@ struct NDS_GE_BUFFERS {
     u32 depth_buffering_w;
 };
 
+union NDS_RE_EXTRA_ATTR {
+    struct {
+        u32 vertex_mode;
+        u32 has_px;
+    };
+    u32 u;
+};
 struct NDS_RE_LINEBUFFER {
     u16 rgb_top[256];
     u16 rgb_bottom[256];
     u16 alpha[256];
     u16 poly_id[256];
+    union NDS_RE_EXTRA_ATTR extra_attr[256];
     union NDS_GE_TEX_PARAM tex_param[256];
     i32 depth[256];
 };

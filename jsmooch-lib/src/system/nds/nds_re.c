@@ -75,6 +75,7 @@ static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
         l->rgb_top[x] = this->re.io.CLEAR.COLOR;
         l->rgb_bottom[x] = this->re.io.CLEAR.COLOR;
         l->alpha[x] = this->re.io.CLEAR.alpha;
+        l->extra_attr[x].u = 0;
         l->depth[x] = INT32_MAX; //this->re.io.clear.depth;
         l->tex_param[x].u = 0;
         //l->depth[x] = this->re.io.clear.depth;
@@ -664,6 +665,8 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                     if (pix_a5) {
                         line->rgb_top[x] = pix_r5 | (pix_g5 << 5) | (pix_b5 << 10);
                         line->tex_param[x] = p->tex_param;
+                        line->extra_attr[x].vertex_mode = p->vertex_mode+1;
+                        line->extra_attr[x].has_px = 1;
                         line->depth[x] = (u32) depth;
                     }
                 }

@@ -1225,19 +1225,28 @@ static void render_image_view_re_output(struct debugger_interface *dbgr, struct 
 static void render_image_view_re_attr(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct NDS *this = (struct NDS *) ptr;
     if (this->clock.master_frame == 0) return;
+    struct debugger_widget_radiogroup *attr_kind = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
 
     u32 tm_colors[8] = {
             0xFF000000, // no texture
-            0xFFFF0000, // color 1, blue
-            0xFF0000FF, // color 2, red
-            0xFF00FF00, // color 3, green
-            0xFFFFFF00, // color 4, yellow
+            0xFFFF0000, // color 1, blue. single tri
+            0xFF0000FF, // color 2, red. single quad
+            0xFF00FF00, // color 3, green. triangle strip
+            0xFFFFFF00, // color 4, teal. quad strip
             0xFFFF00FF, // color 5, purple
-            0xFF00FFFF, // color 6, teal
+            0xFF00FFFF, // color 6, yellow
             0xFFFFFFFF, // color 7, white
     };
-    u32 color0 = 0xFF000000; // no tex
-    u32 color1 = 0xFFFF0000; // tex mode 1
+    u32 tm_colors_0noblack[8] = {
+            0xFFFFFFFF, // color 0, white
+            0xFFFF0000, // color 1, blue. single triangle
+            0xFF0000FF, // color 2, red. single quad
+            0xFF00FF00, // color 3, green. triangle strip
+            0xFFFFFF00, // color 4, teal. quad strip
+            0xFFFF00FF, // color 5, purple
+            0xFF00FFFF, // color 6, yellow
+            0xFF608060, // color 7, greyish
+    };
 
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -1249,8 +1258,21 @@ static void render_image_view_re_attr(struct debugger_interface *dbgr, struct de
         struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         for (u32 x = 0; x < 256; x++) {
-            union NDS_GE_TEX_PARAM tp = lbuf->tex_param[x];
-            out_line[x] = tm_colors[tp.format];
+            switch(attr_kind->value) {
+                case 0: {
+                    union NDS_GE_TEX_PARAM tp = lbuf->tex_param[x];
+                    out_line[x] = tm_colors[tp.format];
+                    break; }
+                case 1: {
+                    union NDS_RE_EXTRA_ATTR ea = lbuf->extra_attr[x];
+                    if (ea.has_px)
+                        out_line[x] = tm_colors[ea.vertex_mode];
+                    break;
+                }
+                default:
+                    NOGOHERE;
+
+            }
         }
     }
 }
@@ -1351,6 +1373,12 @@ static void setup_image_view_re_attr(struct NDS* this, struct debugger_interface
     iv->update_func.func = &render_image_view_re_attr;
 
     snprintf(iv->label, sizeof(iv->label), "RE Attr View");
+
+    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Attr. to show", 1, 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Texture Mode", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Vertex Mode", 1, 1);
+    //debugger_widget_radiogroup_add_button(rg, "Outside", 2, 1);
+
 }
 
 
