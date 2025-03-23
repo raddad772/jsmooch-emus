@@ -1021,10 +1021,10 @@ static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out)
 
     u32 far_plane_intersecting = clip_against_plane(this, 2, COMPARE_GT, &out->vertex_list, &tmp);
 
-    /*    if(!m_polygon_attributes.render_far_plane_intersecting && far_plane_intersecting) {
-        // @todo: test if this is actually working as intended!
-        return {};
-    }*/
+    if(!out->attr.render_if_intersect_far_plane && far_plane_intersecting) {
+        vertex_list_init(&out->vertex_list);
+        return;
+    }
     vertex_list_init(&out->vertex_list);
     clip_against_plane(this, 2, COMPARE_LT, &tmp, &out->vertex_list);
     vertex_list_init(&tmp);
@@ -1231,8 +1231,6 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     }*/
 
     determine_highest_vertex(poly, b);
-    //u32 winding_order = determine_winding_order(poly, b);
-    //poly->front_facing = winding_order == expected_winding_order;
 
     //poly->winding_order = winding_order;
     poly->edge_r_bitfield = 0;
@@ -1266,6 +1264,21 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     else {
         // top to bottom means right edge on CW
         if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
+    }
+}
+
+static void list_reverse(struct NDS_GE_VTX_list *l)
+{
+    struct NDS_GE_VTX_list_node *node = l->first;
+    l->first= l->last;
+    l->last = node;
+    while(node) {
+        struct NDS_GE_VTX_list_node *t = node->next;
+
+        node->next = node->prev;
+        node->prev = t;
+
+        node = t;
     }
 }
 
@@ -1410,8 +1423,8 @@ static void ingest_vertex(struct NDS *this) {
             break;
         case NDS_GEM_QUAD_STRIP:
             if (VTX_LIST.len >= 4) {
+                this->ge.winding_order = 0;
                 ingest_poly(this, this->ge.winding_order);
-                //this->ge.winding_order ^= 1;
                 vertex_list_delete_first(&VTX_LIST);
                 vertex_list_delete_first(&VTX_LIST);
             }

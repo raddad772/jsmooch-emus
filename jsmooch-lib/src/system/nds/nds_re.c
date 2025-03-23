@@ -427,19 +427,26 @@ static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, i32 *s, i32 *t)
     // Round to nearest!
     ms += 8;
     mt += 8;
-    if (ts->s_repeat)
+    u32 t_eo=0, s_eo=0;
+    if (ts->s_repeat) {
+        s_eo = (ms / ts->s_size_fp) & 1;
         ms &= ts->s_fp_mask;
+    }
     else {
         if (ms < 0) ms = 0;
         if (ms > ts->s_fp_mask) ms = ts->s_fp_mask;
     }
+    if (ts->s_flip && s_eo) ms = ts->s_fp_mask - ms;
 
-    if (ts->t_repeat)
+    if (ts->t_repeat) {
+        t_eo = (mt / ts->t_size_fp) & 1;
         mt &= ts->t_fp_mask;
+    }
     else {
         if (mt < 0) mt = 0;
         if (mt > ts->t_fp_mask) mt = ts->t_fp_mask;
     }
+    if (ts->t_flip && t_eo) mt = ts->t_fp_mask - mt;
 
     //printf("\nS SIZE:%d T SIZE:%d", ts->s_size_fp, ts->t_size_fp);
     // clamped = repeat 000?
