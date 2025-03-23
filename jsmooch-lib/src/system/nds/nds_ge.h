@@ -440,6 +440,7 @@ struct NDS_GE {
             u32 ambient[3];
             u32 specular_reflection[3];
             u32 specular_emission[3];
+            i32 spectral_reciprocal[3];
         } material_color;
     }lights;
 

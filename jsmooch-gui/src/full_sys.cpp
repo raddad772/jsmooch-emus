@@ -643,7 +643,7 @@ void full_system::load_default_ROM()
             break;
         case SYS_SMS1:
         case SYS_SMS2:
-            //worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
+            worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             worked = grab_ROM(&ROMs, which, "space_harrier.sms", nullptr);
             break;
         case SYS_GG:
@@ -727,6 +727,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
             worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "recruit.nds", nullptr);
             // NEXT: basic PPU mode 3, 5
             // better FIFO
             // NORMAL mode
@@ -1509,5 +1512,5 @@ void full_system::setup_tracing()
     dbg.traces.ps1.sio0.rw = 0;
     dbg.traces.ps1.sio0.ack = 0;
     dbg.traces.ps1.pad = 0;
-    dbg_enable_trace();
+    //dbg_enable_trace();
 }
