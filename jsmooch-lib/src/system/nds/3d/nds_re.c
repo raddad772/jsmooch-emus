@@ -98,14 +98,6 @@ struct NDS_RE_EDGE {
 void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, struct NDS_RE_POLY *p, u32 comp_y, struct NDS_RE_EDGE *edges)
 {
     struct NDS_GE_VTX_list_node *first_vertex = p->highest_vertex;
-    /*printf("\nHIGHEST VERTEX %d: %d, %d", p->highest_vertex, first_vertex->data.xyzw[0], first_vertex->data.xyzw[1]);
-    printf("\nAll vertices of polygon:");
-    for (u32 i = 0; i < p->num_vertices; i++) {
-        struct NDS_RE_VERTEX *yv = &b->vertex[p->first_vertex_ptr+i];
-        printf("\n%d: %d %d", i, yv->data.xyzw[0], yv->data.xyzw[1]);
-    }
-    printf("\n...");*/
-
     edges[0].v[1] = first_vertex;
     edges[0].dir = -1;
 
@@ -114,7 +106,7 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
     edges[0].found = edges[1].found = 0;
     u32 total_found = 0;
 
-    for (u32 i = 0; i < (p->vertex_list.len + 1); i++) {
+    for (u32 i = 0; i < p->vertex_list.len; i++) {
         for (i32 j = 0; j < 2; j++) {
             if (edges[j].found) continue;
             edges[j].v[0] = edges[j].v[1];
@@ -137,10 +129,12 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
             // Check if edge intersects scanline
             i32 min_y = edges[j].v[0]->data.xyzw[1];
             i32 max_y = edges[j].v[1]->data.xyzw[1];
+            u32 swapped = 0;
             if (max_y < min_y) {
                 i32 t = min_y;
                 min_y = max_y;
                 max_y = t;
+                swapped = 1;
             }
 
             if ((min_y > comp_y) || (max_y < comp_y)) {
@@ -155,20 +149,15 @@ void find_closest_points_marked(struct NDS *this, struct NDS_GE_BUFFERS *b, stru
             //if (j == 0)
                 //printf("\nFound edge %d: %d,%d to %d,%d", j, edges[j].v[0]->data.xyzw[0], edges[j].v[0]->data.xyzw[1], edges[j].v[1]->data.xyzw[0], edges[j].v[1]->data.xyzw[1]);
             total_found++;
-            if (min_y > max_y) {
+            if (swapped) {
                 struct NDS_GE_VTX_list_node *t = edges[j].v[0];
                 edges[j].v[0] = edges[j].v[1];
                 edges[j].v[1] = t;
-
             }
             edges[j].found = 1;
         }
         if (total_found == 2) break;
     }
-    //if (total_found < 2) printf("\nFAILED to find one of the edges!!");
-
-    //for (u32 j = 0; j < 2; j++)
-    //    printf("\nEdge %d vtx 0 %d %d RGB %04x", j, edges[j].v[0]->data.xyzw[0], edges[j].v[0]->data.xyzw[1], edges[j].v[0]->color);
 }
 
 static void NDS_RE_interp_set_x(struct NDS_RE_interp *this, i32 x)
@@ -596,13 +585,13 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                 if (comparison) {
                     u32 pix_r5, pix_g5, pix_b5, pix_a5;
                     float cr, cg, cb;
-                    cr = NDS_RE_interpolate(&interp, left->color[0], right->color[0]);
+                    cr = NDS_RE_interpolate(&interp, left->color[0], right->color[0]) >> 11;
                     if (cr < 0) cr = 0;
                     if (cr > 63) cr = 63;
-                    cg = NDS_RE_interpolate(&interp, left->color[1], right->color[1]);
+                    cg = NDS_RE_interpolate(&interp, left->color[1], right->color[1]) >> 11;
                     if (cg < 0) cg = 0;
                     if (cg > 63) cg = 63;
-                    cb = NDS_RE_interpolate(&interp, left->color[2], right->color[2]);
+                    cb = NDS_RE_interpolate(&interp, left->color[2], right->color[2]) >> 11;
                     if (cb < 0) cb = 0;
                     if (cb > 63) cb = 63;
                     if (tex_enable && p->sampler.sample) {

@@ -698,17 +698,17 @@ static void cmd_TEXCOORD(struct NDS *this)
 #define CCW 0
 #define CW 1
 
-static inline u32 C5to6(u32 c) {
-    return c ? ((c << 1) + 1) : 0;
+static inline u32 C5to18(u32 c) {
+    return c ? ((c << 12) + 0xFFF) : 0;
 }
 
 static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_list_node *node)
 {
     if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
     node->data.processed = 0;
-    node->data.color[0] = C5to6(this->ge.params.vtx.color[0]);
-    node->data.color[1] = C5to6(this->ge.params.vtx.color[1]);
-    node->data.color[2] = C5to6(this->ge.params.vtx.color[2]);
+    node->data.color[0] = C5to18(this->ge.params.vtx.color[0]);
+    node->data.color[1] = C5to18(this->ge.params.vtx.color[1]);
+    node->data.color[2] = C5to18(this->ge.params.vtx.color[2]);
     node->data.processed = 0;
 
     i64 tmp[4] = {(i64)this->ge.params.vtx.x, (i64)this->ge.params.vtx.y, (i64)this->ge.params.vtx.z, 1 << 12};
@@ -787,32 +787,104 @@ static u32 clip_against_plane(struct NDS *this, i32 axis, u32 is_compare_GT, str
     return clipped;
 }
 
-static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out)
+
+static void vertex_list_add_copy(struct NDS_GE_VTX_list *l, struct NDS_GE_VTX_list_node *src)
 {
-    static struct NDS_GE_VTX_list tmp;
-    vertex_list_init(&tmp);
+    struct NDS_GE_VTX_list_node *dest = vertex_list_add_to_end(l, 0);
+    memcpy(&dest->data, &src->data, sizeof(dest->data));
+}
 
-#define COMPARE_GT 1
-#define COMPARE_LT 0
+static void clip_segment(struct NDS *this, u32 comp, i32 plane, u32 attribs, struct NDS_GE_VTX_list *outlist, struct NDS_GE_VTX_list_node *vin, struct NDS_GE_VTX_list_node *vout)
+{
+    i64 factor_num = vin->data.xyzw[3] - (plane*vin->data.xyzw[comp]);
+    i32 factor_den = factor_num - (vout->data.xyzw[3] - (plane*vout->data.xyzw[comp]));
+    struct NDS_GE_VTX_list_node *outbuf = vertex_list_add_to_end(outlist, 0);
 
-    u32 far_plane_intersecting = clip_against_plane(this, 2, COMPARE_GT, &out->vertex_list, &tmp);
+#define INTERPOLATE(val)  { outbuf->data.val = (vin->data.val + ((vout->data.val - vin->data.val) * factor_num) / factor_den); }
 
-    if(!out->attr.render_if_intersect_far_plane && far_plane_intersecting) {
-        vertex_list_init(&out->vertex_list);
-        return;
+    if (comp != 0) INTERPOLATE(xyzw[0]);
+    if (comp != 1) INTERPOLATE(xyzw[1]);
+    if (comp != 2) INTERPOLATE(xyzw[2]);
+    INTERPOLATE(xyzw[3]);
+    outbuf->data.xyzw[comp] = plane*outbuf->data.xyzw[3];
+
+    if (attribs)
+    {
+        INTERPOLATE(color[0]);
+        INTERPOLATE(color[1]);
+        INTERPOLATE(color[2]);
+
+        INTERPOLATE(uv[0]);
+        INTERPOLATE(uv[1]);
     }
-    vertex_list_init(&out->vertex_list);
-    clip_against_plane(this, 2, COMPARE_LT, &tmp, &out->vertex_list);
-    vertex_list_init(&tmp);
+    outbuf->data.processed = 0;
 
-    clip_against_plane(this, 1, COMPARE_GT, &out->vertex_list, &tmp);
-    vertex_list_init(&out->vertex_list);
-    clip_against_plane(this, 1, COMPARE_LT, &tmp, &out->vertex_list);
-    vertex_list_init(&tmp);
+#undef INTERPOLATE
+}
 
-    clip_against_plane(this, 0, COMPARE_GT, &out->vertex_list, &tmp);
-    vertex_list_init(&out->vertex_list);
-    clip_against_plane(this, 0, COMPARE_LT, &tmp, &out->vertex_list);
+static void clip_verts_on_plane(struct NDS *this, u32 comp, u32 attribs, struct NDS_GE_VTX_list *vertices)
+{
+    struct NDS_GE_VTX_list tmp;
+    vertex_list_init(&tmp);
+    struct NDS_GE_VTX_list_node *vtx = vertices->first;
+    struct NDS_GE_VTX_list_node *vprev, *vnext;
+
+    while(vtx) {
+        if (vtx->data.xyzw[comp] > vtx->data.xyzw[3]) {
+            if ((comp == 2) && (!this->ge.params.poly.current.attr.render_if_intersect_far_plane)) {
+                vertex_list_init(vertices);
+                return;
+            }
+
+            vprev = vtx->prev; if (!vprev) vprev = vertices->last;
+            if (vprev->data.xyzw[comp] <= vprev->data.xyzw[3])
+                clip_segment(this, comp, 1, attribs, &tmp, vtx, vprev);
+
+            vnext = vtx->next; if (!vnext) vnext = vertices->first;
+            if (vnext->data.xyzw[comp] <= vnext->data.xyzw[3])
+                clip_segment(this, comp, 1, attribs, &tmp, vtx, vnext);
+        }
+        else {
+            vertex_list_add_copy(&tmp, vtx);
+        }
+        vtx = vtx->next;
+    }
+
+    vertex_list_init(vertices);
+    vtx = tmp.first;
+
+    while(vtx) {
+        if (vtx->data.xyzw[comp] < -vtx->data.xyzw[3]) {
+            vprev = vtx->prev; if (!vprev) vprev = tmp.last;
+            if (vprev->data.xyzw[comp] >= -vprev->data.xyzw[3])
+                clip_segment(this, comp, -1, attribs, vertices, vtx, vprev);
+
+            vnext = vtx->next; if (!vnext) vnext = tmp.first;
+            if (vnext->data.xyzw[comp] >= -vnext->data.xyzw[3])
+                clip_segment(this, comp, -1, attribs, vertices, vtx, vnext);
+        }
+        else
+            vertex_list_add_copy(vertices, vtx);
+        vtx = vtx->next;
+    }
+    
+    vtx = vertices->first;
+    while(vtx) {
+        vtx->data.color[0] &= ~0xFFF;
+        vtx->data.color[0] += 0xFFF;
+        vtx->data.color[1] &= ~0xFFF;
+        vtx->data.color[1] += 0xFFF;
+        vtx->data.color[2] &= ~0xFFF;
+        vtx->data.color[2] += 0xFFF;
+
+        vtx = vtx->next;
+    }
+}
+
+static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out) {
+    clip_verts_on_plane(this, 2, true, &out->vertex_list);
+    clip_verts_on_plane(this, 1, true, &out->vertex_list);
+    clip_verts_on_plane(this, 0, true, &out->vertex_list);
 }
 
 static u32 determine_needs_clipping(struct NDS_GE_VTX_list_node *v)
@@ -907,40 +979,35 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
         if (!node->data.processed) {
             node->data.processed = 1;
 
-            i32 x = node->data.xyzw[0];
-            i32 y = node->data.xyzw[1];
-            i32 z = node->data.xyzw[2];
-            i32 w = node->data.xyzw[3];
-
-            w &= 0xFFFFFF;
-            i32 scrX, scrY;
+            node->data.xyzw[3] &= 0x00FFFFFF;
+            u32 posX, posY;
+            u32 w = node->data.xyzw[3];
             if (w > 0) {
-                scrX = x + w;
-                scrY = -y + w;
-                //sscrY = y + w;
-                i32 den = w;
+                posX = node->data.xyzw[0] + w;
+                posY = -node->data.xyzw[1] + w;
+                u32 den = w;
 
-                // According to melonDS, the NDS uses a 32-bit divider.
-                // If the W coordinate is larger than 16 bits, the hardware seems to sacrifice some precision to fit the numbers
-                // in the divider.
-                if (w > 0xFFFF) {
-                    scrX >>= 1;
-                    scrY >>= 1;
-                    den >>= 1;
+                if (w > 0xFFFF)
+                {
+                    posX >>= 1;
+                    posY >>= 1;
+                    den  >>= 1;
                 }
 
                 den <<= 1;
-                scrX = ((scrX * this->re.io.viewport.width) / den) + this->re.io.viewport.x0;
-                scrY = ((scrY * this->re.io.viewport.height) / den) + this->re.io.viewport.y0;
-                scrX &= 0x1FF;
-                scrY &= 0xFF;
-            } else {
-                scrX = 0;
-                scrY = 0;
+                posX = ((posX * this->re.io.viewport[4]) / den) + this->re.io.viewport[0];
+                posY = ((posY * this->re.io.viewport[5]) / den) + this->re.io.viewport[3];
             }
-            node->data.vram_ptr = commit_vertex(this, node, scrX, scrY, node->data.xyzw[2], node->data.xyzw[3] & 0xFFFFFF, node->data.uv, node->data.color[0], node->data.color[1], node->data.color[2]);
+            else {
+                posX = 0;
+                posY = 0;
+            }
+
+            posX = posX & 0x1FF;
+            posY = posY & 0xFF;
+
+            node->data.vram_ptr = commit_vertex(this, node, posX, posY, node->data.xyzw[2], node->data.xyzw[3], node->data.uv, node->data.color[0], node->data.color[1], node->data.color[2]);
         }
-        //printf("\nVert num %d: %d %d, s:%d/%f t:%d/%f", num++, node->data.xyzw[0], node->data.xyzw[1], node->data.uv[0], uv_to_float(node->data.uv[0]), node->data.uv[1], uv_to_float(node->data.uv[1]));
         node = node->next;
     }
 }
@@ -1286,18 +1353,12 @@ static void terminate_poly_strip(struct NDS *this)
 
 static void cmd_VIEWPORT(struct NDS *this)
 {
-    u32 x0 = DATA[0] & 0xFF;
-    u32 y0 = (DATA[0] >> 8) & 0xFF;
-    u32 x1 = (DATA[0] >> 16) & 0xFF;
-    u32 y1 = (DATA[0] >> 24) & 0xFF;
-
-    printfcd("\nVIEWPORT(%d, %d, %d, %d)", x0, y0, x1, y1);
-    this->re.io.viewport.x0 = x0;
-    this->re.io.viewport.y0 = y0;
-    this->re.io.viewport.x1 = x1;
-    this->re.io.viewport.y1 = y1;
-    this->re.io.viewport.width = 1 + x1 - x0;
-    this->re.io.viewport.height = 1 + y1 - y0;
+    this->re.io.viewport[0] = DATA[0] & 0xFF;
+    this->re.io.viewport[1] = (191 - ((DATA[0] >> 8) & 0xFF)) & 0xFF;
+    this->re.io.viewport[2] = (DATA[0] >> 16) & 0xFF;
+    this->re.io.viewport[3] = (191 - (DATA[0] >> 24)) & 0xFF;
+    this->re.io.viewport[4] = (this->re.io.viewport[2] -this->re.io.viewport[0] + 1) & 0x1FF;
+    this->re.io.viewport[5] = (this->re.io.viewport[1] - this->re.io.viewport[3] + 1) & 0xFF;
 }
 
 static void cmd_TEXIMAGE_PARAM(struct NDS *this)

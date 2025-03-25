@@ -97,7 +97,7 @@ struct NDS_GE_VTX_list_node
         u32 w_normalized;
 
         i32 uv[2];
-        u32 color[3];
+        i32 color[3];
     } data;
 
 
@@ -270,9 +270,7 @@ struct NDS_RE {
             u32 u;
         } DISP3DCNT;
 
-        struct {
-            i32 x0, y0, x1, y1, width, height;
-        } viewport;
+        u32 viewport[6];
 
         u8 SHININESS[128];
         i32 TOON_TABLE_r[32];
