@@ -300,6 +300,7 @@ struct NDS_GE {
     struct NDS_GE_BUFFERS buffers[2];
     u32 enable;
     u32 ge_has_buffer;
+    u32 clip_mtx_dirty;
 
     struct {
         u32 data[64];

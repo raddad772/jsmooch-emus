@@ -354,7 +354,7 @@ static void cmd_MTX_POP(struct NDS *this)
             MS_PROJECTION_PTR = (MS_PROJECTION_PTR - 1) & 1;
             GXSTAT.projection_matrix_stack_level = MS_PROJECTION_PTR;
             memcpy(&M_PROJECTION, &MS_PROJECTION[MS_PROJECTION_PTR], M_SZ);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             break;
         case 1:
         case 2: {
@@ -364,7 +364,7 @@ static void cmd_MTX_POP(struct NDS *this)
             GXSTAT.position_vector_matrix_stack_level = MS_POSITION_VECTOR_PTR;
             memcpy(&M_POSITION, &MS_POSITION[MS_POSITION_VECTOR_PTR], M_SZ);
             memcpy(&M_VECTOR, &MS_VECTOR[MS_POSITION_VECTOR_PTR], M_SZ);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             break; }
         case 3:
             GXSTAT.matrix_stack_over_or_underflow_error |= MS_TEXTURE_PTR == 0;
@@ -401,7 +401,7 @@ static void cmd_MTX_RESTORE(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             memcpy(&M_PROJECTION, &MS_PROJECTION[0], M_SZ);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             break;
         case 1:
         case 2: {
@@ -409,7 +409,7 @@ static void cmd_MTX_RESTORE(struct NDS *this)
             GXSTAT.matrix_stack_over_or_underflow_error |= n > 30;
             memcpy(&M_VECTOR, &MS_VECTOR[n], M_SZ);
             memcpy(&M_POSITION, &MS_POSITION[n], M_SZ);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             break; }
         case 3:
             memcpy(&M_TEXTURE, &MS_TEXTURE[0], M_SZ);
@@ -422,16 +422,16 @@ static void cmd_MTX_IDENTITY(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             identity_matrix(M_PROJECTION);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1:
             identity_matrix(M_POSITION);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 2:
             identity_matrix(M_POSITION);
             identity_matrix(M_VECTOR);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3:
             identity_matrix(M_TEXTURE);
@@ -444,16 +444,16 @@ static void cmd_MTX_LOAD_4x4(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_load_4x4(M_PROJECTION, (i32 *) DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1:
             matrix_load_4x4(M_POSITION, (i32 *) DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 2:
             matrix_load_4x4(M_POSITION, (i32 *) DATA);
             matrix_load_4x4(M_VECTOR, (i32 *) DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3:
             matrix_load_4x4(M_TEXTURE, (i32 *) DATA);
@@ -466,16 +466,16 @@ static void cmd_MTX_LOAD_4x3(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_load_4x3(M_PROJECTION, (i32 *) DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1:
             matrix_load_4x3(M_POSITION, (i32 *) DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 2:
             matrix_load_4x3(M_POSITION, (i32 *) DATA);
             matrix_load_4x3(M_VECTOR, (i32 *) DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3:
             matrix_load_4x3(M_TEXTURE, (i32 *) DATA);
@@ -505,16 +505,16 @@ static void cmd_MTX_MULT_4x4(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
             matrix_multiply_4x4(M_PROJECTION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1: //  pos/coord matrix
             matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 2: // both pos/coord and dir/vector matrices
             matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
             matrix_multiply_4x4(M_VECTOR, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3: // texture matrix
             matrix_multiply_4x4(M_TEXTURE, (i32 *)DATA);
@@ -527,16 +527,16 @@ static void cmd_MTX_MULT_4x3(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
             printfcd("\nMTX_MULT_4x3(Projection);");
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1: //  pos/coord matrix
             matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 2: // both pos/coord and dir/vector matrices
             matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
             matrix_multiply_4x3(M_VECTOR, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3: // texture matrix
             matrix_multiply_4x3(M_TEXTURE, (i32 *)DATA);
@@ -550,16 +550,16 @@ static void cmd_MTX_MULT_3x3(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
             matrix_multiply_3x3(M_PROJECTION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1: //  pos/coord matrix
             matrix_multiply_3x3(M_POSITION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 2: // both pos/coord and dir/vector matrices
             matrix_multiply_3x3(M_POSITION, (i32 *)DATA);
             matrix_multiply_3x3(M_VECTOR, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3: // texture matrix
             matrix_multiply_3x3(M_TEXTURE, (i32 *)DATA);
@@ -572,12 +572,12 @@ static void cmd_MTX_SCALE(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_scale(M_PROJECTION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1:
         case 2:
             matrix_scale(M_POSITION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3:
             matrix_scale(M_TEXTURE, (i32 *)DATA);
@@ -590,16 +590,16 @@ static void cmd_MTX_TRANS(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_translate(M_PROJECTION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 1:
             matrix_translate(M_POSITION, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 2:
             matrix_translate(M_POSITION, (i32 *)DATA);
             matrix_translate(M_VECTOR, (i32 *)DATA);
-            calculate_clip_matrix(this);
+            this->ge.clip_mtx_dirty = 1;
             return;
         case 3:
             matrix_translate(M_TEXTURE, (i32 *)DATA);
@@ -731,8 +731,10 @@ static inline u32 C5to6(u32 c) {
     return c ? ((c << 1) + 1) : 0;
 }
 
-static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_list_node *node)
+static void transform_vertex_on_ingestion(struct NDS *this, i16 x, i16 y, i16 z, struct NDS_GE_VTX_list_node *node)
 {
+    if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
+    node->data.processed = 0;
     node->data.color[0] = C5to6(this->ge.params.vtx.color[0]);
     node->data.color[1] = C5to6(this->ge.params.vtx.color[1]);
     node->data.color[2] = C5to6(this->ge.params.vtx.color[2]);
@@ -740,15 +742,15 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
     node->data.uv[1] = this->ge.params.vtx.T;
     node->data.processed = 0;
 
-    i64 tmp[4] = {(i64)node->data.xyzw[0], (i64)node->data.xyzw[1], (i64)node->data.xyzw[2], 1 << 12};
+    i64 tmp[4] = {(i64)x, (i64)y, (i64)z, 1 << 12};
     node->data.xyzw[0] = (i32)((tmp[0]*M_CLIP[0] + tmp[1]*M_CLIP[4] + tmp[2]*M_CLIP[8] + tmp[3]*M_CLIP[12]) >> 12);
     node->data.xyzw[1] = (i32)((tmp[0]*M_CLIP[1] + tmp[1]*M_CLIP[5] + tmp[2]*M_CLIP[9] + tmp[3]*M_CLIP[13]) >> 12);
     node->data.xyzw[2] = (i32)((tmp[0]*M_CLIP[2] + tmp[1]*M_CLIP[6] + tmp[2]*M_CLIP[10] + tmp[3]*M_CLIP[14]) >> 12);
     node->data.xyzw[3] = (i32)((tmp[0]*M_CLIP[3] + tmp[1]*M_CLIP[7] + tmp[2]*M_CLIP[11] + tmp[3]*M_CLIP[15]) >> 12);
 
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
-        node->data.uv[0] = ((tmp[0]*M_TEXTURE[0] + tmp[1]*M_TEXTURE[4] + tmp[2]*M_TEXTURE[8]) >> 24) + RawTexCoords[0];
-        node->data.uv[1] = ((tmp[0]*M_TEXTURE[1] + tmp[1]*M_TEXTURE[5] + tmp[2]*M_TEXTURE[9]) >> 24) + RawTexCoords[1];
+        node->data.uv[0] = ((tmp[0]*M_TEXTURE[0] + tmp[1]*M_TEXTURE[4] + tmp[2]*M_TEXTURE[8]) >> 24) + this->ge.params.vtx.S;
+        node->data.uv[1] = ((tmp[0]*M_TEXTURE[1] + tmp[1]*M_TEXTURE[5] + tmp[2]*M_TEXTURE[9]) >> 24) + this->ge.params.vtx.T;
     }
 }
 
@@ -1190,12 +1192,7 @@ static void ingest_vertex(struct NDS *this) {
 
     // Add to vertex cache
     struct NDS_GE_VTX_list_node *o = vertex_list_add_to_end(&VTX_LIST, 0);
-    o->data.xyzw[0] = this->ge.params.vtx.x;
-    o->data.xyzw[1] = this->ge.params.vtx.y;
-    o->data.xyzw[2] = this->ge.params.vtx.z;
-    o->data.xyzw[3] = 1 << 12;
-    o->data.processed = 0;
-    transform_vertex_on_ingestion(this, o);
+    transform_vertex_on_ingestion(this, this->ge.params.vtx.x, this->ge.params.vtx.y, this->ge.params.vtx.z, o);
 
     switch(this->ge.params.vtx_strip.mode) {
         case NDS_GEM_SEPERATE_TRIANGLES:
