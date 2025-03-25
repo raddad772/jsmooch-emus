@@ -1135,7 +1135,7 @@ static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 x
     // We need...xx, yy, zz, ww, uv, and color
     // 32 bits each = 24 bytes...
     v->data.xyzw[0] = xx;
-    v->data.xyzw[1] = (192 - yy) & 0xFF;
+    v->data.xyzw[1] = yy;
     v->data.xyzw[2] = zz;
     v->data.xyzw[3] = ww;
     v->data.uv[0] = uv[0];
@@ -1205,8 +1205,8 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
             i32 scrX, scrY;
             if (w > 0) {
                 scrX = x + w;
-                //scrY = -y + w;
-                scrY = y + w;
+                scrY = -y + w;
+                //sscrY = y + w;
                 i32 den = w;
 
                 // According to melonDS, the NDS uses a 32-bit divider.
