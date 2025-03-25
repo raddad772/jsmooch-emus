@@ -410,7 +410,8 @@ struct NDS_GE {
 
         struct {
             u32 color[3]; // 6-bit R, 6-bit G, 6-bit B
-            i32 S, T;
+            i16 uv[2];
+            i16 original_uv[2];
             i16 x,y,z,w;
 
             struct NDS_GE_VTX_list input_list;
@@ -428,18 +429,18 @@ struct NDS_GE {
 
     struct {
         struct NDS_GE_LIGHT {
-            i32 direction[4];
-            i32 halfway[4];
+            i16 direction[4];
             u32 color[3];
         } light[4];
 
         u32 shininess_enable;
+        i16 normal[3];
         struct {
             u32 diffuse[3];
             u32 ambient[3];
-            u32 specular_reflection[3];
-            u32 specular_emission[3];
-            i32 spectral_reciprocal[3];
+            u32 reflection[3];
+            u32 emission[3];
+            i32 reciprocal[3];
         } material_color;
     }lights;
 

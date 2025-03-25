@@ -495,8 +495,6 @@ static void cmd_SHININESS(struct NDS *this) {
     }
 };
 
-// B = A * B
-
 static void cmd_MTX_MULT_4x4(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
@@ -617,67 +615,45 @@ static void cmd_COLOR(struct NDS *this)
 
 static void cmd_NORMAL(struct NDS *this)
 {
-    // IF TexCoordTransformMode=2 THEN TexCoord=NormalVector*Matrix (see TexCoord)
-    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode ==  NDS_TCTM_normal) {
-        static int a = 1;
-        if (a) {
-            printf("\nWARN NORMAL texcoord thingy!");
-            a = 0;
-        }
+    this->ge.lights.normal[0] = (i16)((DATA[0] & 0x000003FF) << 6) >> 6;
+    this->ge.lights.normal[1] = (i16)((DATA[0] & 0x000FFC00) >> 4) >> 6;
+    this->ge.lights.normal[2] = (i16)((DATA[0] & 0x3FF00000) >> 14) >> 6;
 
-        /* MelonDS says:
-        TexCoords[0] = RawTexCoords[0] + (((i64)Normal[0]*TexMatrix[0] + (i64)Normal[1]*TexMatrix[4] + (i64)Normal[2]*TexMatrix[8]) >> 21);
-        TexCoords[1] = RawTexCoords[1] + (((i64)Normal[0]*TexMatrix[1] + (i64)Normal[1]*TexMatrix[5] + (i64)Normal[2]*TexMatrix[9]) >> 21);
-         */
-        //TODO: this
+    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode ==  NDS_TCTM_normal) {
+        this->ge.params.vtx.uv[0] = this->ge.params.vtx.original_uv[0] + (((i64) this->ge.lights.normal[0]*M_TEXTURE[0] + (i64) this->ge.lights.normal[1]*M_TEXTURE[4] + (i64) this->ge.lights.normal[2]*M_TEXTURE[8]) >> 21);
+        this->ge.params.vtx.uv[1] = this->ge.params.vtx.original_uv[1] + (((i64) this->ge.lights.normal[0]*M_TEXTURE[1] + (i64) this->ge.lights.normal[1]*M_TEXTURE[5] + (i64) this->ge.lights.normal[2]*M_TEXTURE[9]) >> 21);
     }
 
-    // NormalVector=NormalVector*DirectionalMatrix
-    i32 src[4];
-    i32 normal_vector[4];
-    src[0] = DATA[0] & 0x3FF;
-    src[1] = (DATA[0] >> 10) & 0x3FF;
-    src[2] = (DATA[0] >> 20) & 0x3FF;
-    src[0] = ((i32)(i16)(src[0] << 6)) >> 3;
-    src[1] = ((i32)(i16)(src[1] << 6)) >> 3;
-    src[2] = ((i32)(i16)(src[2] << 6)) >> 3;
-
-    i32 normalt[3]; // should be 1 bit sign 10 bits frac
-    normalt[0] = ((src[0] * M_VECTOR[0] + src[1] * M_VECTOR[4] + src[2] * M_VECTOR[8]) << 9) >> 21;
-    normalt[1] = ((src[0] * M_VECTOR[1] + src[1] * M_VECTOR[5] + src[2] * M_VECTOR[9]) << 9) >> 21;
-    normalt[2] = ((src[0] * M_VECTOR[2] + src[1] * M_VECTOR[6] + src[2] * M_VECTOR[10]) << 9) >> 21;
+    i32 normaltrans[3]; // should be 1 bit sign 10 bits frac
+    normaltrans[0] = ((this->ge.lights.normal[0]*M_VECTOR[0] + this->ge.lights.normal[1]*M_VECTOR[4] + this->ge.lights.normal[2]*M_VECTOR[8]) << 9) >> 21;
+    normaltrans[1] = ((this->ge.lights.normal[0]*M_VECTOR[1] + this->ge.lights.normal[1]*M_VECTOR[5] + this->ge.lights.normal[2]*M_VECTOR[9]) << 9) >> 21;
+    normaltrans[2] = ((this->ge.lights.normal[0]*M_VECTOR[2] + this->ge.lights.normal[1]*M_VECTOR[6] + this->ge.lights.normal[2]*M_VECTOR[10]) << 9) >> 21;
 
     i32 c = 0;
-    u32 vtx[3] = { (u32)this->ge.lights.material_color.specular_emission[0] << 14,
-                    (u32)this->ge.lights.material_color.specular_emission[1] << 14,
-                    (u32)this->ge.lights.material_color.specular_emission[2] << 14 };
-
-    for (int i = 0; i < 4; i++) {
-        if (!(this->ge.params.poly.current.attr.u & (1 << i)))
+    u32 vtxbuff[3] = {(u32)this->ge.lights.material_color.emission[0] << 14, (u32)this->ge.lights.material_color.emission[1] << 14, (u32)this->ge.lights.material_color.emission[2] << 14 };
+    for (int i = 0; i < 4; i++)
+    {
+        if (!(this->ge.params.poly.current.attr.u & (1<<i)))
             continue;
 
-        i32 dot = ((this->ge.lights.light[i].direction[0]*normalt[0]) >> 9) +
-                  ((this->ge.lights.light[i].direction[1]*normalt[1]) >> 9) +
-                  ((this->ge.lights.light[i].direction[2]*normalt[2]) >> 9);
+        i32 dot = ((this->ge.lights.light[i].direction[0]*normaltrans[0]) >> 9) + ((this->ge.lights.light[i].direction[1]*normaltrans[1]) >> 9) + ((this->ge.lights.light[i].direction[2]*normaltrans[2]) >> 9);
 
         i32 shinelevel;
-        if (dot > 0)
-        {
+        if (dot > 0) {
             i32 diffdot = (dot << 21) >> 21;
-            vtx[0] += (this->ge.lights.material_color.diffuse[0] * this->ge.lights.light[i].color[0] * diffdot) & 0xFFFFF;
-            vtx[1] += (this->ge.lights.material_color.diffuse[1] * this->ge.lights.light[i].color[1] * diffdot) & 0xFFFFF;
-            vtx[2] += (this->ge.lights.material_color.diffuse[2] * this->ge.lights.light[i].color[2] * diffdot) & 0xFFFFF;
+            vtxbuff[0] += (this->ge.lights.material_color.diffuse[0] * this->ge.lights.light[i].color[0] * diffdot) & 0xFFFFF;
+            vtxbuff[1] += (this->ge.lights.material_color.diffuse[1] * this->ge.lights.light[i].color[1] * diffdot) & 0xFFFFF;
+            vtxbuff[2] += (this->ge.lights.material_color.diffuse[2] * this->ge.lights.light[i].color[2] * diffdot) & 0xFFFFF;
 
-            dot = ((dot + normalt[2]) << 21) >> 21;
+            dot += normaltrans[2];
 
+            dot = (dot << 21) >> 21;
             dot = ((dot * dot) >> 10) & 0x3FF;
 
-            // multiply dot and reciprocal, the subtract '1'
-            shinelevel = ((dot * this->ge.lights.material_color.spectral_reciprocal[i]) >> 8) - (1<<9);
+            shinelevel = ((dot * this->ge.lights.material_color.reciprocal[i]) >> 8) - (1<<9);
 
             if (shinelevel < 0) shinelevel = 0;
-            else
-            {
+            else {
                 shinelevel = (shinelevel << 18) >> 18;
                 if (shinelevel < 0) shinelevel = 0;
                 else if (shinelevel > 0x1FF) shinelevel = 0x1FF;
@@ -692,32 +668,31 @@ static void cmd_NORMAL(struct NDS *this)
             shinelevel <<= 1;
         }
 
-        // Note: ambient seems to be a plain bitshift
-        vtx[0] += ((this->ge.lights.material_color.specular_reflection[0] * shinelevel) + (this->ge.lights.material_color.ambient[0] << 9)) * this->ge.lights.light[i].color[0];
-        vtx[1] += ((this->ge.lights.material_color.specular_reflection[1] * shinelevel) + (this->ge.lights.material_color.ambient[1] << 9)) * this->ge.lights.light[i].color[1];
-        vtx[2] += ((this->ge.lights.material_color.specular_reflection[2] * shinelevel) + (this->ge.lights.material_color.ambient[2] << 9)) * this->ge.lights.light[i].color[2];
+        vtxbuff[0] += ((this->ge.lights.material_color.reflection[0] * shinelevel) + (this->ge.lights.material_color.ambient[0] << 9)) * this->ge.lights.light[i].color[0];
+        vtxbuff[1] += ((this->ge.lights.material_color.reflection[1] * shinelevel) + (this->ge.lights.material_color.ambient[1] << 9)) * this->ge.lights.light[i].color[1];
+        vtxbuff[2] += ((this->ge.lights.material_color.reflection[2] * shinelevel) + (this->ge.lights.material_color.ambient[2] << 9)) * this->ge.lights.light[i].color[2];
 
         c++;
     }
 
-    this->ge.params.vtx.color[0] = (vtx[0] >> 14 > 31) ? 31 : (vtx[0] >> 14);
-    this->ge.params.vtx.color[1] = (vtx[1] >> 14 > 31) ? 31 : (vtx[1] >> 14);
-    this->ge.params.vtx.color[2] = (vtx[2] >> 14 > 31) ? 31 : (vtx[2] >> 14);
+    this->ge.params.vtx.color[0] = (vtxbuff[0] >> 14 > 31) ? 31 : (vtxbuff[0] >> 14);
+    this->ge.params.vtx.color[1] = (vtxbuff[1] >> 14 > 31) ? 31 : (vtxbuff[1] >> 14);
+    this->ge.params.vtx.color[2] = (vtxbuff[2] >> 14 > 31) ? 31 : (vtxbuff[2] >> 14);
 }
 
 static void cmd_TEXCOORD(struct NDS *this)
 {
-    printfcd("\nTEXCOORD");
-    // 1bit sign, 11bit integer, 4bit fraction
-    this->ge.params.vtx.S = (i32)(i16)(DATA[0] & 0xFFFF);
-    this->ge.params.vtx.T = (i32)(i16)(DATA[0] >> 16);
-
-    // Now transfrom?
+    this->ge.params.vtx.original_uv[0] = DATA[0] & 0xFFFF;
+    this->ge.params.vtx.original_uv[1] = DATA[1] >> 16;
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_texcoord) {
-        int32_t ts = this->ge.params.vtx.S;
-        int32_t tt = this->ge.params.vtx.T;
-        this->ge.params.vtx.S = (ts * M_TEXTURE[0] + tt * M_TEXTURE[4] + M_TEXTURE[8] + M_TEXTURE[12]) >> 12;
-        this->ge.params.vtx.T = (ts * M_TEXTURE[1] + tt * M_TEXTURE[5] + M_TEXTURE[9] + M_TEXTURE[13]) >> 12;
+        printf("\nTEXCOORD MTX!");
+        this->ge.params.vtx.uv[0] = (this->ge.params.vtx.original_uv[0]*M_TEXTURE[0] + this->ge.params.vtx.original_uv[1]*M_TEXTURE[4] + M_TEXTURE[8] + M_TEXTURE[12]) >> 12;
+        this->ge.params.vtx.uv[1] = (this->ge.params.vtx.original_uv[0]*M_TEXTURE[1] + this->ge.params.vtx.original_uv[1]*M_TEXTURE[5] + M_TEXTURE[9] + M_TEXTURE[13]) >> 12;
+    }
+    else
+    {
+        this->ge.params.vtx.uv[0] = this->ge.params.vtx.original_uv[0];
+        this->ge.params.vtx.uv[1] = this->ge.params.vtx.original_uv[1];
     }
 }
 
@@ -728,26 +703,28 @@ static inline u32 C5to6(u32 c) {
     return c ? ((c << 1) + 1) : 0;
 }
 
-static void transform_vertex_on_ingestion(struct NDS *this, i16 x, i16 y, i16 z, struct NDS_GE_VTX_list_node *node)
+static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_list_node *node)
 {
     if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
     node->data.processed = 0;
     node->data.color[0] = C5to6(this->ge.params.vtx.color[0]);
     node->data.color[1] = C5to6(this->ge.params.vtx.color[1]);
     node->data.color[2] = C5to6(this->ge.params.vtx.color[2]);
-    node->data.uv[0] = this->ge.params.vtx.S;
-    node->data.uv[1] = this->ge.params.vtx.T;
     node->data.processed = 0;
 
-    i64 tmp[4] = {(i64)x, (i64)y, (i64)z, 1 << 12};
+    i64 tmp[4] = {(i64)this->ge.params.vtx.x, (i64)this->ge.params.vtx.y, (i64)this->ge.params.vtx.z, 1 << 12};
     node->data.xyzw[0] = (i32)((tmp[0]*M_CLIP[0] + tmp[1]*M_CLIP[4] + tmp[2]*M_CLIP[8] + tmp[3]*M_CLIP[12]) >> 12);
     node->data.xyzw[1] = (i32)((tmp[0]*M_CLIP[1] + tmp[1]*M_CLIP[5] + tmp[2]*M_CLIP[9] + tmp[3]*M_CLIP[13]) >> 12);
     node->data.xyzw[2] = (i32)((tmp[0]*M_CLIP[2] + tmp[1]*M_CLIP[6] + tmp[2]*M_CLIP[10] + tmp[3]*M_CLIP[14]) >> 12);
     node->data.xyzw[3] = (i32)((tmp[0]*M_CLIP[3] + tmp[1]*M_CLIP[7] + tmp[2]*M_CLIP[11] + tmp[3]*M_CLIP[15]) >> 12);
 
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
-        node->data.uv[0] = ((tmp[0]*M_TEXTURE[0] + tmp[1]*M_TEXTURE[4] + tmp[2]*M_TEXTURE[8]) >> 24) + this->ge.params.vtx.S;
-        node->data.uv[1] = ((tmp[0]*M_TEXTURE[1] + tmp[1]*M_TEXTURE[5] + tmp[2]*M_TEXTURE[9]) >> 24) + this->ge.params.vtx.T;
+        node->data.uv[0] = ((tmp[0]*M_TEXTURE[0] + tmp[1]*M_TEXTURE[4] + tmp[2]*M_TEXTURE[8]) >> 24) + this->ge.params.vtx.original_uv[0];
+        node->data.uv[1] = ((tmp[0]*M_TEXTURE[1] + tmp[1]*M_TEXTURE[5] + tmp[2]*M_TEXTURE[9]) >> 24) + this->ge.params.vtx.original_uv[1];
+    }
+    else {
+        node->data.uv[0] = this->ge.params.vtx.uv[0];
+        node->data.uv[1] = this->ge.params.vtx.uv[1];
     }
 }
 
@@ -1189,7 +1166,7 @@ static void ingest_vertex(struct NDS *this) {
 
     // Add to vertex cache
     struct NDS_GE_VTX_list_node *o = vertex_list_add_to_end(&VTX_LIST, 0);
-    transform_vertex_on_ingestion(this, this->ge.params.vtx.x, this->ge.params.vtx.y, this->ge.params.vtx.z, o);
+    transform_vertex_on_ingestion(this, o);
 
     switch(this->ge.params.vtx_strip.mode) {
         case NDS_GEM_SEPERATE_TRIANGLES:
@@ -1358,8 +1335,8 @@ static void cmd_LIGHT_VECTOR(struct NDS *this)
     this->ge.lights.light[l].direction[2] = (-((dir[0] * M_VECTOR[2] + dir[1] * M_VECTOR[6] + dir[2] * M_VECTOR[10]) >> 12) << 21) >> 21;
     i32 den = -(((dir[0] * M_VECTOR[2] + dir[1] * M_VECTOR[6] + dir[2] * M_VECTOR[10]) << 9) >> 21) + (1 << 9);
 
-    if (den == 0) this->ge.lights.material_color.spectral_reciprocal[l] = 0;
-    else this->ge.lights.material_color.spectral_reciprocal[l] = (1<<18) / den;
+    if (den == 0) this->ge.lights.material_color.reciprocal[l] = 0;
+    else this->ge.lights.material_color.reciprocal[l] = (1 << 18) / den;
 
 }
 
@@ -1384,8 +1361,8 @@ static void cmd_DIF_AMB(struct NDS *this)
 
 static void cmd_SPE_EMI(struct NDS *this)
 {
-    C15to15(DATA[0] & 0x7FFF, this->ge.lights.material_color.specular_reflection);
-    C15to15((DATA[0] >> 16) & 0x7FFF, this->ge.lights.material_color.specular_emission);
+    C15to15(DATA[0] & 0x7FFF, this->ge.lights.material_color.reflection);
+    C15to15((DATA[0] >> 16) & 0x7FFF, this->ge.lights.material_color.emission);
     this->ge.lights.shininess_enable = (DATA[0] >> 15) & 1;
 
 }
