@@ -321,27 +321,9 @@ Vector  = direction
 
 static void calculate_clip_matrix(struct NDS *this)
 {
-    // ClipMatrix = PositionMatrix * ProjectionMatrix
-#define A M_POSITION
-#define B M_PROJECTION
-    //printfcd("\n\n----CALCULATE CLIP MATRIX. COORD:");
-    //pprint_matrix(A);
-    //printfcd("\nPROJECTION:");
-    //pprint_matrix(B);
-    for (u32 x = 0; x < 4; x++) {
-        for (u32 y = 0; y < 16; y+=4) {
-            //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
-            i64 out = ((i64)A[y+0] * (i64)B[x]) >> 12;
-            out += ((i64)A[y+1] * (i64)B[4+x]) >> 12;
-            out += ((i64)A[y+2] * (i64)B[8+x]) >> 12;
-            out += ((i64)A[y+3] * (i64)B[12+x]) >> 12;
-            this->ge.matrices.clip[x+y] = (i32)out;
-        }
-    }
-#undef A
-#undef B
-    //printfcd("\nOUTPUT MATRIX:");
-    //pprint_matrix( this->ge.matrices.clip);
+    // Clip matrix = projection * position
+    memcpy(M_CLIP, M_PROJECTION, M_SZ);
+    matrix_multiply_4x4(M_CLIP, M_POSITION);
 }
 
 static void cmd_MTX_PUSH(struct NDS *this)
@@ -528,109 +510,29 @@ static void cmd_SHININESS(struct NDS *this) {
 };
 
 // B = A * B
-static void matrix_multiply_4x4(i32 *A, i32 *B)
-{
-    i32 tmp_B[16];
-    memcpy(tmp_B, B, sizeof(tmp_B));
-
-    for (u32 x = 0; x < 4; x++) {
-        for (u32 y = 0; y < 16; y+=4) {
-            //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
-            i64 out = ((i64)A[y+0] * (i64)tmp_B[x]) >> 12;
-            out += ((i64)A[y+1] * (i64)tmp_B[4+x]) >> 12;
-            out += ((i64)A[y+2] * (i64)tmp_B[8+x]) >> 12;
-            out += ((i64)A[y+3] * (i64)tmp_B[12+x]) >> 12;
-            B[x+y] = (i32)out;
-        }
-    }
-}
-
-static void matrix_multiply_4x3(i32 *A, i32 *B)
-{
-    // B = A(4x3) * B(4x4)
-    i32 tmp_A[16];
-    i32 tmp_B[16];
-    memcpy(tmp_B, B, sizeof(tmp_B));
-    memset(tmp_A, 0, sizeof(tmp_A));
-
-    u32 i = 0;
-    for (u32 y = 0; y < 16; y+=4) {
-        for (u32 x = 0; x < 3; x++) {
-            tmp_A[y+x] = A[i++];
-        }
-    }
-    tmp_A[15] = 1 << 12;
-
-    for (u32 x = 0; x < 4; x++) {
-        for (u32 y = 0; y < 16; y+=4) {
-            //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
-            i64 out = ((i64)tmp_A[y+0] * (i64)tmp_B[x]) >> 12;
-            out += ((i64)tmp_A[y+1] * (i64)tmp_B[4+x]) >> 12;
-            out += ((i64)tmp_A[y+2] * (i64)tmp_B[8+x]) >> 12;
-            out += ((i64)tmp_A[y+3] * (i64)tmp_B[12+x]) >> 12;
-            B[x+y] = (i32)out;
-        }
-    }
-}
-
-static void matrix_multiply_3x3(i32 *A, i32 *B)
-{
-    // B(4x4) = A(3x3) * B(4x4)
-    i32 tmp_A[16];
-    i32 tmp_B[16];
-    memcpy(tmp_B, B, sizeof(tmp_B));
-    memset(tmp_A, 0, sizeof(tmp_A));
-
-    u32 i = 0;
-    for (u32 y = 0; y < 12; y+=4) {
-        for (u32 x = 0; x < 3; x++) {
-            tmp_A[y + x] = A[i++];
-        }
-    }
-    tmp_A[15] = 1 << 12;
-
-
-    for (u32 x = 0; x < 4; x++) {
-        for (u32 y = 0; y < 16; y+=4) {
-            //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
-            i64 out = ((i64)tmp_A[y+0] * (i64)tmp_B[x]) >> 12;
-            out += ((i64)tmp_A[y+1] * (i64)tmp_B[4+x]) >> 12;
-            out += ((i64)tmp_A[y+2] * (i64)tmp_B[8+x]) >> 12;
-            out += ((i64)tmp_A[y+3] * (i64)tmp_B[12+x]) >> 12;
-            B[x+y] = (i32)out;
-        }
-    }
-
-    //printfcd("\nOut matrix:");
-    //pprint_matrix(B);
-}
-
 
 static void cmd_MTX_MULT_4x4(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
             printfcd("\nMTX_MULT_4x4(proj);");
-            //pprint_matrix("projection before", M_PROJECTION);
-            //pprint_matrix("input matrix", (i32 *)DATA);
-            matrix_multiply_4x4((i32 *)DATA, M_PROJECTION);
-            //pprint_matrix("projection result", M_PROJECTION);
+            matrix_multiply_4x4(M_PROJECTION, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
             printfcd("\nMTX_MULT_4x4(coord);");
-            matrix_multiply_4x4((i32 *)DATA, M_POSITION);
+            matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
             printfcd("\nMTX_MULT_4x4(coord&dir);");
-            matrix_multiply_4x4((i32 *)DATA, M_POSITION);
-            matrix_multiply_4x4((i32 *)DATA, M_VECTOR);
+            matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
+            matrix_multiply_4x4(M_VECTOR, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
             printfcd("\nMTX_MULT_4x4(texture);");
-            matrix_multiply_4x4((i32 *)DATA, M_TEXTURE);
+            matrix_multiply_4x4(M_TEXTURE, (i32 *)DATA);
             return;
     }
 }
@@ -639,25 +541,23 @@ static void cmd_MTX_MULT_4x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
-            matrix_multiply_4x3((i32 *)DATA, M_PROJECTION);
+            matrix_multiply_4x3(M_PROJECTION, (i32 *)DATA);
             printfcd("\nMTX_MULT_4x3(Projection);");
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
-            matrix_multiply_4x3((i32 *)DATA, M_POSITION);
+            matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
             printfcd("\nMTX_MULT_4x3(Coord);");
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
             printfcd("\nMTX_MULT_4x3(coord&dir);");
-            //pprint_matrix("coord before", M_POSITION);
-            matrix_multiply_4x3((i32 *)DATA, M_POSITION);
-            matrix_multiply_4x3((i32 *)DATA, M_VECTOR);
-            //pprint_matrix("coord after", M_POSITION);
+            matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
+            matrix_multiply_4x3(M_VECTOR, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
-            matrix_multiply_4x3((i32 *)DATA, M_TEXTURE);
+            matrix_multiply_4x3(M_TEXTURE, (i32 *)DATA);
             printfcd("\nMTX_MULT_4x3(texture);");
             return;
     }
@@ -667,24 +567,20 @@ static void cmd_MTX_MULT_3x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
-            matrix_multiply_3x3((i32 *)DATA, M_PROJECTION);
-            printfcd("\nMULT_3x3 Projection");
+            matrix_multiply_3x3(M_PROJECTION, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
-            matrix_multiply_3x3((i32 *)DATA, M_POSITION);
-            printfcd("\nMULT_3x3 Pos/Coord");
+            matrix_multiply_3x3(M_POSITION, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
-            printfcd("\nMULT_3x3 Pos/Coord and dir/vector");
-            matrix_multiply_3x3((i32 *)DATA, M_POSITION);
-            matrix_multiply_3x3((i32 *)DATA, M_VECTOR);
+            matrix_multiply_3x3(M_POSITION, (i32 *)DATA);
+            matrix_multiply_3x3(M_VECTOR, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
-            printfcd("\nMULT_3x3 Texture and dir/vector");
-            matrix_multiply_3x3((i32 *)DATA, M_TEXTURE);
+            matrix_multiply_3x3(M_TEXTURE, (i32 *)DATA);
             return;
     }
 }
