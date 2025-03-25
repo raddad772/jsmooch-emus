@@ -329,15 +329,15 @@ struct NDS_GE {
     struct {
         struct {
             i32 projection_ptr;
-            i32 coordinate_direction_ptr;
+            i32 position_vector_ptr;
             i32 texture_ptr;
 
-            struct NDS_GE_matrix coordinate[32];
-            struct NDS_GE_matrix direction[32];
-            struct NDS_GE_matrix projection[2];
-            struct NDS_GE_matrix texture[2];
+            struct NDS_GE_matrix position[32];
+            struct NDS_GE_matrix vector[32];
+            struct NDS_GE_matrix projection[16];
+            struct NDS_GE_matrix texture[16];
         } stacks;
-        struct NDS_GE_matrix coordinate, texture, projection, direction;
+        struct NDS_GE_matrix position, texture, projection, vector;
         struct NDS_GE_matrix clip;
     } matrices;
 
