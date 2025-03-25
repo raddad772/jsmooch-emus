@@ -55,7 +55,7 @@ static void pprint_matrix(const char *n, i32 *s) {
 #define M_PROJECTION this->ge.matrices.projection
 #define M_VECTOR this->ge.matrices.vector
 #define M_CLIP this->ge.matrices.clip
-#define M_SZ sizeof(struct NDS_GE_matrix)
+#define M_SZ sizeof(NDS_GE_matrix)
 #define GXSTAT this->ge.io.GXSTAT
 
 static void identity_matrix(i32 *m)
@@ -231,11 +231,11 @@ void NDS_GE_init(struct NDS *this) {
 void NDS_GE_reset(struct NDS *this)
 {
     // Load identity matrices everywhere
-    identity_matrix(M_PROJECTION.m);
-    identity_matrix(M_CLIP.m);
-    identity_matrix(M_POSITION.m);
-    identity_matrix(M_TEXTURE.m);
-    identity_matrix(M_VECTOR.m);
+    identity_matrix(M_PROJECTION);
+    identity_matrix(M_CLIP);
+    identity_matrix(M_POSITION);
+    identity_matrix(M_TEXTURE);
+    identity_matrix(M_VECTOR);
     vertex_list_init(&VTX_LIST);
     FIFO.head = FIFO.tail = FIFO.len = 0;
     FIFO.pausing_cpu = 0;
@@ -322,8 +322,8 @@ Vector  = direction
 static void calculate_clip_matrix(struct NDS *this)
 {
     // ClipMatrix = PositionMatrix * ProjectionMatrix
-#define A M_POSITION.m
-#define B M_PROJECTION.m
+#define A M_POSITION
+#define B M_PROJECTION
     //printfcd("\n\n----CALCULATE CLIP MATRIX. COORD:");
     //pprint_matrix(A);
     //printfcd("\nPROJECTION:");
@@ -335,13 +335,13 @@ static void calculate_clip_matrix(struct NDS *this)
             out += ((i64)A[y+1] * (i64)B[4+x]) >> 12;
             out += ((i64)A[y+2] * (i64)B[8+x]) >> 12;
             out += ((i64)A[y+3] * (i64)B[12+x]) >> 12;
-            this->ge.matrices.clip.m[x+y] = (i32)out;
+            this->ge.matrices.clip[x+y] = (i32)out;
         }
     }
 #undef A
 #undef B
     //printfcd("\nOUTPUT MATRIX:");
-    //pprint_matrix( this->ge.matrices.clip.m);
+    //pprint_matrix( this->ge.matrices.clip);
 }
 
 static void cmd_MTX_PUSH(struct NDS *this)
@@ -368,7 +368,7 @@ static void cmd_MTX_PUSH(struct NDS *this)
             MS_TEXTURE_PTR = (MS_TEXTURE_PTR + 1) & 1;
             GXSTAT.matrix_stack_over_or_underflow_error |= MS_TEXTURE_PTR == 1;
             //printfcd("\nPushed texture matrix:");
-            //pprint_matrix(M_TEXTURE.m);
+            //pprint_matrix(M_TEXTURE);
             // no texture matrix GXSTAT bits
             break;
     }
@@ -450,97 +450,64 @@ static void cmd_MTX_IDENTITY(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
-            identity_matrix(M_PROJECTION.m);
-            printfcd("\nMTX_IDENTITY(projection);");
-            //pprint_matrix("projection", M_TEXTURE.m);
+            identity_matrix(M_PROJECTION);
             calculate_clip_matrix(this);
             return;
         case 1:
-            identity_matrix(M_POSITION.m);
-            printfcd("\nMTX_IDENTITY(coord);");
-            //pprint_matrix("coord", M_POSITION.m);
+            identity_matrix(M_POSITION);
             calculate_clip_matrix(this);
             return;
         case 2:
-            identity_matrix(M_POSITION.m);
-            identity_matrix(M_VECTOR.m);
-            printfcd("\nMTX_IDENTITY(coord&dir);");
-            //pprint_matrix("coord", M_POSITION.m);
-            //pprint_matrix("dir", M_VECTOR.m);
+            identity_matrix(M_POSITION);
+            identity_matrix(M_VECTOR);
             calculate_clip_matrix(this);
             return;
         case 3:
-            identity_matrix(M_TEXTURE.m);
-            printfcd("\nMTX_IDENTITY(texture);");
-            //pprint_matrix("texture", M_TEXTURE.m);
+            identity_matrix(M_TEXTURE);
             return;
     }
-}
-
-static void load_4x4(i32 *dest, i32 *src)
-{
-    for (u32 i = 0; i < 16; i++) {
-        dest[i] = src[i];
-    }
-}
-
-static void load_4x3(i32 *dest, i32 *src)
-{
-    u32 i = 0;
-    for (u32 y = 0; y < 16; y += 4) {
-        for (u32 x = 0; x < 3; x++) {
-            dest[x+y] = src[i++];
-        }
-    }
-    dest[3] = dest[7] = dest[11] = 0;
-    dest[15] = 1 << 12;
 }
 
 static void cmd_MTX_LOAD_4x4(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
-            load_4x4(M_PROJECTION.m, (i32 *)DATA);
-            printfcd("\nMTX_LOAD_4x4(PROJ);");
+            matrix_load_4x4(M_PROJECTION, (i32 *) DATA);
             calculate_clip_matrix(this);
             return;
         case 1:
-            load_4x4(M_POSITION.m, (i32 *)DATA);
-            printfcd("\nMTX_LOAD_4x4(COORD);");
+            matrix_load_4x4(M_POSITION, (i32 *) DATA);
             calculate_clip_matrix(this);
             return;
         case 2:
-            load_4x4(M_POSITION.m, (i32 *)DATA);
-            load_4x4(M_VECTOR.m, (i32 *)DATA);
-            printfcd("\nMTX_LOAD_4x4(COORD&DIR);");
+            matrix_load_4x4(M_POSITION, (i32 *) DATA);
+            matrix_load_4x4(M_VECTOR, (i32 *) DATA);
             calculate_clip_matrix(this);
             return;
         case 3:
-            load_4x4(M_TEXTURE.m, (i32 *)DATA);
-            printfcd("\nMTX_LOAD_4x4(TEXTURE);");
+            matrix_load_4x4(M_TEXTURE, (i32 *) DATA);
             return;
     }
 }
 
 static void cmd_MTX_LOAD_4x3(struct NDS *this)
 {
-    printfcd("\nMTX_LOAD_4x3");
     switch(this->ge.io.MTX_MODE) {
         case 0:
-            load_4x3(M_PROJECTION.m, (i32 *)DATA);
+            matrix_load_4x3(M_PROJECTION, (i32 *) DATA);
             calculate_clip_matrix(this);
             return;
         case 1:
-            load_4x3(M_POSITION.m, (i32 *)DATA);
+            matrix_load_4x3(M_POSITION, (i32 *) DATA);
             calculate_clip_matrix(this);
             return;
         case 2:
-            load_4x3(M_POSITION.m, (i32 *)DATA);
-            load_4x3(M_VECTOR.m, (i32 *)DATA);
+            matrix_load_4x3(M_POSITION, (i32 *) DATA);
+            matrix_load_4x3(M_VECTOR, (i32 *) DATA);
             calculate_clip_matrix(this);
             return;
         case 3:
-            load_4x3(M_TEXTURE.m, (i32 *)DATA);
+            matrix_load_4x3(M_TEXTURE, (i32 *) DATA);
             return;
     }
 }
@@ -644,26 +611,26 @@ static void cmd_MTX_MULT_4x4(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
             printfcd("\nMTX_MULT_4x4(proj);");
-            //pprint_matrix("projection before", M_PROJECTION.m);
+            //pprint_matrix("projection before", M_PROJECTION);
             //pprint_matrix("input matrix", (i32 *)DATA);
-            matrix_multiply_4x4((i32 *)DATA, M_PROJECTION.m);
-            //pprint_matrix("projection result", M_PROJECTION.m);
+            matrix_multiply_4x4((i32 *)DATA, M_PROJECTION);
+            //pprint_matrix("projection result", M_PROJECTION);
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
             printfcd("\nMTX_MULT_4x4(coord);");
-            matrix_multiply_4x4((i32 *)DATA, M_POSITION.m);
+            matrix_multiply_4x4((i32 *)DATA, M_POSITION);
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
             printfcd("\nMTX_MULT_4x4(coord&dir);");
-            matrix_multiply_4x4((i32 *)DATA, M_POSITION.m);
-            matrix_multiply_4x4((i32 *)DATA, M_VECTOR.m);
+            matrix_multiply_4x4((i32 *)DATA, M_POSITION);
+            matrix_multiply_4x4((i32 *)DATA, M_VECTOR);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
             printfcd("\nMTX_MULT_4x4(texture);");
-            matrix_multiply_4x4((i32 *)DATA, M_TEXTURE.m);
+            matrix_multiply_4x4((i32 *)DATA, M_TEXTURE);
             return;
     }
 }
@@ -672,25 +639,25 @@ static void cmd_MTX_MULT_4x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
-            matrix_multiply_4x3((i32 *)DATA, M_PROJECTION.m);
+            matrix_multiply_4x3((i32 *)DATA, M_PROJECTION);
             printfcd("\nMTX_MULT_4x3(Projection);");
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
-            matrix_multiply_4x3((i32 *)DATA, M_POSITION.m);
+            matrix_multiply_4x3((i32 *)DATA, M_POSITION);
             printfcd("\nMTX_MULT_4x3(Coord);");
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
             printfcd("\nMTX_MULT_4x3(coord&dir);");
-            //pprint_matrix("coord before", M_POSITION.m);
-            matrix_multiply_4x3((i32 *)DATA, M_POSITION.m);
-            matrix_multiply_4x3((i32 *)DATA, M_VECTOR.m);
-            //pprint_matrix("coord after", M_POSITION.m);
+            //pprint_matrix("coord before", M_POSITION);
+            matrix_multiply_4x3((i32 *)DATA, M_POSITION);
+            matrix_multiply_4x3((i32 *)DATA, M_VECTOR);
+            //pprint_matrix("coord after", M_POSITION);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
-            matrix_multiply_4x3((i32 *)DATA, M_TEXTURE.m);
+            matrix_multiply_4x3((i32 *)DATA, M_TEXTURE);
             printfcd("\nMTX_MULT_4x3(texture);");
             return;
     }
@@ -700,24 +667,24 @@ static void cmd_MTX_MULT_3x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
-            matrix_multiply_3x3((i32 *)DATA, M_PROJECTION.m);
+            matrix_multiply_3x3((i32 *)DATA, M_PROJECTION);
             printfcd("\nMULT_3x3 Projection");
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
-            matrix_multiply_3x3((i32 *)DATA, M_POSITION.m);
+            matrix_multiply_3x3((i32 *)DATA, M_POSITION);
             printfcd("\nMULT_3x3 Pos/Coord");
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
             printfcd("\nMULT_3x3 Pos/Coord and dir/vector");
-            matrix_multiply_3x3((i32 *)DATA, M_POSITION.m);
-            matrix_multiply_3x3((i32 *)DATA, M_VECTOR.m);
+            matrix_multiply_3x3((i32 *)DATA, M_POSITION);
+            matrix_multiply_3x3((i32 *)DATA, M_VECTOR);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
             printfcd("\nMULT_3x3 Texture and dir/vector");
-            matrix_multiply_3x3((i32 *)DATA, M_TEXTURE.m);
+            matrix_multiply_3x3((i32 *)DATA, M_TEXTURE);
             return;
     }
 }
@@ -726,19 +693,19 @@ static void cmd_MTX_SCALE(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
-            matrix_scale(M_PROJECTION.m, (i32 *)DATA);
+            matrix_scale(M_PROJECTION, (i32 *)DATA);
             printfcd("\nMTX_SCALE proj");
             calculate_clip_matrix(this);
             return;
         case 1:
         case 2:
-            matrix_scale(M_POSITION.m, (i32 *)DATA);
+            matrix_scale(M_POSITION, (i32 *)DATA);
             printfcd("\nMTX_SCALE COORD");
             calculate_clip_matrix(this);
             return;
         case 3:
             printfcd("\nMTX_SCALE texture");
-            matrix_scale(M_TEXTURE.m, (i32 *)DATA);
+            matrix_scale(M_TEXTURE, (i32 *)DATA);
             return;
     }
 }
@@ -747,24 +714,24 @@ static void cmd_MTX_TRANS(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0:
-            matrix_translate(M_PROJECTION.m, (i32 *)DATA);
+            matrix_translate(M_PROJECTION, (i32 *)DATA);
             printfcd("\nMTX_TRANS projection");
             calculate_clip_matrix(this);
             return;
         case 1:
-            matrix_translate(M_POSITION.m, (i32 *)DATA);
+            matrix_translate(M_POSITION, (i32 *)DATA);
             printfcd("\nMTX_TRANS coordinate");
             calculate_clip_matrix(this);
             return;
         case 2:
-            matrix_translate(M_POSITION.m, (i32 *)DATA);
-            matrix_translate(M_VECTOR.m, (i32 *)DATA);
+            matrix_translate(M_POSITION, (i32 *)DATA);
+            matrix_translate(M_VECTOR, (i32 *)DATA);
             printfcd("\nMTX_TRANS coord/dir");
             calculate_clip_matrix(this);
             return;
         case 3:
             printfcd("\nMTX_TRANS texture");
-            matrix_translate(M_TEXTURE.m, (i32 *)DATA);
+            matrix_translate(M_TEXTURE, (i32 *)DATA);
             return;
     }
 }
@@ -826,9 +793,9 @@ static void cmd_NORMAL(struct NDS *this)
     src[2] = ((i32)(i16)(src[2] << 6)) >> 3;
 
     i32 normalt[3]; // should be 1 bit sign 10 bits frac
-    normalt[0] = ((src[0] * M_VECTOR.m[0] + src[1] * M_VECTOR.m[4] + src[2] * M_VECTOR.m[8]) << 9) >> 21;
-    normalt[1] = ((src[0] * M_VECTOR.m[1] + src[1] * M_VECTOR.m[5] + src[2] * M_VECTOR.m[9]) << 9) >> 21;
-    normalt[2] = ((src[0] * M_VECTOR.m[2] + src[1] * M_VECTOR.m[6] + src[2] * M_VECTOR.m[10]) << 9) >> 21;
+    normalt[0] = ((src[0] * M_VECTOR[0] + src[1] * M_VECTOR[4] + src[2] * M_VECTOR[8]) << 9) >> 21;
+    normalt[1] = ((src[0] * M_VECTOR[1] + src[1] * M_VECTOR[5] + src[2] * M_VECTOR[9]) << 9) >> 21;
+    normalt[2] = ((src[0] * M_VECTOR[2] + src[1] * M_VECTOR[6] + src[2] * M_VECTOR[10]) << 9) >> 21;
 
     i32 c = 0;
     u32 vtx[3] = { (u32)this->ge.lights.material_color.specular_emission[0] << 14,
@@ -899,8 +866,8 @@ static void cmd_TEXCOORD(struct NDS *this)
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_texcoord) {
         int32_t ts = this->ge.params.vtx.S;
         int32_t tt = this->ge.params.vtx.T;
-        this->ge.params.vtx.S = (ts * M_TEXTURE.m[0] + tt * M_TEXTURE.m[4] + M_TEXTURE.m[8] + M_TEXTURE.m[12]) >> 12;
-        this->ge.params.vtx.T = (ts * M_TEXTURE.m[1] + tt * M_TEXTURE.m[5] + M_TEXTURE.m[9] + M_TEXTURE.m[13]) >> 12;
+        this->ge.params.vtx.S = (ts * M_TEXTURE[0] + tt * M_TEXTURE[4] + M_TEXTURE[8] + M_TEXTURE[12]) >> 12;
+        this->ge.params.vtx.T = (ts * M_TEXTURE[1] + tt * M_TEXTURE[5] + M_TEXTURE[9] + M_TEXTURE[13]) >> 12;
     }
 }
 
@@ -925,16 +892,16 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
         printf("\nVERTEX MULT WATCH OUT!");
         for (u32 i = 0; i < 2; i++) {
-            i64 x = node->data.xyzw[0] * M_TEXTURE.m[i*4]; // TODO: May have got x/y wrong here
-            i64 y = node->data.xyzw[1] * M_TEXTURE.m[(i*4)+1];
-            i64 z = node->data.xyzw[2] * M_TEXTURE.m[(i*4)+2];
+            i64 x = node->data.xyzw[0] * M_TEXTURE[i*4]; // TODO: May have got x/y wrong here
+            i64 y = node->data.xyzw[1] * M_TEXTURE[(i*4)+1];
+            i64 z = node->data.xyzw[2] * M_TEXTURE[(i*4)+2];
 
             node->data.uv[i] = (i16)(((x + y + z) >> 24) + node->data.uv[i]);
         }
     }
     i32 tmp[4];
     memcpy(tmp, node->data.xyzw, sizeof(i32)*4);
-    matrix_multiply_by_vector(node->data.xyzw, M_CLIP.m, tmp);
+    matrix_multiply_by_vector(node->data.xyzw, M_CLIP, tmp);
     //printfcd("\nTransformed vertex: %f %f %f %f", vtx_to_float(dest->xyzw[0]), vtx_to_float(dest->xyzw[1]), vtx_to_float(dest->xyzw[2]), vtx_to_float(dest->xyzw[3]));
 }
 
@@ -1546,10 +1513,10 @@ static void cmd_LIGHT_VECTOR(struct NDS *this)
     dir[0] = (i16)((DATA[0] & 0x000003FF) << 6) >> 6;
     dir[1] = (i16)((DATA[0] & 0x000FFC00) >> 4) >> 6;
     dir[2] = (i16)((DATA[0] & 0x3FF00000) >> 14) >> 6;
-    this->ge.lights.light[l].direction[0] = (-((dir[0] * M_VECTOR.m[0] + dir[1] * M_VECTOR.m[4] + dir[2] * M_VECTOR.m[8] ) >> 12) << 21) >> 21;
-    this->ge.lights.light[l].direction[1] = (-((dir[0] * M_VECTOR.m[1] + dir[1] * M_VECTOR.m[5] + dir[2] * M_VECTOR.m[9] ) >> 12) << 21) >> 21;
-    this->ge.lights.light[l].direction[2] = (-((dir[0] * M_VECTOR.m[2] + dir[1] * M_VECTOR.m[6] + dir[2] * M_VECTOR.m[10]) >> 12) << 21) >> 21;
-    i32 den = -(((dir[0] * M_VECTOR.m[2] + dir[1] * M_VECTOR.m[6] + dir[2] * M_VECTOR.m[10]) << 9) >> 21) + (1 << 9);
+    this->ge.lights.light[l].direction[0] = (-((dir[0] * M_VECTOR[0] + dir[1] * M_VECTOR[4] + dir[2] * M_VECTOR[8] ) >> 12) << 21) >> 21;
+    this->ge.lights.light[l].direction[1] = (-((dir[0] * M_VECTOR[1] + dir[1] * M_VECTOR[5] + dir[2] * M_VECTOR[9] ) >> 12) << 21) >> 21;
+    this->ge.lights.light[l].direction[2] = (-((dir[0] * M_VECTOR[2] + dir[1] * M_VECTOR[6] + dir[2] * M_VECTOR[10]) >> 12) << 21) >> 21;
+    i32 den = -(((dir[0] * M_VECTOR[2] + dir[1] * M_VECTOR[6] + dir[2] * M_VECTOR[10]) << 9) >> 21) + (1 << 9);
 
     if (den == 0) this->ge.lights.material_color.spectral_reciprocal[l] = 0;
     else this->ge.lights.material_color.spectral_reciprocal[l] = (1<<18) / den;
@@ -1996,22 +1963,22 @@ static u32 read_results(struct NDS *this, u32 addr, u32 sz)
         printf("\nCLIPMATRIX READ");
         u32 which = (addr - 0x04000640) >> 2;
         assert(which<16);
-        return this->ge.matrices.clip.m[which];
+        return this->ge.matrices.clip[which];
     }
     if ((addr >= 0x04000680) && (addr < 0x040006A4)) {
         printf("\nDIR MATRIX READ");
         u32 which = (addr - 0x04000680) >> 2;
         assert(which<9);
         switch(which) {
-            case 0: return this->ge.matrices.vector.m[0];
-            case 1: return this->ge.matrices.vector.m[1];
-            case 2: return this->ge.matrices.vector.m[2];
-            case 3: return this->ge.matrices.vector.m[4];
-            case 4: return this->ge.matrices.vector.m[5];
-            case 5: return this->ge.matrices.vector.m[6];
-            case 6: return this->ge.matrices.vector.m[8];
-            case 7: return this->ge.matrices.vector.m[9];
-            case 8: return this->ge.matrices.vector.m[10];
+            case 0: return this->ge.matrices.vector[0];
+            case 1: return this->ge.matrices.vector[1];
+            case 2: return this->ge.matrices.vector[2];
+            case 3: return this->ge.matrices.vector[4];
+            case 4: return this->ge.matrices.vector[5];
+            case 5: return this->ge.matrices.vector[6];
+            case 6: return this->ge.matrices.vector[8];
+            case 7: return this->ge.matrices.vector[9];
+            case 8: return this->ge.matrices.vector[10];
         }
     }
     printf("\nUNHANDLED READ FROM RESULTS AT %08x", addr);

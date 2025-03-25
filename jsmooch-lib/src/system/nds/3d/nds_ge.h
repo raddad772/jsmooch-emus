@@ -49,9 +49,7 @@ enum NDS_GE_cmds {
 };
 
 
-struct NDS_GE_matrix {
-    i32 m[16];
-};
+typedef i32 NDS_GE_matrix[16];
 
 struct NDS_GE_FIFO_entry {
     u8 cmd;
@@ -332,13 +330,13 @@ struct NDS_GE {
             i32 position_vector_ptr;
             i32 texture_ptr;
 
-            struct NDS_GE_matrix position[32];
-            struct NDS_GE_matrix vector[32];
-            struct NDS_GE_matrix projection[16];
-            struct NDS_GE_matrix texture[16];
+            NDS_GE_matrix position[32];
+            NDS_GE_matrix vector[32];
+            NDS_GE_matrix projection[16];
+            NDS_GE_matrix texture[16];
         } stacks;
-        struct NDS_GE_matrix position, texture, projection, vector;
-        struct NDS_GE_matrix clip;
+        NDS_GE_matrix position, texture, projection, vector;
+        NDS_GE_matrix clip;
     } matrices;
 
     struct {
