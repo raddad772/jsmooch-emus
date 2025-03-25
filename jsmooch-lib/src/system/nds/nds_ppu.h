@@ -94,18 +94,29 @@ struct NDS_PPU {
         } blend;
 
         struct {
-            u32 do_3d;
-            u32 bg_mode;
             u32 force_blank;
             u32 frame, hblank_free;
-            u32 tile_obj_map_1d;
-            u32 bitmap_obj_map_1d;
-            u32 bitmap_obj_2d_dim;
-            u32 character_base, screen_base;
-            u32 bitmap_obj_1d_boundary, tile_obj_1d_boundary;
-            u32 bitmap_obj_1d_stride, tile_obj_1d_stride;
-            u32 bg_extended_palettes, obj_extended_palettes;
             u32 display_mode;
+            u32 bg_mode;
+
+            struct {
+                u32 do_3d;
+                u32 character_base, screen_base;
+                u32 extended_palettes;
+            } bg;
+
+            struct {
+                struct {
+                    u32 boundary_1d, stride_1d;
+                    u32 map_1d;
+                } tile;
+                struct {
+                    u32 boundary_1d, stride_1d;
+                    u32 map_1d, map_2d;
+                    u32 dim_2d;
+                } bitmap;
+                u32 extended_palettes;
+            } obj;
         } io;
 
         u16 line_px[256];

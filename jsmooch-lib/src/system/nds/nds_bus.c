@@ -189,7 +189,15 @@ static u32 busrd9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access
 
 static void buswr9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (sz == 1) return; // 8-bit writes ignored
+    if (sz == 1) {
+        static int a = 1;
+        if (a) {
+            printf("\nWarning ignore 8-bit vram write!");
+            a = 0;
+        }
+        return; // 8-bit writes ignored
+    }
+    //printf("\nVRAM write addr:%08x vaddr:%06x MSTA:%d OFS:%d val:%04x", addr, addr & 0x1FFFF, this->mem.vram.io.bank[0].mst, this->mem.vram.io.bank[0].ofs, val);
     u8 *ptr = this->mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK];
     if (ptr) return cW[sz](ptr, addr & 0x3FFF, val);
 

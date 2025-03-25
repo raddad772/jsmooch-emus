@@ -29,7 +29,7 @@ void NDS_PPU_init(struct NDS *this)
         p->bg[2].pa = 1 << 8; p->bg[2].pd = 1 << 8;
         p->bg[3].pa = 1 << 8; p->bg[3].pd = 1 << 8;
     }
-    this->ppu.eng2d[0].io.do_3d = 0;
+    this->ppu.eng2d[0].io.bg.do_3d = 0;
 }
 
 void NDS_PPU_delete(struct NDS *this)
@@ -245,7 +245,7 @@ static void draw_sprite_affine(struct NDS *this, struct NDSENG2D *eng, u32 oam_o
         i32 py = (pc*ix + pd*iy)>>8;    // get y texture coordinate
         if ((screen_x >= 0) && (screen_x < 256))
             get_affine_sprite_pixel(this, eng, mode, px, py, tile_num, htiles, vtiles, bpp8, palette, priority,
-                                    eng->io.bitmap_obj_map_1d, dsize, screen_x, blended, w);   // get color from (px,py)
+                                    eng->io.obj.bitmap.map_1d, dsize, screen_x, blended, w);   // get color from (px,py)
         screen_x++;
         eng->obj.drawing_cycles -= 2;
         if (eng->obj.drawing_cycles < 0) return;
@@ -265,10 +265,12 @@ static void calculate_windows_vflags(struct NDS *this, struct NDSENG2D *eng)
 static u32 get_sprite_tile_addr(struct NDS *this, struct NDSENG2D *eng, u32 tile_num, u32 htiles, u32 block_y, u32 line_in_tile, u32 bpp8, u32 d1)
 {
     if (d1) {
-        tile_num += ((htiles << (bpp8 + eng->io.tile_obj_1d_boundary)) * block_y);
+        printf("\nOK HERE!");
+        tile_num *= eng->io.obj.tile.stride_1d;
     }
     else {
-        tile_num += block_y << (2 + eng->io.bitmap_obj_2d_dim);
+        printf("\nOK HERE2!");
+        tile_num += block_y << (2 + eng->io.obj.bitmap.dim_2d);
         /*if (eng->io.bitmap_obj_2d_dim) {
             tile_num += block_y << 5;
         }
@@ -412,7 +414,7 @@ static void draw_sprite_normal(struct NDS *this, struct NDSENG2D *eng, u32 addr,
 
     // OK so we know which line
     // We have two possibilities; 1d or 2d layout
-    u32 tile_addr = get_sprite_tile_addr(this, eng, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, eng->io.bitmap_obj_map_1d);
+    u32 tile_addr = get_sprite_tile_addr(this, eng, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, eng->io.obj.bitmap.map_1d);
     if (hflip) tile_addr += (htiles - 1) * (32 << bpp8);
     //if (y_min != -1) printf("\nSPRITE%d y:%d PALETTE:%d", num, y_min, palette);
 
@@ -444,7 +446,7 @@ static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
     for (u32 i = 0; i < 128; i++) {
         u32 oam_offset = (i * 8);
         u32 affine = (read_oam(this, eng, oam_offset, 2) >> 8) & 1;
-
+        if (eng->num==0 && affine) printf("\nAFFINE! %d", i);
         if (affine) draw_sprite_affine(this, eng, oam_offset, w, i);
         else draw_sprite_normal(this, eng, oam_offset, w, i);
     }
@@ -462,9 +464,16 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
 
 static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, u32 bgnum, u32 block_x, u32 vpos, struct NDS_PX px[8], u32 screen_x) {
     u32 block_y = vpos >> 3;
-    u32 screenblock_addr = bg->screen_base_block + eng->io.screen_base + (se_index_fast(block_x, block_y, bg->screen_size) << 1);
+    //  engine A screen base: BGxCNT.bits*2K + DISPCNT.bits*64K
+    //  engine B screen base: BGxCNT.bits*2K + 0
+    //  engine A char base: BGxCNT.bits*16K + DISPCNT.bits*64K
+    //  engine B char base: BGxCNT.bits*16K + 0
+
+
+    u32 screenblock_addr = bg->screen_base_block + eng->io.bg.screen_base + (se_index_fast(block_x, block_y, bg->screen_size) << 1);
 
     u16 attr = read_vram_bg(this, eng, screenblock_addr, 2);
+    //if (eng->num == 0) printf("\nATTR read from %06x", screenblock_addr);
     u32 tile_num = attr & 0x3FF;
     u32 hflip = (attr >> 10) & 1;
     u32 vflip = (attr >> 11) & 1;
@@ -475,7 +484,7 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
 
     u32 tile_bytes = bg->bpp8 ? 64 : 32;
     u32 line_size = bg->bpp8 ? 8 : 4;
-    u32 tile_start_addr = bg->character_base_block + eng->io.character_base + (tile_num * tile_bytes);
+    u32 tile_start_addr = bg->character_base_block + eng->io.bg.character_base + (tile_num * tile_bytes);
     u32 line_addr = tile_start_addr + (line_in_tile * line_size);
     //if (line_addr >= 0x10000) return; // hardware doesn't draw from up there
     u32 addr = line_addr;
@@ -484,6 +493,7 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
         u32 mx = hflip ? 7 : 0;
         for (u32 ex = 0; ex < 8; ex++) {
             u8 data = read_vram_bg(this, eng, mx + addr, 1);
+            //if ((eng->num == 0) && (data != 0)) printf("\nGOT SONE8!");
             struct NDS_PX *p = &px[ex];
             if ((screen_x + mx) < 256) {
                 if (data != 0) {
@@ -501,6 +511,8 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
         if (hflip) mx = 7;
         for (u32 ex = 0; ex < 4; ex++) {
             u8 data = read_vram_bg(this, eng, addr, 1);
+            //if (eng->num == 0) printf("\nBG READ FROM %06x", addr);
+            //if ((eng->num == 0) && (data != 0)) printf("\nGOT SONE4!");
             addr++;
             for (u32 i = 0; i < 2; i++) {
                 u16 c = data & 15;
@@ -564,7 +576,9 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
-    if (!bg->enable) { return; }
+    if (!bg->enable) {
+        return;
+    }
     // first do a fetch for fine scroll -1
     u32 hpos = bg->hscroll & bg->hpixels_mask;
     u32 vpos = (bg->vscroll + bg->mosaic_y) & bg->vpixels_mask;
@@ -632,12 +646,12 @@ static void get_affine_bg_pixel(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 
     u32 tile_width = bg->htiles;
 
-    u32 screenblock_addr = bg->screen_base_block + eng->io.screen_base;
+    u32 screenblock_addr = bg->screen_base_block + eng->io.bg.screen_base;
     screenblock_addr += block_x + (block_y * tile_width);
     u32 tile_num = read_vram_bg(this, eng, screenblock_addr, 1);
 
     // so now, grab that tile...
-    u32 tile_start_addr = bg->character_base_block + eng->io.character_base + (tile_num * 64);
+    u32 tile_start_addr = bg->character_base_block + eng->io.bg.character_base + (tile_num * 64);
     u32 line_start_addr = tile_start_addr + (line_in_tile * 8);
     u32 addr = line_start_addr;
     u8 color = read_vram_bg(this, eng, line_start_addr + (px & 7), 1);
@@ -658,7 +672,9 @@ static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     i32 fx, fy;
     affine_line_start(this, eng, bg, &fx, &fy);
     memset(bg->line, 0, sizeof(bg->line));
-    if (!bg->enable) { return; }
+    if (!bg->enable) {
+        return;
+    }
 
     //struct NDS_DBG_tilemap_line_bg *dtl = &this->dbg_info.bg_scrolls[bgnum];
 
@@ -860,7 +876,7 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
 static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
-    if ((eng->num == 0) && (eng->io.do_3d)) {
+    if ((eng->num == 0) && (eng->io.bg.do_3d)) {
         draw_3d_line(this, eng, 0);
     }
     else {
@@ -880,7 +896,7 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
-    if ((eng->num == 0) && (eng->io.do_3d)) {
+    if ((eng->num == 0) && (eng->io.bg.do_3d)) {
         draw_3d_line(this, eng, 0);
     }
     else {
@@ -902,7 +918,7 @@ static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 static void draw_line3(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
-    if ((eng->num == 0) && (eng->io.do_3d)) {
+    if ((eng->num == 0) && (eng->io.bg.do_3d)) {
         draw_3d_line(this, eng, 0);
     }
     else {
@@ -924,7 +940,7 @@ static void draw_line3(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 static void draw_line5(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
-    if ((eng->num == 0) && (eng->io.do_3d)) {
+    if ((eng->num == 0) && (eng->io.bg.do_3d)) {
         draw_3d_line(this, eng, 0);
     }
     else {
@@ -947,7 +963,7 @@ static void draw_line5(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 static void draw_line(struct NDS *this, u32 eng_num)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[eng_num];
-    struct NDS_DBG_line *l = &this->dbg_info.line[this->clock.ppu.y];
+    struct NDS_DBG_line *l = &this->dbg_info.eng[eng_num].line[this->clock.ppu.y];
     l->bg_mode = eng->io.bg_mode;
     // We have 2-4 display modes. They can be: WHITE, NORMAL, VRAM display, and "main memory display"
     // During this time, the 2d engine runs like normal!
@@ -975,6 +991,12 @@ static void draw_line(struct NDS *this, u32 eng_num)
         }
     }
 
+    for (u32 ppun = 0; ppun < 2; ppun++) {
+        for (u32 i = 0; i < 4; i++) {
+            memcpy(this->dbg_info.eng[ppun].line[this->clock.ppu.y].bg[i].buf, this->ppu.eng2d[ppun].bg[i].line, sizeof(struct NDS_PX)*256);
+        }
+        memcpy(this->dbg_info.eng[ppun].line[this->clock.ppu.y].sprite_buf, this->ppu.eng2d[ppun].obj.line, sizeof(struct NDS_PX)*256);
+    }
     // Then we will pixel output it to the screen...
     u16 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);
     if (eng_num ^ this->ppu.io.display_swap ^ 1) line_output += (192 * OUT_WIDTH);
@@ -1368,12 +1390,12 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             eng->io.bg_mode = val & 7;
             if (en == 0) {
-                eng->io.do_3d = (val >> 3) & 1;
-                eng->bg[0].do3d = eng->io.do_3d;
+                eng->io.bg.do_3d = (val >> 3) & 1;
+                eng->bg[0].do3d = eng->io.bg.do_3d;
             }
-            eng->io.tile_obj_map_1d = (val >> 4) & 1;
-            eng->io.bitmap_obj_2d_dim = (val >> 5) & 1;
-            eng->io.bitmap_obj_map_1d = (val >> 6) & 1;
+            eng->io.obj.tile.map_1d = (val >> 4) & 1;
+            eng->io.obj.bitmap.dim_2d = (val >> 5) & 1;
+            eng->io.obj.bitmap.map_1d = (val >> 6) & 1;
             eng->io.force_blank = (val >> 7) & 1;
             calc_screen_size(this, eng, 0);
             calc_screen_size(this, eng, 1);
@@ -1399,22 +1421,22 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             if ((en == 1) && (eng->io.display_mode > 1)) {
                 printf("\nWARNING eng1 BAD DISPLAY MODE: %d", eng->io.display_mode);
             }
-            eng->io.tile_obj_1d_boundary = (val >> 4) & 3;
-            eng->io.tile_obj_1d_stride = boundary_to_stride[eng->io.tile_obj_1d_boundary];
+            eng->io.obj.tile.boundary_1d = (val >> 4) & 3;
+            eng->io.obj.tile.stride_1d = boundary_to_stride[eng->io.obj.tile.boundary_1d];
             eng->io.hblank_free = (val >> 7) & 1;
             if (en == 0) {
                 this->ppu.io.display_block = (val >> 2) & 3;
-                eng->io.bitmap_obj_1d_boundary = (val >> 6) & 1;
-                eng->io.bitmap_obj_1d_stride = boundary_to_stride_bitmap[eng->io.bitmap_obj_1d_boundary];
+                eng->io.obj.bitmap.boundary_1d = (val >> 6) & 1;
+                eng->io.obj.bitmap.stride_1d = boundary_to_stride_bitmap[eng->io.obj.bitmap.boundary_1d];
             }
             return;
         case R9_DISPCNT+3:
             if (en == 0) {
-                eng->io.character_base = (val & 7) << 16;
-                eng->io.screen_base = ((val >> 3) & 7) << 16;
+                eng->io.bg.character_base = (val & 7) << 16;
+                eng->io.bg.screen_base = ((val >> 3) & 7) << 16;
             }
-            eng->io.bg_extended_palettes = (val >> 6) & 1;
-            eng->io.obj_extended_palettes = (val >> 7) & 1;
+            eng->io.bg.extended_palettes = (val >> 6) & 1;
+            eng->io.obj.extended_palettes = (val >> 7) & 1;
             return;
         case R9_BG0CNT+0:
         case R9_BG1CNT+0:
@@ -1435,6 +1457,13 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R9_BG3CNT+1: { // BGCNT lo
             u32 bgnum = (addr & 0b0110) >> 1;
             struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+/*
+  engine A screen base: BGxCNT.bits*2K + DISPCNT.bits*64K
+  engine B screen base: BGxCNT.bits*2K + 0
+  engine A char base: BGxCNT.bits*16K + DISPCNT.bits*64K
+  engine B char base: BGxCNT.bits*16K + 0
+ *
+ */
             bg->screen_base_block = ((val >> 0) & 31) << 11;
             if (bgnum >= 2) bg->display_overflow = (val >> 5) & 1;
             bg->screen_size = (val >> 6) & 3;
@@ -1629,9 +1658,9 @@ u32 NDS_PPU_read9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
         case R9_DISPCNT+0:
             v = eng->io.bg_mode;
             v |= eng->bg[0].do3d << 3;
-            v |= eng->io.tile_obj_map_1d << 4;
-            v |= eng->io.bitmap_obj_2d_dim << 5;
-            v |= eng->io.bitmap_obj_map_1d << 6;
+            v |= eng->io.obj.tile.map_1d << 4;
+            v |= eng->io.obj.bitmap.dim_2d << 5;
+            v |= eng->io.obj.bitmap.map_1d << 6;
             v |= eng->io.force_blank << 7;
             return v;
         case R9_DISPCNT+1:
@@ -1646,19 +1675,19 @@ u32 NDS_PPU_read9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return v;
         case R9_DISPCNT+2:
             v = eng->io.display_mode;
-            v |= eng->io.tile_obj_1d_boundary << 4;
+            v |= eng->io.obj.tile.boundary_1d << 4;
             v |= eng->io.hblank_free << 7;
             if (en == 0) {
                 v |= this->ppu.io.display_block << 2;
-                v |= eng->io.bitmap_obj_1d_boundary << 6;
+                v |= eng->io.obj.bitmap.boundary_1d << 6;
             }
             return v;
         case R9_DISPCNT+3:
-            v = eng->io.bg_extended_palettes << 6;
-            v |= eng->io.obj_extended_palettes << 7;
+            v = eng->io.bg.extended_palettes << 6;
+            v |= eng->io.obj.extended_palettes << 7;
             if (en == 0) {
-                v |= eng->io.character_base >> 16;
-                v |= eng->io.screen_base >> 13;
+                v |= eng->io.bg.character_base >> 16;
+                v |= eng->io.bg.screen_base >> 13;
             }
             return v;
         case R_DISPSTAT+0: // DISPSTAT lo

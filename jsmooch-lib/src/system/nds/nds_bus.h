@@ -365,22 +365,25 @@ struct NDS {
     } audio;
 
     struct {
-        struct NDS_DBG_line {
-            u8 window_coverage[256]; // 256 4-bit values, bit 1 = on, bit 0 = off
-            struct NDS_DBG_line_bg {
-                u32 hscroll, vscroll;
-                i32 hpos, vpos;
-                i32 x_lerp, y_lerp;
-                i32 pa, pb, pc, pd;
-                u32 reset_x, reset_y;
-                u32 htiles, vtiles;
-                u32 display_overflow;
-                u32 screen_base_block, character_base_block;
-                u32 priority;
-                u32 bpp8;
-            } bg[4];
-            u32 bg_mode;
-        } line[160];
+        struct NDS_DBG_eng {
+            struct NDS_DBG_line {
+                struct NDS_DBG_line_bg {
+                    struct NDS_PX buf[256];
+                    u32 hscroll, vscroll;
+                    i32 hpos, vpos;
+                    i32 x_lerp, y_lerp;
+                    i32 pa, pb, pc, pd;
+                    u32 reset_x, reset_y;
+                    u32 htiles, vtiles;
+                    u32 display_overflow;
+                    u32 screen_base_block, character_base_block;
+                    u32 priority;
+                    u32 bpp8;
+                } bg[4];
+                struct NDS_PX sprite_buf[256];
+                u32 bg_mode;
+            } line[192];
+        } eng[2];
         struct NDS_DBG_tilemap_line_bg {
             u8 lines[1024 * 128]; // 4, 128*8 1-bit "was rendered or not" values
         } bg_scrolls[4];
@@ -436,6 +439,7 @@ struct NDS {
             MDBG_IMAGE_VIEW(re_wireframe)
             MDBG_IMAGE_VIEW(re_attr)
             MDBG_IMAGE_VIEW(ppu_info)
+            MDBG_IMAGE_VIEW(ppu_layers)
             MDBG_IMAGE_VIEW(re_output)
         DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1
