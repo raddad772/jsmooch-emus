@@ -308,17 +308,6 @@ static void cmd_MTX_MODE(struct NDS *this)
     printfcd("\nMTX_MODE(%d);", this->ge.io.MTX_MODE);
 }
 
-/*
- 0  Projection Matrix - only one
- 1  Position Matrix (aka Modelview Matrix) - ?
- 2  Position & Vector Simultaneous Set mode (used for Light+VEC_TEST) ??
- 3  Texture Matrix (see DS 3D Texture Coordinates chapter) - 1
- */
-/*
-Coordinate  = position matrix
-Vector  = direction
- */
-
 static void calculate_clip_matrix(struct NDS *this)
 {
     // Clip matrix = projection * position
@@ -515,23 +504,19 @@ static void cmd_MTX_MULT_4x4(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
-            printfcd("\nMTX_MULT_4x4(proj);");
             matrix_multiply_4x4(M_PROJECTION, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
-            printfcd("\nMTX_MULT_4x4(coord);");
             matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
-            printfcd("\nMTX_MULT_4x4(coord&dir);");
             matrix_multiply_4x4(M_POSITION, (i32 *)DATA);
             matrix_multiply_4x4(M_VECTOR, (i32 *)DATA);
             calculate_clip_matrix(this);
             return;
         case 3: // texture matrix
-            printfcd("\nMTX_MULT_4x4(texture);");
             matrix_multiply_4x4(M_TEXTURE, (i32 *)DATA);
             return;
     }
@@ -541,17 +526,14 @@ static void cmd_MTX_MULT_4x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
-            matrix_multiply_4x3(M_PROJECTION, (i32 *)DATA);
             printfcd("\nMTX_MULT_4x3(Projection);");
             calculate_clip_matrix(this);
             return;
         case 1: //  pos/coord matrix
             matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
-            printfcd("\nMTX_MULT_4x3(Coord);");
             calculate_clip_matrix(this);
             return;
         case 2: // both pos/coord and dir/vector matrices
-            printfcd("\nMTX_MULT_4x3(coord&dir);");
             matrix_multiply_4x3(M_POSITION, (i32 *)DATA);
             matrix_multiply_4x3(M_VECTOR, (i32 *)DATA);
             calculate_clip_matrix(this);
@@ -590,17 +572,14 @@ static void cmd_MTX_SCALE(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_scale(M_PROJECTION, (i32 *)DATA);
-            printfcd("\nMTX_SCALE proj");
             calculate_clip_matrix(this);
             return;
         case 1:
         case 2:
             matrix_scale(M_POSITION, (i32 *)DATA);
-            printfcd("\nMTX_SCALE COORD");
             calculate_clip_matrix(this);
             return;
         case 3:
-            printfcd("\nMTX_SCALE texture");
             matrix_scale(M_TEXTURE, (i32 *)DATA);
             return;
     }
@@ -611,22 +590,18 @@ static void cmd_MTX_TRANS(struct NDS *this)
     switch(this->ge.io.MTX_MODE) {
         case 0:
             matrix_translate(M_PROJECTION, (i32 *)DATA);
-            printfcd("\nMTX_TRANS projection");
             calculate_clip_matrix(this);
             return;
         case 1:
             matrix_translate(M_POSITION, (i32 *)DATA);
-            printfcd("\nMTX_TRANS coordinate");
             calculate_clip_matrix(this);
             return;
         case 2:
             matrix_translate(M_POSITION, (i32 *)DATA);
             matrix_translate(M_VECTOR, (i32 *)DATA);
-            printfcd("\nMTX_TRANS coord/dir");
             calculate_clip_matrix(this);
             return;
         case 3:
-            printfcd("\nMTX_TRANS texture");
             matrix_translate(M_TEXTURE, (i32 *)DATA);
             return;
     }
@@ -638,27 +613,9 @@ static void cmd_COLOR(struct NDS *this)
     u32 r = (color_in >> 0) & 0x1F;
     u32 g = (color_in >> 5) & 0x1F;
     u32 b = (color_in >> 10) & 0x1F;
-    printfcd("\nCOLOR r:%d g:%d b:%d", r, g, b);
     this->ge.params.vtx.color[0] = r;
     this->ge.params.vtx.color[1] = g;
     this->ge.params.vtx.color[2] = b;
-}
-
-static void matrix_multiply_by_vector(i32 *dest, i32 *matrix, i32 *src)
-{
-    //printfcd("\nMultiply matrix by vector.");
-    //printfcd("\nVector: %f %f %f %f", vtx_to_float(src[0]), vtx_to_float(src[1]), vtx_to_float(src[2]), vtx_to_float(src[3]));
-    //printfcd("\nmatrix: ");
-    //pprint_matrix(matrix);
-    // c[x] = a[x]*b1x + a[y]*b2x + a[y]*b3x + a[y]*b4x
-    for (u32 x = 0; x < 4; x++) {
-        i64 out = ((i64)src[0]*(i64)matrix[0+x])>>12;
-        out += ((i64)src[1]*(i64)matrix[4+x])>>12;
-        out += ((i64)src[2]*(i64)matrix[8+x])>>12;
-        out += ((i64)src[3]*(i64)matrix[12+x])>>12;
-        dest[x] = (i32)out;
-    }
-    //printfcd("\nVector after: %f %f %f %f", vtx_to_float(dest[0]), vtx_to_float(dest[1]), vtx_to_float(dest[2]), vtx_to_float(dest[3]));
 }
 
 static void cmd_NORMAL(struct NDS *this)
@@ -795,10 +752,11 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
             node->data.uv[i] = (i16)(((x + y + z) >> 24) + node->data.uv[i]);
         }
     }
-    i32 tmp[4];
-    memcpy(tmp, node->data.xyzw, sizeof(i32)*4);
-    matrix_multiply_by_vector(node->data.xyzw, M_CLIP, tmp);
-    //printfcd("\nTransformed vertex: %f %f %f %f", vtx_to_float(dest->xyzw[0]), vtx_to_float(dest->xyzw[1]), vtx_to_float(dest->xyzw[2]), vtx_to_float(dest->xyzw[3]));
+    i64 tmp[4] = {(i64)node->data.xyzw[0], (i64)node->data.xyzw[1], (i64)node->data.xyzw[2], 1 << 12};
+    node->data.xyzw[0] = (tmp[0]*M_CLIP[0] + tmp[1]*M_CLIP[4] + tmp[2]*M_CLIP[8] + tmp[3]*M_CLIP[12]) >> 12;
+    node->data.xyzw[1] = (tmp[0]*M_CLIP[1] + tmp[1]*M_CLIP[5] + tmp[2]*M_CLIP[9] + tmp[3]*M_CLIP[13]) >> 12;
+    node->data.xyzw[2] = (tmp[0]*M_CLIP[2] + tmp[1]*M_CLIP[6] + tmp[2]*M_CLIP[10] + tmp[3]*M_CLIP[14]) >> 12;
+    node->data.xyzw[3] = (tmp[0]*M_CLIP[3] + tmp[1]*M_CLIP[7] + tmp[2]*M_CLIP[11] + tmp[3]*M_CLIP[15]) >> 12;
 }
 
 static u32 clip_against_plane(struct NDS *this, i32 axis, u32 is_compare_GT, struct NDS_GE_VTX_list *vertex_list_in, struct NDS_GE_VTX_list *vertex_list_out) {
