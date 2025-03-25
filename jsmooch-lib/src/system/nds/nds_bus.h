@@ -434,6 +434,8 @@ struct NDS {
             MDBG_IMAGE_VIEW(b_sprites)
             MDBG_IMAGE_VIEW(b_tiles)
             MDBG_IMAGE_VIEW(re_wireframe)
+            MDBG_IMAGE_VIEW(re_attr)
+            MDBG_IMAGE_VIEW(ppu_info)
             MDBG_IMAGE_VIEW(re_output)
         DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1

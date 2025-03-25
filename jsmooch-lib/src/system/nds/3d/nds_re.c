@@ -571,7 +571,6 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
             depth_r = right->zz;
         }
 
-
         u32 rside = right->xx > 255 ? 255 : right->xx;
 
         for (u32 x = left->xx; x < rside; x++) {

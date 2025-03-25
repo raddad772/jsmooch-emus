@@ -1222,6 +1222,283 @@ static void render_image_view_re_output(struct debugger_interface *dbgr, struct 
     }
 }
 
+static void set_info_A(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end)
+{
+    switch(mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06800000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engA BG VRAM");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+        case 2:
+            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            *mapaddr_start = 0x20000 * (ofs & 1);
+            break;
+        case 3:
+            sprintf(mapstr, "3d texture");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+    }
+    *mapaddr_end = *mapaddr_start + 0x1FFFF;
+}
+
+static void set_info_B(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06820000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engA BG VRAM");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+        case 2:
+            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            *mapaddr_start = 0x20000 * (ofs & 1);
+            break;
+        case 3:
+            sprintf(mapstr, "3d texture");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+    }
+    *mapaddr_end = *mapaddr_start + 0x1FFFF;
+}
+
+static void set_info_C(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06840000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engA BG VRAM");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+        case 2:
+            sprintf(mapstr, "arm7");
+            *mapaddr_start = 0x06000000 + (0x20000 * (ofs & 1));
+            break;
+        case 3:
+            sprintf(mapstr, "3d texture");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+        case 4:
+            sprintf(mapstr, "arm9+engB BG VRAM");
+            *mapaddr_start = 0;
+            break;
+    }
+    *mapaddr_end = *mapaddr_start + 0x1FFFF;
+}
+
+static void set_info_D(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06860000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engA BG VRAM");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+        case 2:
+            sprintf(mapstr, "arm7");
+            *mapaddr_start = 0x06000000 + (0x20000 * (ofs & 1));
+            break;
+        case 3:
+            sprintf(mapstr, "3d texture");
+            *mapaddr_start = 0x20000 * ofs;
+            break;
+        case 4:
+            sprintf(mapstr, "arm9+engB OBJ VRAM");
+            *mapaddr_start = 0;
+            break;
+    }
+    *mapaddr_end = *mapaddr_start + 0x1FFFF;
+}
+
+static void set_info_E(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06880000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engA BG VRAM");
+            *mapaddr_start = 0;
+            break;
+        case 2:
+            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            *mapaddr_start = 0;
+            break;
+        case 3:
+            sprintf(mapstr, "3d palette 0-3");
+            *mapaddr_start = 0;
+            break;
+        case 4:
+            sprintf(mapstr, "engA BG extended palette 0-3");
+            *mapaddr_start = 0;
+            break;
+    }
+    *mapaddr_end = *mapaddr_start + 0xFFFF;
+}
+
+static void set_info_F(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06890000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engA BG VRAM");
+            *mapaddr_start =  (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            break;
+        case 2:
+            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            *mapaddr_start = (0x4000*(ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            break;
+        case 3:
+            sprintf(mapstr, "3d palette %d", (ofs & 1) + ((ofs & 2) << 1));
+            *mapaddr_start = 0x4000 * ((ofs & 1) + ((ofs & 2) << 1));
+            break;
+        case 4: {
+            char *ptr = mapstr;
+            ptr += sprintf(ptr, "engA BG extended palette ");
+            if ((ofs & 1) == 0) {
+                ptr += sprintf(ptr, "slot 0-1");
+                *mapaddr_start = 0;
+            }
+            else {
+                ptr += sprintf(ptr, "slot 2-3");
+                *mapaddr_start = 0x4000;
+            }
+            break; }
+        case 5:
+            sprintf(mapstr, "engA OBJ extended palette");
+            *mapaddr_start = 0;
+            *mapaddr_end = 0x1FFF;
+            return;
+    }
+    *mapaddr_end = *mapaddr_start + 0x3FFF;
+}
+
+static void set_info_G(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06894000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engA BG VRAM");
+            *mapaddr_start =  (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            break;
+        case 2:
+            sprintf(mapstr, "arm9+engA OBJ VRAM");
+            *mapaddr_start = (0x4000 * (ofs & 1)) + (0x10000 * ((ofs >> 1) & 1));
+            break;
+        case 3:
+            sprintf(mapstr, "3d palette %d", ((ofs & 1) + ((ofs & 2) << 1)));
+            *mapaddr_start = 0x4000 * ((ofs & 1) + ((ofs & 2) << 1));
+            break;
+        case 4: {
+            char *ptr = mapstr;
+            ptr += sprintf(ptr, "engA BG extended palette ");
+            if ((ofs & 1) == 0) {
+                ptr += sprintf(ptr, "slot 0-1");
+                *mapaddr_start = 0;
+            }
+            else {
+                ptr += sprintf(ptr, "slot 2-3");
+                *mapaddr_start = 0x4000;
+            }
+            break; }
+        case 5:
+            sprintf(mapstr, "engA OBJ extended palette");
+            *mapaddr_start = 0;
+            *mapaddr_end = 0x1FFF;
+            return;
+    }
+    *mapaddr_end = *mapaddr_start + 0x3FFF;
+}
+
+static void set_info_H(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x06898000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engB BG VRAM");
+            *mapaddr_start =  0;
+            break;
+        case 2:
+            sprintf(mapstr, "engB BG extended palette 0-3");
+            *mapaddr_start = 0;
+            break;
+    }
+    *mapaddr_end = *mapaddr_start + 0x7FFF;
+}
+
+static void render_image_view_ppu_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct NDS *this = (struct NDS *) ptr;
+    //memset(ptr, 0, out_width * 4 * 10);
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
+    debugger_widgets_textbox_clear(tb);
+    for (u32 ppun = 0; ppun < 2; ppun++) {
+        struct NDSENG2D *eng = &this->ppu.eng2d[ppun];
+        debugger_widgets_textbox_sprintf(tb, "eng%c  display_mode:%d  bg_mode:%d", ppun == 0 ? 'A' : 'B', eng->io.display_mode, eng->io.bg_mode);
+        debugger_widgets_textbox_sprintf(tb, "\n");
+        if (ppun ^ this->ppu.io.display_swap) debugger_widgets_textbox_sprintf(tb, "top     do_3d:%d", eng->io.do_3d);
+        else debugger_widgets_textbox_sprintf(tb, "bottom  do_3d:%d", eng->io.do_3d);
+
+        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+            struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+            debugger_widgets_textbox_sprintf(tb, "\n BG%d  on:%d  mosaic:%d  screen_size:%d", bgnum, bg->enable, bg->mosaic_enable, bg->screen_size);
+        }
+        debugger_widgets_textbox_sprintf(tb, "\n\n");
+    }
+
+    // Now do VRAM mappings
+    char mapstr[50];
+    u32 mapaddr_start, mapaddr_end;
+    for (u32 bnum = 0; bnum < 8; bnum++) {
+        u32 mst = this->mem.vram.io.bank[bnum].mst;
+        u32 ofs = this->mem.vram.io.bank[bnum].ofs;
+
+        switch(bnum) {
+            case 0:
+                set_info_A(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 1:
+                set_info_B(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 2:
+                set_info_C(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 3:
+                set_info_D(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 4:
+                set_info_E(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 5:
+                set_info_F(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 6:
+                set_info_G(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 7:
+                set_info_H(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+        }
+        debugger_widgets_textbox_sprintf(tb, "\nVRAM %c MST:%d OFS:%d mapping:%s addr start:%x end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);
+    }
+
+}
+
+
 static void render_image_view_re_attr(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct NDS *this = (struct NDS *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -1380,11 +1657,33 @@ static void setup_image_view_re_wireframe(struct NDS* this, struct debugger_inte
 
 }
 
+static void setup_image_view_ppu_info(struct NDS *this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.ppu_info = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.ppu_info);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 10;
+    iv->height = 10;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 10, 10 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_ppu_info;
+
+    snprintf(iv->label, sizeof(iv->label), "Sys Info View");
+
+    debugger_widgets_add_textbox(&dview->options, "blah!", 1);
+}
+
 static void setup_image_view_re_attr(struct NDS* this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
-    this->dbg.image_views.re_wireframe = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.re_wireframe);
+    this->dbg.image_views.re_attr = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.re_attr);
     struct image_view *iv = &dview->image;
 
     iv->width = 256;
@@ -1442,6 +1741,7 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     setup_image_view_re_output(this, dbgr);
     setup_image_view_re_wireframe(this, dbgr);
     setup_image_view_re_attr(this, dbgr);
+    setup_image_view_ppu_info(this, dbgr);
 }
 /*
     //setup_ARM7TDMI_disassembly(dbgr, this);

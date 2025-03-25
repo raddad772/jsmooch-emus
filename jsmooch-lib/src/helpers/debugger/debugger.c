@@ -149,7 +149,7 @@ void debugger_widget_init(struct debugger_widget *this, enum JSMD_widgets kind)
             this->colorkey.title[0] = 0;
             break;
         case JSMD_textbox:
-            jsm_string_init(&this->textbox.contents, 100);
+            jsm_string_init(&this->textbox.contents, 4000);
             break;
         default:
             NOGOHERE;

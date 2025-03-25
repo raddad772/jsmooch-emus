@@ -29,7 +29,7 @@ void NDS_PPU_init(struct NDS *this)
         p->bg[2].pa = 1 << 8; p->bg[2].pd = 1 << 8;
         p->bg[3].pa = 1 << 8; p->bg[3].pd = 1 << 8;
     }
-    this->ppu.eng2d[0].io.do_3d = 1;
+    this->ppu.eng2d[0].io.do_3d = 0;
 }
 
 void NDS_PPU_delete(struct NDS *this)
@@ -1366,13 +1366,11 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 printf("\neng%d NEW BG MODE: %d", en, val & 7);
                 dbgloglog(NDS_CAT_PPU_BG_MODE, DBGLS_INFO, "eng%d new BG mode:%d", en, eng->io.bg_mode);
             }
-            if (eng == 0) {
-                eng->io.do_3d = (val >> 3) & 1;
-                printf("\n2d/3d: %d", eng->io.do_3d);
-            }
-
             eng->io.bg_mode = val & 7;
-            if (en == 0) eng->bg[0].do3d = (val >> 3) & 1;
+            if (en == 0) {
+                eng->io.do_3d = (val >> 3) & 1;
+                eng->bg[0].do3d = eng->io.do_3d;
+            }
             eng->io.tile_obj_map_1d = (val >> 4) & 1;
             eng->io.bitmap_obj_2d_dim = (val >> 5) & 1;
             eng->io.bitmap_obj_map_1d = (val >> 6) & 1;
