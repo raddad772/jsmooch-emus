@@ -274,7 +274,7 @@ struct NDS_RE {
             i32 x0, y0, x1, y1, width, height;
         } viewport;
 
-        i32 SHININESS[128];
+        u8 SHININESS[128];
         i32 TOON_TABLE_r[32];
         i32 TOON_TABLE_g[32];
         i32 TOON_TABLE_b[32];

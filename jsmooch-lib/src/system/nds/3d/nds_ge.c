@@ -310,6 +310,7 @@ static void cmd_MTX_MODE(struct NDS *this)
 
 static void calculate_clip_matrix(struct NDS *this)
 {
+    this->ge.clip_mtx_dirty = 0;
     // Clip matrix = projection * position
     memcpy(M_CLIP, M_PROJECTION, M_SZ);
     matrix_multiply_4x4(M_CLIP, M_POSITION);
@@ -488,12 +489,8 @@ static void cmd_SHININESS(struct NDS *this) {
     for (u32 p = 0; p < 32; p++) {
         u32 word = DATA[p];
         for (u32 w = 0; w < 4; w++) {
-            u32 data = word & 0xFF;
+            this->re.io.SHININESS[i++] = word & 0xFF;
             word >>= 8;
-
-            data = SIGNe8to32(data) << 4;
-            // Traditional 12-bit fixed point
-            this->re.io.SHININESS[i++] = data;
         }
     }
 };
@@ -1790,12 +1787,6 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 
 static u32 read_results(struct NDS *this, u32 addr, u32 sz)
 {
-    if ((addr >= 0x04000620) && (addr < 0x04000630)) {
-        printf("\nPOS TEST READ");
-        u32 which = (addr - 0x04000620) >> 2;
-        assert(which<4);
-        return this->ge.results.pos_test[which];
-    }
     if ((addr >= 0x04000630) && (addr < 0x04000638)) {
         printf("\nVEC TEST READ");
         u32 which = (addr - 0x04000630) >> 2;
@@ -1804,25 +1795,8 @@ static u32 read_results(struct NDS *this, u32 addr, u32 sz)
     }
     if ((addr >= 0x04000640) && (addr < 0x04000680)) {
         printf("\nCLIPMATRIX READ");
-        u32 which = (addr - 0x04000640) >> 2;
-        assert(which<16);
-        return this->ge.matrices.clip[which];
-    }
-    if ((addr >= 0x04000680) && (addr < 0x040006A4)) {
-        printf("\nDIR MATRIX READ");
-        u32 which = (addr - 0x04000680) >> 2;
-        assert(which<9);
-        switch(which) {
-            case 0: return this->ge.matrices.vector[0];
-            case 1: return this->ge.matrices.vector[1];
-            case 2: return this->ge.matrices.vector[2];
-            case 3: return this->ge.matrices.vector[4];
-            case 4: return this->ge.matrices.vector[5];
-            case 5: return this->ge.matrices.vector[6];
-            case 6: return this->ge.matrices.vector[8];
-            case 7: return this->ge.matrices.vector[9];
-            case 8: return this->ge.matrices.vector[10];
-        }
+        if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
+        return this->ge.matrices.clip[(addr & 0x3F) >> 2];
     }
     printf("\nUNHANDLED READ FROM RESULTS AT %08x", addr);
     return 0;
@@ -1837,6 +1811,20 @@ u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
         case R9_GXSTAT:
             assert(sz==4);
             return GXSTAT.u;
+        case 0x04000620: printf("\nPOS TEST READ"); return this->ge.results.pos_test[0];
+        case 0x04000624: printf("\nPOS TEST READ"); return this->ge.results.pos_test[1];
+        case 0x04000628: printf("\nPOS TEST READ"); return this->ge.results.pos_test[2];
+        case 0x0400062C: printf("\nPOS TEST READ"); return this->ge.results.pos_test[3];
+
+        case 0x04000680: return M_VECTOR[0];
+        case 0x04000684: return M_VECTOR[1];
+        case 0x04000688: return M_VECTOR[2];
+        case 0x0400068C: return M_VECTOR[4];
+        case 0x04000690: return M_VECTOR[5];
+        case 0x04000694: return M_VECTOR[6];
+        case 0x04000698: return M_VECTOR[8];
+        case 0x0400069C: return M_VECTOR[9];
+        case 0x040006A0: return M_VECTOR[10];
     }
     if (addr >= 0x04000620) {
         assert(sz==4);
