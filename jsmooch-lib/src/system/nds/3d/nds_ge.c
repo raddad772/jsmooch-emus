@@ -628,7 +628,7 @@ static void cmd_NORMAL(struct NDS *this)
             a = 0;
         }
 
-        /*
+        /* MelonDS says:
         TexCoords[0] = RawTexCoords[0] + (((i64)Normal[0]*TexMatrix[0] + (i64)Normal[1]*TexMatrix[4] + (i64)Normal[2]*TexMatrix[8]) >> 21);
         TexCoords[1] = RawTexCoords[1] + (((i64)Normal[0]*TexMatrix[1] + (i64)Normal[1]*TexMatrix[5] + (i64)Normal[2]*TexMatrix[9]) >> 21);
          */
@@ -739,24 +739,17 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
     node->data.uv[0] = this->ge.params.vtx.S;
     node->data.uv[1] = this->ge.params.vtx.T;
     node->data.processed = 0;
-    //printfcd("\nVtx in: %f %f %f", vtx_to_float(src->xyzw[0]), vtx_to_float(src->xyzw[1]), vtx_to_float(src->xyzw[2]));
 
-    // TODO: add any I missed first pass
-    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
-        printf("\nVERTEX MULT WATCH OUT!");
-        for (u32 i = 0; i < 2; i++) {
-            i64 x = node->data.xyzw[0] * M_TEXTURE[i*4]; // TODO: May have got x/y wrong here
-            i64 y = node->data.xyzw[1] * M_TEXTURE[(i*4)+1];
-            i64 z = node->data.xyzw[2] * M_TEXTURE[(i*4)+2];
-
-            node->data.uv[i] = (i16)(((x + y + z) >> 24) + node->data.uv[i]);
-        }
-    }
     i64 tmp[4] = {(i64)node->data.xyzw[0], (i64)node->data.xyzw[1], (i64)node->data.xyzw[2], 1 << 12};
-    node->data.xyzw[0] = (tmp[0]*M_CLIP[0] + tmp[1]*M_CLIP[4] + tmp[2]*M_CLIP[8] + tmp[3]*M_CLIP[12]) >> 12;
-    node->data.xyzw[1] = (tmp[0]*M_CLIP[1] + tmp[1]*M_CLIP[5] + tmp[2]*M_CLIP[9] + tmp[3]*M_CLIP[13]) >> 12;
-    node->data.xyzw[2] = (tmp[0]*M_CLIP[2] + tmp[1]*M_CLIP[6] + tmp[2]*M_CLIP[10] + tmp[3]*M_CLIP[14]) >> 12;
-    node->data.xyzw[3] = (tmp[0]*M_CLIP[3] + tmp[1]*M_CLIP[7] + tmp[2]*M_CLIP[11] + tmp[3]*M_CLIP[15]) >> 12;
+    node->data.xyzw[0] = (i32)((tmp[0]*M_CLIP[0] + tmp[1]*M_CLIP[4] + tmp[2]*M_CLIP[8] + tmp[3]*M_CLIP[12]) >> 12);
+    node->data.xyzw[1] = (i32)((tmp[0]*M_CLIP[1] + tmp[1]*M_CLIP[5] + tmp[2]*M_CLIP[9] + tmp[3]*M_CLIP[13]) >> 12);
+    node->data.xyzw[2] = (i32)((tmp[0]*M_CLIP[2] + tmp[1]*M_CLIP[6] + tmp[2]*M_CLIP[10] + tmp[3]*M_CLIP[14]) >> 12);
+    node->data.xyzw[3] = (i32)((tmp[0]*M_CLIP[3] + tmp[1]*M_CLIP[7] + tmp[2]*M_CLIP[11] + tmp[3]*M_CLIP[15]) >> 12);
+
+    if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_vertex) {
+        node->data.uv[0] = ((tmp[0]*M_TEXTURE[0] + tmp[1]*M_TEXTURE[4] + tmp[2]*M_TEXTURE[8]) >> 24) + RawTexCoords[0];
+        node->data.uv[1] = ((tmp[0]*M_TEXTURE[1] + tmp[1]*M_TEXTURE[5] + tmp[2]*M_TEXTURE[9]) >> 24) + RawTexCoords[1];
+    }
 }
 
 static u32 clip_against_plane(struct NDS *this, i32 axis, u32 is_compare_GT, struct NDS_GE_VTX_list *vertex_list_in, struct NDS_GE_VTX_list *vertex_list_out) {
@@ -821,7 +814,6 @@ static u32 clip_against_plane(struct NDS *this, i32 axis, u32 is_compare_GT, str
 
 static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out)
 {
-    // TODO: this
     static struct NDS_GE_VTX_list tmp;
     vertex_list_init(&tmp);
 
