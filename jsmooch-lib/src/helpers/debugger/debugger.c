@@ -144,6 +144,10 @@ void debugger_widget_init(struct debugger_widget *this, enum JSMD_widgets kind)
         case JSMD_radiogroup:
             cvec_init(&this->radiogroup.buttons, sizeof(struct debugger_widget), 5);
             break;
+        case JSMD_colorkey:
+            this->colorkey.num_items = 0;
+            this->colorkey.title[0] = 0;
+            break;
         case JSMD_textbox:
             jsm_string_init(&this->textbox.contents, 100);
             break;
@@ -156,6 +160,7 @@ void debugger_widget_delete(struct debugger_widget *this)
 {
     if (!this) return;
     switch(this->kind) {
+        case JSMD_colorkey:
         case JSMD_checkbox:
             break;
         case JSMD_radiogroup:
@@ -176,6 +181,7 @@ void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_lin
     w->same_line = same_line;
     jsm_string_sprintf(&w->textbox.contents, "%s", text);
     w->enabled = 1;
+    w->visible = 1;
 }
 
 void debugger_widgets_textbox_clear(struct debugger_widget_textbox *tb)
@@ -200,6 +206,18 @@ void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 e
     snprintf(w->checkbox.text, sizeof(w->checkbox.text), "%s", text);
     w->enabled = enabled;
     w->checkbox.value = default_value;
+    w->visible = 1;
+}
+
+struct debugger_widget *debugger_widgets_add_color_key(struct cvec *widgets, const char *default_text, u32 default_visible)
+{
+    struct debugger_widget *w = cvec_push_back(widgets);
+    debugger_widget_init(w, JSMD_colorkey);
+    w->enabled = 1;
+    w->same_line = 1;
+    snprintf(w->colorkey.title, sizeof(w->colorkey.title), "%s", default_text);
+    w->visible = default_visible;
+    return w;
 }
 
 struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
@@ -210,8 +228,26 @@ struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, co
     w->enabled = enabled;
     snprintf(w->radiogroup.title, sizeof(w->radiogroup.title), "%s", text);
     w->radiogroup.value = default_value;
+    w->visible = 1;
     return w;
 }
+
+void debugger_widgets_colorkey_set_title(struct debugger_widget_colorkey *this, const char *str)
+{
+    snprintf(this->title, sizeof(this->title), "%s", str);
+    this->num_items = 0;
+}
+
+void debugger_widgets_colorkey_add_item(struct debugger_widget_colorkey *this, const char *str, u32 color)
+{
+    u32 num = this->num_items++;
+    assert(this->num_items < 50);
+    struct debugger_widget_colorkey_item *item = &this->items[num];
+    snprintf(item->name, sizeof(item->name), "%s", str);
+    item->color = color;
+    item->hovered = 0;
+}
+
 
 void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, const char *text, u32 value, u32 same_line)
 {
@@ -221,6 +257,7 @@ void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, c
     w->enabled = 1;
     snprintf(w->checkbox.text, sizeof(w->checkbox.text), "%s", text);
     w->checkbox.value = value;
+    w->visible = 1;
 }
 
 void debugger_view_delete(struct debugger_view *this)

@@ -1229,14 +1229,46 @@ static void render_image_view_re_attr(struct debugger_interface *dbgr, struct de
 
     u32 tm_colors[8] = {
             0xFF000000, // no texture/color
-            0xFFFF0000, // color 1, blue. single tri
-            0xFF0000FF, // color 2, red. single quad
-            0xFF00FF00, // color 3, green. triangle strip
-            0xFFFFFF00, // color 4, teal. quad strip
-            0xFFFF00FF, // color 5, purple
-            0xFF00FFFF, // color 6, yellow
+            0xFFFF0000, // color 1, blue. single tri / untextured
+            0xFF0000FF, // color 2, red. single quad / modulation
+            0xFF00FF00, // color 3, green. triangle strip / decal
+            0xFFFFFF00, // color 4, teal. quad strip / toon
+            0xFFFF00FF, // color 5, purple / highlight
+            0xFF00FFFF, // color 6, yellow / shadow
             0xFFFFFFFF, // color 7, white
     };
+
+    struct debugger_widget_colorkey *colorkey = &((struct debugger_widget *)cvec_get(&dview->options, 1))->colorkey;
+
+    switch(attr_kind->value) {
+        case 0: // Texture format
+            debugger_widgets_colorkey_set_title(colorkey, "Texture Format");
+            debugger_widgets_colorkey_add_item(colorkey, "No texture", tm_colors[0]);
+            debugger_widgets_colorkey_add_item(colorkey, "A3I5", tm_colors[1]);
+            debugger_widgets_colorkey_add_item(colorkey, "2bpp", tm_colors[2]);
+            debugger_widgets_colorkey_add_item(colorkey, "4bpp", tm_colors[3]);
+            debugger_widgets_colorkey_add_item(colorkey, "8bpp", tm_colors[4]);
+            debugger_widgets_colorkey_add_item(colorkey, "Compressed", tm_colors[5]);
+            debugger_widgets_colorkey_add_item(colorkey, "A5I3", tm_colors[6]);
+            debugger_widgets_colorkey_add_item(colorkey, "Direct color", tm_colors[7]);
+            break;
+        case 1: // Vertex submit mode
+            debugger_widgets_colorkey_set_title(colorkey, "Vertex submission mode");
+            debugger_widgets_colorkey_add_item(colorkey, "Triangle", tm_colors[1]);
+            debugger_widgets_colorkey_add_item(colorkey, "Quad", tm_colors[2]);
+            debugger_widgets_colorkey_add_item(colorkey, "Triangle strip", tm_colors[3]);
+            debugger_widgets_colorkey_add_item(colorkey, "Quad strip", tm_colors[4]);
+            break;
+        case 2: // Pixel shading mode
+            debugger_widgets_colorkey_set_title(colorkey, "Pixel shading mode");
+            debugger_widgets_colorkey_add_item(colorkey, "Untextured", tm_colors[1]);
+            debugger_widgets_colorkey_add_item(colorkey, "Modulation", tm_colors[2]);
+            debugger_widgets_colorkey_add_item(colorkey, "Decal", tm_colors[3]);
+            debugger_widgets_colorkey_add_item(colorkey, "Toon", tm_colors[4]);
+            debugger_widgets_colorkey_add_item(colorkey, "Highlight", tm_colors[5]);
+            debugger_widgets_colorkey_add_item(colorkey, "Shadow", tm_colors[6]);
+            break;
+    }
 
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -1257,11 +1289,14 @@ static void render_image_view_re_attr(struct debugger_interface *dbgr, struct de
                     union NDS_RE_EXTRA_ATTR ea = lbuf->extra_attr[x];
                     if (ea.has_px)
                         out_line[x] = tm_colors[ea.vertex_mode];
-                    break;
-                }
+                    break; }
+                case 2: {
+                    union NDS_RE_EXTRA_ATTR ea = lbuf->extra_attr[x];
+                    if (ea.has_px)
+                        out_line[x] = tm_colors[ea.shading_mode];
+                    break; }
                 default:
-                    NOGOHERE;
-
+                    printf("\n!?");
             }
         }
     }
@@ -1365,10 +1400,10 @@ static void setup_image_view_re_attr(struct NDS* this, struct debugger_interface
     snprintf(iv->label, sizeof(iv->label), "RE Attr View");
 
     struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Attr. to show", 1, 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Texture Mode", 0, 1);
-    debugger_widget_radiogroup_add_button(rg, "Vertex Mode", 1, 1);
-    //debugger_widget_radiogroup_add_button(rg, "Outside", 2, 1);
-
+    debugger_widget_radiogroup_add_button(rg, "Texture Format", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Vertex Submit Mode", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "Pixel Shading Mode", 2, 0);
+    struct debugger_widget *key = debugger_widgets_add_color_key(&dview->options, "Key", 1);
 }
 
 

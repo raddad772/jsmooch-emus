@@ -541,6 +541,30 @@ static void render_textbox(struct debugger_widget *widget)
     ImGui::Text("%s", widget->textbox.contents.ptr);
 }
 
+static void render_colorkey(struct debugger_widget *widget)
+{
+    struct debugger_widget_colorkey *ck = &widget->colorkey;
+    ImGui::Text("%s", ck->title);
+    for (u32 i = 0; i < ck->num_items; i++) {
+        struct debugger_widget_colorkey_item *item = &ck->items[i];
+        ImGui::PushID(i);
+        ImGui::BeginDisabled();
+        u32 r = item->color & 0xFF;
+        u32 g = (item->color >> 8) & 0xFF;
+        u32 b = (item->color >> 16) & 0xFF;
+        u32 cp = item->color | 0xFF000000;
+        ImGui::PushStyleColor(ImGuiCol_Button, cp);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, cp);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, cp);
+        ImGui::Button(" ");
+        ImGui::EndDisabled();
+        ImGui::PopStyleColor(3);
+        ImGui::PopID();
+        ImGui::SameLine();
+        ImGui::Text("%s", item->name);
+    }
+}
+
 static void render_checkbox(struct debugger_widget *widget)
 {
     bool mval = widget->checkbox.value ? true : false;
@@ -550,6 +574,22 @@ static void render_checkbox(struct debugger_widget *widget)
     ImGui::Checkbox(widget->checkbox.text, &mval);
     ImGui::EndDisabled();
     widget->checkbox.value = mval ? 1 : 0;
+}
+
+
+static void render_debugger_post_widget(struct debugger_widget *widget)
+{
+    switch(widget->kind) {
+        case JSMD_colorkey:
+            render_colorkey(widget);
+            break;
+        case JSMD_radiogroup:
+        case JSMD_checkbox:
+        case JSMD_textbox:
+            break;
+        default:
+            printf("\nWHAN O POST BA %d", widget->kind);
+    }
 }
 
 static void render_debugger_widget(struct debugger_widget *widget)
@@ -564,12 +604,21 @@ static void render_debugger_widget(struct debugger_widget *widget)
         case JSMD_textbox:
             render_textbox(widget);
             break;
+        case JSMD_colorkey:
+            break;
         default:
             printf("\nWHAT KIND BAD %d", widget->kind);
             break;
     }
 }
 
+static void render_debugger_post_widgets(struct cvec *options)
+{
+    for (u32 i = 0; i < cvec_len(options); i++) {
+        struct debugger_widget *widget = (struct debugger_widget *) cvec_get(options, i);
+        render_debugger_post_widget(widget);
+    }
+};
 
 static void render_debugger_widgets(struct cvec *options)
 {
@@ -699,6 +748,7 @@ void imgui_jsmooch_app::render_image_views()
                 render_debugger_widgets(&myv.view->options);
                 fsys.image_view_present(myv.view, myv.texture);
                 ImGui::Image(myv.texture.for_image(), myv.texture.sz_for_display, myv.texture.uv0, myv.texture.uv1);
+                render_debugger_post_widgets(&myv.view->options);
             }
             ImGui::End();
         }

@@ -582,18 +582,19 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
                 if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
+                u32 shading_mode = 1;
                 if (comparison) {
                     u32 pix_r5, pix_g5, pix_b5, pix_a5;
-                    float cr, cg, cb;
-                    cr = NDS_RE_interpolate(&interp, left->color[0], right->color[0]) >> 11;
-                    if (cr < 0) cr = 0;
-                    if (cr > 63) cr = 63;
-                    cg = NDS_RE_interpolate(&interp, left->color[1], right->color[1]) >> 11;
-                    if (cg < 0) cg = 0;
-                    if (cg > 63) cg = 63;
-                    cb = NDS_RE_interpolate(&interp, left->color[2], right->color[2]) >> 11;
-                    if (cb < 0) cb = 0;
-                    if (cb > 63) cb = 63;
+                    float cr6f, cg6f, cb6f;
+                    cr6f = NDS_RE_interpolate(&interp, left->color[0], right->color[0]) >> 11;
+                    if (cr6f < 0) cr6f = 0;
+                    if (cr6f > 63) cr6f = 63;
+                    cg6f = NDS_RE_interpolate(&interp, left->color[1], right->color[1]) >> 11;
+                    if (cg6f < 0) cg6f = 0;
+                    if (cg6f > 63) cg6f = 63;
+                    cb6f = NDS_RE_interpolate(&interp, left->color[2], right->color[2]) >> 11;
+                    if (cb6f < 0) cb6f = 0;
+                    if (cb6f > 63) cb6f = 63;
                     if (tex_enable && p->sampler.sample) {
                         i32 final_s = NDS_RE_interpolate(&interp, left->uv[0], right->uv[0]);
                         i32 final_t = NDS_RE_interpolate(&interp, left->uv[1], right->uv[1]);
@@ -610,17 +611,19 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         // OK we have texture color now...how do we use it!?
                         switch(p->attr.mode) {
                             case 0: // modulation
-                                pix_r5 = (u32)(((tex_rf + 1) * (cr + 1) - 1)) >> 7;
-                                pix_g5 = (u32)(((tex_gf + 1) * (cg + 1) - 1)) >> 7;
-                                pix_b5 = (u32)(((tex_bf + 1) * (cb + 1) - 1)) >> 7;
+                                shading_mode = 2;
+                                pix_r5 = (u32)(((tex_rf + 1) * (cr6f + 1) - 1)) >> 7;
+                                pix_g5 = (u32)(((tex_gf + 1) * (cg6f + 1) - 1)) >> 7;
+                                pix_b5 = (u32)(((tex_bf + 1) * (cb6f + 1) - 1)) >> 7;
                                 pix_a5 = (u32)(((tex_af + 1) * ((p->attr.alpha << 1) + 1) - 1)) >> 7;
                                 break;
                             case 1: // decal
+                                shading_mode = 3;
                                 switch(tex_a6) {
                                     case 0:
-                                        pix_r5 = ((u32)cr) >> 1;
-                                        pix_g5 = ((u32)cg) >> 1;
-                                        pix_b5 = ((u32)cb) >> 1;
+                                        pix_r5 = ((u32)cr6f) >> 1;
+                                        pix_g5 = ((u32)cg6f) >> 1;
+                                        pix_b5 = ((u32)cb6f) >> 1;
                                         break;
                                     case 31:
                                         pix_r5 = ((u32)tex_r6) >> 1;
@@ -629,22 +632,38 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                                         break;
                                     default:
                                         // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
-                                        pix_r5 = (u32)(tex_rf * tex_af + cr * (63 - tex_af)) >> 7;
-                                        pix_g5 = (u32)(tex_gf * tex_af + cg * (63 - tex_af)) >> 7;
-                                        pix_b5 = (u32)(tex_bf * tex_af + cb * (63 - tex_af)) >> 7;
+                                        pix_r5 = (u32)(tex_rf * tex_af + cr6f * (63 - tex_af)) >> 7;
+                                        pix_g5 = (u32)(tex_gf * tex_af + cg6f * (63 - tex_af)) >> 7;
+                                        pix_b5 = (u32)(tex_bf * tex_af + cb6f * (63 - tex_af)) >> 7;
                                         break;
                                 }
                                 pix_a5 = tex_a6 >> 1;
                                 break;
-                            case 2: // highlight/toon
-                                // TODO: this
-                                pix_r5 = 0x1F;
-                                pix_g5 = 0;
-                                pix_b5 = 0x1F;
-                                pix_a5 = 0x1F;
-                                break;
+                            case 2: {// highlight/toon
+                                u32 idx = ((u32)cr6f) >> 1;
+                                float rs = this->re.io.TOON_TABLE_r[idx];
+                                float gs = this->re.io.TOON_TABLE_g[idx];
+                                float bs = this->re.io.TOON_TABLE_b[idx];
+                                switch(this->re.io.DISP3DCNT.polygon_attr_shading) {
+                                    case 0: { // toon
+                                        shading_mode = 4;
+                                        // R = ((Rt+1)*(Rs+1)-1)/64
+                                        pix_r5 = (u32)(((tex_rf+1)*(rs+1)-1)/64.0f) >> 1;
+                                        pix_g5 = (u32)(((tex_gf+1)*(gs+1)-1)/64.0f) >> 1;
+                                        pix_b5 = (u32)(((tex_bf+1)*(bs+1)-1)/64.0f) >> 1;
+                                        break;}
+                                    case 1: { // highlight
+                                        shading_mode = 5;
+                                        pix_r5 = (u32)(((tex_rf+1)*(cr6f+1)-1)/64.0f+rs) >> 1;
+                                        pix_g5 = (u32)(((tex_gf+1)*(cg6f+1)-1)/64.0f+gs) >> 1;
+                                        pix_b5 = (u32)(((tex_bf+1)*(cb6f+1)-1)/64.0f+bs) >> 1;
+                                        break; }
+                                }
+                                pix_a5 = (u32)((tex_af+1)*((float)(p->attr.alpha << 1))/64.0f);
+                                break; }
                             case 3: // shadow
                                 // TODO: this
+                                shading_mode = 6;
                                 pix_r5 = 0x1F;
                                 pix_g5 = 0;
                                 pix_b5 = 0x1F;
@@ -653,9 +672,9 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         }
                     }
                     else {
-                        pix_r5 = ((u32) cr) >> 1;
-                        pix_g5 = ((u32) cg) >> 1;
-                        pix_b5 = ((u32) cb) >> 1;
+                        pix_r5 = ((u32) cr6f) >> 1;
+                        pix_g5 = ((u32) cg6f) >> 1;
+                        pix_b5 = ((u32) cb6f) >> 1;
                         pix_a5 = p->attr.alpha;
                     }
                     if (pix_a5) {
@@ -663,6 +682,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         line->tex_param[x] = p->tex_param;
                         line->extra_attr[x].vertex_mode = p->vertex_mode+1;
                         line->extra_attr[x].has_px = 1;
+                        line->extra_attr[x].shading_mode = shading_mode;
                         line->depth[x] = (u32) depth;
                     }
                 }

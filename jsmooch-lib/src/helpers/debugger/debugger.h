@@ -357,7 +357,8 @@ struct image_view {
 enum JSMD_widgets {
     JSMD_checkbox,
     JSMD_radiogroup,
-    JSMD_textbox
+    JSMD_textbox,
+    JSMD_colorkey
 };
 
 struct debugger_widget_checkbox
@@ -372,18 +373,31 @@ struct debugger_widget_radiogroup {
     struct cvec buttons; // debugger_widget_checkbox
 };
 
+struct debugger_widget_colorkey_item {
+    char name[50];
+    u32 color;
+    u32 hovered;
+};
+
+struct debugger_widget_colorkey {
+    char title[100];
+    u32 num_items;
+    struct debugger_widget_colorkey_item items[50];
+};
+
 struct debugger_widget_textbox {
     struct jsm_string contents;
 };
 
 struct debugger_widget {
     enum JSMD_widgets kind;
-    u32 same_line, enabled;
+    u32 same_line, enabled, visible;
 
     union {
         struct debugger_widget_checkbox checkbox;
         struct debugger_widget_radiogroup radiogroup;
         struct debugger_widget_textbox textbox;
+        struct debugger_widget_colorkey colorkey;
     };
 };
 
@@ -427,6 +441,7 @@ void debugger_widget_init(struct debugger_widget *, enum JSMD_widgets kind);
 void debugger_widget_delete(struct debugger_widget *);
 void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
 struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
+struct debugger_widget *debugger_widgets_add_color_key(struct cvec *widgets, const char *default_text, u32 default_visible);
 void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, const char *text, u32 value, u32 same_line);
 void debugger_widgets_textbox_clear(struct debugger_widget_textbox *tb);
 int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const char *format, ...);
@@ -474,6 +489,10 @@ void dbglog_view_render_to_buffer(struct dbglog_view *, char *output, u64 sz);
 u32 dbglog_count_visible_lines(struct dbglog_view *);
 u32 dbglog_get_nth_visible(struct dbglog_view *, u32 n);
 u32 dbglog_get_next_visible(struct dbglog_view *, u32 start);
+
+void debugger_widgets_colorkey_set_title(struct debugger_widget_colorkey *, const char *str);
+void debugger_widgets_colorkey_add_item(struct debugger_widget_colorkey *, const char *str, u32 color);
+
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)

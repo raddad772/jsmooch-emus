@@ -1598,7 +1598,6 @@ static void write_toon_table(struct NDS *this, u32 addr, u32 sz, u32 val)
         write_toon_table(this, addr+2, 1, val >> 16);
         return;
     }
-    if (sz >= 2) return;
     this->re.io.TOON_TABLE_r[addr] = (val & 0x1F) << 1;
     this->re.io.TOON_TABLE_g[addr] = ((val >> 5) & 0x1F) << 1;
     this->re.io.TOON_TABLE_b[addr] = ((val >> 10) & 0x1F) << 1;

@@ -222,6 +222,7 @@ union NDS_RE_EXTRA_ATTR {
     struct {
         u32 vertex_mode;
         u32 has_px;
+        u32 shading_mode;
     };
     u32 u;
 };
