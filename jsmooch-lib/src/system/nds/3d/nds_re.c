@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include "nds_re.h"
-#include "nds_bus.h"
-#include "nds_vram.h"
+#include "system/nds/nds_bus.h"
+#include "system/nds/nds_vram.h"
 
 /**
  * This interpolation code is adapted from MelonDS

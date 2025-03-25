@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_RE_H
 #define JSMOOCH_EMUS_NDS_RE_H
 
-#include "nds_ge.h"
+#include "system/nds/3d/nds_ge.h"
 
 void NDS_RE_init(struct NDS *);
 void NDS_RE_reset(struct NDS *);

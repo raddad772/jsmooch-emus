@@ -13,8 +13,8 @@
 #include "nds_controller.h"
 #include "cart/nds_cart.h"
 #include "nds_ipc.h"
-#include "nds_ge.h"
-#include "nds_re.h"
+#include "system/nds/3d/nds_ge.h"
+#include "system/nds/3d/nds_re.h"
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm946es/arm946es.h"

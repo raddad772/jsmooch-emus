@@ -13,7 +13,7 @@
 #include "nds_timers.h"
 #include "nds_rtc.h"
 #include "nds_irq.h"
-#include "nds_ge.h"
+#include "system/nds/3d/nds_ge.h"
 #include "nds_regs.h"
 #include "nds_spi.h"
 

@@ -7,7 +7,7 @@
 
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
-#include "nds_ge.h"
+#include "system/nds/3d/nds_ge.h"
 
 enum NDS_SCREEN_KINDS {
     SK_none = 0,

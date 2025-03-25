@@ -5,10 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "nds_ge.h"
-#include "nds_bus.h"
-#include "nds_irq.h"
-#include "nds_regs.h"
-#include "nds_dma.h"
+#include "system/nds/nds_bus.h"
+#include "system/nds/nds_irq.h"
+#include "system/nds/nds_regs.h"
+#include "system/nds/nds_dma.h"
+#include "nds_3dmath.h"
 #include "helpers/multisize_memaccess.c"
 
 #define printfifo(...) (void)0
@@ -691,60 +692,6 @@ static void cmd_MTX_MULT_4x4(struct NDS *this)
     }
 }
 
-static void matrix_scale(i32 *B, i32 *A)
-{
-    i32 tmp_A[16];
-    i32 tmp_B[16];
-    memcpy(tmp_B, B, sizeof(tmp_B));
-    memset(tmp_A, 0, sizeof(tmp_A));
-    tmp_A[0] = A[0];
-    tmp_A[5] = A[1];
-    tmp_A[10] = A[2];
-    tmp_A[15] = 1 << 12;
-
-    for (u32 x = 0; x < 4; x++) {
-        for (u32 y = 0; y < 16; y+=4) {
-            //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
-            i64 out = ((i64)tmp_A[y+0] * (i64)tmp_B[x]) >> 12;
-            out += ((i64)tmp_A[y+1] * (i64)tmp_B[4+x]) >> 12;
-            out += ((i64)tmp_A[y+2] * (i64)tmp_B[8+x]) >> 12;
-            out += ((i64)tmp_A[y+3] * (i64)tmp_B[12+x]) >> 12;
-            B[x+y] = (i32)out;
-        }
-    }
-}
-
-static void matrix_translate(i32 *B, i32 *A)
-{
-    i32 tmp_A[16];
-    i32 tmp_B[16];
-    memcpy(tmp_B, B, sizeof(tmp_B));
-    memset(tmp_A, 0, sizeof(i32) * 12);
-    tmp_A[0] = tmp_A[5] = tmp_A[10] = tmp_A[15] = 1 << 12;
-    tmp_A[12] = A[0];
-    tmp_A[13] = A[1];
-    tmp_A[14] = A[2];
-    //printfcd("\n\n---Matrix translate. Tranlsation matrix:");
-    //pprint_matrix(tmp_A);
-
-    //printfcd("\n\nMatrix to multiply by:");
-    //pprint_matrix(tmp_B);
-
-    for (u32 x = 0; x < 4; x++) {
-        for (u32 y = 0; y < 16; y+=4) {
-            //cyx = ay1*b1x + ay2*b2x + ay3*b3x + ay4*b4x
-            i64 out = ((i64)tmp_A[y+0] * (i64)tmp_B[x]) >> 12;
-            out += ((i64)tmp_A[y+1] * (i64)tmp_B[4+x]) >> 12;
-            out += ((i64)tmp_A[y+2] * (i64)tmp_B[8+x]) >> 12;
-            out += ((i64)tmp_A[y+3] * (i64)tmp_B[12+x]) >> 12;
-            B[x+y] = (i32)out;
-        }
-    }
-    //printfcd("\nResult matrix:");
-    //pprint_matrix(B);
-}
-
-
 static void cmd_MTX_MULT_4x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
@@ -810,7 +757,7 @@ static void cmd_MTX_SCALE(struct NDS *this)
         case 1:
         case 2:
             matrix_scale(M_COORD.m, (i32 *)DATA);
-            printfcd("\nMTX_SCALE COORD proj");
+            printfcd("\nMTX_SCALE COORD");
             calculate_clip_matrix(this);
             return;
         case 3:
@@ -886,8 +833,8 @@ static void cmd_NORMAL(struct NDS *this)
         }
 
         /*
-        TexCoords[0] = RawTexCoords[0] + (((s64)Normal[0]*TexMatrix[0] + (s64)Normal[1]*TexMatrix[4] + (s64)Normal[2]*TexMatrix[8]) >> 21);
-        TexCoords[1] = RawTexCoords[1] + (((s64)Normal[0]*TexMatrix[1] + (s64)Normal[1]*TexMatrix[5] + (s64)Normal[2]*TexMatrix[9]) >> 21);
+        TexCoords[0] = RawTexCoords[0] + (((i64)Normal[0]*TexMatrix[0] + (i64)Normal[1]*TexMatrix[4] + (i64)Normal[2]*TexMatrix[8]) >> 21);
+        TexCoords[1] = RawTexCoords[1] + (((i64)Normal[0]*TexMatrix[1] + (i64)Normal[1]*TexMatrix[5] + (i64)Normal[2]*TexMatrix[9]) >> 21);
          */
         //TODO: this
     }
@@ -1368,12 +1315,12 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     struct NDS_GE_VTX_list_node *v1 = v0->next;
     struct NDS_GE_VTX_list_node *v2 = v1->next;
 
-    i64 normalX = ((s64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[3] - v1->data.xyzw[3]))
-                  - ((s64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[1] - v1->data.xyzw[1]));
-    i64 normalY = ((s64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[0] - v1->data.xyzw[0]))
-                  - ((s64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[3] - v1->data.xyzw[3]));
-    i64 normalZ = ((s64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[1] - v1->data.xyzw[1]))
-                  - ((s64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[0] - v1->data.xyzw[0]));
+    i64 normalX = ((i64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[3] - v1->data.xyzw[3]))
+                  - ((i64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[1] - v1->data.xyzw[1]));
+    i64 normalY = ((i64) (v0->data.xyzw[3] - v1->data.xyzw[3]) * (v2->data.xyzw[0] - v1->data.xyzw[0]))
+                  - ((i64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[3] - v1->data.xyzw[3]));
+    i64 normalZ = ((i64) (v0->data.xyzw[0] - v1->data.xyzw[0]) * (v2->data.xyzw[1] - v1->data.xyzw[1]))
+                  - ((i64) (v0->data.xyzw[1] - v1->data.xyzw[1]) * (v2->data.xyzw[0] - v1->data.xyzw[0]));
 
     // shift until both zero or 1
     while ((((normalX >> 31) ^ (normalX >> 63)) != 0) ||
