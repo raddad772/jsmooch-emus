@@ -683,9 +683,8 @@ static void cmd_NORMAL(struct NDS *this)
 static void cmd_TEXCOORD(struct NDS *this)
 {
     this->ge.params.vtx.original_uv[0] = DATA[0] & 0xFFFF;
-    this->ge.params.vtx.original_uv[1] = DATA[1] >> 16;
+    this->ge.params.vtx.original_uv[1] = DATA[0] >> 16;
     if (this->ge.params.poly.current.tex_param.texture_coord_transform_mode == NDS_TCTM_texcoord) {
-        printf("\nTEXCOORD MTX!");
         this->ge.params.vtx.uv[0] = (this->ge.params.vtx.original_uv[0]*M_TEXTURE[0] + this->ge.params.vtx.original_uv[1]*M_TEXTURE[4] + M_TEXTURE[8] + M_TEXTURE[12]) >> 12;
         this->ge.params.vtx.uv[1] = (this->ge.params.vtx.original_uv[0]*M_TEXTURE[1] + this->ge.params.vtx.original_uv[1]*M_TEXTURE[5] + M_TEXTURE[9] + M_TEXTURE[13]) >> 12;
     }
