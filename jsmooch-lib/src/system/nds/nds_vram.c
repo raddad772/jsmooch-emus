@@ -52,7 +52,7 @@ static void map_eng2d_bg_vram(struct NDS *this, u32 engnum, u32 addr_start, u32 
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     for (u32 addr = addr_start; addr < addr_end; addr += 0x4000) {
-        eng->mem.bg_vram[addr >> 14] = ptr;
+        eng->memp.bg_vram[addr >> 14] = ptr;
         if (ptr != NULL) ptr += 0x4000;
     }
 }
@@ -61,7 +61,7 @@ static void map_eng2d_obj_vram(struct NDS *this, u32 engnum, u32 addr_start, u32
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     for (u32 addr = addr_start; addr < addr_end; addr += 0x4000) {
-        eng->mem.obj_vram[addr >> 14] = ptr;
+        eng->memp.obj_vram[addr >> 14] = ptr;
         if (ptr != NULL) ptr += 0x4000;
     }
 }
@@ -70,7 +70,7 @@ static void map_eng2d_bg_extended_palette4k(struct NDS *this, u32 engnum, u32 sl
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     for (u32 slot = slot_start; slot <= slot_end; slot++) {
-        eng->mem.bg_extended_palette[slot] = ptr;
+        eng->memp.bg_extended_palette[slot] = ptr;
         if (ptr != NULL) ptr += 0x1000;
     }
 }
@@ -78,7 +78,7 @@ static void map_eng2d_bg_extended_palette4k(struct NDS *this, u32 engnum, u32 sl
 static void map_eng2d_obj_extended_palette(struct NDS *this, u32 engnum, u8 *ptr)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
-    eng->mem.obj_extended_palette = ptr;
+    eng->memp.obj_extended_palette = ptr;
 }
 
 static void map_eng3d_texture_slot(struct NDS *this, u32 slot, u8 *ptr)
@@ -354,7 +354,6 @@ static void set_bankI(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
     // MST 1, map to ARM9&EngB BG-VRAM 6208000h
     // MST 2, map to ARM9&EngB OBJ-VRAM 06600000h
     // MST 3, EngB BG extended slots 0-3
-    u32 offset;
     switch(mst) {
         case 0: // ARM9 068A0000
             map_arm9(this, 0x068A0000, 0x068A3FFF, ptr, NVI);
@@ -417,8 +416,8 @@ void NDS_VRAM_set_bank(struct NDS *this, u32 bank_num, u32 mst, u32 ofs, u8 *ptr
 void NDS_VRAM_resetup_banks(struct NDS *this) {
 #define clear(a) memset(&a, 0, sizeof(a))
     clear(this->mem.vram.map);
-    clear(this->ppu.eng2d[0].mem);
-    clear(this->ppu.eng2d[1].mem);
+    clear(this->ppu.eng2d[0].memp);
+    clear(this->ppu.eng2d[1].memp);
     clear(this->ppu.eng3d.slots);
 #undef clear
 

@@ -642,6 +642,30 @@ static void set_info_H(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
     *mapaddr_end = *mapaddr_start + 0x7FFF;
 }
 
+static void set_info_I(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *mapaddr_end) {
+    switch (mst) {
+        case 0:
+            sprintf(mapstr, "arm9");
+            *mapaddr_start = 0x068A0000;
+            break;
+        case 1:
+            sprintf(mapstr, "arm9+engB BG VRAM");
+            *mapaddr_start =  0x8000;
+            break;
+        case 2:
+            sprintf(mapstr, "arm9+engB OBJ VRAM");
+            *mapaddr_start =  0;
+            break;
+        case 3:
+            sprintf(mapstr, "engB OBJ extended palette");
+            *mapaddr_start = 0;
+            *mapaddr_end = 0x1FFF;
+            return;
+    }
+    *mapaddr_end = *mapaddr_start + 0x3FFF;
+}
+
+
 static void render_image_view_ppu_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct NDS *this = (struct NDS *) ptr;
     //memset(ptr, 0, out_width * 4 * 10);
@@ -669,7 +693,7 @@ static void render_image_view_ppu_info(struct debugger_interface *dbgr, struct d
     // Now do VRAM mappings
     char mapstr[50];
     u32 mapaddr_start, mapaddr_end;
-    for (u32 bnum = 0; bnum < 8; bnum++) {
+    for (u32 bnum = 0; bnum < 9; bnum++) {
         u32 mst = this->mem.vram.io.bank[bnum].mst;
         u32 ofs = this->mem.vram.io.bank[bnum].ofs;
 
@@ -697,6 +721,9 @@ static void render_image_view_ppu_info(struct debugger_interface *dbgr, struct d
                 break;
             case 7:
                 set_info_H(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
+                break;
+            case 8:
+                set_info_I(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
                 break;
         }
         debugger_widgets_textbox_sprintf(tb, "\nVRAM %c  MST:%d  OFS:%d  mapping:%s  start:%x  end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);

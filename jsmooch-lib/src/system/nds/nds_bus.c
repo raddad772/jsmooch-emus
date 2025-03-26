@@ -1447,6 +1447,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             u32 bank_num = addr - R9_VRAMCNT;
             if (bank_num >= 8) bank_num--;
 
+
             if ((bank_num < 2) || (bank_num >= 7)) this->mem.vram.io.bank[bank_num].mst = val & 3;
             else this->mem.vram.io.bank[bank_num].mst = val & 7;
 
@@ -2037,6 +2038,10 @@ void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 #ifdef TRACE
     printf("\n wr9:%08x sz:%d val:%08x", addr, sz, val);
 #endif
+
+    /*if ((addr >= 0x6890000) && (addr < 0x06894000)) {
+        if (val != 0) printf("\nbankF pallete write %04x: %04x", addr & 0x3FFF, val);
+    }*/
 
     if (addr < 0x10000000) {
         return this->mem.rw[1].write[(addr >> 24) & 15](this, addr, sz, access, val);

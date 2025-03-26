@@ -51,7 +51,7 @@ void NDS_PPU_reset(struct NDS *this)
 static u32 read_vram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
 {
     assert((addr >> 14) < 32);
-    u8 *ptr = eng->mem.bg_vram[(addr >> 14) & 31];
+    u8 *ptr = eng->memp.bg_vram[(addr >> 14) & 31];
     if (!ptr) {
         static int doit = 0;
         if (!doit) {
@@ -66,7 +66,7 @@ static u32 read_vram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz
 static u32 read_vram_obj(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
 {
     assert((addr >> 14) < 16);
-    u8 *ptr = eng->mem.obj_vram[(addr >> 14) & 15];
+    u8 *ptr = eng->memp.obj_vram[(addr >> 14) & 15];
     if (!ptr) {
         static int doit = 0;
         if (!doit) {
@@ -85,10 +85,10 @@ static u32 read_pram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz
 
 static u32 read_ext_palette_obj(struct NDS *this, struct NDSENG2D *eng, u32 palette, u32 index)
 {
-    palette = 16;
-    u32 addr = ((palette << 7) | (index << 1)) & 0x1FFF;
-    if (eng->mem.obj_extended_palette) {
-         u32 v = cR16(eng->mem.obj_extended_palette, addr);
+    u32 addr = 0x600 + ((palette << 5) | (index << 1)) + (0x200 * eng->num);
+    addr &= 0x1FFF;
+    if (eng->memp.obj_extended_palette) {
+         u32 v = cR16(eng->memp.obj_extended_palette, addr);
          return v;
     }
     return 0;

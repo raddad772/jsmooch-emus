@@ -79,6 +79,10 @@ struct NDS_PPU {
             u8 *obj_vram[16];
             u8 *bg_extended_palette[4];
             u8 *obj_extended_palette;
+
+        } memp;
+
+        struct {
             u8 bg_palette[512];
             u8 obj_palette[512];
             u8 oam[1024];
