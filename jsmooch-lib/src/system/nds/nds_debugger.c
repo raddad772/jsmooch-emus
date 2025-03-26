@@ -699,7 +699,7 @@ static void render_image_view_ppu_info(struct debugger_interface *dbgr, struct d
                 set_info_H(mapstr, mst, ofs, &mapaddr_start, &mapaddr_end);
                 break;
         }
-        debugger_widgets_textbox_sprintf(tb, "\nVRAM %c MST:%d OFS:%d mapping:%s addr start:%x end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);
+        debugger_widgets_textbox_sprintf(tb, "\nVRAM %c  MST:%d  OFS:%d  mapping:%s  start:%x  end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);
     }
 
 }

@@ -2037,6 +2037,7 @@ void NDS_mainbus_write9(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 #ifdef TRACE
     printf("\n wr9:%08x sz:%d val:%08x", addr, sz, val);
 #endif
+
     if (addr < 0x10000000) {
         return this->mem.rw[1].write[(addr >> 24) & 15](this, addr, sz, access, val);
     }

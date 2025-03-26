@@ -85,12 +85,13 @@ static u32 read_pram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz
 
 static u32 read_ext_palette_obj(struct NDS *this, struct NDSENG2D *eng, u32 palette, u32 index)
 {
-    static int a = 1;
-    if (a) {
-        printf("\nWARN READ FROM UNIMPLEMENTED: OBJ EXT PALETTE");
-        a = 0;
+    palette = 16;
+    u32 addr = ((palette << 7) | (index << 1)) & 0x1FFF;
+    if (eng->mem.obj_extended_palette) {
+         u32 v = cR16(eng->mem.obj_extended_palette, addr);
+         return v;
     }
-    return 0x7F0F;
+    return 0;
 }
 
 static u32 read_pram_obj2(struct NDS *this, struct NDSENG2D *eng, u32 palette, u32 index)
@@ -173,38 +174,6 @@ static u32 get_sprite_tile_addr(struct NDS *this, struct NDSENG2D *eng, u32 tile
     u32 tile_base_addr = tile_num;
     u32 tile_line_addr = tile_base_addr;// + (line_in_tile * 4);
     return tile_line_addr;
-}
-
-static void output_sprite_8bpp(struct NDS *this, struct NDSENG2D *eng, u32 tile_addr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 mosaic, struct NDS_PPU_window *w) {
-    for (i32 tile_x = 0; tile_x < 8; tile_x++) {
-        i32 sx;
-        if (hflip) sx = (7 - tile_x) + screen_x;
-        else sx = tile_x + screen_x;
-        if ((sx >= 0) && (sx < 256)) {
-            eng->obj.drawing_cycles -= 1;
-            struct NDS_PX *opx = &eng->obj.line[sx];
-            if ((mode > 1) || (!opx->has) || (priority < opx->priority)) {
-                u8 c = read_vram_obj(this, eng, tile_addr+tile_x, 1);
-                switch (mode) {
-                    case 1:
-                    case 0:
-                        if (c != 0) {
-                            opx->has = 1;
-                            opx->color = read_pram_obj(this, eng, (0x100 + c) << 1, 2);
-                            opx->translucent_sprite = mode;
-                        }
-                        opx->priority = priority;
-                        opx->mosaic_sprite = mosaic;
-                        break;
-                    case 2: { // OBJ window
-                        if (c != 0) w->sprites_inside[sx] = 1;
-                        break;
-                    }
-                }
-            }
-        }
-        if (eng->obj.drawing_cycles < 1) return;
-    }
 }
 
 static int obj_size[4][4][2] = {
@@ -307,10 +276,10 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
 
         if (flip_h) tx = width - tx - 1;
         if (flip_v) ty = height - ty - 1;
-        u32 tile_x = tx & 7;
-        u32 tile_y = ty & 7;
         u32 block_x = tx >> 3;
         u32 block_y = ty >> 3;
+        u32 tile_x = tx & 7;
+        u32 tile_y = ty & 7;
 
         u32 c, is_transparent;
         u32 tile_addr;
@@ -324,7 +293,7 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
                 u32 addr = ((tile_num & ~mask) * 64 + (tile_num & mask) * 8 + ty * (128 << eng->io.obj.bitmap.dim_2d) + tx) << 1;
                 c = read_vram_obj(this, eng, addr, 2);
             }
-            is_transparent = (c >> 15) & 1;
+            is_transparent = ((c >> 15) & 1) ^ 1;
             c &= 0x7FFF;
         }
         else if (bpp8) {
