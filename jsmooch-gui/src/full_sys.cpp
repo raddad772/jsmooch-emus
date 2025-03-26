@@ -700,7 +700,7 @@ void full_system::load_default_ROM()
         case SYS_NDS:
             //worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "touch_test.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "touch_test.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
@@ -731,7 +731,17 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mutha_truckers.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "recruit.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tloz.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "dq9.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "fighting_fantasy.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mp_hunters_rev1.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "okami_den.nds", nullptr); // try again after sprites
+            //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "examples/graphics_2d/sprites_basic.nds", nullptr);
+
             // NEXT: basic PPU mode 3, 5
             // better FIFO
             // NORMAL mode

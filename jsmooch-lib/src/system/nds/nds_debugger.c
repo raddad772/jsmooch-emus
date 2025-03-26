@@ -29,16 +29,19 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
 
     for (u32 eng_num = 0; eng_num < 2; eng_num++) {
         struct NDSENG2D *eng = &this->ppu.eng2d[eng_num];
-        u32 upper_row = eng_num * (PAL_BOX_SIZE_W_BORDER * 3);
+        u32 upper_row = 0;
         u32 offset = 0;
         u32 y_offset = 0;
-        for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) {
+        u32 x_offset = eng_num * ((16 * PAL_BOX_SIZE_W_BORDER) + 1);
+        // iv->width = ((16 * PAL_BOX_SIZE_W_BORDER * 2) + 2);
+
+        for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) { // lohi = bg or OBJ palettes
             u16 *curpal = lohi == 0 ? (u16 *)eng->mem.bg_palette : (u16 *)eng->mem.obj_palette;
             for (u32 palette = 0; palette < 16; palette++) {
                 for (u32 color = 0; color < 16; color++) {
                     u32 y_top = y_offset + offset + upper_row;
-                    u32 x_left = color * PAL_BOX_SIZE_W_BORDER;
-                    u32 c = gba_to_screen(curpal[lohi + (palette << 4) + color]);
+                    u32 x_left = x_offset + (color * PAL_BOX_SIZE_W_BORDER);
+                    u32 c = gba_to_screen(curpal[(palette << 4) + color]);
                     for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
                         u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
                         for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
@@ -53,119 +56,6 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
     }
 }
 
-/*
-
-
-static void get_disassembly_ARM7TDMI(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
-{
-    struct NDS* this = (struct NDS*)genptr;
-    ARM7TDMI_disassemble_entry(&this->cpu, entry);
-}
-
-static struct disassembly_vars get_disassembly_vars_ARM7TDMI(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
-{
-    struct NDS* this = (struct NDS*)macptr;
-    struct disassembly_vars dvar;
-    dvar.address_of_executing_instruction = this->cpu.trace.ins_PC;
-    dvar.current_clock_cycle = this->clock.master_cycle_count;
-    return dvar;
-}
-
-static void setup_cpu_trace(struct debugger_interface *dbgr, struct NDS *this)
-{
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_trace);
-    struct debugger_view *dview = cpg(p);
-    struct trace_view *tv = &dview->trace;
-    snprintf(tv->name, sizeof(tv->name), "ARM7TDMI Trace");
-    trace_view_add_col(tv, "Arch", 5);
-    trace_view_add_col(tv, "Cycle#", 10);
-    trace_view_add_col(tv, "Addr", 8);
-    trace_view_add_col(tv, "Opcode", 8);
-    trace_view_add_col(tv, "Disassembly", 45);
-    trace_view_add_col(tv, "Context", 32);
-    tv->autoscroll = 1;
-    tv->display_end_top = 0;
-
-    this->cpu.dbg.tvptr = tv;
-}
-
-static void setup_ARM7TDMI_disassembly(struct debugger_interface *dbgr, struct NDS* this)
-{
-    struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
-    struct debugger_view *dview = cpg(p);
-    struct disassembly_view *dv = &dview->disassembly;
-    dv->mem_end = 0xFFFFFFFF;
-    dv->addr_column_size = 8;
-    dv->has_context = 1;
-    jsm_string_sprintf(&dv->processor_name, "ARM7TDMI");
-
-    create_and_bind_registers_ARM7TDMI(this, dv);
-    dv->fill_view.ptr = (void *)this;
-    dv->fill_view.func = &fill_disassembly_view;
-
-    dv->get_disassembly.ptr = (void *)this;
-    dv->get_disassembly.func = &get_disassembly_ARM7TDMI;
-
-    dv->get_disassembly_vars.ptr = (void *)this;
-    dv->get_disassembly_vars.func = &get_disassembly_vars_ARM7TDMI;
-}
-
-static void setup_image_view_tiles(struct NDS* this, struct debugger_interface *dbgr)
-{
-    struct debugger_view *dview;
-    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.tiles);
-    struct image_view *iv = &dview->image;
-
-    iv->width = 256;
-    iv->height = 256;
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ 256, 256 };
-
-    iv->update_func.ptr = this;
-    iv->update_func.func = &render_image_view_tiles;
-    snprintf(iv->label, sizeof(iv->label), "Tile Viewer");
-}
-
-static void setup_image_view_sprites(struct NDS* this, struct debugger_interface *dbgr)
-{
-    struct debugger_view *dview;
-    this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
-    dview = cpg(this->dbg.image_views.sprites);
-    struct image_view *iv = &dview->image;
-
-    iv->width = 240;
-    iv->height = 160;
-
-    iv->viewport.exists = 1;
-    iv->viewport.enabled = 1;
-    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
-    iv->viewport.p[1] = (struct ivec2){ iv->width, iv->height };
-
-    iv->update_func.ptr = this;
-    iv->update_func.func = &render_image_view_sprites;
-    snprintf(iv->label, sizeof(iv->label), "Layer/Sprites Viewer");
-
-    debugger_widgets_add_checkbox(&dview->options, "Draw transparencies", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Draw 4bpp", 1, 1, 0);
-    debugger_widgets_add_checkbox(&dview->options, "Draw 8bpp", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Draw normal", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Draw affine", 1, 1, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight 4bpp", 1, 0, 0);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight 8bpp", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight normal", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight affine", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "Highlight window", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box 4bpp", 1, 0, 0);
-    debugger_widgets_add_checkbox(&dview->options, "White box 8bpp", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box normal", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box affine", 1, 0, 1);
-    debugger_widgets_add_checkbox(&dview->options, "White box window", 1, 0, 1);
-}
-*/
-
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
@@ -176,7 +66,7 @@ static void setup_image_view_palettes(struct NDS* this, struct debugger_interfac
     dview = cpg(this->dbg.image_views.palettes);
     struct image_view *iv = &dview->image;
 
-    iv->width = 16 * PAL_BOX_SIZE_W_BORDER;
+    iv->width = ((16 * PAL_BOX_SIZE_W_BORDER * 2) + 2);
     iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 5) + 2;
 
     iv->viewport.exists = 1;
@@ -770,6 +660,9 @@ static void render_image_view_ppu_info(struct debugger_interface *dbgr, struct d
             debugger_widgets_textbox_sprintf(tb, "\n BG%d  on:%d  mosaic:%d  screen_size:%d  8bpp:%d", bgnum, bg->enable, bg->mosaic_enable, bg->screen_size, bg->bpp8);
         }
         debugger_widgets_textbox_sprintf(tb, "\n OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
+        debugger_widgets_textbox_sprintf(tb, "\n  ext_palettes:%d  tile_sprite_1d:%d bitmap_sprite_1d:%d", eng->io.obj.extended_palettes, eng->io.obj.tile.map_1d, eng->io.obj.bitmap.map_1d);
+
+
         debugger_widgets_textbox_sprintf(tb, "\n\n");
     }
 

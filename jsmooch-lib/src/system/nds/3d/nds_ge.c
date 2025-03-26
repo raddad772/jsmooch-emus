@@ -20,6 +20,7 @@
 static u32 tbl_num_params[0xFF];
 static i32 tbl_num_cycles[0xFF];
 static u32 tbl_cmd_good[0xFF];
+static u32 tbl_test_busy[0xFF];
 
 static float uv_to_float(i32 v)
 {
@@ -63,7 +64,6 @@ static void identity_matrix(i32 *m)
     memset(m, 0, sizeof(i32)*16);
     m[0] = m[5] = m[10] = m[15] = 1 << 12;
 }
-
 
 
 static void vertex_list_init(struct NDS_GE_VTX_list *l)
@@ -182,7 +182,12 @@ void NDS_GE_init(struct NDS *this) {
         tbl_num_params[i] = 0;
         tbl_num_cycles[i] = 0;
         tbl_cmd_good[i] = 0;
+        tbl_test_busy[i] = 0;
     }
+
+    tbl_test_busy[NDS_GE_CMD_BOX_TEST] = 1;
+    tbl_test_busy[NDS_GE_CMD_VEC_TEST] = 1;
+    tbl_test_busy[NDS_GE_CMD_POS_TEST] = 1;
 
 #define SCMD(cmd_id, np, ncyc) tbl_num_params[NDS_GE_CMD_##cmd_id] = np; tbl_num_cycles[NDS_GE_CMD_##cmd_id] = ncyc; tbl_cmd_good[NDS_GE_CMD_##cmd_id] = 1
     SCMD(NOP, 0, 0);
@@ -1226,7 +1231,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
 
 static void ingest_vertex(struct NDS *this) {
     if (this->re.io.DISP3DCNT.poly_vtx_ram_overflow) {
-        printf("\nVTX OVERFLOW...");
+        //printf("\nVTX OVERFLOW...");
         return;
     }
 
@@ -1329,6 +1334,215 @@ static void cmd_VTX_10(struct NDS *this)
     this->ge.params.vtx.y = (i16)(((DATA[0] >> 10) & 0x3FF) << 6);
     this->ge.params.vtx.z = (i16)(((DATA[0] >> 20) & 0x3FF) << 6);
     ingest_vertex(this);
+}
+
+static void cmd_POS_TEST(struct NDS *this)
+{
+    this->ge.params.vtx.x = DATA[0] & 0xFFFF;
+    this->ge.params.vtx.y = DATA[0] >> 16;
+    this->ge.params.vtx.z = DATA[1] & 0xFFFF;
+
+    if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
+    i64 vertex[4] = {(i64)this->ge.params.vtx.x, this->ge.params.vtx.y, this->ge.params.vtx.z, 1<<12};
+
+    this->ge.results.pos_test[0] = (vertex[0]*M_CLIP[0] + vertex[1]*M_CLIP[4] + vertex[2]*M_CLIP[8] + vertex[3]*M_CLIP[12]) >> 12;
+    this->ge.results.pos_test[1] = (vertex[0]*M_CLIP[1] + vertex[1]*M_CLIP[5] + vertex[2]*M_CLIP[9] + vertex[3]*M_CLIP[13]) >> 12;
+    this->ge.results.pos_test[2] = (vertex[0]*M_CLIP[2] + vertex[1]*M_CLIP[6] + vertex[2]*M_CLIP[10] + vertex[3]*M_CLIP[14]) >> 12;
+    this->ge.results.pos_test[3] = (vertex[0]*M_CLIP[3] + vertex[1]*M_CLIP[7] + vertex[2]*M_CLIP[11] + vertex[3]*M_CLIP[15]) >> 12;
+}
+
+static void box_test_clip_segment(struct NDS *this, i32 comp, i32 plane, struct NDS_GE_VTX_list_node* outbuf, struct NDS_GE_VTX_list_node* vin, struct NDS_GE_VTX_list_node* vout)
+{
+    s64 factor_num = vin->data.xyzw[3] - (plane*vin->data.xyzw[comp]);
+    s32 factor_den = factor_num - (vout->data.xyzw[3] - (plane*vout->data.xyzw[comp]));
+
+#define INTERPOLATE(var)  { outbuf->data.var = (vin->data.var + ((vout->data.var - vin->data.var) * factor_num) / factor_den); }
+
+    if (comp != 0) INTERPOLATE(xyzw[0]);
+    if (comp != 1) INTERPOLATE(xyzw[1]);
+    if (comp != 2) INTERPOLATE(xyzw[2]);
+    INTERPOLATE(xyzw[3]);
+    outbuf->data.xyzw[comp] = plane*outbuf->data.xyzw[3];
+
+#undef INTERPOLATE
+}
+
+static int box_test_against_plane(struct NDS *this, int comp, struct NDS_GE_VTX_list_node *vertices, int nverts) {
+    struct NDS_GE_VTX_list_node temp[10];
+    i32 prev, next;
+    i32 c = 0;
+
+    for (i32 i = 0; i < nverts; i++) {
+        prev = i - 1;
+        if (prev < 0) prev = nverts - 1;
+        next = i + 1;
+        if (next >= nverts) next = 0;
+
+        struct NDS_GE_VTX_list_node *vtx = &vertices[i];
+        if (vtx->data.xyzw[comp] > vtx->data.xyzw[3]) {
+            struct NDS_GE_VTX_list_node *vprev = &vertices[prev];
+            if (vprev->data.xyzw[comp] <= vprev->data.xyzw[3]) {
+                box_test_clip_segment(this, comp, 1, &temp[c], vtx, vprev);
+                c++;
+            }
+
+            struct NDS_GE_VTX_list_node *vnext = &vertices[next];
+            if (vnext->data.xyzw[comp] <= vnext->data.xyzw[3]) {
+                box_test_clip_segment(this, comp, 1, &temp[c], vtx, vnext);
+                c++;
+            }
+        } else {
+            memcpy(&temp[c++].data, &vtx->data, sizeof(struct NDS_GE_VTX_list_node_data));
+        }
+    }
+
+    nverts = c;
+    c = 0;
+    for (i32 i = 0; i < nverts; i++) {
+        prev = i - 1;
+        if (prev < 0) prev = nverts - 1;
+        next = i + 1;
+        if (next >= nverts) next = 0;
+
+        struct NDS_GE_VTX_list_node *vtx = &temp[i];
+        if (vtx->data.xyzw[comp] < -vtx->data.xyzw[3]) {
+            struct NDS_GE_VTX_list_node *vprev = &temp[prev];
+            if (vprev->data.xyzw[comp] >= -vprev->data.xyzw[3]) {
+                box_test_clip_segment(this, comp, -1, &vertices[c], vtx, vprev);
+                c++;
+            }
+
+            struct NDS_GE_VTX_list_node *vnext = &temp[next];
+            if (vnext->data.xyzw[comp] >= -vnext->data.xyzw[3]) {
+                box_test_clip_segment(this, comp, -1, &vertices[c], vtx, vnext);
+                c++;
+            }
+        } else {
+            memcpy(&vertices[c++].data, &vtx->data, sizeof(struct NDS_GE_VTX_list_node_data));
+        }
+    }
+
+    return c;
+}
+
+
+static i32 box_test_clip_verts(struct NDS *this, struct NDS_GE_VTX_list_node *vertices, int nverts)
+{
+    nverts = box_test_against_plane(this, 2, vertices, nverts);
+
+    // Y clipping
+    nverts = box_test_against_plane(this, 1, vertices, nverts);
+
+    // X clipping
+    nverts = box_test_against_plane(this, 0, vertices, nverts);
+
+    return nverts;
+}
+
+static void cmd_BOX_TEST(struct NDS *this)
+{
+    struct NDS_GE_VTX_list_node box[8];
+    struct NDS_GE_VTX_list_node face[10];
+    i32 res;
+
+    GXSTAT.box_test_result = 0;
+
+    i16 x0 = (i16)(DATA[0] & 0xFFFF);
+    i16 y0 = ((i32)DATA[0]) >> 16;
+    i16 z0 = (i16)(DATA[1] & 0xFFFF);
+    i16 x1 = ((i32)DATA[1]) >> 16;
+    i16 y1 = (i16)(DATA[2] & 0xFFFF);
+    i16 z1 = ((i32)DATA[2]) >> 16;
+
+    x1 += x0;
+    y1 += y0;
+    z1 += z0;
+
+    box[0].data.xyzw[0] = x0;
+    box[0].data.xyzw[1] = y0;
+    box[0].data.xyzw[2] = z0;
+    box[1].data.xyzw[0] = x1;
+    box[1].data.xyzw[1] = y0;
+    box[1].data.xyzw[2] = z0;
+    box[2].data.xyzw[0] = x1;
+    box[2].data.xyzw[1] = y1;
+    box[2].data.xyzw[2] = z0;
+    box[3].data.xyzw[0] = x0;
+    box[3].data.xyzw[1] = y1;
+    box[3].data.xyzw[2] = z0;
+    box[4].data.xyzw[0] = x0;
+    box[4].data.xyzw[1] = y1;
+    box[4].data.xyzw[2] = z1;
+    box[5].data.xyzw[0] = x0;
+    box[5].data.xyzw[1] = y0;
+    box[5].data.xyzw[2] = z1;
+    box[6].data.xyzw[0] = x1;
+    box[6].data.xyzw[1] = y0;
+    box[6].data.xyzw[2] = z1;
+    box[7].data.xyzw[0] = x1;
+    box[7].data.xyzw[1] = y1;
+    box[7].data.xyzw[2] = z1;
+
+    if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
+    for (int i = 0; i < 8; i++) {
+        i32 x = box[i].data.xyzw[0];
+        i32 y = box[i].data.xyzw[1];
+        i32 z = box[i].data.xyzw[2];
+
+        box[i].data.xyzw[0] = ((i64)x * M_CLIP[0] + (i64)y * M_CLIP[4] + (i64)z * M_CLIP[8] + (i64)0x1000 * M_CLIP[12]) >> 12;
+        box[i].data.xyzw[1] = ((i64)x * M_CLIP[1] + (i64)y * M_CLIP[5] + (i64)z * M_CLIP[9] + (i64)0x1000 * M_CLIP[13]) >> 12;
+        box[i].data.xyzw[2] = ((i64)x * M_CLIP[2] + (i64)y * M_CLIP[6] + (i64)z * M_CLIP[10] + (i64)0x1000 * M_CLIP[14]) >> 12;
+        box[i].data.xyzw[3] = ((i64)x * M_CLIP[3] + (i64)y * M_CLIP[7] + (i64)z * M_CLIP[11] + (i64)0x1000 * M_CLIP[15]) >> 12;
+    }
+
+    // front face (-Z)
+    face[0] = box[0]; face[1] = box[1]; face[2] = box[2]; face[3] = box[3];
+    res = box_test_clip_verts(this, face, 4);
+    if (res > 0) {
+        GXSTAT.box_test_result = 1;
+        return;
+    }
+
+    // back face (+Z)*/
+    face[0] = box[4]; face[1] = box[5]; face[2] = box[6]; face[3] = box[7];
+    res = box_test_clip_verts(this, face, 4);
+    if (res > 0) {
+        GXSTAT.box_test_result = 1;
+        return;
+    }
+
+    // left face (-X)
+    face[0] = box[0]; face[1] = box[3]; face[2] = box[4]; face[3] = box[5];
+    res = box_test_clip_verts(this, face, 4);
+    if (res > 0) {
+        GXSTAT.box_test_result = 1;
+        return;
+    }
+
+    // right face (+X)
+    face[0] = box[1]; face[1] = box[2]; face[2] = box[7]; face[3] = box[6];
+    res = box_test_clip_verts(this, face, 4);
+    if (res > 0) {
+        GXSTAT.box_test_result = 1;
+        return;
+    }
+
+    // bottom face (-Y)
+    face[0] = box[0]; face[1] = box[1]; face[2] = box[6]; face[3] = box[5];
+    res = box_test_clip_verts(this, face, 4);
+    if (res > 0) {
+        GXSTAT.box_test_result = 1;
+        return;
+    }
+
+    // top face (+Y)
+    face[0] = box[2]; face[1] = box[3]; face[2] = box[4]; face[3] = box[7];
+    res = box_test_clip_verts(this, face, 4);
+    if (res > 0) {
+        GXSTAT.box_test_result = 1;
+        return;
+    }
+
 }
 
 static void cmd_SWAP_BUFFERS(struct NDS *this)
@@ -1473,12 +1687,15 @@ static void do_cmd(void *ptr, u64 cmd, u64 current_clock, u32 jitter)
         dcmd(VTX_XZ);
         dcmd(VTX_10);
         dcmd(VTX_YZ);
+        dcmd(POS_TEST);
+        dcmd(BOX_TEST);
 #undef dcmd
         default:
             printf("\nUnhandled GE cmd %02llx", cmd);
             break;
     }
 
+    GXSTAT.test_busy = 0;
     // Schedule next command if applicable!
     ge_handle_cmd(this);
 }
@@ -1542,6 +1759,7 @@ static void ge_handle_cmd(struct NDS *this)
     fifo_update_len(this, 0, 0);
     assert(FIFO.cmd_scheduled == 0);
     printfifo("\nSCHEDULING GE CMD %02x FOR %d CYCLES!", cmd, num_cycles);
+    GXSTAT.test_busy = tbl_test_busy[cmd];
     scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + num_cycles, cmd, this, &do_cmd, &FIFO.cmd_scheduled);
 }
 
@@ -1847,10 +2065,10 @@ u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
         case R9_GXSTAT:
             assert(sz==4);
             return GXSTAT.u;
-        case 0x04000620: printf("\nPOS TEST READ"); return this->ge.results.pos_test[0];
-        case 0x04000624: printf("\nPOS TEST READ"); return this->ge.results.pos_test[1];
-        case 0x04000628: printf("\nPOS TEST READ"); return this->ge.results.pos_test[2];
-        case 0x0400062C: printf("\nPOS TEST READ"); return this->ge.results.pos_test[3];
+        case 0x04000620: return this->ge.results.pos_test[0];
+        case 0x04000624: return this->ge.results.pos_test[1];
+        case 0x04000628: return this->ge.results.pos_test[2];
+        case 0x0400062C: return this->ge.results.pos_test[3];
 
         case 0x04000680: return M_VECTOR[0];
         case 0x04000684: return M_VECTOR[1];

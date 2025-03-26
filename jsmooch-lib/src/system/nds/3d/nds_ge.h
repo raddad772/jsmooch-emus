@@ -444,7 +444,7 @@ struct NDS_GE {
     }lights;
 
     struct {
-        u32 pos_test[4];
+        i32 pos_test[4];
         u32 vector[2];
     } results;
     u32 winding_order;

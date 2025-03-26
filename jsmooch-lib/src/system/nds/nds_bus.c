@@ -1413,7 +1413,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 }
             }
             else if (ch->io.start_timing > 3) {
-                printf("\nwarn DMA9 Start timing:%d", ch->io.start_timing);
+                if (ch->io.start_timing != 5) printf("\nwarn DMA9 Start timing:%d", ch->io.start_timing);
             }
             return;}
 

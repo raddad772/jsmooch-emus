@@ -83,6 +83,25 @@ static u32 read_pram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz
     return cR[sz](eng->mem.bg_palette, addr & 0x1FF);
 }
 
+static u32 read_ext_palette_obj(struct NDS *this, struct NDSENG2D *eng, u32 palette, u32 index)
+{
+    static int a = 1;
+    if (a) {
+        printf("\nWARN READ FROM UNIMPLEMENTED: OBJ EXT PALETTE");
+        a = 0;
+    }
+    return 0x7F0F;
+}
+
+static u32 read_pram_obj2(struct NDS *this, struct NDSENG2D *eng, u32 palette, u32 index)
+{
+    if (eng->io.obj.extended_palettes)
+        return read_ext_palette_obj(this, eng, palette, index) & 0x7FFF;
+    u32 addr = ((palette << 5) | (index << 1)) & 0x1FF;
+    u32 v = cR16(eng->mem.obj_palette, addr) & 0x7FFF;
+    return v;
+}
+
 static u32 read_pram_obj(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.obj_palette, addr & 0x1FF);
@@ -122,136 +141,6 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
 #undef T
 }
 
-static void get_affine_sprite_pixel(struct NDS *this, struct NDSENG2D *eng, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_1d, u32 dsize, i32 screen_x, u32 blended, struct NDS_PPU_window *w)
-{
-    i32 hpixels = htiles * 8;
-    i32 vpixels = vtiles * 8;
-    if (dsize) {
-        hpixels >>= 1;
-        vpixels >>= 1;
-    }
-    px += (hpixels >> 1);
-    py += (vpixels >> 1);
-    if ((px < 0) || (py < 0)) return;
-    if ((px >= hpixels) || (py >= vpixels)) return;
-
-    u32 block_x = px >> 3;
-    u32 block_y = py >> 3;
-    u32 tile_x = px & 7;
-    u32 tile_y = py & 7;
-    if (obj_mapping_1d) {
-        //1D!
-        tile_num += (((htiles >> dsize) << bpp8) * block_y);
-    }
-    else {
-        tile_num += block_y << 5;
-    }
-    tile_num += block_x << bpp8;
-    tile_num &= 0x3FF;
-    if (bpp8) tile_num &= 0x3FE;
-
-    u32 tile_base_addr = (32 * tile_num);
-    u32 tile_line_addr = tile_base_addr + (tile_y << (2 + bpp8));
-    u32 tile_px_addr = bpp8 ? (tile_line_addr + tile_x) : (tile_line_addr + (tile_x >> 1));
-    u8 c = read_vram_obj(this, eng, tile_px_addr, 1);
-
-    if (!bpp8) {
-        if (tile_x & 1) c >>= 4;
-        c &= 15;
-    }
-    else palette = 0x100;
-
-    if (c != 0) {
-        switch(mode) {
-            case 1:
-            case 0: {
-                struct NDS_PX *opx = &eng->obj.line[screen_x];
-                if (!opx->has) {
-                    opx->has = 1;
-                    opx->priority = priority;
-                    opx->color = read_pram_obj(this, eng, (c + palette) << 1, 2);
-                    opx->translucent_sprite = blended;
-                }
-                break; }
-            case 2: {
-                w->sprites_inside[screen_x] = 1;
-                break; }
-        }
-    }
-}
-
-static void draw_sprite_affine(struct NDS *this, struct NDSENG2D *eng, u32 oam_offset, struct NDS_PPU_window *w, u32 num)
-{
-    eng->obj.drawing_cycles -= 1;
-    if (eng->obj.drawing_cycles < 1) return;
-
-    u32 ptr[3];
-    ptr[0] = read_oam(this, eng, oam_offset, 2);
-    ptr[1] = read_oam(this, eng, oam_offset+2, 2);
-    ptr[2] = read_oam(this, eng, oam_offset+4, 2);
-    u32 mosaic = (ptr[0] >> 12) & 1;
-    i32 my_y = mosaic ? this->ppu.mosaic.obj.y_current : this->clock.ppu.y;
-
-    u32 dsize = (ptr[0] >> 9) & 1;
-    u32 htiles, vtiles;
-    u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
-    u32 sz = (ptr[1] >> 14) & 3;
-    get_obj_tile_size(sz, shape, &htiles, &vtiles);
-    if (dsize) {
-        htiles *= 2;
-        vtiles *= 2;
-    }
-
-    i32 y_min = ptr[0] & 0xFF;
-    i32 y_max = (y_min + ((i32)vtiles * 8)) & 255;
-    if(y_max < y_min)
-        y_min -= 256;
-    if(my_y < y_min || my_y >= y_max) {
-        return;
-    }
-
-    u32 mode = (ptr[0] >> 10) & 3;
-    u32 blended = mode == 1;
-
-    u32 tile_num = ptr[2] & 0x3FF;
-    u32 bpp8 = (ptr[0] >> 13) & 1;
-    u32 x = ptr[1] & 0x1FF;
-    x = SIGNe9to32(x);
-    u32 pgroup = (ptr[1] >> 9) & 31;
-    u32 pbase = (pgroup * 0x20) >> 1;
-    u32 pbase_ptr[4];
-    pbase_ptr[0] = read_oam(this, eng, pbase+3, 2);
-    pbase_ptr[1] = read_oam(this, eng, pbase+7, 2);
-    pbase_ptr[2] = read_oam(this, eng, pbase+11, 2);
-    pbase_ptr[3] = read_oam(this, eng, pbase+15, 2);
-    i32 pa = SIGNe16to32(pbase_ptr[0]);
-    i32 pb = SIGNe16to32(pbase_ptr[1]);
-    i32 pc = SIGNe16to32(pbase_ptr[2]);
-    i32 pd = SIGNe16to32(pbase_ptr[3]);
-    eng->obj.drawing_cycles -= 9;
-    if (eng->obj.drawing_cycles < 0) return;
-
-    u32 priority = (ptr[2] >> 10) & 3;
-    u32 palette = bpp8 ? 0x100 : (0x100 + (((ptr[2] >> 12) & 15) << 4));
-
-    i32 line_in_sprite = my_y - y_min;
-    //i32 x_origin = x - (htiles << 2);
-
-    i32 screen_x = x;
-    i32 iy = (i32)line_in_sprite - ((i32)vtiles * 4);
-    i32 hwidth = (i32)htiles * 4;
-    for (i32 ix=-hwidth; ix < hwidth; ix++) {
-        i32 px = (pa*ix + pb*iy)>>8;    // get x texture coordinate
-        i32 py = (pc*ix + pd*iy)>>8;    // get y texture coordinate
-        if ((screen_x >= 0) && (screen_x < 256))
-            get_affine_sprite_pixel(this, eng, mode, px, py, tile_num, htiles, vtiles, bpp8, palette, priority,
-                                    eng->io.obj.bitmap.map_1d, dsize, screen_x, blended, w);   // get color from (px,py)
-        screen_x++;
-        eng->obj.drawing_cycles -= 2;
-        if (eng->obj.drawing_cycles < 0) return;
-    }
-}
-
 static void calculate_windows_vflags(struct NDS *this, struct NDSENG2D *eng)
 {
     for (u32 wn = 0; wn < 2; wn++) {
@@ -265,12 +154,10 @@ static void calculate_windows_vflags(struct NDS *this, struct NDSENG2D *eng)
 static u32 get_sprite_tile_addr(struct NDS *this, struct NDSENG2D *eng, u32 tile_num, u32 htiles, u32 block_y, u32 line_in_tile, u32 bpp8, u32 d1)
 {
     if (d1) {
-        printf("\nOK HERE!");
         tile_num *= eng->io.obj.tile.stride_1d;
     }
     else {
-        printf("\nOK HERE2!");
-        tile_num += block_y << (2 + eng->io.obj.bitmap.dim_2d);
+        tile_num += (block_y * eng->io.obj.tile.stride_1d);
         /*if (eng->io.bitmap_obj_2d_dim) {
             tile_num += block_y << 5;
         }
@@ -283,8 +170,8 @@ static u32 get_sprite_tile_addr(struct NDS *this, struct NDSENG2D *eng, u32 tile
     //tile_num &= 0x3FF;
 
     // Now get pointer to that tile
-    u32 tile_base_addr = (32 * tile_num);
-    u32 tile_line_addr = tile_base_addr + (line_in_tile * 4);
+    u32 tile_base_addr = tile_num;
+    u32 tile_line_addr = tile_base_addr;// + (line_in_tile * 4);
     return tile_line_addr;
 }
 
@@ -320,122 +207,181 @@ static void output_sprite_8bpp(struct NDS *this, struct NDSENG2D *eng, u32 tile_
     }
 }
 
+static int obj_size[4][4][2] = {
+        { { 8 , 8  }, { 16, 16 }, { 32, 32 }, { 64, 64 } },
+        { { 16, 8  }, { 32, 8  }, { 32, 16 }, { 64, 32 } },
+        { { 8 , 16 }, { 8 , 32 }, { 16, 32 }, { 32, 64 } },
+        { { 8 , 8  }, { 8 , 8  }, { 8 , 8  }, { 8 , 8  } }
+};
 
-static void output_sprite_4bpp(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, u32 mosaic, struct NDS_PPU_window *w) {
-    for (i32 tile_x = 0; tile_x < 4; tile_x++) {
-        i32 sx;
-        if (hflip) sx = (7 - (tile_x * 2)) + screen_x;
-        else sx = (tile_x * 2) + screen_x;
-        u8 data = read_vram_obj(this, eng, addr+tile_x, 1);
-        for (u32 i = 0; i < 2; i++) {
-            if ((sx >= 0) && (sx < 256)) {
-                eng->obj.drawing_cycles -= 1;
-                struct NDS_PX *opx = &eng->obj.line[sx];
-                u32 c = data & 15;
-                data >>= 4;
-                if ((mode > 1) || (!opx->has) || (priority < opx->priority)) {
-                    switch (mode) {
-                        case 1:
-                        case 0: {
-                            if (c != 0) {
-                                opx->has = 1;
-                                opx->color = read_pram_obj(this, eng, (c + palette) << 1, 2);
-                                opx->translucent_sprite = mode;
-                            }
-                            opx->priority = priority;
-                            opx->mosaic_sprite = mosaic;
-                            break;
-                        }
-                        case 2: {
-                            if (c != 0) w->sprites_inside[sx] = 1;
-                            break;
-                        }
-                    }
-                }
-                if (eng->obj.drawing_cycles < 1) return;
+static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 oam_offset)
+{
+    i32 cycles_per_pixel;
+    i32 pa, pb, pc, pd;
+
+    u16 attr[3];
+    attr[0] = read_oam(this, eng, oam_offset, 2);
+    u32 affine = (attr[0] >> 8) & 1;
+    u32 b9 = (attr[0] >> 9) & 1;
+    if (!affine && b9) {
+        eng->obj.drawing_cycles--;
+        return;
+    }
+    cycles_per_pixel = affine ? 2 : 1;
+    eng->obj.drawing_cycles -= affine ? 10 : 1;
+    if (eng->obj.drawing_cycles < 0) return;
+
+    attr[1] = read_oam(this, eng, oam_offset+2, 2);
+
+    i32 x = attr[1] & 0x1FF;
+    i32 y = attr[0] & 0xFF;
+    u32 shape = (attr[0] >> 14) & 3;
+    u32 sz = (attr[1] >> 14) & 3;
+    u32 priority = (attr[2] >> 10) & 3;
+    u32 mode = (attr[0] >> 10) & 3;
+    u32 mosaic = (attr[0] >> 12) & 1;
+
+    if (x & 0x100) x -= 512;
+    if (y >= 192) y -= 256;
+
+    i32 width = obj_size[shape][sz][0];
+    i32 height = obj_size[shape][sz][1];
+    i32 half_width = width >> 1;
+    i32 half_height = height >> 1;
+    i32 real_half_width = half_width;
+    i32 real_half_height = half_height;
+
+    x += half_width;
+    y += half_height;
+    if (affine && b9) {
+        x += half_height;
+        y += half_height;
+        half_width <<= 1;
+        half_height <<= 1;
+    }
+    i32 my_y = this->clock.ppu.y;
+    if (my_y < (y - half_height) || my_y >= (y + half_height)){
+        return;
+    }
+
+    if (affine) {
+        u32 pgroup = ((attr[1] >> 9) & 31) << 5;
+        pa = read_oam(this, eng, pgroup + 6, 2);
+        pb = read_oam(this, eng, pgroup + 14, 2);
+        pc = read_oam(this, eng, pgroup + 22, 2);
+        pd = read_oam(this, eng, pgroup + 30, 2);
+        pa = SIGNe16to32(pa);
+        pb = SIGNe16to32(pb);
+        pc = SIGNe16to32(pc);
+        pd = SIGNe16to32(pd);
+    }
+    else {
+        pa = 1 << 8;
+        pb = 0;
+        pc = 0;
+        pd = 1 << 8;
+    }
+
+    attr[2] = read_oam(this, eng, oam_offset+4, 2);
+    i32 sprite_y = my_y - y;
+    u32 tile_num = attr[2] & 0x3FF;
+    u32 palette = (attr[2] >> 12) + 16;
+    u32 flip_h = ((attr[1] >> 12) & 1) & (affine ^ 1);
+    u32 flip_v = ((attr[1] >> 13) & 1) & (affine ^ 1);
+    u32 bpp8 = (attr[0] >> 13) & 1;
+
+    if (mosaic) {
+        sprite_y = this->ppu.mosaic.obj.y_current - y;
+    }
+
+    for (i32 lx = -half_width; lx <= half_width; lx++) {
+        eng->obj.drawing_cycles -= cycles_per_pixel;
+        if (eng->obj.drawing_cycles < 1) return;
+        i32 line_x = lx + x;
+        if ((line_x < 0) || (line_x > 255)) continue;
+
+        i32 tx = ((pa * lx + pb * sprite_y) >> 8) + real_half_width;
+        i32 ty = ((pc * lx + pd * sprite_y) >> 8) + real_half_height;
+
+        if ((tx < 0) || (ty < 0) || (tx >= width) || (ty >= height)) continue;
+
+        if (flip_h) tx = width - tx - 1;
+        if (flip_v) ty = height - ty - 1;
+        u32 tile_x = tx & 7;
+        u32 tile_y = ty & 7;
+        u32 block_x = tx >> 3;
+        u32 block_y = ty >> 3;
+
+        u32 c, is_transparent;
+        u32 tile_addr;
+        if (mode == 3) { // bitmap
+            if (eng->io.obj.bitmap.map_1d) {
+                u32 addr = (tile_num * (64 << eng->io.obj.bitmap.boundary_1d) + ty * width + tx) << 1;
+                c = read_vram_obj(this, eng, addr, 2);
             }
-            if (hflip) sx--;
-            else sx++;
+            else {
+                // ((number & ~mask) * 64 + (number & mask) * 8 + tex_y * (128 << dimension) + tex_x) * 2)
+                u32 mask = (16 << eng->io.obj.bitmap.dim_2d) - 1;
+                u32 addr = ((tile_num & ~mask) * 64 + (tile_num & mask) * 8 + ty * (128 << eng->io.obj.bitmap.dim_2d) + tx) << 1;
+                c = read_vram_obj(this, eng, addr, 2);
+            }
+            is_transparent = (c >> 15) & 1;
+            c &= 0x7FFF;
+        }
+        else if (bpp8) {
+            if (eng->io.obj.tile.map_1d)
+                tile_addr = (tile_num << eng->io.obj.tile.boundary_1d) + block_y * (width >> 2);
+            else
+                tile_addr = (tile_num & 0x3FE) + block_y * 32;
+
+            tile_addr = ((tile_addr + (block_x << 1)) << 5) + (tile_y << 3) + tile_x;
+            c = read_vram_obj(this, eng, tile_addr, 1);
+            is_transparent = c == 0;
+            c = read_pram_obj2(this, eng, 0, c);
+        }
+        else { // 4bpp
+            if (eng->io.obj.tile.map_1d)
+                tile_addr = (tile_num << eng->io.obj.tile.boundary_1d) + block_y * (width >> 3);
+            else
+                tile_addr = tile_num + block_y * 32;
+
+            tile_addr = ((tile_addr + block_x) << 5) + ((tile_y << 2) | (tile_x >> 1));
+            c = read_vram_obj(this, eng, tile_addr, 1);
+            if (tile_x & 1) c >>= 4;
+            c &= 15;
+            is_transparent = c == 0;
+            c = read_pram_obj2(this, eng, palette, c);
+        }
+
+        struct NDS_PX *opx = &eng->obj.line[line_x];
+        if ((mode == 2) || (!opx->has) || (priority < opx->priority)) {
+            switch (mode) {
+                case 3: // bitmap
+                case 1: // translucent iirc?
+                case 0: {
+                    if (!is_transparent) {
+                        opx->has = 1;
+                        opx->color = c;
+                        opx->translucent_sprite = mode;
+                    }
+                    opx->priority = priority;
+                    opx->mosaic_sprite = mosaic;
+                    break;
+                }
+                case 2: {
+                    if (!is_transparent) eng->window[NDS_WINOBJ].sprites_inside[line_x] = 1;
+                    break;
+                }
+            }
         }
     }
 }
-
-static void draw_sprite_normal(struct NDS *this, struct NDSENG2D *eng, u32 addr, struct NDS_PPU_window *w, u32 num)
-{
-    // 1 cycle to evaluate and 1 cycle per pixel
-    eng->obj.drawing_cycles -= 1;
-    if (eng->obj.drawing_cycles < 1) return;
-
-    u16 ptr[3];
-    ptr[0] = read_oam(this, eng, addr, 2);
-    u32 obj_disable = (ptr[0] >> 9) & 1;
-    if (obj_disable) return;
-    ptr[1] = read_oam(this, eng, addr+2, 2);
-    ptr[2] = read_oam(this, eng, addr+4, 2);
-
-    u32 shape = (ptr[0] >> 14) & 3; // 0 = square, 1 = horiozontal, 2 = vertical
-    u32 sz = (ptr[1] >> 14) & 3;
-    u32 htiles, vtiles;
-    get_obj_tile_size(sz, shape, &htiles, &vtiles);
-
-    i32 y_min = ptr[0] & 0xFF;
-    i32 y_max = (y_min + ((i32)vtiles * 8)) & 255;
-    if(y_max < y_min)
-        y_min -= 256;
-
-    u32 mosaic = (ptr[0] >> 12) & 1;
-    i32 my_y = mosaic ? this->ppu.mosaic.obj.y_current : this->clock.ppu.y;
-    if(my_y < y_min || my_y >= y_max) {
-        return;
-    }
-
-    u32 tile_num = ptr[2] & 0x3FF;
-
-    u32 mode = (ptr[0] >> 10) & 3;
-    u32 bpp8 = (ptr[0] >> 13) & 1;
-    u32 x = ptr[1] & 0x1FF;
-    x = SIGNe9to32(x);
-    if (x >= 256) {
-        eng->obj.drawing_cycles -= 1;
-        return;
-    }
-    u32 hflip = (ptr[1] >> 12) & 1;
-    u32 vflip = (ptr[1] >> 13) & 1;
-
-    u32 priority = (ptr[2] >> 10) & 3;
-    u32 palette = bpp8 ? 0 : (0x100 + (((ptr[2] >> 12) & 15) << 4));
-    if (bpp8) tile_num &= 0x3FE;
-
-    // OK we got all the attributes. Let's draw it!
-    i32 line_in_sprite = my_y - y_min;
-    if (vflip) line_in_sprite = (((vtiles * 8) - 1) - line_in_sprite);
-    u32 tile_y_in_sprite = line_in_sprite >> 3; // /8
-    u32 line_in_tile = line_in_sprite & 7;
-
-    // OK so we know which line
-    // We have two possibilities; 1d or 2d layout
-    u32 tile_addr = get_sprite_tile_addr(this, eng, tile_num, htiles, tile_y_in_sprite, line_in_tile, bpp8, eng->io.obj.bitmap.map_1d);
-    if (hflip) tile_addr += (htiles - 1) * (32 << bpp8);
-    //if (y_min != -1) printf("\nSPRITE%d y:%d PALETTE:%d", num, y_min, palette);
-
-    i32 screen_x = x;
-
-    for (u32 tile_xs = 0; tile_xs < htiles; tile_xs++) {
-        if (bpp8) output_sprite_8bpp(this, eng, tile_addr, mode, screen_x, priority, hflip, mosaic, w);
-        else output_sprite_4bpp(this, eng, tile_addr, mode, screen_x, priority, hflip, palette, mosaic, w);
-        if (hflip) tile_addr -= (32 << bpp8);
-        else tile_addr += (32 << bpp8);
-        screen_x += 8;
-        if (eng->obj.drawing_cycles < 1) return;
-    }
-}
-
 
 static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
 {
     eng->obj.drawing_cycles = eng->io.hblank_free ? 1530 : 2124;
 
-    memset(eng->obj.line, 0, sizeof(eng->obj.line));
+    memset(eng->obj.line, 0, sizeof(struct NDS_PX) * 256);
     struct NDS_PPU_window *w = &eng->window[NDS_WINOBJ];
     memset(&w->sprites_inside, 0, sizeof(w->sprites_inside));
 
@@ -443,12 +389,12 @@ static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
     // (GBA) Each OBJ takes:
     // n*1 cycles per pixel
     // 10 + n*2 per pixel if rotated/scaled
-    for (u32 i = 0; i < 128; i++) {
-        u32 oam_offset = (i * 8);
-        u32 affine = (read_oam(this, eng, oam_offset, 2) >> 8) & 1;
-        if (eng->num==0 && affine) printf("\nAFFINE! %d", i);
-        if (affine) draw_sprite_affine(this, eng, oam_offset, w, i);
-        else draw_sprite_normal(this, eng, oam_offset, w, i);
+    for (u32 oam_offset = 0; oam_offset <= (127 * 8); oam_offset += 8) {
+        if (eng->obj.drawing_cycles < 0) {
+            printf("\nNO DRAW CYCLES LEFT!");
+            return;
+        }
+        draw_obj_on_line(this, eng, oam_offset);
     }
 }
 
@@ -1413,10 +1359,6 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             eng->window[NDS_WINOBJ].enable = (val >> 7) & 1;
             return;
         case R9_DISPCNT+2:
-            if (eng->io.display_mode != (val & 3)) {
-                dbgloglog(NDS_CAT_PPU_BG_MODE, DBGLS_INFO, "eng%d NEW DISPLAY MODE: %d", en, val & 3);
-                printf("\neng%d NEW DISPLAY MODE: %d", en, val & 3);
-            }
             eng->io.display_mode = val & 3;
             if ((en == 1) && (eng->io.display_mode > 1)) {
                 printf("\nWARNING eng1 BAD DISPLAY MODE: %d", eng->io.display_mode);
