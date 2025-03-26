@@ -1072,47 +1072,9 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
     v[1] = poly->vertex_list.first;
     u32 edgenum = 0;
 
-    /*printf("\n\nPOLY!");
-    for (u32 i = 0; i < poly->num_vertices; i++) {
-        struct NDS_RE_VERTEX *pver = &b->vertex[poly->vertex_pointers[i]];
-        printf("\nvert%d: x:%f y:%f color:%04x s:%f t:%f", poly->vertex_pointers[i], vtx_to_float(pver->xx), vtx_to_float(pver->yy), pver->color, uv_to_float(pver->uv[0]), uv_to_float(pver->uv[1]));
-    }*/
-
     determine_highest_vertex(poly, b);
-
-    //poly->winding_order = winding_order;
-    poly->edge_r_bitfield = 0;
-
-    /*for (u32 i = 1; i <= poly->vertex_list.len; i++) {
-        v[0] = v[1];
-        v[1] = v[0]->next;
-        if (!v[1]) v[1] = poly->vertex_list.first;
-        u32 top_to_bottom = edge_is_top_or_bottom(poly, v) ^ 1;
-
-        //printf("\nV0 %d,%d V1 %d,%d top_to_bottom:%d", v[0]->xx, v[0]->yy, v[1]->xx, v[1]->yy, top_to_bottom);
-        if (poly->winding_order == CCW) {
-            //printf("\nTOP TO BOTTOM? %d")
-            // top to bottom means left edge on CCW
-            if (!top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
-        }
-        else {
-            // top to bottom means right edge on CW
-            if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
-        }
-        edgenum++;
-    }*/
-
-    v[0] = v[1];
-    v[1] = poly->vertex_list.first;
-    u32 top_to_bottom = edge_is_top_or_bottom(poly, v);
-    if (poly->winding_order == CCW) {
-        // top to bottom means left edge on CCW
-        if (!top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
-    }
-    else {
-        // top to bottom means right edge on CW
-        if (top_to_bottom) poly->edge_r_bitfield |= (1 << edgenum);
-    }
+    poly->is_translucent = ((poly->tex_param.format == 1 || poly->tex_param.format == 6) && !(poly->attr.mode & 1)) || (poly->attr.alpha > 0 && poly->attr.alpha < 31);
+    poly->sorting_key = (poly->max_y << 9) | poly->min_y | (poly->is_translucent << 24);
 }
 
 static void list_reverse(struct NDS_GE_VTX_list *l)
@@ -1213,13 +1175,7 @@ static void ingest_poly(struct NDS *this, u32 winding_order) {
     }
 
 
-    //printf("\n\nEvaluate for poly %d", addr);
     evaluate_edges(this, out, winding_order);
-    /*if ((!out->attr.render_back && !out->front_facing) ||
-        (!out->attr.render_front && out->front_facing)) {
-        b->polygon_index--;
-        return;
-    }*/
 
     b->polygon_index++;
     if (b->polygon_index >= 2048) {

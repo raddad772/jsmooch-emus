@@ -182,6 +182,8 @@ struct NDS_RE_POLY  { // no more __attribute__((packed))
     union NDS_GE_POLY_ATTR attr; // 32 bits
     union NDS_GE_TEX_PARAM tex_param;
 
+    u32 sorting_key;
+    u32 is_translucent;
     u32 pltt_base;
     u32 w_normalization_left;
     u32 w_normalization_right;
@@ -235,8 +237,16 @@ struct NDS_RE_LINEBUFFER {
     u32 depth[256];
 };
 
+struct NDS_RE_POLY_LIST {
+    u32 len;
+    struct NDS_RE_POLY *items[2048];
+    u32 num_opaque;
+    i32 num_translucent;
+};
+
 struct NDS_RE {
     u32 enable;
+    struct NDS_RE_POLY_LIST render_list;
     struct {
         struct {
             u16 COLOR;

@@ -557,19 +557,13 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     struct NDS_RE_EDGE edges[2];
     struct tex_sampler;
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
-        struct NDS_RE_POLY *p = &b->polygon[poly_num];
+        struct NDS_RE_POLY *p = this->re.render_list.items[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
         if (p->attr.mode > 2) continue;
-        //if (p->attr.alpha < 30) continue;
-        /*if (p->attr.alpha == 0) {
-            printf("\nskip poly %d as hidden alpha", poly_num);
-            continue;
-        }*/
-        //if (poly_num > 0) break;
+
         // Polygon does not intersect this line
         if ((line_num < p->min_y) || (line_num > p->max_y)) {
-            //printf("\nSkip poly %d min:%d max:%d", poly_num, p->min_y, p->max_y);
             continue;
         }
 
@@ -723,9 +717,40 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     }
 }
 
+int poly_comparator(const void *a, const void *b)
+{
+    return ((struct NDS_RE_POLY *)a)->sorting_key - ((struct NDS_RE_POLY *)b)->sorting_key;
+}
+
+static void copy_and_sort_list(struct NDS *this, struct NDS_GE_BUFFERS *b)
+{
+    this->re.render_list.len = 0;
+    this->re.render_list.num_opaque = 0;
+    this->re.render_list.num_translucent = 0;
+    for (u32 i = 0; i < b->polygon_index; i++) {
+        struct NDS_RE_POLY *p = &b->polygon[i];
+        this->re.render_list.num_opaque += p->is_translucent ^ 1;
+        this->re.render_list.num_translucent += p->is_translucent;
+    }
+
+    u32 opaque_index = 0;
+    u32 transparent_index = this->re.render_list.num_opaque;
+    for (u32 i = 0; i < b->polygon_index; i++) {
+        struct NDS_RE_POLY *p = &b->polygon[i];
+        if (p->is_translucent)
+            this->re.render_list.items[transparent_index++] = p;
+        else
+            this->re.render_list.items[opaque_index++] = p;
+    }
+    u32 num_to_sort = b->translucent_y_sorting_manual ? this->re.render_list.num_opaque : b->polygon_index;
+
+    qsort(this->re.render_list.items, num_to_sort, sizeof(this->re.render_list.items[0]), &poly_comparator);
+}
+
 void NDS_RE_render_frame(struct NDS *this)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer ^ 1];
+    copy_and_sort_list(this, b);
     for (u32 i = 0; i < 192; i++)
         render_line(this, b, i);
 }
