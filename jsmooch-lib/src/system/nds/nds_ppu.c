@@ -320,7 +320,6 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
                 c = read_vram_obj(this, eng, addr, 2);
             }
             else {
-                // ((number & ~mask) * 64 + (number & mask) * 8 + tex_y * (128 << dimension) + tex_x) * 2)
                 u32 mask = (16 << eng->io.obj.bitmap.dim_2d) - 1;
                 u32 addr = ((tile_num & ~mask) * 64 + (tile_num & mask) * 8 + ty * (128 << eng->io.obj.bitmap.dim_2d) + tx) << 1;
                 c = read_vram_obj(this, eng, addr, 2);
