@@ -227,13 +227,12 @@ union NDS_RE_EXTRA_ATTR {
     u32 u;
 };
 struct NDS_RE_LINEBUFFER {
-    u16 rgb_top[256];
-    u16 rgb_bottom[256];
+    u32 rgb[256];
     u16 alpha[256];
     u16 poly_id[256];
     union NDS_RE_EXTRA_ATTR extra_attr[256];
     union NDS_GE_TEX_PARAM tex_param[256];
-    i32 depth[256];
+    u32 depth[256];
 };
 
 struct NDS_RE {
@@ -266,7 +265,7 @@ struct NDS_RE {
                 u32 fog_depth_shift : 4;
                 u32 rdlines_underflow : 1;
                 u32 poly_vtx_ram_overflow : 1;
-                u32 rear_plane_mode : 1;
+                u32 rear_plane_is_bitmap : 1;
             };
             u32 u;
         } DISP3DCNT;

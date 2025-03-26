@@ -72,13 +72,39 @@ static void NDS_RE_interp_setup(struct NDS_RE_interp *this, u32 bit_precision, i
 static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
     for (u32 x = 0; x < 256; x++) {
         l->poly_id[x] = this->re.io.CLEAR.poly_id;
-        l->rgb_top[x] = this->re.io.CLEAR.COLOR;
-        l->rgb_bottom[x] = this->re.io.CLEAR.COLOR;
+        l->rgb[x] = this->re.io.CLEAR.COLOR;
+        //l->rgb_bottom[x] = this->re.io.CLEAR.COLOR;
         l->alpha[x] = this->re.io.CLEAR.alpha;
         l->extra_attr[x].u = 0;
-        l->depth[x] = INT32_MAX; //this->re.io.clear.depth;
+        //l->depth[x] = INT32_MAX; //this->re.io.clear.depth;
         l->tex_param[x].u = 0;
-        //l->depth[x] = this->re.io.clear.depth;
+        l->depth[x] = this->re.io.CLEAR.depth;
+    }
+
+    if (this->re.io.DISP3DCNT.rear_plane_is_bitmap) {
+        u32 x_offset = this->re.io.CLRIMAGE_OFFSET & 0xFF;
+        u32 y_offset = (this->re.io.CLRIMAGE_OFFSET >> 8) & 0xFF;
+        for (u32 x = 0; x < 256; x++) {
+            u16 val2 =  NDS_VRAM_tex_read(this, 0x40000 + (y_offset << 9) + (x_offset << 1), 2);
+            u16 val3 = NDS_VRAM_tex_read(this, 0x60000 + (y_offset << 9) + (x_offset << 1), 2);
+
+            u32 r = (val2 << 1) & 0x3E;
+            u32 g = (val2 >> 4) & 0x3E;
+            u32 b = (val2 >> 9) & 0x3E;
+            if (r) r++;
+            if (g) g++;
+            if (b) b++;
+            u32 a = (val2 & 0x8000) ? 0x1F000000 : 0;
+            u32 color = r | (g << 8) | (b << 16) | a;
+
+            u32 z = ((val3 & 0x7FFF) * 0x200) + 0x1FF;
+
+            l->rgb[x] = color;
+            l->depth[x] = z;
+            l->poly_id[x] = this->re.io.CLEAR.poly_id | 0x8000;
+
+            x_offset++;
+        }
     }
 }
 
@@ -579,11 +605,11 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                 u32 comparison, depth;
                 depth = NDS_RE_interpolate(&interp, depth_l, depth_r);
 
-                if (p->attr.depth_test_mode == 0) comparison = (i32)depth < line->depth[x];
+                if (p->attr.depth_test_mode == 0) comparison = depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
                 u32 shading_mode = 1;
                 if (comparison) {
-                    u32 pix_r5, pix_g5, pix_b5, pix_a5;
+                    u32 pix_r6, pix_g6, pix_b6, pix_a6;
                     float cr6f, cg6f, cb6f;
                     cr6f = NDS_RE_interpolate(&interp, left->color[0], right->color[0]) >> 11;
                     if (cr6f < 0) cr6f = 0;
@@ -611,32 +637,32 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         switch(p->attr.mode) {
                             case 0: // modulation
                                 shading_mode = 2;
-                                pix_r5 = (u32)(((tex_rf + 1) * (cr6f + 1) - 1)) >> 7;
-                                pix_g5 = (u32)(((tex_gf + 1) * (cg6f + 1) - 1)) >> 7;
-                                pix_b5 = (u32)(((tex_bf + 1) * (cb6f + 1) - 1)) >> 7;
-                                pix_a5 = (u32)(((tex_af + 1) * ((p->attr.alpha << 1) + 1) - 1)) >> 7;
+                                pix_r6 = (u32)(((tex_rf + 1) * (cr6f + 1) - 1)) >> 6;
+                                pix_g6 = (u32)(((tex_gf + 1) * (cg6f + 1) - 1)) >> 6;
+                                pix_b6 = (u32)(((tex_bf + 1) * (cb6f + 1) - 1)) >> 6;
+                                pix_a6 = (u32)(((tex_af + 1) * ((p->attr.alpha << 1) + 1) - 1)) >> 6;
                                 break;
                             case 1: // decal
                                 shading_mode = 3;
                                 switch(tex_a6) {
                                     case 0:
-                                        pix_r5 = ((u32)cr6f) >> 1;
-                                        pix_g5 = ((u32)cg6f) >> 1;
-                                        pix_b5 = ((u32)cb6f) >> 1;
+                                        pix_r6 = (u32)cr6f;
+                                        pix_g6 = (u32)cg6f;
+                                        pix_b6 = (u32)cb6f;
                                         break;
                                     case 31:
-                                        pix_r5 = ((u32)tex_r6) >> 1;
-                                        pix_g5 = ((u32)tex_g6) >> 1;
-                                        pix_b5 = ((u32)tex_b6) >> 1;
+                                        pix_r6 = (u32)tex_r6;
+                                        pix_g6 = (u32)tex_g6;
+                                        pix_b6 = (u32)tex_b6;
                                         break;
                                     default:
                                         // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
-                                        pix_r5 = (u32)(tex_rf * tex_af + cr6f * (63 - tex_af)) >> 7;
-                                        pix_g5 = (u32)(tex_gf * tex_af + cg6f * (63 - tex_af)) >> 7;
-                                        pix_b5 = (u32)(tex_bf * tex_af + cb6f * (63 - tex_af)) >> 7;
+                                        pix_r6 = (u32)(tex_rf * tex_af + cr6f * (63 - tex_af)) >> 6;
+                                        pix_g6 = (u32)(tex_gf * tex_af + cg6f * (63 - tex_af)) >> 6;
+                                        pix_b6 = (u32)(tex_bf * tex_af + cb6f * (63 - tex_af)) >> 6;
                                         break;
                                 }
-                                pix_a5 = tex_a6 >> 1;
+                                pix_a6 = tex_a6;
                                 break;
                             case 2: {// highlight/toon
                                 u32 idx = ((u32)cr6f) >> 1;
@@ -647,37 +673,44 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                                     case 0: { // toon
                                         shading_mode = 4;
                                         // R = ((Rt+1)*(Rs+1)-1)/64
-                                        pix_r5 = (u32)(((tex_rf+1)*(rs+1)-1)/64.0f) >> 1;
-                                        pix_g5 = (u32)(((tex_gf+1)*(gs+1)-1)/64.0f) >> 1;
-                                        pix_b5 = (u32)(((tex_bf+1)*(bs+1)-1)/64.0f) >> 1;
+                                        pix_r6 = (u32)(((tex_rf+1)*(rs+1)-1)/64.0f);
+                                        pix_g6 = (u32)(((tex_gf+1)*(gs+1)-1)/64.0f);
+                                        pix_b6 = (u32)(((tex_bf+1)*(bs+1)-1)/64.0f);
                                         break;}
                                     case 1: { // highlight
                                         shading_mode = 5;
-                                        pix_r5 = (u32)(((tex_rf+1)*(cr6f+1)-1)/64.0f+rs) >> 1;
-                                        pix_g5 = (u32)(((tex_gf+1)*(cg6f+1)-1)/64.0f+gs) >> 1;
-                                        pix_b5 = (u32)(((tex_bf+1)*(cb6f+1)-1)/64.0f+bs) >> 1;
+                                        pix_r6 = (u32)(((tex_rf+1)*(cr6f+1)-1)/64.0f+rs);
+                                        pix_g6 = (u32)(((tex_gf+1)*(cg6f+1)-1)/64.0f+gs);
+                                        pix_b6 = (u32)(((tex_bf+1)*(cb6f+1)-1)/64.0f+bs);
                                         break; }
                                 }
-                                pix_a5 = (u32)((tex_af+1)*((float)(p->attr.alpha << 1))/64.0f);
+                                // TODO: uhhhhh....?
+                                pix_a6 = (u32)((tex_af+1)*((float)(p->attr.alpha << 1))/64.0f);
                                 break; }
                             case 3: // shadow
                                 // TODO: this
                                 shading_mode = 6;
-                                pix_r5 = 0x1F;
-                                pix_g5 = 0;
-                                pix_b5 = 0x1F;
-                                pix_a5 = 0x1F;
+                                pix_r6 = 0x1F;
+                                pix_g6 = 0;
+                                pix_b6 = 0x1F;
+                                pix_a6 = 0x1F;
                                 break;
                         }
                     }
                     else {
-                        pix_r5 = ((u32) cr6f) >> 1;
-                        pix_g5 = ((u32) cg6f) >> 1;
-                        pix_b5 = ((u32) cb6f) >> 1;
-                        pix_a5 = p->attr.alpha;
+                        pix_r6 = (u32) cr6f;
+                        pix_g6 = (u32) cg6f;
+                        pix_b6 = (u32) cb6f;
+                        pix_a6 = p->attr.alpha << 1;
                     }
-                    if (pix_a5) {
-                        line->rgb_top[x] = pix_r5 | (pix_g5 << 5) | (pix_b5 << 10);
+                    if (pix_a6) {
+                        if (pix_r6 < 0) pix_r6 = 0;
+                        if (pix_r6 > 63) pix_r6 = 63;
+                        if (pix_g6 < 0) pix_g6 = 0;
+                        if (pix_g6 > 63) pix_g6 = 63;
+                        if (pix_b6 < 0) pix_b6 = 0;
+                        if (pix_b6 > 63) pix_b6 = 63;
+                        line->rgb[x] = pix_r6 | (pix_g6 << 6) | (pix_b6 << 12);
                         line->tex_param[x] = p->tex_param;
                         line->extra_attr[x].vertex_mode = p->vertex_mode+1;
                         line->extra_attr[x].has_px = 1;

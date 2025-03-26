@@ -1338,6 +1338,7 @@ static void cmd_VTX_10(struct NDS *this)
 
 static void cmd_POS_TEST(struct NDS *this)
 {
+    printf("\nPOS TEST!");
     this->ge.params.vtx.x = DATA[0] & 0xFFFF;
     this->ge.params.vtx.y = DATA[0] >> 16;
     this->ge.params.vtx.z = DATA[1] & 0xFFFF;
@@ -1441,6 +1442,7 @@ static i32 box_test_clip_verts(struct NDS *this, struct NDS_GE_VTX_list_node *ve
 
 static void cmd_BOX_TEST(struct NDS *this)
 {
+    printf("\nBOX TEST!");
     struct NDS_GE_VTX_list_node box[8];
     struct NDS_GE_VTX_list_node face[10];
     i32 res;
@@ -1957,11 +1959,7 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
         case R9_CLEAR_DEPTH:
             assert(sz==2);
             val &= 0x7FFF;
-            // The 15bit Depth is expanded to 24bit as "X=(X*200h)+((X+1)/8000h)*1FFh".
-            this->re.io.CLEAR.depth = (val * 0x200) + ((val + 1) / 0x8000) * 0x1FF;
-            this->re.io.CLEAR.depth = SIGNe24to32(this->re.io.CLEAR.depth);
-            this->re.io.CLEAR.depth = ((u32)this->re.io.CLEAR.depth) >> 8;
-            //printf("\nCLEAR VALUE SET %08x %f", this->re.io.clear.depth, vtx_to_float(this->re.io.clear.depth));
+            this->re.io.CLEAR.depth = ((val << 9) + ((val + 1) >> 15)) * 0x1FF;
             return;
         case R9_GXSTAT:
             assert(sz==4);
@@ -2042,15 +2040,23 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 static u32 read_results(struct NDS *this, u32 addr, u32 sz)
 {
     if ((addr >= 0x04000630) && (addr < 0x04000638)) {
-        printf("\nVEC TEST READ");
+        static int a = 1;
+        if (a) {
+            printf("\nVEC TEST READ");
+            a = 0;
+        }
         u32 which = (addr - 0x04000630) >> 2;
         assert(which<2);
         return this->ge.results.vector[which];
     }
     if ((addr >= 0x04000640) && (addr < 0x04000680)) {
-        printf("\nCLIPMATRIX READ");
+        static int a = 1;
+        if (a) {
+            printf("\nCLIPMATRIX READ!");
+            a = 0;
+        }
         if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
-        return this->ge.matrices.clip[(addr & 0x3F) >> 2];
+        return M_CLIP[(addr & 0x3F) >> 2];
     }
     printf("\nUNHANDLED READ FROM RESULTS AT %08x", addr);
     return 0;

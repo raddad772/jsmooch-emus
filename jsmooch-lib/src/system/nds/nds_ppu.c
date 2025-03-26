@@ -447,6 +447,11 @@ static void fetch_bg_slice(struct NDS *this, struct NDSENG2D *eng, struct NDS_PP
     }
 }
 
+static inline u32 C18to15(u32 c)
+{
+    return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
+}
+
 static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 {
     u32 line_num = this->clock.ppu.y;
@@ -456,7 +461,7 @@ static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
     memset(bg->line, 0, sizeof(bg->line));
     struct NDS_RE_LINEBUFFER *re_line = &this->re.out.linebuffer[line_num];
     for (u32 x = 0; x < 256; x++) {
-        bg->line[x].color = re_line->rgb_top[x];
+        bg->line[x].color = C18to15(re_line->rgb[x]);
         bg->line[x].has = 1;
         bg->line[x].priority = bg->priority;
     }
@@ -829,6 +834,29 @@ static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     }
 }
 
+static void draw_line2(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+{
+    draw_obj_line(this, eng);
+    if ((eng->num == 0) && (eng->io.bg.do_3d)) {
+        draw_3d_line(this, eng, 0);
+    }
+    else {
+        draw_bg_line_normal(this, eng, 0);
+    }
+    draw_bg_line_normal(this, eng, 1);
+    draw_bg_line_affine(this, eng, 2);
+    draw_bg_line_affine(this, eng, 3);
+    apply_mosaic(this, eng);
+
+    calculate_windows_vflags(this, eng);
+    u32 bg_enables[4] = {eng->bg[0].enable, eng->bg[1].enable, eng->bg[2].enable, eng->bg[3].enable};
+    //memset(eng->line_px, 0x50, sizeof(eng->line_px));
+    for (u32 x = 0; x < 256; x++) {
+        output_pixel(this, eng, x, eng->obj.enable, &bg_enables[0]);
+    }
+}
+
+
 static void draw_line3(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
@@ -889,6 +917,9 @@ static void draw_line(struct NDS *this, u32 eng_num)
             break;
         case 1:
             draw_line1(this, eng, l);
+            break;
+        case 2:
+            draw_line2(this, eng, l);
             break;
         case 3:
             draw_line3(this, eng, l);
@@ -1298,10 +1329,10 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->ppu.io.vcount_at9 = (this->ppu.io.vcount_at9 & 0x100) | val;
             return;
         case R9_DISPCNT+0:
-            if ((val & 7) != eng->io.bg_mode) {
+            /*if ((val & 7) != eng->io.bg_mode) {
                 printf("\neng%d NEW BG MODE: %d", en, val & 7);
                 dbgloglog(NDS_CAT_PPU_BG_MODE, DBGLS_INFO, "eng%d new BG mode:%d", en, eng->io.bg_mode);
-            }
+            }*/
             eng->io.bg_mode = val & 7;
             if (en == 0) {
                 eng->io.bg.do_3d = (val >> 3) & 1;

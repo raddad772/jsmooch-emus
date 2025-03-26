@@ -320,6 +320,7 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
                 //printf("\nWRITE IF %d", this->cart.RAM.status.write_enable);
                 cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
                 this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
+                this->cart.RAM.store->dirty = 1;
                 this->cart.RAM.data_in_pos++;
                 if (this->cart.RAM.data_in_pos > 258) {
                     //printf("\nQUIT WRITE NOW!");
@@ -386,6 +387,7 @@ static void eeprom_read(struct NDS *this)
 
 static void eeprom_write(struct NDS *this, u32 val)
 {
+    this->cart.RAM.store->dirty = 1;
     if (this->cart.RAM.status.write_enable) cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
     this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
     this->cart.RAM.data_in_pos++;
