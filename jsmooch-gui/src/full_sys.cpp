@@ -740,7 +740,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mp_hunters_rev1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "okami_den.nds", nullptr); // try again after sprites
             //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "examples/graphics_2d/bg_rotation.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "examples/graphics_2d/bg_bmp_16bit.nds", nullptr);
 
             // NEXT: basic PPU mode 3, 5
             // better FIFO

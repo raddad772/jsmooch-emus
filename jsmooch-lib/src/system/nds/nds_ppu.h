@@ -127,7 +127,7 @@ struct NDS_PPU {
 
         struct NDS_PPU_bg {
             enum NDS_SCREEN_KINDS kind;
-            u32 enable;
+            u32 enable, num;
 
             u32 bpp8;
             u32 htiles, vtiles;

@@ -28,6 +28,9 @@ void NDS_PPU_init(struct NDS *this)
         p->mosaic.obj.hsize = p->mosaic.obj.vsize = 1;
         p->bg[2].pa = 1 << 8; p->bg[2].pd = 1 << 8;
         p->bg[3].pa = 1 << 8; p->bg[3].pd = 1 << 8;
+        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+            p->bg[bgnum].num = bgnum;
+        }
     }
     this->ppu.eng2d[0].io.bg.do_3d = 0;
 }
@@ -481,30 +484,6 @@ static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
     }
 }
 
-static void draw_bg_line_extended(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
-{
-    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
-    memset(bg->line, 0, sizeof(bg->line));
-    if (!bg->enable) { return; }
-
-    u32 bpp;
-    if (!bg->bpp8) bpp = 4;
-    else {
-        if ((bg->character_base_block >> 14) & 1) {
-            bpp = 16;
-        }
-        else {
-            bpp = 8;
-        }
-    }
-
-    static int a = 1;
-    if (a) {
-        printf("\nWARN IMPLEMENT EXTENDED BG...");
-        a = 0;
-    }
-}
-
 static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
@@ -516,7 +495,6 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 
     i32 line = bg->mosaic_enable ? bg->mosaic_y : this->clock.ppu.y;
     line += bg->vscroll;
-    //printf("\nENG:%d BG:%d PPU LINE %d LINE %d MOS:%d", eng->num, bgnum, this->clock.ppu.y, line, bg->mosaic_enable);
 
     i32 draw_x = -(bg->hscroll % 8);
     i32 grid_x = bg->hscroll / 8;
@@ -646,34 +624,6 @@ static void affine_line_end(struct NDS *this, struct NDSENG2D *eng, struct NDS_P
     }
 }
 
-static void get_affine_bg_pixel(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, struct NDS_PPU_bg *bg, i32 px, i32 py, struct NDS_PX *opx)
-{
-    // Now px and py represent a number inside 0...hpixels and 0...vpixels
-    u32 block_x = px >> 3;
-    u32 block_y = py >> 3;
-    u32 line_in_tile = py & 7;
-
-    u32 tile_width = bg->htiles;
-
-    u32 screenblock_addr = bg->screen_base_block + eng->io.bg.screen_base;
-    screenblock_addr += block_x + (block_y * tile_width);
-    u32 tile_num = read_vram_bg(this, eng, screenblock_addr, 1);
-
-    // so now, grab that tile...
-    u32 tile_start_addr = bg->character_base_block + eng->io.bg.character_base + (tile_num * 64);
-    u32 line_start_addr = tile_start_addr + (line_in_tile * 8);
-    u32 addr = line_start_addr;
-    u8 color = read_vram_bg(this, eng, line_start_addr + (px & 7), 1);
-    if (color != 0) {
-        opx->has = 1;
-        opx->color = read_pram_bg(this, eng, color << 1, 2);
-        opx->priority = bg->priority;
-    }
-    else {
-        opx->has = 0;
-    }
-}
-
 typedef void (*affinerenderfunc)(struct NDS *, struct NDSENG2D *, struct NDS_PPU_bg *, i32 x, i32 y, struct NDS_PX *, void *);
 
 // map_base, block_width, tile_base
@@ -681,6 +631,7 @@ typedef void (*affinerenderfunc)(struct NDS *, struct NDSENG2D *, struct NDS_PPU
 struct affine_normal_xtradata {
     u32 map_base, tile_base;
     i32 block_width;
+    i32 width, height;
 };
 
 static void affine_normal(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
@@ -731,6 +682,101 @@ static void render_affine_loop(struct NDS *this, struct NDSENG2D *eng, struct ND
     }
     affine_line_end(this, eng, bg);
 }
+
+static void affine_rotodc(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
+{
+    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+
+    u32 color = read_vram_bg(this, eng, bg->screen_base_block + (y * xd->width + x) * 2, 2);
+    if (color & 0x8000) {
+        out->has = 1;
+        out->color = color & 0x7FFF;
+        out->priority = bg->priority;
+    } else {
+        out->has = 0;
+    }
+}
+
+static void affine_rotobpp8(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
+{
+    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+
+    u32 color = read_vram_bg(this, eng, bg->screen_base_block+ y * xd->width + x, 1);
+    if (color) {
+        out->has = 1;
+        out->color = read_pram_bg(this, eng, color << 1, 2);
+        out->priority = bg->priority;
+    } else {
+        out->has = 0;
+    }
+}
+
+static void affine_rotobpp16(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
+{
+    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+    u32 encoder = read_vram_bg(this, eng, xd->map_base + ((y >> 3) * xd->block_width + (x >> 3)) * 2, 2);
+    u32 number = encoder & 0x3FF;
+    u32 palette = encoder >> 12;
+    u32 tile_x = x & 7;
+    u32 tile_y = y & 7;
+
+    tile_x ^= ((encoder >> 10) & 1) * 7;
+    tile_y ^= ((encoder >> 11) & 1) * 7;
+
+    u32 addr = xd->tile_base + number * 64;
+    u8 index = read_vram_bg(this, eng, addr + (tile_y << 3) + tile_x, 1);
+    if (index == 0) {
+        out->has = 0;
+    }
+    else {
+        u32 c;
+
+        if (eng->io.bg.extended_palettes)
+            out->color = read_pram_bg_ext(this, eng, bg->num, bg->num, index << 1);
+        else
+            out->color = read_pram_bg(this, eng, index << 1, 2);
+        out->has = 1;
+        out->priority = bg->priority;
+    }
+}
+
+
+static void draw_bg_line_extended(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+{
+    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+    memset(bg->line, 0, sizeof(bg->line));
+    if (!bg->enable) { return; }
+
+    struct affine_normal_xtradata xtra;
+    if (bg->bpp8) {
+        static const i32 sz[4][2] = { {128, 128}, {256, 256}, {512, 256}, {512, 512}};
+        i32 width = sz[bg->screen_size][0];
+        i32 height = sz[bg->screen_size][1];
+        xtra.width = width;
+        xtra.height = height;
+        if ((bg->character_base_block >> 14) & 1) {
+            // Rotate scale direct-color
+            render_affine_loop(this, eng, bg, width, height, &affine_rotodc, &xtra);
+        }
+        else {
+            render_affine_loop(this, eng, bg, width, height, &affine_rotobpp8, &xtra);
+        }
+    }
+    else {
+        // rotoscale 16bpp
+        i32 size = 128 << bg->screen_size;
+        i32 block_width = 16 << bg->screen_size;
+        xtra.block_width = block_width;
+        xtra.map_base = eng->io.bg.screen_base + bg->screen_base_block;
+        xtra.tile_base = eng->io.bg.character_base + bg->character_base_block;
+
+        render_affine_loop(this, eng, bg, size, size, &affine_rotobpp16, &xtra);
+    }
+
+
+
+}
+
 
 static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 {
