@@ -1909,7 +1909,8 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
         case R9_CLEAR_COLOR: {
             this->re.io.CLEAR.COLOR = val & 0x7FFF;
             this->re.io.CLEAR.fog_to_rear_plane = (val >> 15) & 1;
-            this->re.io.CLEAR.alpha = (val >> 16) & 0x1F;
+            this->re.io.CLEAR.alpha = ((val >> 16) & 0x1F) << 1;
+            if (this->re.io.CLEAR.alpha) this->re.io.CLEAR.alpha++;
             this->re.io.CLEAR.poly_id = (val >> 24) & 0x3F;
             return; }
         case R9_CLEAR_DEPTH:

@@ -324,10 +324,14 @@ static void sample_texture_a5i3(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts,
         return;
     }
     u32 color = NDS_VRAM_pal_read(this, ts->pltt_base+((sample & 7) * 2), 2);
-    *r = ((color & 0x1F) << 1) + 1;
-    *g = (((color >> 5) & 0x1F) << 1) + 1;
-    *b = (((color >> 10) & 0x1F) << 1) + 1;
-    *a = ((sample >> 3) << 1) + 1;
+    *r = (color & 0x1F) << 1;
+    *g = ((color >> 5) & 0x1F) << 1;
+    *b = ((color >> 10) & 0x1F) << 1;
+    *a = (sample >> 3) << 1;
+    if (*r) (*r)++;
+    if (*g) (*g)++;
+    if (*b) (*b)++;
+    if (*a) (*a)++;
 }
 
 static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
@@ -561,6 +565,9 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
         if (p->attr.mode > 2) continue;
+        u32 poly_a6 = (p->attr.alpha << 1) ;
+        if (poly_a6) poly_a6++;
+        float poly_af = (float)poly_a6;
 
         // Polygon does not intersect this line
         if ((line_num < p->min_y) || (line_num > p->max_y)) {
@@ -575,7 +582,6 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         interpolate_edge_to_vertex(&edges[0], &lerped[0], line_num, tex_enable);
         interpolate_edge_to_vertex(&edges[1], &lerped[1], line_num, tex_enable);
 
-        u32 color0_is_transparent = p->tex_param.color0_is_transparent;
         u32 xorby = lerped[0].xx > lerped[1].xx ? 1 : 0;
         struct NDS_RE_VERTEX *left = &lerped[0 ^ xorby];
         struct NDS_RE_VERTEX *right = &lerped[1 ^ xorby];
@@ -634,7 +640,8 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                                 pix_r6 = (u32)(((tex_rf + 1) * (cr6f + 1) - 1)) >> 6;
                                 pix_g6 = (u32)(((tex_gf + 1) * (cg6f + 1) - 1)) >> 6;
                                 pix_b6 = (u32)(((tex_bf + 1) * (cb6f + 1) - 1)) >> 6;
-                                pix_a6 = (u32)(((tex_af + 1) * ((p->attr.alpha << 1) + 1) - 1)) >> 6;
+
+                                pix_a6 = (u32)(((tex_af + 1) * (poly_af + 1) - 1)) >> 6;
                                 break;
                             case 1: // decal
                                 shading_mode = 3;
@@ -696,14 +703,28 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         pix_g6 = (u32) cg6f;
                         pix_b6 = (u32) cb6f;
                         pix_a6 = p->attr.alpha << 1;
+                        if (pix_a6) pix_a6++;
                     }
-                    if (pix_a6) {
-                        if (pix_r6 < 0) pix_r6 = 0;
+                    if (pix_a6>>1) {
                         if (pix_r6 > 63) pix_r6 = 63;
-                        if (pix_g6 < 0) pix_g6 = 0;
                         if (pix_g6 > 63) pix_g6 = 63;
-                        if (pix_b6 < 0) pix_b6 = 0;
                         if (pix_b6 > 63) pix_b6 = 63;
+                        if (pix_a6 > 63) pix_a6 = 63;
+                        if ((pix_a6 < 63) && (this->re.io.DISP3DCNT.alpha_blending) && (line->alpha[x] != 0)) {
+                            if (line->poly_id[x] == p->attr.poly_id) {
+                                continue;
+                            }
+                            u32 fb_r6 = line->rgb[x] & 0x3F;
+                            u32 fb_g6 = (line->rgb[x] >> 6) & 0x3F;
+                            u32 fb_b6 = (line->rgb[x] >> 12) & 0x3F;
+                            u32 fb_a6 = line->alpha[x];
+                            pix_r6 = (pix_r6 * (pix_a6 + 1) + fb_r6 * (63 - pix_a6)) / 64;
+                            pix_g6 = (pix_g6 * (pix_a6 + 1) + fb_g6 * (63 - pix_a6)) / 64;
+                            pix_b6 = (pix_b6 * (pix_a6 + 1) + fb_b6 * (63 - pix_a6)) / 64;
+                            if (p->attr.translucent_set_new_depth) pix_a6 = pix_a6 > fb_a6 ? pix_a6 : fb_a6;
+                            else pix_a6 = fb_a6;
+                        }
+
                         line->rgb[x] = pix_r6 | (pix_g6 << 6) | (pix_b6 << 12);
                         line->tex_param[x] = p->tex_param;
                         line->extra_attr[x].vertex_mode = p->vertex_mode+1;
