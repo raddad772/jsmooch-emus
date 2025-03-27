@@ -139,7 +139,7 @@ struct NDS_PPU {
             u32 priority;
             u32 extrabits; // IO bits that are saved but useless
             u32 character_base_block, screen_base_block;
-            u32 mosaic_enable, display_overflow;
+            u32 mosaic_enable, display_overflow, ext_pal_slot;
             u32 screen_size;
 
             i32 pa, pb, pc, pd;

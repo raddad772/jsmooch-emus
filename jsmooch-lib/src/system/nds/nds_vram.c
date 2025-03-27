@@ -66,12 +66,12 @@ static void map_eng2d_obj_vram(struct NDS *this, u32 engnum, u32 addr_start, u32
     }
 }
 
-static void map_eng2d_bg_extended_palette4k(struct NDS *this, u32 engnum, u32 slot_start, u32 slot_end, u8 *ptr)
+static void map_eng2d_bg_extended_palette8k(struct NDS *this, u32 engnum, u32 slot_start, u32 slot_end, u8 *ptr)
 {
     struct NDSENG2D *eng = &this->ppu.eng2d[engnum];
     for (u32 slot = slot_start; slot <= slot_end; slot++) {
         eng->memp.bg_extended_palette[slot] = ptr;
-        if (ptr != NULL) ptr += 0x1000;
+        if (ptr != NULL) ptr += 0x2000;
     }
 }
 
@@ -244,7 +244,7 @@ static void set_bankE(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
             map_eng3d_palette_slot(this, 0, 3, ptr);
             break;
         case 4: // EngA BG extended palette (lower 32k)
-            map_eng2d_bg_extended_palette4k(this, ENG_A, 0, 3, ptr);
+            map_eng2d_bg_extended_palette8k(this, ENG_A, 0, 3, ptr);
             break;
         default: NOGOHERE;
     }
@@ -281,7 +281,7 @@ static void set_bankF(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
             break;
         case 4: // EngA BG-extended. OFS=0 slot 0-1, OFS=1 slot 2-3
             offset = (ofs & 1) << 1;
-            map_eng2d_bg_extended_palette4k(this, ENG_A, offset, offset+1, ptr);
+            map_eng2d_bg_extended_palette8k(this, ENG_A, offset, offset + 1, ptr);
             break;
         case 5: // EngA OBJ-extended, lower 8K used
             map_eng2d_obj_extended_palette(this, ENG_A, ptr);
@@ -315,7 +315,7 @@ static void set_bankG(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
             break;
         case 4: // EngA BG-extended. OFS=0 slot 0-1, OFS=1 slot 2-3
             offset = (ofs & 1) << 1;
-            map_eng2d_bg_extended_palette4k(this, ENG_A, offset, offset + 1, ptr);
+            map_eng2d_bg_extended_palette8k(this, ENG_A, offset, offset + 1, ptr);
             break;
         case 5: // EngA OBJ-extended, lower 8K used
             map_eng2d_obj_extended_palette(this, ENG_A, ptr);
@@ -341,7 +341,7 @@ static void set_bankH(struct NDS *this, u32 mst, u32 ofs, u8 *ptr)
             map_eng2d_bg_vram(this, ENG_B, 0x0000, 0x7FFF, ptr);
             break;
         case 2: // EngB BG extended palette slots 0-3
-            map_eng2d_bg_extended_palette4k(this, ENG_B, 0, 3, ptr);
+            map_eng2d_bg_extended_palette8k(this, ENG_B, 0, 3, ptr);
             break;
         default: NOGOHERE;
     }

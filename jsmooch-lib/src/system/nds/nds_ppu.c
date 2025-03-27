@@ -48,7 +48,7 @@ void NDS_PPU_reset(struct NDS *this)
     }
 }
 
-static u32 read_vram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
+static u64 read_vram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
 {
     assert((addr >> 14) < 32);
     u8 *ptr = eng->memp.bg_vram[(addr >> 14) & 31];
@@ -76,6 +76,20 @@ static u32 read_vram_obj(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 s
         return 0;
     }
     return cR[sz](ptr, addr & 0x3FFF);
+}
+
+static u32 read_pram_bg_ext(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 slotnum, u32 addr)
+{
+    if (!eng->memp.bg_extended_palette[slotnum & 3]) {
+        static int a = 1;
+        if (a) {
+            printf("\nMISSED VRAM PAL READ!");
+            a = 0;
+        }
+        return 0b1111110000011111; // glaring purple
+    }
+    addr &= 0x1FFF;
+    return cR16(eng->memp.bg_extended_palette[slotnum & 3], addr);
 }
 
 static u32 read_pram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
@@ -498,39 +512,118 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     if (!bg->enable) {
         return;
     }
-    // first do a fetch for fine scroll -1
-    u32 hpos = bg->hscroll & bg->hpixels_mask;
-    u32 vpos = (bg->vscroll + bg->mosaic_y) & bg->vpixels_mask;
-    u32 fine_x = hpos & 7;
-    u32 screen_x = 0;
-    struct NDS_PX bgpx[8];
-    //hpos = ((hpos >> 3) - 1) << 3;
-    fetch_bg_slice(this, eng, bg, bgnum, hpos >> 3, vpos, bgpx, 0);
-    //struct NDS_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
-    //u8 *scroll_line = &this->dbg_info.bg_scrolls[bgnum].lines[((bg->vscroll + this->clock.ppu.y) & bg->vpixels_mask) * 128];
-    u32 startx = fine_x;
-    for (u32 i = startx; i < 8; i++) {
-        bg->line[screen_x].color = bgpx[i].color;
-        bg->line[screen_x].has = bgpx[i].has;
-        bg->line[screen_x].priority = bgpx[i].priority;
-        screen_x++;
-        hpos = (hpos + 1) & bg->hpixels_mask;
-        //scroll_line[hpos >> 3] |= 1 << (hpos & 7);
-    }
+    u32 expal_slot = bgnum | (bg->ext_pal_slot << 1);
 
-    while (screen_x < 256) {
-        fetch_bg_slice(this, eng, bg, bgnum, hpos >> 3, vpos, &bg->line[screen_x], screen_x);
-/*        if (screen_x <= 248) {
-            scroll_line[hpos >> 3] = 0xFF;
-        }
-        else {
-            for (u32 rx = screen_x; rx < 256; rx++) {
-                scroll_line[hpos >> 3] |= 1 << (rx - screen_x);
+    i32 line = bg->mosaic_enable ? bg->mosaic_y : this->clock.ppu.y;
+    line += bg->vscroll;
+    //printf("\nENG:%d BG:%d PPU LINE %d LINE %d MOS:%d", eng->num, bgnum, this->clock.ppu.y, line, bg->mosaic_enable);
+
+    i32 draw_x = -(bg->hscroll % 8);
+    i32 grid_x = bg->hscroll / 8;
+    i32 grid_y = line >> 3;
+    i32 tile_y = line & 7;
+
+    i32 screen_x = (grid_x >> 5) & 1;
+    i32 screen_y = (grid_y >> 5) & 1;
+
+    u32 base = eng->io.bg.screen_base + bg->screen_base_block + (grid_y % 32) * 64;
+    struct NDS_PX *buffer = bg->line;
+    i32 last_encoder = -1;
+    u16 encoder;
+
+    grid_x &= 31;
+
+    static const i32 sxm[4] = { 0, 2048, 0, 2048};
+    static const i32 sym[4] = { 0, 0, 2048, 4096};
+    u32 base_adjust = sxm[bg->screen_size];
+    base += (screen_x * sxm[bg->screen_size]) + (screen_y * sym[bg->screen_size]);
+
+    struct NDS_PX tile[8];
+    if (screen_x == 1) base_adjust ^= 0xFFFFFFFF;
+    u32 tile_base = bg->character_base_block + eng->io.bg.character_base;
+    do {
+        do {
+            encoder = read_vram_bg(this, eng, base + grid_x++ * 2, 2);
+            if (encoder != last_encoder) {
+                int number = encoder & 0x3FF;
+                int palette = encoder >> 12;
+                i32 flip_x = (encoder >> 10) & 1;
+                i32 flip_y = (encoder >> 11) & 1;
+                i32 _tile_y = tile_y ^ (7 * flip_y);
+                i32 xxor = 7 * flip_x;
+
+                if (bg->bpp8) { // 8bpp
+                    u64 data = read_vram_bg(this, eng, tile_base + (number << 6 | _tile_y << 3), 8);
+                    for (u32 ix = 0; ix < 8; ix++) {
+                        u32 mx = ix ^ xxor;
+                        u32 index = data & 0xFF;
+                        data >>= 8;
+
+                        if (index == 0) {
+                            tile[mx].has = 0;
+                        }
+                        else {
+                            u32 c;
+
+                            if (eng->io.bg.extended_palettes)
+                                c = read_pram_bg_ext(this, eng, expal_slot, bgnum, palette << 9 | index << 1);
+                            else
+                                c = read_pram_bg(this, eng, index << 1, 2);
+                            tile[mx].has = 1;
+                            tile[mx].priority = bg->priority;
+                            tile[mx].color = c;
+                        }
+                    }
+                }
+                else { // 4bpp
+                    u32 data = read_vram_bg(this, eng, tile_base + (number << 5 | _tile_y << 2), 4);
+                    for (u32 ix = 0; ix < 8; ix++) {
+                        u32 mx = ix ^ xxor;
+                        u32 index = data & 15;
+                        data >>= 4;
+                        if (index == 0) {
+                            tile[mx].has = 0;
+                        }
+                        else {
+                            tile[mx].has = 1;
+                            tile[mx].priority = bg->priority;
+                            tile[mx].color = read_pram_bg(this, eng, palette << 5 | index << 1, 2);
+                        }
+                    }
+                }
+
+                last_encoder = encoder;
             }
-        }*/
-        screen_x += 8;
-        hpos = (hpos + 8) & bg->hpixels_mask;
-    }
+
+            if (draw_x >= 0 && draw_x <= 248) {
+                memcpy(&buffer[draw_x], &tile[0], sizeof(struct NDS_PX) * 8);
+                draw_x += 8;
+            }
+            else {
+                int x = 0;
+                int max = 8;
+
+                if (draw_x < 0) {
+                    x = -draw_x;
+                    draw_x = 0;
+                    for (; x < max; x++) {
+                        memcpy(&buffer[draw_x++], &tile[x], sizeof(struct NDS_PX));
+                    }
+                } else {
+                    max -= draw_x - 248;
+                    for (; x < max; x++) {
+                        memcpy(&buffer[draw_x++], &tile[x], sizeof(struct NDS_PX));
+                    }
+                    break;
+                }
+            }
+        } while(grid_x< 32);
+
+        base += base_adjust;
+        base_adjust ^= 0xFFFFFFFF;
+        grid_x = 0;
+
+    } while(draw_x < 256);
 }
 
 static void affine_line_start(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 *fx, i32 *fy)
@@ -936,11 +1029,13 @@ static void draw_line(struct NDS *this, u32 eng_num)
         }
     }
 
-    for (u32 ppun = 0; ppun < 2; ppun++) {
-        for (u32 i = 0; i < 4; i++) {
-            memcpy(this->dbg_info.eng[ppun].line[this->clock.ppu.y].bg[i].buf, this->ppu.eng2d[ppun].bg[i].line, sizeof(struct NDS_PX)*256);
+    if (this->clock.ppu.y < 192) {
+        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+            memcpy(this->dbg_info.eng[eng_num].line[this->clock.ppu.y].bg[bgnum].buf,
+                   eng->bg[bgnum].line, sizeof(struct NDS_PX) * 256);
         }
-        memcpy(this->dbg_info.eng[ppun].line[this->clock.ppu.y].sprite_buf, this->ppu.eng2d[ppun].obj.line, sizeof(struct NDS_PX)*256);
+        memcpy(this->dbg_info.eng[eng_num].line[this->clock.ppu.y].sprite_buf, eng->obj.line,
+               sizeof(struct NDS_PX) * 256);
     }
     // Then we will pixel output it to the screen...
     u16 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);
@@ -1366,7 +1461,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             eng->io.obj.tile.stride_1d = boundary_to_stride[eng->io.obj.tile.boundary_1d];
             eng->io.hblank_free = (val >> 7) & 1;
             if (en == 0) {
-                this->ppu.io.display_block = (val >> 2) & 3;
+                this->ppu.io.display_block = ((val >> 2) & 3);
                 eng->io.obj.bitmap.boundary_1d = (val >> 6) & 1;
                 eng->io.obj.bitmap.stride_1d = boundary_to_stride_bitmap[eng->io.obj.bitmap.boundary_1d];
             }
@@ -1387,7 +1482,7 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             struct NDS_PPU_bg *bg = &eng->bg[bgnum];
             bg->priority = val & 3;
             bg->extrabits = (val >> 4) & 3;
-            bg->character_base_block = ((val >> 2) & 3) << 14;
+            bg->character_base_block = ((val >> 2) & 7) << 14;
             bg->mosaic_enable = (val >> 6) & 1;
             bg->bpp8 = (val >> 7) & 1;
             if (eng->num == 0) calc_screen_size(this, eng, bgnum);
@@ -1398,15 +1493,15 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R9_BG3CNT+1: { // BGCNT lo
             u32 bgnum = (addr & 0b0110) >> 1;
             struct NDS_PPU_bg *bg = &eng->bg[bgnum];
-/*
-  engine A screen base: BGxCNT.bits*2K + DISPCNT.bits*64K
-  engine B screen base: BGxCNT.bits*2K + 0
-  engine A char base: BGxCNT.bits*16K + DISPCNT.bits*64K
-  engine B char base: BGxCNT.bits*16K + 0
- *
- */
             bg->screen_base_block = ((val >> 0) & 31) << 11;
-            if (bgnum >= 2) bg->display_overflow = (val >> 5) & 1;
+            if (bgnum >= 2) {
+                bg->display_overflow = (val >> 5) & 1;
+                bg->ext_pal_slot = 0;
+            }
+            else {
+                bg->ext_pal_slot = (val >> 5) & 1;
+                bg->display_overflow = 0;
+            }
             bg->screen_size = (val >> 6) & 3;
             calc_screen_size(this, eng, bgnum);
             return; }
@@ -1414,22 +1509,26 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 #define SET16L(thing, to) thing = (thing & 0xFF00) | to
 #define SET16H(thing, to) thing = (thing & 0xFF) | (to << 8)
 
-        case R9_BG0HOFS+0: SET16L(eng->bg[0].hscroll, val); return;
-        case R9_BG0HOFS+1: SET16H(eng->bg[0].hscroll, val); return;
-        case R9_BG0VOFS+0: SET16L(eng->bg[0].vscroll, val); return;
-        case R9_BG0VOFS+1: SET16H(eng->bg[0].vscroll, val); return;
-        case R9_BG1HOFS+0: SET16L(eng->bg[1].hscroll, val); return;
-        case R9_BG1HOFS+1: SET16H(eng->bg[1].hscroll, val); return;
-        case R9_BG1VOFS+0: SET16L(eng->bg[1].vscroll, val); return;
-        case R9_BG1VOFS+1: SET16H(eng->bg[1].vscroll, val); return;
-        case R9_BG2HOFS+0: SET16L(eng->bg[2].hscroll, val); return;
-        case R9_BG2HOFS+1: SET16H(eng->bg[2].hscroll, val); return;
-        case R9_BG2VOFS+0: SET16L(eng->bg[2].vscroll, val); return;
-        case R9_BG2VOFS+1: SET16H(eng->bg[2].vscroll, val); return;
-        case R9_BG3HOFS+0: SET16L(eng->bg[3].hscroll, val); return;
-        case R9_BG3HOFS+1: SET16H(eng->bg[3].hscroll, val); return;
-        case R9_BG3VOFS+0: SET16L(eng->bg[3].vscroll, val); return;
-        case R9_BG3VOFS+1: SET16H(eng->bg[3].vscroll, val); return;
+        //case R9_BG0HOFS+0: SET16L(eng->bg[0].hscroll, val); return;
+        case R9_BG0HOFS+0: eng->bg[0].hscroll = val & 0x1FF; return;
+        case R9_BG0HOFS+1: return;
+        case R9_BG0VOFS+0: eng->bg[0].vscroll = val & 0x1FF; return;
+        case R9_BG0VOFS+1: return;
+
+        case R9_BG1HOFS+0: eng->bg[1].hscroll = val & 0x1FF; return;
+        case R9_BG1HOFS+1: return;
+        case R9_BG1VOFS+0: eng->bg[1].vscroll = val & 0x1FF; return;
+        case R9_BG1VOFS+1: return;
+
+        case R9_BG2HOFS+0: eng->bg[2].hscroll = val & 0x1FF; return;
+        case R9_BG2HOFS+1: return;
+        case R9_BG2VOFS+0: eng->bg[2].vscroll = val & 0x1FF; return;
+        case R9_BG2VOFS+1: return;
+
+        case R9_BG3HOFS+0: eng->bg[3].hscroll = val & 0x1FF; return;
+        case R9_BG3HOFS+1: return;
+        case R9_BG3VOFS+0: eng->bg[3].vscroll = val & 0x1FF; return;
+        case R9_BG3VOFS+1: return;
 
 #define BG2 2
 #define BG3 3

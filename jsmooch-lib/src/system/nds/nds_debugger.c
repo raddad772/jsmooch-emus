@@ -26,33 +26,49 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * (((16 * PAL_BOX_SIZE_W_BORDER) * 5) + 2));
+    u32 which = ((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup.value;
 
-    for (u32 eng_num = 0; eng_num < 2; eng_num++) {
-        struct NDSENG2D *eng = &this->ppu.eng2d[eng_num];
-        u32 upper_row = 0;
-        u32 offset = 0;
-        u32 y_offset = 0;
-        u32 x_offset = eng_num * ((16 * PAL_BOX_SIZE_W_BORDER) + 1);
-        // iv->width = ((16 * PAL_BOX_SIZE_W_BORDER * 2) + 2);
+    // We get a 32x32 playground, ish.
+    // That's 1000 colors, but extended palettes have 4000.
 
-        for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) { // lohi = bg or OBJ palettes
-            u16 *curpal = lohi == 0 ? (u16 *)eng->mem.bg_palette : (u16 *)eng->mem.obj_palette;
-            for (u32 palette = 0; palette < 16; palette++) {
-                for (u32 color = 0; color < 16; color++) {
-                    u32 y_top = y_offset + offset + upper_row;
-                    u32 x_left = x_offset + (color * PAL_BOX_SIZE_W_BORDER);
-                    u32 c = gba_to_screen(curpal[(palette << 4) + color]);
-                    for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
-                        u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
-                        for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
-                            box_ptr[x] = c;
+    if (which == 0) {
+
+        for (u32 eng_num = 0; eng_num < 2; eng_num++) {
+            struct NDSENG2D *eng = &this->ppu.eng2d[eng_num];
+            u32 upper_row = 0;
+            u32 offset = 0;
+            u32 y_offset = 0;
+            u32 x_offset = eng_num * ((16 * PAL_BOX_SIZE_W_BORDER) + 1);
+            // iv->width = ((16 * PAL_BOX_SIZE_W_BORDER * 2) + 2);
+
+            for (u32 lohi = 0; lohi < 0x200; lohi += 0x100) { // lohi = bg or OBJ palettes
+                u16 *curpal = lohi == 0 ? (u16 *) eng->mem.bg_palette : (u16 *) eng->mem.obj_palette;
+                for (u32 palette = 0; palette < 16; palette++) {
+                    for (u32 color = 0; color < 16; color++) {
+                        u32 y_top = y_offset + offset + upper_row;
+                        u32 x_left = x_offset + (color * PAL_BOX_SIZE_W_BORDER);
+                        u32 c = gba_to_screen(curpal[(palette << 4) + color]);
+                        for (u32 y = 0; y < PAL_BOX_SIZE; y++) {
+                            u32 *box_ptr = (outbuf + ((y_top + y) * out_width) + x_left);
+                            for (u32 x = 0; x < PAL_BOX_SIZE; x++) {
+                                box_ptr[x] = c;
+                            }
                         }
                     }
+                    y_offset += PAL_BOX_SIZE;
                 }
-                y_offset += PAL_BOX_SIZE;
+                offset += 2;
             }
-            offset += 2;
         }
+    }
+    else {
+        u32 eng_num;
+        u32 slot_num;
+        /*u8 *ptr;
+        switch(which) {
+            case 0:
+
+        }*/
     }
 }
 
@@ -66,8 +82,8 @@ static void setup_image_view_palettes(struct NDS* this, struct debugger_interfac
     dview = cpg(this->dbg.image_views.palettes);
     struct image_view *iv = &dview->image;
 
-    iv->width = ((16 * PAL_BOX_SIZE_W_BORDER * 2) + 2);
-    iv->height = ((16 * PAL_BOX_SIZE_W_BORDER) * 5) + 2;
+    iv->width = (64 * PAL_BOX_SIZE_W_BORDER) + 10;
+    iv->height = (64 * PAL_BOX_SIZE_W_BORDER) + 10;
 
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
@@ -77,6 +93,14 @@ static void setup_image_view_palettes(struct NDS* this, struct debugger_interfac
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_palette;
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
+
+    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Which", 1, 0, 0);
+    debugger_widget_radiogroup_add_button(rg, "Regular", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "EngA Ext.BG", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "EngA Ext.OBJ", 2, 1);
+    debugger_widget_radiogroup_add_button(rg, "EngB Ext.BG", 3, 1);
+    debugger_widget_radiogroup_add_button(rg, "EngB Ext.OBJ", 4, 1);
+
 }
 
 static void draw_line(u32 *outbuf, u32 out_width, u32 out_height, i32 x0, i32 y0, i32 x1, i32 y1)
@@ -270,7 +294,8 @@ static void set_info_E(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
         case 4:
             sprintf(mapstr, "engA BG extended palette 0-3");
             *mapaddr_start = 0;
-            break;
+            *mapaddr_end = 0x7FFF;
+            return;
     }
     *mapaddr_end = *mapaddr_start + 0xFFFF;
 }
@@ -394,26 +419,42 @@ static void set_info_I(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
     *mapaddr_end = *mapaddr_start + 0x3FFF;
 }
 
+static void print_layer_info(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, struct debugger_widget_textbox *tb)
+{
+    if (bgnum < 4) {
+        struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+        debugger_widgets_textbox_sprintf(tb, "\n BG%d  on:%d  mosaic:%d  screen_size:%d  8bpp:%d", bgnum, bg->enable,
+                                         bg->mosaic_enable, bg->screen_size, bg->bpp8);
+        debugger_widgets_textbox_sprintf(tb, "\n   hscroll:%d  vscroll:%d  ", bg->hscroll, bg->vscroll);
+        if (bgnum < 2) {
+            debugger_widgets_textbox_sprintf(tb, "ext_palette:%d", bg->ext_pal_slot);
+        }
+        else {
+            debugger_widgets_textbox_sprintf(tb, "disp_overflow:%d", bg->display_overflow);
+        }
+    }
+    else {
+        debugger_widgets_textbox_sprintf(tb, "\n OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
+        debugger_widgets_textbox_sprintf(tb, "\n  ext_palettes:%d  tile_1d:%d  bitmap_1d:%d", eng->io.obj.extended_palettes, eng->io.obj.tile.map_1d, eng->io.obj.bitmap.map_1d);
+    }
+}
 
-static void render_image_view_ppu_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_sys_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct NDS *this = (struct NDS *) ptr;
     //memset(ptr, 0, out_width * 4 * 10);
     struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 0))->textbox;
     debugger_widgets_textbox_clear(tb);
     for (u32 ppun = 0; ppun < 2; ppun++) {
         struct NDSENG2D *eng = &this->ppu.eng2d[ppun];
-        debugger_widgets_textbox_sprintf(tb, "eng%c  display_mode:%d  bg_mode:%d", ppun == 0 ? 'A' : 'B', eng->io.display_mode, eng->io.bg_mode);
+        debugger_widgets_textbox_sprintf(tb, "eng%c  display_mode:%d  bg_mode:%d  bg_ext_pal:%d", ppun == 0 ? 'A' : 'B', eng->io.display_mode, eng->io.bg_mode, eng->io.bg.extended_palettes);
         debugger_widgets_textbox_sprintf(tb, "\n");
         if (ppun ^ this->ppu.io.display_swap) debugger_widgets_textbox_sprintf(tb, "top   ");
         else debugger_widgets_textbox_sprintf(tb, "bottom");
         if (ppun == 0) debugger_widgets_textbox_sprintf(tb, "  do_3d:%d", eng->io.bg.do_3d);
 
-        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
-            struct NDS_PPU_bg *bg = &eng->bg[bgnum];
-            debugger_widgets_textbox_sprintf(tb, "\n BG%d  on:%d  mosaic:%d  screen_size:%d  8bpp:%d", bgnum, bg->enable, bg->mosaic_enable, bg->screen_size, bg->bpp8);
+        for (u32 bgnum = 0; bgnum < 5; bgnum++) {
+            print_layer_info(this, eng, bgnum, tb);
         }
-        debugger_widgets_textbox_sprintf(tb, "\n OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
-        debugger_widgets_textbox_sprintf(tb, "\n  ext_palettes:%d  tile_sprite_1d:%d bitmap_sprite_1d:%d", eng->io.obj.extended_palettes, eng->io.obj.tile.map_1d, eng->io.obj.bitmap.map_1d);
 
 
         debugger_widgets_textbox_sprintf(tb, "\n\n");
@@ -466,13 +507,18 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
     if (this->clock.master_frame == 0) return;
     struct debugger_widget_radiogroup *engrg = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
     struct debugger_widget_radiogroup *layernum = &((struct debugger_widget *)cvec_get(&dview->options, 1))->radiogroup;
+    struct debugger_widget_radiogroup *attrkind = &((struct debugger_widget *)cvec_get(&dview->options, 2))->radiogroup;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 3))->textbox;
 
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * 4 * 192);
 
+    debugger_widgets_textbox_clear(tb);
     struct NDSENG2D *eng = &this->ppu.eng2d[engrg->value];
+    print_layer_info(this, eng, layernum->value, tb);
+
     for (u32 y = 0; y < 192; y++) {
         //struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
@@ -484,10 +530,18 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
             px_line = this->dbg_info.eng[engrg->value].line[y].sprite_buf;
         }
         for (u32 x = 0; x < 256; x++) {
-            //if (px_line[x].has) {
-            u32 c = px_line[x].color;
-            out_line[x] = gba_to_screen(c);
-            //}
+            if (attrkind->value == 0) {
+                if (px_line[x].has) {
+                    u32 c = px_line[x].color;
+                    out_line[x] = gba_to_screen(c);
+                }
+                else {
+                    out_line[x] = 0xFF000000;
+                }
+            }
+            else {
+                out_line[x] = 0xFF000000 | (px_line[x].has * 0xFFFFFF);
+            }
         }
     }
 }
@@ -679,6 +733,11 @@ static void setup_image_view_ppu_layers(struct NDS *this, struct debugger_interf
     debugger_widget_radiogroup_add_button(rg, "BG3", 3, 1);
     debugger_widget_radiogroup_add_button(rg, "OBJ", 4, 1);
 
+    rg = debugger_widgets_add_radiogroup(&dview->options, "View", 1, 0, 0);
+    debugger_widget_radiogroup_add_button(rg, "RGB", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Has", 1, 1);
+
+    debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
 }
 static void setup_image_view_ppu_info(struct NDS *this, struct debugger_interface *dbgr)
 {
@@ -695,7 +754,7 @@ static void setup_image_view_ppu_info(struct NDS *this, struct debugger_interfac
     iv->viewport.p[1] = (struct ivec2){ 10, 10 };
 
     iv->update_func.ptr = this;
-    iv->update_func.func = &render_image_view_ppu_info;
+    iv->update_func.func = &render_image_view_sys_info;
 
     snprintf(iv->label, sizeof(iv->label), "Sys Info View");
 
