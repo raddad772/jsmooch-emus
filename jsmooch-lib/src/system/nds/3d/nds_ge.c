@@ -2023,6 +2023,12 @@ u32 NDS_GE_read(struct NDS *this, u32 addr, u32 sz)
 {
     u32 v;
     switch(addr) {
+        case R9_RAM_COUNT:
+            v = this->ge.buffers[this->ge.ge_has_buffer].polygon_index;
+            if (sz == 4) v |= this->ge.buffers[this->ge.ge_has_buffer].vertex_index << 16;
+            return v;
+        case R9_RAM_COUNT+2:
+            return this->ge.buffers[this->ge.ge_has_buffer].vertex_index;
         case R9_G_CMD_POLYGON_ATTR:
             return 0;
         case R9_GXSTAT:
