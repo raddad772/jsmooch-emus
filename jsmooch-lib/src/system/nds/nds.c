@@ -16,6 +16,7 @@
 #include "system/nds/3d/nds_ge.h"
 #include "nds_regs.h"
 #include "nds_spi.h"
+#include "nds_apu.h"
 
 #include "helpers/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
@@ -264,7 +265,7 @@ void NDS_new(struct jsm_system *jsm)
     NDS_PPU_init(this);
     NDS_GE_init(this);
     NDS_RE_init(this);
-    //NDS_APU_init(this);
+    NDS_APU_init(this);
 
     snprintf(jsm->label, sizeof(jsm->label), "Nintendo DS");
     struct jsm_debug_read_trace dt7;

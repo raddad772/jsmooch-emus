@@ -419,6 +419,8 @@ add_library(jsmooch-lib
         src/system/nds/3d/nds_re.h
         src/system/nds/3d/nds_3dmath.c
         src/system/nds/3d/nds_3dmath.h
+        src/system/nds/nds_apu.c
+        src/system/nds/nds_apu.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

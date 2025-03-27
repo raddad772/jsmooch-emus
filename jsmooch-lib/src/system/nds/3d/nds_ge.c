@@ -526,7 +526,7 @@ static void cmd_MTX_MULT_4x3(struct NDS *this)
 {
     switch(this->ge.io.MTX_MODE) {
         case 0: // projection
-            printfcd("\nMTX_MULT_4x3(Projection);");
+            matrix_multiply_4x3(M_PROJECTION, (i32 *)DATA);
             this->ge.clip_mtx_dirty = 1;
             return;
         case 1: //  pos/coord matrix
@@ -1302,10 +1302,10 @@ static void cmd_POS_TEST(struct NDS *this)
     if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
     i64 vertex[4] = {(i64)this->ge.params.vtx.x, this->ge.params.vtx.y, this->ge.params.vtx.z, 1<<12};
 
-    this->ge.results.pos_test[0] = (vertex[0]*M_CLIP[0] + vertex[1]*M_CLIP[4] + vertex[2]*M_CLIP[8] + vertex[3]*M_CLIP[12]) >> 12;
-    this->ge.results.pos_test[1] = (vertex[0]*M_CLIP[1] + vertex[1]*M_CLIP[5] + vertex[2]*M_CLIP[9] + vertex[3]*M_CLIP[13]) >> 12;
-    this->ge.results.pos_test[2] = (vertex[0]*M_CLIP[2] + vertex[1]*M_CLIP[6] + vertex[2]*M_CLIP[10] + vertex[3]*M_CLIP[14]) >> 12;
-    this->ge.results.pos_test[3] = (vertex[0]*M_CLIP[3] + vertex[1]*M_CLIP[7] + vertex[2]*M_CLIP[11] + vertex[3]*M_CLIP[15]) >> 12;
+    this->ge.results.pos_test[0] = ((vertex[0]*M_CLIP[0] + vertex[1]*M_CLIP[4] + vertex[2]*M_CLIP[8] + vertex[3]*M_CLIP[12]) >> 12);
+    this->ge.results.pos_test[1] = ((vertex[0]*M_CLIP[1] + vertex[1]*M_CLIP[5] + vertex[2]*M_CLIP[9] + vertex[3]*M_CLIP[13]) >> 12);
+    this->ge.results.pos_test[2] = ((vertex[0]*M_CLIP[2] + vertex[1]*M_CLIP[6] + vertex[2]*M_CLIP[10] + vertex[3]*M_CLIP[14]) >> 12);
+    this->ge.results.pos_test[3] = ((vertex[0]*M_CLIP[3] + vertex[1]*M_CLIP[7] + vertex[2]*M_CLIP[11] + vertex[3]*M_CLIP[15]) >> 12);
 }
 
 static void box_test_clip_segment(struct NDS *this, i32 comp, i32 plane, struct NDS_GE_VTX_list_node* outbuf, struct NDS_GE_VTX_list_node* vin, struct NDS_GE_VTX_list_node* vout)

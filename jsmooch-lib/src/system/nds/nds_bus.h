@@ -15,6 +15,7 @@
 #include "nds_ipc.h"
 #include "system/nds/3d/nds_ge.h"
 #include "system/nds/3d/nds_re.h"
+#include "nds_apu.h"
 
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm946es/arm946es.h"
@@ -33,6 +34,7 @@ struct NDS {
     struct NDS_PPU ppu;
     struct NDS_GE ge;
     struct NDS_RE re;
+    struct NDS_APU apu;
     u32 arm9_ins, arm7_ins;
     struct NDS_controller controller;
 

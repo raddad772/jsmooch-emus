@@ -156,6 +156,10 @@ static void render_image_view_re_wireframe(struct debugger_interface *dbgr, stru
     }
 }
 
+static inline u32 C18to15(u32 c)
+{
+    return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
+}
 
 static void render_image_view_re_output(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct NDS *this = (struct NDS *) ptr;
@@ -171,7 +175,7 @@ static void render_image_view_re_output(struct debugger_interface *dbgr, struct 
         struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         for (u32 x = 0; x < 256; x++) {
-            out_line[x] = gba_to_screen(lbuf->rgb[x]);
+            out_line[x] = gba_to_screen(C18to15(lbuf->rgb[x]) & 0x7FFF);
         }
     }
 }
