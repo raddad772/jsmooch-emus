@@ -146,6 +146,7 @@ struct NDS_PPU {
             i32 x, y;
             u32 x_written, y_written;
             i32 x_lerp, y_lerp;
+            i32 fx, fy;
 
             struct NDS_PX line[256+8];
 

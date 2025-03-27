@@ -419,12 +419,56 @@ static void set_info_I(char *mapstr, u32 mst, u32 ofs, u32 *mapaddr_start, u32 *
     *mapaddr_end = *mapaddr_start + 0x3FFF;
 }
 
+static void classify_bg_kind(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, struct jsm_string *js)
+{
+    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+
+#define cl(...) { jsm_string_sprintf(js, __VA_ARGS__); return; }
+    if ((eng->num == 0) && (bgnum == 0) && (bg->do3d)) cl("3d")
+    if (bgnum < 2) cl("text")
+    if (bgnum == 2) {
+        switch(eng->io.bg_mode) {
+            case 0:
+            case 1:
+            case 3: cl("text")
+            case 2:
+            case 4: cl("affine")
+            case 5: cl("extended")
+            case 6:
+                if (eng->num == 0) cl("large")
+                else cl("none")
+            default:
+                cl("none")
+        }
+    }
+    else {
+        switch(eng->io.bg_mode) {
+            case 0:
+                cl("text")
+            case 1:
+            case 2:
+                cl("affine")
+            case 3:
+            case 4:
+            case 5:
+                cl("extended")
+            default:
+                cl("none")
+        }
+    }
+#undef cl
+}
+
 static void print_layer_info(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, struct debugger_widget_textbox *tb)
 {
     if (bgnum < 4) {
         struct NDS_PPU_bg *bg = &eng->bg[bgnum];
-        debugger_widgets_textbox_sprintf(tb, "\n BG%d  on:%d  mosaic:%d  screen_size:%d  8bpp:%d", bgnum, bg->enable,
-                                         bg->mosaic_enable, bg->screen_size, bg->bpp8);
+        debugger_widgets_textbox_sprintf(tb, "\n BG%d:", bgnum);
+        if (bg->enable) debugger_widgets_textbox_sprintf(tb, "on ");
+        else debugger_widgets_textbox_sprintf(tb, "off");
+        debugger_widgets_textbox_sprintf(tb, "  kind:");
+        classify_bg_kind(this, eng, bgnum, &tb->contents);
+//mosaic:%d  screen_size:%d  8bpp:%d\", bgnum, bg->enable,bg->mosaic_enable, bg->screen_size, bg->bpp8);
         debugger_widgets_textbox_sprintf(tb, "\n   hscroll:%d  vscroll:%d  ", bg->hscroll, bg->vscroll);
         if (bgnum < 2) {
             debugger_widgets_textbox_sprintf(tb, "ext_palette:%d", bg->ext_pal_slot);

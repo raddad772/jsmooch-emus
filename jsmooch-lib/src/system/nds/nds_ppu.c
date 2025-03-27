@@ -626,7 +626,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     } while(draw_x < 256);
 }
 
-static void affine_line_start(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 *fx, i32 *fy)
+static void affine_line_start(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg)
 {
     if (!bg->enable) {
         if (bg->mosaic_y != bg->last_y_rendered) {
@@ -634,10 +634,7 @@ static void affine_line_start(struct NDS *this, struct NDSENG2D *eng, struct NDS
             bg->y_lerp += bg->pd * eng->mosaic.bg.vsize;
             bg->last_y_rendered = bg->mosaic_y;
         }
-        return;
     }
-    *fx = bg->x_lerp;
-    *fy = bg->y_lerp;
 }
 
 static void affine_line_end(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg)
@@ -677,39 +674,86 @@ static void get_affine_bg_pixel(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     }
 }
 
-static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+typedef void (*affinerenderfunc)(struct NDS *, struct NDSENG2D *, struct NDS_PPU_bg *, i32 x, i32 y, struct NDS_PX *, void *);
+
+// map_base, block_width, tile_base
+
+struct affine_normal_xtradata {
+    u32 map_base, tile_base;
+    i32 block_width;
+};
+
+static void affine_normal(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
 {
-    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+    struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
+    u32 tile_number = read_vram_bg(this, eng, xd->map_base + (y >> 3) * xd->block_width + (x >> 3), 1);
 
-    i32 fx, fy;
-    affine_line_start(this, eng, bg, &fx, &fy);
-    memset(bg->line, 0, sizeof(bg->line));
-    if (!bg->enable) {
-        return;
+    u32 addr = (xd->tile_base + tile_number * 64);
+    u32 c = read_vram_bg(this, eng, addr + ((y & 7) << 3) + (x & 7), 1);
+
+    out->has = 1;
+    out->color = 0x7FFF;
+    if (c == 0) {
+        out->has = 0;
     }
+    else {
+        out->has = 1;
+        out->priority = bg->priority;
+        out->color = read_pram_bg(this, eng, c << 1, 2);
+    }
+}
 
-    //struct NDS_DBG_tilemap_line_bg *dtl = &this->dbg_info.bg_scrolls[bgnum];
-
+static void render_affine_loop(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 width, i32 height, affinerenderfunc render_func, void *xtra)
+{
+    i32 fx = bg->x_lerp;
+    i32 fy = bg->y_lerp;
     for (i64 screen_x = 0; screen_x < 256; screen_x++) {
         i32 px = fx >> 8;
         i32 py = fy >> 8;
         fx += bg->pa;
         fy += bg->pc;
+
         if (bg->display_overflow) { // wraparound
-            px &= bg->hpixels_mask;
-            py &= bg->vpixels_mask;
+            if (px >= width)
+                px %= width;
+            else if (px < 0)
+                px = width + (px % width);
+
+            if (py >= height)
+                py %= height;
+            else if (py < 0)
+                py = height + (py % height);
         }
-        else { // clip/transparent
-            if (px < 0) continue;
-            if (py < 0) continue;
-            if (px >= bg->hpixels) continue;
-            if (py >= bg->vpixels) continue;
+        else if ((px < 0) || (py < 0) || (px >= width) || (py >= height)){ // clip/transparent
+            continue;
         }
-        get_affine_bg_pixel(this, eng, bgnum, bg, px, py, &bg->line[screen_x]);
-        //dtl->lines[(py << 7) + (px >> 3)] |= 1 << (px & 7);
+        render_func(this, eng, bg, px, py, &bg->line[screen_x], xtra);
     }
     affine_line_end(this, eng, bg);
 }
+
+static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+{
+    struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+
+    affine_line_start(this, eng, bg);
+    memset(bg->line, 0, sizeof(bg->line));
+    if (!bg->enable) {
+        return;
+    }
+
+    struct affine_normal_xtradata xtra;
+    xtra.map_base = eng->io.bg.screen_base + bg->screen_base_block;
+    xtra.tile_base = eng->io.bg.character_base + bg->character_base_block;
+    xtra.block_width = 16 << bg->screen_size;
+
+    render_affine_loop(this, eng, bg, eng->bg[bgnum].hpixels, eng->bg[bgnum].vpixels, &affine_normal, &xtra);
+
+    affine_line_end(this, eng, bg);
+}
+
+
+
 
 static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
 {
@@ -1084,6 +1128,21 @@ void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hbla
             debugger_report_line(this->dbg.interface, this->clock.ppu.y);
         }
 
+        for (u32 ppun = 0; ppun < 2; ppun++) {
+            struct NDSENG2D *eng = &this->ppu.eng2d[ppun];
+            for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+                struct NDS_PPU_bg *bg = &eng->bg[bgnum];
+                if ((this->clock.ppu.y == 0) || bg->x_written) {
+                    bg->x_lerp = bg->x;
+                }
+
+                if ((this->clock.ppu.y == 0) || (bg->y_written)) {
+                    bg->y_lerp = bg->y;
+                }
+                bg->x_written = bg->y_written = 0;
+            }
+        }
+
         if ((this->ppu.io.vcount_at7 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable7) NDS_update_IF7(this, NDS_IRQ_VMATCH);
         if ((this->ppu.io.vcount_at9 == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable9) NDS_update_IF9(this, NDS_IRQ_VMATCH);
     }
@@ -1104,8 +1163,6 @@ void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hbla
 
 #define MASTER_CYCLES_PER_FRAME 570716
 static void new_frame(struct NDS *this) {
-    //printf("\n--new frame");
-    //debugger_report_frame(this->dbg.interface);
     this->clock.ppu.y = 0;
     this->clock.frame_start_cycle = NDS_clock_current7(this);
     this->ppu.cur_output = ((u16 *) this->ppu.display->output[this->ppu.display->last_written ^ 1]);
@@ -1124,12 +1181,6 @@ static void new_frame(struct NDS *this) {
         this->ppu.mosaic.bg.y_current = 0;
         this->ppu.mosaic.obj.y_counter = 0;
         this->ppu.mosaic.obj.y_current = 0;
-
-        /*for (u32 bgnum = 0; bgnum < 4; bgnum++) {
-            for (u32 line = 0; line < 1024; line++) {
-                memset(&this->dbg_info.bg_scrolls[bgnum].lines[0], 0, 1024 * 128);
-            }
-        }*/
     }
 
     NDS_trigger_dma9_if(this, NDS_DMA_START_OF_DISPLAY);
