@@ -333,8 +333,6 @@ static void sample_audio(struct NDS* this)
             return;
         }
         float s = ((((float)(this->apu.buffer.samples[this->apu.buffer.head] >> 22)) + 512.0f) / 511.5f) - 1.0f;
-        // Make sure we clear the sample for the next time around's mixing!
-        this->apu.buffer.samples[this->apu.buffer.head] = 0;
         assert(s>=-1.0f && s<=1.0f);
         *outptr = s;
         outptr++;

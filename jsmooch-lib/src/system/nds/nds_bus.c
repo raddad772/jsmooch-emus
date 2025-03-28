@@ -211,7 +211,7 @@ static u32 busrd9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_e
     if (ptr) return cR[sz](ptr, addr & 0x3FFF);
 
     printf("\nInvalid VRAM read unmapped addr:%08x sz:%d", addr, sz);
-    dbg_break("Unmapped VRAM9 read", this->clock.master_cycle_count7);
+    //dbg_break("Unmapped VRAM9 read", this->clock.master_cycle_count7);
     return 0;
 }
 
@@ -266,23 +266,6 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return NDS_cart_read_spicnt(this) & 0xFF;
         case R_AUXSPICNT+1:
             return NDS_cart_read_spicnt(this) >> 8;
-        case R7_SOUNDCNT+0:
-            return this->apu.io.master_vol;
-        case R7_SOUNDCNT+1:
-            v = this->apu.io.left_output_from;
-            v |= this->apu.io.right_output_from << 2;
-            v |= this->apu.io.output_ch1_from_mixer << 4;
-            v |= this->apu.io.output_ch3_from_mixer << 5;
-            v |= this->apu.master_enable << 7;
-            return v;
-        case R7_SOUNDCNT+2:
-        case R7_SOUNDCNT+3:
-            return 0;
-
-        case R7_SOUNDBIAS+0:
-            return this->apu.io.SOUNDBIAS & 0xFF;
-        case R7_SOUNDBIAS+1:
-            return (this->apu.io.SOUNDBIAS >> 8) & 3;
 
         case R_RCNT+0: return this->io.sio_data & 0xFF;
         case R_RCNT+1: return this->io.sio_data >> 8;
@@ -464,6 +447,14 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return (this->io.arm7.EXMEM & 0x7F) | (this->io.arm9.EXMEM & 0x80);
         case R7_EXMEMSTAT+1:
             return (this->io.arm9.EXMEM >> 8) | (1 << 5);
+
+        case 0x04004008: // DSi stuff
+        case 0x04004009:
+        case 0x0400400a:
+        case 0x0400400b:
+        case 0x04004700:
+        case 0x04004701:
+            return 0;
     }
     printf("\nUnhandled BUSRD7IO8 addr:%08x", addr);
     return 0;
@@ -593,28 +584,6 @@ static void sqrt_calc(struct NDS *this)
 static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     switch(addr) {
-
-        case R7_SOUNDCNT+0:
-            this->apu.io.master_vol = val & 0x7F;
-            return;
-        case R7_SOUNDCNT+1:
-            this->apu.io.left_output_from = val & 3;
-            this->apu.io.right_output_from = (val >> 2) & 3;
-            this->apu.io.output_ch1_from_mixer = (val >> 4) & 1;
-            this->apu.io.output_ch3_from_mixer = (val >> 5) & 1;
-            this->apu.master_enable = (val >> 7) & 1;
-            return;
-        case R7_SOUNDCNT+2:
-        case R7_SOUNDCNT+3:
-            return;
-
-        case R7_SOUNDBIAS+0:
-            this->apu.io.SOUNDBIAS = (this->apu.io.SOUNDBIAS & 0x300) | val;
-            return;
-        case R7_SOUNDBIAS+1:
-            this->apu.io.SOUNDBIAS = (this->apu.io.SOUNDBIAS & 0xFF) | ((val & 3) << 8);
-            return;
-
         case R_RCNT+0:
             this->io.sio_data = (this->io.sio_data & 0xFF00) | val;
             return;
@@ -886,9 +855,10 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     }
     u32 v;
     switch(addr) {
-        case 0x04004000:
-            // NDS thing
-            return 0;
+        case R_AUXSPICNT:
+            return NDS_cart_read_spicnt(this) & 0xFF;
+        case R_AUXSPICNT+1:
+            return NDS_cart_read_spicnt(this) >> 8;
         case R9_POWCNT1+0:
             v = this->io.powcnt.lcd_enable;
             v |= this->ppu.eng2d[0].enable << 1;
@@ -1158,10 +1128,17 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return v;
         }
 
+        case R9_DIVCNT+2:
+        case R9_DIVCNT+3:
+        case 0x04004000:
+            // NDS thing
+            return 0;
         case 0x04004008: // new DSi stuff libnds cares about?
         case 0x04004009:
         case 0x0400400A:
         case 0x0400400B:
+        case 0x04004010:
+        case 0x04004011:
             return 0;
     }
     printf("\nUnhandled BUSRD9IO8 addr:%08x", addr);
@@ -1603,24 +1580,6 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     return v;
 }
 
-static u32 busrd7_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect){
-    static int already_did = 0;
-    if (!already_did) {
-        already_did = 1;
-        printf("\nWARN: APU READ7!");
-    }
-    return 0;
-}
-
-static void buswr7_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
-    static int already_did = 0;
-    if (!already_did) {
-        already_did = 1;
-        printf("\nWARN: APU WRITE7!");
-    }
-}
-
-
 static void buswr9_apu(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val) {
     static int already_did = 0;
     if (!already_did) {
@@ -1731,7 +1690,7 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     if (((addr >= 0x04000000) && (addr < 0x04000070)) || ((addr >= 0x04001000) && (addr < 0x04001070))) {
         return NDS_PPU_read7_io(this, addr, sz, access, has_effect);
     }
-    if ((addr >= 0x04000400) && (addr < 0x04000520)) return busrd7_apu(this, addr, sz, access, has_effect);
+    if ((addr >= 0x04000400) && (addr < 0x04000520)) return NDS_APU_read(this, addr, sz, access);
     if (addr >= 0x04800000) return busrd7_wifi(this, addr, sz, access, has_effect);
     u32 v;
     switch(addr) {
@@ -1793,7 +1752,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         NDS_PPU_write7_io(this, addr, sz, access, val);
         return;
     }
-    if ((addr >= 0x04000400) && (addr < 0x04000520)) return buswr7_apu(this, addr, sz, access, val);
+    if ((addr >= 0x04000400) && (addr < 0x04000520)) return NDS_APU_write(this, addr, sz, access, val);
     if (addr >= 0x04800000) return buswr7_wifi(this, addr, sz, access, val);
 
     switch(addr) {

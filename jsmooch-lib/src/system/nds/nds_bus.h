@@ -42,8 +42,8 @@ struct NDS {
 
     struct {
         u64 current_transaction;
+        u64 current_shift; // 1
     } waitstates;
-
 
     struct {
         struct { // Only bits 27-24 are needed to distinguish valid endpoints, mostly.

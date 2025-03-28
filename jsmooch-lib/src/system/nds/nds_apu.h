@@ -9,6 +9,14 @@
 
 #define NDS_APU_MAX_SAMPLES 131072
 
+enum NDS_APU_FMT {
+    NDS_APU_FMT_pcm8,
+    NDS_APU_FMT_pcm16,
+    NDS_APU_FMT_ima_adpcm,
+    NDS_APU_FMT_psg
+};
+
+
 // Output: 32768hz, 10-bit. (11-bit with mono mix I'll do)
 struct NDS_APU {
 
@@ -16,30 +24,29 @@ struct NDS_APU {
         u32 dirty, num;
 
         struct {
-            u32 enabled;
+            u32 playing;
             u32 in_loop;
-            i64 last_timecode_mixed;
+            u32 pos;
 
-            i64 next_timecode;
-            struct {
-                i64 timecode;
-                i16 data;
-                u32 pos;
+            u32 counter;
 
-                u32 mix_buffer_tail; // Current position in the mixing buffer
-            } last_sample;
+            i16 sample;
+
+            long double my_total_sample_len;
+            long double next_timecode;
+            long double last_timecode;
+            u32 mix_buffer_tail; // Current position in the mixing buffer
 
             struct {
                 u32 len;
                 u32 head, tail;
                 i16 samples[16];
-            } buffer;
+            } sample_input_buffer;
         } status;
-
-
 
         struct NDS_APU_CH_params {
             u32 vol; // 0...127
+            u32 vol_div;
             u32 vol_rshift; // 0, 1, 2, 4
             u32 hold;
             u32 pan, left_pan, right_pan; // 0...127, 64=center. so 0...63 per ch
@@ -52,12 +59,8 @@ struct NDS_APU {
                 NDS_APU_RM_bad
             } repeat_mode;
 
-            enum NDS_APU_FMT {
-                NDS_APU_FMT_pcm8,
-                NDS_APU_FMT_pcm16,
-                NDS_APU_FMT_ima_adpcm,
-                NDS_APU_FMT_psg
-            } format;
+            enum NDS_APU_FMT format;
+
             u32 status; // 0 = stop. 1 = start/busy
 
             u32 source_addr;
@@ -86,13 +89,19 @@ struct NDS_APU {
     struct {
         i32 samples[NDS_APU_MAX_SAMPLES];
         u32 len, head, tail;
+        struct {
+            u64 next_timecode;
+
+            long double total_sample_len;
+            // These start at 0
+        } status;
     } buffer;
 };
 
 struct NDS;
 void NDS_APU_run_to_current(struct NDS *);
 void NDS_APU_init(struct NDS *);
-u32 NDS_APU_read(struct NDS *, u32 addr, u32 sz);
-void NDS_APU_write(struct NDS *, u32 addr, u32 sz, u32 val);
+u32 NDS_APU_read(struct NDS *, u32 addr, u32 sz, u32 access);
+void NDS_APU_write(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);
 
 #endif //JSMOOCH_EMUS_NDS_APU_H

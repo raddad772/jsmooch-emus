@@ -301,8 +301,9 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
     u32 worked = 0;
 
     GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
-
+    printf("\nWORKED OS FAR? %d", worked);
     if (!worked) return 0;
+
     mfs_add(fname, BASE_PATH, ROMs);
     //printf("\n%d %s %s", ROMs->files[ROMs->num_files-1].buf.size > 0, BASE_PATH, fname);
     return ROMs->files[ROMs->num_files-1].buf.size > 0;
@@ -737,10 +738,12 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tloz.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dq9.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "fighting_fantasy.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "kirbycc.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "kirbycc.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mp_hunters_rev1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "okami_den.nds", nullptr); // try again after sprites
             //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
+            printf("\nGRAB ROM NOW!");
+            worked = grab_ROM(&ROMs, which, "poke_black_2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "examples/graphics_2d/bg_bmp_16bit.nds", nullptr);
 
             // NEXT: basic PPU mode 3, 5
