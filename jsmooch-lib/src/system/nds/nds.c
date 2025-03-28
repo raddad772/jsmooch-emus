@@ -39,12 +39,6 @@ static u32 NDSJ_step_master(JSM, u32 howmany);
 static void NDSJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void NDSJ_describe_io(JSM, struct cvec* IOs);
 
-enum NDS_frame_events {
-    evt_EMPTY=0,
-    evt_SCANLINE_START,
-    evt_HBLANK_IN,
-    evt_SCANLINE_END
-};
 /*
 Especially when games have very bizarre bugs, such as bowsers inside story purposefully sabotaging inputs at the save select screen because I allowed cart reads from the secure area, which made it think it was running on a flashcart
 Or Mario jumping way way way too high because I calculated the zero flag incorrectly for a certain multiply instruction */
@@ -124,7 +118,6 @@ static void do_next_scheduled_frame(void *bound_ptr, u64 key, u64 current_clock,
 
 static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
 {
-    //printf("\nSCHEDULE FRAME START AT CYCLE %lld CUR:%lld LINE CYCLES:%lld LINE:%d!", start_clock, NDS_clock_current7(this), this->clock.timing.scanline.cycles_total, this->clock.ppu.y);
     // Schedule out a frame!
     i64 cur_clock = start_clock;
     this->clock.cycles_left_this_frame += this->clock.timing.frame.cycles;
@@ -324,6 +317,33 @@ void NDS_delete(struct jsm_system *jsm)
     jsm_clearfuncs(jsm);
 }
 
+static void sample_audio(struct NDS* this)
+{
+    NDS_clock_current7(this);
+    // Get buffer
+    // this->audio.buf->ptr
+    // Run audio to current point
+    NDS_APU_run_to_current(this);
+
+    // Take NDS samples into our buffer
+    float *outptr = (float *)this->audio.buf->ptr;
+    for (u32 i = 0; i < this->audio.buf->samples_len; i++) {
+        if (this->apu.buffer.len < 1) {
+            printf("\nUNDERRUN %d SAMPLES!", this->audio.buf->samples_len - i);
+            return;
+        }
+        float s = ((((float)(this->apu.buffer.samples[this->apu.buffer.head] >> 22)) + 512.0f) / 511.5f) - 1.0f;
+        // Make sure we clear the sample for the next time around's mixing!
+        this->apu.buffer.samples[this->apu.buffer.head] = 0;
+        assert(s>=-1.0f && s<=1.0f);
+        *outptr = s;
+        outptr++;
+        this->apu.buffer.head = (this->apu.buffer.head + 1) & (NDS_APU_MAX_SAMPLES - 1);
+        this->apu.buffer.len--;
+    }
+}
+
+
 u32 NDSJ_finish_frame(JSM)
 {
     JTHIS;
@@ -332,6 +352,7 @@ u32 NDSJ_finish_frame(JSM)
     scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
     u64 diff = NDS_clock_current7(this) - old_clock;
     this->clock.cycles_left_this_frame -= (i64)diff;
+    sample_audio(this);
     return 0;
 
 }
@@ -478,43 +499,6 @@ void NDSJ_reset(JSM)
 }
 
 
-static void sample_audio(struct NDS* this, u32 num_cycles)
-{
-/*    for (u64 i = 0; i < num_cycles; i++) {
-        NDS_APU_cycle(this);
-        u64 mc = this->clock.master_cycle_count + i;
-        if (this->audio.buf && (mc >= (u64) this->audio.next_sample_cycle)) {
-            this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-            if (this->audio.buf->upos < this->audio.buf->samples_len) {
-                ((float *)(this->audio.buf->ptr))[this->audio.buf->upos] = NDS_APU_mix_sample(this, 0);
-            }
-            this->audio.buf->upos++;
-        }
-
-        struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
-        if (mc >= (u64)dw->user.next_sample_cycle) {
-            if (dw->user.buf_pos < dw->samples_requested) {
-                dw->user.next_sample_cycle += dw->user.cycle_stride;
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = NDS_APU_mix_sample(this, 1);
-                dw->user.buf_pos++;
-            }
-        }
-
-        dw = cpg(this->dbg.waveforms.chan[0]);
-        if (mc >= (u64)dw->user.next_sample_cycle) {
-            for (int j = 0; j < 6; j++) {
-                dw = cpg(this->dbg.waveforms.chan[j]);
-                if (dw->user.buf_pos < dw->samples_requested) {
-                    dw->user.next_sample_cycle += dw->user.cycle_stride;
-                    float sv = NDS_APU_sample_channel(this, j);
-                    ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
-                    dw->user.buf_pos++;
-                    assert(dw->user.buf_pos < 410);
-                }
-            }
-        }
-    }*/
-}
 
 #ifndef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -598,8 +582,8 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 262144;
-    chan->low_pass_filter = 24000;
+    chan->sample_rate = 32768;
+    chan->low_pass_filter = 16384;
 }
 
 

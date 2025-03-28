@@ -41,19 +41,6 @@ struct NDS {
     struct scheduler_t scheduler;
 
     struct {
-        struct {
-            u32 master_vol;
-            u32 left_output_from;
-            u32 right_output_from;
-            u32 output_ch1_from_mixer;
-            u32 output_ch3_from_mixer;
-            u32 SOUNDBIAS;
-        } io;
-        u32 master_enable;
-
-    } apu;
-
-    struct {
         u64 current_transaction;
     } waitstates;
 

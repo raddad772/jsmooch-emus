@@ -7,12 +7,36 @@
 
 #include "helpers/int.h"
 
+#define NDS_APU_MAX_SAMPLES 131072
+
+// Output: 32768hz, 10-bit. (11-bit with mono mix I'll do)
 struct NDS_APU {
+
     struct NDS_APU_CH {
         u32 dirty, num;
 
-        i64 last_timecode_mixed;
-        i64 next_timecode_sample_change;
+        struct {
+            u32 enabled;
+            u32 in_loop;
+            i64 last_timecode_mixed;
+
+            i64 next_timecode;
+            struct {
+                i64 timecode;
+                i16 data;
+                u32 pos;
+
+                u32 mix_buffer_tail; // Current position in the mixing buffer
+            } last_sample;
+
+            struct {
+                u32 len;
+                u32 head, tail;
+                i16 samples[16];
+            } buffer;
+        } status;
+
+
 
         struct NDS_APU_CH_params {
             u32 vol; // 0...127
@@ -58,11 +82,17 @@ struct NDS_APU {
         u32 output_ch1_to_mixer;
         u32 output_ch3_to_mixer;
     } io, latched;
+
+    struct {
+        i32 samples[NDS_APU_MAX_SAMPLES];
+        u32 len, head, tail;
+    } buffer;
 };
 
 struct NDS;
-void NDS_APU_init(struct NDS *this);
-u32 NDS_APU_read(struct NDS *this, u32 addr, u32 sz);
-void NDS_APU_write(struct NDS *this, u32 addr, u32 sz, u32 val);
+void NDS_APU_run_to_current(struct NDS *);
+void NDS_APU_init(struct NDS *);
+u32 NDS_APU_read(struct NDS *, u32 addr, u32 sz);
+void NDS_APU_write(struct NDS *, u32 addr, u32 sz, u32 val);
 
 #endif //JSMOOCH_EMUS_NDS_APU_H

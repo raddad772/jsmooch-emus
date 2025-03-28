@@ -7,6 +7,26 @@
 #include "nds_apu.h"
 #include "nds_regs.h"
 
+static void do_run_to_current(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
+{
+
+}
+
+static void run_to_current(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
+{
+    if (ch) do_run_to_current(this, ch, cur_clock);
+    else {
+        for (u32 i = 0; i < 16; i++) {
+            do_run_to_current(this, ch, cur_clock);
+        }
+    }
+}
+
+void NDS_APU_run_to_current(struct NDS *this)
+{
+    run_to_current(this, NULL, NDS_clock_current7(this));
+}
+
 static u32 apu_read8(struct NDS *this, u32 addr)
 {
     u32 v;
@@ -44,17 +64,58 @@ static u32 apu_read8(struct NDS *this, u32 addr)
     return 0;
 }
 
+/* So, each cycle, add 32768 to a counter.
+ * When counter >= arm7.hz, -= arm7.hz, new sample.
+ */
 
+static void latch_io(struct NDS *this, struct NDS_APU_CH *ch) {
+    if (!ch) {
+        for (u32 i = 0; i < 15; i++) {
+            ch = &this->apu.ch[i];
+            memcpy(&ch->latched, &ch->io, sizeof(struct NDS_APU_CH_params));
+        }
+        memcpy(&this->apu.latched, &this->apu.io, sizeof(struct NDS_APU_params));
+    } else
+        memcpy(&ch->latched, &ch->io, sizeof(struct NDS_APU_CH_params));
+}
+
+static void calculate_ch(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
+{
+    // Empty, off channel.
+    if (!ch->latched.status) return;
+
+    // calculate when next sample will be
+    u64 cycles_per_sample = (this->clock.timing.arm7.hz >> 1) / ch->latched.period;
+
+    ch->status.next_timecode = ch->status.last_sample.timecode + cycles_per_sample;
+}
+
+static void calculate_ch_settings_based_on_current_values(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
+{
+    if (!ch) {
+        for (u32 i = 0; i < 16; i++) {
+            ch = &this->apu.ch[i];
+            calculate_ch(this, ch, cur_clock);
+        }
+    }
+    else calculate_ch(this, ch, cur_clock);
+}
 
 static void change_params(struct NDS *this, struct NDS_APU_CH *ch)
 {
-    // catch-up a channel if ch, or all channels if it's NULL.
-    // mark the channel as not dirty, and latch new values
+    u64 cur_clock = NDS_clock_current7(this);
+    run_to_current(this, ch, cur_clock);
+    latch_io(this, ch);
+    calculate_ch_settings_based_on_current_values(this, ch, cur_clock);
 }
 
 static void write_sndcnt_hi(struct NDS *this, struct NDS_APU_CH *ch, u32 val)
 {
-
+    // TODO: this. mostly for 0->1 edge of enable
+    // if !old and new: calculate_ch_settngs_based_on_current_values();
+    // else if old && new: change_params(this, ch);
+    // else if old && !new: sample_off(this, ch) which will set output hold
+    change_params(this, ch);
 }
 
 static void apu_write8(struct NDS *this, u32 addr, u32 val)

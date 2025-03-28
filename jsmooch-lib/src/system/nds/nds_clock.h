@@ -24,6 +24,10 @@ struct NDS_clock {
     } ppu;
 
     struct {
+
+        struct {
+            u32 hz;
+        } apu;
         struct {
             u64 hz;
         } arm7;
@@ -42,6 +46,8 @@ struct NDS_clock {
             u64 number;
         } scanline;
     } timing;
+
+
 };
 
 
