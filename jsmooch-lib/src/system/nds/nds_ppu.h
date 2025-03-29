@@ -28,12 +28,11 @@ struct NDS_PPU_window {
     u32 enable;
 
     u32 v_flag, h_flag;
-    u32 is_inside;
 
     i32 left, right, top, bottom;
 
     u32 active[6]; // In OBJ, bg0, bg1, bg2, bg3, special FX order
-    u8 sprites_inside[256]; // for sprites
+    u8 inside[256]; // for sprites
 };
 
 struct NDS_PX {
@@ -61,6 +60,11 @@ struct NDS_PPU {
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 
+
+    u16 line_a[256];
+    u16 line_b[256];
+    u32 doing_capture;
+
     struct {
         u32 vblank_irq_enable7, hblank_irq_enable7, vcount_irq_enable7;
         u32 vcount_at7;
@@ -68,6 +72,26 @@ struct NDS_PPU {
         u32 vcount_at9;
         u32 display_block; // A B C or D
         u32 display_swap;
+
+        union NDS_DISPCAPCNT {
+            struct {
+                u32 eva : 5; // 0-4
+                u32 _un1: 3; // 5-7
+                u32 evb: 5; // 8-12
+                u32 _un2: 3; // 13-15
+                u32 vram_write_block : 2;
+                u32 vram_write_offset : 2;
+                u32 capture_size : 2;
+                u32 _un3: 2;
+                u32 source_a : 1;
+                u32 source_b : 1;
+                u32 vram_read_offset : 2;
+                u32 _un4: 1;
+                u32 capture_source: 2;
+                u32 capture_enable : 1;
+            };
+            u32 u;
+        } DISPCAPCNT;
     } io;
 
     struct NDSENG2D {
@@ -122,6 +146,7 @@ struct NDS_PPU {
                 u32 extended_palettes;
             } obj;
         } io;
+
 
         u16 line_px[256];
 

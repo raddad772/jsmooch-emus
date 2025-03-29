@@ -472,8 +472,8 @@ static void print_layer_info(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, 
         else debugger_widgets_textbox_sprintf(tb, "off");
         debugger_widgets_textbox_sprintf(tb, "  kind:");
         classify_bg_kind(this, eng, bgnum, &tb->contents);
-//mosaic:%d  screen_size:%d  8bpp:%d\", bgnum, bg->enable,bg->mosaic_enable, bg->screen_size, bg->bpp8);
-        debugger_widgets_textbox_sprintf(tb, "\n   hscroll:%d  vscroll:%d  ", bg->hscroll, bg->vscroll);
+        debugger_widgets_textbox_sprintf(tb, "  mosaic:%d  screen_size:%d  8bpp:%d", bg->enable,bg->mosaic_enable, bg->screen_size, bg->bpp8);
+        debugger_widgets_textbox_sprintf(tb, "\n   hscroll:%d  vscroll:%d  mos.x,y:%d,%d  ", bg->hscroll, bg->vscroll, this->ppu.eng2d[0].mosaic.bg.hsize, this->ppu.eng2d[0].mosaic.bg.vsize);
         if (bgnum < 2) {
             debugger_widgets_textbox_sprintf(tb, "ext_palette:%d", bg->ext_pal_slot);
         }
@@ -547,6 +547,37 @@ static void render_image_view_sys_info(struct debugger_interface *dbgr, struct d
         debugger_widgets_textbox_sprintf(tb, "\nVRAM %c  MST:%d  OFS:%d  mapping:%s  start:%x  end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);
     }
 
+}
+
+static void render_image_view_dispcap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    struct NDS *this = (struct NDS *) ptr;
+    if (this->clock.master_frame == 0) return;
+
+    struct debugger_widget_radiogroup *engrg = &((struct debugger_widget *)cvec_get(&dview->options, 0))->radiogroup;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *)cvec_get(&dview->options, 1))->textbox;
+
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 192);
+
+    static const int csize[4][2] = {{128, 128}, {256, 64}, {256, 128}, {256, 192} };
+    union NDS_DISPCAPCNT dc = this->ppu.io.DISPCAPCNT;
+
+    debugger_widgets_textbox_sprintf(tb, "DISPCAP stats:");
+    debugger_widgets_textbox_sprintf(tb, "\ncap_size:%d(%dx%d)   eva:%d  evb:%d", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1], dc.eva, dc.evb);
+    debugger_widgets_textbox_sprintf(tb, "\ncap_size:%d(%dx%d)", dc.capture_size, csize[dc.capture_size][0], csize[dc.capture_size][1]);
+
+
+    debugger_widgets_textbox_clear(tb);
+    for (u32 y = 0; y < 192; y++) {
+        u32 *out_line = outbuf + (y * out_width);
+        u16 *in_line = this->dbg_info.eng[0].line[y].dispcap_px;
+        for (u32 x = 0; x < 256; x++) {
+            out_line[x] = gba_to_screen(in_line[x]);
+        }
+    }
 }
 
 static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
@@ -752,6 +783,29 @@ static void setup_image_view_re_wireframe(struct NDS* this, struct debugger_inte
 
 }
 
+static void setup_image_view_dispcap(struct NDS *this, struct debugger_interface *dbgr) {
+    struct debugger_view *dview;
+    this->dbg.image_views.dispcap = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.dispcap);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 256;
+    iv->height = 192;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2) {0, 0};
+    iv->viewport.p[1] = (struct ivec2) {256, 192};
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_dispcap;
+    snprintf(iv->label, sizeof(iv->label), "DISPCAP view");
+
+    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Eng", 1, 0, 0);
+    debugger_widget_radiogroup_add_button(rg, "EngA", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "EngB", 1, 1);
+    debugger_widgets_add_textbox(&dview->options, "Default!", 0);
+}
+
 static void setup_image_view_ppu_layers(struct NDS *this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
@@ -784,6 +838,7 @@ static void setup_image_view_ppu_layers(struct NDS *this, struct debugger_interf
     rg = debugger_widgets_add_radiogroup(&dview->options, "View", 1, 0, 0);
     debugger_widget_radiogroup_add_button(rg, "RGB", 0, 1);
     debugger_widget_radiogroup_add_button(rg, "Has", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "Priority", 2, 1);
 
     debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
 }
@@ -864,13 +919,14 @@ void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     dbgr->smallest_step = 1;
     cvec_lock_reallocs(&dbgr->views);
 
-    setup_image_view_palettes(this, dbgr);
     //setup_cpu_trace(dbgr, this);
 
     setup_dbglog(dbgr, this);
     setup_image_view_re_output(this, dbgr);
     setup_image_view_re_wireframe(this, dbgr);
     setup_image_view_re_attr(this, dbgr);
+    setup_image_view_palettes(this, dbgr);
     setup_image_view_ppu_info(this, dbgr);
     setup_image_view_ppu_layers(this, dbgr);
+    setup_image_view_dispcap(this, dbgr);
 }

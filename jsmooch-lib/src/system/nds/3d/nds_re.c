@@ -725,7 +725,8 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                             else pix_a6 = fb_a6;
                         }
 
-                        line->rgb[x] = pix_r6 | (pix_g6 << 6) | (pix_b6 << 12);
+                        u32 alpha_out = 0x8000 * (pix_a6 > 0);
+                        line->rgb[x] = pix_r6 | (pix_g6 << 6) | (pix_b6 << 12) | alpha_out;
                         line->tex_param[x] = p->tex_param;
                         line->extra_attr[x].vertex_mode = p->vertex_mode+1;
                         line->extra_attr[x].has_px = 1;

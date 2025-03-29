@@ -259,6 +259,18 @@ static u32 apu_read8(struct NDS *this, u32 addr)
         case R7_SOUNDBIAS+2:
         case R7_SOUNDBIAS+3:
             return 0;
+
+        case R7_SOUNDCAP0CNT:
+        case R7_SOUNDCAP1CNT:
+            return 0;
+    }
+    if (addr > 0x04000508) {
+        static int a = 1;
+        if (a) {
+            printf("\nWARN: SND CAP READ!");
+            a = 0;
+        }
+        return 0;
     }
 
     printf("\nUnhandled APU read %08x", addr);
@@ -453,6 +465,14 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
         case R7_SOUNDBIAS+2:
         case R7_SOUNDBIAS+3:
             return;
+    }
+    if (addr > 0x04000508) {
+        static int a = 1;
+        if (a) {
+            printf("\nWARN: SND CAP WRITE!");
+            a = 0;
+        }
+        return;
     }
     printf("\nUnhandled APU write %08x: %02x", addr, val);
 }

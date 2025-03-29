@@ -370,6 +370,7 @@ struct NDS {
                     u32 bpp8;
                 } bg[4];
                 struct NDS_PX sprite_buf[256];
+                u16 dispcap_px[256];
                 u32 bg_mode;
             } line[192];
         } eng[2];
@@ -429,6 +430,7 @@ struct NDS {
             MDBG_IMAGE_VIEW(re_attr)
             MDBG_IMAGE_VIEW(ppu_info)
             MDBG_IMAGE_VIEW(ppu_layers)
+            MDBG_IMAGE_VIEW(dispcap)
             MDBG_IMAGE_VIEW(re_output)
         DBG_IMAGE_VIEWS_END
         DBG_WAVEFORM_START1
