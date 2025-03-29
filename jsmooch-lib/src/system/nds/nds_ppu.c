@@ -120,6 +120,8 @@ static u32 read_pram_obj2(struct NDS *this, struct NDSENG2D *eng, u32 palette, u
     return v;
 }
 
+
+
 static u32 read_pram_obj(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.obj_palette, addr & 0x1FF);
@@ -176,15 +178,21 @@ static int obj_size[4][4][2] = {
         { { 8 , 8  }, { 8 , 8  }, { 8 , 8  }, { 8 , 8  } }
 };
 
-static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 oam_offset)
+static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 oam_offset, u32 prio_to_draw)
 {
     i32 cycles_per_pixel;
     i32 pa, pb, pc, pd;
 
     u16 attr[3];
+
+    attr[2] = read_oam(this, eng, oam_offset+4, 2);
+    u32 priority = (attr[2] >> 10) & 3;
+    if (priority != prio_to_draw) return;
+
     attr[0] = read_oam(this, eng, oam_offset, 2);
     u32 affine = (attr[0] >> 8) & 1;
     u32 b9 = (attr[0] >> 9) & 1;
+
     if (!affine && b9) {
         eng->obj.drawing_cycles--;
         return;
@@ -193,18 +201,18 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
     eng->obj.drawing_cycles -= affine ? 10 : 1;
     if (eng->obj.drawing_cycles < 0) return;
 
-    attr[1] = read_oam(this, eng, oam_offset+2, 2);
 
-    i32 x = attr[1] & 0x1FF;
     i32 y = attr[0] & 0xFF;
     u32 shape = (attr[0] >> 14) & 3;
-    u32 sz = (attr[1] >> 14) & 3;
-    u32 priority = (attr[2] >> 10) & 3;
     u32 mode = (attr[0] >> 10) & 3;
     u32 mosaic = (attr[0] >> 12) & 1;
 
-    if (x & 0x100) x -= 512;
     if (y >= 192) y -= 256;
+
+    attr[1] = read_oam(this, eng, oam_offset+2, 2);
+    i32 x = attr[1] & 0x1FF;
+    u32 sz = (attr[1] >> 14) & 3;
+    if (x & 0x100) x -= 512;
 
     i32 width = obj_size[shape][sz][0];
     i32 height = obj_size[shape][sz][1];
@@ -244,10 +252,9 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
         pd = 1 << 8;
     }
 
-    attr[2] = read_oam(this, eng, oam_offset+4, 2);
     i32 sprite_y = my_y - y;
     u32 tile_num = attr[2] & 0x3FF;
-    u32 palette = (attr[2] >> 12) + 16;
+    u32 palette = (attr[2] >> 12);
     u32 flip_h = ((attr[1] >> 12) & 1) & (affine ^ 1);
     u32 flip_v = ((attr[1] >> 13) & 1) & (affine ^ 1);
     u32 bpp8 = (attr[0] >> 13) & 1;
@@ -256,7 +263,11 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
         sprite_y = this->ppu.mosaic.obj.y_current - y;
     }
 
+    u32 dbpp = bpp8;
+    if (mode == 3) dbpp = 2;
+
     for (i32 lx = -half_width; lx <= half_width; lx++) {
+        union NDS_PX mypx = {.has=1, .priority=priority, .sp_mosaic=mosaic, .dbg_mode=mode, .dbg_bpp = dbpp};
         eng->obj.drawing_cycles -= cycles_per_pixel;
         if (eng->obj.drawing_cycles < 1) return;
         i32 line_x = lx + x;
@@ -286,8 +297,10 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
                 u32 addr = ((tile_num & ~mask) * 64 + (tile_num & mask) * 8 + ty * (128 << eng->io.obj.bitmap.dim_2d) + tx) << 1;
                 c = read_vram_obj(this, eng, addr, 2);
             }
-            is_transparent = ((c >> 15) & 1) ^ 1;
-            c &= 0x7FFF;
+            mypx.has = (c >> 15) & 1;
+            mypx.color = c & 0x7FFF;
+            mypx.alpha = palette;
+            mypx.sp_translucent = palette < 15;
         }
         else if (bpp8) {
             if (eng->io.obj.tile.map_1d)
@@ -297,8 +310,9 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
 
             tile_addr = ((tile_addr + (block_x << 1)) << 5) + (tile_y << 3) + tile_x;
             c = read_vram_obj(this, eng, tile_addr, 1);
-            is_transparent = c == 0;
-            c = read_pram_obj2(this, eng, 0, c);
+            mypx.has = c != 0;
+            mypx.color = read_pram_obj2(this, eng, 0, c);
+            mypx.sp_translucent = mode == 1;
         }
         else { // 4bpp
             if (eng->io.obj.tile.map_1d)
@@ -310,30 +324,20 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
             c = read_vram_obj(this, eng, tile_addr, 1);
             if (tile_x & 1) c >>= 4;
             c &= 15;
-            is_transparent = c == 0;
-            c = read_pram_obj2(this, eng, palette, c);
-        }
+            mypx.has = c != 0;
+            mypx.color = read_pram_obj(this, eng, ((palette << 4) | c) << 1, 2);
+            mypx.sp_translucent = mode == 1;
 
-        struct NDS_PX *opx = &eng->obj.line[line_x];
-        if ((mode == 2) || (!opx->has) || (priority < opx->priority)) {
-            switch (mode) {
-                case 3: // bitmap
-                case 1: // translucent iirc?
-                case 0: {
-                    if (!is_transparent) {
-                        opx->has = 1;
-                        opx->color = c;
-                        opx->translucent_sprite = mode;
-                    }
-                    opx->priority = priority;
-                    opx->mosaic_sprite = mosaic;
-                    break;
-                }
-                case 2: {
-                    if (!is_transparent) eng->window[NDS_WINOBJ].inside[line_x] = 1;
-                    break;
-                }
-            }
+        }
+        union NDS_PX *opx = &eng->obj.line[line_x];
+
+        if (mypx.has) {
+            if (mode == 2) eng->window[NDS_WINOBJ].inside[line_x] = 1;
+            else opx->u = mypx.u;
+        }
+        else {
+            if (!opx->has)
+                opx->u = mypx.u;
         }
     }
 }
@@ -350,12 +354,14 @@ static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
     // (GBA) Each OBJ takes:
     // n*1 cycles per pixel
     // 10 + n*2 per pixel if rotated/scaled
-    for (u32 oam_offset = 0; oam_offset <= (127 * 8); oam_offset += 8) {
-        if (eng->obj.drawing_cycles < 0) {
-            printf("\nNO DRAW CYCLES LEFT!");
-            return;
+    for (i32 prio = 3; prio >= 0; prio--) {
+        for (i32 i = 127; i >= 0; i--) {
+            if (eng->obj.drawing_cycles < 0) {
+                printf("\nNO DRAW CYCLES LEFT!");
+                return;
+            }
+            draw_obj_on_line(this, eng, i * 8, prio);
         }
-        draw_obj_on_line(this, eng, oam_offset);
     }
 }
 
@@ -410,7 +416,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     i32 screen_y = (grid_y >> 5) & 1;
 
     u32 base = eng->io.bg.screen_base + bg->screen_base_block + (grid_y % 32) * 64;
-    struct NDS_PX *buffer = bg->line;
+    union NDS_PX *buffer = bg->line;
     i32 last_encoder = -1;
     u16 encoder;
 
@@ -421,7 +427,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
     u32 base_adjust = sxm[bg->screen_size];
     base += (screen_x * sxm[bg->screen_size]) + (screen_y * sym[bg->screen_size]);
 
-    struct NDS_PX tile[8] = {};
+    union NDS_PX tile[8] = {};
     if (screen_x == 1) base_adjust *= -1;
     u32 tile_base = bg->character_base_block + eng->io.bg.character_base;
     do {
@@ -479,7 +485,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
             }
 
             if (draw_x >= 0 && draw_x <= 248) {
-                memcpy(&buffer[draw_x], &tile[0], sizeof(struct NDS_PX) * 8);
+                memcpy(&buffer[draw_x], &tile[0], sizeof(union NDS_PX) * 8);
                 draw_x += 8;
             }
             else {
@@ -490,12 +496,12 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
                     x = -draw_x;
                     draw_x = 0;
                     for (; x < max; x++) {
-                        memcpy(&buffer[draw_x++], &tile[x], sizeof(struct NDS_PX));
+                        memcpy(&buffer[draw_x++], &tile[x], sizeof(union NDS_PX));
                     }
                 } else {
                     max -= draw_x - 248;
                     for (; x < max; x++) {
-                        memcpy(&buffer[draw_x++], &tile[x], sizeof(struct NDS_PX));
+                        memcpy(&buffer[draw_x++], &tile[x], sizeof(union NDS_PX));
                     }
                     break;
                 }
@@ -529,7 +535,7 @@ static void affine_line_end(struct NDS *this, struct NDSENG2D *eng, struct NDS_P
     }
 }
 
-typedef void (*affinerenderfunc)(struct NDS *, struct NDSENG2D *, struct NDS_PPU_bg *, i32 x, i32 y, struct NDS_PX *, void *);
+typedef void (*affinerenderfunc)(struct NDS *, struct NDSENG2D *, struct NDS_PPU_bg *, i32 x, i32 y, union NDS_PX *, void *);
 
 // map_base, block_width, tile_base
 
@@ -539,7 +545,7 @@ struct affine_normal_xtradata {
     i32 width, height;
 };
 
-static void affine_normal(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
+static void affine_normal(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
     u32 tile_number = read_vram_bg(this, eng, xd->map_base + (y >> 3) * xd->block_width + (x >> 3), 1);
@@ -588,7 +594,7 @@ static void render_affine_loop(struct NDS *this, struct NDSENG2D *eng, struct ND
     affine_line_end(this, eng, bg);
 }
 
-static void affine_rotodc(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
+static void affine_rotodc(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
 
@@ -602,7 +608,7 @@ static void affine_rotodc(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU
     }
 }
 
-static void affine_rotobpp8(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
+static void affine_rotobpp8(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
 
@@ -616,7 +622,7 @@ static void affine_rotobpp8(struct NDS *this, struct NDSENG2D *eng, struct NDS_P
     }
 }
 
-static void affine_rotobpp16(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, struct NDS_PX *out, void *xtra)
+static void affine_rotobpp16(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
     u32 encoder = read_vram_bg(this, eng, xd->map_base + ((y >> 3) * xd->block_width + (x >> 3)) * 2, 2);
@@ -731,7 +737,7 @@ static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
         bg = &eng->bg[i];
         if (!bg->enable || !bg->mosaic_enable) continue;
         u32 mosaic_counter = 0;
-        struct NDS_PX *src;
+        union NDS_PX *src;
         for (u32 x = 0; x < 256; x++) {
             if (mosaic_counter == 0) {
                 src = &bg->line[x];
@@ -746,19 +752,19 @@ static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
     }
 
     // Now do sprites, which is a bit different
-    struct NDS_PX *src = &eng->obj.line[0];
+    union NDS_PX *src = &eng->obj.line[0];
     u32 mosaic_counter = 0;
     for (u32 x = 0; x < 256; x++) {
-        struct NDS_PX *current = &eng->obj.line[x];
-        if (!current->mosaic_sprite || !src->mosaic_sprite || (mosaic_counter == 0))  {
+        union NDS_PX *current = &eng->obj.line[x];
+        if (!current->sp_mosaic || !src->sp_mosaic || (mosaic_counter == 0))  {
             src = current;
         }
         else {
             current->has = src->has;
             current->color = src->color;
             current->priority = src->priority;
-            current->translucent_sprite = src->translucent_sprite;
-            current->mosaic_sprite = src->mosaic_sprite;
+            current->sp_translucent = src->sp_translucent;
+            current->sp_mosaic = src->sp_mosaic;
         }
         mosaic_counter = (mosaic_counter + 1) % eng->mosaic.obj.hsize;
     }
@@ -778,8 +784,23 @@ static inline struct NDS_PPU_window *get_active_window(struct NDS *this, struct 
     return active_window;
 }
 
-static void find_targets_and_priorities(u32 bg_enables[6], struct NDS_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x, u32 *actives)
+static void find_targets_and_priorities(u32 bg_enables[6], union NDS_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x, u32 *actives)
 {
+/*
+ * MelonDS algorithm:
+ * for (priority = 3; priority >= 0; priority--) {
+ *   for (u32 bg = 3; bg >= 0; bg--) {
+ *       draw_bg(priority);
+ *   }
+ *   for each pixel:
+ *       if sprite has pixel at this priority, overwrite.
+ *
+ *   on ANYTHING overwrite ANYTHING ELSE, move target right
+ *
+ *   so, priority in same level works like this:
+ *      sprite, bg0, bg1, bg2, bg3, backdrop
+ */
+    // Outputs here. 5 = backdrop, 4-1 = bg 3-0, 0 = sprite.
     u32 laout = 5;
     u32 lbout = 5;
 
@@ -851,15 +872,16 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
     struct NDS_PPU_window *active_window = get_active_window(this, eng, x);
     if (active_window) actives = active_window->active;
 
-    struct NDS_PX *sp_px = &eng->obj.line[x];
-    struct NDS_PX empty_px;
+    union NDS_PX *sp_px = &eng->obj.line[x];
+    union NDS_PX empty_px;
     empty_px.color=read_pram_bg(this, eng, 0, 2);
     empty_px.priority=4;
-    empty_px.translucent_sprite=0;
+    empty_px.sp_translucent=0;
     empty_px.has=1;
+
     sp_px->has &= obj_enable;
 
-    struct NDS_PX *layers[6] = {
+    union NDS_PX *layers[6] = {
             sp_px,
             &eng->bg[0].line[x],
             &eng->bg[1].line[x],
@@ -884,15 +906,16 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
     // Blending ONLY happens if the topmost pixel is a valid A target and the next-topmost is a valid B target
     // Brighten/darken only happen if topmost pixel is a valid A target
 
-    struct NDS_PX *target_a = layers[target_a_layer];
-    struct NDS_PX *target_b = layers[target_b_layer];
+    union NDS_PX *target_a = layers[target_a_layer];
+    union NDS_PX *target_b = layers[target_b_layer];
 
     u32 blend_b = target_b->color;
 
+
     u32 output_color = target_a->color;
-    if (actives[5] || (target_a->has && target_a->translucent_sprite &&
+    if (actives[5] || (target_a->has && target_a->sp_translucent &&
                                   eng->blend.targets_b[target_b_layer])) { // backdrop is contained in active for the highest-priority window OR above is a semi-transparent sprite & below is a valid target
-        if (target_a->has && target_a->translucent_sprite &&
+        if (target_a->has && target_a->sp_translucent &&
             eng->blend.targets_b[target_b_layer]) { // above is semi-transparent sprite and below is a valid target
             output_color = gba_alpha(output_color, blend_b, eng->blend.use_eva_a, eng->blend.use_eva_b);
         } else if (mode == 1 && eng->blend.targets_a[target_a_layer] &&
@@ -1170,10 +1193,10 @@ static void draw_line(struct NDS *this, u32 eng_num)
 
     for (u32 bgnum = 0; bgnum < 4; bgnum++) {
         memcpy(this->dbg_info.eng[eng_num].line[this->clock.ppu.y].bg[bgnum].buf,
-               eng->bg[bgnum].line, sizeof(struct NDS_PX) * 256);
+               eng->bg[bgnum].line, sizeof(union NDS_PX) * 256);
     }
     memcpy(this->dbg_info.eng[eng_num].line[this->clock.ppu.y].sprite_buf, eng->obj.line,
-           sizeof(struct NDS_PX) * 256);
+           sizeof(union NDS_PX) * 256);
 
     // Then we will pixel output it to the screen...
     u16 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);

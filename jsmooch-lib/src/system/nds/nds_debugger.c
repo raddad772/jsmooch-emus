@@ -480,6 +480,7 @@ static void print_layer_info(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, 
         else {
             debugger_widgets_textbox_sprintf(tb, "disp_overflow:%d", bg->display_overflow);
         }
+        debugger_widgets_textbox_sprintf(tb, "  priority:%d",  bg->priority);
     }
     else {
         debugger_widgets_textbox_sprintf(tb, "\n OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
@@ -601,7 +602,7 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
     for (u32 y = 0; y < 192; y++) {
         //struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
-        struct NDS_PX *px_line;
+        union NDS_PX *px_line;
         if (layernum->value < 4) {
             px_line = this->dbg_info.eng[engrg->value].line[y].bg[layernum->value].buf;
         }
@@ -609,17 +610,47 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
             px_line = this->dbg_info.eng[engrg->value].line[y].sprite_buf;
         }
         for (u32 x = 0; x < 256; x++) {
-            if (attrkind->value == 0) {
-                if (px_line[x].has) {
-                    u32 c = px_line[x].color;
-                    out_line[x] = gba_to_screen(c);
-                }
-                else {
-                    out_line[x] = 0xFF000000;
-                }
-            }
-            else {
-                out_line[x] = 0xFF000000 | (px_line[x].has * 0xFFFFFF);
+            switch(attrkind->value) {
+                case 0:
+                    if (px_line[x].has) {
+                        u32 c = px_line[x].color;
+                        out_line[x] = gba_to_screen(c);
+                    }
+                    else {
+                        out_line[x] = 0xFF000000;
+                    }
+                    break;
+                case 1:
+                    out_line[x] = 0xFF000000 | (px_line[x].has * 0xFFFFFF);
+                    break;
+                case 2: {
+                    u32 v = px_line[x].priority + 1;
+                    assert(px_line[x].priority < 5);
+                    float f = ((float)v) / 5.0f;
+                    f *= 255.0f;
+                    v = (u32)f;
+                    out_line[x] = v | (v << 8) | (v << 16) | 0xFF000000;
+                    break; }
+                case 3: {
+                    if (px_line[x].has) {
+                        u32 v = px_line[x].dbg_mode;
+                        // red   purple     yellow     white
+                        static const u32 mode_colors[4] = {0x0000FF, 0xFF00FF, 0x00FFFF, 0xFFFFFF};
+                        out_line[x] = 0xFF000000 | mode_colors[v];
+                    }
+                    break; }
+                case 4: { // sp_translucent
+                    if (px_line[x].sp_translucent) {
+                        out_line[x] = 0xFFFFFFFF;
+                    }
+                    break; }
+                case 5: { // BPP. 4=red, 8=green, 16=blue
+                    if (px_line[x].has) {
+                        static const u32 mode_colors[4] = {0xFF0000FF, 0xFF00FF00, 0xFFFF0000, 0xFFFFFFFF};
+                        out_line[x] = mode_colors[px_line[x].dbg_bpp];
+                    }
+                    break; }
+
             }
         }
     }
@@ -839,6 +870,9 @@ static void setup_image_view_ppu_layers(struct NDS *this, struct debugger_interf
     debugger_widget_radiogroup_add_button(rg, "RGB", 0, 1);
     debugger_widget_radiogroup_add_button(rg, "Has", 1, 1);
     debugger_widget_radiogroup_add_button(rg, "Priority", 2, 1);
+    debugger_widget_radiogroup_add_button(rg, "Mode", 3, 1);
+    debugger_widget_radiogroup_add_button(rg, "Sp.Trnslcnt.", 4, 0);
+    debugger_widget_radiogroup_add_button(rg, "BPP", 5, 1);
 
     debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
 }

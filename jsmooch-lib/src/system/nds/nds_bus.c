@@ -201,7 +201,12 @@ static void buswr9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     u8 *ptr = this->mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK];
     if (ptr) return cW[sz](ptr, addr & 0x3FFF, val);
 
-    printf("\nInvalid VRAM write unmapped addr:%08x sz:%d val:%08x", addr, sz, val);
+    static int a = 10;
+    if (a) {
+        printf("\nInvalid VRAM write unmapped addr:%08x sz:%d val:%08x", addr, sz, val);
+        a--;
+        if (a == 0) printf("\nMuting invalid VRAM write messages...");
+    }
     //dbg_break("Unmapped VRAM9 write", this->clock.master_cycle_count7);
 }
 

@@ -329,7 +329,7 @@ static void sample_audio(struct NDS* this)
     float *outptr = (float *)this->audio.buf->ptr;
     for (u32 i = 0; i < this->audio.buf->samples_len; i++) {
         if (this->apu.buffer.len < 1) {
-            printf("\nUNDERRUN %d SAMPLES!", this->audio.buf->samples_len - i);
+            //printf("\nUNDERRUN %d SAMPLES!", this->audio.buf->samples_len - i);
             return;
         }
         float s = ((((float)(this->apu.buffer.samples[this->apu.buffer.head] >> 22)) + 512.0f) / 511.5f) - 1.0f;

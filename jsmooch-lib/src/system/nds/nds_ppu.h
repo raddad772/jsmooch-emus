@@ -35,17 +35,24 @@ struct NDS_PPU_window {
     u8 inside[256]; // for sprites
 };
 
-struct NDS_PX {
-    u32 color;
-    u32 priority;
-    u32 has;
-    u32 translucent_sprite;
-    u32 mosaic_sprite;
+union NDS_PX {
+    struct {
+        u32 color : 18;
+        u32 priority : 3; // =21
+        u32 has : 1; // =22
+        u32 sp_translucent : 1; //=23
+        u32 sp_mosaic : 1; //=24
+        u32 alpha : 4; // =28
+
+        u32 dbg_mode : 2; // = 30
+        u32 dbg_bpp : 2; // =32. 0=4bpp, 1=8bpp, 2=16bpp
+    };
+    u32 u;
 };
 
 struct NDS_PPU_OBJ {
     u32 enable;
-    struct NDS_PX line[256];
+    union NDS_PX line[256];
     i32 drawing_cycles;
 };
 
@@ -173,7 +180,7 @@ struct NDS_PPU {
             i32 x_lerp, y_lerp;
             i32 fx, fy;
 
-            struct NDS_PX line[256+8];
+            union NDS_PX line[256+8];
 
             u32 mosaic_y;
 

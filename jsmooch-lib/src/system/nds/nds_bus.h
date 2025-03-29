@@ -357,7 +357,7 @@ struct NDS {
         struct NDS_DBG_eng {
             struct NDS_DBG_line {
                 struct NDS_DBG_line_bg {
-                    struct NDS_PX buf[256];
+                    union NDS_PX buf[256];
                     u32 hscroll, vscroll;
                     i32 hpos, vpos;
                     i32 x_lerp, y_lerp;
@@ -369,7 +369,7 @@ struct NDS {
                     u32 priority;
                     u32 bpp8;
                 } bg[4];
-                struct NDS_PX sprite_buf[256];
+                union NDS_PX sprite_buf[256];
                 u16 dispcap_px[256];
                 u32 bg_mode;
             } line[192];
