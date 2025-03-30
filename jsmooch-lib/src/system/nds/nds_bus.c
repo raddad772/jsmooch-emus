@@ -201,7 +201,7 @@ static void buswr9_vram(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     u8 *ptr = this->mem.vram.map.arm9[NDSVRAMSHIFT(addr) & NDSVRAMMASK];
     if (ptr) return cW[sz](ptr, addr & 0x3FFF, val);
 
-    static int a = 10;
+    static int a = 2;
     if (a) {
         printf("\nInvalid VRAM write unmapped addr:%08x sz:%d val:%08x", addr, sz, val);
         a--;
@@ -1144,6 +1144,8 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
         case 0x0400400B:
         case 0x04004010:
         case 0x04004011:
+        case 0x04004004:
+        case 0x04004005:
             return 0;
     }
     printf("\nUnhandled BUSRD9IO8 addr:%08x", addr);
@@ -1914,7 +1916,7 @@ static void trace_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     struct NDS *this = (struct NDS *)ptr;
-    this->waitstates.current_transaction++;
+    if (has_effect) this->waitstates.current_transaction++;
     u32 v;
 
     if (addr < 0x10000000) v = this->mem.rw[0].read[(addr >> 24) & 15](this, addr, sz, access, has_effect);

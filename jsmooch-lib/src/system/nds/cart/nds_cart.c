@@ -342,9 +342,13 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val, u32 is_cmd)
             this->cart.RAM.data_out.b8[2] = this->cart.RAM.status.u;
             this->cart.RAM.data_out.b8[3] = this->cart.RAM.status.u;
             break;
-        default:
-            printf("\nUnhandled flash SPI cmd %02x", this->cart.RAM.cmd);
-            break;
+        default: {
+            static int a = 1;
+            if (a) {
+                printf("\nUnhandled flash SPI cmd(s) %02x", this->cart.RAM.cmd);
+                a = 0;
+            }
+            break; }
     }
 }
 

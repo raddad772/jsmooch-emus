@@ -39,12 +39,27 @@ static void buffer_pcm8(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
 
 static void buffer_pcm16(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
 {
-    static int a = 1;
-    if (a) {
-        printf("\nWARN IMPLEMENT PCM16");
-        a = 0;
+    // Since we move in 32-bit words, we move 2 samples at a time for PCM16.
+    // We must read at least that many samples.
+    i32 match_num = num;
+    if (num & 1) num++;
+    num >>= 1;
+    for (u32 i = 0; i < num; i++) {
+        u32 word = NDS_mainbus_read7(this, ch->status.addr, 4, 0, 0);
+        ch->status.addr += 4;
+        for (u32 j = 0; j < 2; j++) {
+            match_num--;
+            if (match_num < 0) {
+                ch->status.sample_input_buffer.samples[ch->status.sample_input_buffer.tail] = word & 0xFFFF;
+                ch->status.sample_input_buffer.tail = (ch->status.sample_input_buffer.tail + 1) & 15;
+                ch->status.sample_input_buffer.len++;
+            }
+            else {
+                ch->status.sample = word & 0xFFFF;
+            }
+            word >>= 16;
+        }
     }
-
 }
 
 static void buffer_adpcm(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
@@ -94,19 +109,15 @@ static void pop_samples(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
 
     switch(ch->latched.format) {
         case NDS_APU_FMT_pcm8:
-            // buffer 4 PCM8 samples
             buffer_pcm8(this, ch, num);
             break;
         case NDS_APU_FMT_pcm16:
-            // buffer 4 PCM16 samples
             buffer_pcm16(this, ch, num);
             break;
         case NDS_APU_FMT_ima_adpcm:
-            // buffer some ADPCM samples
             buffer_adpcm(this, ch, num);
             break;
         case NDS_APU_FMT_psg:
-            // buffer some PSG samples
             buffer_psg(this, ch, num);
             break;
     }
@@ -285,7 +296,12 @@ static void calculate_ch(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
         ch->status.playing = 1;
         // clear input data FIFO, read first ADPM header, setup PSG state, etc.
         ch->status.sample_input_buffer.head = ch->status.sample_input_buffer.tail = ch->status.sample_input_buffer.len = 0;
+        ch->status.pos = 0;
+        ch->status.addr = ch->latched.source_addr;
         switch(ch->latched.format ) {
+            case NDS_APU_FMT_pcm8:
+            case NDS_APU_FMT_pcm16:
+                break;
             case NDS_APU_FMT_ima_adpcm:
                 // TODO: this
                 break;

@@ -30,6 +30,8 @@ struct NDS_APU {
 
             u32 counter;
 
+            u32 addr;
+
             i16 sample;
 
             u32 mix_buffer_tail; // Current position in the mixing buffer
