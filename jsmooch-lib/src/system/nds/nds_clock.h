@@ -30,6 +30,7 @@ struct NDS_clock {
         } apu;
         struct {
             u64 hz;
+            u64 hz_2;
         } arm7;
 
         struct {

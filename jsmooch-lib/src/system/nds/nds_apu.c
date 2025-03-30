@@ -112,86 +112,58 @@ static void pop_samples(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
     }
 }
 
-static void do_run_to_current(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
+static void do_run_to_current(struct NDS *this, struct NDS_APU_CH *ch)
 {
     if (!ch->status.playing) return;
-    if (cur_clock < ch->status.next_timecode) return;
-    if (ch->latched.period < 4) {
-        ch->status.playing = 0;
-        return;
-    }
+    if (this->apu.buffer.status.total_samples < ch->status.next_timecode) return;
 
-    // Determine how many samples ahead the FIFO is
-    u32 f_tail = ch->status.mix_buffer_tail;
-    u32 f_head = this->apu.buffer.head;
-    if (f_tail < f_head) f_tail += NDS_APU_MAX_SAMPLES;
-    u32 our_len = f_tail - f_head;
-
-    i32 master_samples_behind = (i32)this->apu.buffer.len - (i32)our_len;
-
-    if (master_samples_behind < 0) return;
-
-    // Determine our starting "sample value," 0-1, a fraction representing where we "currently are"
-    // Also my_samples_per_master_sample
-    mf number_of_clocks_passed = cur_clock - ch->status.next_timecode;
-
-    mf clocks_per_sample = (mf)(this->clock.timing.arm7.hz >> 1) / (mf)ch->latched.period;
-
-    mf number_of_mine_to_do = clocks_per_sample * number_of_clocks_passed;
-
-    // let's say it's 200 for master sample, 100 for mine
-    mf clocks_per_master_sample = (mf)(this->clock.timing.arm7.hz >> 1) / (mf)this->clock.timing.apu.hz;
-    mf my_samples_per_master_sample = clocks_per_master_sample / clocks_per_sample;
-
-    // Determine when next sample will be played AFTER I play mine
-    mf number_of_mine_round = floorl(number_of_mine_to_do) * clocks_per_sample;
-    ch->status.last_timecode += number_of_mine_round;
-    ch->status.next_timecode = ch->status.last_timecode + clocks_per_master_sample;
-
-    // Now do the samples!
-    for (u32 i = 0; i < master_samples_behind; i++) {
-        number_of_mine_to_do += my_samples_per_master_sample;
-        mf rn = floorl(number_of_mine_to_do);
-        if (rn > .2) {
-            number_of_mine_to_do -= rn;
-            //pop_my_samples(this, ch, (u32)number_of_mine_to_do);
+    while(ch->status.my_total_samples < this->apu.buffer.status.total_samples) {
+        ch->status.sampling_counter += ch->status.freq;
+        if (ch->status.sampling_counter >= 32768) {
+            u64 num_to_pop = ch->status.sampling_counter / 32768;
+            ch->status.sampling_counter %= 32768;
+            pop_samples(this, ch, num_to_pop);
         }
-
         this->apu.buffer.samples[ch->status.mix_buffer_tail] += ch->status.sample;
         ch->status.mix_buffer_tail = (ch->status.mix_buffer_tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
+        ch->status.my_total_samples++;
     }
+
+    ch->status.last_timecode = this->apu.buffer.status.total_samples;
+    u64 num_to_wait = (32768 - ch->status.sampling_counter) / ch->status.freq;
+    ch->status.next_timecode = ch->status.last_timecode + (num_to_wait ? num_to_wait : 1);
 }
 
 static void run_master_to_current(struct NDS *this, u64 cur_clock)
 {
-    if (cur_clock < this->apu.buffer.status.next_timecode) return;
-
-    // Determine number of samples...
-    u64 num_clock = cur_clock;
-
-    mf cycles_per_sample = (mf)(this->clock.timing.arm7.hz >> 1) / (mf)this->clock.timing.apu.hz;
-
-    mf num_samples_to_play = (mf)num_clock / cycles_per_sample;
-    if (num_samples_to_play < 1) {
-        printf("\nWHAT UNDERRUN HERE WHY!?");
-        this->apu.buffer.status.next_timecode = ((u64)floorl(this->apu.buffer.status.total_sample_len * cycles_per_sample)) + 1;
+    if (cur_clock < this->apu.buffer.status.next_timecode) {
         return;
     }
 
-    mf num_to_play = floorl(num_samples_to_play);
+    u64 num_clocks = cur_clock - this->apu.buffer.status.last_timecode;
+    this->apu.buffer.status.last_timecode = cur_clock;
 
-    this->apu.buffer.status.total_sample_len += num_to_play;
-    this->apu.buffer.status.next_timecode = ((u64)floorl(this->apu.buffer.status.total_sample_len * cycles_per_sample)) + 1;
+    this->apu.buffer.status.sampling_counter += num_clocks * 32768;
+    u64 num_samples_to_play = this->apu.buffer.status.sampling_counter / this->clock.timing.arm7.hz;
+    this->apu.buffer.status.sampling_counter -= this->clock.timing.arm7.hz * num_samples_to_play;
+    this->apu.buffer.status.next_timecode = cur_clock + this->apu.buffer.status.sampling_counter;
 
-    u32 num = (u32)num_to_play;
-    for (u32 i = 0; i < num; i++) {
+    // Determine number of samples we need to catch up!
+    if (num_samples_to_play < 1) {
+        printf("\nWHAT UNDERRUN HERE WHY!?");
+        return;
+    }
+
+    this->apu.buffer.status.total_samples += num_samples_to_play;
+    this->apu.buffer.len += num_samples_to_play;
+
+    for (u64 i = 0; i < num_samples_to_play; i++) {
         if (this->apu.buffer.len >= NDS_APU_MAX_SAMPLES) {
             printf("\nCRAP HERE YO!");
             return;
         }
         this->apu.buffer.samples[this->apu.buffer.tail] = 0;
         this->apu.buffer.tail = (this->apu.buffer.tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
-        this->apu.buffer.len++;
     }
 }
 
@@ -199,12 +171,12 @@ static void run_to_current(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_cloc
 {
     run_master_to_current(this, cur_clock);
     if (ch) {
-        do_run_to_current(this, ch, cur_clock);
+        do_run_to_current(this, ch);
     }
     else {
         for (u32 i = 0; i < 16; i++) {
             ch = &this->apu.ch[i];
-            do_run_to_current(this, ch, cur_clock);
+            do_run_to_current(this, ch);
         }
     }
 }
@@ -277,13 +249,14 @@ static u32 apu_read8(struct NDS *this, u32 addr)
     return 0;
 }
 
-/* So, each cycle, add 32768 to a counter.
- * When counter >= arm7.hz, -= arm7.hz, new sample.
- */
-
 static inline void latch_io_ch(struct NDS *this, struct NDS_APU_CH *ch)
 {
     memcpy(&ch->latched, &ch->io, sizeof(struct NDS_APU_CH_params));
+    ch->status.freq = this->clock.timing.arm7.hz_2 / ch->latched.period;
+    if (ch->latched.period < 4) {
+        ch->status.playing = 0;
+        return;
+    }
 }
 
 static void latch_io(struct NDS *this, struct NDS_APU_CH *ch) {
@@ -303,21 +276,30 @@ static void calculate_ch(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
     if (!ch->latched.status) return;
 
     // Check if we WERE off but are now on
-    if (!ch->status.playing) {
+    u32 trigger = !ch->status.playing;
+
+
+    if (trigger) {
         // trigger channel.
         printf("\nTRIGGER CH %d", ch->num);
         ch->status.playing = 1;
         // clear input data FIFO, read first ADPM header, setup PSG state, etc.
+        ch->status.sample_input_buffer.head = ch->status.sample_input_buffer.tail = ch->status.sample_input_buffer.len = 0;
+        switch(ch->latched.format ) {
+            case NDS_APU_FMT_ima_adpcm:
+                // TODO: this
+                break;
+            case NDS_APU_FMT_psg:
+                // TODO: this
+                break;
+            default:
+                break;
+        }
+        ch->status.sampling_counter = 0;
+        ch->status.last_timecode = this->apu.buffer.status.total_samples;
+
+        ch->status.next_timecode = ch->status.last_timecode + (32768 / ch->status.freq);
     }
-
-    // calculate when next sample will be
-    u64 cycles_per_sample = (this->clock.timing.arm7.hz >> 1) / ch->latched.period;
-
-    ch->status.last_timecode = cur_clock;
-    ch->status.next_timecode = ch->status.last_timecode + cycles_per_sample;
-
-    // Run the channel up to here if needed
-    run_to_current(this, ch, cur_clock);
 }
 
 static void calculate_ch_settings_based_on_current_values(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
@@ -402,7 +384,11 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
             return; }
 
         case R7_SOUNDxCNT+3: {
-            write_sndcnt_hi(this, ch, val);
+            ch->io.wave_duty = val & 7;
+            ch->io.repeat_mode = (val >> 3) & 3;
+            ch->io.format = (val >> 5) & 3;
+            ch->io.status = (val >> 7) & 1;
+            change_params(this, ch);
             return; }
 
         case R7_SOUNDxSAD+0:

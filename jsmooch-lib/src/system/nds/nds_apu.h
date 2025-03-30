@@ -32,10 +32,14 @@ struct NDS_APU {
 
             i16 sample;
 
-            long double my_total_sample_len;
-            long double next_timecode;
-            long double last_timecode;
             u32 mix_buffer_tail; // Current position in the mixing buffer
+
+            u64 last_timecode, next_timecode;
+            u64 my_total_samples;
+
+            u64 freq;
+            u64 last_freq;
+            i64 sampling_counter;
 
             struct {
                 u32 len;
@@ -91,9 +95,11 @@ struct NDS_APU {
         u32 len, head, tail;
         struct {
             u64 next_timecode;
+            u64 last_timecode;
 
-            long double total_sample_len;
-            // These start at 0
+            u64 total_samples;
+
+            u64 sampling_counter;
         } status;
     } buffer;
 };
