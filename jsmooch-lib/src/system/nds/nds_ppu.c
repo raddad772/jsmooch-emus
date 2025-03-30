@@ -344,7 +344,8 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
 
 static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
 {
-    eng->obj.drawing_cycles = eng->io.hblank_free ? 1530 : 2124;
+    //eng->obj.drawing_cycles = eng->io.hblank_free ? 1530 : 2124;
+    eng->obj.drawing_cycles = 10000;
 
     memset(eng->obj.line, 0, sizeof(eng->obj.line));
     struct NDS_PPU_window *w = &eng->window[NDS_WINOBJ];
@@ -357,7 +358,7 @@ static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
     for (i32 prio = 3; prio >= 0; prio--) {
         for (i32 i = 127; i >= 0; i--) {
             if (eng->obj.drawing_cycles < 0) {
-                printf("\nNO DRAW CYCLES LEFT!");
+                //printf("\nNO DRAW CYCLES LEFT!");
                 return;
             }
             draw_obj_on_line(this, eng, i * 8, prio);
@@ -1685,26 +1686,25 @@ void NDS_PPU_write9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 #define SET16L(thing, to) thing = (thing & 0xFF00) | to
 #define SET16H(thing, to) thing = (thing & 0xFF) | (to << 8)
 
-        //case R9_BG0HOFS+0: SET16L(eng->bg[0].hscroll, val); return;
-        case R9_BG0HOFS+0: eng->bg[0].hscroll = val & 0x1FF; return;
-        case R9_BG0HOFS+1: return;
-        case R9_BG0VOFS+0: eng->bg[0].vscroll = val & 0x1FF; return;
-        case R9_BG0VOFS+1: return;
+        case R9_BG0HOFS+0: SET16L(eng->bg[0].hscroll, val); return;
+        case R9_BG0HOFS+1: SET16H(eng->bg[0].hscroll, val); return;
+        case R9_BG0VOFS+0: SET16L(eng->bg[0].vscroll, val); return;
+        case R9_BG0VOFS+1: SET16H(eng->bg[0].vscroll, val); return;
 
-        case R9_BG1HOFS+0: eng->bg[1].hscroll = val & 0x1FF; return;
-        case R9_BG1HOFS+1: return;
-        case R9_BG1VOFS+0: eng->bg[1].vscroll = val & 0x1FF; return;
-        case R9_BG1VOFS+1: return;
+        case R9_BG1HOFS+0: SET16L(eng->bg[1].hscroll, val); return;
+        case R9_BG1HOFS+1: SET16H(eng->bg[1].hscroll, val); return;
+        case R9_BG1VOFS+0: SET16L(eng->bg[1].vscroll, val); return;
+        case R9_BG1VOFS+1: SET16H(eng->bg[1].vscroll, val); return;
 
-        case R9_BG2HOFS+0: eng->bg[2].hscroll = val & 0x1FF; return;
-        case R9_BG2HOFS+1: return;
-        case R9_BG2VOFS+0: eng->bg[2].vscroll = val & 0x1FF; return;
-        case R9_BG2VOFS+1: return;
+        case R9_BG2HOFS+0: SET16L(eng->bg[2].hscroll, val); return;
+        case R9_BG2HOFS+1: SET16H(eng->bg[2].hscroll, val); return;
+        case R9_BG2VOFS+0: SET16L(eng->bg[2].vscroll, val); return;
+        case R9_BG2VOFS+1: SET16H(eng->bg[2].vscroll, val); return;
 
-        case R9_BG3HOFS+0: eng->bg[3].hscroll = val & 0x1FF; return;
-        case R9_BG3HOFS+1: return;
-        case R9_BG3VOFS+0: eng->bg[3].vscroll = val & 0x1FF; return;
-        case R9_BG3VOFS+1: return;
+        case R9_BG3HOFS+0: SET16L(eng->bg[3].hscroll, val); return;
+        case R9_BG3HOFS+1: SET16H(eng->bg[3].hscroll, val); return;
+        case R9_BG3VOFS+0: SET16L(eng->bg[3].vscroll, val); return;
+        case R9_BG3VOFS+1: SET16H(eng->bg[3].vscroll, val); return;
 
 #define BG2 2
 #define BG3 3

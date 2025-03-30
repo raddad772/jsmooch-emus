@@ -308,7 +308,6 @@ static void calculate_ch(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
         printf("\nTRIGGER CH %d", ch->num);
         ch->status.playing = 1;
         // clear input data FIFO, read first ADPM header, setup PSG state, etc.
-
     }
 
     // calculate when next sample will be

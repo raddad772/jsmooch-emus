@@ -608,7 +608,6 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
                 if (p->attr.depth_test_mode == 0) comparison = depth < line->depth[x];
                 else comparison = (u32)depth == line->depth[x];
-                comparison = 1;
                 u32 shading_mode = 1;
                 if (comparison) {
                     u32 pix_r6, pix_g6, pix_b6, pix_a6;
