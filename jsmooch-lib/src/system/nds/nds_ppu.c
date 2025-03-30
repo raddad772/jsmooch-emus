@@ -390,8 +390,9 @@ static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
     struct NDS_RE_LINEBUFFER *re_line = &this->re.out.linebuffer[line_num];
     for (u32 x = 0; x < 256; x++) {
         bg->line[x].color = C18to15(re_line->rgb[x]);
-        bg->line[x].has = 1;
+        bg->line[x].has = re_line->has[x];
         bg->line[x].priority = bg->priority;
+        bg->line[x].alpha = re_line->alpha[x];
     }
 }
 
@@ -1079,7 +1080,11 @@ static void run_dispcap(struct NDS *this)
 
     u32 vram_write_block = this->ppu.io.DISPCAPCNT.vram_write_block;
     if (this->mem.vram.io.bank[vram_write_block].mst != 0) {
-        printf("\nCANT OUTPUT TO UNMAPPED BLOCK...!?");
+        static int a = 1;
+        if (a) {
+            printf("\nWARN: CANT OUTPUT TO UNMAPPED BLOCK...!?");
+            a = 0;
+        }
         return;
     }
     static const int csize[4][2] = {{128, 128}, {256, 64}, {256, 128}, {256, 192} };

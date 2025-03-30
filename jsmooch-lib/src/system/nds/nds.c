@@ -329,7 +329,7 @@ static void sample_audio(struct NDS* this)
     float *outptr = (float *)this->audio.buf->ptr;
     for (u32 i = 0; i < this->audio.buf->samples_len; i++) {
         if (this->apu.buffer.len < 1) {
-            //printf("\nUNDERRUN %d SAMPLES!", this->audio.buf->samples_len - i);
+            printf("\nUNDERRUN %d SAMPLES!", this->audio.buf->samples_len - i);
             return;
         }
         float s = ((((float)(this->apu.buffer.samples[this->apu.buffer.head] >> 22)) + 512.0f) / 511.5f) - 1.0f;
@@ -346,10 +346,14 @@ u32 NDSJ_finish_frame(JSM)
 {
     JTHIS;
 
-    u64 old_clock = NDS_clock_current7(this);
-    scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
-    u64 diff = NDS_clock_current7(this) - old_clock;
-    this->clock.cycles_left_this_frame -= (i64)diff;
+    u64 total = 0;
+    while (total < (this->clock.timing.frame.cycles >> 1)) {
+        u64 old_clock = NDS_clock_current7(this);
+        scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
+        u64 diff = NDS_clock_current7(this) - old_clock;
+        this->clock.cycles_left_this_frame -= (i64)diff;
+        total += diff;
+    }
     sample_audio(this);
     return 0;
 

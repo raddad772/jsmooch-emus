@@ -230,6 +230,7 @@ union NDS_RE_EXTRA_ATTR {
     u32 u;
 };
 struct NDS_RE_LINEBUFFER {
+    u32 has[256];
     u32 rgb[256];
     u16 alpha[256];
     u16 poly_id[256];

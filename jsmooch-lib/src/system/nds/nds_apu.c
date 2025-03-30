@@ -115,7 +115,7 @@ static void pop_samples(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
 static void do_run_to_current(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
 {
     if (!ch->status.playing) return;
-    if (ch->status.next_timecode < cur_clock) return;
+    if (cur_clock < ch->status.next_timecode) return;
     if (ch->latched.period < 4) {
         ch->status.playing = 0;
         return;
@@ -305,7 +305,8 @@ static void calculate_ch(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
     // Check if we WERE off but are now on
     if (!ch->status.playing) {
         // trigger channel.
-
+        printf("\nTRIGGER CH %d", ch->num);
+        ch->status.playing = 1;
         // clear input data FIFO, read first ADPM header, setup PSG state, etc.
 
     }
