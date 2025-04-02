@@ -35,12 +35,15 @@ struct NDS_APU {
             u32 real_loop_start_pos;
             u32 sampling_interval;
 
-            struct {
-                u32 len;
-                u32 head, tail;
-                i16 samples[16];
-            } sample_input_buffer;
         } status;
+
+        struct {
+            i32 tbl_idx;
+            i32 loop_tbl_idx;
+            i16 loop_sample;
+            u32 data;
+            i32 sample;
+        } adpcm;
 
         struct NDS_APU_CH_params {
             u32 vol; // 0...127
@@ -132,7 +135,6 @@ struct NDS_APU {
 };
 
 struct NDS;
-void NDS_APU_run_to_current(struct NDS *);
 void NDS_APU_init(struct NDS *);
 u32 NDS_APU_read(struct NDS *, u32 addr, u32 sz, u32 access);
 void NDS_APU_write(struct NDS *, u32 addr, u32 sz, u32 access, u32 val);

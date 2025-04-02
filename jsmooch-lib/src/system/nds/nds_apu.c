@@ -8,6 +8,22 @@
 #include "nds_apu.h"
 #include "nds_regs.h"
 
+static const i32 ima_index_table[8] = { -1, -1, -1, -1, 2, 4, 6, 8 };
+
+static const i16 ima_step_table[89] = {
+0x0007, 0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E,
+0x0010, 0x0011, 0x0013, 0x0015, 0x0017, 0x0019, 0x001C, 0x001F,
+0x0022, 0x0025, 0x0029, 0x002D, 0x0032, 0x0037, 0x003C, 0x0042,
+0x0049, 0x0050, 0x0058, 0x0061, 0x006B, 0x0076, 0x0082, 0x008F,
+0x009D, 0x00AD, 0x00BE, 0x00D1, 0x00E6, 0x00FD, 0x0117, 0x0133,
+0x0151, 0x0173, 0x0198, 0x01C1, 0x01EE, 0x0220, 0x0256, 0x0292,
+0x02D4, 0x031C, 0x036C, 0x03C3, 0x0424, 0x048E, 0x0502, 0x0583,
+0x0610, 0x06AB, 0x0756, 0x0812, 0x08E0, 0x09C3, 0x0ABD, 0x0BD0,
+0x0CFF, 0x0E4C, 0x0FBA, 0x114C, 0x1307, 0x14EE, 0x1706, 0x1954,
+0x1BDC, 0x1EA5, 0x21B6, 0x2515, 0x28CA, 0x2CDF, 0x315B, 0x364B,
+0x3BB9, 0x41B2, 0x4844, 0x4F7E, 0x5771, 0x602F, 0x69CE, 0x7462,
+0x7FFF
+};
 
 static void disable_ch(struct NDS *this, struct NDS_APU_CH *ch)
 {
@@ -127,28 +143,44 @@ static void update_len(struct NDS *this, struct NDS_APU_CH *ch)
 
 static void run_pcm8(struct NDS *this, struct NDS_APU_CH *ch)
 {
-    ch->sample = (i16)(NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos << 1), 1, 0, 0) << 8);
+    ch->sample = (i16)(NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos & 0xFFFFFFFC), 1, 0, 0) << 8);
     ch->status.pos++;
-    ch->status.word_pos = ch->status.pos >> 2;
+    ch->status.word_pos = (ch->status.pos & 0xFFFFFFFC);
 }
 
 static void run_pcm16(struct NDS *this, struct NDS_APU_CH *ch)
 {
     // addr, sz, access, effect
-    ch->sample = NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos << 1), 2, 0, 0);
+    ch->sample = NDS_mainbus_read7(this, ch->io.source_addr + ((ch->status.pos >> 1) << 2), 2, 0, 0);
     ch->status.pos++;
-    ch->status.word_pos = ch->status.pos >> 1;
+    ch->status.word_pos = ((ch->status.pos >> 1) << 2);
 }
 
 static void run_ima_adpcm(struct NDS *this, struct NDS_APU_CH *ch)
 {
-    static int a = 1;
-    if (a) {
-        printf("\nWARN: IMPLEMENT APU IMA ADPCM");
-        a = 0;
+    if ((ch->status.pos & 7) == 0) {
+        ch->adpcm.data = NDS_mainbus_read7(this, ch->io.source_addr + ((ch->status.pos >> 3) << 2) + 4, 4, 0, 0);
     }
+    u32 nibble = ch->adpcm.data & 15;
+    ch->adpcm.data >>= 4;
+
+    i32 diff = (i32)(ima_step_table[ch->adpcm.tbl_idx] * (((nibble & 7) << 1) | 1) >> 3);
+
+    if (nibble & 8) {
+        ch->adpcm.sample -= diff;
+        if (ch->adpcm.sample < -32767) ch->adpcm.sample = -32767;
+    } else {
+        ch->adpcm.sample += diff;
+        if (ch->adpcm.sample > 32767) ch->adpcm.sample = 32767;
+    }
+    ch->sample = (i16)ch->adpcm.sample;
+
+    ch->adpcm.tbl_idx += ima_index_table[nibble & 7];
+    if (ch->adpcm.tbl_idx < 0) ch->adpcm.tbl_idx = 0;
+    if (ch->adpcm.tbl_idx > 88) ch->adpcm.tbl_idx = 88;
+
     ch->status.pos++;
-    ch->status.word_pos = (ch->status.pos - 1) >> 3;
+    ch->status.word_pos = ((ch->status.pos >> 3) << 2) + 1;
 }
 
 static void run_psg(struct NDS *this, struct NDS_APU_CH *ch)
@@ -208,8 +240,13 @@ static void run_channel(void *ptr, u64 ch_num, u64 cur_clock, u32 jitter)
     }
     if (ch->io.format != NDS_APU_FMT_psg) {
         if (ch->status.pos >= ch->io.sample_len) {
-            if (ch->io.repeat_mode == NDS_APU_RM_loop_infinite)
+            if (ch->io.repeat_mode == NDS_APU_RM_loop_infinite) {
                 ch->status.pos = ch->status.real_loop_start_pos;
+                if (ch->io.format == NDS_APU_FMT_ima_adpcm) {
+                    ch->adpcm.tbl_idx = ch->adpcm.loop_tbl_idx;
+                    ch->adpcm.sample = ch->adpcm.loop_sample;
+                }
+            }
             else { // TODO: supposed to disable after the last sample finishes?
                 disable_ch(this, ch);
                 return;
@@ -245,8 +282,19 @@ static void probe_trigger(struct NDS *this, struct NDS_APU_CH *ch, u32 old_statu
 
     // Trigger channel!
     // TODO: supposed to wait 1-3 0 samples
+    if (ch->io.format == NDS_APU_FMT_ima_adpcm) {
+        u32 adpcm_header = NDS_mainbus_read7(this, ch->io.source_addr, 4, 0, 0);
+
+        ch->adpcm.sample = ch->sample = (i16)(adpcm_header & 0xFFFF);
+        ch->adpcm.tbl_idx = (adpcm_header >> 16) & 0x7F;
+        if (ch->adpcm.tbl_idx < 0) ch->adpcm.tbl_idx = 0;
+        if (ch->adpcm.tbl_idx > 88) ch->adpcm.tbl_idx = 88;
+
+        ch->adpcm.loop_sample = ch->sample;
+        ch->adpcm.loop_tbl_idx = ch->adpcm.tbl_idx;
+    }
+
     ch->status.pos = 0;
-    ch->status.sample_input_buffer.len = ch->status.sample_input_buffer.head = ch->status.sample_input_buffer.tail = 0;
     ch->sample = 0;
     ch->schedule_id = scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + ch->status.sampling_interval, ch->num, this, &run_channel, &ch->scheduled);
     ch->lfsr = 0x7FFF;
