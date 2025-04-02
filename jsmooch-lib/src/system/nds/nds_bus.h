@@ -327,6 +327,8 @@ struct NDS {
         u32 run_counter;
     } dma7[4], dma9[4];
 
+    u32 dma7_total, dma9_total;
+
     struct NDS_TIMER {
         struct {
             u32 io;

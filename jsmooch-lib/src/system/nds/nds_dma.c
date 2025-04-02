@@ -27,11 +27,6 @@ static void raise_irq_for_dma9(struct NDS *this, u32 num)
 
 static u32 dma7_go_ch(struct NDS *this, u32 num) {
     struct NDS_DMA_ch *ch = &this->dma7[num];
-    if (ch->run_counter && ch->io.enable) {
-        ch->run_counter--;
-        if (ch->run_counter == 0) NDS_dma7_start(this, ch, num);
-        else return 0;
-    }
     if ((ch->io.enable) && (ch->op.started)) {
         if (ch->op.sz == 2) {
             u16 value;
@@ -103,6 +98,7 @@ static u32 dma7_go_ch(struct NDS *this, u32 num) {
 
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
+                this->dma7_total--;
             }
         }
         return 1;
@@ -111,6 +107,7 @@ static u32 dma7_go_ch(struct NDS *this, u32 num) {
 }
 
 u32 NDS_dma7_go(struct NDS *this) {
+    if (!this->dma7_total) return 0;
     for (u32 i = 0; i < 4; i++) {
         if (dma7_go_ch(this, i)) return 1;
     }
@@ -124,6 +121,7 @@ void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
     u32 mask = ch->io.transfer_size ? ~3 : ~1;
     mask &= 0x0FFFFFFF;
     //u32 mask = 0x0FFFFFFF;
+    this->dma7_total++;
     if (ch->op.first_run) {
         ch->op.dest_addr = ch->io.dest_addr & mask;
         ch->op.src_addr = ch->io.src_addr & mask;
@@ -142,11 +140,6 @@ void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 
 static u32 dma9_go_ch(struct NDS *this, u32 num) {
     struct NDS_DMA_ch *ch = &this->dma9[num];
-    if (ch->run_counter && ch->io.enable) {
-        ch->run_counter--;
-        if (ch->run_counter == 0) NDS_dma9_start(this, ch, num);
-        else return 0;
-    }
     if ((ch->io.enable) && (ch->op.started)) {
         if (ch->op.sz == 2) {
             u16 value;
@@ -216,6 +209,7 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
 
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
+                this->dma9_total--;
             }
         }
         return 1;
@@ -224,6 +218,7 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
 }
 
 u32 NDS_dma9_go(struct NDS *this) {
+    if (!this->dma9_total) return 0;
     for (u32 i = 0; i < 4; i++) {
         if (dma9_go_ch(this, i)) return 1;
     }
@@ -233,6 +228,7 @@ u32 NDS_dma9_go(struct NDS *this) {
 void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA9 %d start", i);
+    this->dma9_total++;
     if (ch->io.start_timing == NDS_DMA_GE_FIFO) {
         ch->op.started = 1;
         if (ch->op.first_run) {

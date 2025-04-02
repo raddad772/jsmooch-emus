@@ -274,11 +274,16 @@ void PS1_DMA_write(struct PS1 *this, u32 addr, u32 sz, u32 val)
                 case 4: // DICR - DMA Interrupt register case 0x1F8010F4:
                     // Low 5 bits are R/w, we don't know what
                     this->dma.unknown1 = val & 31;
-                    this->dma.irq_force = (val >> 15) & 1;
-                    this->dma.irq_enable_ch = (val >> 16) & 0x7F;
-                    this->dma.irq_enable = (val >> 23) & 1;
-                    u32 to_ack = (val >> 24) & 0x3F;
-                    this->dma.irq_flags_ch &= (to_ack ^ 0x3F);
+                    if (sz >= 2)
+                        this->dma.irq_force = (val >> 15) & 1;
+                    if (sz >= 3) {
+                        this->dma.irq_enable_ch = (val >> 16) & 0x7F;
+                        this->dma.irq_enable = (val >> 23) & 1;
+                    }
+                    if (sz >= 4) {
+                        u32 to_ack = (val >> 24) & 0x3F;
+                        this->dma.irq_flags_ch &= (to_ack ^ 0x3F);
+                    }
                     return;
                 default:
                     printf("\nUnhandled DMA write: %d %d %08x", ch_num, reg, addr);

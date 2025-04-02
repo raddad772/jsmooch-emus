@@ -147,6 +147,7 @@ static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
 
     //printf("\nSCHEDULE NEW FRAME SET FOR CYCLE %lld", start_clock+this->clock.timing.frame.cycles);
     scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
+    if (is_first) scheduler_only_add_abs(&this->scheduler, (i64)this->apu.next_sample, 0, this, &NDS_master_sample_callback, NULL);
 }
 
 static i64 run_arm7(struct NDS *this, i64 num_cycles)
@@ -319,12 +320,6 @@ void NDS_delete(struct jsm_system *jsm)
 
 static void sample_audio(struct NDS* this)
 {
-    NDS_clock_current7(this);
-    // Get buffer
-    // this->audio.buf->ptr
-    // Run audio to current point
-    NDS_APU_run_to_current(this);
-
     // Take NDS samples into our buffer
     float *outptr = (float *)this->audio.buf->ptr;
     for (u32 i = 0; i < this->audio.buf->samples_len; i++) {
@@ -333,8 +328,9 @@ static void sample_audio(struct NDS* this)
             return;
         }
         i32 smp = this->apu.buffer.samples[this->apu.buffer.head];
-        //float s = ((((float)(smp >> 22)) + 512.0f) / 511.5f) - 1.0f;
-        float s = ((((float)smp) + 32768.0f) / 33768.5f) - 1.0f;
+        // Current range is -512 to 511, 10 bits.
+        //float s = ((((float)smp) + 512.0f) / 511.5f) - 1.0f;
+        float s = ((((float)smp) + 1024.0f) / 1023.5f) - 1.0f;
         assert(s>=-1.0f && s<=1.0f);
         *outptr = s;
         outptr++;
@@ -586,8 +582,8 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 32768;
-    chan->low_pass_filter = 16384;
+    chan->sample_rate = 32760; // uhhhh....yeah...lol
+    chan->low_pass_filter = 16380;
 }
 
 

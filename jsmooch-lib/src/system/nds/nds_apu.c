@@ -9,216 +9,13 @@
 #include "nds_regs.h"
 
 
-typedef long double mf;
-
-
-static i32 adpcm_index_tbl[8] = { -1, -1, -1, -1, 2, 4, 6, 8 };
-
-static i16 adpcm_tbl[89] = {
-0x0007, 0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E,
-0x0010, 0x0011, 0x0013, 0x0015, 0x0017, 0x0019, 0x001C, 0x001F,
-0x0022, 0x0025, 0x0029, 0x002D, 0x0032, 0x0037, 0x003C, 0x0042,
-0x0049, 0x0050, 0x0058, 0x0061, 0x006B, 0x0076, 0x0082, 0x008F,
-0x009D, 0x00AD, 0x00BE, 0x00D1, 0x00E6, 0x00FD, 0x0117, 0x0133,
-0x0151, 0x0173, 0x0198, 0x01C1, 0x01EE, 0x0220, 0x0256, 0x0292,
-0x02D4, 0x031C, 0x036C, 0x03C3, 0x0424, 0x048E, 0x0502, 0x0583,
-0x0610, 0x06AB, 0x0756, 0x0812, 0x08E0, 0x09C3, 0x0ABD, 0x0BD0,
-0x0CFF, 0x0E4C, 0x0FBA, 0x114C, 0x1307, 0x14EE, 0x1706, 0x1954,
-0x1BDC, 0x1EA5, 0x21B6, 0x2515, 0x28CA, 0x2CDF, 0x315B, 0x364B,
-0x3BB9, 0x41B2, 0x4843, 0x4F7E, 0x5771, 0x602F, 0x69CE, 0x7462,
-0x7FFF };
-
-static struct wav_stream mywave;
-
-static void buffer_pcm8(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
+static void disable_ch(struct NDS *this, struct NDS_APU_CH *ch)
 {
-    static int a = 1;
-    if (a) {
-        printf("\nWARN IMPLEMENT PCM8");
-        a = 0;
+    if (ch->scheduled) {
+        scheduler_delete_if_exist(&this->scheduler, ch->schedule_id);
     }
-
-}
-
-
-// 0....1
-// to -1....1
-
-//
-
-
-static void buffer_psg(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
-{
-    ch->status.pos += num;
-    ch->status.sample = (i16)(((i32)(((ch->status.pos & 7) > ch->io.wave_duty) * 65535)) - 32768);
-}
-
-static void buffer_pcm16(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
-{
-    // Since we move in 32-bit words, we move 2 samples at a time for PCM16.
-    // We must read at least that many samples.
-    if (this->clock.master_frame > (60 * 20)) {
-        wav_stream_close(&mywave);
-    }
-    for (u32 i = 0; i < num; i++) {
-        u16 wd = NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos << 1), 2, 0, 0);
-        //ch->status.sample = (i16)((wd >> 8) | (wd << 8));
-        ch->status.sample = (i16)wd;
-        wav_stream_output(&mywave, 1, &wd);
-        ch->status.pos += 1;
-        if (ch->status.pos > (ch->io.len << 1)) { ch->status.playing = 0; break; }
-    }
-    return;
-
-    i32 match_num = num;
-    if (num & 1) num++;
-    num >>= 1;
-    for (u32 i = 0; i < num; i++) {
-        u32 word = NDS_mainbus_read7(this, ch->status.addr, 4, 0, 0);
-        ch->status.addr += 4;
-        for (u32 j = 0; j < 2; j++) {
-            match_num--;
-            i16 smp = (word & 0xFFFF);
-            word >>= 16;
-            if (match_num < 0) {
-                ch->status.sample_input_buffer.samples[ch->status.sample_input_buffer.tail] = smp;
-                ch->status.sample_input_buffer.tail = (ch->status.sample_input_buffer.tail + 1) & 15;
-                ch->status.sample_input_buffer.len++;
-            }
-            else {
-                ch->status.sample = smp;
-            }
-        }
-    }
-}
-
-static void buffer_adpcm(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
-{
-    static int a = 1;
-    if (a) {
-        printf("\nWARN IMPLEMENT ADPCM");
-        a = 0;
-    }
-
-}
-
-static void pop_samples(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
-{
-    if (num < 1) {
-        printf("\nPOP 0 SAMPLES!?");
-        return;
-    }
-
-    if (ch->status.sample_input_buffer.len > 0) {
-        if (num >= ch->status.sample_input_buffer.len) { // case: we need as many or more samples than are in buffer
-            // empty out that buffer!
-            ch->status.sample = ch->status.sample_input_buffer.samples[ch->status.sample_input_buffer.tail];
-            num -= ch->status.sample_input_buffer.len;
-            ch->status.sample_input_buffer.len = ch->status.sample_input_buffer.head = ch->status.sample_input_buffer.tail = 0;
-            if (num == 0) return;
-        }
-        else { // case: we need less samples than are in buffer
-            // Empty out part of buffer and return!
-            ch->status.sample_input_buffer.len -= num;
-            ch->status.sample_input_buffer.head = (ch->status.sample_input_buffer.head + num) & 15;
-            u32 nm1 = (ch->status.sample_input_buffer.head - 1) & 15;
-            ch->status.sample = ch->status.sample_input_buffer.samples[nm1];
-            return;
-        }
-    }
-
-    switch(ch->latched.format) {
-        case NDS_APU_FMT_pcm8:
-            buffer_pcm8(this, ch, num);
-            break;
-        case NDS_APU_FMT_pcm16:
-            buffer_pcm16(this, ch, num);
-            break;
-        case NDS_APU_FMT_ima_adpcm:
-            buffer_adpcm(this, ch, num);
-            break;
-        case NDS_APU_FMT_psg:
-            buffer_psg(this, ch, num);
-            break;
-    }
-}
-
-static void do_run_to_current(struct NDS *this, struct NDS_APU_CH *ch)
-{
-    if (!ch->status.playing) return;
-    if (this->apu.buffer.status.total_samples < ch->status.next_timecode) return;
-
-    while(ch->status.my_total_samples < this->apu.buffer.status.total_samples) {
-        ch->status.sampling_counter += ch->status.freq;
-        if (ch->status.sampling_counter >= 32768) {
-            u64 num_to_pop = ch->status.sampling_counter / 32768;
-            ch->status.sampling_counter %= 32768;
-            pop_samples(this, ch, num_to_pop);
-        }
-        i32 smp = ch->status.sample;
-        smp *= ch->io.vol;
-        smp >>= 7;
-        this->apu.buffer.samples[ch->status.mix_buffer_tail] += ;
-        ch->status.mix_buffer_tail = (ch->status.mix_buffer_tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
-        ch->status.my_total_samples++;
-    }
-
-    ch->status.last_timecode = this->apu.buffer.status.total_samples;
-    u64 num_to_wait = (32768 - ch->status.sampling_counter) / ch->status.freq;
-    ch->status.next_timecode = ch->status.last_timecode + (num_to_wait ? num_to_wait : 1);
-}
-
-static void run_master_to_current(struct NDS *this, u64 cur_clock)
-{
-    if (cur_clock < this->apu.buffer.status.next_timecode) {
-        return;
-    }
-
-    u64 num_clocks = cur_clock - this->apu.buffer.status.last_timecode;
-    this->apu.buffer.status.last_timecode = cur_clock;
-
-    this->apu.buffer.status.sampling_counter += num_clocks * 32768;
-    u64 num_samples_to_play = this->apu.buffer.status.sampling_counter / this->clock.timing.arm7.hz;
-    this->apu.buffer.status.sampling_counter %= this->clock.timing.arm7.hz;
-    u64 num_to_wait = (this->clock.timing.arm7.hz - this->apu.buffer.status.sampling_counter) / 32768;
-    this->apu.buffer.status.next_timecode = cur_clock + num_to_wait;
-
-    // Determine number of samples we need to catch up!
-    if (num_samples_to_play < 1) {
-        printf("\nWHAT UNDERRUN HERE WHY!?");
-        return;
-    }
-
-    this->apu.buffer.status.total_samples += num_samples_to_play;
-    this->apu.buffer.len += num_samples_to_play;
-
-    for (u64 i = 0; i < num_samples_to_play; i++) {
-        if (this->apu.buffer.len >= NDS_APU_MAX_SAMPLES) {
-            printf("\nCRAP HERE YO!");
-            return;
-        }
-        this->apu.buffer.samples[this->apu.buffer.tail] = 0;
-        this->apu.buffer.tail = (this->apu.buffer.tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
-    }
-}
-
-static void run_to_current(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
-{
-    run_master_to_current(this, cur_clock);
-    if (ch) {
-        do_run_to_current(this, ch);
-    }
-    else {
-        for (u32 i = 0; i < 16; i++) {
-            ch = &this->apu.ch[i];
-            do_run_to_current(this, ch);
-        }
-    }
-}
-
-void NDS_APU_run_to_current(struct NDS *this)
-{
-    run_to_current(this, NULL, NDS_clock_current7(this));
+    if (!ch->io.hold) ch->sample = 0;
+    ch->io.status = 0;
 }
 
 static u32 apu_read8(struct NDS *this, u32 addr)
@@ -241,11 +38,10 @@ static u32 apu_read8(struct NDS *this, u32 addr)
         case R7_SOUNDxCNT+2:
             return ch->io.pan;
         case R7_SOUNDxCNT+3:
-            run_to_current(this, ch, NDS_clock_current7(this));
             v = ch->io.wave_duty;
             v |= ch->io.repeat_mode << 3;
             v |= ch->io.format << 5;
-            v |= ch->status.playing << 7;
+            v |= ch->io.status << 7;
             return v;
         case R7_SOUNDCNT+0:
             return this->apu.io.master_vol;
@@ -262,151 +58,205 @@ static u32 apu_read8(struct NDS *this, u32 addr)
         case R7_SOUNDBIAS+1:
             return (this->apu.io.sound_bias >> 8) & 3;
 
+        case R7_SOUNDCAP0CNT:
+        case R7_SOUNDCAP1CNT: {
+            u32 num = addr & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            v = cp->ctrl_src;
+            v |= cp->cap_source << 1;
+            v |= cp->repeat_mode << 2;
+            v |= cp->format << 3;
+            v |= cp->status << 7;
+            return v; }
+
+        case R7_SOUNDCAP0DAD+0: return this->apu.soundcap[0].dest_addr & 0xFF;
+        case R7_SOUNDCAP0DAD+1: return (this->apu.soundcap[0].dest_addr >> 8) & 0xFF;
+        case R7_SOUNDCAP0DAD+2: return (this->apu.soundcap[0].dest_addr >> 16) & 0xFF;
+        case R7_SOUNDCAP0DAD+3: return (this->apu.soundcap[0].dest_addr >> 24) & 0xFF;
+        case R7_SOUNDCAP1DAD+0: return this->apu.soundcap[1].dest_addr & 0xFF;
+        case R7_SOUNDCAP1DAD+1: return (this->apu.soundcap[1].dest_addr >> 8) & 0xFF;
+        case R7_SOUNDCAP1DAD+2: return (this->apu.soundcap[1].dest_addr >> 16) & 0xFF;
+        case R7_SOUNDCAP1DAD+3: return (this->apu.soundcap[1].dest_addr >> 24) & 0xFF;
+
         case R7_SOUNDCNT+2:
         case R7_SOUNDCNT+3:
         case R7_SOUNDBIAS+2:
         case R7_SOUNDBIAS+3:
             return 0;
 
-        case R7_SOUNDCAP0CNT:
-        case R7_SOUNDCAP1CNT:
-            return 0;
     }
-    if (addr > 0x04000508) {
-        static int a = 1;
-        if (a) {
-            printf("\nWARN: SND CAP READ!");
-            a = 0;
-        }
-        return 0;
-    }
-
     printf("\nUnhandled APU read %08x", addr);
     return 0;
 }
 
-static inline void latch_io_ch(struct NDS *this, struct NDS_APU_CH *ch)
+static void calc_loop_start(struct NDS *this, struct NDS_APU_CH *ch)
 {
-    memcpy(&ch->latched, &ch->io, sizeof(struct NDS_APU_CH_params));
-    u32 old_freq = ch->status.freq;
-    //ch->status.freq = this->clock.timing.arm7.hz_2 / (0x10000 - ch->latched.period);
-    ch->status.freq = 32768;
-    //ch->status.freq = ch->latched.period >> 4;
-    if (old_freq != ch->status.freq) printf("\nSET CH %d FREQ TO %lld", ch->num, ch->status.freq);
-    if (ch->latched.period < 4) {
-        ch->status.playing = 0;
-        return;
+    switch(ch->io.format) {
+        case NDS_APU_FMT_pcm8:
+            ch->status.real_loop_start_pos = ch->io.loop_start_pos * 4;
+            break;
+        case NDS_APU_FMT_pcm16:
+            ch->status.real_loop_start_pos = ch->io.loop_start_pos * 2;
+            break;
+        case NDS_APU_FMT_ima_adpcm:
+            ch->status.real_loop_start_pos = ch->io.loop_start_pos * 8;
+            break;
+        case NDS_APU_FMT_psg:
+            ch->status.real_loop_start_pos = 0;
+            break;
     }
-}
-
-static void latch_io(struct NDS *this, struct NDS_APU_CH *ch) {
-    if (!ch) {
-        memcpy(&this->apu.latched, &this->apu.io, sizeof(struct NDS_APU_params));
-        for (u32 i = 0; i < 15; i++) {
-            ch = &this->apu.ch[i];
-            latch_io_ch(this, ch);
-        }
-    } else
-        latch_io_ch(this, ch);
-}
-
-static void calculate_ch(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
-{
-    // Empty, off channel.
-    if (!ch->latched.status) {
-        ch->status.playing = 0;
-        return;
-    }
-
-    // Check if we WERE off but are now on
-    u32 trigger = !ch->status.playing;
-
-    if (trigger) {
-        // trigger channel.
-        printf("\nTRIGGER CH %d ADDR:%08x", ch->num, ch->io.source_addr);
-        ch->status.playing = 1;
-        // clear input data FIFO, read first ADPM header, setup PSG state, etc.
-        ch->status.sample_input_buffer.head = ch->status.sample_input_buffer.tail = ch->status.sample_input_buffer.len = 0;
-        ch->status.pos = 0;
-        ch->status.addr = ch->latched.source_addr & 0x07FFFFFC;
-        switch(ch->latched.format ) {
-            case NDS_APU_FMT_pcm8:
-                break;
-            case NDS_APU_FMT_pcm16:
-                break;
-            case NDS_APU_FMT_ima_adpcm:
-                // TODO: this
-                break;
-            case NDS_APU_FMT_psg:
-                break;
-            default:
-                break;
-        }
-        ch->status.sampling_counter = 0;
-        ch->status.last_timecode = this->apu.buffer.status.total_samples;
-
-        ch->status.next_timecode = ch->status.last_timecode + (32768 / ch->status.freq);
-    }
-}
-
-static void calculate_ch_settings_based_on_current_values(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
-{
-    if (!ch) {
-        for (u32 i = 0; i < 16; i++) {
-            ch = &this->apu.ch[i];
-            calculate_ch(this, ch, cur_clock);
-        }
-    }
-    else calculate_ch(this, ch, cur_clock);
-}
-
-static void change_params(struct NDS *this, struct NDS_APU_CH *ch)
-{
-    u64 cur_clock = NDS_clock_current7(this);
-    run_to_current(this, ch, cur_clock);
-    latch_io(this, ch);
-    calculate_ch_settings_based_on_current_values(this, ch, cur_clock);
-}
-
-static void write_sndcnt_hi(struct NDS *this, struct NDS_APU_CH *ch, u32 val)
-{
-    // TODO: this. mostly for 0->1 edge of enable
-    // if !old and new: calculate_ch_settngs_based_on_current_values();
-    // else if old && new: change_params(this, ch);
-    // else if old && !new: sample_off(this, ch) which will set output hold
-    change_params(this, ch);
 }
 
 static void update_len(struct NDS *this, struct NDS_APU_CH *ch)
 {
+    // TODO: more of this
     switch(ch->io.format) {
-        case 0:
+        case NDS_APU_FMT_pcm8:
             ch->io.sample_len = 4 * ch->io.len;
             break;
-        case 1:
+        case NDS_APU_FMT_pcm16:
             ch->io.sample_len = 2 * ch->io.len;
             break;
-        case 2:
+        case NDS_APU_FMT_ima_adpcm:
             ch->io.sample_len = 8 * (ch->io.len - 1);
             break;
-        case 3:
+        case NDS_APU_FMT_psg:
             break;
     }
 }
 
-static void apu_write8(struct NDS *this, u32 addr, u32 val)
+static void run_pcm8(struct NDS *this, struct NDS_APU_CH *ch)
 {
-    u32 chn;
-    struct NDS_APU_CH *ch = NULL;
-    if (addr < 0x04000500) {
-        chn = (addr >> 4) & 15;
-        ch = &this->apu.ch[chn];
-        addr &= 0xFFFFFF0F;
+    ch->sample = (i16)(NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos << 1), 1, 0, 0) << 8);
+    ch->status.pos++;
+    ch->status.word_pos = ch->status.pos >> 2;
+}
+
+static void run_pcm16(struct NDS *this, struct NDS_APU_CH *ch)
+{
+    // addr, sz, access, effect
+    ch->sample = NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos << 1), 2, 0, 0);
+    ch->status.pos++;
+    ch->status.word_pos = ch->status.pos >> 1;
+}
+
+static void run_ima_adpcm(struct NDS *this, struct NDS_APU_CH *ch)
+{
+    static int a = 1;
+    if (a) {
+        printf("\nWARN: IMPLEMENT APU IMA ADPCM");
+        a = 0;
     }
+    ch->status.pos++;
+    ch->status.word_pos = (ch->status.pos - 1) >> 3;
+}
+
+static void run_psg(struct NDS *this, struct NDS_APU_CH *ch)
+{
+    ch->sample = (i16)((i32)(((ch->status.pos++) > ch->io.wave_duty) * 65535) - 32768);
+    ch->status.pos++;
+}
+
+static void run_noise(struct NDS *this, struct NDS_APU_CH *ch)
+{
+    u32 b1 = ch->lfsr & 1;
+    u32 xorby = b1 * 0x6000;
+    ch->lfsr = (ch->lfsr >> 1) ^ xorby;
+    ch->sample = (i16)((((i32)b1) * 65535) - 32768);
+    ch->status.pos++;
+}
+
+static void run_cap(struct NDS *this, u32 cap_num)
+{
+    struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[cap_num];
+    if (!cp->status) return;
+    u32 target_ch = (cap_num << 1) + 1;
+    struct NDS_APU_CH *ch = &this->apu.ch[target_ch];
+
+    i32 smp = ch->sample;
+    static int a = 1;
+    if (a) {
+        printf("\nWARN IMPLEMENT SOUND CAP");
+        a = 0;
+    }
+}
+
+static void run_channel(void *ptr, u64 ch_num, u64 cur_clock, u32 jitter)
+{
+    struct NDS *this = (struct NDS *)ptr;
+    struct NDS_APU_CH *ch = &this->apu.ch[ch_num];
+
+    if (!ch->io.status) return;
+
+    u64 real_clock = cur_clock - jitter;
+
+    // Get sample
+    switch(ch->io.format) {
+        case NDS_APU_FMT_pcm8:
+            run_pcm8(this, ch);
+            break;
+        case NDS_APU_FMT_pcm16:
+            run_pcm16(this, ch);
+            break;
+        case NDS_APU_FMT_ima_adpcm:
+            run_ima_adpcm(this, ch);
+            break;
+        case NDS_APU_FMT_psg:
+            if (ch->has_psg) run_psg(this, ch);
+            if (ch->has_noise) run_noise(this, ch);
+            break;
+    }
+    if (ch->io.format != NDS_APU_FMT_psg) {
+        if (ch->status.pos >= ch->io.sample_len) {
+            if (ch->io.repeat_mode == NDS_APU_RM_loop_infinite)
+                ch->status.pos = ch->status.real_loop_start_pos;
+            else { // TODO: supposed to disable after the last sample finishes?
+                disable_ch(this, ch);
+                return;
+            }
+        }
+    }
+
+    ch->schedule_id = scheduler_only_add_abs(&this->scheduler, real_clock + ch->status.sampling_interval, ch->num, this, &run_channel, &ch->scheduled);
+    if (ch->has_cap) run_cap(this, ch->num >> 1);
+}
+
+static void change_freq(struct NDS *this, struct NDS_APU_CH *ch)
+{
+    u32 new_interval = (0x10000 - ch->io.period) << 1;
+    if (new_interval != ch->status.sampling_interval) {
+        if (ch->scheduled) {
+            scheduler_delete_if_exist(&this->scheduler, ch->schedule_id);
+            ch->schedule_id = scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + new_interval, ch->num, this, &run_channel, &ch->scheduled);
+        }
+        ch->status.sampling_interval = new_interval;
+    }
+}
+
+
+static void probe_trigger(struct NDS *this, struct NDS_APU_CH *ch, u32 old_status)
+{
+    if (old_status == ch->io.status) return;
+
+    if (old_status) { // Disable channel!
+        disable_ch(this, ch);
+        return;
+    }
+
+    // Trigger channel!
+    // TODO: supposed to wait 1-3 0 samples
+    ch->status.pos = 0;
+    ch->status.sample_input_buffer.len = ch->status.sample_input_buffer.head = ch->status.sample_input_buffer.tail = 0;
+    ch->sample = 0;
+    ch->schedule_id = scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + ch->status.sampling_interval, ch->num, this, &run_channel, &ch->scheduled);
+    ch->lfsr = 0x7FFF;
+}
+
+static void apu_write8(struct NDS *this, u32 addr, u32 val, struct NDS_APU_CH *ch)
+{
     switch(addr) {
         case R7_SOUNDCNT+0:
             this->apu.io.master_vol = val & 0x7F;
-            change_params(this, NULL);
             return;
 
         case R7_SOUNDCNT+1:
@@ -415,19 +265,16 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
             this->apu.io.output_ch1_to_mixer = (val >> 4) & 1;
             this->apu.io.output_ch3_to_mixer = (val >> 5) & 1;
             this->apu.io.master_enable = (val >> 7) & 1;
-            change_params(this, NULL);
             return;
         case R7_SOUNDxCNT+0:
             ch->io.vol = ch->io.real_vol = val & 0x7F;
             if (ch->io.real_vol == 127) ch->io.real_vol = 128;
-            change_params(this, ch);
             return;
         case R7_SOUNDxCNT+1: {
             static const u32 sval[4] = {0, 1, 2, 4};
             ch->io.vol_div = val & 3;
             ch->io.vol_rshift = sval[ch->io.vol_div];
             ch->io.hold = (val >> 7) & 1;
-            change_params(this, ch);
             return; }
         case R7_SOUNDxCNT+2: {
             val &= 0x7F;
@@ -445,16 +292,19 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
                     ch->io.left_pan = 127 - val;
                 }
             }
-            change_params(this, ch);
+            if (ch->io.right_pan == 63) ch->io.right_pan = 64;
+            if (ch->io.left_pan == 63) ch->io.left_pan = 64;
             return; }
 
         case R7_SOUNDxCNT+3: {
+            u32 old_enable = ch->io.status;
             ch->io.wave_duty = val & 7;
             ch->io.repeat_mode = (val >> 3) & 3;
             ch->io.format = (val >> 5) & 3;
             ch->io.status = (val >> 7) & 1;
             update_len(this, ch);
-            change_params(this, ch);
+            calc_loop_start(this, ch);
+            probe_trigger(this, ch, old_enable);
             return; }
 
         case R7_SOUNDxSAD+0:
@@ -471,16 +321,16 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
 
         case R7_SOUNDxSAD+3:
             ch->io.source_addr = (ch->io.source_addr & 0x00FFFFFF) | ((val & 7) << 24);
-            change_params(this, ch);
             return;
 
         case R7_SOUNDxTMR+0:
             ch->io.period = (ch->io.period & 0xFF00) | val;
+            change_freq(this, ch);
             return;
 
         case R7_SOUNDxTMR+1:
             ch->io.period = (ch->io.period & 0xFF) | (val << 8);
-            change_params(this, ch);
+            change_freq(this, ch);
             return;
 
         case R7_SOUNDxLEN+0:
@@ -491,7 +341,6 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
         case R7_SOUNDxLEN+1:
             ch->io.len = (ch->io.len & 0xFF) | (val << 8);
             update_len(this, ch);
-            change_params(this, ch);
             return;
 
         case R7_SOUNDBIAS+0:
@@ -500,17 +349,76 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
 
         case R7_SOUNDBIAS+1:
             this->apu.io.sound_bias = (this->apu.io.sound_bias & 0xFF) | ((val & 3) << 8);
-            change_params(this, NULL);
             return;
 
         case R7_SOUNDxPNT+0:
             ch->io.loop_start_pos = (ch->io.loop_start_pos & 0xFF00) | val;
+            calc_loop_start(this, ch);
             return;
 
         case R7_SOUNDxPNT+1:
             ch->io.loop_start_pos = (ch->io.loop_start_pos & 0xFF) | (val << 8);
-            change_params(this, ch);
+            calc_loop_start(this, ch);
             return;
+
+        case R7_SOUNDCAP0CNT:
+        case R7_SOUNDCAP1CNT: {
+            u32 num = addr & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            u32 old_status = cp->status;
+            cp->ctrl_src = val & 1;
+            cp->cap_source = (val >> 1) & 1;
+            cp->repeat_mode = (val >> 2) & 1;
+            cp->format = (val >> 3) & 1;
+            cp->status = (val >> 7) & 1;
+            if (!old_status && cp->status) {
+                cp->pos = 0;
+            }
+            return; }
+
+        case R7_SOUNDCAP0DAD+0:
+        case R7_SOUNDCAP1DAD+0: {
+            u32 num = (addr >> 4) & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            cp->dest_addr = (cp->dest_addr & 0x07FFFF00) | val;
+            return; }
+
+        case R7_SOUNDCAP0DAD+1:
+        case R7_SOUNDCAP1DAD+1: {
+            u32 num = (addr >> 4) & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            cp->dest_addr = (cp->dest_addr & 0x07FF00FF) | (val << 8);
+            return; }
+
+        case R7_SOUNDCAP0DAD+2:
+        case R7_SOUNDCAP1DAD+2: {
+            u32 num = (addr >> 4) & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            cp->dest_addr = (cp->dest_addr & 0x0700FFFF) | (val << 16);
+            return; }
+
+        case R7_SOUNDCAP0DAD+3:
+        case R7_SOUNDCAP1DAD+3: {
+            u32 num = (addr >> 4) & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            cp->dest_addr = (cp->dest_addr & 0x00FFFFFF) | ((val & 7) << 24);
+            return; }
+
+        case R7_SOUNDCAP0LEN+0:
+        case R7_SOUNDCAP1LEN+0: {
+            u32 num = (addr >> 4) & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            cp->len_words = (cp->len_words & 0xFF00) | val;
+            cp->len_bytes = cp->len_words << 2;
+            return; }
+
+        case R7_SOUNDCAP0LEN+1:
+        case R7_SOUNDCAP1LEN+1: {
+            u32 num = (addr >> 4) & 1;
+            struct NDS_APU_SOUNDCAP *cp = &this->apu.soundcap[num];
+            cp->len_words = (cp->len_words & 0xFF) | (val << 8);
+            cp->len_bytes = cp->len_words << 2;
+            return; }
 
         case R7_SOUNDCNT+2:
         case R7_SOUNDCNT+3:
@@ -520,15 +428,6 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
         case R7_SOUNDBIAS+3:
             return;
     }
-    if (addr > 0x04000508) {
-        static int a = 1;
-        if (a) {
-            printf("\nWARN: SND CAP WRITE!");
-            a = 0;
-        }
-        return;
-    }
-    printf("\nUnhandled APU write %08x: %02x", addr, val);
 }
 
 u32 NDS_APU_read(struct NDS *this, u32 addr, u32 sz, u32 access)
@@ -546,22 +445,40 @@ u32 NDS_APU_read(struct NDS *this, u32 addr, u32 sz, u32 access)
 
 void NDS_APU_write(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    apu_write8(this, addr, val & 0xFF);
+    u32 chn;
+    struct NDS_APU_CH *ch = NULL;
+    if (addr < 0x04000500) {
+        chn = (addr >> 4) & 15;
+        ch = &this->apu.ch[chn];
+        addr &= 0xFFFFFF0F;
+    }
+
+    switch(addr) {
+        case R7_SOUNDxTMR:
+            if (sz == 1) ch->io.period = (val & 0xFF00) | val;
+            else ch->io.period = val & 0xFFFF;
+            change_freq(this, ch);
+            if (sz == 4) NDS_APU_write(this, addr+2, 2, access, val >> 16);
+            return;
+    }
+
+    apu_write8(this, addr, val & 0xFF, ch);
     if (sz >= 2) {
-        apu_write8(this, addr+1, (val >> 8) & 0xFF);
+        apu_write8(this, addr+1, (val >> 8) & 0xFF, ch);
     }
     if (sz == 4) {
-        apu_write8(this, addr+2, (val >> 16) & 0xFF);
-        apu_write8(this, addr+3, (val >> 24) & 0xFF);
+        apu_write8(this, addr+2, (val >> 16) & 0xFF, ch);
+        apu_write8(this, addr+3, (val >> 24) & 0xFF, ch);
     }
 }
 
-void NDS_APU_init(struct NDS *this)
-{
+void NDS_APU_init(struct NDS *this) {
+    // MUST be done AFTER NDS_clock_init, which should be first init.
     memset(&this->apu, 0, sizeof(this->apu));
     for (u32 i = 0; i < 16; i++) {
         struct NDS_APU_CH *ch = &this->apu.ch[i];
         ch->num = i;
+        if ((i == 1) || (i == 3)) ch->has_cap = 1;
         if ((i >= 8) && (i < 14)) {
             ch->has_psg = 1;
         }
@@ -570,5 +487,59 @@ void NDS_APU_init(struct NDS *this)
         }
     }
 
-    wav_stream_create(&mywave, "/Users/dave/whatnot.wav", 32768, 2);
+    this->apu.sample_cycles = ((long double) this->clock.timing.arm7.hz / 32768.0f);
+    this->apu.next_sample = this->apu.sample_cycles;
+    this->apu.io.master_enable = 1;
+}
+
+void NDS_master_sample_callback(void *ptr, u64 nothing, u64 cur_clock, u32 jitter)
+{
+    //printf("\nMASTER SAMPLE CALLBACK!");
+    struct NDS *this = (struct NDS *)ptr;
+    /*if (!this->apu.io.master_enable) {
+        this->apu.buffer.samples[this->apu.buffer.tail] = 0;
+        this->apu.buffer.tail = (this->apu.buffer.tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
+        this->apu.buffer.len++;
+
+        this->apu.total_samples += 1.0;
+        this->apu.next_sample = this->apu.total_samples * this->apu.sample_cycles;
+        scheduler_only_add_abs(&this->scheduler, (i64)this->apu.next_sample, 0, this, &NDS_master_sample_callback, NULL);
+        return;
+    }*/
+
+    i32 left = 0, right = 0;
+    i32 spkr = 0;
+    for (u32 chn = 0; chn < 16; chn++) {
+        struct NDS_APU_CH *ch = &this->apu.ch[chn];
+        //i32 smp = ch->sample; //
+        i32 smp = ((ch->sample * (i32)ch->io.real_vol) >> 7) >> ch->io.vol_rshift;
+        // Current range, 16 bits.
+        // Output range: 16 bits to capture, 10 bits to mixed output
+        spkr += (smp >> 6);
+
+        left += (smp * ch->io.left_pan) >> 6;
+        right += (smp * ch->io.right_pan) >> 6;
+    }
+    spkr >>= 6;
+    if (spkr < -1024) spkr = -1024;
+    if (spkr > 1023) spkr = 1023;
+    if (left <= -32768) left = -32768;
+    if (left > 32767) left = 32767;
+    if (right <= -32768) right = -32768;
+    if (right > 32767) right = 32767;
+    if (this->apu.buffer.len >= NDS_APU_MAX_SAMPLES) {
+        printf("\nERROR SOUND OVERRUN!");
+    }
+    else {
+        this->apu.buffer.samples[this->apu.buffer.tail] = spkr;
+        this->apu.buffer.tail = (this->apu.buffer.tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
+        this->apu.buffer.len++;
+    }
+
+    this->apu.right_output = right;
+    this->apu.left_output = left;
+    this->apu.total_samples += 1.0;
+
+    this->apu.next_sample = this->apu.total_samples * this->apu.sample_cycles;
+    scheduler_only_add_abs(&this->scheduler, (i64)this->apu.next_sample, 0, this, &NDS_master_sample_callback, NULL);
 }
