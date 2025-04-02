@@ -15,19 +15,26 @@
 // 5. add interrupt registers
 // 6. add timers/registers
 
-static void raise_irq_for_dma7(struct NDS *this, u32 num)
+void NDS_DMA_init(struct NDS *this)
 {
-    NDS_update_IF7(this, NDS_IRQ_DMA0 + num);
+    for (u32 i = 0; i < 4; i++) {
+        struct NDS_DMA_ch *ch = &this->dma7[i];
+        ch->num = i;
+        ch = &this->dma9[i];
+        ch->num = i;
+    }
 }
 
-static void raise_irq_for_dma9(struct NDS *this, u32 num)
+static void dma7_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
 {
-    NDS_update_IF9(this, NDS_IRQ_DMA0 + num);
+    struct NDS *this = (struct NDS *)ptr;
+    NDS_update_IF7(this, NDS_IRQ_DMA0 + key);
 }
 
-static u32 dma7_go_ch(struct NDS *this, u32 num) {
-    struct NDS_DMA_ch *ch = &this->dma7[num];
-    if ((ch->io.enable) && (ch->op.started)) {
+static void dma7_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
+    u32 num_transfer = 0;
+    u32 ct = this->waitstates.current_transaction;
+    while((ch->io.enable) && (ch->op.started)) {
         if (ch->op.sz == 2) {
             u16 value;
             if (ch->op.src_addr >= 0x02000000) {
@@ -43,6 +50,7 @@ static u32 dma7_go_ch(struct NDS *this, u32 num) {
             }
 
             NDS_mainbus_write7(this, ch->op.dest_addr, 2, ch->op.dest_access, value);
+            num_transfer++;
         }
         else {
             if (ch->op.src_addr >= 0x02000000)
@@ -50,6 +58,7 @@ static u32 dma7_go_ch(struct NDS *this, u32 num) {
             else
                 this->waitstates.current_transaction++;
             NDS_mainbus_write7(this, ch->op.dest_addr, 4, ch->op.dest_access, ch->io.open_bus);
+            num_transfer++;
         }
 
         ch->op.src_access = ARM7P_sequential | ARM7P_dma;
@@ -58,11 +67,11 @@ static u32 dma7_go_ch(struct NDS *this, u32 num) {
         switch(ch->io.src_addr_ctrl) {
             case 0: // increment
                 ch->op.src_addr = (ch->op.src_addr + ch->op.sz) & 0x0FFFFFFF;
-                if (num == 0) ch->op.src_addr &= 0x07FFFFFF;
+                if (ch->num == 0) ch->op.src_addr &= 0x07FFFFFF;
                 break;
             case 1: // decrement
                 ch->op.src_addr = (ch->op.src_addr - ch->op.sz) & 0x0FFFFFFF;
-                if (num == 0) ch->op.src_addr &= 0x07FFFFFF;
+                if (ch->num == 0) ch->op.src_addr &= 0x07FFFFFF;
                 break;
             case 2: // constant
                 break;
@@ -74,17 +83,17 @@ static u32 dma7_go_ch(struct NDS *this, u32 num) {
         switch(ch->io.dest_addr_ctrl) {
             case 0: // increment
                 ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
-                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
+                if (ch->num < 3) ch->op.dest_addr &= 0x07FFFFFF;
                 break;
             case 1: // decrement
                 ch->op.dest_addr = (ch->op.dest_addr - ch->op.sz) & 0x0FFFFFFF;
-                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
+                if (ch->num < 3) ch->op.dest_addr &= 0x07FFFFFF;
                 break;
             case 2: // constant
                 break;
             case 3: // increment & reload on repeat
                 ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
-                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
+                if (ch->num < 3) ch->op.dest_addr &= 0x07FFFFFF;
                 break;
         }
 
@@ -93,25 +102,15 @@ static u32 dma7_go_ch(struct NDS *this, u32 num) {
             ch->op.started = 0; // Disable
             ch->op.first_run = 0;
             if (ch->io.irq_on_end) {
-                raise_irq_for_dma7(this, num);
+                scheduler_add_or_run_abs(&this->scheduler, NDS_clock_current7(this) + num_transfer, ch->num, this, &dma7_irq, NULL);
             }
 
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
-                this->dma7_total--;
             }
         }
-        return 1;
     }
-    return 0;
-}
-
-u32 NDS_dma7_go(struct NDS *this) {
-    if (!this->dma7_total) return 0;
-    for (u32 i = 0; i < 4; i++) {
-        if (dma7_go_ch(this, i)) return 1;
-    }
-    return 0;
+    this->waitstates.current_transaction = ct;
 }
 
 void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
@@ -121,7 +120,6 @@ void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
     u32 mask = ch->io.transfer_size ? ~3 : ~1;
     mask &= 0x0FFFFFFF;
     //u32 mask = 0x0FFFFFFF;
-    this->dma7_total++;
     if (ch->op.first_run) {
         ch->op.dest_addr = ch->io.dest_addr & mask;
         ch->op.src_addr = ch->io.src_addr & mask;
@@ -134,17 +132,25 @@ void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
     ch->op.word_mask = i == 3 ? 0xFFFF : 0x3FFF;
     ch->op.dest_access = ARM7P_nonsequential | ARM7P_dma;
     ch->op.src_access = ARM7P_nonsequential | ARM7P_dma;
+    dma7_go_ch(this, ch);
 }
 
 // -------------################
+static void dma9_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
+{
+    struct NDS *this = (struct NDS *)ptr;
+    NDS_update_IF9(this, NDS_IRQ_DMA0 + key);
+}
 
-static u32 dma9_go_ch(struct NDS *this, u32 num) {
-    struct NDS_DMA_ch *ch = &this->dma9[num];
-    if ((ch->io.enable) && (ch->op.started)) {
+
+static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
+    u32 num_transfer = 0;
+    u32 ct = this->waitstates.current_transaction;
+    while ((ch->io.enable) && (ch->op.started)) {
         if (ch->op.sz == 2) {
             u16 value;
             if (ch->op.src_addr >= 0x02000000) {
-                value = NDS_mainbus_read9(this, ch->op.src_addr, 2, ch->op.src_access, 1);
+                value = NDS_mainbus_read9(this, ch->op.src_addr, 2, ch->op.src_access, 0);
                 ch->io.open_bus = (value << 16) | value;
             } else {
                 if (ch->op.dest_addr & 2) {
@@ -156,13 +162,15 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
             }
 
             NDS_mainbus_write9(this, ch->op.dest_addr, 2, ch->op.dest_access, value);
+            num_transfer++;
         }
         else {
             if (ch->op.src_addr >= 0x02000000)
-                ch->io.open_bus = NDS_mainbus_read9(this, ch->op.src_addr, 4, ch->op.src_access, 1);
+                ch->io.open_bus = NDS_mainbus_read9(this, ch->op.src_addr, 4, ch->op.src_access, 0);
             else
                 this->waitstates.current_transaction++;
             NDS_mainbus_write9(this, ch->op.dest_addr, 4, ch->op.dest_access, ch->io.open_bus);
+            num_transfer++;
         }
 
         ch->op.src_access = ARM9P_sequential | ARM9P_dma;
@@ -203,32 +211,20 @@ static u32 dma9_go_ch(struct NDS *this, u32 num) {
         if (ch->op.word_count == 0) {
             ch->op.started = 0; // Disable
             ch->op.first_run = 0;
-            if (ch->io.irq_on_end) {
-                raise_irq_for_dma9(this, num);
-            }
+            if (ch->io.irq_on_end)
+                scheduler_add_or_run_abs(&this->scheduler, NDS_clock_current9(this) + num_transfer, ch->num, this, &dma9_irq, NULL);
 
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
-                this->dma9_total--;
             }
         }
-        return 1;
     }
-    return 0;
-}
-
-u32 NDS_dma9_go(struct NDS *this) {
-    if (!this->dma9_total) return 0;
-    for (u32 i = 0; i < 4; i++) {
-        if (dma9_go_ch(this, i)) return 1;
-    }
-    return 0;
+    this->waitstates.current_transaction = ct;
 }
 
 void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA9 %d start", i);
-    this->dma9_total++;
     if (ch->io.start_timing == NDS_DMA_GE_FIFO) {
         ch->op.started = 1;
         if (ch->op.first_run) {
@@ -272,6 +268,7 @@ void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
     ch->op.word_mask = 0x1FFFFF;
     ch->op.dest_access = ARM9P_nonsequential | ARM9P_dma;
     ch->op.src_access = ARM9P_nonsequential | ARM9P_dma;
+    dma9_go_ch(this, ch);
 }
 
 // #############################

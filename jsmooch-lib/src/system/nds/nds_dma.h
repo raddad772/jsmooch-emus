@@ -36,6 +36,7 @@ u32 NDS_dma7_go(struct NDS *this);
 void NDS_dma9_start(struct NDS *, struct NDS_DMA_ch *ch, u32 i);
 u32 NDS_dma9_go(struct NDS *this);
 
+void NDS_DMA_init(struct NDS *);
 void NDS_check_dma9_at_hblank(struct NDS *);
 void NDS_check_dma9_at_vblank(struct NDS *);
 void NDS_check_dma7_at_vblank(struct NDS *);

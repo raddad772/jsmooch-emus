@@ -153,22 +153,18 @@ static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
 static i64 run_arm7(struct NDS *this, i64 num_cycles)
 {
     // Run DMA & CPU
-    if (NDS_dma7_go(this)) {
+    if (this->io.arm7.halted) {
+        this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
+        if (!this->io.arm7.halted) {
+            //printf("\nIF:%08x IE:%08x", this->io.arm7.IF, this->io.arm7.IE);
+            dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "ARM7 RESUME! cyc:%lld IF:%08x IE:%08x", NDS_clock_current7(this), this->io.arm7.IF, this->io.arm7.IE);
+        }
+        this->waitstates.current_transaction++;
     }
     else {
-        if (this->io.arm7.halted) {
-            this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
-            if (!this->io.arm7.halted) {
-                //printf("\nIF:%08x IE:%08x", this->io.arm7.IF, this->io.arm7.IE);
-                dbgloglog(NDS_CAT_ARM7_HALT, DBGLS_INFO, "ARM7 RESUME! cyc:%lld IF:%08x IE:%08x", NDS_clock_current7(this), this->io.arm7.IF, this->io.arm7.IE);
-            }
-            this->waitstates.current_transaction++;
-        }
-        else {
-            this->arm7_ins = 1;
-            ARM7TDMI_run_noIRQcheck(&this->arm7);
-            this->arm7_ins = 0;
-        }
+        this->arm7_ins = 1;
+        ARM7TDMI_run_noIRQcheck(&this->arm7);
+        this->arm7_ins = 0;
     }
     this->clock.master_cycle_count7 += this->waitstates.current_transaction;
     u32 r = this->waitstates.current_transaction;
@@ -181,17 +177,13 @@ static i64 run_arm9(struct NDS *this, i64 num_cycles)
 {
     this->arm9_ins = 1;
     // Run DMA & CPU
-    if (NDS_dma9_go(this)) {
+    if (!this->ge.fifo.pausing_cpu) {
+        this->arm9_ins = 1;
+        ARM946ES_run_noIRQcheck(&this->arm9);
+        this->arm9_ins = 0;
     }
     else {
-        if (!this->ge.fifo.pausing_cpu) {
-            this->arm9_ins = 1;
-            ARM946ES_run_noIRQcheck(&this->arm9);
-            this->arm9_ins = 0;
-        }
-        else {
-            this->waitstates.current_transaction += 1;
-        }
+        this->waitstates.current_transaction += 1;
     }
     this->clock.master_cycle_count9 += this->waitstates.current_transaction;
     u32 r = this->waitstates.current_transaction;
@@ -206,7 +198,6 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 
     this->clock.cycles7 += (i64)num_cycles;
     this->clock.cycles9 += (i64)num_cycles;
-    //printf("\nRUN %lld CYCLES!", num_cycles);
     while((this->clock.cycles7 > 0) || (this->clock.cycles9 > 0)) {
         if (this->clock.cycles7 > 0) {
             this->clock.cycles7 -= run_arm7(this, this->clock.cycles7);
@@ -233,6 +224,8 @@ void NDS_new(struct jsm_system *jsm)
     this->scheduler.run.func = &NDS_run_block;
     this->scheduler.run.ptr = this;
 
+    NDS_clock_init(&this->clock);
+    NDS_DMA_init(this);
     //ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, &this->scheduler);
     ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, NULL);
     this->arm7.read_ptr = this;
@@ -253,7 +246,6 @@ void NDS_new(struct jsm_system *jsm)
     this->arm9.fetch_ptr = this;
     this->arm9.fetch_ins = &NDS_mainbus_fetchins9;
 
-    NDS_clock_init(&this->clock);
     NDS_bus_init(this);
     NDS_cart_init(this);
     NDS_PPU_init(this);

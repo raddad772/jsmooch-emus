@@ -295,6 +295,7 @@ struct NDS {
     } jsm;
 
     struct NDS_DMA_ch {
+        u32 num;
         struct {
             u32 src_addr; // 28 bits
             u32 dest_addr; // 28 bits
@@ -326,8 +327,6 @@ struct NDS {
         } op;
         u32 run_counter;
     } dma7[4], dma9[4];
-
-    u32 dma7_total, dma9_total;
 
     struct NDS_TIMER {
         struct {
