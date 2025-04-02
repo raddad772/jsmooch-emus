@@ -146,7 +146,7 @@ static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
     }
 
     //printf("\nSCHEDULE NEW FRAME SET FOR CYCLE %lld", start_clock+this->clock.timing.frame.cycles);
-    scheduler_only_add_abs(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL);
+    scheduler_only_add_abs_w_tag(&this->scheduler, start_clock+this->clock.timing.frame.cycles, 0, this, &do_next_scheduled_frame, NULL, 1);
     if (is_first) scheduler_only_add_abs(&this->scheduler, (i64)this->apu.next_sample, 0, this, &NDS_master_sample_callback, NULL);
 }
 
@@ -337,13 +337,7 @@ u32 NDSJ_finish_frame(JSM)
     JTHIS;
 
     u64 total = 0;
-    while (total < (this->clock.timing.frame.cycles >> 1)) {
-        u64 old_clock = NDS_clock_current7(this);
-        scheduler_run_for_cycles(&this->scheduler, this->clock.cycles_left_this_frame);
-        u64 diff = NDS_clock_current7(this) - old_clock;
-        this->clock.cycles_left_this_frame -= (i64)diff;
-        total += diff;
-    }
+    scheduler_run_til_tag(&this->scheduler, 1);
     sample_audio(this);
     return 0;
 
