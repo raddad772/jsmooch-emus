@@ -115,7 +115,7 @@ static void calc_loop_start(struct NDS *this, struct NDS_APU_CH *ch)
             ch->status.real_loop_start_pos = ch->io.loop_start_pos * 2;
             break;
         case NDS_APU_FMT_ima_adpcm:
-            ch->status.real_loop_start_pos = ch->io.loop_start_pos * 8;
+            ch->status.real_loop_start_pos = (ch->io.loop_start_pos - 1) * 8;
             break;
         case NDS_APU_FMT_psg:
             ch->status.real_loop_start_pos = 0;
@@ -145,7 +145,6 @@ static void run_pcm8(struct NDS *this, struct NDS_APU_CH *ch)
 {
     ch->sample = (i16)(NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos & 0xFFFFFFFC), 1, 0, 0) << 8);
     ch->status.pos++;
-    ch->status.word_pos = (ch->status.pos & 0xFFFFFFFC);
 }
 
 static void run_pcm16(struct NDS *this, struct NDS_APU_CH *ch)
@@ -153,7 +152,6 @@ static void run_pcm16(struct NDS *this, struct NDS_APU_CH *ch)
     // addr, sz, access, effect
     ch->sample = NDS_mainbus_read7(this, ch->io.source_addr + ((ch->status.pos >> 1) << 2), 2, 0, 0);
     ch->status.pos++;
-    ch->status.word_pos = ((ch->status.pos >> 1) << 2);
 }
 
 static void run_ima_adpcm(struct NDS *this, struct NDS_APU_CH *ch)
@@ -180,7 +178,6 @@ static void run_ima_adpcm(struct NDS *this, struct NDS_APU_CH *ch)
     if (ch->adpcm.tbl_idx > 88) ch->adpcm.tbl_idx = 88;
 
     ch->status.pos++;
-    ch->status.word_pos = ((ch->status.pos >> 3) << 2) + 1;
 }
 
 static void run_psg(struct NDS *this, struct NDS_APU_CH *ch)
@@ -295,6 +292,7 @@ static void probe_trigger(struct NDS *this, struct NDS_APU_CH *ch, u32 old_statu
     }
 
     ch->status.pos = 0;
+
     ch->sample = 0;
     ch->schedule_id = scheduler_only_add_abs(&this->scheduler, NDS_clock_current7(this) + ch->status.sampling_interval, ch->num, this, &run_channel, &ch->scheduled);
     ch->lfsr = 0x7FFF;

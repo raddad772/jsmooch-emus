@@ -31,10 +31,8 @@ struct NDS_APU {
 
         struct {
             u32 pos;
-            u32 word_pos;
             u32 real_loop_start_pos;
             u32 sampling_interval;
-
         } status;
 
         struct {
