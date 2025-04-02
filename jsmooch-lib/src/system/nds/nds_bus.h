@@ -295,6 +295,7 @@ struct NDS {
     } jsm;
 
     struct NDS_DMA_ch {
+        u32 active;
         u32 num;
         struct {
             u32 src_addr; // 28 bits

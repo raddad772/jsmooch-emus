@@ -34,6 +34,7 @@ static void dma7_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
 static void dma7_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
     u32 num_transfer = 0;
     u32 ct = this->waitstates.current_transaction;
+    ch->active = 1;
     while((ch->io.enable) && (ch->op.started)) {
         if (ch->op.sz == 2) {
             u16 value;
@@ -103,6 +104,7 @@ static void dma7_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
             ch->op.first_run = 0;
             if (ch->io.irq_on_end) {
                 scheduler_add_or_run_abs(&this->scheduler, NDS_clock_current7(this) + num_transfer, ch->num, this, &dma7_irq, NULL);
+                //dma7_irq(this, ch->num, 0, 0);
             }
 
             if (!ch->io.repeat) {
@@ -111,10 +113,12 @@ static void dma7_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
         }
     }
     this->waitstates.current_transaction = ct;
+    ch->active = 0;
 }
 
 void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
+    if (ch->active) return;
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA7 %d start", i);
     ch->op.started = 1;
     u32 mask = ch->io.transfer_size ? ~3 : ~1;
@@ -144,6 +148,7 @@ static void dma9_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
 
 
 static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
+    ch->active = 1;
     u32 num_transfer = 0;
     u32 ct = this->waitstates.current_transaction;
     while ((ch->io.enable) && (ch->op.started)) {
@@ -211,8 +216,10 @@ static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
         if (ch->op.word_count == 0) {
             ch->op.started = 0; // Disable
             ch->op.first_run = 0;
-            if (ch->io.irq_on_end)
+            if (ch->io.irq_on_end) {
                 scheduler_add_or_run_abs(&this->scheduler, NDS_clock_current9(this) + num_transfer, ch->num, this, &dma9_irq, NULL);
+                //dma9_irq(this, ch->num, 0, 0);
+            }
 
             if (!ch->io.repeat) {
                 ch->io.enable = 0;
@@ -220,10 +227,12 @@ static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
         }
     }
     this->waitstates.current_transaction = ct;
+    ch->active = 0;
 }
 
 void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
 {
+    if (ch->active) return;
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA9 %d start", i);
     if (ch->io.start_timing == NDS_DMA_GE_FIFO) {
         ch->op.started = 1;
@@ -246,6 +255,7 @@ void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
         ch->op.src_access = ARM9P_nonsequential | ARM9P_dma;
 
         ch->op.chunks = 112;
+        dma9_go_ch(this, ch);
         return;
     }
 
