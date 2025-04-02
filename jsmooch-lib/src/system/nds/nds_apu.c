@@ -8,6 +8,7 @@
 #include "nds_apu.h"
 #include "nds_regs.h"
 
+
 typedef long double mf;
 
 
@@ -27,6 +28,8 @@ static i16 adpcm_tbl[89] = {
 0x3BB9, 0x41B2, 0x4843, 0x4F7E, 0x5771, 0x602F, 0x69CE, 0x7462,
 0x7FFF };
 
+static struct wav_stream mywave;
+
 static void buffer_pcm8(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
 {
     static int a = 1;
@@ -37,10 +40,36 @@ static void buffer_pcm8(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
 
 }
 
+
+// 0....1
+// to -1....1
+
+//
+
+
+static void buffer_psg(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
+{
+    ch->status.pos += num;
+    ch->status.sample = (i16)(((i32)(((ch->status.pos & 7) > ch->io.wave_duty) * 65535)) - 32768);
+}
+
 static void buffer_pcm16(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
 {
     // Since we move in 32-bit words, we move 2 samples at a time for PCM16.
     // We must read at least that many samples.
+    if (this->clock.master_frame > (60 * 20)) {
+        wav_stream_close(&mywave);
+    }
+    for (u32 i = 0; i < num; i++) {
+        u16 wd = NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos << 1), 2, 0, 0);
+        //ch->status.sample = (i16)((wd >> 8) | (wd << 8));
+        ch->status.sample = (i16)wd;
+        wav_stream_output(&mywave, 1, &wd);
+        ch->status.pos += 1;
+        if (ch->status.pos > (ch->io.len << 1)) { ch->status.playing = 0; break; }
+    }
+    return;
+
     i32 match_num = num;
     if (num & 1) num++;
     num >>= 1;
@@ -49,15 +78,16 @@ static void buffer_pcm16(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
         ch->status.addr += 4;
         for (u32 j = 0; j < 2; j++) {
             match_num--;
+            i16 smp = (word & 0xFFFF);
+            word >>= 16;
             if (match_num < 0) {
-                ch->status.sample_input_buffer.samples[ch->status.sample_input_buffer.tail] = word & 0xFFFF;
+                ch->status.sample_input_buffer.samples[ch->status.sample_input_buffer.tail] = smp;
                 ch->status.sample_input_buffer.tail = (ch->status.sample_input_buffer.tail + 1) & 15;
                 ch->status.sample_input_buffer.len++;
             }
             else {
-                ch->status.sample = word & 0xFFFF;
+                ch->status.sample = smp;
             }
-            word >>= 16;
         }
     }
 }
@@ -70,16 +100,6 @@ static void buffer_adpcm(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
         a = 0;
     }
 
-}
-
-static void buffer_psg(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
-{
-    if (!ch->has_psg) return;
-    static int a = 1;
-    if (a) {
-        printf("\nWARN IMPLEMENT PSG");
-        a = 0;
-    }
 }
 
 static void pop_samples(struct NDS *this, struct NDS_APU_CH *ch, u32 num)
@@ -135,7 +155,10 @@ static void do_run_to_current(struct NDS *this, struct NDS_APU_CH *ch)
             ch->status.sampling_counter %= 32768;
             pop_samples(this, ch, num_to_pop);
         }
-        this->apu.buffer.samples[ch->status.mix_buffer_tail] += ch->status.sample;
+        i32 smp = ch->status.sample;
+        smp *= ch->io.vol;
+        smp >>= 7;
+        this->apu.buffer.samples[ch->status.mix_buffer_tail] += ;
         ch->status.mix_buffer_tail = (ch->status.mix_buffer_tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
         ch->status.my_total_samples++;
     }
@@ -156,8 +179,9 @@ static void run_master_to_current(struct NDS *this, u64 cur_clock)
 
     this->apu.buffer.status.sampling_counter += num_clocks * 32768;
     u64 num_samples_to_play = this->apu.buffer.status.sampling_counter / this->clock.timing.arm7.hz;
-    this->apu.buffer.status.sampling_counter -= this->clock.timing.arm7.hz * num_samples_to_play;
-    this->apu.buffer.status.next_timecode = cur_clock + this->apu.buffer.status.sampling_counter;
+    this->apu.buffer.status.sampling_counter %= this->clock.timing.arm7.hz;
+    u64 num_to_wait = (this->clock.timing.arm7.hz - this->apu.buffer.status.sampling_counter) / 32768;
+    this->apu.buffer.status.next_timecode = cur_clock + num_to_wait;
 
     // Determine number of samples we need to catch up!
     if (num_samples_to_play < 1) {
@@ -217,6 +241,7 @@ static u32 apu_read8(struct NDS *this, u32 addr)
         case R7_SOUNDxCNT+2:
             return ch->io.pan;
         case R7_SOUNDxCNT+3:
+            run_to_current(this, ch, NDS_clock_current7(this));
             v = ch->io.wave_duty;
             v |= ch->io.repeat_mode << 3;
             v |= ch->io.format << 5;
@@ -263,7 +288,11 @@ static u32 apu_read8(struct NDS *this, u32 addr)
 static inline void latch_io_ch(struct NDS *this, struct NDS_APU_CH *ch)
 {
     memcpy(&ch->latched, &ch->io, sizeof(struct NDS_APU_CH_params));
-    ch->status.freq = this->clock.timing.arm7.hz_2 / ch->latched.period;
+    u32 old_freq = ch->status.freq;
+    //ch->status.freq = this->clock.timing.arm7.hz_2 / (0x10000 - ch->latched.period);
+    ch->status.freq = 32768;
+    //ch->status.freq = ch->latched.period >> 4;
+    if (old_freq != ch->status.freq) printf("\nSET CH %d FREQ TO %lld", ch->num, ch->status.freq);
     if (ch->latched.period < 4) {
         ch->status.playing = 0;
         return;
@@ -284,29 +313,31 @@ static void latch_io(struct NDS *this, struct NDS_APU_CH *ch) {
 static void calculate_ch(struct NDS *this, struct NDS_APU_CH *ch, u64 cur_clock)
 {
     // Empty, off channel.
-    if (!ch->latched.status) return;
+    if (!ch->latched.status) {
+        ch->status.playing = 0;
+        return;
+    }
 
     // Check if we WERE off but are now on
     u32 trigger = !ch->status.playing;
 
-
     if (trigger) {
         // trigger channel.
-        printf("\nTRIGGER CH %d", ch->num);
+        printf("\nTRIGGER CH %d ADDR:%08x", ch->num, ch->io.source_addr);
         ch->status.playing = 1;
         // clear input data FIFO, read first ADPM header, setup PSG state, etc.
         ch->status.sample_input_buffer.head = ch->status.sample_input_buffer.tail = ch->status.sample_input_buffer.len = 0;
         ch->status.pos = 0;
-        ch->status.addr = ch->latched.source_addr;
+        ch->status.addr = ch->latched.source_addr & 0x07FFFFFC;
         switch(ch->latched.format ) {
             case NDS_APU_FMT_pcm8:
+                break;
             case NDS_APU_FMT_pcm16:
                 break;
             case NDS_APU_FMT_ima_adpcm:
                 // TODO: this
                 break;
             case NDS_APU_FMT_psg:
-                // TODO: this
                 break;
             default:
                 break;
@@ -346,6 +377,23 @@ static void write_sndcnt_hi(struct NDS *this, struct NDS_APU_CH *ch, u32 val)
     change_params(this, ch);
 }
 
+static void update_len(struct NDS *this, struct NDS_APU_CH *ch)
+{
+    switch(ch->io.format) {
+        case 0:
+            ch->io.sample_len = 4 * ch->io.len;
+            break;
+        case 1:
+            ch->io.sample_len = 2 * ch->io.len;
+            break;
+        case 2:
+            ch->io.sample_len = 8 * (ch->io.len - 1);
+            break;
+        case 3:
+            break;
+    }
+}
+
 static void apu_write8(struct NDS *this, u32 addr, u32 val)
 {
     u32 chn;
@@ -370,7 +418,8 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
             change_params(this, NULL);
             return;
         case R7_SOUNDxCNT+0:
-            ch->io.vol = val & 0x7F;
+            ch->io.vol = ch->io.real_vol = val & 0x7F;
+            if (ch->io.real_vol == 127) ch->io.real_vol = 128;
             change_params(this, ch);
             return;
         case R7_SOUNDxCNT+1: {
@@ -404,6 +453,7 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
             ch->io.repeat_mode = (val >> 3) & 3;
             ch->io.format = (val >> 5) & 3;
             ch->io.status = (val >> 7) & 1;
+            update_len(this, ch);
             change_params(this, ch);
             return; }
 
@@ -435,10 +485,12 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val)
 
         case R7_SOUNDxLEN+0:
             ch->io.len = (ch->io.len & 0xFF00) | val;
+            update_len(this, ch);
             return;
 
         case R7_SOUNDxLEN+1:
             ch->io.len = (ch->io.len & 0xFF) | (val << 8);
+            update_len(this, ch);
             change_params(this, ch);
             return;
 
@@ -517,4 +569,6 @@ void NDS_APU_init(struct NDS *this)
             ch->has_noise = 1;
         }
     }
+
+    wav_stream_create(&mywave, "/Users/dave/whatnot.wav", 32768, 2);
 }

@@ -421,6 +421,8 @@ add_library(jsmooch-lib
         src/system/nds/3d/nds_3dmath.h
         src/system/nds/nds_apu.c
         src/system/nds/nds_apu.h
+        src/helpers/wav.c
+        src/helpers/wav.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

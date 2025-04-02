@@ -817,7 +817,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
+            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!

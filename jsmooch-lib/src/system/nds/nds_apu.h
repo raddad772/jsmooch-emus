@@ -6,14 +6,15 @@
 #define JSMOOCH_EMUS_NDS_APU_H
 
 #include "helpers/int.h"
+#include "helpers/wav.h"
 
 #define NDS_APU_MAX_SAMPLES 131072
 
 enum NDS_APU_FMT {
-    NDS_APU_FMT_pcm8,
-    NDS_APU_FMT_pcm16,
-    NDS_APU_FMT_ima_adpcm,
-    NDS_APU_FMT_psg
+    NDS_APU_FMT_pcm8 = 0,
+    NDS_APU_FMT_pcm16 = 1,
+    NDS_APU_FMT_ima_adpcm = 2,
+    NDS_APU_FMT_psg = 3
 };
 
 
@@ -52,6 +53,7 @@ struct NDS_APU {
 
         struct NDS_APU_CH_params {
             u32 vol; // 0...127
+            u32 real_vol; // 0...126, 128
             u32 vol_div;
             u32 vol_rshift; // 0, 1, 2, 4
             u32 hold;
@@ -73,6 +75,7 @@ struct NDS_APU {
             u32 period;
             u32 loop_start_pos;
             u32 len;
+            u32 sample_len;
         } io, latched;
 
         u32 has_psg, has_noise;

@@ -411,17 +411,8 @@ void R3000_fSLTU(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
 }
 
 void R3000_fBcondZ(u32 opcode, struct R3000_opcode *op, struct R3000 *core) {
-    /*
-        000001 | rs   | xxxx0| <--immediate16bit--> | bltz
-        000001 | rs   | xxxx1| <--immediate16bit--> | bgez
-        000001 | rs   | 10000| <--immediate16bit--> | bltzal
-        000001 | rs   | 10001| <--immediate16bit--> | bgezal
-     */
     u32 rs = (opcode >> 21) & 0x1F;
     u32 w = (opcode >> 16) & 0x1F;
-    // cases
-    // 0x10  bltzal
-    // 0x11  bgezal
     if ((w < 0x10) || (w > 0x11)) w &= 1;
     i32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
@@ -707,7 +698,6 @@ void R3000_fLWL(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 imm16 = (u32)((i16)(opcode & 0xFFFF));
     u32 addr = core->regs.R[rs] + imm16;
-
 
     // Fetch register from delay if it's there, and also clobber it
     u32 cur_v = R3000_fs_reg_delay_read(core, rt);

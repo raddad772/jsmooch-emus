@@ -801,6 +801,8 @@ static void find_targets_and_priorities(u32 bg_enables[6], union NDS_PX *layers[
  *
  *   so, priority in same level works like this:
  *      sprite, bg0, bg1, bg2, bg3, backdrop
+ *
+ *  this does the same thing but with only 1 draw pass
  */
     // Outputs here. 5 = backdrop, 4-1 = bg 3-0, 0 = sprite.
     u32 laout = 5;
