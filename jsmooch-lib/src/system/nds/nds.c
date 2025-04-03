@@ -150,44 +150,6 @@ static void schedule_frame(struct NDS *this, u64 start_clock, u32 is_first)
     if (is_first) scheduler_only_add_abs(&this->scheduler, (i64)this->apu.next_sample, 0, this, &NDS_master_sample_callback, NULL);
 }
 
-static void run_arm7(struct NDS *this)
-{
-    // Run DMA & CPU
-    if (this->io.arm7.halted) {
-        this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
-    }
-
-    if (this->io.arm7.halted) {
-        this->clock.master_cycle_count7 = this->clock.cycles7;
-        return;
-    }
-
-    this->arm7_ins = 1;
-
-    while((i64)this->clock.master_cycle_count7 < this->clock.cycles7) {
-        ARM7TDMI_run_noIRQcheck(&this->arm7);
-        this->clock.master_cycle_count7 += this->waitstates.current_transaction;
-        this->waitstates.current_transaction = 0;
-    }
-    this->arm7_ins = 0;
-}
-
-static void run_arm9(struct NDS *this)
-{
-    if (this->ge.fifo.pausing_cpu) {
-        this->clock.master_cycle_count9 = this->clock.cycles9;
-        return;
-    }
-
-    this->arm9_ins = 1;
-    while((i64)this->clock.master_cycle_count9 < this->clock.cycles9) {
-        ARM946ES_run_noIRQcheck(&this->arm9);
-        this->clock.master_cycle_count9 += this->waitstates.current_transaction;
-        this->waitstates.current_transaction = 0;
-    }
-    this->arm9_ins = 0;
-}
-
 static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 {
     struct NDS *this = (struct NDS *)ptr;
@@ -195,8 +157,37 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
     this->waitstates.current_transaction = 0;
     this->clock.cycles7 += (i64)num_cycles;
     this->clock.cycles9 += (i64)num_cycles;
-    run_arm7(this);
-    run_arm9(this);
+
+
+    if (this->io.arm7.halted) {
+        this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
+    }
+
+    if (this->io.arm7.halted) {
+        this->clock.master_cycle_count7 = this->clock.cycles7;
+    }
+    else {
+        this->arm7_ins = 1;
+        while ((i64) this->clock.master_cycle_count7 < this->clock.cycles7) {
+            ARM7TDMI_run_noIRQcheck(&this->arm7);
+            this->clock.master_cycle_count7 += this->waitstates.current_transaction;
+            this->waitstates.current_transaction = 0;
+        }
+        this->arm7_ins = 0;
+    }
+
+    if (this->ge.fifo.pausing_cpu || this->arm9.halted) {
+        this->clock.master_cycle_count9 = this->clock.cycles9;
+    }
+    else {
+        this->arm9_ins = 1;
+        while((i64)this->clock.master_cycle_count9 < this->clock.cycles9) {
+            ARM946ES_run_noIRQcheck(&this->arm9);
+            this->clock.master_cycle_count9 += this->waitstates.current_transaction;
+            this->waitstates.current_transaction = 0;
+        }
+        this->arm9_ins = 0;
+    }
 
     // TODO: let this be scheduled.
     // TODO Next: yes do it!
@@ -210,7 +201,7 @@ void NDS_new(struct jsm_system *jsm)
     memset(this, 0, sizeof(*this));
     this->waitstates.current_transaction = 0;
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count7, &this->waitstates.current_transaction);
-    this->scheduler.max_block_size = 20;
+    this->scheduler.max_block_size = 25;
 
     this->scheduler.run.func = &NDS_run_block;
     this->scheduler.run.ptr = this;

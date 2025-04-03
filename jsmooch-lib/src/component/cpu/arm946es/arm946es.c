@@ -306,11 +306,6 @@ void ARM946ES_schedule_IRQ_check(struct ARM946ES *this)
 
 void ARM946ES_run_noIRQcheck(struct ARM946ES*this)
 {
-    if (this->halted) {
-        (*this->waitstates)++;
-        return;
-    }
-
     u32 opcode = this->pipeline.opcode[0];
     u32 opcode_addr = this->pipeline.addr[0];
     this->pipeline.opcode[0] = this->pipeline.opcode[1];

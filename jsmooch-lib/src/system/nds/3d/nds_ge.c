@@ -1074,6 +1074,8 @@ static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expec
 
     determine_highest_vertex(poly, b);
     poly->is_translucent = ((poly->tex_param.format == 1 || poly->tex_param.format == 6) && !(poly->attr.mode & 1)) || (poly->attr.alpha > 0 && poly->attr.alpha < 31);
+    poly->is_shadow_mask = (poly->attr.poly_id== 0) && (poly->attr.mode == 3);
+    poly->is_shadow = !poly->is_shadow_mask && (poly->attr.mode == 3);
     poly->sorting_key = (poly->max_y << 9) | poly->min_y | (poly->is_translucent << 24);
 }
 

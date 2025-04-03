@@ -2,6 +2,7 @@
 // Created by . on 3/12/25.
 //
 
+#include <string.h>
 #include <stdlib.h>
 #include <math.h>
 #include "nds_re.h"
@@ -69,6 +70,10 @@ static void NDS_RE_interp_setup(struct NDS_RE_interp *this, u32 bit_precision, i
     }
 }
 
+static void clear_stencil(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
+    memset(&l->stencil, 0, sizeof(l->stencil));
+}
+
 static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
     for (u32 x = 0; x < 256; x++) {
         l->poly_id[x] = this->re.io.CLEAR.poly_id;
@@ -79,6 +84,7 @@ static void clear_line(struct NDS *this, struct NDS_RE_LINEBUFFER *l) {
         l->extra_attr[x].u = 0;
         //l->depth[x] = INT32_MAX; //this->re.io.clear.depth;
         l->tex_param[x].u = 0;
+        l->stencil[x] = 0;
         l->depth[x] = this->re.io.CLEAR.depth;
     }
 
@@ -555,6 +561,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     clear_line(this, line);
     u32 test_byte = line_num >> 3;
     u32 test_bit = 1 << (line_num & 7);
+    u32 last_was_smask = 0;
     struct NDS_RE_interp interp;
 
     u32 global_tex_enable = this->re.io.DISP3DCNT.texture_mapping;
@@ -564,11 +571,18 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
         struct NDS_RE_POLY *p = this->re.render_list.items[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
+        if (p->attr.mode == 3)  {
+            if (!last_was_smask) clear_stencil(this, line);
+            last_was_smask = 1;
+        }
+        else {
+            last_was_smask = 0;
+        }
         if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
-        if (p->attr.mode > 2) continue;
         u32 poly_a6 = (p->attr.alpha << 1) ;
         if (poly_a6) poly_a6++;
         float poly_af = (float)poly_a6;
+
 
         // Polygon does not intersect this line
         if ((line_num < p->min_y) || (line_num > p->max_y)) {
@@ -644,6 +658,18 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
 
                                 pix_a6 = (u32)(((tex_af + 1) * (poly_af + 1) - 1)) >> 6;
                                 break;
+                            case 3: // shadow
+                                if ((p->attr.poly_id == 0) || (p->attr.poly_id == line->poly_id[x])) continue; // this pixel should be forgotten about
+                                if (!line->stencil[x]) continue;
+                                shading_mode = 6;
+                                // shadows use decal blending...
+                                // but no textures!
+                                u32 colo = line->rgb[x];
+                                tex_rf = (colo & 0x3F);
+                                tex_gf = ((colo >> 6) & 0x3F);
+                                tex_bf = ((colo >> 12) & 0x1F);
+                                tex_a6 = poly_a6;
+                                __attribute__ ((fallthrough));
                             case 1: // decal
                                 shading_mode = 3;
                                 switch(tex_a6) {
@@ -689,22 +715,46 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                                 // TODO: uhhhhh....?
                                 pix_a6 = (u32)((tex_af+1)*((float)(p->attr.alpha << 1))/64.0f);
                                 break; }
-                            case 3: // shadow
-                                // TODO: this
-                                shading_mode = 6;
-                                pix_r6 = 0x1F;
-                                pix_g6 = 0;
-                                pix_b6 = 0x1F;
-                                pix_a6 = 0x1F;
-                                break;
                         }
                     }
                     else {
-                        pix_r6 = (u32) cr6f;
-                        pix_g6 = (u32) cg6f;
-                        pix_b6 = (u32) cb6f;
-                        pix_a6 = p->attr.alpha << 1;
-                        if (pix_a6) pix_a6++;
+                        if (p->attr.mode == 3) {
+                            if ((p->attr.poly_id == 0) || (p->attr.poly_id == line->poly_id[x]))
+                                continue; // this pixel should be forgotten about
+                            if (!line->stencil[x]) continue;
+                            u32 colo = line->rgb[x];
+                            float tex_rf = (colo & 0x3F);
+                            float tex_gf = ((colo >> 6) & 0x3F);
+                            float tex_bf = ((colo >> 12) & 0x1F);
+                            float tex_af = poly_a6;
+                            switch(poly_a6) {
+                                case 0:
+                                    pix_r6 = (u32)cr6f;
+                                    pix_g6 = (u32)cg6f;
+                                    pix_b6 = (u32)cb6f;
+                                    break;
+                                case 31:
+                                    pix_r6 = (u32)tex_rf;
+                                    pix_g6 = (u32)tex_gf;
+                                    pix_b6 = (u32)tex_bf;
+                                    break;
+                                default:
+                                    // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
+                                    pix_r6 = (u32)(tex_rf * tex_af + cr6f * (63 - tex_af)) >> 6;
+                                    pix_g6 = (u32)(tex_gf * tex_af + cg6f * (63 - tex_af)) >> 6;
+                                    pix_b6 = (u32)(tex_bf * tex_af + cb6f * (63 - tex_af)) >> 6;
+                                    break;
+                            }
+                            pix_a6 = poly_a6;
+                            shading_mode = 6;
+                        }
+                        else {
+                            pix_r6 = (u32) cr6f;
+                            pix_g6 = (u32) cg6f;
+                            pix_b6 = (u32) cb6f;
+                            pix_a6 = p->attr.alpha << 1;
+                            if (pix_a6) pix_a6++;
+                        }
                     }
                     if (pix_a6>>1) {
                         if (pix_r6 > 63) pix_r6 = 63;
@@ -729,12 +779,16 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                         u32 alpha_out = 0x8000 * (pix_a6 > 0);
                         line->rgb[x] = pix_r6 | (pix_g6 << 6) | (pix_b6 << 12) | alpha_out;
                         line->tex_param[x] = p->tex_param;
+                        line->poly_id[x] = p->attr.poly_id;
                         line->extra_attr[x].vertex_mode = p->vertex_mode+1;
                         line->extra_attr[x].has_px = 1;
                         line->has[x] = 1;
                         line->extra_attr[x].shading_mode = shading_mode;
                         line->depth[x] = (u32) depth;
                     }
+                }
+                else if ((p->attr.mode == 3) && (p->attr.poly_id == 0)) {
+                    line->stencil[x] = 1;
                 }
             }
         }

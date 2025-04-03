@@ -183,7 +183,7 @@ struct NDS_RE_POLY  { // no more __attribute__((packed))
     union NDS_GE_TEX_PARAM tex_param;
 
     u32 sorting_key;
-    u32 is_translucent;
+    u32 is_translucent, is_shadow_mask, is_shadow;
     u32 pltt_base;
     u32 w_normalization_left;
     u32 w_normalization_right;
@@ -230,10 +230,12 @@ union NDS_RE_EXTRA_ATTR {
     u32 u;
 };
 struct NDS_RE_LINEBUFFER {
+    u8 stencil[256];
     u32 has[256];
     u32 rgb[256];
     u16 alpha[256];
     u16 poly_id[256];
+    u32 shadow_drawn;
     union NDS_RE_EXTRA_ATTR extra_attr[256];
     union NDS_GE_TEX_PARAM tex_param[256];
     u32 depth[256];
