@@ -445,7 +445,7 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
                 this->waitstates.current_transaction++;
             }
             else {
-                ARM7TDMI_IRQcheck(&this->cpu);
+                ARM7TDMI_IRQcheck(&this->cpu, 0);
                 ARM7TDMI_run_noIRQcheck(&this->cpu);
             }
         }

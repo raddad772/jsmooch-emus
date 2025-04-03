@@ -197,9 +197,11 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
     this->clock.cycles9 += (i64)num_cycles;
     run_arm7(this);
     run_arm9(this);
+
     // TODO: let this be scheduled.
-    ARM7TDMI_IRQcheck(&this->arm7);
-    ARM946ES_IRQcheck(&this->arm9);
+    // TODO Next: yes do it!
+    //ARM7TDMI_IRQcheck(&this->arm7);
+    //ARM946ES_IRQcheck(&this->arm9);
 }
 
 void NDS_new(struct jsm_system *jsm)
@@ -215,8 +217,8 @@ void NDS_new(struct jsm_system *jsm)
 
     NDS_clock_init(&this->clock);
     NDS_DMA_init(this);
-    //ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, &this->scheduler);
-    ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, NULL);
+    ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, &this->scheduler);
+    //ARM7TDMI_init(&this->arm7, &this->clock.master_cycle_count7, &this->waitstates.current_transaction, NULL);
     this->arm7.read_ptr = this;
     this->arm7.write_ptr = this;
     this->arm7.read = &NDS_mainbus_read7;
@@ -224,8 +226,8 @@ void NDS_new(struct jsm_system *jsm)
     this->arm7.fetch_ptr = this;
     this->arm7.fetch_ins = &NDS_mainbus_fetchins7;
 
-    ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, NULL);
-    //ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, &this->scheduler);
+    //ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, NULL);
+    ARM946ES_init(&this->arm9, &this->clock.master_cycle_count9, &this->waitstates.current_transaction, &this->scheduler);
     this->arm9.read_ptr = this;
     this->arm9.read = &NDS_mainbus_read9;
 

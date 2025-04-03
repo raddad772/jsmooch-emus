@@ -34,6 +34,7 @@ void ARM946ES_init(struct ARM946ES *this, u64 *master_clock, u64 *waitstates, st
     memset(this, 0, sizeof(*this));
     ARM946ES_fill_arm_table(this);
     this->waitstates = waitstates;
+    this->scheduler = scheduler;
     this->master_clock = master_clock;
     for (u32 i = 0; i < 16; i++) {
         this->regmap[i] = &this->regs.R[i];
@@ -278,15 +279,19 @@ static void decode_and_exec_arm(struct ARM946ES *this, u32 opcode, u32 opcode_ad
     this->arm9_ins->exec(this, opcode);
 }
 
-void ARM946ES_IRQcheck(struct ARM946ES *this) {
+static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
+{
+    struct ARM946ES *this = (struct ARM946ES *)ptr;
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
     }
 }
 
-static void sch_check_irq(void *ptr, u64 key, u64 timecode, u32 jitter)
-{
-    struct ARM946ES *this = (struct ARM946ES *)ptr;
+void ARM946ES_IRQcheck(struct ARM946ES *this, u32 do_sched) {
+    if (do_sched) {
+        scheduler_add_next(this->scheduler, 0, this, &sch_check_irq, NULL);
+        return;
+    }
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
     }

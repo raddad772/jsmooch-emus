@@ -8,6 +8,7 @@
 void NDS_eval_irqs_7(struct NDS *this)
 {
     this->arm7.regs.IRQ_line = (!!(this->io.arm7.IE & this->io.arm7.IF)) & this->io.arm7.IME;
+    ARM7TDMI_IRQcheck(&this->arm7, this->arm7_ins);
 }
 
 void NDS_eval_irqs_9(struct NDS *this)
@@ -16,6 +17,7 @@ void NDS_eval_irqs_9(struct NDS *this)
     if (!(this->io.arm9.IF & (1 << 21)))
         this->io.arm9.IF |= NDS_GE_check_irq(this) << 21;
     this->arm9.regs.IRQ_line = (!!(this->io.arm9.IE & this->io.arm9.IF)) & this->io.arm9.IME;
+    ARM946ES_IRQcheck(&this->arm9, this->arm9_ins);
 }
 
 void NDS_eval_irqs(struct NDS *this)
@@ -64,7 +66,7 @@ void NDS_update_IF7(struct NDS *this, u32 bitnum)
     if (old_IF != this->io.arm7.IF) {
         NDS_eval_irqs_7(this);
     }
-    if (!this->arm7_ins) ARM7TDMI_IRQcheck(&this->arm7);
+    ARM7TDMI_IRQcheck(&this->arm7, this->arm7_ins);
 }
 
 void NDS_update_IF9(struct NDS *this, u32 bitnum)
@@ -74,7 +76,6 @@ void NDS_update_IF9(struct NDS *this, u32 bitnum)
     if (old_IF != this->io.arm9.IF) {
         NDS_eval_irqs_9(this);
     }
-    if (!this->arm9_ins) ARM946ES_IRQcheck(&this->arm9);
 }
 
 void NDS_update_IFs(struct NDS *this, u32 bitnum)

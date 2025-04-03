@@ -118,7 +118,7 @@ static void calc_loop_start(struct NDS *this, struct NDS_APU_CH *ch)
             ch->status.real_loop_start_pos = (ch->io.loop_start_pos - 1) * 8;
             break;
         case NDS_APU_FMT_psg:
-            ch->status.real_loop_start_pos = 0;
+            ch->status.real_loop_start_pos = INT32_MAX;
             break;
     }
 }
@@ -560,8 +560,7 @@ void NDS_master_sample_callback(void *ptr, u64 nothing, u64 cur_clock, u32 jitte
         //i32 smp = ch->sample; //
         i32 smp = ((ch->sample * (i32)ch->io.real_vol) >> 7) >> ch->io.vol_rshift;
         // Current range, 16 bits.
-        // Output range: 16 bits to capture, 10 bits to mixed output
-        spkr += (smp >> 6);
+        spkr += smp;
 
         left += (smp * ch->io.left_pan) >> 6;
         right += (smp * ch->io.right_pan) >> 6;

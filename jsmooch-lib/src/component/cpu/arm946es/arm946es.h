@@ -232,7 +232,7 @@ void ARM946ES_reset(struct ARM946ES *);
 void ARM946ES_disassemble_entry(struct ARM946ES*, struct disassembly_entry* entry);
 void ARM946ES_setup_tracing(struct ARM946ES*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
 void ARM946ES_run_noIRQcheck(struct ARM946ES*);
-void ARM946ES_IRQcheck(struct ARM946ES*);
+void ARM946ES_IRQcheck(struct ARM946ES*, u32 do_sched);
 void ARM946ES_flush_pipeline(struct ARM946ES *);
 void ARM946ES_fill_regmap(struct ARM946ES *);
 void ARM946ES_reload_pipeline(struct ARM946ES *);

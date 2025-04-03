@@ -329,8 +329,12 @@ void ARM7TDMI_idle(struct ARM7TDMI*this, u32 num)
     (*this->waitstates) += num;
 }
 
-void ARM7TDMI_IRQcheck(struct ARM7TDMI *this)
+void ARM7TDMI_IRQcheck(struct ARM7TDMI *this, u32 do_sched)
 {
+    if (do_sched) {
+        scheduler_add_next(this->scheduler, 0, this, &sch_check_irq, NULL);
+        return;
+    }
     if (this->regs.IRQ_line && !this->regs.CPSR.I) {
         do_IRQ(this);
     }
