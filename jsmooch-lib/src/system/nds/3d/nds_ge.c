@@ -883,33 +883,44 @@ static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
     out->w_normalization_right = 0;
     u32 longest_one = 0;
     struct NDS_GE_VTX_list_node *item = out->vertex_list.first;
+    u32 wsize = 0;
     while(item) {
-        u32 w = item->data.xyzw[3];
-        u32 leading = __builtin_clrsb(w);
-        u32 how_many_significant = 32 - leading;
-        if (how_many_significant > longest_one) longest_one = how_many_significant;
+        u32 w = (u32)item->data.xyzw[3];
+        //if (w == 0) poly->Degenerate = true;
+
+        while ((w >> wsize) && (wsize < 32))
+            wsize += 4;
         item = item->next;
     }
 
-    // We either need to cut them down so the longest one is only 16 bits,
-    // or boost them up so the shortest one is 16 bits
-    if (longest_one > 16) {
-        // Rown UP
-        out->w_normalization_right = (((longest_one - 16) + 3) >> 2) << 2;
-    }
-    else {
-        // round UP
-        out->w_normalization_left = (((16 - longest_one) + 0) >> 2) << 2;
-    }
+    struct NDS_GE_VTX_list_node *vtx = out->vertex_list.first;
+    while(vtx) {
+        s32 w, wshifted;
 
-    //printf("\n\nW NORMALIZE!");
-    item = out->vertex_list.first;
-    while(item) {
-        if (out->w_normalization_right) item->data.w_normalized = item->data.xyzw[3] >> out->w_normalization_right;
-        else if (out->w_normalization_left) item->data.w_normalized = item->data.xyzw[3] << out->w_normalization_left;
-        else item->data.w_normalized = item->data.xyzw[3];
-        //printf("\nORIGINAL W: %04x NEW W:%04x sl:%d sr:%d", item->data.xyzw[3], item->data.w_normalized, out->w_normalization_left, out->w_normalization_right);
-        item = item->next;
+        if (wsize < 16)
+        {
+            w = vtx->data.xyzw[3] << (16 - wsize);
+            wshifted = w >> (16 - wsize);
+        }
+        else
+        {
+            w = vtx->data.xyzw[3] >> (wsize - 16);
+            wshifted = w << (wsize - 16);
+        }
+
+        i32 z;
+        if (vtx->data.xyzw[3])
+            z = ((((i64)vtx->data.xyzw[2] * 0x4000) / vtx->data.xyzw[3]) + 0x3FFF) * 0x200;
+        else
+            z = 0x7FFE00;
+
+        if (z < 0) z = 0;
+        else if (z > 0xFFFFFF) z = 0xFFFFFF;
+
+        vtx->data.w_normalized = w;
+        vtx->data.xyzw[2] = w;
+
+        vtx = vtx->next;
     }
 }
 

@@ -271,7 +271,8 @@ static inline u32 tex(u32 colo)
 static inline u32 texc(u32 colo)
 {
     //return ctabl[colo & 31];
-    u32 v = ((colo & 0x1F) << 1) | ((colo & 0x10) >> 4);
+    u32 v = ((colo & 0x1F) << 1);
+    if (v) v++;//| ((colo & 0x10) >> 4);
     return v;
 }
 
@@ -346,106 +347,131 @@ static void sample_texture_a5i3(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts,
 
 static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
-    u32 block_x = s >> 2;
-    u32 block_y = t >> 2;
-    u32 sample_addr = (block_y * ts->s_size) + (block_x * 4);
+    u32 vramaddr = ts->tex_addr;
+    vramaddr += ((t & 0x3FC) * (ts->s_size>>2)) + (s & 0x3FC);
+    vramaddr += (t & 0x3);
+    vramaddr &= 0x7FFFF;
 
-    u16 slot1_word = NDS_VRAM_tex_read(this, ts->tex_slot1_addr + (sample_addr>>1), 2);
-    u32 sub_x = s & 3;
-    u32 sub_y = t & 3;
-    // each block_y adds width bytes.
-    // each block_x adds 4 bytes.
-    u32 sample = NDS_VRAM_tex_read(this, ts->tex_addr+sample_addr, 4);
+    u32 slot1addr = 0x20000 + ((vramaddr & 0x1FFFC) >> 1);
+    if (vramaddr >= 0x40000)
+        slot1addr += 0x10000;
 
-    u32 shift = (sub_y * 8) + (sub_x * 2);
-    u32 texel = (sample >> shift) & 3;
-    u32 pal_addr = ts->pltt_base + ((slot1_word & 0x3FFF) << 2);
+    u8 val;
+    if (vramaddr >= 0x20000 && vramaddr < 0x40000) // reading slot 1 for texels should always read 0
+        val = 0;
+    else
+    {
+        val = NDS_VRAM_tex_read(this, vramaddr, 1);
+        val >>= (2 * (s & 0x3));
+    }
 
-    switch(texel) {
+    u16 palinfo = NDS_VRAM_tex_read(this, slot1addr, 2);
+    u32 paloffset = (palinfo & 0x3FFF) << 2;
+    u32 texpal = ts->pltt_base;
+
+    u32 color;
+    switch (val & 3)
+    {
         case 0:
-            ct_basic_read(NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2), r, g, b, a);
+            color = NDS_VRAM_pal_read(this, texpal + paloffset, 2);
+            *r = texc(color);
+            *g = texc(color >> 5);
+            *b = texc(color >> 10);
+            *a = 31;
             break;
+
         case 1:
-            ct_basic_read(NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2), r, g, b, a);
+            color = NDS_VRAM_pal_read(this, texpal + paloffset + 2, 2);
+            *r = texc(color);
+            *g = texc(color >> 5);
+            *b = texc(color >> 10);
+            *a = 31;
             break;
+
         case 2:
-            if ((slot1_word >> 14) == 1) {
-                u16 color0 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2);
-                u16 color1 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2);
+            if ((palinfo >> 14) == 1) {
+                u32 color0 = NDS_VRAM_pal_read(this, texpal + paloffset, 2);
+                u32 color1 = NDS_VRAM_pal_read(this, texpal + paloffset + 2, 2);
 
-                u32 r0 = color0 & 0x001F;
-                u32 g0 = color0 & 0x03E0;
-                u32 b0 = color0 & 0x7C00;
-                u32 r1 = color1 & 0x001F;
-                u32 g1 = color1 & 0x03E0;
-                u32 b1 = color1 & 0x7C00;
+                u32 r0 = color0 & 0x1F;
+                u32 g0 = (color0 >> 5) & 0x1F;
+                u32 b0 = (color0 >> 10) & 0x1F;
+                u32 r1 = color1 & 0x1F;
+                u32 g1 = (color1 >> 5) & 0x1F;
+                u32 b1 = (color1 >> 10) & 0x1F;
 
-                u32 br = (r0 + r1) >> 1;
-                u32 bg = ((g0 + g1) >> 1) & 0x03E0;
-                u32 bb = ((b0 + b1) >> 1) & 0x7C00;
+                u32 mr = (r0 + r1) >> 1;
+                u32 mg = (g0 + g1) >> 1;
+                u32 mb = (b0 + b1) >> 1;
 
-                *r = texc(br);
-                *g = texc(bg >> 5);
-                *b = texc(bb >> 10);
-            } else if ((slot1_word >> 14) == 3) {
-                u16 color0 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2);
-                u16 color1 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2);
+                *r = texc(mr);
+                *g = texc(mg);
+                *b = texc(mb);
+            }
+            else if ((palinfo >> 14) == 3) {
+                u32 color0 = NDS_VRAM_pal_read(this, texpal + paloffset, 2);
+                u32 color1 = NDS_VRAM_pal_read(this, texpal + paloffset + 2, 2);
 
-                u32 r0 = color0 & 0x001F;
-                u32 g0 = color0 & 0x03E0;
-                u32 b0 = color0 & 0x7C00;
-                u32 r1 = color1 & 0x001F;
-                u32 g1 = color1 & 0x03E0;
-                u32 b1 = color1 & 0x7C00;
+                u32 r0 = color0 & 0x1F;
+                u32 g0 = (color0 >> 5) & 0x1F;
+                u32 b0 = (color0 >> 10) & 0x1F;
+                u32 r1 = color1 & 0x1F;
+                u32 g1 = (color1 >> 5) & 0x1F;
+                u32 b1 = (color1 >> 10) & 0x1F;
 
-                u32 br = (r0 * 5 + r1 * 3) >> 3;
-                u32 bg = ((g0 * 5 + g1 * 3) >> 3) & 0x03E0;
-                u32 bb = ((b0 * 5 + b1 * 3) >> 3) & 0x7C00;
+                u32 mr = (r0*5 + r1*3) >> 3;
+                u32 mg = (g0*5 + g1*3) >> 3;
+                u32 mb = (b0*5 + b1*3) >> 3;
 
-                *r = texc(br);
-                *g = texc(bg >> 5);
-                *b = texc(bb >> 10);
-            } else {
-                u32 c = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 4, 2);
-                *r = texc(c);
-                *g = texc(c >> 5);
-                *b = texc(c >> 10);
+                *r = texc(mr);
+                *g = texc(mg);
+                *b = texc(mb);
+            }
+            else {
+                color = NDS_VRAM_pal_read(this, texpal + paloffset + 4, 2);
+                *r = texc(color);
+                *g = texc(color >> 5);
+                *b = texc(color >> 10);
             }
             *a = 31;
             break;
 
         case 3:
-            if ((slot1_word >> 14) == 2) {
-                u32 c = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 6, 2);
-                *r = texc(c);
-                *g = texc(c >> 5);
-                *b = texc(c >> 10);
+            if ((palinfo >> 14) == 2) {
+                color = NDS_VRAM_pal_read(this, texpal + paloffset + 6, 2);
+                *r = texc(color);
+                *g = texc(color >> 5);
+                *b = texc(color >> 10);
                 *a = 31;
-            } else if ((slot1_word >> 14) == 3) {
-                u16 color0 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2);
-                u16 color1 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2);
+            }
+            else if ((palinfo >> 14) == 3)
+            {
+                u32 color0 = NDS_VRAM_pal_read(this, texpal + paloffset, 2);
+                u32 color1 = NDS_VRAM_pal_read(this, texpal + paloffset + 2, 2);
 
-                u32 r0 = color0 & 0x001F;
-                u32 g0 = color0 & 0x03E0;
-                u32 b0 = color0 & 0x7C00;
-                u32 r1 = color1 & 0x001F;
-                u32 g1 = color1 & 0x03E0;
-                u32 b1 = color1 & 0x7C00;
+                u32 r0 = color0 & 0x1F;
+                u32 g0 = (color0 >> 5) & 0x1F;
+                u32 b0 = (color0 >> 10) & 0x1F;
+                u32 r1 = color1 & 0x1F;
+                u32 g1 = (color1 >> 5) & 0x1F;
+                u32 b1 = (color1 >> 10) & 0x1F;
 
-                u32 br = (r0 * 3 + r1 * 5) >> 3;
-                u32 bg = ((g0 * 3 + g1 * 5) >> 3) & 0x03E0;
-                u32 bb = ((b0 * 3 + b1 * 5) >> 3) & 0x7C00;
+                u32 mr = (r0*3 + r1*5) >> 3;
+                u32 mg = (g0*3 + g1*5) >> 3;
+                u32 mb = (b0*3 + b1*5) >> 3;
 
-                *r = texc(br);
-                *g = texc(bg >> 5);
-                *b = texc(bb >> 10);
+                *r = texc(mr);
+                *g = texc(mg);
+                *b = texc(mb);
                 *a = 31;
-            } else {
+            }
+            else {
                 *r = *g = *b = *a = 0;
             }
             break;
     }
 }
+
 
 static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
@@ -503,41 +529,42 @@ static void sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *t
 static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, i32 *s, i32 *t)
 {
     //printf("\nINPUT S,T: %f, %f", uv_to_float(*s), uv_to_float(*t));
-    i32 ms = (i32)*s;
-    i32 mt = (i32)*t;
-    // Round to nearest!
-    ms += 8;
-    mt += 8;
-    u32 t_eo=0, s_eo=0;
+    i32 ms = ((i32)*s) >> 4;
+    i32 mt = ((i32)*t) >> 4;
+
     if (ts->s_repeat) {
-        s_eo = (ms / ts->s_size_fp) & 1;
-        ms &= ts->s_fp_mask;
+        if (ts->s_flip)
+        {
+            if (ms & ts->s_size) ms = (ts->s_size-1) - (ms & ts->s_mask);
+            else ms = ms & ts->s_mask;
+        }
+        else
+            ms &= ts->s_mask;
     }
-    else {
+    else
+    {
         if (ms < 0) ms = 0;
-        if (ms > ts->s_fp_mask) ms = ts->s_fp_mask;
+        else if (ms >= ts->s_size) ms = ts->s_mask;
     }
-    if (ts->s_flip && s_eo) ms = ts->s_fp_mask - ms;
+
 
     if (ts->t_repeat) {
-        t_eo = (mt / ts->t_size_fp) & 1;
-        mt &= ts->t_fp_mask;
+        if (ts->t_flip)
+        {
+            if (mt & ts->t_size) mt = (ts->t_size-1) - (mt & ts->t_mask);
+            else mt = mt & ts->t_mask;
+        }
+        else
+            mt &= ts->t_mask;
     }
-    else {
+    else
+    {
         if (mt < 0) mt = 0;
-        if (mt > ts->t_fp_mask) mt = ts->t_fp_mask;
+        else if (mt >= ts->t_size) mt = ts->t_mask;
     }
-    if (ts->t_flip && t_eo) mt = ts->t_fp_mask - mt;
 
-    //printf("\nS SIZE:%d T SIZE:%d", ts->s_size_fp, ts->t_size_fp);
-    // clamped = repeat 000?
-    // TODO: add clamping, mirroring, flipping, etc.
-
-    // We wont' do that for now
-    *s = ms >> 4;
-    *t = mt >> 4;
-
-    //printf("\nFINAL S,T: %d, %d", *s, *t);
+    *s = ms;
+    *t = mt;
 
 }
 
@@ -557,10 +584,8 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
     ts->pltt_base = p->tex_param.format == 2 ? p->pltt_base << 3 : p->pltt_base << 4;
     ts->s_size_fp = (ts->s_size << 4);
     ts->t_size_fp = (ts->t_size << 4);
-    ts->s_fp_mask = ts->s_size_fp - 1;
-    ts->t_fp_mask = ts->t_size_fp - 1;
-    ts->s_sub_shift = (3 + p->tex_param.sz_s) + 4; // 4 in these lines is for the 4-bit fixed point addition
-    ts->t_sub_shift = (3 + p->tex_param.sz_t) + 4;
+    ts->s_mask = ts->s_size - 1;
+    ts->t_mask = ts->t_size - 1;
     ts->s_flip = p->tex_param.flip_s;
     ts->t_flip = p->tex_param.flip_t;
     ts->s_repeat = p->tex_param.repeat_s;
@@ -776,6 +801,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                     if (pix_g6 > 63) pix_g6 = 63;
                     if (pix_b6 > 63) pix_b6 = 63;
                     if (pix_a5 > 31) pix_a5 = 31;
+                    if (pix_a5 < this->re.io.ALPHA_TEST_REF) continue;
                     if ((pix_a5 < 31) && (this->re.io.DISP3DCNT.alpha_blending) && (line->alpha[x] != 0)) {
                         // BLEND ALPHA!
                         if (line->poly_id[x] == p->attr.poly_id) {
