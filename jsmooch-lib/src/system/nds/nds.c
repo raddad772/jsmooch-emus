@@ -39,20 +39,6 @@ static u32 NDSJ_step_master(JSM, u32 howmany);
 static void NDSJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void NDSJ_describe_io(JSM, struct cvec* IOs);
 
-/*
-Especially when games have very bizarre bugs, such as bowsers inside story purposefully sabotaging inputs at the save select screen because I allowed cart reads from the secure area, which made it think it was running on a flashcart
-Or Mario jumping way way way too high because I calculated the zero flag incorrectly for a certain multiply instruction */
-
-// master cycles per second: 33554432 (ARM7)
-//59.8261 = 560866 per frame
-/*   355 x 263
- * = 2132 cycles per line
- *
-H-Timing: 256 dots visible, 99 dots blanking, 355 dots total (15.7343KHz)
-V-Timing: 192 lines visible, 71 lines blanking, 263 lines total (59.8261 Hz)
-The V-Blank cycle for the 3D Engine consists of the 23 lines, 191..213. *
- */
-
 static u32 timer_reload_ticks(u32 reload)
 {
     // So it overflows at 0x100

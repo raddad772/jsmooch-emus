@@ -128,7 +128,7 @@ static void get_mouse_coords(ImGuiIO& io, struct mouse_emu_struct &a)
     a.button_down = ImGui::IsMouseDown(0);
 }
 
-static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
+static void render_emu_window(struct full_system &fsys, ImGuiIO& io, u32 frame_multi)
 {
     //ImVec2 window_origin = ImGui::GetCursorPos();
     if (ImGui::Begin(fsys.sys->label)) {
@@ -147,7 +147,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io)
         struct mouse_emu_struct a;
         get_mouse_coords(io, a);
         fsys.update_touch(a.x, a.y, a.button_down);
-        ImGui::Text("FPS: %.1f", io.Framerate * FRAME_MULTI);
+        ImGui::Text("FPS: %.1f", io.Framerate * frame_multi);
         ImGui::Text("CORDS: %d %d", a.x, a.y);
     }
     ImGui::End();
@@ -926,8 +926,9 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     if (hotkeys[1]) {
         fsys.load_state();
     }
+    u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? 5 : 1;
     if (fsys.state == FSS_play) {
-        for (u32 i = 0; i < FRAME_MULTI; i++) {
+        for (u32 i = 0; i < frame_multi; i++) {
             fsys.do_frame();
         }
         last_frame_was_whole = true;
@@ -936,7 +937,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     }
     fsys.present();
 
-    render_emu_window(fsys, io);
+    render_emu_window(fsys, io, frame_multi);
     // debug controls window
     if (ImGui::Begin("Play")){
         static int steps[4] = { 100, 1, 1, 1 };

@@ -101,7 +101,6 @@ struct NDS_cart {
 
     struct {
         struct persistent_store *store;
-        u32 is_flash;
         u32 cmd;
 
         union {
