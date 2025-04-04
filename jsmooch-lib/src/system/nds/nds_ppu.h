@@ -63,13 +63,13 @@ struct NDS_PPU_OBJ {
 
 struct NDS_PPU {
     // 2 mostly-identical 2d engines (A and B) and a 3d engine
-    u16 *cur_output;
+    u32 *cur_output;
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 
 
-    u16 line_a[256];
-    u16 line_b[256];
+    u32 line_a[256];
+    u32 line_b[256];
     u32 doing_capture;
 
     struct {
@@ -155,7 +155,7 @@ struct NDS_PPU {
         } io;
 
 
-        u16 line_px[256];
+        u32 line_px[256];
 
         struct NDS_PPU_bg {
             enum NDS_SCREEN_KINDS kind;

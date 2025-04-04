@@ -574,16 +574,16 @@ static void NDSJ_describe_io(JSM, struct cvec* IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(256 * 384 * 2);
-    d->display.output[1] = malloc(256 * 384 * 2);
-    memset(d->display.output[0], 0, 256*384*2);
-    memset(d->display.output[1], 0, 256*384*2);
+    d->display.output[0] = malloc(256 * 384 * 4);
+    d->display.output[1] = malloc(256 * 384 * 4);
+    memset(d->display.output[0], 0, 256*384*4);
+    memset(d->display.output[1], 0, 256*384*4);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_lcd(&d->display);
     this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
-    this->ppu.cur_output = (u16 *)(d->display.output[0]);
+    this->ppu.cur_output = (u32 *)(d->display.output[0]);
 
     struct physical_io_device *t = cvec_push_back(IOs);
     physical_io_device_init(t, HID_TOUCHSCREEN, 1, 1, 1, 0);

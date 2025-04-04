@@ -311,7 +311,7 @@ void NES_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
 
 void NDS_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
-    u16 *gbao = (u16 *)device->display.output[device->display.last_written ^ 1];
+    u32 *gbao = (u32 *)device->display.output[device->display.last_written ^ 1];
     u32 *img32 = (u32 *) out_buf;
 
     for (u32 ry = 0; ry < 384; ry++) {
@@ -321,7 +321,7 @@ void NDS_present(struct physical_io_device *device, void *out_buf, u32 out_width
             u32 x = rx;
             u32 di = ((y * 256) + x);
 
-            u32 color = gba_to_screen(gbao[di]);
+            u32 color = nds_to_screen(gbao[di]);
             *line_out_ptr = color;
             line_out_ptr++;
         }

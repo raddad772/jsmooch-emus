@@ -17,6 +17,18 @@
 #define NDS_WINOBJ 2
 #define NDS_WINOUTSIDE 3
 
+static inline u32 c15to18(u32 color)
+{
+    u32 r = ((color << 1) & 0x3E);
+    u32 g = ((color >> 4) & 0x3E);
+    u32 b = ((color >> 9) & 0x3E);
+    r |= (r >> 5);
+    g |= (g >> 5);
+    b |= (b >> 5);
+    return r | (g << 6) | (b << 12);
+}
+
+
 void NDS_PPU_init(struct NDS *this)
 {
     memset(&this->ppu, 0, sizeof(this->ppu));
@@ -298,7 +310,7 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
                 c = read_vram_obj(this, eng, addr, 2);
             }
             mypx.has = (c >> 15) & 1;
-            mypx.color = c & 0x7FFF;
+            mypx.color = c15to18(c & 0x7FFF);
             mypx.alpha = palette;
             mypx.sp_translucent = palette < 15;
         }
@@ -311,7 +323,7 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
             tile_addr = ((tile_addr + (block_x << 1)) << 5) + (tile_y << 3) + tile_x;
             c = read_vram_obj(this, eng, tile_addr, 1);
             mypx.has = c != 0;
-            mypx.color = read_pram_obj2(this, eng, 0, c);
+            mypx.color = c15to18(read_pram_obj2(this, eng, 0, c));
             mypx.sp_translucent = mode == 1;
         }
         else { // 4bpp
@@ -325,7 +337,7 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
             if (tile_x & 1) c >>= 4;
             c &= 15;
             mypx.has = c != 0;
-            mypx.color = read_pram_obj(this, eng, ((palette << 4) | c) << 1, 2);
+            mypx.color = c15to18(read_pram_obj(this, eng, ((palette << 4) | c) << 1, 2));
             mypx.sp_translucent = mode == 1;
 
         }
@@ -394,7 +406,7 @@ static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
     memset(bg->line, 0, sizeof(bg->line));
     struct NDS_RE_LINEBUFFER *re_line = &this->re.out.linebuffer[line_num];
     for (u32 x = 0; x < 256; x++) {
-        bg->line[x].color = C18to15(re_line->rgb[x]);
+        bg->line[x].color = re_line->rgb[x];
         bg->line[x].has = re_line->has[x];
         bg->line[x].priority = bg->priority;
         bg->line[x].alpha = re_line->alpha[x];
@@ -466,7 +478,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
                                 c = read_pram_bg(this, eng, index << 1, 2);
                             tile[mx].has = 1;
                             tile[mx].priority = bg->priority;
-                            tile[mx].color = c;
+                            tile[mx].color = c15to18(c);
                         }
                     }
                 }
@@ -482,7 +494,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
                         else {
                             tile[mx].has = 1;
                             tile[mx].priority = bg->priority;
-                            tile[mx].color = read_pram_bg(this, eng, palette << 5 | index << 1, 2);
+                            tile[mx].color = c15to18(read_pram_bg(this, eng, palette << 5 | index << 1, 2));
                         }
                     }
                 }
@@ -607,7 +619,7 @@ static void affine_rotodc(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU
     u32 color = read_vram_bg(this, eng, bg->screen_base_block + (y * xd->width + x) * 2, 2);
     if (color & 0x8000) {
         out->has = 1;
-        out->color = color & 0x7FFF;
+        out->color = c15to18(color & 0x7FFF);
         out->priority = bg->priority;
     } else {
         out->has = 0;
@@ -621,7 +633,7 @@ static void affine_rotobpp8(struct NDS *this, struct NDSENG2D *eng, struct NDS_P
     u32 color = read_vram_bg(this, eng, bg->screen_base_block+ y * xd->width + x, 1);
     if (color) {
         out->has = 1;
-        out->color = read_pram_bg(this, eng, color << 1, 2);
+        out->color = c15to18(read_pram_bg(this, eng, color << 1, 2));
         out->priority = bg->priority;
     } else {
         out->has = 0;
@@ -649,9 +661,9 @@ static void affine_rotobpp16(struct NDS *this, struct NDSENG2D *eng, struct NDS_
         u32 c;
 
         if (eng->io.bg.extended_palettes)
-            out->color = read_pram_bg_ext(this, eng, bg->num, bg->num, index << 1);
+            out->color = c15to18(read_pram_bg_ext(this, eng, bg->num, bg->num, index << 1));
         else
-            out->color = read_pram_bg(this, eng, index << 1, 2);
+            out->color = c15to18(read_pram_bg(this, eng, index << 1, 2));
         out->has = 1;
         out->priority = bg->priority;
     }
@@ -918,21 +930,19 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
     union NDS_PX *target_b = layers[target_b_layer];
 
     u32 blend_b = target_b->color;
-
-
     u32 output_color = target_a->color;
     if (actives[5] || (target_a->has && target_a->sp_translucent &&
                                   eng->blend.targets_b[target_b_layer])) { // backdrop is contained in active for the highest-priority window OR above is a semi-transparent sprite & below is a valid target
         if (target_a->has && target_a->sp_translucent &&
             eng->blend.targets_b[target_b_layer]) { // above is semi-transparent sprite and below is a valid target
-            output_color = gba_alpha(output_color, blend_b, eng->blend.use_eva_a, eng->blend.use_eva_b);
+            output_color = nds_alpha(output_color, blend_b, eng->blend.use_eva_a, eng->blend.use_eva_b);
         } else if (mode == 1 && eng->blend.targets_a[target_a_layer] &&
                    eng->blend.targets_b[target_b_layer]) { // mode == 1, both are valid
-            output_color = gba_alpha(output_color, blend_b, eng->blend.use_eva_a, eng->blend.use_eva_b);
+            output_color = nds_alpha(output_color, blend_b, eng->blend.use_eva_a, eng->blend.use_eva_b);
         } else if (mode == 2 && eng->blend.targets_a[target_a_layer]) { // mode = 2, A is valid
-            output_color = gba_brighten(output_color, (i32) eng->blend.use_bldy);
+            output_color = nds_brighten(output_color, (i32) eng->blend.use_bldy);
         } else if (mode == 3 && eng->blend.targets_a[target_a_layer]) { // mode = 3, B is valid
-            output_color = gba_darken(output_color, (i32) eng->blend.use_bldy);
+            output_color = nds_darken(output_color, (i32) eng->blend.use_bldy);
         }
     }
     /*switch(x % 6) {
@@ -1109,7 +1119,9 @@ static void run_dispcap(struct NDS *this)
         // 0 = full PPUA output  eng->line_px
         // 1 = RE output only re->output 6 to 5
         if (!this->ppu.io.DISPCAPCNT.source_a) { // full PPUA output
-            memcpy(this->ppu.line_a, eng->line_px, sizeof(this->ppu.line_a));
+            for (u32 x = 0; x < 256; x++) {
+                this->ppu.line_a[x] = C18to15(eng->line_px[x]);
+            }
         }
         else {
             for (u32 x = 0; x < 256; x++) {
@@ -1127,7 +1139,7 @@ static void run_dispcap(struct NDS *this)
         }
     }
 
-    u16 *src;
+    u32 *src;
     if (need_a) {
         src = this->ppu.line_a;
     }
@@ -1155,8 +1167,8 @@ static void run_dispcap(struct NDS *this)
             a_a = 1;
 
             u32 blend_r = capblend(a_r, a_a, b_r, b_a, eva, evb);
-            u32 blend_g = capblend(a_r, a_a, b_r, b_a, eva, evb);
-            u32 blend_b = capblend(a_r, a_a, b_r, b_a, eva, evb);
+            u32 blend_g = capblend(a_g, a_a, b_g, b_a, eva, evb);
+            u32 blend_b = capblend(a_b, a_a, b_b, b_a, eva, evb);
             // Dest_Alpha = (SrcA_Alpha AND (EVA>0)) OR (SrcB_Alpha AND EVB>0))
             u32 blend_a = 0x8000 * ((a_a && (eva>0)) | (a_b && (evb>0)));
             this->ppu.line_a[x] = blend_r | (blend_g << 5) | (blend_b << 10) | blend_a;
@@ -1211,28 +1223,32 @@ static void draw_line(struct NDS *this, u32 eng_num)
            sizeof(union NDS_PX) * 256);
 
     // Then we will pixel output it to the screen...
-    u16 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);
+    u32 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);
     if (eng_num ^ this->ppu.io.display_swap ^ 1) line_output += (192 * OUT_WIDTH);
 
     u32 display_mode = eng->io.display_mode;
     if (eng_num == 1) display_mode &= 1;
     switch(display_mode) {
         case 0: // WHITE!
-            memset(line_output, 0xFF, 512);
+            memset(line_output, 0xFF, 1024);
             break;
         case 1: // NORMAL!
-            memcpy(line_output, eng->line_px, 512);
+            memcpy(line_output, eng->line_px, 1024);
             break;
         case 2: { // VRAM!
             u32 block_num = this->ppu.io.display_block << 17;
             u16 *line_input = (u16 *)(this->mem.vram.data + block_num);
             line_input += this->clock.ppu.y << 8; // * 256
-            memcpy(line_output, line_input, 512);
+            for(u32 x = 0; x < 256; x++) {
+                line_output[x] = c15to18(line_input[x]);
+            }
             break; }
         case 3: { //Main RAM
             u16 *line_input = (u16 *)this->mem.RAM;
             line_input += this->clock.ppu.y << 8; // * 256
-            memcpy(line_output, line_input, 512);
+            for(u32 x = 0; x < 256; x++) {
+                line_output[x] = c15to18(line_input[x]);
+            }
             break; }
     }
 }
@@ -1299,7 +1315,7 @@ void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hbla
 static void new_frame(struct NDS *this) {
     this->clock.ppu.y = 0;
     this->clock.frame_start_cycle = NDS_clock_current7(this);
-    this->ppu.cur_output = ((u16 *) this->ppu.display->output[this->ppu.display->last_written ^ 1]);
+    this->ppu.cur_output = ((u32 *) this->ppu.display->output[this->ppu.display->last_written ^ 1]);
     this->ppu.display->last_written ^= 1;
     this->clock.master_frame++;
     struct NDS_PPU_bg *bg;

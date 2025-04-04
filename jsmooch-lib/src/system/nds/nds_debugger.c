@@ -175,7 +175,7 @@ static void render_image_view_re_output(struct debugger_interface *dbgr, struct 
         struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
         for (u32 x = 0; x < 256; x++) {
-            out_line[x] = gba_to_screen(C18to15(lbuf->rgb[x]) & 0x7FFF);
+            out_line[x] = nds_to_screen(lbuf->rgb[x]);
         }
     }
 }
@@ -614,7 +614,7 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
                 case 0:
                     if (px_line[x].has) {
                         u32 c = px_line[x].color;
-                        out_line[x] = gba_to_screen(c);
+                        out_line[x] = nds_to_screen(c);
                     }
                     else {
                         out_line[x] = 0xFF000000;
