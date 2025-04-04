@@ -662,14 +662,11 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                                 if ((p->attr.poly_id == 0) || (p->attr.poly_id == line->poly_id[x])) continue; // this pixel should be forgotten about
                                 if (!line->stencil[x]) continue;
                                 shading_mode = 6;
-                                // shadows use decal blending...
-                                // but no textures!
-                                u32 colo = line->rgb[x];
-                                tex_rf = (colo & 0x3F);
-                                tex_gf = ((colo >> 6) & 0x3F);
-                                tex_bf = ((colo >> 12) & 0x1F);
-                                tex_a6 = poly_a6;
-                                __attribute__ ((fallthrough));
+                                pix_r6 = cr6f;
+                                pix_g6 = cg6f;
+                                pix_b6 = cb6f;
+                                pix_a6 = poly_a6;
+                                break;
                             case 1: // decal
                                 shading_mode = 3;
                                 switch(tex_a6) {
@@ -722,39 +719,12 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
                             if ((p->attr.poly_id == 0) || (p->attr.poly_id == line->poly_id[x]))
                                 continue; // this pixel should be forgotten about
                             if (!line->stencil[x]) continue;
-                            u32 colo = line->rgb[x];
-                            float tex_rf = (colo & 0x3F);
-                            float tex_gf = ((colo >> 6) & 0x3F);
-                            float tex_bf = ((colo >> 12) & 0x1F);
-                            float tex_af = poly_a6;
-                            switch(poly_a6) {
-                                case 0:
-                                    pix_r6 = (u32)cr6f;
-                                    pix_g6 = (u32)cg6f;
-                                    pix_b6 = (u32)cb6f;
-                                    break;
-                                case 31:
-                                    pix_r6 = (u32)tex_rf;
-                                    pix_g6 = (u32)tex_gf;
-                                    pix_b6 = (u32)tex_bf;
-                                    break;
-                                default:
-                                    // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
-                                    pix_r6 = (u32)(tex_rf * tex_af + cr6f * (63 - tex_af)) >> 6;
-                                    pix_g6 = (u32)(tex_gf * tex_af + cg6f * (63 - tex_af)) >> 6;
-                                    pix_b6 = (u32)(tex_bf * tex_af + cb6f * (63 - tex_af)) >> 6;
-                                    break;
-                            }
-                            pix_a6 = poly_a6;
-                            shading_mode = 6;
                         }
-                        else {
-                            pix_r6 = (u32) cr6f;
-                            pix_g6 = (u32) cg6f;
-                            pix_b6 = (u32) cb6f;
-                            pix_a6 = p->attr.alpha << 1;
-                            if (pix_a6) pix_a6++;
-                        }
+                        pix_r6 = (u32) cr6f;
+                        pix_g6 = (u32) cg6f;
+                        pix_b6 = (u32) cb6f;
+                        pix_a6 = p->attr.alpha << 1;
+                        if (pix_a6) pix_a6++;
                     }
                     if (pix_a6>>1) {
                         if (pix_r6 > 63) pix_r6 = 63;
