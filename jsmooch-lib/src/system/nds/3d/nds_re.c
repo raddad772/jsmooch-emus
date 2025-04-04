@@ -263,12 +263,16 @@ static const u32 ctabl[32] = {
         49, 51, 53, 55, 57, 59, 61, 63
 };
 
+static inline u32 tex(u32 colo)
+{
+    return colo & 0x1F;
+}
+
 static inline u32 texc(u32 colo)
 {
-    return ctabl[colo & 31];
-    //u32 v = (colo & 0x1F) << 1;
-    //if (v) v++;
-    //return v;
+    //return ctabl[colo & 31];
+    u32 v = ((colo & 0x1F) << 1) | ((colo & 0x10) >> 4);
+    return v;
 }
 
 
@@ -282,7 +286,7 @@ static void ct_basic_read(u32 color, u32 *r, u32 *g, u32 *b, u32 *a)
     *r = texc(color);
     *g = texc(color >> 5);
     *b = texc(color >> 10);
-    *a = 63;
+    *a = 31;
 }
 
 static void ct_transparent(u32 *r, u32 *g, u32 *b, u32 *a)
@@ -297,7 +301,7 @@ static void ct_blend1(u32 color, u32 *r, u32 *g, u32 *b, u32 *a)
     *r = (texc(color0) + texc(color1)) >> 1;
     *g = (texc(color0 >> 5) + texc(color1 >> 5)) >> 1;
     *b = (texc(color0 >> 10) + texc(color1 >> 10)) >> 1;
-    *a = 63;
+    *a = 31;
 }
 
 static void ct_blend5(u32 color, u32 balance, u32 *r, u32 *g, u32 *b, u32 *a)
@@ -312,25 +316,18 @@ static void ct_blend5(u32 color, u32 balance, u32 *r, u32 *g, u32 *b, u32 *a)
     *r = ((texc(color0) * mul0) + (texc(color1) * mul1)) >> 3;
     *g = ((texc(color0 >> 5) * mul0) + (texc(color1 >> 5) * mul1)) >> 3;
     *b = ((texc(color0 >> 10) * mul0) + (texc(color1 >> 10) * mul1)) >> 3;
-    //*a = (((color0 >> 15) * 63 * mul0) + ((color1 >> 15) * 63 * mul1)) >> 1;
-    *a = 63;
+    *a = 31;
 }
 
 static void sample_texture_a3i5(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     //Alpha=(Alpha*4)+(Alpha/2).
     u8 sample = NDS_VRAM_tex_read(this, ts->tex_addr+((t*ts->s_size)+s), 1);
-    if (ts->color0_is_transparent && ((sample & 31) == 0)) {
-        *a = 0;
-        return;
-    }
     u32 color = NDS_VRAM_pal_read(this, ts->pltt_base+((sample & 31) * 2), 2);
     *r = texc(color);
     *g = texc(color >> 5);
     *b = texc(color >> 10);
-    u32 ma = (sample >> 5) & 7;
-    ma = (ma << 2) + (ma << 1);
-    *a = (ma << 1) + 1;
+    *a =  ((sample >> 3) & 0x1C) + (sample >> 6);
 }
 
 static void sample_texture_a5i3(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
@@ -340,15 +337,11 @@ static void sample_texture_a5i3(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts,
     //  Bit3-7: Alpha       (0..31; 0=Transparent, 31=Solid)
     // y*width bytes + x
     u8 sample = NDS_VRAM_tex_read(this, ts->tex_addr+((t*ts->s_size)+s), 1);
-    if (ts->color0_is_transparent && ((sample & 7) == 0)) {
-        *a = 0;
-        return;
-    }
     u32 color = NDS_VRAM_pal_read(this, ts->pltt_base+((sample & 7) * 2), 2);
     *r = texc(color);
     *g = texc(color >> 5);
     *b = texc(color >> 10);
-    *a = texc(sample >> 3);
+    *a = sample >> 3;
 }
 
 static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
@@ -367,30 +360,91 @@ static void sample_texture_compressed(struct NDS *this, struct NDS_RE_TEX_SAMPLE
     u32 shift = (sub_y * 8) + (sub_x * 2);
     u32 texel = (sample >> shift) & 3;
     u32 pal_addr = ts->pltt_base + ((slot1_word & 0x3FFF) << 2);
-    switch((slot1_word >> 14) & 3) {
-        case 0: //
-            if (texel < 3) ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
-            else ct_transparent(r, g, b, a);
+
+    switch(texel) {
+        case 0:
+            ct_basic_read(NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2), r, g, b, a);
             break;
         case 1:
-            if (texel < 2) ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
-            else if (texel == 2)
-                ct_blend1(NDS_VRAM_pal_read(this, pal_addr, 4), r, g, b, a);
-            else
-                ct_transparent(r, g, b, a);
+            ct_basic_read(NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2), r, g, b, a);
             break;
         case 2:
-            ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
+            if ((slot1_word >> 14) == 1) {
+                u16 color0 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2);
+                u16 color1 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2);
+
+                u32 r0 = color0 & 0x001F;
+                u32 g0 = color0 & 0x03E0;
+                u32 b0 = color0 & 0x7C00;
+                u32 r1 = color1 & 0x001F;
+                u32 g1 = color1 & 0x03E0;
+                u32 b1 = color1 & 0x7C00;
+
+                u32 br = (r0 + r1) >> 1;
+                u32 bg = ((g0 + g1) >> 1) & 0x03E0;
+                u32 bb = ((b0 + b1) >> 1) & 0x7C00;
+
+                *r = texc(br);
+                *g = texc(bg >> 5);
+                *b = texc(bb >> 10);
+            } else if ((slot1_word >> 14) == 3) {
+                u16 color0 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2);
+                u16 color1 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2);
+
+                u32 r0 = color0 & 0x001F;
+                u32 g0 = color0 & 0x03E0;
+                u32 b0 = color0 & 0x7C00;
+                u32 r1 = color1 & 0x001F;
+                u32 g1 = color1 & 0x03E0;
+                u32 b1 = color1 & 0x7C00;
+
+                u32 br = (r0 * 5 + r1 * 3) >> 3;
+                u32 bg = ((g0 * 5 + g1 * 3) >> 3) & 0x03E0;
+                u32 bb = ((b0 * 5 + b1 * 3) >> 3) & 0x7C00;
+
+                *r = texc(br);
+                *g = texc(bg >> 5);
+                *b = texc(bb >> 10);
+            } else {
+                u32 c = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 4, 2);
+                *r = texc(c);
+                *g = texc(c >> 5);
+                *b = texc(c >> 10);
+            }
+            *a = 31;
             break;
+
         case 3:
-            if (texel < 2) ct_basic_read(NDS_VRAM_pal_read(this, pal_addr+(texel*2), 2), r, g, b, a);
-            else {
-                if (texel == 2) ct_blend5(NDS_VRAM_pal_read(this, pal_addr, 4), 0, r, g, b, a);
-                else ct_blend5(NDS_VRAM_pal_read(this, pal_addr, 4), 1, r, g, b, a);
+            if ((slot1_word >> 14) == 2) {
+                u32 c = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 6, 2);
+                *r = texc(c);
+                *g = texc(c >> 5);
+                *b = texc(c >> 10);
+                *a = 31;
+            } else if ((slot1_word >> 14) == 3) {
+                u16 color0 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2), 2);
+                u16 color1 = NDS_VRAM_pal_read(this, pal_addr + (texel * 2) + 2, 2);
+
+                u32 r0 = color0 & 0x001F;
+                u32 g0 = color0 & 0x03E0;
+                u32 b0 = color0 & 0x7C00;
+                u32 r1 = color1 & 0x001F;
+                u32 g1 = color1 & 0x03E0;
+                u32 b1 = color1 & 0x7C00;
+
+                u32 br = (r0 * 3 + r1 * 5) >> 3;
+                u32 bg = ((g0 * 3 + g1 * 5) >> 3) & 0x03E0;
+                u32 bb = ((b0 * 3 + b1 * 5) >> 3) & 0x7C00;
+
+                *r = texc(br);
+                *g = texc(bg >> 5);
+                *b = texc(bb >> 10);
+                *a = 31;
+            } else {
+                *r = *g = *b = *a = 0;
             }
             break;
     }
-
 }
 
 static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
@@ -399,16 +453,13 @@ static void sample_texture_palette_4bpp(struct NDS *this, struct NDS_RE_TEX_SAMP
     u32 c = NDS_VRAM_tex_read(this, ts->tex_addr + (addr >> 1), 1) & 0xFF;
     c >>= ((addr & 1) << 2);
     c &= 0x0F;
-    if ((ts->color0_is_transparent) && (c == 0)) {
-        *a = 0;
-        return;
-    }
+    *a = c ? 31 : ts->alpha0;
+
     c = NDS_VRAM_pal_read(this, ts->pltt_base + (c*2), 2);
 
     *r = texc(c);
     *g = texc(c >> 5);
     *b = texc(c >> 10);
-    *a = 63;
 }
 
 static void sample_texture_palette_2bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
@@ -416,32 +467,26 @@ static void sample_texture_palette_2bpp(struct NDS *this, struct NDS_RE_TEX_SAMP
     u32 addr = ((t * ts->s_size) + s);
     u32 c = NDS_VRAM_tex_read(this, ts->tex_addr + (addr >> 2), 1) & 0xFF;
     c = (c >> (2 * (addr & 3))) & 3;
-    if ((ts->color0_is_transparent) && (c == 0)) {
-        *a = 0;
-        return;
-    }
+
+    *a = c ? 31 : ts->alpha0;
     c = NDS_VRAM_pal_read(this, ts->pltt_base + (c*2), 2);
 
     *r = texc(c);
     *g = texc(c >> 5);
     *b = texc(c >> 10);
-    *a = 63;
 }
 
 static void sample_texture_palette_8bpp(struct NDS *this, struct NDS_RE_TEX_SAMPLER *ts, struct NDS_RE_POLY *p, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a)
 {
     u32 addr = ((t * ts->s_size) + s);
     u32 c = NDS_VRAM_tex_read(this, ts->tex_addr+addr, 1) & 0xFF;
-    if ((ts->color0_is_transparent) && (c == 0)) {
-        *a = 0;
-        return;
-    }
+
+    *a = c ? 31 : ts->alpha0;
     c = NDS_VRAM_pal_read(this, ts->pltt_base + (c*2), 2);
 
     *r = texc(c);
     *g = texc(c >> 5);
     *b = texc(c >> 10);
-    *a = 63;
 }
 
 
@@ -452,7 +497,7 @@ static void sample_texture_direct(struct NDS *this, struct NDS_RE_TEX_SAMPLER *t
     *r = texc(c);
     *g = texc(c >> 5);
     *b = texc(c >> 10);
-    *a = ((c >> 15) & 1) * 63;
+    *a = ((c >> 15) & 1) * 31;
 }
 
 static void final_tex_coord(struct NDS_RE_TEX_SAMPLER *ts, i32 *s, i32 *t)
@@ -508,7 +553,7 @@ static void fill_tex_sampler(struct NDS *this, struct NDS_RE_POLY *p)
     struct NDS_RE_TEX_SAMPLER *ts = &p->sampler;
     ts->s_size = 8 << p->tex_param.sz_s;
     ts->t_size = 8 << p->tex_param.sz_t;
-    ts->color0_is_transparent = p->tex_param.color0_is_transparent;
+    ts->alpha0 = p->tex_param.color0_is_transparent ? 0 : 31;
     ts->pltt_base = p->tex_param.format == 2 ? p->pltt_base << 3 : p->pltt_base << 4;
     ts->s_size_fp = (ts->s_size << 4);
     ts->t_size_fp = (ts->t_size << 4);
@@ -581,22 +626,21 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
     for (u32 poly_num = 0; poly_num < b->polygon_index; poly_num++) {
         struct NDS_RE_POLY *p = this->re.render_list.items[poly_num];
         u32 tex_enable = global_tex_enable && (p->tex_param.format != 0);
-        if (p->attr.mode == 3)  {
-            if (!last_was_smask) clear_stencil(this, line);
-            last_was_smask = 1;
-        }
-        else {
-            last_was_smask = 0;
-        }
-        if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
-        u32 poly_a6 = (p->attr.alpha << 1) ;
-        if (poly_a6) poly_a6++;
-
 
         // Polygon does not intersect this line
         if ((line_num < p->min_y) || (line_num > p->max_y)) {
             continue;
         }
+
+        if (p->attr.mode == 3) {
+            if (!last_was_smask) clear_stencil(this, line);
+            last_was_smask = 1;
+        } else {
+            last_was_smask = 0;
+        }
+
+        if (tex_enable && !p->sampler.filled_out) fill_tex_sampler(this, p);
+        u32 poly_a5 = p->attr.alpha;
 
         // Find the correct points to lerp
         find_closest_points_marked(this, b, p, line_num, edges);
@@ -615,8 +659,7 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         if (b->depth_buffering_w) {
             depth_l = left->original_w;
             depth_r = right->original_w;
-        }
-        else {
+        } else {
             depth_l = left->zz;
             depth_r = right->zz;
         }
@@ -624,140 +667,147 @@ void render_line(struct NDS *this, struct NDS_GE_BUFFERS *b, i32 line_num)
         u32 rside = right->xx > 255 ? 255 : right->xx;
 
         for (u32 x = left->xx; x < rside; x++) {
-            if (x < 256) {
-                NDS_RE_interp_set_x(&interp, x);
-                u32 comparison, depth;
-                depth = NDS_RE_interpolate(&interp, depth_l, depth_r);
+            NDS_RE_interp_set_x(&interp, x);
+            u32 comparison, depth;
+            depth = NDS_RE_interpolate(&interp, depth_l, depth_r);
 
-                if (p->attr.depth_test_mode == 0) comparison = depth < line->depth[x];
-                else comparison = (u32)depth == line->depth[x];
-                u32 shading_mode = 1;
-                if (comparison) {
-                    u32 pix_r6, pix_g6, pix_b6, pix_a6;
-                    u32 vr6, vg6, vb6;
-                    vr6 = NDS_RE_interpolate(&interp, left->color[0], right->color[0]) >> 11;
-                    vg6 = NDS_RE_interpolate(&interp, left->color[1], right->color[1]) >> 11;
-                    vb6 = NDS_RE_interpolate(&interp, left->color[2], right->color[2]) >> 11;
-                    if (tex_enable && p->sampler.sample) {
-                        i32 final_s = NDS_RE_interpolate(&interp, left->uv[0], right->uv[0]);
-                        i32 final_t = NDS_RE_interpolate(&interp, left->uv[1], right->uv[1]);
-                        u32 tex_r6, tex_g6, tex_b6, tex_a6;
-                        final_tex_coord(&p->sampler, &final_s, &final_t);
-                        p->sampler.sample(this, &p->sampler, p, final_s, final_t, &tex_r6, &tex_g6, &tex_b6,
-                                          &tex_a6);
+            if (p->attr.depth_test_mode == 0) comparison = depth < line->depth[x];
+            else comparison = (u32) depth == line->depth[x];
+            u32 shading_mode = 1;
+            if (comparison) {
+                u32 pix_r6, pix_g6, pix_b6, pix_a5;
+                u32 vr6, vg6, vb6;
+                vr6 = NDS_RE_interpolate(&interp, left->color[0], right->color[0]) >> 3;
+                vg6 = NDS_RE_interpolate(&interp, left->color[1], right->color[1]) >> 3;
+                vb6 = NDS_RE_interpolate(&interp, left->color[2], right->color[2]) >> 3;
+                if (tex_enable && p->sampler.sample) {
+                    i32 final_s = NDS_RE_interpolate(&interp, left->uv[0], right->uv[0]);
+                    i32 final_t = NDS_RE_interpolate(&interp, left->uv[1], right->uv[1]);
+                    u32 tex_r6, tex_g6, tex_b6, tex_a5;
+                    final_tex_coord(&p->sampler, &final_s, &final_t);
+                    p->sampler.sample(this, &p->sampler, p, final_s, final_t, &tex_r6, &tex_g6, &tex_b6,
+                                      &tex_a5);
 
-                        // OK we have texture color now...how do we use it!?
-                        switch(p->attr.mode) {
-                            case 0: // modulation
-                                shading_mode = 2;
-                                pix_r6 = (u32)(((tex_r6 + 1) * (vr6 + 1) - 1)) >> 6;
-                                pix_g6 = (u32)(((tex_g6 + 1) * (vg6 + 1) - 1)) >> 6;
-                                pix_b6 = (u32)(((tex_b6 + 1) * (vb6 + 1) - 1)) >> 6;
+                    // OK we have texture color now...how do we use it!?
+                    switch (p->attr.mode) {
+                        case 0: // modulation
+                            shading_mode = 2;
+                            pix_r6 = ((tex_r6 + 1) * (vr6 + 1) - 1) >> 6;
+                            pix_g6 = ((tex_g6 + 1) * (vg6 + 1) - 1) >> 6;
+                            pix_b6 = ((tex_b6 + 1) * (vb6 + 1) - 1) >> 6;
 
-                                pix_a6 = (u32)(((tex_a6 + 1) * (poly_a6 + 1) - 1)) >> 6;
-                                break;
-                            case 3: // shadow
-                                if ((p->attr.poly_id == 0) || (p->attr.poly_id == line->poly_id[x])) continue; // this pixel should be forgotten about
-                                if (!line->stencil[x]) continue;
-                                shading_mode = 6;
-                                pix_r6 = vr6;
-                                pix_g6 = vg6;
-                                pix_b6 = vb6;
-                                pix_a6 = poly_a6;
-                                break;
-                            case 1: // decal
-                                shading_mode = 3;
-                                switch(tex_a6) {
-                                    case 0:
-                                        pix_r6 = vr6;
-                                        pix_g6 = vg6;
-                                        pix_b6 = vb6;
-                                        break;
-                                    case 31:
-                                        pix_r6 = vr6;
-                                        pix_g6 = vg6;
-                                        pix_b6 = vb6;
-                                        break;
-                                    default:
-                                        // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
-                                        pix_r6 = (u32)(tex_r6 * tex_a6 + vr6 * (63 - tex_a6)) >> 6;
-                                        pix_g6 = (u32)(tex_g6 * tex_a6 + vg6 * (63 - tex_a6)) >> 6;
-                                        pix_b6 = (u32)(tex_b6 * tex_a6 + vb6 * (63 - tex_a6)) >> 6;
-                                        break;
-                                }
-                                pix_a6 = tex_a6;
-                                break;
-                            case 2: {// highlight/toon
-                                u32 idx = vg6 >> 1;
-                                u32 rs = this->re.io.TOON_TABLE_r[idx];
-                                u32 gs = this->re.io.TOON_TABLE_g[idx];
-                                u32 bs = this->re.io.TOON_TABLE_b[idx];
-                                switch(this->re.io.DISP3DCNT.polygon_attr_shading) {
-                                    case 0: { // toon
-                                        shading_mode = 4;
-                                        // R = ((Rt+1)*(Rs+1)-1)/64
-                                        pix_r6 = ((tex_r6+1)*(rs+1)-1) >> 6;
-                                        pix_g6 = ((tex_g6+1)*(gs+1)-1) >> 6;
-                                        pix_b6 = ((tex_b6+1)*(bs+1)-1) >> 6;
-                                        break;}
-                                    case 1: { // highlight
-                                        shading_mode = 5;
-                                        pix_r6 = ((tex_r6+1)*(vr6+1)-1) >> 6;
-                                        pix_g6 = ((tex_g6+1)*(vg6+1)-1) >> 6;
-                                        pix_b6 = ((tex_b6+1)*(vb6+1)-1) >> 6;
-                                        break; }
-                                }
-                                // TODO: uhhhhh....?
-                                pix_a6 = (tex_a6 * (p->attr.alpha << 1)) >> 6;
-                                break; }
-                        }
-                    }
-                    else {
-                        if (p->attr.mode == 3) {
+                            pix_a5 = ((tex_a5 + 1) * (poly_a5 + 1) - 1) >> 5;
+                            break;
+                        case 3: // shadow
+                            printf("\nGOT HERE...");
                             if ((p->attr.poly_id == 0) || (p->attr.poly_id == line->poly_id[x]))
                                 continue; // this pixel should be forgotten about
                             if (!line->stencil[x]) continue;
-                        }
-                        pix_r6 = vr6;
-                        pix_g6 = vg6;
-                        pix_b6 = vb6;
-                        pix_a6 = p->attr.alpha << 1;
-                        if (pix_a6) pix_a6++;
-                    }
-                    if (pix_a6>>1) {
-                        if (pix_r6 > 63) pix_r6 = 63;
-                        if (pix_g6 > 63) pix_g6 = 63;
-                        if (pix_b6 > 63) pix_b6 = 63;
-                        if (pix_a6 > 63) pix_a6 = 63;
-                        if ((pix_a6 < 63) && (this->re.io.DISP3DCNT.alpha_blending) && (line->alpha[x] != 0)) {
-                            if (line->poly_id[x] == p->attr.poly_id) {
-                                continue;
+                            shading_mode = 6;
+                            pix_r6 = vr6;
+                            pix_g6 = vg6;
+                            pix_b6 = vb6;
+                            pix_a5 = poly_a5;
+                            break;
+                        case 1: // decal
+                            shading_mode = 3;
+                            switch (tex_a5) {
+                                case 0:
+                                    pix_r6 = vr6;
+                                    pix_g6 = vg6;
+                                    pix_b6 = vb6;
+                                    break;
+                                case 31:
+                                    pix_r6 = tex_r6;
+                                    pix_g6 = tex_g6;
+                                    pix_b6 = tex_b6;
+                                    break;
+                                default:
+                                    // // R = (Rt*At + Rv*(63-At))/64  ;except, when At=0: R=Rv, when At=31: R=Rt
+                                    pix_r6 = (tex_r6 * tex_a5 + vr6 * (31 - tex_a5)) >> 5;
+                                    pix_g6 = (tex_g6 * tex_a5 + vg6 * (31 - tex_a5)) >> 5;
+                                    pix_b6 = (tex_b6 * tex_a5 + vb6 * (31 - tex_a5)) >> 5;
+                                    break;
                             }
-                            u32 fb_r6 = line->rgb[x] & 0x3F;
-                            u32 fb_g6 = (line->rgb[x] >> 6) & 0x3F;
-                            u32 fb_b6 = (line->rgb[x] >> 12) & 0x3F;
-                            u32 fb_a6 = line->alpha[x];
-                            pix_r6 = (pix_r6 * (pix_a6 + 1) + fb_r6 * (63 - pix_a6)) / 64;
-                            pix_g6 = (pix_g6 * (pix_a6 + 1) + fb_g6 * (63 - pix_a6)) / 64;
-                            pix_b6 = (pix_b6 * (pix_a6 + 1) + fb_b6 * (63 - pix_a6)) / 64;
-                            if (p->attr.translucent_set_new_depth) pix_a6 = pix_a6 > fb_a6 ? pix_a6 : fb_a6;
-                            else pix_a6 = fb_a6;
-                        }
+                            pix_a5 = poly_a5;
+                            break;
+                        case 2: {// highlight/toon
+                            u32 idx = vg6 >> 1;
+                            u32 rs = this->re.io.TOON_TABLE_r[idx];
+                            u32 gs = this->re.io.TOON_TABLE_g[idx];
+                            u32 bs = this->re.io.TOON_TABLE_b[idx];
+                            switch (this->re.io.DISP3DCNT.polygon_attr_shading) {
+                                case 0: { // toon
+                                    shading_mode = 4;
+                                    // R = ((Rt+1)*(Rs+1)-1)/64
+                                    pix_r6 = ((tex_r6 + 1) * (rs + 1) - 1) >> 6;
+                                    pix_g6 = ((tex_g6 + 1) * (gs + 1) - 1) >> 6;
+                                    pix_b6 = ((tex_b6 + 1) * (bs + 1) - 1) >> 6;
+                                    break;
+                                }
+                                case 1: { // highlight
+                                    shading_mode = 5;
+                                    pix_r6 = ((tex_r6 + 1) * (vr6 + 1) - 1) >> 6;
+                                    pix_g6 = ((tex_g6 + 1) * (vg6 + 1) - 1) >> 6;
+                                    pix_b6 = ((tex_b6 + 1) * (vb6 + 1) - 1) >> 6;
+                                    break;
+                                }
+                            }
+                            // TODO: uhhhhh....?
+                            pix_a5 = (tex_a5 * p->attr.alpha) >> 5;
 
-                        u32 alpha_out = 0x8000 * (pix_a6 > 0);
-                        line->rgb[x] = pix_r6 | (pix_g6 << 6) | (pix_b6 << 12) | alpha_out;
-                        line->tex_param[x] = p->tex_param;
-                        line->poly_id[x] = p->attr.poly_id;
-                        line->extra_attr[x].vertex_mode = p->vertex_mode+1;
-                        line->extra_attr[x].has_px = 1;
-                        line->has[x] = 1;
-                        line->extra_attr[x].shading_mode = shading_mode;
-                        line->depth[x] = (u32) depth;
+                            //pix_a5 = poly_a5;
+                            break;
+                        }
                     }
+                } else {
+                    if (p->attr.mode == 3) {
+                        if ((p->attr.poly_id == 0) || (p->attr.poly_id == line->poly_id[x]))
+                            continue; // this pixel should be forgotten about
+                        if (!line->stencil[x]) continue;
+                    }
+                    pix_r6 = vr6;
+                    pix_g6 = vg6;
+                    pix_b6 = vb6;
+                    pix_a5 = p->attr.alpha;
                 }
-                else if ((p->attr.mode == 3) && (p->attr.poly_id == 0)) {
-                    line->stencil[x] = 1;
+                if (pix_a5) {
+                    if (pix_r6 > 63) pix_r6 = 63;
+                    if (pix_g6 > 63) pix_g6 = 63;
+                    if (pix_b6 > 63) pix_b6 = 63;
+                    if (pix_a5 > 31) pix_a5 = 31;
+                    if ((pix_a5 < 31) && (this->re.io.DISP3DCNT.alpha_blending) && (line->alpha[x] != 0)) {
+                        // BLEND ALPHA!
+                        if (line->poly_id[x] == p->attr.poly_id) {
+                            continue;
+                        }
+                        u32 fb_r6 = line->rgb[x] & 0x3F;
+                        u32 fb_g6 = (line->rgb[x] >> 6) & 0x3F;
+                        u32 fb_b6 = (line->rgb[x] >> 12) & 0x3F;
+                        u32 fb_a5 = line->alpha[x];
+
+                        pix_a5++;
+                        pix_r6 = ((pix_r6 * pix_a5) + (fb_r6 * (32 - pix_a5))) >> 5;
+                        pix_g6 = ((pix_g6 * pix_a5) + (fb_g6 * (32 - pix_a5))) >> 5;
+                        pix_b6 = ((pix_b6 * pix_a5) + (fb_b6 * (32 - pix_a5))) >> 5;
+                        pix_a5--;
+
+                        if (p->attr.translucent_set_new_depth) pix_a5 = pix_a5 > fb_a5 ? pix_a5 : fb_a5;
+                        else pix_a5 = fb_a5;
+                    }
+
+                    u32 alpha_out = 0x8000 * (pix_a5 > 0);
+                    line->rgb[x] = pix_r6 | (pix_g6 << 6) | (pix_b6 << 12) | alpha_out;
+                    line->tex_param[x] = p->tex_param;
+                    line->poly_id[x] = p->attr.poly_id;
+                    line->extra_attr[x].vertex_mode = p->vertex_mode + 1;
+                    line->extra_attr[x].has_px = 1;
+                    line->has[x] = 1;
+                    line->extra_attr[x].shading_mode = shading_mode;
+                    line->depth[x] = (u32) depth;
                 }
+            } else if ((p->attr.mode == 3) && (p->attr.poly_id == 0)) {
+                line->stencil[x] = 1;
             }
         }
     }

@@ -680,9 +680,9 @@ static void cmd_NORMAL(struct NDS *this)
         c++;
     }
 
-    this->ge.params.vtx.color[0] = (vtxbuff[0] >> 14 > 31) ? 31 : (vtxbuff[0] >> 14);
-    this->ge.params.vtx.color[1] = (vtxbuff[1] >> 14 > 31) ? 31 : (vtxbuff[1] >> 14);
-    this->ge.params.vtx.color[2] = (vtxbuff[2] >> 14 > 31) ? 31 : (vtxbuff[2] >> 14);
+    this->ge.params.vtx.color[0] = ((vtxbuff[0] >> 14) > 31) ? 31 : (vtxbuff[0] >> 14);
+    this->ge.params.vtx.color[1] = ((vtxbuff[1] >> 14) > 31) ? 31 : (vtxbuff[1] >> 14);
+    this->ge.params.vtx.color[2] = ((vtxbuff[2] >> 14) > 31) ? 31 : (vtxbuff[2] >> 14);
 }
 
 static void cmd_TEXCOORD(struct NDS *this)
@@ -731,67 +731,6 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
         node->data.uv[1] = this->ge.params.vtx.uv[1];
     }
 }
-
-static u32 clip_against_plane(struct NDS *this, i32 axis, u32 is_compare_GT, struct NDS_GE_VTX_list *vertex_list_in, struct NDS_GE_VTX_list *vertex_list_out) {
-    const i32 clip_precision = 18;
-
-    const u32 size = vertex_list_in->len;
-    
-    struct NDS_GE_VTX_list_node *v0 = NULL;
-
-    u32 clipped = 0;
-    // LT = x < -w
-    // GT = x > w
-    for (int i = 0; i < size; i++) {
-        if (!v0) v0 = vertex_list_in->first;
-        else v0 = v0->next;
-
-        u32 comp;
-        if (is_compare_GT)
-            comp = v0->data.xyzw[axis] > v0->data.xyzw[3];
-        else
-            comp = v0->data.xyzw[axis] < -v0->data.xyzw[3];
-        if (comp) {
-            struct NDS_GE_VTX_list_node *vlns[2] = {v0->prev, v0->next};
-            if (!vlns[0]) vlns[0] = vertex_list_in->last;
-            if (!vlns[1]) vlns[1] = vertex_list_in->first;
-            for (u32 j = 0; j < 2; j++) {
-                struct NDS_GE_VTX_list_node *v1 = vlns[j];
-
-                if (is_compare_GT)
-                    comp = v1->data.xyzw[axis] > v1->data.xyzw[3];
-                else
-                    comp = v1->data.xyzw[axis] < -v1->data.xyzw[3];
-                if (!comp) {
-                    const i64 sign = v0->data.xyzw[axis] < -v0->data.xyzw[3] ? 1 : -1;
-                    const i64 numer = v1->data.xyzw[axis] + sign * v1->data.xyzw[3];
-                    const i64 denom = (v0->data.xyzw[3] - v1->data.xyzw[3]) +
-                                      (v0->data.xyzw[axis] - v1->data.xyzw[axis]) * sign;
-                    const i64 scale = -sign * ((i64) numer << clip_precision) / denom;
-                    const i64 scale_inv = (1 << clip_precision) - scale;
-
-                    struct NDS_GE_VTX_list_node *clipped_vertex = vertex_list_add_to_end(vertex_list_out, 0);
-
-                    for (u32 k = 0; k < 4; k++) {
-                        clipped_vertex->data.xyzw[k] = (v1->data.xyzw[k] * scale_inv + v0->data.xyzw[k] * scale) >> clip_precision;
-                        clipped_vertex->data.color[k] = (v1->data.color[k] * scale_inv + v0->data.color[k] * scale) >> clip_precision;
-                    }
-
-                    for (u32 k = 0; k < 2; k++) {
-                        clipped_vertex->data.uv[k] = (v1->data.uv[k] * scale_inv + v0->data.uv[k] * scale) >> clip_precision;
-                    }
-                }
-            }
-            clipped = 1;
-        } else {
-            struct NDS_GE_VTX_list_node *n = vertex_list_add_to_end(vertex_list_out, 0);
-            memcpy(&n->data, &v0->data, sizeof(struct NDS_GE_VTX_list_node_data));
-        }
-    }
-
-    return clipped;
-}
-
 
 static void vertex_list_add_copy(struct NDS_GE_VTX_list *l, struct NDS_GE_VTX_list_node *src)
 {
@@ -928,9 +867,13 @@ static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 x
     v->data.xyzw[3] = ww;
     v->data.uv[0] = uv[0];
     v->data.uv[1] = uv[1];
-    v->data.color[0] = cr;
-    v->data.color[1] = cg;
-    v->data.color[2] = cb;
+    cr >>= 12;
+    cg >>= 12;
+    cb >>= 12;
+    v->data.color[0] = cr ? ((cr << 4) + 0xF) : 0;
+    v->data.color[1] = cg ? ((cg << 4) + 0xF) : 0;
+    v->data.color[2] = cb ? ((cb << 4) + 0xF) : 0;
+
     return addr;
 }
 
@@ -992,8 +935,7 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
                 posY = -node->data.xyzw[1] + w;
                 u32 den = w;
 
-                if (w > 0xFFFF)
-                {
+                if (w > 0xFFFF) {
                     posX >>= 1;
                     posY >>= 1;
                     den  >>= 1;
@@ -1768,6 +1710,12 @@ static void write_edge_table(struct NDS *this, u32 addr, u32 sz, u32 val)
 
 }
 
+static inline u32 texc(u32 colo)
+{
+    //return ctabl[colo & 31];
+    u32 v = ((colo & 0x1F) << 1) | ((colo & 0x10) >> 4);
+    return v;
+}
 
 static void write_toon_table(struct NDS *this, u32 addr, u32 sz, u32 val)
 {
@@ -1776,9 +1724,9 @@ static void write_toon_table(struct NDS *this, u32 addr, u32 sz, u32 val)
         write_toon_table(this, addr+2, 1, val >> 16);
         return;
     }
-    this->re.io.TOON_TABLE_r[addr] = (val & 0x1F) << 1;
-    this->re.io.TOON_TABLE_g[addr] = ((val >> 5) & 0x1F) << 1;
-    this->re.io.TOON_TABLE_b[addr] = ((val >> 10) & 0x1F) << 1;
+    this->re.io.TOON_TABLE_r[addr] = texc(val);
+    this->re.io.TOON_TABLE_g[addr] = texc(val >> 5);
+    this->re.io.TOON_TABLE_b[addr] = texc(val >> 10);;
 }
 
 static void fifo_push(struct NDS *this, u32 cmd, u32 val, u32 from_dma)

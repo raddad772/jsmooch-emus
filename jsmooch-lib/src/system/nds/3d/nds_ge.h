@@ -162,10 +162,10 @@ struct NDS_RE_TEX_SAMPLER {
     char *tex_ptr;
     u32 tex_addr;
     u32 tex_slot;
-    u32 color0_is_transparent;
     u32 tex_slot1_addr;
     u32 pltt_base;
     u32 s_size, t_size; // total size
+    u32 alpha0;
     u32 s_max_fp, t_max_fp;
     u32 s_size_fp, t_size_fp;
     u32 s_fp_mask, t_fp_mask;
@@ -287,9 +287,9 @@ struct NDS_RE {
         u32 viewport[6];
 
         u8 SHININESS[128];
-        i32 TOON_TABLE_r[32];
-        i32 TOON_TABLE_g[32];
-        i32 TOON_TABLE_b[32];
+        u32 TOON_TABLE_r[32];
+        u32 TOON_TABLE_g[32];
+        u32 TOON_TABLE_b[32];
         i32 EDGE_TABLE_r[32];
         i32 EDGE_TABLE_g[32];
         i32 EDGE_TABLE_b[32];

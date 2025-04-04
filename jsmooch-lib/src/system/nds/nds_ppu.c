@@ -378,7 +378,11 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
 
 static inline u32 C18to15(u32 c)
 {
-    return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
+    u32 b = (c >> 13) & 0x1F;
+    u32 g = (c >> 7) & 0x1F;
+    u32 r = (c >> 1) & 0x1F;
+    return r | (g << 5) | (b << 10);
+    //return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
 }
 
 static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
