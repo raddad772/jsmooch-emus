@@ -18,6 +18,8 @@
 #include "../nds_dma.h"
 #include "../nds_debugger.h"
 
+#define flprintf(...) printf(__VA_ARGS__)
+
 void NDS_cart_init(struct NDS* this)
 {
     buf_init(&this->cart.ROM);
@@ -278,8 +280,12 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
 static void flash_handle_spi_cmd(struct NDS *this, u32 val)
 {
     switch(this->cart.RAM.cmd) {
-        case 3:
+        case 0:
+            printf("\nBAD FTRANSFER? %02x", val);
+            break;
+        case 3: // RD
             if (this->cart.RAM.data_in_pos < 3) {
+                flprintf("\nRD/ADDR %02x", val);
                 this->cart.RAM.data_in.b8[this->cart.RAM.data_in_pos] = val;
                 this->cart.RAM.data_in_pos++;
 
@@ -287,41 +293,47 @@ static void flash_handle_spi_cmd(struct NDS *this, u32 val)
                     this->cart.RAM.data_in.b8[3] = this->cart.RAM.data_in.b8[0];
                     this->cart.RAM.data_in.b8[0] = this->cart.RAM.data_in.b8[2];
                     this->cart.RAM.data_in.b8[2] = this->cart.RAM.data_in.b8[3];
+                    this->cart.RAM.data_in.b8[3] = 0;
                     this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & this->cart.RAM.detect.sz_mask;
-                    //printf("\nREAD DATA ADDR:%04x", this->cart.RAM.cmd_addr);
+                    flprintf("\nRD ADDR IS:%06x", this->cart.RAM.cmd_addr);
                 }
             }
             else {
-                //printf("\nREAD BYTE FROM %04x", this->cart.RAM.cmd_addr);
                 this->cart.RAM.data_out.b8[0] = this->cart.RAM.data_out.b8[1] =
                         cR8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr);
+                flprintf("\nRD/DATA %06x:%02x", this->cart.RAM.cmd_addr, this->cart.RAM.data_out.b8[0]);
                 this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & this->cart.RAM.detect.sz_mask;
+
                 this->cart.RAM.data_in_pos++;
-                if (this->cart.RAM.data_in_pos > 258) {
-                    //printf("\nQUIT READ NOW!");
+                if (this->cart.RAM.data_in_pos > 259) {
+                    printf("\nQUIT READ NOW!");
                     this->cart.RAM.cmd = 0;
                 }
             }
             return;
         case 0xA:
             if (this->cart.RAM.data_in_pos < 3) {
+                flprintf("\nWR/ADDR %02x", val);
                 this->cart.RAM.data_in.b8[this->cart.RAM.data_in_pos] = val;
                 this->cart.RAM.data_in_pos++;
 
                 if (this->cart.RAM.data_in_pos == 3) {
-                    //printf("\nWRITE DATA ADDR:%04x", this->cart.RAM.cmd_addr);
+                    this->cart.RAM.data_in.b8[3] = this->cart.RAM.data_in.b8[0];
+                    this->cart.RAM.data_in.b8[0] = this->cart.RAM.data_in.b8[2];
+                    this->cart.RAM.data_in.b8[2] = this->cart.RAM.data_in.b8[3];
                     this->cart.RAM.data_in.b8[3] = 0;
-                    this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & (this->cart.RAM.store->requested_size-1);
+                    this->cart.RAM.cmd_addr = this->cart.RAM.data_in.u & this->cart.RAM.detect.sz_mask;
+                    flprintf("\nWR ADDR IS:%06x", this->cart.RAM.cmd_addr);
                 }
             }
             else {
-                //printf("\nWRITE IF %d", this->cart.RAM.status.write_enable);
                 cW8(this->cart.RAM.store->data, this->cart.RAM.cmd_addr, val & 0xFF);
-                this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.store->requested_size - 1);
+                flprintf("\nRD/DATA %06x:%02x", this->cart.RAM.cmd_addr, val & 0xFF);
+                this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr + 1) & (this->cart.RAM.detect.sz_mask);
                 this->cart.RAM.store->dirty = 1;
                 this->cart.RAM.data_in_pos++;
-                if (this->cart.RAM.data_in_pos > 258) {
-                    //printf("\nQUIT WRITE NOW!");
+                if (this->cart.RAM.data_in_pos > 259) {
+                    printf("\nQUIT WRITE NOW!");
                     this->cart.RAM.cmd = 0;
                 }
             }
@@ -508,6 +520,7 @@ static void eeprom_spi_transaction(struct NDS *this, u32 val)
 static void flash_spi_transaction(struct NDS *this, u32 val)
 {
     if (!this->cart.RAM.chipsel) {
+        flprintf("\nCMD: %02x", val);
         this->cart.RAM.cmd = val;
         this->cart.RAM.data_in_pos = 0;
     }

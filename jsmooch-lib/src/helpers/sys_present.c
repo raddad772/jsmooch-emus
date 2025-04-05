@@ -321,9 +321,7 @@ void NDS_present(struct physical_io_device *device, void *out_buf, u32 out_width
             u32 x = rx;
             u32 di = ((y * 256) + x);
 
-            u32 color = nds_to_screen(gbao[di]);
-            *line_out_ptr = color;
-            line_out_ptr++;
+            *(line_out_ptr++) = nds_to_screen(gbao[di]);
         }
     }
 }
