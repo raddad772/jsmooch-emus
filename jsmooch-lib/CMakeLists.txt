@@ -423,6 +423,10 @@ add_library(jsmooch-lib
         src/system/nds/nds_apu.h
         src/helpers/wav.c
         src/helpers/wav.h
+        src/system/nds/cart/nds_flash.c
+        src/system/nds/cart/nds_flash.h
+        src/system/nds/cart/nds_eeprom.c
+        src/system/nds/cart/nds_eeprom.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
