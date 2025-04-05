@@ -65,7 +65,7 @@ u32 NDS_cart_read_spicnt(struct NDS *this)
     v |= this->cart.io.transfer_ready_irq << 14;
     v |= this->cart.io.nds_slot_enable << 15;
     // 0 = ready, 1 = busy
-    v |= this->cart.io.romctrl.busy << 7;
+    if (this->cart.io.spi.slot_mode == 0) v |= this->cart.io.romctrl.busy << 7;
     return v;
 }
 

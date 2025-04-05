@@ -7,6 +7,8 @@
 #include "../nds_bus.h"
 #include "helpers/multisize_memaccess.c"
 
+#define flprintf(...) printf(__VA_ARGS__)
+
 static void inc_addr(struct NDS *this)
 {
     this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr & 0xFFFFFF00) | ((this->cart.RAM.cmd_addr + 1) & 0xFF);
