@@ -7,7 +7,8 @@
 #include "../nds_bus.h"
 #include "helpers/multisize_memaccess.c"
 
-#define flprintf(...) printf(__VA_ARGS__)
+//#define flprintf(...) printf(__VA_ARGS__)
+#define flprintf(...) (void)0
 
 static void inc_addr(struct NDS *this)
 {

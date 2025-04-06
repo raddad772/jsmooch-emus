@@ -926,7 +926,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     if (hotkeys[1]) {
         fsys.load_state();
     }
-    u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? 5 : 1;
+    u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
     if (fsys.state == FSS_play) {
         for (u32 i = 0; i < frame_multi; i++) {
             fsys.do_frame();

@@ -7,7 +7,8 @@
 #include "../nds_bus.h"
 #include "helpers/multisize_memaccess.c"
 
-#define flprintf(...) printf(__VA_ARGS__)
+//#define flprintf(...) printf(__VA_ARGS__)
+#define flprintf(...) (void)0
 
 static void inc_addr(struct NDS *this)
 {
@@ -159,5 +160,5 @@ void NDS_eeprom_spi_transaction(struct NDS *this, u32 val)
     }
 
     this->cart.RAM.chipsel = this->cart.io.spi.next_chipsel;
-    if (!this->cart.RAM.chipsel) printf("\nCHIPSEL DOWN...");
+    if (!this->cart.RAM.chipsel) flprintf("\nCHIPSEL DOWN...");
 }

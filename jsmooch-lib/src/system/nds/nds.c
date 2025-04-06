@@ -177,8 +177,8 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 
     // TODO: let this be scheduled.
     // TODO Next: yes do it!
-    //ARM7TDMI_IRQcheck(&this->arm7);
-    //ARM946ES_IRQcheck(&this->arm9);
+    ARM7TDMI_IRQcheck(&this->arm7, 0);
+    ARM946ES_IRQcheck(&this->arm9, 0);
 }
 
 void NDS_new(struct jsm_system *jsm)

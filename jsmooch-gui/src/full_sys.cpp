@@ -599,7 +599,7 @@ void full_system::load_default_ROM()
 
             // MMC3
             //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "gauntlet.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "recca.nes", nullptr);
 
@@ -617,7 +617,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "doraemon.nes", nullptr);
 
             //MMC1
-            worked = grab_ROM(&ROMs, which, "zelda.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "zelda.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "tetris.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "metroid.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "bioniccommando.nes", nullptr);
@@ -701,7 +701,7 @@ void full_system::load_default_ROM()
         case SYS_NDS:
             //worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "touch_test.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/hello_world.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
@@ -717,7 +717,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/lesson11.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/256colorTilemap.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/simple_tri.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "libnds/touch_area.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "libnds/touch_test.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/2Dplus3D.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/bitmap_sprites.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "3d_demos/libnds3d/3d_ortho_projection.nds", nullptr);
@@ -727,7 +727,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
