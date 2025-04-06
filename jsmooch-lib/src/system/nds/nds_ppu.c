@@ -22,9 +22,9 @@ static inline u32 c15to18(u32 color)
     u32 r = ((color << 1) & 0x3E);
     u32 g = ((color >> 4) & 0x3E);
     u32 b = ((color >> 9) & 0x3E);
-    r |= (r >> 5);
+    /*r |= (r >> 5);
     g |= (g >> 5);
-    b |= (b >> 5);
+    b |= (b >> 5);*/
     return r | (g << 6) | (b << 12);
 }
 
@@ -337,9 +337,11 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
             if (tile_x & 1) c >>= 4;
             c &= 15;
             mypx.has = c != 0;
-            mypx.color = c15to18(read_pram_obj(this, eng, ((palette << 4) | c) << 1, 2));
-            mypx.sp_translucent = mode == 1;
 
+            c = read_pram_obj(this, eng, ((palette << 4) | c) << 1, 2);
+
+            mypx.color = c15to18(c);
+            mypx.sp_translucent = mode == 1;
         }
         union NDS_PX *opx = &eng->obj.line[line_x];
 
@@ -494,7 +496,8 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
                         else {
                             tile[mx].has = 1;
                             tile[mx].priority = bg->priority;
-                            tile[mx].color = c15to18(read_pram_bg(this, eng, palette << 5 | index << 1, 2));
+                            u32 c = read_pram_bg(this, eng, palette << 5 | index << 1, 2);
+                            tile[mx].color = c15to18(c);
                         }
                     }
                 }
@@ -894,7 +897,7 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
 
     union NDS_PX *sp_px = &eng->obj.line[x];
     union NDS_PX empty_px;
-    empty_px.color=read_pram_bg(this, eng, 0, 2);
+    empty_px.color=c15to18(read_pram_bg(this, eng, 0, 2));
     empty_px.priority=4;
     empty_px.sp_translucent=0;
     empty_px.has=1;
@@ -945,20 +948,6 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
             output_color = nds_darken(output_color, (i32) eng->blend.use_bldy);
         }
     }
-    /*switch(x % 6) {
-        case 0:
-        case 1:
-            output_color = 0x1F;
-            break;
-        case 2:
-        case 3:
-            output_color = 0x1F << 5;
-            break;
-        case 4:
-        case 5:
-            output_color = 0x1F << 10;
-            break;
-    }*/
     eng->line_px[x] = output_color;
 }
 
@@ -1353,16 +1342,6 @@ void NDS_PPU_vblank(void *ptr, u64 key, u64 clock, u32 jitter)
         this->ppu.doing_capture = 0;
     }
     // else { // line 0
-}
-
-u32 NDS_PPU_read_2d_bg_palette(struct NDS *this, u32 eng_num, u32 addr, u32 sz)
-{
-    return cR[sz](this->ppu.eng2d[eng_num].mem.bg_palette, addr);
-}
-
-u32 NDS_PPU_read_2d_obj_palette(struct NDS *this, u32 eng_num, u32 addr, u32 sz)
-{
-    return cR[sz](this->ppu.eng2d[eng_num].mem.obj_palette, addr);
 }
 
 void NDS_PPU_write_2d_bg_palette(struct NDS *this, u32 eng_num, u32 addr, u32 sz, u32 val)
@@ -2022,6 +2001,25 @@ u32 NDS_PPU_read9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
         case R9_BLDALPHA+1:
             return eng->blend.eva_b;
 
+        case R9_BG0HOFS+0:
+        case R9_BG0HOFS+1:
+        case R9_BG0VOFS+0:
+        case R9_BG0VOFS+1:
+        case R9_BG1HOFS+0:
+        case R9_BG1HOFS+1:
+        case R9_BG1VOFS+0:
+        case R9_BG1VOFS+1:
+        case R9_BG2HOFS+0:
+        case R9_BG2HOFS+1:
+        case R9_BG2VOFS+0:
+        case R9_BG2VOFS+1:
+        case R9_BG3HOFS+0:
+        case R9_BG3HOFS+1:
+        case R9_BG3VOFS+0:
+        case R9_BG3VOFS+1:
+        case R9_BLDY+0:
+        case R9_BLDY+1:
+            return 0;
     }
 
     printf("\nUNKNOWN PPU RD9 ADDR:%08x sz:%d", addr, sz);

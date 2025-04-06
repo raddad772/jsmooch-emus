@@ -17,6 +17,18 @@
 #define printfcd(...) (void)0
 //#define printfcd(...) printf(__VA_ARGS__)
 
+
+static inline u32 c15to18(u32 color)
+{
+    u32 r = ((color << 1) & 0x3E);
+    u32 g = ((color >> 4) & 0x3E);
+    u32 b = ((color >> 9) & 0x3E);
+    /*r |= (r >> 5);
+    g |= (g >> 5);
+    b |= (b >> 5);*/
+    return r | (g << 6) | (b << 12);
+}
+
 static u32 tbl_num_params[0xFF];
 static i32 tbl_num_cycles[0xFF];
 static u32 tbl_cmd_good[0xFF];
@@ -1249,7 +1261,11 @@ static void cmd_VTX_10(struct NDS *this)
 
 static void cmd_POS_TEST(struct NDS *this)
 {
-    printf("\nPOS TEST!");
+    static int a = 1;
+    if (a) {
+        printf("\nWARN: POS TEST!");
+        a = 0;
+    }
     this->ge.params.vtx.x = DATA[0] & 0xFFFF;
     this->ge.params.vtx.y = DATA[0] >> 16;
     this->ge.params.vtx.z = DATA[1] & 0xFFFF;
@@ -1868,7 +1884,7 @@ void NDS_GE_write(struct NDS *this, u32 addr, u32 sz, u32 val)
             this->re.io.FOG.COLOR_g = ((val >> 5) & 0x1F) << 1;
             this->re.io.FOG.COLOR_b = ((val >> 10) & 0x1F) << 1;
         case R9_CLEAR_COLOR: {
-            this->re.io.CLEAR.COLOR = val & 0x7FFF;
+            this->re.io.CLEAR.COLOR = c15to18(val & 0x7FFF);
             this->re.io.CLEAR.fog_to_rear_plane = (val >> 15) & 1;
             this->re.io.CLEAR.alpha = ((val >> 16) & 0x1F) << 1;
             if (this->re.io.CLEAR.alpha) this->re.io.CLEAR.alpha++;

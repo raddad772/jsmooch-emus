@@ -467,13 +467,13 @@ static void print_layer_info(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, 
 {
     if (bgnum < 4) {
         struct NDS_PPU_bg *bg = &eng->bg[bgnum];
-        debugger_widgets_textbox_sprintf(tb, "\n BG%d:", bgnum);
+        debugger_widgets_textbox_sprintf(tb, "\n-BG%d:", bgnum);
         if (bg->enable) debugger_widgets_textbox_sprintf(tb, "on ");
         else debugger_widgets_textbox_sprintf(tb, "off");
         debugger_widgets_textbox_sprintf(tb, "  kind:");
         classify_bg_kind(this, eng, bgnum, &tb->contents);
         debugger_widgets_textbox_sprintf(tb, "  mosaic:%d  screen_size:%d  8bpp:%d", bg->enable,bg->mosaic_enable, bg->screen_size, bg->bpp8);
-        debugger_widgets_textbox_sprintf(tb, "\n   hscroll:%d  vscroll:%d  mos.x,y:%d,%d  ", bg->hscroll, bg->vscroll, this->ppu.eng2d[0].mosaic.bg.hsize, this->ppu.eng2d[0].mosaic.bg.vsize);
+        debugger_widgets_textbox_sprintf(tb, "\n---hscroll:%d  vscroll:%d  mos.x,y:%d,%d  ", bg->hscroll, bg->vscroll, this->ppu.eng2d[0].mosaic.bg.hsize, this->ppu.eng2d[0].mosaic.bg.vsize);
         if (bgnum < 2) {
             debugger_widgets_textbox_sprintf(tb, "ext_palette:%d", bg->ext_pal_slot);
         }
@@ -483,8 +483,8 @@ static void print_layer_info(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, 
         debugger_widgets_textbox_sprintf(tb, "  priority:%d",  bg->priority);
     }
     else {
-        debugger_widgets_textbox_sprintf(tb, "\n OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
-        debugger_widgets_textbox_sprintf(tb, "\n  ext_palettes:%d  tile_1d:%d  bitmap_1d:%d", eng->io.obj.extended_palettes, eng->io.obj.tile.map_1d, eng->io.obj.bitmap.map_1d);
+        debugger_widgets_textbox_sprintf(tb, "\n-OBJ  on:%d  mosaic:%d", eng->obj.enable, eng->mosaic.obj.enable);
+        debugger_widgets_textbox_sprintf(tb, "\n---ext_palettes:%d  tile_1d:%d  bitmap_1d:%d", eng->io.obj.extended_palettes, eng->io.obj.tile.map_1d, eng->io.obj.bitmap.map_1d);
     }
 }
 

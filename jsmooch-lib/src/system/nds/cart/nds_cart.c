@@ -35,7 +35,7 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 void NDS_cart_reset(struct NDS *this)
 {
     // TODO: this
-    this->cart.RAM.status.busy = 0;
+    this->cart.backup.status.busy = 0;
 }
 
 void NDS_cart_direct_boot(struct NDS *this)
@@ -49,8 +49,8 @@ u32 NDS_cart_load_ROM_from_RAM(struct NDS_cart* this, char* fil, u64 fil_sz, str
     memcpy(this->ROM.ptr, fil, fil_sz);
 
     if (SRAM_enable) *SRAM_enable = 1;
-    this->RAM.store = &pio->cartridge_port.SRAM;
-    this->RAM.store->fill_value = 0xFF;
+    this->backup.store = &pio->cartridge_port.SRAM;
+    this->backup.store->fill_value = 0xFF;
     struct persistent_store *ps = &pio->cartridge_port.SRAM;
     ps->requested_size = 1 * 1024 * 1024;
     ps->persistent = 1;
@@ -108,7 +108,7 @@ static u32 rom_transfer_time(struct NDS *this, u32 clk_spd, u32 sz_in_bytes)
 
 u32 NDS_cart_read_spi(struct NDS *this, u32 bnum)
 {
-    return this->cart.RAM.data_out.b8[bnum];
+    return this->cart.backup.data_out.b8[bnum];
 }
 
 u32 NDS_cart_read_rom(struct NDS *this, u32 addr, u32 sz)
@@ -279,13 +279,13 @@ void NDS_cart_spi_write_spicnt(struct NDS *this, u32 val, u32 bnum)
 
 static void inc_addr(struct NDS *this)
 {
-    this->cart.RAM.cmd_addr = (this->cart.RAM.cmd_addr & 0xFFFFFF00) | ((this->cart.RAM.cmd_addr + 1) & 0xFF);
+    this->cart.backup.cmd_addr = (this->cart.backup.cmd_addr & 0xFFFFFF00) | ((this->cart.backup.cmd_addr + 1) & 0xFF);
 }
 
 
 void NDS_cart_spi_transaction(struct NDS *this, u32 val)
 {
-    switch(this->cart.RAM.detect.kind) {
+    switch(this->cart.backup.detect.kind) {
         case NDSBK_none:
             printf("\nSPI transactions with no backup!?");
             return;
@@ -331,49 +331,54 @@ void NDS_cart_detect_kind(struct NDS *this, u32 from, u32 val)
     u32 reset = 1;
     if (subsystem == FS_SUBSYS) {
         u32 data = val >> 6;
-        if ((this->cart.RAM.detect.pos == 0) && (from == 9) && (data == 0)) {
+        if ((this->cart.backup.detect.pos == 0) && (from == 9) && (data == 0)) {
             reset = 0;
         }
-        else if ((this->cart.RAM.detect.pos < 3) && (from == 9) && (!this->cart.RAM.detect.done)) {
+        else if ((this->cart.backup.detect.pos < 3) && (from == 9) && (!this->cart.backup.detect.done)) {
             reset = 0;
-            this->cart.RAM.detect.arg_buf_addr = data;
-            u32 second_word = cR32(this->mem.RAM, (this->cart.RAM.detect.arg_buf_addr + 4) & 0x3FFFFF);
+            this->cart.backup.detect.arg_buf_addr = data;
+            u32 second_word = cR32(this->mem.RAM, (this->cart.backup.detect.arg_buf_addr + 4) & 0x3FFFFF);
             // bits 0-1 encode the savedata type (0=none, 1=EEPROM, 2=flash, 3=fram
             // - never seen fram used), and
             // bits 8-15 encode the backup size in a shift amount - i.e. the size in bytes is (1 << n)
             u32 kind = second_word & 3;
             u32 sz = 1 << ((second_word >> 8) & 0xFF);
-            if (kind == NDSBK_eeprom) {
-                if (sz <= 512)
-                    this->cart.RAM.detect.addr_bytes = 1;
-                else if (sz < 131072)
-                    this->cart.RAM.detect.addr_bytes = 2;
-                else
-                    this->cart.RAM.detect.addr_bytes = 3;
-            }
             printf("\nDETECT CART SAVE KIND:%d SZ:%d bytes", kind, sz);
-            this->cart.RAM.detect.kind = kind;
-            this->cart.RAM.detect.sz = sz;
-            this->cart.RAM.detect.sz_mask = sz - 1;
-            this->cart.RAM.detect.done = 1;
-            this->cart.RAM.store->requested_size = sz;
+            this->cart.backup.detect.kind = kind;
+            this->cart.backup.detect.sz = sz;
+            this->cart.backup.detect.sz_mask = sz - 1;
+            this->cart.backup.detect.done = 1;
+            this->cart.backup.store->requested_size = sz;
+            switch(this->cart.backup.detect.kind) {
+                case 0: // none
+                break;
+                case 1: // eeprom
+                    NDS_eeprom_setup(this);
+                    break;
+                case 2: // flash
+                    NDS_flash_setup(this);
+                    break;
+                case 3: // fram
+                    printf("\nFRAM IMPLEMENT!");
+                    break;
+            }
         }
-        else if ((this->cart.RAM.detect.pos == 1) && (from == 7) && (data == 1)) {
+        else if ((this->cart.backup.detect.pos == 1) && (from == 7) && (data == 1)) {
             reset = 0;
         }
-        /*if ((this->cart.RAM.detect.pos == 3) && (from == 7) && (data == 1)) {
+        /*if ((this->cart.backup.detect.pos == 3) && (from == 7) && (data == 1)) {
             reset = 0;
             printf("\nSTEP 4");
         }
-        if ((this->cart.RAM.detect.pos == 4) && (from == 9)) {
+        if ((this->cart.backup.detect.pos == 4) && (from == 9)) {
             printf("\nSTEP 5?");
         }*/
     }
 
     if (reset) {
-        this->cart.RAM.detect.pos = 0;
+        this->cart.backup.detect.pos = 0;
     }
     else {
-        this->cart.RAM.detect.pos++;
+        this->cart.backup.detect.pos++;
     }
 }

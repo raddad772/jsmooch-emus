@@ -251,7 +251,7 @@ struct NDS_RE {
     struct NDS_RE_POLY_LIST render_list;
     struct {
         struct {
-            u16 COLOR;
+            u32 COLOR;
             u32 fog_to_rear_plane;
             u16 alpha;
             u16 poly_id;

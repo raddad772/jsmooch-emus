@@ -172,8 +172,9 @@ static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
         else {
             if (ch->op.src_addr >= 0x02000000)
                 ch->io.open_bus = NDS_mainbus_read9(this, ch->op.src_addr, 4, ch->op.src_access, 0);
-            else
+            else {
                 this->waitstates.current_transaction++;
+            }
             NDS_mainbus_write9(this, ch->op.dest_addr, 4, ch->op.dest_access, ch->io.open_bus);
             num_transfer++;
         }

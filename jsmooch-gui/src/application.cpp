@@ -1384,6 +1384,7 @@ int webgpu_main(imgui_jsmooch_app &app)
     // Make sure GLFW does not initialize any graphics context.
     // This needs to be done explicitly later.
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_SRGB_CAPABLE , GLFW_TRUE);
     GLFWwindow* window = glfwCreateWindow(wgpu_swap_chain_width, wgpu_swap_chain_height, "JSMooCh GUI!", nullptr, nullptr);
     if (window == nullptr)
         return 1;

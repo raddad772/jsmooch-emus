@@ -22,9 +22,12 @@ static inline u32 nds_to_screen(u32 color)
     u32 b = (color >> 12) & 0x3F;
     u32 g = (color >> 6) & 0x3F;
     u32 r = color & 0x3F;
-    r = (r << 2) | (r >> 4);
-    g = (g << 2) | (g >> 4);
-    b = (b << 2) | (b >> 4);
+    //r = (r << 2) | (r >> 4);
+    //g = (g << 2) | (g >> 4);
+    //b = (b << 2) | (b >> 4);
+    r <<= 2;
+    g <<= 2;
+    b <<= 2;
     return 0xFF000000 | (b << 16) | (g << 8) | r;
 }
 

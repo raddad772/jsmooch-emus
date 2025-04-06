@@ -320,8 +320,11 @@ void NDS_present(struct physical_io_device *device, void *out_buf, u32 out_width
         for (u32 rx = 0; rx < 256; rx++) {
             u32 x = rx;
             u32 di = ((y * 256) + x);
+            u32 c = gbao[di];
+            //if (c == 0xBBE) printf("\nTO SCREEN: %08x", nds_to_screen(c));
 
-            *(line_out_ptr++) = nds_to_screen(gbao[di]);
+            *(line_out_ptr++) = nds_to_screen(c);
+            //*(line_out_ptr++) = 0xFF808080;
         }
     }
 }

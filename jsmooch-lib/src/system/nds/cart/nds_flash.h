@@ -9,5 +9,6 @@
 
 struct NDS;
 void NDS_flash_spi_transaction(struct NDS *this, u32 val);
+void NDS_flash_setup(struct NDS *this);
 
 #endif //JSMOOCH_EMUS_NDS_FLASH_H

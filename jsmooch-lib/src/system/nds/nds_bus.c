@@ -170,9 +170,14 @@ static void buswr9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 acces
     if (addr < 0x05000000) return;
     addr &= 0x7FF;
     if (addr < 0x200) return NDS_PPU_write_2d_bg_palette(this, 0, addr & 0x1FF, sz, val);
-    if (addr < 0x400) return NDS_PPU_write_2d_obj_palette(this, 0, addr & 0x1FF, sz, val);
+    if (addr < 0x400) {
+        //if (val != 0) printf("\nENG1 WRITE COLOR:%d VAL:%04x", (addr & 0x1FF) >> 1, val);
+        return NDS_PPU_write_2d_obj_palette(this, 0, addr & 0x1FF, sz, val);
+    }
     if (addr < 0x600) return NDS_PPU_write_2d_bg_palette(this, 1, addr & 0x1FF, sz, val);
-    if (addr < 0x800) return NDS_PPU_write_2d_obj_palette(this, 1, addr & 0x1FF, sz, val);
+    if (addr < 0x800) {
+        return NDS_PPU_write_2d_obj_palette(this, 1, addr & 0x1FF, sz, val);
+    }
     buswr9_invalid(this, addr, sz, access, val);
 }
 
@@ -180,10 +185,14 @@ static u32 busrd9_obj_and_palette(struct NDS *this, u32 addr, u32 sz, u32 access
 {
     if (addr < 0x05000000) return busrd9_invalid(this, addr, sz, access, has_effect);
     addr &= 0x7FF;
-    if (addr < 200) return NDS_PPU_read_2d_bg_palette(this, 0, addr & 0x1FF, sz);
-    if (addr < 400) return NDS_PPU_read_2d_obj_palette(this, 0, addr & 0x1FF, sz);
-    if (addr < 600) return NDS_PPU_read_2d_bg_palette(this, 1, addr & 0x1FF, sz);
-    if (addr < 800) return NDS_PPU_read_2d_obj_palette(this, 1, addr & 0x1FF, sz);
+    if (addr < 200)
+        return cR[sz](this->ppu.eng2d[0].mem.bg_palette, addr & 0x1FF);
+    if (addr < 400)
+        return cR[sz](this->ppu.eng2d[0].mem.obj_palette, addr & 0x1FF);
+    if (addr < 600)
+        return cR[sz](this->ppu.eng2d[1].mem.bg_palette, addr & 0x1FF);
+    if (addr < 800)
+        return cR[sz](this->ppu.eng2d[1].mem.obj_palette, addr & 0x1FF);
     return busrd9_invalid(this, addr, sz, access, has_effect);
 }
 
@@ -1654,7 +1663,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
                 if (this->io.ipc.arm9.fifo_enable) {
                     this->io.ipc.arm9.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm7, val);
-                    if (!this->cart.RAM.detect.done) NDS_cart_detect_kind(this, 9, val);
+                    if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 9, val);
                 }
 
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
@@ -1815,7 +1824,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (this->io.ipc.arm7.fifo_enable) {
                     this->io.ipc.arm7.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm9, val);
-                    if (!this->cart.RAM.detect.done) NDS_cart_detect_kind(this, 7, val);
+                    if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 7, val);
                 }
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (!old_bits && new_bits) {

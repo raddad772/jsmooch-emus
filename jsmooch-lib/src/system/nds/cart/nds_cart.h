@@ -99,17 +99,16 @@ struct NDS_cart {
         } romctrl;
     } io;
 
+
     struct {
         struct persistent_store *store;
         u32 cmd;
-
         union {
             u8 b8[4];
             u32 u;
         } data_in;
         u32 data_in_pos;
         u32 cmd_addr;
-
         union {
             u8 b8[4];
             u32 b32;
@@ -119,10 +118,17 @@ struct NDS_cart {
             struct {
                 u8 busy : 1;
                 u8 write_enable : 1;
+                u8 write_protect_mode : 2;
+                u8 _u : 3;
+                u8 reg_write_disable : 1;
             };
             u8 u;
         } status;
         u32 chipsel;
+
+        u32 page_mask;
+        u32 uh, uq;
+
         struct {
             u32 done;
             u32 pos;
@@ -133,10 +139,8 @@ struct NDS_cart {
             u32 arg_buf_ptr;
             u32 addr_bytes;
         } detect;
+    } backup;
 
-    } RAM;
-
-    u64 spi_busy_until;
     u64 rom_busy_until;
     enum NDS_cart_data_modes data_mode;
 
