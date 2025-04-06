@@ -149,18 +149,17 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
         this->io.arm7.halted &= ((!!(this->io.arm7.IF & this->io.arm7.IE)) ^ 1);
     }
 
-    if (this->io.arm7.halted) {
-        this->clock.master_cycle_count7 = this->clock.cycles7;
-    }
-    else {
-        this->arm7_ins = 1;
-        while ((i64) this->clock.master_cycle_count7 < this->clock.cycles7) {
-            ARM7TDMI_run_noIRQcheck(&this->arm7);
-            this->clock.master_cycle_count7 += this->waitstates.current_transaction;
-            this->waitstates.current_transaction = 0;
+    this->arm7_ins = 1;
+    while ((i64) this->clock.master_cycle_count7 < this->clock.cycles7) {
+        if (this->io.arm7.halted) {
+            this->clock.master_cycle_count7 = this->clock.cycles7;
+            break;
         }
-        this->arm7_ins = 0;
+        ARM7TDMI_run_noIRQcheck(&this->arm7);
+        this->clock.master_cycle_count7 += this->waitstates.current_transaction;
+        this->waitstates.current_transaction = 0;
     }
+    this->arm7_ins = 0;
 
     if (this->ge.fifo.pausing_cpu || this->arm9.halted) {
         this->clock.master_cycle_count9 = this->clock.cycles9;
@@ -177,8 +176,8 @@ static void NDS_run_block(void *ptr, u64 num_cycles, u64 clock, u32 jitter)
 
     // TODO: let this be scheduled.
     // TODO Next: yes do it!
-    ARM7TDMI_IRQcheck(&this->arm7, 0);
-    ARM946ES_IRQcheck(&this->arm9, 0);
+    //ARM7TDMI_IRQcheck(&this->arm7, 0);
+    //ARM946ES_IRQcheck(&this->arm9, 0);
 }
 
 void NDS_new(struct jsm_system *jsm)

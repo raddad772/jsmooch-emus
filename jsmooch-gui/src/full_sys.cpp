@@ -717,7 +717,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "libnds/lesson11.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/256colorTilemap.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/simple_tri.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "libnds/touch_test.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "libnds/touch_test.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/2Dplus3D.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/bitmap_sprites.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "3d_demos/libnds3d/3d_ortho_projection.nds", nullptr);
@@ -742,7 +742,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mp_hunters_rev1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "okami_den.nds", nullptr); // try again after sprites
             //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "poke_black_2.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "poke_black_2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "infinite_space.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nsmb.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "examples/graphics_2d/sprites_ext_palette.nds", nullptr);

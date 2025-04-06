@@ -34,7 +34,7 @@ u32 NDS_get_controller_state(struct NDS *this, u32 byte)
     if (byte == 0) return v & 0xFF;
     if (byte == 1) return (v >> 8) & 0xFF;
     if (byte == 2) {
-        return (v >> 16) & 0xFF;
+        return (v >> 16) & 0x7F;
     }
     printf("\nWHAT!?!?!?!?");
     return v;
