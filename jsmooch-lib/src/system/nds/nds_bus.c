@@ -1231,7 +1231,11 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->io.ipc.arm9sync.enable_irq_from_remote = (val >> 6) & 1;
             return;
 
-        case R_IME: this->io.arm9.IME = val & 1; NDS_eval_irqs_9(this); return;
+        case R_IME: {
+            this->io.arm9.IME = val & 1;
+            NDS_eval_irqs_9(this);
+            return;
+        }
         case R_IME+1: return;
         case R_IME+2: return;
         case R_IME+3: return;

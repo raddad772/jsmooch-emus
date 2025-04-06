@@ -223,6 +223,7 @@ void NDS_CP_write(struct ARM946ES *this, u32 num, u32 opcode, u32 Cn, u32 Cm, u3
             return;
         case CP15r_cache_commands_and_halt: // 04, 82
             if (((Cm == 0) && (CP == 4)) || (Cm == 8) && (CP == 2)) {
+                //printf("\nHALT ARM9");
                 this->halted = 1;
                 return;
             }

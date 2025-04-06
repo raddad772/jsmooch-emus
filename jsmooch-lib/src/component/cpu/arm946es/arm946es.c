@@ -79,6 +79,9 @@ void ARM946ES_setup_tracing(struct ARM946ES* this, struct jsm_debug_read_trace *
 
 static void do_IRQ(struct ARM946ES* this)
 {
+    /*if (this->halted) {
+        printf("\nUNHALT ARM9");
+    }*/
     this->halted = 0;
     if (this->regs.CPSR.T) {
         fetch_ins(this, 2);
@@ -306,6 +309,10 @@ void ARM946ES_schedule_IRQ_check(struct ARM946ES *this)
 
 void ARM946ES_run_noIRQcheck(struct ARM946ES*this)
 {
+    if (this->halted) {
+        (*this->waitstates)++;
+        return;
+    }
     u32 opcode = this->pipeline.opcode[0];
     u32 opcode_addr = this->pipeline.addr[0];
     this->pipeline.opcode[0] = this->pipeline.opcode[1];

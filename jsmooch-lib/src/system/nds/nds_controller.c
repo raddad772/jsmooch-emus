@@ -30,7 +30,6 @@ u32 NDS_get_controller_state(struct NDS *this, u32 byte)
     // pen down bit 22
     v |= (tsc->touch.down << 22);
     v ^= 0x7FFFFF;
-    return 0xFF;
 
     if (byte == 0) return v & 0xFF;
     if (byte == 1) return (v >> 8) & 0xFF;

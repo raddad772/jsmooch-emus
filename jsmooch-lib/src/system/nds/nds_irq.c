@@ -14,9 +14,11 @@ void NDS_eval_irqs_7(struct NDS *this)
 void NDS_eval_irqs_9(struct NDS *this)
 {
     // Bit 21 can't go down while certain conditions are true
+    //printf("\neval_irqs_9 IF:%08x IE:%08x IME:%d", this->io.arm9.IF, this->io.arm9.IE, this->io.arm9.IME);
     if (!(this->io.arm9.IF & (1 << 21)))
         this->io.arm9.IF |= NDS_GE_check_irq(this) << 21;
     this->arm9.regs.IRQ_line = (!!(this->io.arm9.IE & this->io.arm9.IF)) & this->io.arm9.IME;
+    //printf("\nARM9 IRQ line:%d", this->arm9.regs.IRQ_line);
     ARM946ES_IRQcheck(&this->arm9, this->arm9_ins);
 }
 
@@ -73,9 +75,7 @@ void NDS_update_IF9(struct NDS *this, u32 bitnum)
 {
     u32 old_IF = this->io.arm9.IF;
     this->io.arm9.IF |= 1 << bitnum;
-    if (old_IF != this->io.arm9.IF) {
-        NDS_eval_irqs_9(this);
-    }
+    NDS_eval_irqs_9(this);
 }
 
 void NDS_update_IFs(struct NDS *this, u32 bitnum)
