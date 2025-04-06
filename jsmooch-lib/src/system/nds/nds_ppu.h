@@ -68,8 +68,8 @@ struct NDS_PPU {
     struct JSM_DISPLAY *display;
 
 
-    u32 line_a[256];
-    u32 line_b[256];
+    u16 line_a[256];
+    u16 line_b[256];
     u32 doing_capture;
 
     struct {

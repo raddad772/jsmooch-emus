@@ -301,7 +301,6 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
     u32 worked = 0;
 
     GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
-    printf("\nWORKED OS FAR? %d", worked);
     if (!worked) return 0;
 
     mfs_add(fname, BASE_PATH, ROMs);

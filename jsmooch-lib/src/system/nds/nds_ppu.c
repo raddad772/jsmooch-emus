@@ -1139,7 +1139,7 @@ static void run_dispcap(struct NDS *this)
         }
     }
 
-    u32 *src;
+    u16 *src;
     if (need_a) {
         src = this->ppu.line_a;
     }
@@ -1164,7 +1164,7 @@ static void run_dispcap(struct NDS *this)
             u32 b_b = (fb >> 10) & 0x1F;
             u32 b_a = (fb >> 15) & 1;
 
-            a_a = 1;
+            a_a = 1; // TODO: ?
 
             u32 blend_r = capblend(a_r, a_a, b_r, b_a, eva, evb);
             u32 blend_g = capblend(a_g, a_a, b_g, b_a, eva, evb);
