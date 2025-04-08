@@ -888,10 +888,10 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             return NDS_get_controller_state(this, 0);
         case R_KEYINPUT+1: // buttons!!!
             return NDS_get_controller_state(this, 1);
-        case R_EXTKEYIN+0:
+        /*case R_EXTKEYIN+0:
             return NDS_get_controller_state(this, 2);
         case R_EXTKEYIN+1:
-            return 0;
+            return 0;*/
 
         case R_IPCFIFOCNT+0:
             // send fifo from 9 is to_7
