@@ -94,7 +94,6 @@ void Z80_regs_exchange_de_hl(struct Z80_regs*);
 void Z80_regs_exchange_shadow(struct Z80_regs*);
 
 struct Z80_pins {
-    u32 NMI, IRQ;
     u32 Addr;
     u32 D;
 

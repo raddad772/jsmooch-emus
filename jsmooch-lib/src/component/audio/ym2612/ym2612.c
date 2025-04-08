@@ -24,8 +24,8 @@
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
-static u16 sine[0x400];
-static i16 pow2[0x200];
+static i32 sine[0x200];
+static i32 pow2[0x100];
 static const u8 lfo_dividers[8] = {108, 77, 71, 67, 62, 44, 8, 5};
 static const u8 vibratos[8][16] = {{0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0},
                                    {0, 0, 0, 0,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0, 0, 0},
@@ -67,10 +67,37 @@ static const struct env_rate envelope_rates[16] = {
 
 static int math_done = 0;
 
+void do_math()
+{
+    math_done = 1;
+    for (u32 n = 0; n < 0x200; n++) {
+        u32 i = (!(n & 0x100)) ? n & 0xFF : 0x1FF - (n & 0x1FF);
+        // Scale is slightly offset from [0, π/2]
+        u32 base_phase = 2 * i + 1;
+        double phase = ((double)base_phase) / 512.0 * M_PI / 2.0;
+
+        // Compute the inverted log2-sine value
+        double attenuation = -log2(sin(phase));
+
+        // Convert to 4.8 fixed-point decimal
+        sine[n] = (i32)(u16)round((attenuation * 256.0));
+    }
+    for (u32 i = 0; i < 256; i++) {
+        // Table index N represents exponent of -(N+1)/256
+        double exponent = -((double)(i + 1)) / 256.0;
+        double value = pow(2.0, exponent);
+
+        // Convert to 0.11 fixed-point decimal
+        pow2[i] = (i32)(u16)round((value * 2048.0));
+    }
+}
+
 void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count)
 {
     memset(this, 0, sizeof(*this));
     DBG_EVENT_VIEW_INIT;
+
+    if (!math_done) do_math();
 
     for (u32 i = 0; i < 6; i++) {
         struct YM2612_CHANNEL *ch = &this->channel[i];
@@ -94,7 +121,6 @@ static void write_addr(struct ym2612 *this, u32 val, u32 hi)
 {
     this->io.group = hi;
     this->io.addr =val;
-    printf("\nYM2612 WRITE addr:%d grp:%d", this->io.addr, hi);
     this->io.chn = val & 3;
     if (this->io.chn == 3) return;
     if (this->io.group == 1) {
@@ -147,6 +173,38 @@ static inline i32 get_detune_delta(u32 fnum, u32 block, u32 dtune_idx)
     return delta * ((((i32)dtune_idx  >> 2) & 1) * 2) - 1;
 }
 
+static inline void update_key_scale(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+{
+    u32 idx = get_detune_lookup(op->fnum.reload, op->block.reload);
+    op->envelope.rks = (i32)idx >> (3 - (i32)op->envelope.key_scale);
+}
+
+static inline i32 calculate_rate(struct YM2612_ENV *e)
+{
+    i32 R;
+    switch(e->state) {
+        case EP_attack:
+            R = e->attack_rate;
+            break;
+        case EP_decay:
+            R = e->decay_rate;
+            break;
+        case EP_sustain:
+            R = e->sustain_rate;
+            break;
+        case EP_release:
+            R = e->release_rate;
+            break;
+    }
+    i32 rate = 0;
+    if (R) {
+        rate = (R * 2) + e->rks;
+    }
+    if (rate > 63) rate = 63;
+    return rate < 0 ? 0 : rate;
+}
+
+
 static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, u32 val)
 {
     if (op->key_on == val) return;
@@ -154,10 +212,32 @@ static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, str
     if (op->key_on) { // KEYON
         op->phase.value = 0;
         op->phase.output = 0;
-        printf("\nKEYON ch%d op%d", ch->num, op->num);
+
+        //change phase to attack
+        op->envelope.state = EP_attack;
+
+        // Rate 62, 63 immediately trip to decay
+        u32 attack_rate = calculate_rate(&op->envelope);
+
+        // if in attack and attenuation=0, go to decay
+        if (op->envelope.level == 0) {
+            op->envelope.state = EP_decay;
+        }
+
+        // when in decay if attenuation >= sustain_level, go to sustain
+        if ((op->envelope.state == EP_decay) && (op->envelope.level >= op->envelope.sustain_level)) {
+            op->envelope.state = EP_sustain;
+        }
+
+        if (attack_rate >= 62) {
+            op->envelope.level = 0;
+        }
     }
     else { // KEYOFF
         // only envelope cares about this
+
+        // Change phase to release
+        op->envelope.state = EP_release;
     }
 }
 
@@ -176,7 +256,7 @@ static void write_fnum_lo(struct ym2612 *this, struct YM2612_CHANNEL *ch, u8 val
         ch->operator[ch3_op].block.reload = ch->operator[3].block.latch;
         ch->operator[ch3_op].phase.delta = (ch->operator[ch3_op].fnum.reload << ch->operator[ch3_op].block.reload) >> 1;
         ch->operator[ch3_op].detune_delta = get_detune_delta(ch->operator[ch3_op].fnum.reload, ch->operator[ch3_op].block.reload, ch->operator[ch3_op].detune);
-
+        update_key_scale(this, ch, &ch->operator[ch3_op]);
         return;
     }
     u32 fnum = ch->operator[0].fnum.latch | val;
@@ -188,6 +268,7 @@ static void write_fnum_lo(struct ym2612 *this, struct YM2612_CHANNEL *ch, u8 val
         ch->operator[i].block.reload = block;
         ch->operator[i].phase.delta = delta;
         ch->operator[i].detune_delta = detune_delta;
+        update_key_scale(this, ch, &ch->operator[i]);
     }
 }
 
@@ -195,7 +276,6 @@ static void write_data(struct ym2612 *this, u8 val)
 {
     struct YM2612_CHANNEL *ch = &this->channel[this->io.chn];
     struct YM2612_OPERATOR *op = &ch->operator[this->io.opn];
-    printf("\nYM2612 WRITE DATA val:%02x", val);
     this->status.busy_for_how_long = 32;
     static int a[256] = {};
     switch(this->io.addr) {
@@ -238,9 +318,9 @@ static void write_data(struct ym2612 *this, u8 val)
 
             return; }
         case 0x2A: // dac PCM output
-            this->dac.sample = ((i32)val - 128);
-            this->dac.sample = SIGNe8to32(this->dac.sample) << 6;
-            if (this->dac.enable) this->channel[5].output = this->dac.sample << 2;
+            this->dac.sample = ((i32)val - 128); // 8bit
+            this->dac.sample = SIGNe8to32(this->dac.sample) << 6; // 4bit
+            if (this->dac.enable) this->channel[5].output = this->dac.sample;
             return;
         case 0x2B: // bit 7 is DAC enable
             // TODO: more here
@@ -271,6 +351,110 @@ static void write_data(struct ym2612 *this, u8 val)
             op->detune = (val >> 4) & 7;
             op->detune_delta = get_detune_delta(op->fnum.reload, op->block.reload, op->detune);
             return;
+
+        case 0x40:
+        case 0x41:
+        case 0x42:
+        case 0x44:
+        case 0x45:
+        case 0x46:
+        case 0x48:
+        case 0x49:
+        case 0x4A:
+        case 0x4C:
+        case 0x4D:
+        case 0x4E: // "total level"
+            op->envelope.total_level = (val & 0x7F) << 3;
+            return;
+
+        case 0x50:
+        case 0x51:
+        case 0x52:
+        case 0x54:
+        case 0x55:
+        case 0x56:
+        case 0x58:
+        case 0x59:
+        case 0x5A:
+        case 0x5C:
+        case 0x5D:
+        case 0x5E: // attack and key scale
+            op->envelope.attack_rate = val & 0x1F;
+            op->envelope.key_scale = (val >> 6) & 3;
+            update_key_scale(this, ch, op);
+            return;
+
+        case 0x60:
+        case 0x61:
+        case 0x62:
+        case 0x64:
+        case 0x65:
+        case 0x66:
+        case 0x68:
+        case 0x69:
+        case 0x6A:
+        case 0x6C:
+        case 0x6D:
+        case 0x6E: // decay and LFO AM
+            op->envelope.decay_rate = val & 0x1F;
+            op->lfo_enable = (val >> 7) & 1;
+            return;
+
+        case 0x70:
+        case 0x71:
+        case 0x72:
+        case 0x74:
+        case 0x75:
+        case 0x76:
+        case 0x78:
+        case 0x79:
+        case 0x7A:
+        case 0x7C:
+        case 0x7D:
+        case 0x7E: // "sustain"
+            op->envelope.sustain_rate = val & 0x1F;
+            return;
+
+        case 0x80:
+        case 0x81:
+        case 0x82:
+        case 0x84:
+        case 0x85:
+        case 0x86:
+        case 0x88:
+        case 0x89:
+        case 0x8A:
+        case 0x8C:
+        case 0x8D:
+        case 0x8E: // "release" and sustain level
+            op->envelope.release_rate = ((val & 0xF) << 1) + 1;
+            u32 s = (val >> 4) & 0xF;
+            if (s == 15) s = 0x3E0;
+            else s <<= 5;
+            op->envelope.sustain_level = s;
+            return;
+
+        case 0x90:
+        case 0x91:
+        case 0x92:
+        case 0x94:
+        case 0x95:
+        case 0x96:
+        case 0x98:
+        case 0x99:
+        case 0x9A:
+        case 0x9C:
+        case 0x9D:
+        case 0x9E: // "SSG-EG" stuff
+            if (val != 0) {
+                static int ra = 1;
+                if (ra) {
+                    printf("\nWRAN SSG-EG MODE USE");
+                    ra = 0;
+                }
+            }
+            return;
+
 
         case 0xA0:
         case 0xA1:
@@ -372,7 +556,7 @@ static void mix_sample(struct ym2612*this)
     for (u32 i = 0; i < 6; i++) {
         struct YM2612_CHANNEL *ch = &this->channel[i];
         if (ch->ext_enable) {
-            i32 smp = ym2612_sample_channel(this, i);
+            i32 smp = ch->output;
             if (ch->left_enable) left += smp;
             if (ch->right_enable) right += smp;
         }
@@ -380,7 +564,7 @@ static void mix_sample(struct ym2612*this)
     // 14-bit samples, 6 of them though, so we are at 17 bits, so shift right by 1
     this->mix.left_output = left >> 1;
     this->mix.right_output = right >> 1;
-    this->mix.mono_output = (left + right) >> 2;
+    this->mix.mono_output = left + right;
 }
 
 static void run_op(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
@@ -393,7 +577,22 @@ static void run_op(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612
 
     op->phase.value = (op->phase.value + inc) & 0xFFFFF;
 
-    op->phase.output = op->phase.value >> 10;
+    u32 phase = op->phase.value >> 10; // 10-bit with 10th bit as a sign
+
+    i32 sn = (((i32)((phase >> 9) & 1) * 2) - 1) * -1;
+    u32 table_idx =phase & 0x1FF;
+    u32 attenuation = sine[table_idx] + (op->envelope.attenuation << 2);
+
+    u32 fract_part = attenuation & 0xFF;
+    u32 int_part = attenuation >> 8;
+    if (int_part > 255) printf("\nWHAT!? %d", int_part);
+    i32 output_level;
+    if (int_part >= 13)
+        output_level = 0;
+    else
+        output_level = (pow2[fract_part] << 2) >> int_part; // unsigned 13-bit PCM
+    output_level *= sn; // signed 14-bit PCM
+    op->output = output_level;
 }
 
 static void run_ch(struct ym2612 *this, u32 chn)
@@ -405,18 +604,79 @@ static void run_ch(struct ym2612 *this, u32 chn)
     }
 
     struct YM2612_OPERATOR *c = &ch->operator[3];
-    u32 phase = c->phase.output;
+    ch->output = c->key_on ? c->output : 0;
+}
 
-    // OK now set our output to op3 carrier basically
-// Phase is a 10-bit integer; convert to [0, 2*PI)
-    double mphase = ((double)phase) / ((double)(1 << 10)) * M_2_PI;
+static const i32 env_inc_table[64][8] = {
+{0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,1,0,1,0,1,0,1}, {0,1,0,1,0,1,0,1},  // 0-3
+{0,1,0,1,0,1,0,1}, {0,1,0,1,0,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,0,1,1,1},  // 4-7
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 8-11
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 12-15
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 16-19
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 20-23
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 24-27
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 28-31
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 32-35
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 36-39
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 40-43
+{0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},  // 44-47
+{1,1,1,1,1,1,1,1}, {1,1,1,2,1,1,1,2}, {1,2,1,2,1,2,1,2}, {1,2,2,2,1,2,2,2},  // 48-51
+{2,2,2,2,2,2,2,2}, {2,2,2,4,2,2,2,4}, {2,4,2,4,2,4,2,4}, {2,4,4,4,2,4,4,4},  // 52-55
+{4,4,4,4,4,4,4,4}, {4,4,4,8,4,4,4,8}, {4,8,4,8,4,8,4,8}, {4,8,8,8,4,8,8,8},  // 56-59
+{8,8,8,8,8,8,8,8}, {8,8,8,8,8,8,8,8}, {8,8,8,8,8,8,8,8}, {8,8,8,8,8,8,8,8},  // 60-63
+};
 
-    // Compute sine and use as channel output
-    // -1 to 1
-    double output = (sin(mphase) + 1.0); // 0...2
-    output *= 32767.5;
-    output -= 32768;
-    ch->output = (i32)round(output);
+static inline void run_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+{
+    struct YM2612_ENV *e = &op->envelope;
+    if (e->state == EP_attack && e->level == 0) {
+        e->state = EP_decay;
+    }
+
+    if (e->state == EP_decay && e->level >= e->sustain_level) {
+        e->state = EP_sustain;
+    }
+
+    i32 rate = calculate_rate(e);
+    i32 shift = 11 - (rate >> 2);
+    if ((this->status.env_cycle_counter & ((1 << shift) - 1)) == 0) {
+        u32 idx = (this->status.env_cycle_counter >> shift) & 7;
+        i32 increment = env_inc_table[rate][idx];
+        i32 current = e->level;
+
+        switch(e->state) {
+            case EP_attack:
+                // A' = A + ((I * !A) >> 4)
+                current = current + ((increment * -(current + 1)) >> 4);
+                break;
+            case EP_decay:
+            case EP_sustain:
+            case EP_release:
+                current += increment;
+                break;
+        }
+        if (current > 0x3FF) current = 0x3FF;
+        if (current < 0) current = 0;
+        e->level = current;
+        e->attenuation = e->level + e->total_level;
+        if (e->attenuation > 0x3FF) e->attenuation = 0x3FF;
+    }
+
+
+}
+
+static void run_envs(struct ym2612 *this) {
+    this->status.env_cycle_counter++;
+    if (this->status.env_cycle_counter >= 0x1000) {
+        this->status.env_cycle_counter = 1;
+    }
+    for (u32 chn = 0; chn < 6; chn++) {
+        struct YM2612_CHANNEL *ch = &this->channel[chn];
+        for (u32 opn = 0; opn < 4; opn++) {
+            struct YM2612_OPERATOR *op = &ch->operator[opn];
+            run_env(this, ch, op);
+        }
+    }
 }
 
 void ym2612_cycle(struct ym2612*this)
@@ -429,13 +689,19 @@ void ym2612_cycle(struct ym2612*this)
     this->clock.div24++;
     if (this->clock.div24 >= 24) {
         this->clock.div24 = 0;
+        this->clock.div24_3 = (this->clock.div24_3 + 1) % 3;
+        if (this->clock.div24_3 == 0) {
+            run_envs(this);
+        }
+
+
         run_ch(this, 0);
         run_ch(this, 1);
         run_ch(this, 2);
         run_ch(this, 3);
         run_ch(this, 4);
         run_ch(this, 5);
-        if (this->dac.enable) this->channel[5].output = this->dac.sample << 2;
+        if (this->dac.enable) this->channel[5].output = this->dac.sample;
         mix_sample(this);
     }
 
@@ -444,28 +710,9 @@ void ym2612_cycle(struct ym2612*this)
 i16 ym2612_sample_channel(struct ym2612*this, u32 chn)
 {
     // Return an i16
-    if ((chn == 5) && (this->dac.enable)) {
-        return this->dac.sample << 2;
-    }
     struct YM2612_CHANNEL *ch = &this->channel[chn];
-
     struct YM2612_OPERATOR *c = &ch->operator[3];
-    if (!c->key_on) return 0;
-    u32 phase = c->phase.output;
-
-    // OK now set our output to op3 carrier basically
-// Phase is a 10-bit integer; convert to [0, 2*PI)
-    double mphase = ((double)phase) / ((double)(1 << 10)) * M_PI * 2.0;
-
-    // Compute sine and use as channel output
-    // -1 to 1
-    // convert to 14-bit (-8192 to 8191)
-    double output = (sin(mphase) + 1.0); // 0...2
-    output *= 8191.5;
-    output -= 8192;
-    output = round(output);
-
-    return (i16)output;
+    return c->output;
 }
 
 void ym2612_serialize(struct ym2612*this, struct serialized_state *state)

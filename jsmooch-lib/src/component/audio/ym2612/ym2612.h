@@ -36,6 +36,7 @@ struct ym2612 {
 
     struct {
         i32 busy_for_how_long, timer_b_overflow, timer_a_overflow;
+        u64 env_cycle_counter;
     } status;
 
     struct YM2612_CHANNEL {
@@ -62,8 +63,9 @@ struct ym2612 {
 
             struct YM2612_CHANNEL *ch;
 
-            u16 output_level;
-            i16 output, prior, prior_buffer;
+            i32 output;
+
+            i16 prior, prior_buffer;
 
             struct {
                 u16 value, reload, latch; // 11 bits
@@ -88,14 +90,18 @@ struct ym2612 {
                 } state;
                 i32 rate, divider;
                 u32 steps;
-                u32 value;
+                u32 level; // 10 bits, 4.6 fixed-point
+                u32 attenuation;
 
                 u32 key_scale; // 2bit
+                i32 rks;
                 u32 attack_rate; // 5bit
                 u32 decay_rate; // 5bit
                 u32 sustain_rate; // 5bit
                 u32 sustain_level; // 4bit
                 u32 release_rate; // 5bit
+
+                u32 total_level;
             } envelope;
 
             struct {
@@ -111,6 +117,7 @@ struct ym2612 {
 
     struct {
         u32 div24;
+        u32 div24_3;
     } clock;
 
     struct {

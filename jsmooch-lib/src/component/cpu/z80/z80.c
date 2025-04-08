@@ -111,7 +111,6 @@ void Z80_regs_exchange_shadow_af(struct Z80_regs* this)
 
 void Z80_pins_init(struct Z80_pins* this)
 {
-    this->NMI = this->IRQ = 0;
     this->Addr = 0;
     this->D = 0;
     this->IRQ_maskable = 1;
@@ -247,7 +246,6 @@ void Z80_ins_cycles(struct Z80* this)
             if (this->regs.HALT) { this->regs.TCU = 0; break; }
             if (this->regs.poll_IRQ) {
                 // Make sure we only do this at start of an instruction
-                printf("\nPOLL IRQ! IRQ_pending:%d IFF1:%d EI:%d", this->IRQ_pending, this->regs.IFF1, this->regs.EI);
                 this->regs.poll_IRQ = false;
                 if (this->NMI_pending && !this->NMI_ack) {
                     DBG_EVENT(this->dbg.events.NMI);
@@ -515,8 +513,6 @@ static void serialize_regs(struct Z80_regs *this, struct serialized_state *state
 
 static void serialize_pins(struct Z80_pins* this, struct serialized_state *state)
 {
-    S(NMI);
-    S(IRQ);
     S(Addr);
     S(D);
     S(IRQ_maskable);
@@ -595,8 +591,6 @@ static void deserialize_regs(struct Z80_regs* this, struct serialized_state *sta
 
 static void deserialize_pins(struct Z80_pins* this, struct serialized_state *state)
 {
-    L(NMI);
-    L(IRQ);
     L(Addr);
     L(D);
     L(IRQ_maskable);

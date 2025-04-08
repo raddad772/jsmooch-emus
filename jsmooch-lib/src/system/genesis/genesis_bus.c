@@ -343,10 +343,11 @@ void genesis_bus_update_irqs(struct genesis* this)
 void genesis_z80_interrupt(struct genesis* this, u32 level)
 {
     //if ((this->z80.pins.IRQ == 0) && level) printf("\nZ80 IRQ PIN SET!");
-    if (this->z80.pins.IRQ != level) {
+    /*if (this->z80.IRQ_pending != level) {
         printf("\nZ80 IRQ TO %d and EI:%d IFF1:%d IFF2:%d", level, this->z80.regs.EI, this->z80.regs.IFF1, this->z80.regs.IFF2);
-    }
-    this->z80.pins.IRQ = level;
+    }*/
+    //this->z80.pins.IRQ = level;
+    Z80_notify_IRQ(&this->z80, level);
 }
 
 void genesis_cycle_z80(struct genesis* this)
