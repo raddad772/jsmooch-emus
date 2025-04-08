@@ -875,7 +875,7 @@ void full_system::load_default_ROM()
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
             //dbg_enable_trace();
-            //worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sonic2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sonic3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
@@ -883,7 +883,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
-            worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
+            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!
@@ -946,7 +946,7 @@ void full_system::load_default_ROM()
 
 
             //worked = grab_ROM(&ROMs, which, "wonder_boy4.md", nullptr); // seems fine
-            worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // issues!
+            //worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // issues!
             //worked = grab_ROM(&ROMs, which, "star_cruiser.bin", nullptr); // seems fine? hard to say
             //worked = grab_ROM(&ROMs, which, "sonic_spinball.md", nullptr); // same sprite priority issue
             //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well

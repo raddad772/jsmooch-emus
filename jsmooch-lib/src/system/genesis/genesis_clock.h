@@ -40,6 +40,10 @@ struct genesis_clock {
     } psg;
 
     struct {
+        i32 divider;
+    } ym2612;
+
+    struct {
         i32 clock_divisor;
         i32 cycles_til_clock;
     } m68k;

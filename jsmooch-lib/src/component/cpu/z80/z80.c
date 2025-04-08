@@ -247,6 +247,7 @@ void Z80_ins_cycles(struct Z80* this)
             if (this->regs.HALT) { this->regs.TCU = 0; break; }
             if (this->regs.poll_IRQ) {
                 // Make sure we only do this at start of an instruction
+                printf("\nPOLL IRQ! IRQ_pending:%d IFF1:%d EI:%d", this->IRQ_pending, this->regs.IFF1, this->regs.EI);
                 this->regs.poll_IRQ = false;
                 if (this->NMI_pending && !this->NMI_ack) {
                     DBG_EVENT(this->dbg.events.NMI);

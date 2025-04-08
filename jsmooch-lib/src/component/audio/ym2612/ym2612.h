@@ -26,19 +26,27 @@ struct ym2612 {
     } mix;
 
     struct {
-        u16 address; // 9bit
+        u32 group;
+        u32 addr;
+
+        u32 chn, opn;
+
+        u32 ch3_special;
     } io;
+
+    struct {
+        i32 busy_for_how_long, timer_b_overflow, timer_a_overflow;
+    } status;
 
     struct YM2612_CHANNEL {
         u32 num;
+        u32 block;
         u32 ext_enable;
         u32 left_enable, right_enable;
-        struct {
-            i32 mono, left, right; // 14 bits
-        } ext_output;
+        i32 output;
 
-        u32 algorithm, feedback, vibrato; //3bit
-        u32 tremolo, mode; // 2bit
+        u32 algorithm, feedback, pms; //3bit . pms = vibrato
+        u32 ams, mode; // 2bit ams = tremolo
 
         struct YM2612_OPERATOR {
             u32 num;
@@ -46,22 +54,29 @@ struct ym2612 {
             u32 key_line; // 1bit
             u32 lfo_enable; // 1bit
             u32 detune; // 3bit
-            u32 multiple; //4bit
-            u32 total_level; // 7bit
+            i32 detune_delta;
+            struct {
+                u32 val;
+                u32 rshift, multiplier;
+            } multiple;
+
+            struct YM2612_CHANNEL *ch;
 
             u16 output_level;
             i16 output, prior, prior_buffer;
 
             struct {
                 u16 value, reload, latch; // 11 bits
-            } pitch;
+            } fnum;
 
             struct {
                 u16 value, reload, latch; // 3 bits
-            } octave;
+            } block;
+
 
             struct {
                 u32 value, delta; // 20bit
+                u32 output; // 10bit
             } phase;
 
             struct YM2612_ENV {
@@ -90,12 +105,12 @@ struct ym2612 {
     } channel[6];
 
     struct {
-        u32 sample;
+        i32 sample;
         u32 enable;
     } dac;
 
     struct {
-        u32 div144;
+        u32 div24;
     } clock;
 
     struct {

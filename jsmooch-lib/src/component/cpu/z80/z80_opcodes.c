@@ -8251,6 +8251,7 @@ void Z80_ins_00_FB_EI(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
         case 1: { // cleanup_custom
+            printf("\nEI SETR!");
             regs->Q = 0;
             regs->IFF1 = regs->IFF2 = regs->EI = 1;
             // Following is auto-generated code for instruction finish
@@ -23945,6 +23946,7 @@ void Z80_ins_DD_F3_DI(struct Z80_regs* regs, struct Z80_pins* pins)
 {
     switch(regs->TCU) {
         case 1: { // cleanup_custom
+            printf("\nDI SETR!");
             regs->Q = 0;
             regs->IFF1 = regs->IFF2 = 0;
             // Following is auto-generated code for instruction finish

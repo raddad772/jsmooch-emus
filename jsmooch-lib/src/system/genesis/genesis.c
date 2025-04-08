@@ -465,7 +465,11 @@ static void genesis_step_loop(struct genesis* this)
     if (this->clock.m68k.cycles_til_clock <= 0) {
         this->clock.m68k.cycles_til_clock += this->clock.m68k.clock_divisor;
         genesis_cycle_m68k(this);
-        ym2612_cycle(&this->ym2612);
+        this->clock.ym2612.divider++;
+        if (this->clock.ym2612.divider >= 6) {
+            this->clock.ym2612.divider = 0;
+            ym2612_cycle(&this->ym2612);
+        }
     }
     if (this->clock.z80.cycles_til_clock <= 0) {
         this->clock.z80.cycles_til_clock += this->clock.z80.clock_divisor;
