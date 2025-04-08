@@ -213,7 +213,7 @@ static u8 genesis_z80_mainbus_read(struct genesis* this, u32 addr, u8 old, u32 h
 }
 
 static u8 genesis_z80_ym2612_read(struct genesis* this, u32 addr, u8 old, u32 has_effect) {
-    return ym2612_read(&this->ym2612, addr & 3, old, has_effect);
+    return ym2612_read(&this->ym2612, addr & 3, old, has_effect, this->clock.master_cycle_count);
 }
 
 u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect)

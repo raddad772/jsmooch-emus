@@ -39,7 +39,9 @@ struct ym2612 {
         u64 env_cycle_counter;
     } status;
 
+
     struct YM2612_CHANNEL {
+        i32 op0_prior[2];
         u32 num;
         u32 block;
         u32 ext_enable;
@@ -65,8 +67,6 @@ struct ym2612 {
 
             i32 output;
 
-            i16 prior, prior_buffer;
-
             struct {
                 u16 value, reload, latch; // 11 bits
             } fnum;
@@ -78,7 +78,8 @@ struct ym2612 {
 
             struct {
                 u32 value, delta; // 20bit
-                u32 output; // 10bit
+
+                u32 input;
             } phase;
 
             struct YM2612_ENV {
@@ -149,7 +150,7 @@ void ym2612_serialize(struct ym2612*, struct serialized_state *state);
 void ym2612_deserialize(struct ym2612*, struct serialized_state *state);
 
 void ym2612_write(struct ym2612*, u32 addr, u8 val);
-u8 ym2612_read(struct ym2612*, u32 addr, u32 old, u32 has_effect);
+u8 ym2612_read(struct ym2612*, u32 addr, u32 old, u32 has_effect, u64 master_clock);
 void ym2612_reset(struct ym2612*);
 void ym2612_cycle(struct ym2612*);
 i16 ym2612_sample_channel(struct ym2612*, u32 ch);

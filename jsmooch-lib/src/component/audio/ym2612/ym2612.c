@@ -110,6 +110,7 @@ void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cyc
             op->ch = ch;
         }
     }
+    this->dac.sample = 0;
 }
 
 void ym2612_delete(struct ym2612*this)
@@ -211,7 +212,6 @@ static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, str
     op->key_on = val;
     if (op->key_on) { // KEYON
         op->phase.value = 0;
-        op->phase.output = 0;
 
         //change phase to attack
         op->envelope.state = EP_attack;
@@ -276,11 +276,33 @@ static void write_data(struct ym2612 *this, u8 val)
 {
     struct YM2612_CHANNEL *ch = &this->channel[this->io.chn];
     struct YM2612_OPERATOR *op = &ch->operator[this->io.opn];
-    this->status.busy_for_how_long = 32;
+    this->status.busy_for_how_long = 6;
     static int a[256] = {};
     switch(this->io.addr) {
+        case 0x24: // TMRA upper 8
+            this->timer_a.period = (this->timer_a.period & 3) | (val << 2);
+            return;
+        case 0x25: // //TMRA lower 2
+            this->timer_a.period = (this->timer_a.period & 0x3FC) | (val & 3);
+            return;
+        case 0x26:
+            this->timer_b.period = val;
+            return;
         case 0x27:
-            // TODO: more?
+            if(!this->timer_a.enable && (val & 1)) this->timer_a.counter = this->timer_a.period;
+            if(!this->timer_b.enable && (val & 2)) {
+                this->timer_b.counter = this->timer_b.period;
+                this->timer_b.divider = 0;
+            }
+
+            this->timer_a.enable = (val & 1);
+            this->timer_b.enable = (val >> 1) & 1;
+            this->timer_a.irq = (val >> 2) & 1;
+            this->timer_b.irq = (val >> 3) & 1;
+
+            if(val & 0x10) this->timer_a.line = 0;
+            if(val & 0x20) this->timer_b.line = 0;
+
             this->io.ch3_special = (val & 0xC0) != 0;
             static int ab = 1;
             if (ab) {
@@ -318,9 +340,11 @@ static void write_data(struct ym2612 *this, u8 val)
 
             return; }
         case 0x2A: // dac PCM output
-            this->dac.sample = ((i32)val - 128); // 8bit
-            this->dac.sample = SIGNe8to32(this->dac.sample) << 6; // 4bit
-            if (this->dac.enable) this->channel[5].output = this->dac.sample;
+            this->dac.sample = (i32)val - 0x80; // 8bit
+            //this->dac.sample = SIGNe8to32(this->dac.sample) << 6; // 8 - > 14bit
+            this->dac.sample <<= 6;
+            //if (this->dac.enable) this->channel[5].output = this->dac.sample;
+            this->status.busy_for_how_long = 0;
             return;
         case 0x2B: // bit 7 is DAC enable
             // TODO: more here
@@ -495,6 +519,13 @@ static void write_data(struct ym2612 *this, u8 val)
             write_fnum_hi(this, ch, val, 3);
             return;
 
+        case 0xB0:
+        case 0xB1:
+        case 0xB2: // algorithm and op1 feedback
+            ch->algorithm = val & 7;
+            ch->feedback = (val >> 3) & 7;
+            return;
+
         case 0xB4:
         case 0xB5:
         case 0xB6: // L/R panning for ch3/6
@@ -505,10 +536,10 @@ static void write_data(struct ym2612 *this, u8 val)
             // TODO: more here
             return;
         default:
-            if (!a[this->io.addr]) {
+            /*if (!a[this->io.addr]) {
                 a[this->io.addr] = 1;
-                printf("\nWARN WRITE TO UNSUPPORTED YM2612 PORT ADDR:%02x GRP:%d", this->io.addr, this->io.group);
-            }
+                //printf("\nWARN WRITE TO UNSUPPORTED YM2612 PORT ADDR:%02x GRP:%d", this->io.addr, this->io.group);
+            }*/
             return;
     }
 }
@@ -533,7 +564,7 @@ void ym2612_write(struct ym2612*this, u32 addr, u8 val)
     }
 }
 
-u8 ym2612_read(struct ym2612*this, u32 addr, u32 old, u32 has_effect)
+u8 ym2612_read(struct ym2612*this, u32 addr, u32 old, u32 has_effect, u64 master_clock)
 {
     addr &= 3;
     u32 v = 0;
@@ -564,10 +595,10 @@ static void mix_sample(struct ym2612*this)
     // 14-bit samples, 6 of them though, so we are at 17 bits, so shift right by 1
     this->mix.left_output = left >> 1;
     this->mix.right_output = right >> 1;
-    this->mix.mono_output = left + right;
+    this->mix.mono_output = (left + right) >> 1;
 }
 
-static void run_op(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void run_op_phase(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
 {
     // Get delta with detune applied. 17bits
     u32 inc = (op->phase.delta + op->detune_delta) & 0x1FFFF;
@@ -576,11 +607,24 @@ static void run_op(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612
     inc = (inc >> op->multiple.rshift) * op->multiple.multiplier; // up to 20bits
 
     op->phase.value = (op->phase.value + inc) & 0xFFFFF;
+}
 
-    u32 phase = op->phase.value >> 10; // 10-bit with 10th bit as a sign
+static i32 calc_op(struct YM2612_CHANNEL *ch, u32 opn, u32 input)
+{
+    struct YM2612_OPERATOR *op = &ch->operator[opn];
+    u32 mphase = op->phase.value >> 10;
+    u32 phase = (input + mphase) & 0x3FF;
+    return phase;
+}
 
+static i32 run_op_output(struct YM2612_CHANNEL *ch, u32 opn, u32 phase_input)
+{
+    struct YM2612_OPERATOR *op = &ch->operator[opn];
+    phase_input = (phase_input >> 1) & 0x3FF;
+    u32 mphase = op->phase.value >> 10;
+    u32 phase = (phase_input + mphase) & 0x3FF;
     i32 sn = (((i32)((phase >> 9) & 1) * 2) - 1) * -1;
-    u32 table_idx =phase & 0x1FF;
+    u32 table_idx = phase & 0x1FF;
     u32 attenuation = sine[table_idx] + (op->envelope.attenuation << 2);
 
     u32 fract_part = attenuation & 0xFF;
@@ -592,19 +636,98 @@ static void run_op(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612
     else
         output_level = (pow2[fract_part] << 2) >> int_part; // unsigned 13-bit PCM
     output_level *= sn; // signed 14-bit PCM
-    op->output = output_level;
+    op->output = op->key_on ? output_level : 0;
+    return op->output;
 }
 
 static void run_ch(struct ym2612 *this, u32 chn)
 {
     struct YM2612_CHANNEL *ch = &this->channel[chn];
+    // Update phases
+    i32 input0 = 0;
+    if (ch->feedback) {
+        input0 = (ch->op0_prior[0] + ch->op0_prior[0]) >> (10 - ch->feedback);
+    }
+    i32 input, input2;
+
     for (u32 opn = 0; opn < 4; opn++) {
         struct YM2612_OPERATOR *op = &ch->operator[opn];
-        run_op(this, ch, op);
+        run_op_phase(this, ch, op);
+        op->phase.input = 0;
     }
 
-    struct YM2612_OPERATOR *c = &ch->operator[3];
-    ch->output = c->key_on ? c->output : 0;
+    // Apply algorithm
+    switch(ch->algorithm) {
+        case 0: // S1 -> S2 -> S3 -> S4. // but they calculate 1-3-2-4
+            input = run_op_output(ch, 0, input0); // 1
+            run_op_output(ch, 2, ch->operator[1].output); // 3
+            input = run_op_output(ch, 1, input); // 2
+            ch->output = run_op_output(ch, 3, input);
+            break;
+        case 1: // (S1 + S2) -> S3 -> S4.   1 3 2 4
+            input = run_op_output(ch, 0, input0); // S1
+            input += ch->operator[1].output; // old S2
+            input = run_op_output(ch, 2, input); // S3 with (S1 + old S2)
+            run_op_output(ch, 2, ch->operator[0].output); // S2 with current S1 to updaet it
+            ch->output = run_op_output(ch, 3, input); // S4
+            break;
+        case 2: // S1 + (S2 -> S3) -> S4
+            input = run_op_output(ch, 2, ch->operator[1].output); // S3
+            run_op_output(ch, 1, 0); // S2
+            input += run_op_output(ch, 0, input0); // S1
+            ch->output = run_op_output(ch, 3, input); // S4
+            break;
+        case 3: // (S1 -> S2) + S3 -> S4
+            input = run_op_output(ch, 0, input0);
+            input = run_op_output(ch, 1, input);
+            input += run_op_output(ch, 2, 0);
+            ch->output = run_op_output(ch, 3, input);
+            break;
+        case 4: // (S1->S2) + (S3->S4)
+            input = run_op_output(ch, 0, input0);
+            input2 = run_op_output(ch, 2, 0);
+
+            input = run_op_output(ch, 1, input);
+            input2 = run_op_output(ch, 3, input2);
+            ch->output = (input + input2);
+            if (ch->output < -8192) ch->output = -8192;
+            if (ch->output > 8191) ch->output = 8191;
+            break;
+        case 5: // S1 -> all(S2 + S3 + S4)
+            input0 = run_op_output(ch, 0, input0);
+            input = run_op_output(ch, 2, input0);
+            input += run_op_output(ch, 1, input0);
+            input += run_op_output(ch, 3, input0);
+            ch->output = input;
+            if (ch->output < -8192) ch->output = -8192;
+            if (ch->output > 8191) ch->output = 8191;
+            break;
+        case 6: // (S1->S2) + S3 + S4
+            input0 = run_op_output(ch, 0, input0);
+            input = run_op_output(ch, 2, 0);
+            input += run_op_output(ch, 1, input0);
+            input += run_op_output(ch, 3, 0);
+            ch->output = input;
+            if (ch->output < -8192) ch->output = -8192;
+            if (ch->output > 8191) ch->output = 8191;
+            break;
+        case 7: // add all 4
+            input = run_op_output(ch, 0, input0);
+            input += run_op_output(ch, 2, 0);
+            input += run_op_output(ch, 1, 0);
+            input += run_op_output(ch, 3, 0);
+            ch->output = input;
+            if (ch->output < -8192) ch->output = -8192;
+            if (ch->output > 8191) ch->output = 8191;
+            break;
+    }
+    ch->op0_prior[0] = ch->op0_prior[1];
+    ch->op0_prior[1] = ch->operator[0].output;
+
+    // Create outputs
+
+    /*struct YM2612_OPERATOR *c = &ch->operator[3];
+    ch->output = c->key_on ? c->output : 0;*/
 }
 
 static const i32 env_inc_table[64][8] = {
@@ -679,6 +802,30 @@ static void run_envs(struct ym2612 *this) {
     }
 }
 
+static void cycle_timers(struct ym2612* this)
+{
+    if (this->timer_a.enable) {
+        this->timer_a.counter = (this->timer_a.counter + 1) & 0x3FF; // 10 bits
+        if (!this->timer_a.counter) {
+
+            this->timer_a.counter = this->timer_a.period;
+            this->timer_a.line |= this->timer_a.irq;
+        }
+    }
+
+    if (this->timer_b.enable) {
+        this->timer_b.divider = (this->timer_b.divider + 1) & 15;
+        if (!this->timer_b.divider) {
+            this->timer_b.counter = (this->timer_b.counter + 1) & 0xFF;
+            if (!this->timer_b.counter) {
+                this->timer_b.counter = this->timer_b.period;
+                this->timer_b.line |= this->timer_b.irq;
+            }
+        }
+    }
+}
+
+
 void ym2612_cycle(struct ym2612*this)
 {
     // When we get here, we already have /6. we need to /24 to get /144
@@ -703,16 +850,16 @@ void ym2612_cycle(struct ym2612*this)
         run_ch(this, 5);
         if (this->dac.enable) this->channel[5].output = this->dac.sample;
         mix_sample(this);
-    }
 
+        cycle_timers(this);
+    }
 }
 
 i16 ym2612_sample_channel(struct ym2612*this, u32 chn)
 {
     // Return an i16
     struct YM2612_CHANNEL *ch = &this->channel[chn];
-    struct YM2612_OPERATOR *c = &ch->operator[3];
-    return c->output;
+    return ch->output;
 }
 
 void ym2612_serialize(struct ym2612*this, struct serialized_state *state)
