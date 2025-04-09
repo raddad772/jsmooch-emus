@@ -13,6 +13,11 @@ typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_cl
 
 struct scheduled_bound_function { scheduler_callback func; void *ptr; u32 saveinfo; };
 
+struct premade_scheduler_list {
+
+    struct event *next;
+};
+
 struct scheduler_event {
     i64 timecode;    // Timecode can be for instance, cycle in frame
 
@@ -35,7 +40,7 @@ struct scheduler_event {
  * Completely ignore the past, use a circular buffer
  * Schedule in the future with insertion
  */
-#define SCHEDULER_DELETE_NUM 1000
+#define SCHEDULER_DELETE_NUM 2500 // Genesis can get 1.2k going pretty easily
 struct scheduler_t {
     u64 max_block_size;
 

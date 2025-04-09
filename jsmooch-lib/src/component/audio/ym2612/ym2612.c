@@ -241,14 +241,6 @@ static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, str
     }
 }
 
-static void ch_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32 v)
-{
-    for (u32 i = 0; i < 4; i++) {
-        struct YM2612_OPERATOR *op = &ch->operator[i];
-        op_key_on(this, ch, op, v);
-    }
-}
-
 static void write_fnum_lo(struct ym2612 *this, struct YM2612_CHANNEL *ch, u8 val, u32 ch3_op)
 {
     if (ch->num == 3 && this->io.ch3_special) {
@@ -311,21 +303,6 @@ static void write_data(struct ym2612 *this, u8 val)
             }
             return;
         case 0x28: {// KEYON
-            /*
-000 = Channel 1
-001 = Channel 2
-010 = Channel 3
-100 = Channel 4
-101 = Channel 5
-110 = Channel 6             */
-
-            // 0 = ch.0
-            // 1 = ch.1
-            // 2 = ch.2
-            // 3 = invalid
-            // 4 = ch.3
-            // 5 = ch.4
-            // 6 = ch.5
             u32 chn = val & 7;
             if ((chn & 3) == 3) {
                 printf("\nWARN KEYON BAD CHANNEL!?");
@@ -337,7 +314,6 @@ static void write_data(struct ym2612 *this, u8 val)
                 op_key_on(this, &this->channel[chn], &this->channel[chn].operator[i], val & 1);
                 val >>= 1;
             }
-
             return; }
         case 0x2A: // dac PCM output
             this->dac.sample = (i32)val - 0x80; // 8bit
@@ -773,6 +749,8 @@ static inline void run_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struc
                 current = current + ((increment * -(current + 1)) >> 4);
                 break;
             case EP_decay:
+                current -= increment;
+                break;
             case EP_sustain:
             case EP_release:
                 current += increment;

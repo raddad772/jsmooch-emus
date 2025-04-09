@@ -15,6 +15,7 @@
 #include "component/cpu/m68000/m68000.h"
 #include "component/audio/sn76489/sn76489.h"
 #include "component/audio/ym2612/ym2612.h"
+#include "helpers/scheduler.h"
 
 #include "component/controller/genesis3/genesis3.h"
 #include "component/controller/genesis6/genesis6.h"
@@ -25,11 +26,23 @@
 #include "genesis_controllerport.h"
 #include "genesis_vdp.h"
 
+struct genesis;
+typedef void (*gensched_callback)(struct genesis *);
+
+struct gensched_item {
+    u32 next_index;
+    gensched_callback callback;
+};
+
 struct genesis {
     struct Z80 z80;
     struct M68k m68k;
     struct genesis_clock clock;
     struct genesis_cart cart;
+
+    struct scheduler_t scheduler;
+    struct gensched_item scheduler_lookup[105 * 2];
+    u32 scheduler_index;
 
     struct ym2612 ym2612;
     struct SN76489 psg;

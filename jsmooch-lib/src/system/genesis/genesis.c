@@ -127,11 +127,88 @@ static void read_opts(struct jsm_system *jsm, struct genesis* this)
 
 }
 
+static void c_m68k_z80_vdp(struct genesis *this)
+{
+    genesis_cycle_m68k(this);
+    genesis_cycle_z80(this);
+    genesis_VDP_cycle(this);
+}
+
+static void c_z80_m68k_vdp(struct genesis *this)
+{
+    genesis_cycle_z80(this);
+    genesis_cycle_m68k(this);
+    genesis_VDP_cycle(this);
+}
+
+static void c_m68k_vdp(struct genesis *this)
+{
+    genesis_cycle_m68k(this);
+    genesis_VDP_cycle(this);
+}
+
+static void c_z80_vdp(struct genesis *this)
+{
+    genesis_cycle_z80(this);
+    genesis_VDP_cycle(this);
+}
+
+static void c_vdp(struct genesis *this)
+{
+    genesis_VDP_cycle(this);
+}
+
+static void create_scheduling_lookup_table(struct genesis *this)
+{
+    u32 lookup_add = 0;
+    for (i32 cycles=4; cycles<6; cycles++) {
+        for (i32 tbl_entry = 0; tbl_entry < 420; tbl_entry++) {
+            // thing is, there's 15 values for m68k_cycles, and 7 for z80_cycles
+            // Decode values from tbl_entry
+            i32 z80_cycles = (tbl_entry % 15) + 1;
+            i32 m68k_cycles = (tbl_entry / 15) + 1;
+
+            // Apply cycles
+            z80_cycles -= cycles;
+            m68k_cycles -= cycles;
+
+            struct gensched_item *item = &this->scheduler_lookup[lookup_add + tbl_entry];
+
+            // Determine which function to use
+            if ((z80_cycles <= 0) && (m68k_cycles <= 0)) {
+                if (z80_cycles < m68k_cycles)
+                    item->callback = &c_z80_m68k_vdp;
+                else
+                    item->callback = &c_m68k_z80_vdp;
+                z80_cycles += 14;
+                m68k_cycles += 6;
+            }
+            else if (z80_cycles <= 0) {
+                item->callback = &c_z80_vdp;
+                z80_cycles += 14;
+            }
+            else if (m68k_cycles <= 0) {
+                item->callback = &c_m68k_vdp;
+                m68k_cycles += 6;
+            }
+            else {
+                item->callback = &c_vdp;
+            }
+
+            // Encode values of next to tbl_entry
+            item->next_index = (m68k_cycles * 15) + z80_cycles;
+        }
+        lookup_add += 105;
+    }
+}
+
 void genesis_new(JSM, enum jsm_systems kind)
 {
     struct genesis* this = (struct genesis*)malloc(sizeof(struct genesis));
     memset(this, 0, sizeof(*this));
     populate_opts(jsm);
+    create_scheduling_lookup_table(this);
+    scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.waitstates);
     Z80_init(&this->z80, 0);
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock, kind);
@@ -364,6 +441,7 @@ void genesisJ_reset(JSM)
     this->io.z80.bus_request = this->io.z80.bus_ack = 1;
     this->io.m68k.VDP_FIFO_stall = 0;
     this->io.m68k.VDP_prefetch_stall = 0;
+    this->scheduler_index = (6 * 15) + 14;
     printf("\nGenesis reset!");
 }
 
@@ -454,37 +532,11 @@ static void debug_audio(struct genesis* this)
 
 static void genesis_step_loop(struct genesis* this)
 {
-
-    i32 biggest_step = MIN(MIN(MIN(this->clock.vdp.cycles_til_clock, this->clock.m68k.cycles_til_clock), this->clock.z80.cycles_til_clock), this->clock.psg.cycles_til_clock);
-    this->jsm.cycles_left -= biggest_step;
-    this->clock.master_cycle_count += biggest_step;
-    this->clock.m68k.cycles_til_clock -= biggest_step;
-    this->clock.z80.cycles_til_clock -= biggest_step;
-    this->clock.vdp.cycles_til_clock -= biggest_step;
-    this->clock.psg.cycles_til_clock -= biggest_step;
-    if (this->clock.m68k.cycles_til_clock <= 0) {
-        this->clock.m68k.cycles_til_clock += this->clock.m68k.clock_divisor;
-        genesis_cycle_m68k(this);
-        this->clock.ym2612.divider++;
-        if (this->clock.ym2612.divider >= 6) {
-            this->clock.ym2612.divider = 0;
-            ym2612_cycle(&this->ym2612);
-        }
-    }
-    if (this->clock.z80.cycles_til_clock <= 0) {
-        this->clock.z80.cycles_til_clock += this->clock.z80.clock_divisor;
-        genesis_cycle_z80(this);
-    }
-    if (this->clock.vdp.cycles_til_clock <= 0) {
-        genesis_VDP_cycle(this);
-        this->clock.vdp.cycles_til_clock += this->clock.vdp.clock_divisor;
-    }
-    if (this->clock.psg.cycles_til_clock <= 0) {
-        SN76489_cycle(&this->psg);
-        this->clock.psg.cycles_til_clock += this->clock.psg.clock_divisor;
-    }
-    sample_audio(this);
-    debug_audio(this);
+    u32 lu = 105 * (this->clock.vdp.clock_divisor - 4);
+    this->scheduler_lookup[lu + this->scheduler_index].callback(this);
+    this->scheduler_index = this->scheduler_lookup[lu + this->scheduler_index].next_index;
+    //sample_audio(this);
+    //debug_audio(this);
 }
 
 

@@ -315,7 +315,7 @@ void genesis_VDP_delete(struct genesis *this)
 
 static void set_clock_divisor(struct genesis* this)
 {
-    u32 clk = 10; // 5 for h32, it's slow! *2
+    u32 clk = 5; // 5 for h32, it's slow! *2
 
     // IF H40. and IF we're not in hsync. and IF we're not at the slow mclocks start
     if (this->vdp.latch.h40) {
@@ -323,7 +323,7 @@ static void set_clock_divisor(struct genesis* this)
         // that's 17 sc cocks. 8 of those should be /4, 9 are /5
         // in this case, our SC clock will be /5 from 199-210
         if (this->vdp.sc_slot < 199)
-            clk = 8;
+            clk = 4;
     }
 
     this->clock.vdp.clock_divisor = (i32)clk;

@@ -10,6 +10,7 @@
 
 struct genesis_clock {
     u64 master_cycle_count;
+    u64 waitstates;
     u64 master_frame;
     u64 frames_since_reset;
 
