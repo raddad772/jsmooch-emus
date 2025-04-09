@@ -161,9 +161,8 @@ static void c_vdp(struct genesis *this)
 static void create_scheduling_lookup_table(struct genesis *this)
 {
     u32 lookup_add = 0;
-    for (i32 cycles=4; cycles<6; cycles++) {
+    for (i32 cycles=4; cycles<6; cycles++) { // 4 and 5 are the two possible vdp divisors
         for (i32 tbl_entry = 0; tbl_entry < 420; tbl_entry++) {
-            // thing is, there's 15 values for m68k_cycles, and 7 for z80_cycles
             // Decode values from tbl_entry
             i32 z80_cycles = (tbl_entry % 15) + 1;
             i32 m68k_cycles = (tbl_entry / 15) + 1;
@@ -180,27 +179,28 @@ static void create_scheduling_lookup_table(struct genesis *this)
                     item->callback = &c_z80_m68k_vdp;
                 else
                     item->callback = &c_m68k_z80_vdp;
-                z80_cycles += 14;
-                m68k_cycles += 6;
+                z80_cycles += 15;
+                m68k_cycles += 7;
             }
             else if (z80_cycles <= 0) {
                 item->callback = &c_z80_vdp;
-                z80_cycles += 14;
+                z80_cycles += 16;
             }
             else if (m68k_cycles <= 0) {
                 item->callback = &c_m68k_vdp;
-                m68k_cycles += 6;
+                m68k_cycles += 7;
             }
             else {
                 item->callback = &c_vdp;
             }
 
             // Encode values of next to tbl_entry
-            item->next_index = (m68k_cycles * 15) + z80_cycles;
+            item->next_index = ((m68k_cycles - 1) * 15) + (z80_cycles - 1);
         }
         lookup_add += 105;
     }
 }
+
 
 void genesis_new(JSM, enum jsm_systems kind)
 {
@@ -535,6 +535,7 @@ static void genesis_step_loop(struct genesis* this)
     u32 lu = 105 * (this->clock.vdp.clock_divisor - 4);
     this->scheduler_lookup[lu + this->scheduler_index].callback(this);
     this->scheduler_index = this->scheduler_lookup[lu + this->scheduler_index].next_index;
+    this->clock.master_cycle_count += this->clock.vdp.clock_divisor;
     //sample_audio(this);
     //debug_audio(this);
 }
