@@ -1611,6 +1611,7 @@ static void render_left_column(struct genesis* this)
 void genesis_VDP_cycle(struct genesis* this)
 {
     // We only run this every OTHER
+    this->timing.vdp_cycles++;
     u32 run_dma = 0;
 
     this->vdp.display->scan_x+=2;

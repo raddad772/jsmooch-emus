@@ -40,7 +40,8 @@ static void genesisJ_describe_io(JSM, struct cvec* IOs);
 #define NTSC_SCANLINES 262
 
 // 896040
-#define MASTER_CYCLES_PER_FRAME MASTER_CYCLES_PER_SCANLINE*NTSC_SCANLINES
+#define MASTER_CYCLES_PER_FRAME (MASTER_CYCLES_PER_SCANLINE*NTSC_SCANLINES)
+#define MASTER_CYCLES_PER_SECOND (MASTER_CYCLES_PER_FRAME*60)
 
 // SMS/GG has 179208, so genesis master clock is *5
 // Sn76489 divider on SMS/GG is 48, so 48*5 = 240
@@ -339,6 +340,7 @@ static inline float i16_to_float(i16 val)
 static void run_ym2612(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis* this = (struct genesis *)ptr;
+    this->timing.ym2612_cycles++;
     u64 cur = clock - jitter;
     scheduler_only_add_abs(&this->scheduler, cur+this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
     ym2612_cycle(&this->ym2612);
@@ -347,6 +349,7 @@ static void run_ym2612(void *ptr, u64 key, u64 clock, u32 jitter)
 static void run_psg(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis* this = (struct genesis *)ptr;
+    this->timing.psg_cycles++;
     u64 cur = clock - jitter;
     scheduler_only_add_abs(&this->scheduler, cur+this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
     SN76489_cycle(&this->psg);
@@ -356,6 +359,7 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis* this = (struct genesis *)ptr;
     if (this->audio.buf) {
+        this->audio.cycles++;
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
         if (this->audio.buf->upos < this->audio.buf->samples_len) {
@@ -428,7 +432,6 @@ static void schedule_first(struct genesis *this)
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
     scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
-    scheduler_only_add_abs(&this->scheduler, this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
     genesis_VDP_schedule_first(this);
 }
 
@@ -598,8 +601,45 @@ u32 genesisJ_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
-
+    u64 ym_start = this->timing.ym2612_cycles;
+    u64 z80_start = this->timing.z80_cycles;
+    u64 m68k_start = this->timing.m68k_cycles;
+    u64 vdp_start = this->timing.vdp_cycles;
+    u64 clock_start = this->clock.master_cycle_count;
+    u64 psg_start = this->timing.psg_cycles;
+    u64 audio_start = this->audio.cycles;
     scheduler_run_til_tag(&this->scheduler, TAG_FRAME);
+    u64 ym_num_cycles = (this->timing.ym2612_cycles - ym_start) * 60;
+    u64 psg_num_cycles = (this->timing.psg_cycles - psg_start) * 60;
+    u64 z80_num_cycles = (this->timing.z80_cycles - z80_start) * 60;
+    u64 m68k_num_cycles = (this->timing.m68k_cycles - m68k_start) * 60;
+    u64 vdp_num_cycles = (this->timing.vdp_cycles - vdp_start) * 60;
+    u64 clock_num_cycles = (this->clock.master_cycle_count - clock_start) * 60;
+    u64 per_frame = this->clock.master_cycle_count - clock_start;
+    u64 per_scanline = per_frame / 262;
+    u64 audio_num_cycles = (this->audio.cycles - audio_start) * 60;
+    double ym_div = (double)MASTER_CYCLES_PER_SECOND / (double)ym_num_cycles;
+    double z80_div = (double)MASTER_CYCLES_PER_SECOND / (double)z80_num_cycles;
+    double m68k_div = (double)MASTER_CYCLES_PER_SECOND / (double)m68k_num_cycles;
+    double vdp_div = (double)MASTER_CYCLES_PER_SECOND / (double)vdp_num_cycles;
+    double psg_div = (double)MASTER_CYCLES_PER_SECOND / (double)psg_num_cycles;
+
+    double ym_spd = (1008.0 / ym_div) * 100.0;
+    double psg_spd = (240.0 / psg_div) * 100.0;
+    double m68k_spd = (7.0 / m68k_div) * 100.0;
+    double z80_spd = (15.0 / z80_div) * 100.0;
+    double vdp_spd = (16.0 / vdp_div) * 100.0;
+    double audio_spd = ((double)audio_num_cycles / ((MASTER_CYCLES_PER_FRAME * 60) / (7 * 144))) * 100.0;
+
+    printf("\nSCANLINE:%d FRAME:%lld", this->clock.vdp.vcount, this->clock.master_frame);
+    printf("\n\nEFFECTIVE AUDIO FREQ IS %lld. RUNNING AT %f SPEED", audio_num_cycles, audio_spd);
+    printf("\nEFFECTIVE YM FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", ym_num_cycles, ym_div, ym_spd);
+    printf("\nEFFECTIVE PSG FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", psg_num_cycles, psg_div, psg_spd);
+    printf("\nEFFECTIVE Z80 SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", z80_num_cycles, z80_div, z80_spd);
+    printf("\nEFFECTIVE M68K SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", m68k_num_cycles, m68k_div, m68k_spd);
+    printf("\nEFFECTIVE VDP SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", vdp_num_cycles, vdp_div, vdp_spd);
+    printf("\nEFFECTIVE MASTER CLOCK IS %lld. PER FRAME:%lld PER SCANLINE:%lld", clock_num_cycles, per_frame, per_scanline);
+
     return this->vdp.display->last_written;
 }
 

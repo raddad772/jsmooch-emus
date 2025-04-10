@@ -98,6 +98,7 @@ void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cyc
     DBG_EVENT_VIEW_INIT;
 
     this->ext_enable = 1;
+    this->master_cycle_count = master_cycle_count;
 
     if (!math_done) do_math();
 
@@ -270,7 +271,7 @@ static void write_data(struct ym2612 *this, u8 val)
 {
     struct YM2612_CHANNEL *ch = &this->channel[this->io.chn];
     struct YM2612_OPERATOR *op = &ch->operator[this->io.opn];
-    this->status.busy_for_how_long = 6;
+    this->status.busy_until = (*this->master_cycle_count) + (32 * 42);
     static int a[256] = {};
     switch(this->io.addr) {
         case 0x24: // TMRA upper 8
@@ -322,7 +323,7 @@ static void write_data(struct ym2612 *this, u8 val)
             //this->dac.sample = SIGNe8to32(this->dac.sample) << 6; // 8 - > 14bit
             this->dac.sample <<= 6;
             //if (this->dac.enable) this->channel[5].output = this->dac.sample;
-            this->status.busy_for_how_long = 0;
+            this->status.busy_until = 0;
             return;
         case 0x2B: // bit 7 is DAC enable
             // TODO: more here
@@ -542,12 +543,12 @@ void ym2612_write(struct ym2612*this, u32 addr, u8 val)
     }
 }
 
-u8 ym2612_read(struct ym2612*this, u32 addr, u32 old, u32 has_effect, u64 master_clock)
+u8 ym2612_read(struct ym2612*this, u32 addr, u32 old, u32 has_effect)
 {
     addr &= 3;
     u32 v = 0;
     if (addr == 0) {
-        //v = (this->status.busy_for_how_long > 0) << 7;
+        v = ((*this->master_cycle_count) < this->status.busy_until) << 7;
         v |= this->status.timer_b_overflow << 1;
         v |= this->status.timer_a_overflow;
     }

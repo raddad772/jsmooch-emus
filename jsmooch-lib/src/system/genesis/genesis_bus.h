@@ -49,6 +49,10 @@ struct genesis {
     struct genesis_clock clock;
     struct genesis_cart cart;
 
+    struct {
+        u64 z80_cycles, m68k_cycles, vdp_cycles, ym2612_cycles, psg_cycles;
+    } timing;
+
     struct scheduler_t scheduler;
     struct gensched_item scheduler_lookup[NUM_GENSCHED * 2];
     u8 scheduler_index;
@@ -140,6 +144,7 @@ struct genesis {
         double next_sample_cycle_max, next_sample_cycle_min, next_sample_cycle;
         double next_debug_cycle;
         struct audiobuf *buf;
+        u64 cycles;
     } audio;
 
     struct {

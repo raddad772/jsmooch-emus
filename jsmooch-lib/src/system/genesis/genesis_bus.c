@@ -213,7 +213,7 @@ static u8 genesis_z80_mainbus_read(struct genesis* this, u32 addr, u8 old, u32 h
 }
 
 static u8 genesis_z80_ym2612_read(struct genesis* this, u32 addr, u8 old, u32 has_effect) {
-    return ym2612_read(&this->ym2612, addr & 3, old, has_effect, this->clock.master_cycle_count);
+    return ym2612_read(&this->ym2612, addr & 3, old, has_effect);
 }
 
 u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect)
@@ -281,6 +281,7 @@ static struct SYMDO *get_at_addr(struct genesis* this, u32 addr)
 void genesis_cycle_m68k(struct genesis* this)
 {
     static u32 PCO = 0;
+    this->timing.m68k_cycles++;
     if (this->io.m68k.stuck) dbg_printf("\nSTUCK cyc %lld", *this->m68k.trace.cycles);
     if (this->vdp.io.bus_locked) return;
 
@@ -352,6 +353,7 @@ void genesis_z80_interrupt(struct genesis* this, u32 level)
 
 void genesis_cycle_z80(struct genesis* this)
 {
+    this->timing.z80_cycles++;
     if (this->io.z80.reset_line) {
         this->io.z80.reset_line_count++;
         if (this->io.z80.reset_line_count >= 3) return; // If it's held down 3 or more, freeze!

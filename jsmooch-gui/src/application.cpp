@@ -439,7 +439,7 @@ void imgui_jsmooch_app::render_waveform_view(struct WVIEW &wview, u32 num)
                 static int a;
                 static bool rv = false;
                 a = wview.waveforms[0].wf->clock_divider;
-                ImGui::DragInt("Clock divider", &a, 0.5f, 10, 500, "%d");
+                ImGui::DragInt("Clock divider", &a, 0.5f, 10, 1500, "%d");
                 /*
                 ImGui::Checkbox("Randomly vary divider", &rv);
                 static int b = 10;

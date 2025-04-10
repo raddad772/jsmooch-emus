@@ -293,6 +293,7 @@ struct M68k {
         struct jsm_string str;
         u32 ok;
         u64 *cycles;
+        u64 my_cycles;
     } trace;
 
     u32 last_decode;

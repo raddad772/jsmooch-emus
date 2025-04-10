@@ -36,7 +36,7 @@ struct ym2612 {
     } io;
 
     struct {
-        i32 busy_for_how_long, timer_b_overflow, timer_a_overflow;
+        i32 busy_until, timer_b_overflow, timer_a_overflow;
         u64 env_cycle_counter;
     } status;
 
@@ -147,7 +147,7 @@ void ym2612_serialize(struct ym2612*, struct serialized_state *state);
 void ym2612_deserialize(struct ym2612*, struct serialized_state *state);
 
 void ym2612_write(struct ym2612*, u32 addr, u8 val);
-u8 ym2612_read(struct ym2612*, u32 addr, u32 old, u32 has_effect, u64 master_clock);
+u8 ym2612_read(struct ym2612*, u32 addr, u32 old, u32 has_effect);
 void ym2612_reset(struct ym2612*);
 void ym2612_cycle(struct ym2612*);
 i16 ym2612_sample_channel(struct ym2612*, u32 ch);
