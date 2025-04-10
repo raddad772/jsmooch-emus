@@ -136,8 +136,9 @@ struct genesis {
     DBG_END
 
     struct {
-        double master_cycles_per_audio_sample;
-        double next_sample_cycle;
+        double master_cycles_per_audio_sample, master_cycles_per_min_sample, master_cycles_per_max_sample;
+        double next_sample_cycle_max, next_sample_cycle_min, next_sample_cycle;
+        double next_debug_cycle;
         struct audiobuf *buf;
     } audio;
 

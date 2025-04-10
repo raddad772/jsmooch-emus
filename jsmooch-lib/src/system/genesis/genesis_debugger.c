@@ -392,7 +392,7 @@ static void setup_waveforms_ym2612(struct genesis* this, struct debugger_interfa
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
-    dw->default_clock_divider = 144;
+    dw->default_clock_divider = 1008;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);

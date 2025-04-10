@@ -24,6 +24,7 @@ struct ym2612 {
         i32 left_output, right_output, mono_output; // Current mixed sample
         u64 last_master_clock_op0;
     } mix;
+    u32 ext_enable;
 
     struct {
         u32 group;
@@ -105,9 +106,6 @@ struct ym2612 {
                 u32 total_level;
             } envelope;
 
-            struct {
-                u32 enable, attack, alternate, hold, invert; // 1bit
-            } ssg;
         } operator[4];
     } channel[6];
 
@@ -138,7 +136,6 @@ struct ym2612 {
     } timer_b;
 
     u64 *master_cycle_count;
-    u64 last_master_cycle;
 
     DBG_EVENT_VIEW_ONLY;
 };

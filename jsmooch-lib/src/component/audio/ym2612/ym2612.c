@@ -97,6 +97,8 @@ void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cyc
     memset(this, 0, sizeof(*this));
     DBG_EVENT_VIEW_INIT;
 
+    this->ext_enable = 1;
+
     if (!math_done) do_math();
 
     for (u32 i = 0; i < 6; i++) {

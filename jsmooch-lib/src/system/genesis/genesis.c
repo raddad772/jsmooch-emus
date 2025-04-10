@@ -75,15 +75,20 @@ void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
-        this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.main);
-        this->psg.ext_enable = wf->ch_output_enabled;
+        this->audio.next_sample_cycle_max = 0;
+        struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
+        this->audio.master_cycles_per_max_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
+        this->audio.master_cycles_per_min_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
     }
 
     // PSG
     struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
     setup_debug_waveform(wf);
-    //this->clock.apu_divisor = wf->clock_divider;
+    this->psg.ext_enable = wf->ch_output_enabled;
+    if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
+    this->clock.psg.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
         wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
         setup_debug_waveform(wf);
@@ -96,8 +101,10 @@ void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 
     // ym2612
     wf = cpg(this->dbg.waveforms_ym2612.main);
+    this->ym2612.ext_enable = wf->ch_output_enabled;
     setup_debug_waveform(wf);
-    //this->clock.apu_divisor = wf->clock_divider;
+    if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
+    this->clock.ym2612.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 6; i++) {
         wf = (struct debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
         setup_debug_waveform(wf);
@@ -352,18 +359,74 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
         if (this->audio.buf->upos < this->audio.buf->samples_len) {
-            i32 v = ((i32)SN76489_mix_sample(&this->psg, 0) + (i32)this->ym2612.mix.mono_output) / 2;
-            //v = SN76489_mix_sample(&this->psg, 0);
+            i32 v = 0;
+            if (this->psg.ext_enable)
+                v += (i32)SN76489_mix_sample(&this->psg, 0);
+            if (this->ym2612.ext_enable)
+                v += ((i32)this->ym2612.mix.mono_output) >> 1;
             ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
         }
         this->audio.buf->upos++;
     }
 }
 
+static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis *)ptr;
+
+    /* PSG */
+    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
+    if (dw->user.buf_pos < dw->samples_requested) {
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->psg, 1));
+        dw->user.buf_pos++;
+    }
+
+    /* YM2612 */
+    dw = cpg(this->dbg.waveforms_ym2612.main);
+    if (dw->user.buf_pos < dw->samples_requested) {
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output);
+        dw->user.buf_pos++;
+    }
+    this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+}
+
+static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis *)ptr;
+
+    /* PSG */
+    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.chan[0]);
+    for (int j = 0; j < 4; j++) {
+        dw = cpg(this->dbg.waveforms_psg.chan[j]);
+        if (dw->user.buf_pos < dw->samples_requested) {
+            i16 sv = SN76489_sample_channel(&this->psg, j);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+            dw->user.buf_pos++;
+        }
+    }
+
+    /* YM2612 */
+    for (int j = 0; j < 6; j++) {
+        dw = cpg(this->dbg.waveforms_ym2612.chan[j]);
+        if (dw->user.buf_pos < dw->samples_requested) {
+            dw->user.next_sample_cycle += dw->user.cycle_stride;
+            i16 sv = ym2612_sample_channel(&this->ym2612, j);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
+            dw->user.buf_pos++;
+        }
+    }
+    this->audio.next_sample_cycle_min += this->audio.master_cycles_per_min_sample;
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
+}
+
 
 static void schedule_first(struct genesis *this)
 {
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
     scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
     scheduler_only_add_abs(&this->scheduler, this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
     genesis_VDP_schedule_first(this);
@@ -538,60 +601,6 @@ u32 genesisJ_finish_frame(JSM)
 
     scheduler_run_til_tag(&this->scheduler, TAG_FRAME);
     return this->vdp.display->last_written;
-}
-
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-
-static void debug_audio(struct genesis* this)
-{
-    /* PSG */
-    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
-    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
-        if (dw->user.buf_pos < dw->samples_requested) {
-            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
-            dw->user.next_sample_cycle += dw->user.cycle_stride;
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->psg, 1));
-            dw->user.buf_pos++;
-        }
-    }
-
-    dw = cpg(this->dbg.waveforms_psg.chan[0]);
-    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
-        for (int j = 0; j < 4; j++) {
-            dw = cpg(this->dbg.waveforms_psg.chan[j]);
-            if (dw->user.buf_pos < dw->samples_requested) {
-                dw->user.next_sample_cycle += dw->user.cycle_stride;
-                i16 sv = SN76489_sample_channel(&this->psg, j);
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
-                dw->user.buf_pos++;
-            }
-        }
-    }
-
-    /* YM2612 */
-    dw = cpg(this->dbg.waveforms_ym2612.main);
-    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
-        if (dw->user.buf_pos < dw->samples_requested) {
-            //printf("\nSAMPLE AT %lld next:%f stride:%f", this->clock.master_cycles, dw->user.next_sample_cycle, dw->user.cycle_stride);
-            dw->user.next_sample_cycle += dw->user.cycle_stride;
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output);
-            dw->user.buf_pos++;
-        }
-    }
-
-    dw = cpg(this->dbg.waveforms_ym2612.chan[0]);
-    if (this->clock.master_cycle_count >= dw->user.next_sample_cycle) {
-        for (int j = 0; j < 6; j++) {
-            dw = cpg(this->dbg.waveforms_ym2612.chan[j]);
-            if (dw->user.buf_pos < dw->samples_requested) {
-                dw->user.next_sample_cycle += dw->user.cycle_stride;
-                i16 sv = ym2612_sample_channel(&this->ym2612, j);
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
-                dw->user.buf_pos++;
-            }
-        }
-    }
-
 }
 
 u32 genesisJ_finish_scanline(JSM)
