@@ -26,12 +26,18 @@
 #include "genesis_controllerport.h"
 #include "genesis_vdp.h"
 
+
+//#define GENSCHED_SWITCH
 struct genesis;
 typedef void (*gensched_callback)(struct genesis *);
 
 struct gensched_item {
-    u32 next_index;
+    u8 next_index;
+#ifdef GENSCHED_SWITCH
+    u8 kind;
+#else
     gensched_callback callback;
+#endif
 };
 
 struct genesis {
@@ -42,8 +48,7 @@ struct genesis {
 
     struct scheduler_t scheduler;
     struct gensched_item scheduler_lookup[105 * 2];
-    u32 scheduler_index;
-    i32 block_cycles_to_run;
+    u8 scheduler_index;
 
     struct ym2612 ym2612;
     struct SN76489 psg;

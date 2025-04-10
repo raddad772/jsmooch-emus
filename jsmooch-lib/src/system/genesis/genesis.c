@@ -179,22 +179,42 @@ static void create_scheduling_lookup_table(struct genesis *this)
             // Determine which function to use
             if ((z80_cycles <= 0) && (m68k_cycles <= 0)) {
                 if (z80_cycles < m68k_cycles)
-                    item->callback = &c_z80_m68k_vdp;
+#ifdef GENSCHED_SWITCH
+                item->kind = 0;
+#else
+                item->callback = &c_z80_m68k_vdp;
+#endif
                 else
+#ifdef GENSCHED_SWITCH
+                    item->kind = 1;
+#else
                     item->callback = &c_m68k_z80_vdp;
+#endif
                 z80_cycles += 15;
                 m68k_cycles += 7;
             }
             else if (z80_cycles <= 0) {
+#ifdef GENSCHED_SWITCH
+                item->kind = 2;
+#else
                 item->callback = &c_z80_vdp;
+#endif
                 z80_cycles += 16;
             }
             else if (m68k_cycles <= 0) {
+#ifdef GENSCHED_SWITCH
+                item->kind = 3;
+#else
                 item->callback = &c_m68k_vdp;
+#endif
                 m68k_cycles += 7;
             }
             else {
+#ifdef GENSCHED_SWITCH
+                item->kind = 4;
+#else
                 item->callback = &c_vdp;
+#endif
             }
 
             // Encode values of next to tbl_entry
@@ -208,7 +228,34 @@ static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis *this = (struct genesis *)ptr;
     u32 lu = 105 * (this->clock.vdp.clock_divisor - 4);
-    this->scheduler_lookup[lu + this->scheduler_index].callback(this);
+    struct gensched_item *e = &this->scheduler_lookup[lu + this->scheduler_index];
+#ifdef GENSCHED_SWITCH
+    switch(e->kind) {
+        case 0:
+            genesis_cycle_z80(this);
+            genesis_cycle_m68k(this);
+            genesis_VDP_cycle(this);
+            break;
+        case 1:
+            genesis_cycle_m68k(this);
+            genesis_cycle_z80(this);
+            genesis_VDP_cycle(this);
+            break;
+        case 2:
+            genesis_cycle_z80(this);
+            genesis_VDP_cycle(this);
+            break;
+        case 3:
+            genesis_cycle_m68k(this);
+            genesis_VDP_cycle(this);
+            break;
+        case 4:
+            genesis_VDP_cycle(this);
+            break;
+    }
+#else
+    e->callback(this);
+#endif
     this->scheduler_index = this->scheduler_lookup[lu + this->scheduler_index].next_index;
     this->clock.master_cycle_count += this->clock.vdp.clock_divisor;
 }
@@ -312,21 +359,7 @@ static void load_symbols(struct genesis* this) {
     fclose(f);
 }
 
-static void schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct genesis *this = (struct genesis*)ptr;
-    u64 cur = clock - jitter;
-    u64 next_frame = cur + MASTER_CYCLES_PER_FRAME;
-    scheduler_only_add_abs_w_tag(&this->scheduler, next_frame, 0, this, &schedule_frame, NULL, TAG_FRAME);
-}
 
-static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct genesis *this = (struct genesis*)ptr;
-    u64 cur = clock - jitter;
-    u64 next_scanline = cur + MASTER_CYCLES_PER_SCANLINE;
-    scheduler_only_add_abs_w_tag(&this->scheduler, next_scanline, 0, this, &schedule_scanline, NULL, TAG_SCANLINE);
-}
 
 static inline float i16_to_float(i16 val)
 {
@@ -367,13 +400,10 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void schedule_first(struct genesis *this)
 {
-    printf("\nSCHEDULE FIRST");
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
     scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
     scheduler_only_add_abs(&this->scheduler, this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
-    schedule_scanline(this, 0, 0, 0);
-    schedule_frame(this, 0, 0, 0);
-    printf("\nSCHEDULE FIRST DONE");
+    genesis_VDP_schedule_first(this);
 }
 
 static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)

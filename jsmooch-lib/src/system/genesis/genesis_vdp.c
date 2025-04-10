@@ -20,6 +20,12 @@
 #include "genesis_vdp.h"
 #include "genesis_debugger.h"
 
+
+
+#define MASTER_CYCLES_PER_SCANLINE 3420
+#define NTSC_SCANLINES 262
+#define MASTER_CYCLES_PER_FRAME (MASTER_CYCLES_PER_SCANLINE * NTSC_SCANLINES)
+
 #define PLANE_A 0
 #define PLANE_B 1
 #define PLANE_WINDOW 2
@@ -313,20 +319,9 @@ void genesis_VDP_delete(struct genesis *this)
 
 }
 
-static void set_clock_divisor(struct genesis* this)
+void set_clock_divisor(struct genesis* this)
 {
-    u32 clk = 5; // 5 for h32, it's slow! *2
-
-    // IF H40. and IF we're not in hsync. and IF we're not at the slow mclocks start
-    if (this->vdp.latch.h40) {
-        // If we're in H40 mode, hsync is 197 through 210 around to 2.
-        // that's 17 sc cocks. 8 of those should be /4, 9 are /5
-        // in this case, our SC clock will be /5 from 199-210
-        if (this->vdp.sc_slot < 199)
-            clk = 4;
-    }
-
-    this->clock.vdp.clock_divisor = (i32)clk;
+    this->clock.vdp.clock_divisor = this->vdp.latch.h40 && (this->vdp.sc_slot < 199) ? 4 : 5;
 }
 
 static inline void latch_hcounter(struct genesis* this)
@@ -349,6 +344,7 @@ static void do_vcounter(struct genesis* this)
 static void hblank(struct genesis* this, u32 new_value)
 {
     this->clock.vdp.hblank_active = new_value;
+    set_clock_divisor(this);
     //if (new_value)
 
 }
@@ -361,7 +357,7 @@ static void set_sc_array(struct genesis* this)
     else this->vdp.sc_array = this->vdp.latch.h40;
 }
 
-static void vblank(struct genesis* this, u32 new_value)
+void genesis_VDP_vblank(struct genesis* this, u32 new_value)
 {
     u32 old_value = this->clock.vdp.vblank_active;
     this->clock.vdp.vblank_active = new_value;  // Our value that indicates vblank yes or no
@@ -376,8 +372,12 @@ static void vblank(struct genesis* this, u32 new_value)
     set_clock_divisor(this);
 }
 
-static void new_frame(struct genesis* this)
+static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 {
+    u64 cur = cur_clock - jitter;
+    //printf("\nNEW FRAME @%lld", cur);
+    struct genesis* this = (struct genesis*)ptr;
+
     debugger_report_frame(this->dbg.interface);
     this->vdp.cur_output = ((u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1]);
     this->clock.master_frame++;
@@ -396,9 +396,13 @@ static void new_frame(struct genesis* this)
 
     this->vdp.display->scan_y = 0;
     this->vdp.display->scan_x = 0;
+    if (this->clock.vdp.vcount == 0) {
+        scheduler_only_add_abs_w_tag(&this->scheduler, cur + MASTER_CYCLES_PER_FRAME, 0, this, &new_frame, NULL, 2);
+    }
 
     set_clock_divisor(this);
 }
+
 
 static void print_scroll_info(struct genesis* this)
 {
@@ -407,17 +411,23 @@ static void print_scroll_info(struct genesis* this)
     printf("\nFG WIDTH:%d  HEIGHT:%d", this->vdp.io.foreground_width, this->vdp.io.foreground_height);
 }
 
-static void new_scanline(struct genesis* this)
+static void gen_z80_interrupt_off(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    Z80_notify_IRQ(&((struct genesis *)ptr)->z80, 0);
+}
+
+
+static void new_scanline(struct genesis* this, u64 cur_clock)
 {
     // We use info from last line to render this one, before we reset it!
     render_sprites(this);
     this->clock.vdp.vcount++;
+    this->vdp.sc_slot = 0;
+    set_clock_divisor(this);
+
     this->vdp.line.sprite_mappings = 0;
     this->vdp.line.sprite_patterns = 0;
     this->vdp.latch.h40 = this->vdp.io.h40;
-    if (this->clock.vdp.vcount == 262) {
-        new_frame(this);
-    }
     if (this->dbg.events.view.vec) {
         debugger_report_line(this->dbg.interface, this->clock.vdp.vcount);
     }
@@ -476,7 +486,7 @@ static void new_scanline(struct genesis* this)
     this->vdp.line.screen_x = 0;
     this->vdp.line.screen_y = this->clock.vdp.vcount;
 
-    this->clock.vdp.line_mclock -= MCLOCKS_PER_LINE;
+    this->clock.vdp.line_mclock = 0;
     this->vdp.sc_count = 0;
     this->vdp.sc_slot = 0;
     this->vdp.fetcher.vscroll_latch[0] = this->vdp.VSRAM[0];
@@ -484,20 +494,37 @@ static void new_scanline(struct genesis* this)
 
     switch(this->clock.vdp.vcount) {
         case 0:
-            vblank(this, 0);
+            genesis_VDP_vblank(this, 0);
             break;
         case 0xE0: // vblank start
-            vblank(this, 1);
-            this->vdp.io.z80_irq_clocks = 2573; // Thanks @MaskOfDestiny
+            genesis_VDP_vblank(this, 1);
             genesis_z80_interrupt(this, 1); // Z80 asserts vblank interrupt for 2573 mclocks
+            scheduler_only_add_abs(&this->scheduler, this->clock.master_cycle_count + 2573, 0, this, &gen_z80_interrupt_off, NULL);
             break;
     }
     //if (this->clock.vdp.vcount == 0) latch_hcounter(this);
     if (this->clock.vdp.vcount >= 225) latch_hcounter(this); // in vblank, continually reload. TODO: make dependent on vblank
     else do_vcounter(this);
-    set_clock_divisor(this);
     set_sc_array(this);
 }
+
+
+static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis*)ptr;
+    u64 cur = clock - jitter;
+    u64 next_scanline = cur + MASTER_CYCLES_PER_SCANLINE;
+    scheduler_only_add_abs_w_tag(&this->scheduler, next_scanline, 0, this, &schedule_scanline, NULL, 1);
+    new_scanline(this, cur);
+}
+
+
+void genesis_VDP_schedule_first(struct genesis *this)
+{
+    schedule_scanline(this, 0, 0, 0);
+    scheduler_only_add_abs_w_tag(&this->scheduler, MASTER_CYCLES_PER_FRAME, 0, this, &new_frame, NULL, 2);
+}
+
 
 static u32 fifo_empty(struct genesis* this)
 {
@@ -878,6 +905,15 @@ static void write_control_port(struct genesis* this, u16 val, u16 mask)
 
     write_vdp_reg(this, (val >> 8) & 0x1F, val & 0xFF);
 }
+
+void genesis_VDP_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis*)ptr;
+    u64 cur = clock - jitter;
+    u64 next_frame = cur + MASTER_CYCLES_PER_FRAME;
+    scheduler_only_add_abs_w_tag(&this->scheduler, next_frame, 0, this, &genesis_VDP_schedule_frame, NULL, 2);
+}
+
 
 static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
 {
@@ -1588,20 +1624,8 @@ static void render_left_column(struct genesis* this)
 
 void genesis_VDP_cycle(struct genesis* this)
 {
-    // Take care of Z80 interrupt line
-    if (this->vdp.io.z80_irq_clocks) {
-        this->vdp.io.z80_irq_clocks -= this->clock.vdp.clock_divisor;
-        if (this->vdp.io.z80_irq_clocks <= 0) {
-            this->vdp.io.z80_irq_clocks = 0;
-            genesis_z80_interrupt(this, 0);
-        }
-    }
-
     // Add our clock divisor
     this->clock.vdp.line_mclock += this->clock.vdp.clock_divisor;
-
-    // Set up next clock divisor
-    set_clock_divisor(this);
 
     // 2 of our cycles per SC transfer
     u32 run_dma = 0;
@@ -1612,6 +1636,7 @@ void genesis_VDP_cycle(struct genesis* this)
     this->vdp.sc_count++;
     if ((this->vdp.sc_count & 1) == 0) { // 1 SC clock per 2 of our cycles
         this->vdp.sc_slot++;
+        //printf("\nLINE MCLOCK:%d SC_SLOT:%d", this->clock.vdp.line_mclock, this->vdp.sc_slot);
         // Do FIFO if this is an external slot
         enum slot_kinds sk = this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot];
         switch(sk) {
@@ -1659,9 +1684,5 @@ void genesis_VDP_cycle(struct genesis* this)
     run_dma |= (this->vdp.io.enable_display ^ 1);
     if (run_dma) {
         dma_run_if_ready(this);
-    }
-
-    if (this->clock.vdp.line_mclock >= MCLOCKS_PER_LINE) {
-        new_scanline(this);
     }
 }

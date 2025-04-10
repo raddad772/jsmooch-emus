@@ -228,5 +228,7 @@ void genesis_VDP_cycle(struct genesis*);
 u8 genesis_VDP_z80_read(struct genesis*, u32 addr, u8 old, u32 has_effect);
 void genesis_VDP_z80_write(struct genesis*, u32 addr, u8 val);
 void genesis_VDP_reset(struct genesis*);
+void genesis_VDP_vblank(struct genesis*, u32 new_value);
+void genesis_VDP_schedule_first(struct genesis *);
 
 #endif //JSMOOCH_EMUS_GENESIS_VDP_H
