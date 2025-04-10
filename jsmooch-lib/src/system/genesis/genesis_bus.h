@@ -29,10 +29,12 @@
 
 //#define GENSCHED_SWITCH
 struct genesis;
-typedef void (*gensched_callback)(struct genesis *);
+struct gensched_item;
+typedef void (*gensched_callback)(struct genesis *, struct gensched_item *);
 
 struct gensched_item {
     u8 next_index;
+    u8 clk_add_z80, clk_add_m68k, clk_add_vdp;
 #ifdef GENSCHED_SWITCH
     u8 kind;
 #else

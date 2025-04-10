@@ -135,38 +135,59 @@ static void read_opts(struct jsm_system *jsm, struct genesis* this)
 
     w = cvec_get(&jsm->opts, 3);
     this->opts.vdp.ex_trace = w->checkbox.value;
-
 }
 
-static void c_vdp_z80_m68k(struct genesis *this)
+static void c_vdp_z80_m68k(struct genesis *this, struct gensched_item *e)
 {
+    this->clock.master_cycle_count += e->clk_add_vdp;
     genesis_VDP_cycle(this);
+
+    this->clock.master_cycle_count += e->clk_add_z80;
     genesis_cycle_z80(this);
+
+    this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
+
+    assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_z80_vdp_m68k(struct genesis *this)
+static void c_z80_vdp_m68k(struct genesis *this, struct gensched_item *e)
 {
+    this->clock.master_cycle_count += e->clk_add_z80;
     genesis_cycle_z80(this);
+
+    this->clock.master_cycle_count += e->clk_add_vdp;
     genesis_VDP_cycle(this);
+
+    this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
+    assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_vdp_m68k(struct genesis *this)
+static void c_vdp_m68k(struct genesis *this, struct gensched_item *e)
 {
+    this->clock.master_cycle_count += e->clk_add_vdp;
     genesis_VDP_cycle(this);
+
+    this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
+    assert((e->clk_add_m68k+e->clk_add_vdp) == 7);
 }
 
-static void c_z80_m68k(struct genesis *this)
+static void c_z80_m68k(struct genesis *this, struct gensched_item *e)
 {
+    this->clock.master_cycle_count += e->clk_add_z80;
     genesis_cycle_z80(this);
+
+    this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
+    assert((e->clk_add_m68k+e->clk_add_z80) == 7);
 }
 
-static void c_m68k(struct genesis *this)
+static void c_m68k(struct genesis *this, struct gensched_item *e)
 {
     genesis_cycle_m68k(this);
+    this->clock.master_cycle_count += 7;
 }
 
 static void create_scheduling_lookup_table(struct genesis *this)
@@ -180,27 +201,60 @@ static void create_scheduling_lookup_table(struct genesis *this)
             i32 vdp_cycles = (tbl_entry % GENSCHED_MUL) + 1; // 0-19/1-20
             assert(z80_cycles < 16);
             assert(vdp_cycles < 21);
-            // Apply m68k divider
-            z80_cycles -= 7;
-            vdp_cycles -= 7;
+
+            // Apply m68k divider, 7
+            static const i32 m68k_cycles = 7;
+
+            z80_cycles -= m68k_cycles; // 6 = -1
+            vdp_cycles -= m68k_cycles; // 7 = 0
 
             struct gensched_item *item = &this->scheduler_lookup[lookup_add + tbl_entry];
 
             // Determine which function to use
             if ((z80_cycles <= 0) && (vdp_cycles <= 0)) {
-                if (z80_cycles < vdp_cycles)
+                if (z80_cycles < vdp_cycles) {
                     item->callback = &c_z80_vdp_m68k;
-                else
+
+                    i32 num = m68k_cycles + z80_cycles;
+                    item->clk_add_z80 = num;
+
+                    num = vdp_cycles - z80_cycles;
+                    item->clk_add_vdp = num;
+
+                    item->clk_add_m68k = m68k_cycles - (item->clk_add_z80 + item->clk_add_vdp);
+                }
+                else {
                     item->callback = &c_vdp_z80_m68k;
+
+                    i32 num = m68k_cycles + vdp_cycles;
+                    item->clk_add_vdp = num;
+
+                    num = z80_cycles - vdp_cycles;
+                    item->clk_add_z80 = num;
+
+                    item->clk_add_m68k = m68k_cycles - (item->clk_add_z80 + item->clk_add_vdp);
+                }
                 z80_cycles += 15;
                 vdp_cycles += cycles;
             }
-            else if (z80_cycles <= 0) {
+            else if (z80_cycles <= 0) { // just Z80
                 item->callback = &c_z80_m68k;
+
+                i32 num = m68k_cycles + z80_cycles;
+                item->clk_add_z80 = num;
+
+                item->clk_add_m68k = m68k_cycles - item->clk_add_z80;
+
                 z80_cycles += 15;
             }
-            else if (vdp_cycles <= 0) {
+            else if (vdp_cycles <= 0) { // just VDP
                 item->callback = &c_vdp_m68k;
+
+                i32 num = m68k_cycles + vdp_cycles;
+                item->clk_add_vdp = num;
+
+                item->clk_add_m68k = m68k_cycles - item->clk_add_vdp;
+
                 vdp_cycles += cycles;
             }
             else {
@@ -226,9 +280,8 @@ static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     assert(lu <= 1);
     lu *= NUM_GENSCHED;
     struct gensched_item *e = &this->scheduler_lookup[lu + this->scheduler_index];
-    e->callback(this);
+    e->callback(this, e);
     this->scheduler_index = e->next_index;
-    this->clock.master_cycle_count += 7;
 }
 
 
