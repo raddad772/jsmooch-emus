@@ -40,6 +40,9 @@ struct gensched_item {
 #endif
 };
 
+#define NUM_GENSCHED 300
+#define GENSCHED_MUL 20
+
 struct genesis {
     struct Z80 z80;
     struct M68k m68k;
@@ -47,7 +50,7 @@ struct genesis {
     struct genesis_cart cart;
 
     struct scheduler_t scheduler;
-    struct gensched_item scheduler_lookup[105 * 2];
+    struct gensched_item scheduler_lookup[NUM_GENSCHED * 2];
     u8 scheduler_index;
 
     struct ym2612 ym2612;

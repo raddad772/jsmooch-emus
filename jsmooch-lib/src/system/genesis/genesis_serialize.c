@@ -73,7 +73,6 @@ static void serialize_clock(struct genesis *this, struct serialized_state *state
     S(vdp.field);
     S(vdp.clock_divisor);
     S(vdp.cycles_til_clock);
-    S(vdp.line_mclock);
     S(vdp.bottom_rendered_line);
 
     S(psg.cycles_til_clock);
@@ -306,7 +305,6 @@ static void deserialize_clock(struct genesis* this, struct serialized_state *sta
     L(vdp.field);
     L(vdp.clock_divisor);
     L(vdp.cycles_til_clock);
-    L(vdp.line_mclock);
     L(vdp.bottom_rendered_line);
 
     L(psg.cycles_til_clock);

@@ -30,7 +30,6 @@ struct genesis_clock {
         u32 field;
         i32 clock_divisor;
         i32 cycles_til_clock;
-        u32 line_mclock;
 
         u32 bottom_rendered_line;
     } vdp;

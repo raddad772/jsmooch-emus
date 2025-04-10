@@ -130,134 +130,97 @@ static void read_opts(struct jsm_system *jsm, struct genesis* this)
 
 }
 
-static void c_m68k_z80_vdp(struct genesis *this)
+static void c_vdp_z80_m68k(struct genesis *this)
 {
-    genesis_cycle_m68k(this);
-    genesis_cycle_z80(this);
     genesis_VDP_cycle(this);
-}
-
-static void c_z80_m68k_vdp(struct genesis *this)
-{
     genesis_cycle_z80(this);
     genesis_cycle_m68k(this);
-    genesis_VDP_cycle(this);
 }
 
-static void c_m68k_vdp(struct genesis *this)
-{
-    genesis_cycle_m68k(this);
-    genesis_VDP_cycle(this);
-}
-
-static void c_z80_vdp(struct genesis *this)
+static void c_z80_vdp_m68k(struct genesis *this)
 {
     genesis_cycle_z80(this);
     genesis_VDP_cycle(this);
+    genesis_cycle_m68k(this);
 }
 
-static void c_vdp(struct genesis *this)
+static void c_vdp_m68k(struct genesis *this)
 {
     genesis_VDP_cycle(this);
+    genesis_cycle_m68k(this);
+}
+
+static void c_z80_m68k(struct genesis *this)
+{
+    genesis_cycle_z80(this);
+    genesis_cycle_m68k(this);
+}
+
+static void c_m68k(struct genesis *this)
+{
+    genesis_cycle_m68k(this);
 }
 
 static void create_scheduling_lookup_table(struct genesis *this)
 {
     u32 lookup_add = 0;
-    for (i32 cycles=4; cycles<6; cycles++) { // 4 and 5 are the two possible vdp divisors
-        for (i32 tbl_entry = 0; tbl_entry < 420; tbl_entry++) {
+    for (i32 cycles=16; cycles<24; cycles+=4) { // 4 and 5 are the two possible vdp divisors
+        for (i32 tbl_entry = 0; tbl_entry < NUM_GENSCHED; tbl_entry++) {
             // Decode values from tbl_entry
-            i32 z80_cycles = (tbl_entry % 15) + 1;
-            i32 m68k_cycles = (tbl_entry / 15) + 1;
-
-            // Apply cycles
-            z80_cycles -= cycles;
-            m68k_cycles -= cycles;
+            // Index = (z80-1 * x) + vdp-1
+            i32 z80_cycles = (tbl_entry / GENSCHED_MUL) + 1; // 0-14/1-15
+            i32 vdp_cycles = (tbl_entry % GENSCHED_MUL) + 1; // 0-19/1-20
+            assert(z80_cycles < 16);
+            assert(vdp_cycles < 21);
+            // Apply m68k divider
+            z80_cycles -= 7;
+            vdp_cycles -= 7;
 
             struct gensched_item *item = &this->scheduler_lookup[lookup_add + tbl_entry];
 
             // Determine which function to use
-            if ((z80_cycles <= 0) && (m68k_cycles <= 0)) {
-                if (z80_cycles < m68k_cycles)
-#ifdef GENSCHED_SWITCH
-                item->kind = 0;
-#else
-                item->callback = &c_z80_m68k_vdp;
-#endif
+            if ((z80_cycles <= 0) && (vdp_cycles <= 0)) {
+                if (z80_cycles < vdp_cycles)
+                    item->callback = &c_z80_vdp_m68k;
                 else
-#ifdef GENSCHED_SWITCH
-                    item->kind = 1;
-#else
-                    item->callback = &c_m68k_z80_vdp;
-#endif
+                    item->callback = &c_vdp_z80_m68k;
                 z80_cycles += 15;
-                m68k_cycles += 7;
+                vdp_cycles += cycles;
             }
             else if (z80_cycles <= 0) {
-#ifdef GENSCHED_SWITCH
-                item->kind = 2;
-#else
-                item->callback = &c_z80_vdp;
-#endif
-                z80_cycles += 16;
+                item->callback = &c_z80_m68k;
+                z80_cycles += 15;
             }
-            else if (m68k_cycles <= 0) {
-#ifdef GENSCHED_SWITCH
-                item->kind = 3;
-#else
-                item->callback = &c_m68k_vdp;
-#endif
-                m68k_cycles += 7;
+            else if (vdp_cycles <= 0) {
+                item->callback = &c_vdp_m68k;
+                vdp_cycles += cycles;
             }
             else {
-#ifdef GENSCHED_SWITCH
-                item->kind = 4;
-#else
-                item->callback = &c_vdp;
-#endif
+                item->callback = &c_m68k;
             }
 
             // Encode values of next to tbl_entry
-            item->next_index = ((m68k_cycles - 1) * 15) + (z80_cycles - 1);
+            // Index = (z80-1 * x) + vdp-1
+            u32 ni = ((z80_cycles - 1) * GENSCHED_MUL) + (vdp_cycles - 1);
+            assert(ni < NUM_GENSCHED);
+            item->next_index = ni;
         }
-        lookup_add += 105;
+        lookup_add += NUM_GENSCHED;
     }
 }
 
 static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis *this = (struct genesis *)ptr;
-    u32 lu = 105 * (this->clock.vdp.clock_divisor - 4);
+    //             // Index = (z80-1 * x) + vdp-1
+    u32 lu = ((this->clock.vdp.clock_divisor >> 2) - 4);
+    assert(lu >= 0);
+    assert(lu <= 1);
+    lu *= NUM_GENSCHED;
     struct gensched_item *e = &this->scheduler_lookup[lu + this->scheduler_index];
-#ifdef GENSCHED_SWITCH
-    switch(e->kind) {
-        case 0:
-            genesis_cycle_z80(this);
-            genesis_cycle_m68k(this);
-            genesis_VDP_cycle(this);
-            break;
-        case 1:
-            genesis_cycle_m68k(this);
-            genesis_cycle_z80(this);
-            genesis_VDP_cycle(this);
-            break;
-        case 2:
-            genesis_cycle_z80(this);
-            genesis_VDP_cycle(this);
-            break;
-        case 3:
-            genesis_cycle_m68k(this);
-            genesis_VDP_cycle(this);
-            break;
-        case 4:
-            genesis_VDP_cycle(this);
-            break;
-    }
-#else
     e->callback(this);
-#endif
-    this->scheduler_index = this->scheduler_lookup[lu + this->scheduler_index].next_index;
-    this->clock.master_cycle_count += this->clock.vdp.clock_divisor;
+    this->scheduler_index = e->next_index;
+    this->clock.master_cycle_count += 7;
 }
 
 
@@ -561,7 +524,7 @@ void genesisJ_reset(JSM)
     this->io.z80.bus_request = this->io.z80.bus_ack = 1;
     this->io.m68k.VDP_FIFO_stall = 0;
     this->io.m68k.VDP_prefetch_stall = 0;
-    this->scheduler_index = (6 * 15) + 14;
+    this->scheduler_index = 0;
 
     scheduler_clear(&this->scheduler);
     schedule_first(this);

@@ -321,7 +321,7 @@ void genesis_VDP_delete(struct genesis *this)
 
 void set_clock_divisor(struct genesis* this)
 {
-    this->clock.vdp.clock_divisor = this->vdp.latch.h40 && (this->vdp.sc_slot < 199) ? 4 : 5;
+    this->clock.vdp.clock_divisor = this->vdp.latch.h40 && (this->vdp.sc_slot < 199) ? 16 : 20;
 }
 
 static inline void latch_hcounter(struct genesis* this)
@@ -345,8 +345,6 @@ static void hblank(struct genesis* this, u32 new_value)
 {
     this->clock.vdp.hblank_active = new_value;
     set_clock_divisor(this);
-    //if (new_value)
-
 }
 
 static void set_sc_array(struct genesis* this)
@@ -486,7 +484,6 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
     this->vdp.line.screen_x = 0;
     this->vdp.line.screen_y = this->clock.vdp.vcount;
 
-    this->clock.vdp.line_mclock = 0;
     this->vdp.sc_count = 0;
     this->vdp.sc_slot = 0;
     this->vdp.fetcher.vscroll_latch[0] = this->vdp.VSRAM[0];
@@ -542,13 +539,7 @@ static u32 fifo_full(struct genesis* this)
 }
 
 static void recalc_window(struct genesis* this)
-{/*
-    vdp->io.window_h_pos = (val & 0x1F) << 14;
-    vdp->io.window_R = (val >> 7) & 1;
-    vdp->io.window_v_pos = (val & 0x1F) << 3;
-    vdp->io.window_draw_top_to_bottom = (val >> 7) & 1;*/
-    // We will
-    //this->vdp.window.left_col =
+{
     if (this->vdp.io.window_RIGHT) {
         this->vdp.window.left_col = this->vdp.io.window_h_pos;
         this->vdp.window.right_col = this->vdp.latch.h40 ? 40 : 32;
@@ -574,10 +565,6 @@ static void recalc_window(struct genesis* this)
 
 static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
 {
-    /*if ((rn >= 24)  {
-        if (dbg.traces.vdp) dbg_printf("\nWARNING illegal VDP register write %d %04x on cycle:%lld", rn, val, this->clock.master_cycle_count);
-        return;
-    }*/
     struct genesis_vdp* vdp = &this->vdp;
     u32 va;
     val &= 0xFF;
@@ -1567,7 +1554,6 @@ static void render_16_more(struct genesis* this)
     u32 vscrolls[2];
     get_vscrolls(this, this->vdp.fetcher.column, vscrolls);
     u32 plane_wrap = this->vdp.io.foreground_width_mask_pixels;
-    //printf("\nRENDER 16 line:%d col:%d screen_x:%d sc_slot:%d", this->clock.vdp.vcount, this->vdp.fetcher.column, this->vdp.line.screen_x, this->vdp.sc_slot);
 
     // Dump to ringbuffer
     struct slice slice;
@@ -1624,62 +1610,55 @@ static void render_left_column(struct genesis* this)
 
 void genesis_VDP_cycle(struct genesis* this)
 {
-    // Add our clock divisor
-    this->clock.vdp.line_mclock += this->clock.vdp.clock_divisor;
-
-    // 2 of our cycles per SC transfer
+    // We only run this every OTHER
     u32 run_dma = 0;
 
-    this->vdp.display->scan_x++;
-    this->clock.vdp.hcount++;
+    this->vdp.display->scan_x+=2;
+    this->clock.vdp.hcount+=2;
 
-    this->vdp.sc_count++;
-    if ((this->vdp.sc_count & 1) == 0) { // 1 SC clock per 2 of our cycles
-        this->vdp.sc_slot++;
-        //printf("\nLINE MCLOCK:%d SC_SLOT:%d", this->clock.vdp.line_mclock, this->vdp.sc_slot);
-        // Do FIFO if this is an external slot
-        enum slot_kinds sk = this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot];
-        switch(sk) {
-            case slot_sprite_pattern:
-                this->vdp.line.sprite_patterns += this->vdp.io.enable_display;
+    this->vdp.sc_slot++;
+    // Do FIFO if this is an external slot
+    enum slot_kinds sk = this->vdp.slot_array[this->vdp.sc_array][this->vdp.sc_slot];
+    switch(sk) {
+        case slot_sprite_pattern:
+            this->vdp.line.sprite_patterns += this->vdp.io.enable_display;
+            break;
+        case slot_sprite_mapping:
+            this->vdp.line.sprite_mappings += this->vdp.io.enable_display;
+            break;
+        case slot_external_access:
+            if (this->vdp.sc_skip) { // because our load uses 16 bit transfers, we only do every other opportunity to mimic 8-bit transfers
+                this->vdp.sc_skip--;
+            }
+            else run_dma = 1;
+            break;
+        case slot_layer_b_pattern_first_trigger:
+            render_left_column(this);
+            break;
+        case slot_layer_b_pattern_trigger:
+            render_16_more(this);
+            break;
+    }
+
+    if (!this->vdp.latch.h40) { // h32
+        switch(this->vdp.sc_slot) {
+            case 6:
+                hblank(this, 0);
                 break;
-            case slot_sprite_mapping:
-                this->vdp.line.sprite_mappings += this->vdp.io.enable_display;
-                break;
-            case slot_external_access:
-                if (this->vdp.sc_skip) { // because our load uses 16 bit transfers, we only do every other opportunity to mimic 8-bit transfers
-                    this->vdp.sc_skip--;
-                }
-                else run_dma = 1;
-                break;
-            case slot_layer_b_pattern_first_trigger:
-                render_left_column(this);
-                break;
-            case slot_layer_b_pattern_trigger:
-                render_16_more(this);
+            case 164:
+                hblank(this, 1);
                 break;
         }
-
-        if (!this->vdp.latch.h40) { // h32
-            switch(this->vdp.sc_slot) {
-                case 6:
-                    hblank(this, 0);
-                    break;
-                case 164:
-                    hblank(this, 1);
-                    break;
-            }
+    }
+    else {
+        switch(this->vdp.sc_slot) {
+            case 3:
+                hblank(this, 0);
+                break;
+            case 197:
+                hblank(this, 1);
+                break;
         }
-        else {
-            switch(this->vdp.sc_slot) {
-                case 3:
-                    hblank(this, 0);
-                    break;
-                case 197:
-                    hblank(this, 1);
-                    break;
-            }
-        };
     }
     run_dma |= (this->vdp.io.enable_display ^ 1);
     if (run_dma) {
