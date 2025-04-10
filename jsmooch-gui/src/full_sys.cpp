@@ -1028,7 +1028,7 @@ void full_system::add_dbglog_view(u32 idx)
 void full_system::add_disassembly_view(u32 idx)
 {
     auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
-    printf("\nAdding disassembly view %s:", dview->disassembly.processor_name.ptr);
+    //printf("\nAdding disassembly view %s:", dview->disassembly.processor_name.ptr);
     DVIEW myv;
     myv.view = dview;
     cvec_init(&myv.dasm_rows, sizeof(struct disassembly_entry_strings), 150);

@@ -932,7 +932,7 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
         //assert(1==2);
         //this->vdp.io.vblank = 0;
         //genesis_m68k_vblank_irq(this, 0);
-        printf("\nWHAT!?!");
+        //printf("\nWHAT!?!");
     }
     //if (dbg.traces.vdp3) DFT("\nRD VDP CP DATA:%04x", v);
     return v;

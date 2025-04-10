@@ -263,6 +263,10 @@ static void create_scheduling_lookup_table(struct genesis *this)
 
             // Encode values of next to tbl_entry
             // Index = (z80-1 * x) + vdp-1
+            assert(z80_cycles>0);
+            assert(z80_cycles < 16);
+            assert(vdp_cycles>0);
+            assert(vdp_cycles<21);
             u32 ni = ((z80_cycles - 1) * GENSCHED_MUL) + (vdp_cycles - 1);
             assert(ni < NUM_GENSCHED);
             item->next_index = ni;
@@ -281,7 +285,8 @@ static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     lu *= NUM_GENSCHED;
     struct gensched_item *e = &this->scheduler_lookup[lu + this->scheduler_index];
     e->callback(this, e);
-    this->scheduler_index = e->next_index;
+    u32 ni = e->next_index;
+    this->scheduler_index = ni;
 }
 
 
@@ -650,10 +655,14 @@ void genesisJ_reset(JSM)
     printf("\nGenesis reset!");
 }
 
+//#define DO_STATS
+
 u32 genesisJ_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
+
+#ifdef DO_STATS
     u64 ym_start = this->timing.ym2612_cycles;
     u64 z80_start = this->timing.z80_cycles;
     u64 m68k_start = this->timing.m68k_cycles;
@@ -661,7 +670,10 @@ u32 genesisJ_finish_frame(JSM)
     u64 clock_start = this->clock.master_cycle_count;
     u64 psg_start = this->timing.psg_cycles;
     u64 audio_start = this->audio.cycles;
+#endif
     scheduler_run_til_tag(&this->scheduler, TAG_FRAME);
+
+#ifdef DO_STATS
     u64 ym_num_cycles = (this->timing.ym2612_cycles - ym_start) * 60;
     u64 psg_num_cycles = (this->timing.psg_cycles - psg_start) * 60;
     u64 z80_num_cycles = (this->timing.z80_cycles - z80_start) * 60;
@@ -692,7 +704,7 @@ u32 genesisJ_finish_frame(JSM)
     printf("\nEFFECTIVE M68K SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", m68k_num_cycles, m68k_div, m68k_spd);
     printf("\nEFFECTIVE VDP SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", vdp_num_cycles, vdp_div, vdp_spd);
     printf("\nEFFECTIVE MASTER CLOCK IS %lld. PER FRAME:%lld PER SCANLINE:%lld", clock_num_cycles, per_frame, per_scanline);
-
+#endif
     return this->vdp.display->last_written;
 }
 

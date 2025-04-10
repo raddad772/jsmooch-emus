@@ -33,7 +33,7 @@ struct gensched_item;
 typedef void (*gensched_callback)(struct genesis *, struct gensched_item *);
 
 struct gensched_item {
-    u8 next_index;
+    u16 next_index;
     u8 clk_add_z80, clk_add_m68k, clk_add_vdp;
 #ifdef GENSCHED_SWITCH
     u8 kind;
@@ -57,7 +57,7 @@ struct genesis {
 
     struct scheduler_t scheduler;
     struct gensched_item scheduler_lookup[NUM_GENSCHED * 2];
-    u8 scheduler_index;
+    u16 scheduler_index;
 
     struct ym2612 ym2612;
     struct SN76489 psg;
