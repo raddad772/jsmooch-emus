@@ -36,12 +36,14 @@ struct genesis_clock {
     } vdp;
 
     struct {
+        u64 next_clock;
         i32 cycles_til_clock;
         i32 clock_divisor;
     } psg;
 
     struct {
-        i32 divider;
+        u64 next_clock;
+        i32 clock_divisor;
     } ym2612;
 
     struct {

@@ -43,6 +43,7 @@ struct genesis {
     struct scheduler_t scheduler;
     struct gensched_item scheduler_lookup[105 * 2];
     u32 scheduler_index;
+    i32 block_cycles_to_run;
 
     struct ym2612 ym2612;
     struct SN76489 psg;
@@ -55,7 +56,6 @@ struct genesis {
     struct {
         struct cvec* IOs;
         u32 described_inputs;
-        i64 cycles_left;
     } jsm;
 
     struct {

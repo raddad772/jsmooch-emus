@@ -17,6 +17,9 @@
 #include "genesis_vdp.h"
 #include "genesis_serialize.h"
 
+#define TAG_SCANLINE 1
+#define TAG_FRAME 2
+
 #define JTHIS struct genesis* this = (struct genesis*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
@@ -201,6 +204,26 @@ static void create_scheduling_lookup_table(struct genesis *this)
     }
 }
 
+static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis *)ptr;
+    u32 lu = 105 * (this->clock.vdp.clock_divisor - 4);
+    this->scheduler_lookup[lu + this->scheduler_index].callback(this);
+    this->scheduler_index = this->scheduler_lookup[lu + this->scheduler_index].next_index;
+    this->clock.master_cycle_count += this->clock.vdp.clock_divisor;
+}
+
+
+/*static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis *)ptr;
+    this->block_cycles_to_run += key;
+    while (this->block_cycles_to_run > 0) {
+        block_step(this);
+        this->block_cycles_to_run -= this->clock.vdp.clock_divisor;
+        if (dbg.do_break) break;
+    }
+}*/
 
 void genesis_new(JSM, enum jsm_systems kind)
 {
@@ -209,6 +232,10 @@ void genesis_new(JSM, enum jsm_systems kind)
     populate_opts(jsm);
     create_scheduling_lookup_table(this);
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.waitstates);
+    this->scheduler.max_block_size = 20;
+    this->scheduler.run.func = &block_step;
+    this->scheduler.run.ptr = this;
+
     Z80_init(&this->z80, 0);
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock, kind);
@@ -227,7 +254,6 @@ void genesis_new(JSM, enum jsm_systems kind)
 
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
-    this->jsm.cycles_left = 0;
 
     jsm->ptr = (void*)this;
 
@@ -284,6 +310,70 @@ static void load_symbols(struct genesis* this) {
         if (this->debugging.num_symbols >= 20000) abort();
     }
     fclose(f);
+}
+
+static void schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis*)ptr;
+    u64 cur = clock - jitter;
+    u64 next_frame = cur + MASTER_CYCLES_PER_FRAME;
+    scheduler_only_add_abs_w_tag(&this->scheduler, next_frame, 0, this, &schedule_frame, NULL, TAG_FRAME);
+}
+
+static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis *this = (struct genesis*)ptr;
+    u64 cur = clock - jitter;
+    u64 next_scanline = cur + MASTER_CYCLES_PER_SCANLINE;
+    scheduler_only_add_abs_w_tag(&this->scheduler, next_scanline, 0, this, &schedule_scanline, NULL, TAG_SCANLINE);
+}
+
+static inline float i16_to_float(i16 val)
+{
+    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
+}
+
+static void run_ym2612(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis* this = (struct genesis *)ptr;
+    u64 cur = clock - jitter;
+    scheduler_only_add_abs(&this->scheduler, cur+this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
+    ym2612_cycle(&this->ym2612);
+}
+
+static void run_psg(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis* this = (struct genesis *)ptr;
+    u64 cur = clock - jitter;
+    scheduler_only_add_abs(&this->scheduler, cur+this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
+    SN76489_cycle(&this->psg);
+}
+
+static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct genesis* this = (struct genesis *)ptr;
+    if (this->audio.buf) {
+        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+        scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
+        if (this->audio.buf->upos < this->audio.buf->samples_len) {
+            i32 v = ((i32)SN76489_mix_sample(&this->psg, 0) + (i32)this->ym2612.mix.mono_output) / 2;
+            //v = SN76489_mix_sample(&this->psg, 0);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
+        }
+        this->audio.buf->upos++;
+    }
+}
+
+
+static void schedule_first(struct genesis *this)
+{
+    printf("\nSCHEDULE FIRST");
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
+    scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
+    scheduler_only_add_abs(&this->scheduler, this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
+    schedule_scanline(this, 0, 0, 0);
+    schedule_frame(this, 0, 0, 0);
+    printf("\nSCHEDULE FIRST DONE");
 }
 
 static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
@@ -442,6 +532,9 @@ void genesisJ_reset(JSM)
     this->io.m68k.VDP_FIFO_stall = 0;
     this->io.m68k.VDP_prefetch_stall = 0;
     this->scheduler_index = (6 * 15) + 14;
+
+    scheduler_clear(&this->scheduler);
+    schedule_first(this);
     printf("\nGenesis reset!");
 }
 
@@ -450,33 +543,11 @@ u32 genesisJ_finish_frame(JSM)
     JTHIS;
     read_opts(jsm, this);
 
-    u32 current_frame = this->clock.master_frame;
-    while (this->clock.master_frame == current_frame) {
-        genesisJ_finish_scanline(jsm);
-        if (dbg.do_break) break;
-    }
+    scheduler_run_til_tag(&this->scheduler, TAG_FRAME);
     return this->vdp.display->last_written;
 }
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
-
-static float i16_to_float(i16 val)
-{
-    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
-}
-
-static void sample_audio(struct genesis* this)
-{
-    if (this->audio.buf && (this->clock.master_cycle_count >= (u64)this->audio.next_sample_cycle)) {
-        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-        if (this->audio.buf->upos < this->audio.buf->samples_len) {
-            i32 v = ((i32)SN76489_mix_sample(&this->psg, 0) + (i32)this->ym2612.mix.mono_output) / 2;
-            //v = SN76489_mix_sample(&this->psg, 0);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
-        }
-        this->audio.buf->upos++;
-    }
-}
 
 static void debug_audio(struct genesis* this)
 {
@@ -530,39 +601,18 @@ static void debug_audio(struct genesis* this)
 
 }
 
-static void genesis_step_loop(struct genesis* this)
-{
-    u32 lu = 105 * (this->clock.vdp.clock_divisor - 4);
-    this->scheduler_lookup[lu + this->scheduler_index].callback(this);
-    this->scheduler_index = this->scheduler_lookup[lu + this->scheduler_index].next_index;
-    this->clock.master_cycle_count += this->clock.vdp.clock_divisor;
-    //sample_audio(this);
-    //debug_audio(this);
-}
-
-
 u32 genesisJ_finish_scanline(JSM)
 {
     JTHIS;
-    u32 current_line = this->clock.vdp.vcount;
-    while (this->clock.vdp.vcount == current_line) {
-        genesis_step_loop(this);
-        if (dbg.do_break) break;
-    }
+    scheduler_run_til_tag(&this->scheduler, TAG_SCANLINE);
+
     return this->vdp.display->last_written;
 }
-
 
 u32 genesisJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    this->clock.mem_break = 0;
-    //this->jsm.cycles_left += howmany;
-    this->jsm.cycles_left = howmany;
-    while (this->jsm.cycles_left >= 0) {
-        genesis_step_loop(this);
-        if (dbg.do_break) break;
-    }
+    scheduler_run_for_cycles(&this->scheduler, howmany);
     return 0;
 }
 

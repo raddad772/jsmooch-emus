@@ -44,6 +44,7 @@ void genesis_clock_ntsc(struct genesis_clock* this)
     this->z80.clock_divisor = 15;
     this->vdp.clock_divisor = 4; // ?
     this->psg.clock_divisor = 240; // 48 of SMS/GG * 5
+    this->ym2612.clock_divisor = 1008;
 
     this->m68k.cycles_til_clock = this->m68k.clock_divisor;
     this->z80.cycles_til_clock = this->z80.clock_divisor;

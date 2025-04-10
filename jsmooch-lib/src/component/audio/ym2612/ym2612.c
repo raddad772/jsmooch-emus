@@ -545,7 +545,7 @@ u8 ym2612_read(struct ym2612*this, u32 addr, u32 old, u32 has_effect, u64 master
     addr &= 3;
     u32 v = 0;
     if (addr == 0) {
-        v = (this->status.busy_for_how_long > 0) << 7;
+        //v = (this->status.busy_for_how_long > 0) << 7;
         v |= this->status.timer_b_overflow << 1;
         v |= this->status.timer_a_overflow;
     }
@@ -807,13 +807,13 @@ static void cycle_timers(struct ym2612* this)
 void ym2612_cycle(struct ym2612*this)
 {
     // When we get here, we already have /6. we need to /24 to get /144
-    if (this->status.busy_for_how_long) {
+    /*if (this->status.busy_for_how_long) {
         this->status.busy_for_how_long--;
-    }
+    }*/
 
-    this->clock.div24++;
+    /*this->clock.div24++;
     if (this->clock.div24 >= 24) {
-        this->clock.div24 = 0;
+        this->clock.div24 = 0;*/
         this->clock.div24_3 = (this->clock.div24_3 + 1) % 3;
         if (this->clock.div24_3 == 0) {
             run_envs(this);
@@ -830,7 +830,7 @@ void ym2612_cycle(struct ym2612*this)
         mix_sample(this);
 
         cycle_timers(this);
-    }
+    //}
 }
 
 i16 ym2612_sample_channel(struct ym2612*this, u32 chn)

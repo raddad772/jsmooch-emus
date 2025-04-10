@@ -342,6 +342,7 @@ void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
         if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
         this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);
         //i64 cycles_run = current_time(this) - loop_start_clock;
+        //printf("\nCYCLES RUN:%lld", cycles_run);
         //this->cycles_left_to_run -= (i64)cycles_run;
     }
     if (dbg.do_break) {
