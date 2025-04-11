@@ -38,7 +38,7 @@ static const i32 detune_table[32][4] = {
         {0,  8, 16, 22},  {0,  8, 16, 22},  {0,  8, 16, 22},  {0,  8, 16, 22},  // Block 7
 };
 
-static const int envelope_rates[64][8] = {
+static const i32 envelope_rates[64][8] = {
         {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,1,0,1,0,1,0,1}, {0,1,0,1,0,1,0,1},
         {0,1,0,1,0,1,0,1}, {0,1,0,1,0,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,0,1,1,1},
         {0,1,0,1,0,1,0,1}, {0,1,0,1,1,1,0,1}, {0,1,1,1,0,1,1,1}, {0,1,1,1,1,1,1,1},
@@ -113,18 +113,10 @@ void ym2612_delete(struct ym2612*this)
 
 }
 
-static void write_addr(struct ym2612 *this, u32 val, u32 hi)
-{
-    this->io.group = hi;
-    this->io.addr = val;
-}
-
 static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32 opn, u32 val) {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
-    u32 key_is_on = op->envelope.state != EP_release;
     if (val) {
-        op->key_on = 1;
-        if (!key_is_on) {
+        if (op->envelope.state == EP_release) {
             op->phase.counter = 0;
             u32 rate = 2 * op->envelope.attack_rate + op->envelope.key_scale_rate;
 
@@ -138,11 +130,10 @@ static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32
             op->envelope.ssg.invert_output = 0;
         }
     } else {
-        op->key_on = 0;
         if (op->envelope.ssg.enabled && (op->envelope.state != EP_release) && (op->envelope.ssg.invert_output != op->envelope.ssg.attack)) {
             op->envelope.attenuation =  (0x200 - op->envelope.attenuation) & 0x3FF;
-            op->envelope.state = EP_release;
         }
+        op->envelope.state = EP_release;
     }
 }
 
@@ -306,14 +297,12 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
         run_op_env_ssg(this, ch, op);
     }
 
-    op->envelope.divider--;
+    op->envelope.divider = (op->envelope.divider + 1) & 3;
     if (!op->envelope.divider) {
-        op->envelope.divider = 3;
-
         op->envelope.cycle_count++;
         op->envelope.cycle_count = (op->envelope.cycle_count & 0xFFF) + (op->envelope.cycle_count >> 12);
 
-        u32 sustain_level = op->envelope.sustain_level == 15 ? 0x3E0 : op->envelope.sustain_level << 5;
+        u32 sustain_level = op->envelope.sustain_level == 15 ? 0x3E0 : (op->envelope.sustain_level << 5);
         if (op->envelope.state == EP_attack && op->envelope.attenuation == 0) {
             op->envelope.state = EP_decay;
         }
@@ -329,8 +318,10 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
             case EP_release: r = (op->envelope.release_rate << 1) + 1; break;
         }
 
-        i32 comp = 2 * r * op->envelope.key_scale_rate;
-        i32 rate = !r ? 0 : MIN(63, comp);
+        i32 rate;
+        if (r == 0) rate = 0;
+        else rate = 2 * r * op->envelope.key_scale_rate;
+        if (rate > 63) rate = 63;
 
         i32 update_f_shift = 11 - (rate >> 2);
         if (update_f_shift < 0) update_f_shift = 0;
@@ -340,21 +331,28 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
             switch(op->envelope.state) {
                 case EP_attack:
                     if (rate <= 61) {
-                        op->envelope.attenuation += (~op->envelope.attenuation * increment) >> 4;
+                        op->envelope.attenuation += ((~op->envelope.attenuation) * increment) >> 4;
+                        if (op->envelope.attenuation < 0) op->envelope.attenuation = 0;
+                        if (op->envelope.attenuation > 0x3FF) op->envelope.attenuation = 0x3FF;
                     }
+                    //op->envelope.attenuation = 0;
                     break;
-                case EP_sustain:
                 case EP_release:
+                case EP_sustain:
                 case EP_decay:
-                    if (op->envelope.ssg.enabled) {
+                    /*if (op->envelope.ssg.enabled) {
                         if (op->envelope.attenuation < 0x200) {
                             u32 cmp = op->envelope.attenuation + (4 * increment);
                             op->envelope.attenuation = MIN(0x3FF, cmp);
                         }
                     }
-                    else {
-                        u32 cmp = MIN(0x3FF, op->envelope.attenuation + increment);
-                    }
+                    else {*/
+                        //op->envelope.attenuation = MIN(0x3FF, op->envelope.attenuation + increment);
+                    op->envelope.attenuation += increment;
+                    if (op->envelope.attenuation < 0) op->envelope.attenuation = 0;
+                    if (op->envelope.attenuation > 0x3FF) op->envelope.attenuation = 0x3FF;
+                    //}
+                    break;
             }
             op->envelope.attenuation &= 0x3FF;
         }
@@ -548,7 +546,7 @@ void ym2612_cycle(struct ym2612*this)
     run_lfo(this);
     u32 a_overflowed = cycle_timers(this);
 
-    if (this->io.csm_enabled && a_overflowed) {
+    if (this->io.csm_enabled && a_overflowed && false) {
         // Man this chip is odd at times
         struct YM2612_CHANNEL *ch = &this->channel[2];
         for (u32 opn = 0; opn < 4; opn++) {
@@ -844,10 +842,12 @@ void ym2612_write(struct ym2612*this, u32 addr, u8 val)
             else write_group1(this, val);
             return;
         case 0:
-            write_addr(this, val, 0);
+            this->io.group = 0;
+            this->io.addr = val;
             return;
         case 2:
-            write_addr(this, val, 1);
+            this->io.group = 1;
+            this->io.addr = val;
             return;
     }
 }

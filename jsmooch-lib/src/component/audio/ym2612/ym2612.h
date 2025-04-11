@@ -68,11 +68,7 @@ struct ym2612 {
 
         struct YM2612_OPERATOR {
             u32 num;
-            u32 key_on; // 1bit
-            u32 key_line; // 1bit
             u32 am_enable; // 1bit
-            u32 detune; // 3bit
-            i32 detune_delta;
 
             u32 lfo_counter, ams;
 
@@ -105,7 +101,7 @@ struct ym2612 {
                 u32 cycle_count;
                 u32 steps;
                 u32 level; // 10 bits, 4.6 fixed-point
-                u32 attenuation;
+                i32 attenuation;
 
                 u32 key_scale; // 2bit
                 u32 key_scale_rate;

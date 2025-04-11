@@ -18,7 +18,7 @@
 static u32 UDS_mask[4] = { 0, 0xFF, 0xFF00, 0xFFFF };
 #define UDSMASK UDS_mask[((UDS) << 1) | (LDS)]
 
-static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val);
+static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val, u32 is_m68k);
 
 
 void gen_test_dbg_break(struct genesis* this, const char *where)
@@ -175,8 +175,8 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
     } //     // A06000
 
     if ((addr >= 0xA00000) && (addr < 0xA10000)) {
-        if (UDS) genesis_z80_bus_write(this, addr & 0x7FFE, val >> 8);
-        else genesis_z80_bus_write(this, (addr & 0x7FFE) | 1, val & 0xFF);
+        if (UDS) genesis_z80_bus_write(this, addr & 0x7FFE, val >> 8, 1);
+        else genesis_z80_bus_write(this, (addr & 0x7FFE) | 1, val & 0xFF, 1);
         return;
     }
 
@@ -209,7 +209,16 @@ static void genesis_z80_mainbus_write(struct genesis* this, u32 addr, u8 val)
 
 static u8 genesis_z80_mainbus_read(struct genesis* this, u32 addr, u8 old, u32 has_effect)
 {
-    return genesis_mainbus_read(this, ((u32)(addr & 0xFFFE) | this->io.z80.bank_address_register), (addr & 1) ^ 1, addr & 1, 0, 1) >> (((addr & 1) ^ 1) * 8);
+    addr = (addr & 0x7FFF) | (this->io.z80.bank_address_register << 15);
+    u8 data = 0xFF;
+    if(addr & 1) {
+        data = genesis_mainbus_read(this, addr & ~1, 0, 1, 0, 1) & 0xFF;
+    } else {
+        data = genesis_mainbus_read(this, addr & ~1, 1, 0, 0, 1) >> 8;
+    }
+
+    //return genesis_mainbus_read(this, ((u32)(addr & 0xFFFE) | this->io.z80.bank_address_register), (addr & 1) ^ 1, addr & 1, 0, 1) >> (((addr & 1) ^ 1) * 8);
+    return data;
 }
 
 static u8 genesis_z80_ym2612_read(struct genesis* this, u32 addr, u8 old, u32 has_effect) {
@@ -240,11 +249,13 @@ static void genesis_z80_ym2612_write(struct genesis* this, u32 addr, u32 val)
 
 static void write_z80_bank_address_register(struct genesis* this, u32 val)
 {
-    u32 v = (this->io.z80.bank_address_register >> 1) & 0x7F0000;
-    this->io.z80.bank_address_register = v | ((val & 1) << 23);
+    //state.bank = data.bit(0) << 8 | state.bank >> 1
+    this->io.z80.bank_address_register = this->io.z80.bank_address_register >> 1 | ((val & 1) << 8);
+    //u32 v = (this->io.z80.bank_address_register >> 1) & 0x7F0000;
+    //this->io.z80.bank_address_register = v | ((val & 1) << 23);
 }
 
-static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val)
+static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val, u32 is_m68k)
 {
     if (addr < 0x2000) {
         this->ARAM[addr] = val;
@@ -256,7 +267,7 @@ static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val)
         genesis_z80_ym2612_write(this, addr, val);
         return;
     }
-    if (addr < 0x60FF) {
+    if ((addr < 0x60FF) && (!is_m68k)) {
         write_z80_bank_address_register(this, val);
         return;
     }
@@ -379,7 +390,7 @@ void genesis_cycle_z80(struct genesis* this)
     else if (this->z80.pins.WR) {
         if (this->z80.pins.MRQ) {
             // All Z80 IO requests are ignored
-            genesis_z80_bus_write(this, this->z80.pins.Addr, this->z80.pins.D);
+            genesis_z80_bus_write(this, this->z80.pins.Addr, this->z80.pins.D, 0);
             if (dbg.trace_on && dbg.traces.z80.mem) {
                 dbg_printf(DBGC_WRITE "\nw.Z80 (%lld)   %06x  v:%04x" DBGC_RST, this->clock.master_cycle_count, this->z80.pins.Addr, this->z80.pins.D);
             }
