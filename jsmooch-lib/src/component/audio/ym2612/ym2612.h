@@ -18,7 +18,6 @@ enum OPN2_variant {
 };
 
 struct ym2612 {
-
     enum OPN2_variant variant;
     struct {
         i32 left_output, right_output, mono_output; // Current mixed sample
@@ -26,11 +25,16 @@ struct ym2612 {
     } mix;
     u32 ext_enable;
 
+    struct ym2612_lfo {
+        u32 enabled;
+        u8 counter, divider, period;
+    } lfo;
+
+
     struct {
         u32 group;
         u32 addr;
-
-        u32 chn, opn;
+        u32 csm_enabled;
 
         u32 ch3_special;
     } io;
@@ -42,45 +46,52 @@ struct ym2612 {
 
 
     struct YM2612_CHANNEL {
+        enum YM2612_FREQ_MODE {
+            YFM_single,
+            YFM_multiple
+        } mode;
         i32 op0_prior[2];
         u32 num;
-        u32 block;
         u32 ext_enable;
         u32 left_enable, right_enable;
         i32 output;
 
         u32 algorithm, feedback, pms; //3bit . pms = vibrato
-        u32 ams, mode; // 2bit ams = tremolo
+        u32 ams; // 2bit ams = tremolo
+        struct {
+            u16 value, latch; // 11 bits
+        } f_num;
+        struct {
+            u16 value, latch; // 11 bits
+        } block;
+
 
         struct YM2612_OPERATOR {
             u32 num;
             u32 key_on; // 1bit
             u32 key_line; // 1bit
-            u32 lfo_enable; // 1bit
+            u32 am_enable; // 1bit
             u32 detune; // 3bit
             i32 detune_delta;
-            struct {
-                u32 val;
-                u32 rshift, multiplier;
-            } multiple;
+
+            u32 lfo_counter, ams;
 
             struct YM2612_CHANNEL *ch;
 
-            i32 output;
-
+            i32 prev_output, output;
             struct {
-                u16 value, reload, latch; // 11 bits
-            } fnum;
-
+                u32 value, latch;
+            } f_num;
             struct {
-                u16 value, reload, latch; // 3 bits
+                u32 value, latch;
             } block;
 
-
             struct {
-                u32 value, delta; // 20bit
-
+                u32 counter; // 20bit
+                u32 output; // 10bit
+                u16 f_num, block;
                 u32 input;
+                u32 multiple, detune;
             } phase;
 
             struct YM2612_ENV {
@@ -91,11 +102,13 @@ struct ym2612 {
                     EP_release = 3,
                 } state;
                 i32 rate, divider;
+                u32 cycle_count;
                 u32 steps;
                 u32 level; // 10 bits, 4.6 fixed-point
                 u32 attenuation;
 
                 u32 key_scale; // 2bit
+                u32 key_scale_rate;
                 i32 rks;
                 u32 attack_rate; // 5bit
                 u32 decay_rate; // 5bit
@@ -103,6 +116,9 @@ struct ym2612 {
                 u32 sustain_level; // 4bit
                 u32 release_rate; // 5bit
 
+                struct {
+                    u32 invert_output, attack, enabled, hold, alternate;
+                }ssg;
                 u32 total_level;
             } envelope;
 
@@ -122,10 +138,6 @@ struct ym2612 {
     struct {
         u32 clock, divider; // clock=12bit, divider = 32bit
     } envelope;
-
-    struct {
-        u32 clock, rate, enable, divider;
-    } lfo;
 
     struct {
         u32 enable, irq, line, period, counter;
