@@ -116,14 +116,19 @@ void ym2612_delete(struct ym2612*this)
 static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32 opn, u32 val) {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
     if (val) {
-        if (op->envelope.state == EP_release) {
+        //if (op->envelope.state == EP_release) {
+        if ((!op->key_on) || (op->envelope.state == EP_release)) {
+            op->key_on = 1;
             op->phase.counter = 0;
             u32 rate = 2 * op->envelope.attack_rate + op->envelope.key_scale_rate;
+            if (ch->num == 1) printf("\n%d.%d KEYON! RATE:%d", ch->num, op->num, rate);
 
             if (rate >= 62) {
+                if (ch->num==1) printf("\nIMMEDIATE DECAY!");
                 op->envelope.state = EP_decay;
                 op->envelope.attenuation = 0;
             } else {
+                if (ch->num==1) printf("\nNOPE WERE IN ATTACK!");
                 op->envelope.state = EP_attack;
             }
 
@@ -134,6 +139,7 @@ static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32
             op->envelope.attenuation =  (0x200 - op->envelope.attenuation) & 0x3FF;
         }
         op->envelope.state = EP_release;
+        op->key_on = 0;
     }
 }
 
@@ -223,7 +229,17 @@ static void mix_sample(struct ym2612*this)
     // 14-bit samples, 6 of them though, so we are at 17 bits, so shift right by 1
     this->mix.left_output = left >> 1;
     this->mix.right_output = right >> 1;
-    this->mix.mono_output = (left + right) >> 1;
+    this->mix.mono_output = (left + right) >> 4;
+
+    if (this->mix.mono_output < -8192) {
+        printf("\n%d", this->mix.mono_output);
+        this->mix.mono_output = -8192;
+    }
+    if (this->mix.mono_output > 8191) {
+        printf("\n%d", this->mix.mono_output);
+        this->mix.mono_output = 8191;
+
+    }
 }
 
 
@@ -236,7 +252,7 @@ static inline u8 scale_key_code(u16 f_num, u8 block)
     u32 f8 = (f_num >> 7) & 1;
     return (block << 2)
            | (f11 << 1)
-           | ((f11 && (f10 || f9 || f8) || (!f11 && f10 && f9 && f8)));
+           | ((f11 && (f10 || f9 || f8)) || (!f11 && f10 && f9 && f8));
 }
 
 static i32 phase_compute_increment(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
@@ -297,7 +313,7 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
         run_op_env_ssg(this, ch, op);
     }
 
-    op->envelope.divider = (op->envelope.divider + 1) & 3;
+    op->envelope.divider = (op->envelope.divider + 1) % 3;
     if (!op->envelope.divider) {
         op->envelope.cycle_count++;
         op->envelope.cycle_count = (op->envelope.cycle_count & 0xFFF) + (op->envelope.cycle_count >> 12);
@@ -329,17 +345,17 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
             u32 idx = (op->envelope.cycle_count >> update_f_shift) & 7;
             u16 increment = envelope_rates[rate][idx];
             switch(op->envelope.state) {
-                case EP_attack:
-                    if (rate <= 61) {
-                        op->envelope.attenuation += ((~op->envelope.attenuation) * increment) >> 4;
-                        if (op->envelope.attenuation < 0) op->envelope.attenuation = 0;
-                        if (op->envelope.attenuation > 0x3FF) op->envelope.attenuation = 0x3FF;
-                    }
-                    //op->envelope.attenuation = 0;
-                    break;
+                case EP_attack: {
+                    i32 old_a = op->envelope.attenuation;
+                    op->envelope.attenuation += ((~op->envelope.attenuation) * increment) >> 4;
+                    if (op->envelope.attenuation < 0) op->envelope.attenuation = 0;
+                    if (op->envelope.attenuation > 0x3FF) op->envelope.attenuation = 0x3FF;
+                    if (ch->num==1)
+                        printf("\nATT %d.%d IN:%03x OUT:%03x", ch->num, op->num, old_a, op->envelope.attenuation);
+                    break; }
                 case EP_release:
                 case EP_sustain:
-                case EP_decay:
+                case EP_decay: {
                     /*if (op->envelope.ssg.enabled) {
                         if (op->envelope.attenuation < 0x200) {
                             u32 cmp = op->envelope.attenuation + (4 * increment);
@@ -348,11 +364,15 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
                     }
                     else {*/
                         //op->envelope.attenuation = MIN(0x3FF, op->envelope.attenuation + increment);
+
+                    i32 old_a = op->envelope.attenuation;
                     op->envelope.attenuation += increment;
                     if (op->envelope.attenuation < 0) op->envelope.attenuation = 0;
                     if (op->envelope.attenuation > 0x3FF) op->envelope.attenuation = 0x3FF;
+                    if (ch->num==1)
+                        //printf("\nRDS %d.%d IN:%03x OUT:%03x", ch->num, op->num, old_a, op->envelope.attenuation);
                     //}
-                    break;
+                    break; }
             }
             op->envelope.attenuation &= 0x3FF;
         }
@@ -457,8 +477,6 @@ static void run_ch(struct ym2612 *this, u32 chn)
             input = run_op_output(ch, 1, input);
             input2 = run_op_output(ch, 3, input2);
             ch->output = (input + input2);
-            if (ch->output < -8192) ch->output = -8192;
-            if (ch->output > 8191) ch->output = 8191;
             break;
         case 5: // S1 -> all(S2 + S3 + S4)
             input0 = run_op_output(ch, 0, input0);
@@ -466,8 +484,6 @@ static void run_ch(struct ym2612 *this, u32 chn)
             input += run_op_output(ch, 1, input0);
             input += run_op_output(ch, 3, input0);
             ch->output = input;
-            if (ch->output < -8192) ch->output = -8192;
-            if (ch->output > 8191) ch->output = 8191;
             break;
         case 6: // (S1->S2) + S3 + S4
             input0 = run_op_output(ch, 0, input0);
@@ -475,8 +491,6 @@ static void run_ch(struct ym2612 *this, u32 chn)
             input += run_op_output(ch, 1, input0);
             input += run_op_output(ch, 3, 0);
             ch->output = input;
-            if (ch->output < -8192) ch->output = -8192;
-            if (ch->output > 8191) ch->output = 8191;
             break;
         case 7: // add all 4
             input = run_op_output(ch, 0, input0);
@@ -484,10 +498,10 @@ static void run_ch(struct ym2612 *this, u32 chn)
             input += run_op_output(ch, 1, 0);
             input += run_op_output(ch, 3, 0);
             ch->output = input;
-            if (ch->output < -8192) ch->output = -8192;
-            if (ch->output > 8191) ch->output = 8191;
             break;
     }
+    if (ch->output < -8192) ch->output = -8192;
+    if (ch->output > 8191) ch->output = 8191;
     ch->op0_prior[0] = ch->op0_prior[1];
     ch->op0_prior[1] = ch->operator[0].output;
 
@@ -528,9 +542,9 @@ static u32 cycle_timers(struct ym2612* this)
         }
     }
 
-    if (this->timer_b.enable) {
-        this->timer_b.divider = (this->timer_b.divider + 1) & 15;
-        if (!this->timer_b.divider) {
+    this->timer_b.divider = (this->timer_b.divider + 1) & 15;
+    if (!this->timer_b.divider) {
+        if (this->timer_b.enable) {
             this->timer_b.counter = (this->timer_b.counter + 1) & 0xFF;
             if (!this->timer_b.counter) {
                 this->timer_b.counter = this->timer_b.period;
@@ -618,6 +632,7 @@ static void op_update_key_scale(struct ym2612 *this, struct YM2612_CHANNEL *ch, 
 {
     op->envelope.key_scale = val;
     env_update_key_scale_rate(this, ch, op, op->phase.f_num, op->phase.block);
+    if (ch->num==1) printf("\n%d.%d KS:%d KSR:%d", ch->num, op->num, val, op->envelope.key_scale_rate);
 }
 
 static void write_ch_reg(struct ym2612 *this, u8 val, u32 bch)
@@ -858,8 +873,8 @@ u8 ym2612_read(struct ym2612*this, u32 addr, u32 old, u32 has_effect)
     u32 v = 0;
     if (addr == 0) {
         v = ((*this->master_cycle_count) < this->status.busy_until) << 7;
-        v |= this->status.timer_b_overflow << 1;
-        v |= this->status.timer_a_overflow;
+        v |= this->timer_b.line << 1;
+        v |= this->timer_a.line;
     }
     return v;
 }

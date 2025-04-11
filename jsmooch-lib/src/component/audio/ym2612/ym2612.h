@@ -40,7 +40,7 @@ struct ym2612 {
     } io;
 
     struct {
-        i32 busy_until, timer_b_overflow, timer_a_overflow;
+        i32 busy_until;
         u64 env_cycle_counter;
     } status;
 
@@ -105,7 +105,6 @@ struct ym2612 {
 
                 u32 key_scale; // 2bit
                 u32 key_scale_rate;
-                i32 rks;
                 u32 attack_rate; // 5bit
                 u32 decay_rate; // 5bit
                 u32 sustain_rate; // 5bit
@@ -117,6 +116,8 @@ struct ym2612 {
                 }ssg;
                 u32 total_level;
             } envelope;
+
+            u32 key_on;
 
         } operator[4];
     } channel[6];
