@@ -52,7 +52,7 @@ struct ym2612 {
         u32 num;
         u32 ext_enable;
         u32 left_enable, right_enable;
-        i32 output;
+        i16 output;
 
         u32 algorithm, feedback, pms; //3bit . pms = vibrato
         u32 ams; // 2bit ams = tremolo
@@ -72,7 +72,7 @@ struct ym2612 {
 
             struct YM2612_CHANNEL *ch;
 
-            i32 prev_output, output;
+            i16 output;
             struct {
                 u32 value, latch;
             } f_num;
@@ -82,7 +82,7 @@ struct ym2612 {
 
             struct {
                 u32 counter; // 20bit
-                u32 output; // 10bit
+                u16 output; // 10bit
                 u16 f_num, block;
                 u32 input;
                 u32 multiple, detune;

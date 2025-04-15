@@ -738,14 +738,14 @@ static void render_image_view_ym_info(struct debugger_interface *dbgr, struct de
         else
             tbp("normal    ");
 
-        tbp("  L:%d  R:%d  out:%04x  alg:%d  ch0_feedback:%d", ch->left_enable, ch->right_enable, ch->output, ch->algorithm, ch->feedback);
+        tbp("  L:%d  R:%d  out:%04x  alg:%d  ch0_feedback:%d", ch->left_enable, ch->right_enable, ch->output & 0xFFFF, ch->algorithm, ch->feedback);
         if (single) {
             tbp("  fnum:%d  octave:%d", ch->f_num.value, ch->block.value);
         }
 
         for (u32 opn = 0; opn < 4; opn++) {
             struct YM2612_OPERATOR *op = &ch->operator[opn];
-            tbp("\n--op:%d  out:%04x", opn, op->output);
+            tbp("\n--op:%d  out:%04x", opn, op->output & 0xFFFF);
             if ((ch->num == 2) && (ch->mode == YFM_multiple)) {
                 tbp("  f_num:%d  octave:%d", op->f_num.value, op->block.value);
             }
@@ -765,7 +765,7 @@ static void render_image_view_ym_info(struct debugger_interface *dbgr, struct de
                     break;
             }
             tbp("  att:%04x  attack:%d  sustain:%d  decay:%d  release:%d", op->envelope.attenuation, op->envelope.attack_rate, op->envelope.sustain_rate, op->envelope.decay_rate, op->envelope.release_rate);
-            tbp("\n         ks:%d  ksr:%d", op->envelope.key_scale, op->envelope.key_scale_rate);
+            tbp("\n         ks:%d  ksr:%d  sus:%d  calc_sus:%03x  ssg:%d", op->envelope.key_scale, op->envelope.key_scale_rate, op->envelope.sustain_level, op->envelope.sustain_level == 15 ? 0x3E0 : (op->envelope.sustain_level << 5), op->envelope.ssg.enabled);
         }
         tbp("\n");
     }

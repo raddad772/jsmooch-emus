@@ -423,7 +423,7 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
         if (this->audio.buf->upos < this->audio.buf->samples_len) {
             i32 v = 0;
             if (this->psg.ext_enable)
-                v += (i32)SN76489_mix_sample(&this->psg, 0);
+                v += (i32)(SN76489_mix_sample(&this->psg, 0) >> 2);
             if (this->ym2612.ext_enable)
                 v += ((i32)this->ym2612.mix.mono_output) >> 1;
             ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);

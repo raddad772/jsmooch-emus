@@ -122,14 +122,14 @@ static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32
             op->key_on = 1;
             op->phase.counter = 0;
             u32 rate = (2 * op->envelope.attack_rate) + op->envelope.key_scale_rate;
-            if (ch->num == 1) printf("\n%d.%d KEYON! RATE:%d", ch->num, op->num, rate);
+            //if (ch->num == 1) printf("\n%d.%d KEYON! RATE:%d", ch->num, op->num, rate);
 
             if (rate >= 62) {
-                if (ch->num==1) printf("\nIMMEDIATE DECAY!");
+                //if (ch->num==1) printf("\nIMMEDIATE DECAY!");
                 op->envelope.state = EP_decay;
                 op->envelope.attenuation = 0;
             } else {
-                if (ch->num==1) printf("\nNOPE WERE IN ATTACK!");
+                //if (ch->num==1) printf("\nNOPE WERE IN ATTACK!");
                 op->envelope.state = EP_attack;
             }
 
@@ -228,9 +228,11 @@ static void mix_sample(struct ym2612*this)
         }
     }
     // 14-bit samples, 6 of them though, so we are at 17 bits, so shift right by 1
-    this->mix.left_output = left >> 1;
-    this->mix.right_output = right >> 1;
-    this->mix.mono_output = (left + right) >> 4;
+    left /= 6;
+    right /= 6;
+    this->mix.left_output = left;
+    this->mix.right_output = right;
+    this->mix.mono_output = (left + right) >> 1;
 
     if (this->mix.mono_output < -8192) {
         printf("\n%d", this->mix.mono_output);
@@ -314,8 +316,8 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
         run_op_env_ssg(this, ch, op);
     }
 
-    op->envelope.divider = (op->envelope.divider + 1) % 3;
     if (!op->envelope.divider) {
+        op->envelope.divider = 3;
         op->envelope.cycle_count++;
         op->envelope.cycle_count = (op->envelope.cycle_count & 0xFFF) + (op->envelope.cycle_count >> 12);
 
@@ -337,7 +339,7 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
 
         i32 rate;
         if (r == 0) rate = 0;
-        else rate = 2 * r * op->envelope.key_scale_rate;
+        else rate = (2 * r) + op->envelope.key_scale_rate;
         if (rate > 63) rate = 63;
 
         i32 update_f_shift = 11 - (rate >> 2);
@@ -377,6 +379,7 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
             }
         }
     }
+    op->envelope.divider = op->envelope.divider - 1;
 }
 
 static u16 attenuation_to_amplitude(u16 attenuation)
@@ -404,7 +407,7 @@ static u16 op_attenuation(struct YM2612_OPERATOR *op)
 static i16 run_op_output(struct YM2612_CHANNEL *ch, u32 opn, i32 mod_input)
 {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
-    u16 phase = op->phase.output + mod_input & 0x3FF;
+    u16 phase = (op->phase.output + mod_input) & 0x3FF;
 
     u32 sign = (phase >> 9) & 1;
     i32 sine_attenuation = sine[phase & 0x1FF];
@@ -419,9 +422,9 @@ static i16 run_op_output(struct YM2612_CHANNEL *ch, u32 opn, i32 mod_input)
     }
     else env_am_attenuation = env_attenuation;
 
-    u16 amplitude = attenuation_to_amplitude(sine_attenuation + (env_am_attenuation << 2));
+    i32 amplitude = attenuation_to_amplitude(sine_attenuation + (env_am_attenuation << 2)) & 0x7FFF;
     //op->prev_output = op->output;
-    op->output = sign ? (-((i16)amplitude)) : (i16)amplitude;;
+    op->output = sign ? (-amplitude) : amplitude;
     return op->output;
 }
 
@@ -444,31 +447,32 @@ static void run_ch(struct ym2612 *this, u32 chn)
     i32 input, input2;
 
     // Apply algorithm
+    i32 out;
     switch(ch->algorithm) {
         case 0: // S1 -> S2 -> S3 -> S4. // but they calculate 1-3-2-4
             input = run_op_output(ch, 0, input0); // 1
             run_op_output(ch, 2, ch->operator[1].output); // 3
             input = run_op_output(ch, 1, input); // 2
-            ch->output = run_op_output(ch, 3, input);
+            out = run_op_output(ch, 3, input);
             break;
         case 1: // (S1 + S2) -> S3 -> S4.   1 3 2 4
             input = run_op_output(ch, 0, input0); // S1
             input += ch->operator[1].output; // old S2
             input = run_op_output(ch, 2, input); // S3 with (S1 + old S2)
             run_op_output(ch, 2, ch->operator[0].output); // S2 with current S1 to updaet it
-            ch->output = run_op_output(ch, 3, input); // S4
+            out = run_op_output(ch, 3, input); // S4
             break;
         case 2: // S1 + (S2 -> S3) -> S4
             input = run_op_output(ch, 2, ch->operator[1].output); // S3
             run_op_output(ch, 1, 0); // S2
             input += run_op_output(ch, 0, input0); // S1
-            ch->output = run_op_output(ch, 3, input); // S4
+            out = run_op_output(ch, 3, input); // S4
             break;
         case 3: // (S1 -> S2) + S3 -> S4
             input = run_op_output(ch, 0, input0);
             input = run_op_output(ch, 1, input);
             input += run_op_output(ch, 2, 0);
-            ch->output = run_op_output(ch, 3, input);
+            out = run_op_output(ch, 3, input);
             break;
         case 4: // (S1->S2) + (S3->S4)
             input = run_op_output(ch, 0, input0);
@@ -476,32 +480,33 @@ static void run_ch(struct ym2612 *this, u32 chn)
 
             input = run_op_output(ch, 1, input);
             input2 = run_op_output(ch, 3, input2);
-            ch->output = (input + input2);
+            out = (input + input2);
             break;
         case 5: // S1 -> all(S2 + S3 + S4)
             input0 = run_op_output(ch, 0, input0);
             input = run_op_output(ch, 2, input0);
             input += run_op_output(ch, 1, input0);
             input += run_op_output(ch, 3, input0);
-            ch->output = input;
+            out = input;
             break;
         case 6: // (S1->S2) + S3 + S4
             input0 = run_op_output(ch, 0, input0);
             input = run_op_output(ch, 2, 0);
             input += run_op_output(ch, 1, input0);
             input += run_op_output(ch, 3, 0);
-            ch->output = input;
+            out = input;
             break;
         case 7: // add all 4
             input = run_op_output(ch, 0, input0);
             input += run_op_output(ch, 2, 0);
             input += run_op_output(ch, 1, 0);
             input += run_op_output(ch, 3, 0);
-            ch->output = input;
+            out = input;
             break;
     }
-    if (ch->output < -8192) ch->output = -8192;
-    if (ch->output > 8191) ch->output = 8191;
+    if (out < -8192) out = -8192;
+    if (out > 8191) out = 8191;
+    ch->output = out;
     ch->op0_prior[0] = ch->op0_prior[1];
     ch->op0_prior[1] = ch->operator[0].output;
 
@@ -562,6 +567,7 @@ void ym2612_cycle(struct ym2612*this)
 
     if (this->io.csm_enabled && a_overflowed && false) {
         // Man this chip is odd at times
+        printf("\nCSM WHAT?");
         struct YM2612_CHANNEL *ch = &this->channel[2];
         for (u32 opn = 0; opn < 4; opn++) {
             struct YM2612_OPERATOR *op = &ch->operator[opn];
@@ -632,7 +638,7 @@ static void op_update_key_scale(struct ym2612 *this, struct YM2612_CHANNEL *ch, 
 {
     op->envelope.key_scale = val;
     env_update_key_scale_rate(this, ch, op, op->phase.f_num, op->phase.block);
-    if (ch->num==1) printf("\n%d.%d KS:%d KSR:%d", ch->num, op->num, val, op->envelope.key_scale_rate);
+    //if (ch->num==1) printf("\n%d.%d KS:%d KSR:%d", ch->num, op->num, val, op->envelope.key_scale_rate);
 }
 
 static void write_ch_reg(struct ym2612 *this, u8 val, u32 bch)
