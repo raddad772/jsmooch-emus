@@ -17,6 +17,8 @@
 
 #define SIGNe14to32(x) (((((x) >> 13) & 1) * 0xFFFFC000) | ((x) & 0x3FFF))
 
+#define MASTER_WAIT_CYCLES (32 * 6 * 7) // 7 = m68k div. 6 = further div. 32 of those
+
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
@@ -767,7 +769,7 @@ static void write_op_reg(struct ym2612 *this, u8 val, u32 bch)
 
 static void write_group1(struct ym2612* this, u8 val)
 {
-    this->status.busy_until = (*this->master_cycle_count) + 32;
+    this->status.busy_until = (*this->master_cycle_count) + MASTER_WAIT_CYCLES;
     switch(this->io.addr) {
         case 0x22:
             lfo_enable(this, (val >> 3) & 1);
@@ -836,7 +838,7 @@ static void write_group1(struct ym2612* this, u8 val)
 
 static void write_group2(struct ym2612* this, u8 val)
 {
-    this->status.busy_until = (*this->master_cycle_count) + 32;
+    this->status.busy_until = (*this->master_cycle_count) + MASTER_WAIT_CYCLES;
 
     if ((this->io.addr >= 0x30) && (this->io.addr < 0xA0)) {
         write_op_reg(this, val, 3);
