@@ -1367,7 +1367,7 @@ static void setup_image_view_ym_info(struct genesis *this, struct debugger_inter
     iv->update_func.ptr = this;
     iv->update_func.func = &render_image_view_ym_info;
 
-    snprintf(iv->label, sizeof(iv->label), "Sys Info View");
+    snprintf(iv->label, sizeof(iv->label), "YM2612 Info");
 
     debugger_widgets_add_textbox(&dview->options, "blah!", 1);
 }

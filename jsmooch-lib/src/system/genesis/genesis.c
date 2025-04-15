@@ -423,9 +423,9 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
         if (this->audio.buf->upos < this->audio.buf->samples_len) {
             i32 v = 0;
             if (this->psg.ext_enable)
-                v += (i32)(SN76489_mix_sample(&this->psg, 0) >> 2);
+                v += (i32)(SN76489_mix_sample(&this->psg, 0) >> 5);
             if (this->ym2612.ext_enable)
-                v += ((i32)this->ym2612.mix.mono_output) >> 1;
+                v += (i32)this->ym2612.mix.mono_output;
             ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
         }
         this->audio.buf->upos++;
@@ -446,7 +446,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     /* YM2612 */
     dw = cpg(this->dbg.waveforms_ym2612.main);
     if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output);
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output << 3);
         dw->user.buf_pos++;
     }
     this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
@@ -474,7 +474,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
         if (dw->user.buf_pos < dw->samples_requested) {
             dw->user.next_sample_cycle += dw->user.cycle_stride;
             i16 sv = ym2612_sample_channel(&this->ym2612, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv << 2);
             dw->user.buf_pos++;
         }
     }

@@ -38,7 +38,7 @@ struct ym2612 {
     } io;
 
     struct {
-        i32 busy_until;
+        u64 busy_until;
         u64 env_cycle_counter;
     } status;
 
