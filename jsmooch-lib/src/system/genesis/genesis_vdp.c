@@ -1470,7 +1470,7 @@ static void output_16(struct genesis* this)
 #define PX_BG 4
         // Using logic from Ares here.
         // I originally had my own. Then I went to do shadow&highlight, and use Ares logic.
-        // I couldn't get it to work. Then I tried making my own and realized I was just reproducing Ares but
+        // I couldn't get it to work. Then I tried making my own again and realized I was just reproducing Ares but
         //  understanding it, so gave in.
 
 #define solid_sprite (sprite->has_px && (sprite->color & 15))
@@ -1564,7 +1564,7 @@ static void render_16_more(struct genesis* this)
         }
 
         fetch_slice(this, plane == 0 ? this->vdp.io.plane_a_table_addr : this->vdp.io.plane_b_table_addr, this->vdp.fetcher.hscroll[plane], vscrolls[plane]+this->clock.vdp.vcount, &slice, plane);
-        u32 col = this->vdp.fetcher.column;
+        //u32 col = this->vdp.fetcher.column;
         this->vdp.fetcher.hscroll[plane] = (this->vdp.fetcher.hscroll[plane] + 16) & plane_wrap;
 
         // If we just went from window to regular and (xscroll % 15) != 0, glitch time!
@@ -1610,7 +1610,6 @@ static void render_left_column(struct genesis* this)
 
 void genesis_VDP_cycle(struct genesis* this)
 {
-    // We only run this every OTHER
     this->timing.vdp_cycles++;
     u32 run_dma = 0;
 
@@ -1628,10 +1627,8 @@ void genesis_VDP_cycle(struct genesis* this)
             this->vdp.line.sprite_mappings += this->vdp.io.enable_display;
             break;
         case slot_external_access:
-            if (this->vdp.sc_skip) { // because our load uses 16 bit transfers, we only do every other opportunity to mimic 8-bit transfers
-                this->vdp.sc_skip--;
-            }
-            else run_dma = 1;
+            this->vdp.sc_skip++;
+            run_dma = this->vdp.sc_skip & 1;
             break;
         case slot_layer_b_pattern_first_trigger:
             render_left_column(this);
