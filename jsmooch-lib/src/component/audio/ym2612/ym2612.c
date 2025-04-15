@@ -25,8 +25,8 @@
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
-static i32 sine[0x200];
-static i32 pow2[0x100];
+static u16 sine[0x200];
+static u16 pow2[0x100];
 static const i32 detune_table[32][4] = {
         {0,  0,  1,  2},  {0,  0,  1,  2},  {0,  0,  1,  2},  {0,  0,  1,  2},  // Block 0
         {0,  1,  2,  2},  {0,  1,  2,  3},  {0,  1,  2,  3},  {0,  1,  2,  3},  // Block 1
@@ -62,17 +62,17 @@ static int math_done = 0;
 void do_math()
 {
     math_done = 1;
-    for (u32 n = 0; n < 0x200; n++) {
-        u32 i = (!(n & 0x100)) ? n & 0xFF : 0x1FF - (n & 0x1FF);
-        // Scale is slightly offset from [0, π/2]
-        u32 base_phase = 2 * i + 1;
-        double phase = ((double)base_phase) / 512.0 * M_PI / 2.0;
+    for (u32 mn = 0; mn < 0x200; mn++) {
+        u32 i = ((mn & 0x100) ? (~mn) : mn) & 0xFF;
 
-        // Compute the inverted log2-sine value
-        double attenuation = -log2(sin(phase));
+        double n = (double)((i << 1) | 1);
+        double s = sin((n / 512.0 * M_PI / 2.0));
 
-        // Convert to 4.8 fixed-point decimal
-        sine[n] = (i32)(u16)round((attenuation * 256.0));
+        // The table stores attenuation values, but on a log2 scale instead of log10
+        double attenuation = -log2(s);
+
+        // Table contains 12-bit values that represent 4.8 fixed-point
+        sine[mn] = (u16)round((attenuation * 256.0));
     }
     for (u32 i = 0; i < 256; i++) {
         // Table index N represents exponent of -(N+1)/256
@@ -103,6 +103,7 @@ void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cyc
             struct YM2612_OPERATOR *op = &ch->operator[j];
             op->num = j;
             op->ch = ch;
+            op->envelope.attenuation = 0x3FF;
         }
     }
     this->dac.sample = 0;
@@ -120,7 +121,7 @@ static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32
         if ((!op->key_on) || (op->envelope.state == EP_release)) {
             op->key_on = 1;
             op->phase.counter = 0;
-            u32 rate = 2 * op->envelope.attack_rate + op->envelope.key_scale_rate;
+            u32 rate = (2 * op->envelope.attack_rate) + op->envelope.key_scale_rate;
             if (ch->num == 1) printf("\n%d.%d KEYON! RATE:%d", ch->num, op->num, rate);
 
             if (rate >= 62) {
@@ -294,7 +295,7 @@ static void run_op_env_ssg(struct ym2612 *this, struct YM2612_CHANNEL *ch, struc
     }
 
     if (!op->envelope.ssg.hold && ((op->envelope.state == EP_decay) || (op->envelope.state == EP_sustain))) {
-        if ((2 * op->envelope.attack_rate + op->envelope.key_scale_rate) >= 62) {
+        if (((2 * op->envelope.attack_rate) + op->envelope.key_scale_rate) >= 62) {
             op->envelope.attenuation = 0;
             op->envelope.state = EP_decay;
         }
@@ -351,7 +352,7 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
                     if (op->envelope.attenuation < 0) op->envelope.attenuation = 0;
                     if (op->envelope.attenuation > 0x3FF) op->envelope.attenuation = 0x3FF;
                     if (ch->num==1)
-                        printf("\nATT %d.%d IN:%03x OUT:%03x", ch->num, op->num, old_a, op->envelope.attenuation);
+                        //printf("\nATT %d.%d IN:%03x OUT:%03x", ch->num, op->num, old_a, op->envelope.attenuation);
                     break; }
                 case EP_release:
                 case EP_sustain:
@@ -369,12 +370,11 @@ static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM
                     op->envelope.attenuation += increment;
                     if (op->envelope.attenuation < 0) op->envelope.attenuation = 0;
                     if (op->envelope.attenuation > 0x3FF) op->envelope.attenuation = 0x3FF;
-                    if (ch->num==1)
+                    //if (ch->num==1)
                         //printf("\nRDS %d.%d IN:%03x OUT:%03x", ch->num, op->num, old_a, op->envelope.attenuation);
                     //}
                     break; }
             }
-            op->envelope.attenuation &= 0x3FF;
         }
     }
 }
@@ -383,7 +383,7 @@ static u16 attenuation_to_amplitude(u16 attenuation)
 {
     int int_part = (attenuation >> 8) & 0x1F;
     if (int_part > 12) return 0;
-    u16 fp2 = pow2[attenuation & 0xFF];
+    u32 fp2 = pow2[attenuation & 0xFF];
     return (fp2 << 2) >> int_part;
 }
 
@@ -404,7 +404,7 @@ static u16 op_attenuation(struct YM2612_OPERATOR *op)
 static i16 run_op_output(struct YM2612_CHANNEL *ch, u32 opn, i32 mod_input)
 {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
-    i16 phase = op->phase.output + mod_input;
+    u16 phase = op->phase.output + mod_input & 0x3FF;
 
     u32 sign = (phase >> 9) & 1;
     i32 sine_attenuation = sine[phase & 0x1FF];
@@ -796,7 +796,6 @@ static void write_group1(struct ym2612* this, u8 val)
             struct YM2612_CHANNEL *ch = &this->channel[2];
             ch->mode = (val & 0xC0) ? YFM_multiple : YFM_single;
             ch_update_phase_generators(this, ch);
-
             return; }
         case 0x28: {
             u32 bchn = (val & 4) ? 3 : 0;

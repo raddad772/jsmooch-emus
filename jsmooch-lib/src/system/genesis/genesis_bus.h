@@ -127,6 +127,7 @@ struct genesis {
             MDBG_IMAGE_VIEW(palette)
             MDBG_IMAGE_VIEW(sprites)
             MDBG_IMAGE_VIEW(tiles)
+            MDBG_IMAGE_VIEW(ym_info)
         DBG_IMAGE_VIEWS_END
 
         DBG_WAVEFORM_START(psg)

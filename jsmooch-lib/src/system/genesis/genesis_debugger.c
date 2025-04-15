@@ -11,6 +11,7 @@
 #include "genesis.h"
 #include "genesis_bus.h"
 #include "component/cpu/z80/z80_disassembler.h"
+#include "component/audio/ym2612/ym2612.h"
 
 #define JTHIS struct genesis* this = (struct genesis*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -715,6 +716,63 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
     }
 }
 
+static void render_image_view_ym_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct genesis *gen = (struct genesis *) ptr;
+    struct ym2612 *this = &gen->ym2612;
+    //memset(ptr, 0, out_width * 4 * 10);
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *) cvec_get(&dview->options, 0))->textbox;
+    debugger_widgets_textbox_clear(tb);
+    ///         debugger_widgets_textbox_sprintf(tb, "eng%c  display_mode:%d  bg_mode:%d  bg_ext_pal:%d", ppun == 0 ? 'A' : 'B', eng->io.display_mode, eng->io.bg_mode, eng->io.bg.extended_palettes);
+#define tbp(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
+#define YN(x) (x) ? "yes" : "no"
+    for (u32 chn = 0; chn < 6; chn++) {
+        struct YM2612_CHANNEL *ch = &this->channel[chn];
+        tbp("\nch:%d  mode:", chn);
+        u32 single = 1;
+        if ((ch->num == 2) && (ch->mode == YFM_multiple)) {
+            tbp("multi-freq");
+            single = 0;
+        }
+        else if ((ch->num == 5) && (this->dac.enable))
+            tbp("dac       ");
+        else
+            tbp("normal    ");
+
+        tbp("  L:%d  R:%d  out:%04x  alg:%d  ch0_feedback:%d", ch->left_enable, ch->right_enable, ch->output, ch->algorithm, ch->feedback);
+        if (single) {
+            tbp("  fnum:%d  octave:%d", ch->f_num.value, ch->block.value);
+        }
+
+        for (u32 opn = 0; opn < 4; opn++) {
+            struct YM2612_OPERATOR *op = &ch->operator[opn];
+            tbp("\n--op:%d  out:%04x", opn, op->output);
+            if ((ch->num == 2) && (ch->mode == YFM_multiple)) {
+                tbp("  f_num:%d  octave:%d", op->f_num.value, op->block.value);
+            }
+            tbp("\n  env    am:%d  phase:", op->am_enable);
+            switch(op->envelope.state) {
+                case EP_attack:
+                    tbp("attack ");
+                    break;
+                case EP_decay:
+                    tbp("decay  ");
+                    break;
+                case EP_sustain:
+                    tbp("sustain");
+                    break;
+                case EP_release:
+                    tbp("release");
+                    break;
+            }
+            tbp("  att:%04x  attack:%d  sustain:%d  decay:%d  release:%d", op->envelope.attenuation, op->envelope.attack_rate, op->envelope.sustain_rate, op->envelope.decay_rate, op->envelope.release_rate);
+            tbp("\n         ks:%d  ksr:%d", op->envelope.key_scale, op->envelope.key_scale_rate);
+        }
+        tbp("\n");
+    }
+}
+#undef tbp
+#undef YN
+
 static void render_image_view_planea(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     render_image_view_plane(dbgr, dview, ptr, out_width, 0);
 }
@@ -1292,6 +1350,27 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
     debugger_report_frame(this->dbg.interface);
 }
 
+static void setup_image_view_ym_info(struct genesis *this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.ym_info = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.ym_info);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 10;
+    iv->height = 10;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 10, 10 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_ym_info;
+
+    snprintf(iv->label, sizeof(iv->label), "Sys Info View");
+
+    debugger_widgets_add_textbox(&dview->options, "blah!", 1);
+}
 
 void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
@@ -1312,4 +1391,5 @@ void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_plane(this, dbgr, 2);
     setup_image_view_sprites(this, dbgr);
     setup_image_view_output(this, dbgr);
+    setup_image_view_ym_info(this, dbgr);
 }

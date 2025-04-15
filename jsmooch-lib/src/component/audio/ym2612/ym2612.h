@@ -35,8 +35,6 @@ struct ym2612 {
         u32 group;
         u32 addr;
         u32 csm_enabled;
-
-        u32 ch3_special;
     } io;
 
     struct {
@@ -47,7 +45,7 @@ struct ym2612 {
 
     struct YM2612_CHANNEL {
         enum YM2612_FREQ_MODE {
-            YFM_single,
+            YFM_single = 0,
             YFM_multiple
         } mode;
         i32 op0_prior[2];
