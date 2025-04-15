@@ -17,8 +17,6 @@
 
 #define SIGNe14to32(x) (((((x) >> 13) & 1) * 0xFFFFC000) | ((x) & 0x3FFF))
 
-#define MASTER_WAIT_CYCLES (32 * 6 * 7) // 7 = m68k div. 6 = further div. 32 of those
-
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
@@ -86,13 +84,14 @@ void do_math()
     }
 }
 
-void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count)
+void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count, u64 master_wait_cycles)
 {
     memset(this, 0, sizeof(*this));
     DBG_EVENT_VIEW_INIT;
 
     this->ext_enable = 1;
     this->master_cycle_count = master_cycle_count;
+    this->master_wait_cycles = master_wait_cycles;
 
     if (!math_done) do_math();
 
@@ -769,7 +768,7 @@ static void write_op_reg(struct ym2612 *this, u8 val, u32 bch)
 
 static void write_group1(struct ym2612* this, u8 val)
 {
-    this->status.busy_until = (*this->master_cycle_count) + MASTER_WAIT_CYCLES;
+    this->status.busy_until = (*this->master_cycle_count) + this->master_wait_cycles;
     switch(this->io.addr) {
         case 0x22:
             lfo_enable(this, (val >> 3) & 1);
@@ -838,7 +837,7 @@ static void write_group1(struct ym2612* this, u8 val)
 
 static void write_group2(struct ym2612* this, u8 val)
 {
-    this->status.busy_until = (*this->master_cycle_count) + MASTER_WAIT_CYCLES;
+    this->status.busy_until = (*this->master_cycle_count) + this->master_wait_cycles;
 
     if ((this->io.addr >= 0x30) && (this->io.addr < 0xA0)) {
         write_op_reg(this, val, 3);

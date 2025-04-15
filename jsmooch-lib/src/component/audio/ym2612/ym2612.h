@@ -143,12 +143,13 @@ struct ym2612 {
     } timer_b;
 
     u64 *master_cycle_count;
+    u64 master_wait_cycles;
 
     DBG_EVENT_VIEW_ONLY;
 };
 
 struct serialized_state;
-void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count);
+void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count, u64 master_wait_cycles);
 void ym2612_delete(struct ym2612*);
 void ym2612_serialize(struct ym2612*, struct serialized_state *state);
 void ym2612_deserialize(struct ym2612*, struct serialized_state *state);
