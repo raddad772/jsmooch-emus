@@ -427,6 +427,15 @@ add_library(jsmooch-lib
         src/system/nds/cart/nds_flash.h
         src/system/nds/cart/nds_eeprom.c
         src/system/nds/cart/nds_eeprom.h
+        src/component/cpu/wdc65816/wdc65816.c
+        src/component/cpu/wdc65816/wdc65816.h
+        src/component/cpu/wdc65816/wdc65816_generated_opcodes.h
+        src/component/cpu/wdc65816/wdc65816_generated_opcodes.c
+        src/component/cpu/spc700/spc700.c
+        src/component/cpu/spc700/spc700.h
+        src/component/cpu/wdc65816/wdc65816_instructions.c
+        src/component/cpu/wdc65816/wdc65816_instructions.h
+        src/component/cpu/wdc65816/wdc65816_generated_opcodes.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

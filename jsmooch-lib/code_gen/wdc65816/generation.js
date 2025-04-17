@@ -73,7 +73,7 @@ function set_gentarget(to) {
 
 function generate_wdc65816_js() {
     set_gentarget('js');
-	save_js('wdc65816_generated_opcodes.js', '"use strict";\n\nconst wdc65816_decoded_opcodes = Object.freeze(\n' + decode_opcodes() + ');');
+    save_js('wdc65816_generated_opcodes.js', '"use strict";\n\nconst wdc65816_decoded_opcodes = Object.freeze(\n' + decode_opcodes() + ');');
 }
 
 function generate_spc700_js() {
@@ -126,13 +126,13 @@ function generate_sm83_c() {
 
 function generate_spc700_c() {
     set_gentarget('c');
-    save_js('spc700_generated_opcodes.js', generate_wdc65816_core_c());
+    save_js('spc700_generated_opcodes.js', generate_spc700_core_c());
 }
 
 
 function generate_wdc65816_c() {
     set_gentarget('c');
-    save_js('wdc65816_generated_opcodes.js', generate_spc700_core_c());
+    save_js('wdc65816_generated_opcodes.c', decode_opcodes_c());
 }
 
 

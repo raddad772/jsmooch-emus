@@ -101,12 +101,12 @@ void GBA_PPU_start_scanline(struct GBA*this)
         this->ppu.mosaic.bg.y_current = 0;
         this->ppu.mosaic.obj.y_counter = 0;
         this->ppu.mosaic.obj.y_current = 0;
-
-        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+        memset(this->dbg_info.bg_scrolls, 0, sizeof(this->dbg_info.bg_scrolls));
+        /*for (u32 bgnum = 0; bgnum < 4; bgnum++) {
             for (u32 line = 0; line < 1024; line++) {
                 memset(&this->dbg_info.bg_scrolls[bgnum].lines[0], 0, 1024 * 128);
             }
-        }
+        }*/
     }
     if (this->clock.ppu.y < 160) {
         struct GBA_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];

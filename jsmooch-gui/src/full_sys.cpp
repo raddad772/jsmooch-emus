@@ -668,12 +668,12 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
         case SYS_GBC:
-            //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
             // worked = grab_ROM(&ROMs, which, "densha.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "cutedemo.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "aitd.gbc", nullptr);
-            worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
         case SYS_ATARI2600:
             worked = grab_ROM(&ROMs, which, "space_invaders.a26", nullptr);
@@ -777,7 +777,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "panda.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler-gba-fixed.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "arm.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "retaddr.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "tonc/first.gba", nullptr);
@@ -814,11 +814,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROM`s, which, "duke3d.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pcrysound.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
@@ -880,7 +880,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
             //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
@@ -890,7 +890,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "batman.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "gen_test_ym.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "junglestrike.md", nullptr); // works!

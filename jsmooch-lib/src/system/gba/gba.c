@@ -158,7 +158,7 @@ u32 GBAJ_finish_frame(JSM)
         GBAJ_finish_scanline(jsm);
         if (dbg.do_break) break;
     }
-    struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[4]);
+    //struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[4]);
     return this->ppu.display->last_written;
 }
 
@@ -397,6 +397,7 @@ static void sample_audio(struct GBA* this, u32 num_cycles)
 {
     for (u64 i = 0; i < num_cycles; i++) {
         GBA_APU_cycle(this);
+
         u64 mc = this->clock.master_cycle_count + i;
         if (this->audio.buf && (mc >= (u64) this->audio.next_sample_cycle)) {
             this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
@@ -405,7 +406,7 @@ static void sample_audio(struct GBA* this, u32 num_cycles)
             }
             this->audio.buf->upos++;
         }
-
+        // TODO: optimize the heck out of this. cpg is taking huge amounts of time, slowing us down by 60%!
         struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
         if (mc >= (u64)dw->user.next_sample_cycle) {
             if (dw->user.buf_pos < dw->samples_requested) {

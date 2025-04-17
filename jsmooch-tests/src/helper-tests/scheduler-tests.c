@@ -94,7 +94,7 @@ static void testgrp1()
 void test_scheduler()
 {
     printf("\nTEST SCHEDULER!");
-    scheduler_init(&scheduler, &st.clock);
+    scheduler_init(&scheduler, &st.clock, NULL);
     scheduler.max_block_size = 50;
 
     printf("\nTest group1!");

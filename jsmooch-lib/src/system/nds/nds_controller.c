@@ -28,7 +28,6 @@ u32 NDS_get_controller_state(struct NDS *this, u32 byte)
     B_GET(17, 11); // Y button
 #undef B_GET
     b = cvec_get(bl, 10);
-    printf("\nSTATE IS %d", b->state);
     // pen down bit 22
     v |= (tsc->touch.down << 22);
     v ^= 0x007FFFFF;
