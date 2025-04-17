@@ -191,7 +191,7 @@ static void construct_path(char *out, u32 iclass, u32 ins)
     tp += sprintf(tp, "%02x.json", ins);
 }
 
-void parse_state(struct json_object_s *object, struct test_state *state)
+static void parse_state(struct json_object_s *object, struct test_state *state)
 {
     struct json_object_element_s *el = object->start;
     state->num_ram_entry = 0;

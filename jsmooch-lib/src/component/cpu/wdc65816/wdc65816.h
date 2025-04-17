@@ -28,7 +28,7 @@ union WDC65816_P {
         u8 Z : 1;
         u8 I: 1;
         u8 D : 1;
-        u8 X: 1;
+        u8 X : 1;
         u8 M : 1;
         u8 V : 1;
         u8 N : 1;
