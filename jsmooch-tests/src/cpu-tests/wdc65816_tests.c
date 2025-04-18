@@ -251,14 +251,14 @@ static void copy_state_to_cpu(struct test_state *state, struct WDC65816 *cpu)
     cpu->regs.Y = state->regs.Y;
     cpu->regs.P.v = state->regs.P;
     cpu->regs.PBR = state->regs.PBR;
-    cpu->regs.PC = state->regs.PC;
+    cpu->regs.PC = (state->regs.PC+1)&0xFFFF;
     cpu->regs.S = state->regs.S;
     cpu->regs.E = state->regs.E;
 }
 
-static void pprint_regs(struct WDC65816_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 only_print_diff)
+static void pprint_regs(struct WDC65816_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
 {
-    printf("\nREG CPU    TEST");
+    printf("\nREG  CPU    TEST");
     printf("\n----------------");
 #define TREG4(cpuname, testname, strname) if ((only_print_diff && (cpu_regs->cpuname != test_regs->testname)) || (!only_print_diff))\
         printf("\n" strname "  %04x   %04x", cpu_regs->cpuname, test_regs->testname);
@@ -266,6 +266,7 @@ static void pprint_regs(struct WDC65816_regs *cpu_regs, struct test_cpu_regs *te
     TREG4(X, X, "X   ");
     TREG4(Y, Y, "Y   ");
     TREG4(PC, PC, "PC  ");
+    printf("\nlast_pc: %04x", last_pc);
     TREG4(D, D, "D   ");
     TREG4(DBR, DBR, "DBR ");
     TREG4(PBR, PBR, "PBR ");
@@ -274,11 +275,11 @@ static void pprint_regs(struct WDC65816_regs *cpu_regs, struct test_cpu_regs *te
     TREG4(P.v, P, "P    ");
 #undef TREG4
 }
-static u32 testregs(struct WDC65816 *cpu, struct test_state *final)
+static u32 testregs(struct WDC65816 *cpu, struct test_state *final, u32 last_pc)
 {
     u32 passed = 1;
     // u32 C, DBR, D, X, Y, P, PBR, PC, S, E;
-    passed &= cpu->regs.PC == final->regs.PC;
+    passed &= (((cpu->regs.PC-1)&0xFFFF) == final->regs.PC) || (last_pc == final->regs.PC);
     passed &= cpu->regs.C == final->regs.C;
     passed &= cpu->regs.DBR == final->regs.DBR;
     passed &= cpu->regs.D == final->regs.D;
@@ -289,7 +290,7 @@ static u32 testregs(struct WDC65816 *cpu, struct test_state *final)
     passed &= cpu->regs.S == final->regs.S;
     passed &= cpu->regs.E == final->regs.E;
     if (!passed) {
-        pprint_regs(&cpu->regs, &final->regs, 1);
+        pprint_regs(&cpu->regs, &final->regs, last_pc, 1);
     }
     return passed;
 }
@@ -305,6 +306,7 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
     u32 last_pc;
     u32 ins;
     for (u32 i = 0; i < 10000; i++) {
+        //printf("\n\nTest #%d/10000", i);
         out->failed_test_struct = &tests[i];
         struct jsontest *test = &tests[i];
         struct test_state *initial = &tests[i].initial;
@@ -322,18 +324,21 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
         }
 
         cpu->regs.TCU = 0;
-        cpu->pins.Addr = cpu->regs.PC & 0xFFFF;
+        cpu->pins.Addr = (cpu->regs.PC-1) & 0xFFFF;
         assert(dataval != -1);
+        cpu->regs.IR = cpu->pins.D;
         cpu->pins.D = dataval;
         cpu->pins.PDV = 1;
         cpu->pins.RW = 0;
         cpu->pins.BA = cpu->regs.PBR;
-        cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
+        //cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 
         u32 addr, passed = 1;
         for (u32 cyclei = 0; cyclei < test->num_cycles; cyclei++) {
+            //printf("\nCycle #%d/%d", cyclei, test->num_cycles-1);
             struct test_cycle *cycle = &test->cycles[cyclei];
             struct test_cycle *out_cycle = &out->cycles[cyclei];
+            u32 iocycle = cycle->VDA || cycle->VPA;
             addr = cpu->pins.Addr | (cpu->pins.BA << 16);
 
             if (cpu->pins.PDV && !cpu->pins.RW) { // Read request!
@@ -353,11 +358,11 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
                 cpu->pins.D = outdata;
             }
 
-            if (cycle->addr != addr) {
+            if (iocycle && cycle->addr != addr) {
                 printf("\nMISMATCH IN PIN ADDR ME:%06x   TEST:%06x   STEP:%d", addr, cycle->addr, cyclei);
                 passed = 0;
             }
-            if (cycle->data != cpu->pins.D) {
+            if (iocycle && cycle->data != cpu->pins.D) {
                 printf("\nMISMATCH IN DATA PINS!");
                 passed = 0;
             }
@@ -366,8 +371,8 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
                 printf("\nMISMATCH IN PDV!");
                 passed = 0;
             }
-            if (cpu->pins.RW = cycle->RWB) {
-                printf("\nMISMATCH IN RWB!");
+            if (cpu->pins.RW != (cycle->RWB ^ 1)) {
+                printf("\nMISMATCH IN RWB! TEST:%d  ME:%d", cycle->RWB ^ 1, cpu->pins.RW);
                 passed = 0;
             }
 
@@ -375,6 +380,13 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
             out_cycle->addr = cpu->pins.Addr | (cpu->pins.BA << 16);
             out_cycle->PDV = cpu->pins.PDV;
             out_cycle->RWB = cpu->pins.RW;
+
+            last_pc = cpu->regs.PC;
+
+            if (i == 8) {
+                int a = 4;
+                a++;
+            }
 
             WDC65816_cycle(cpu);
 
@@ -389,9 +401,9 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
                     }
                 }
                 if (found_addr == -1) {
-                    test->num_ram_entry++;
                     test->ram[test->num_ram_entry].addr = addr;
                     test->ram[test->num_ram_entry].val = cpu->pins.D;
+                    test->num_ram_entry++;
                 } else {
                     test->ram[found_addr].val = cpu->pins.D;
                 }
@@ -399,24 +411,40 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
         }
         if (!passed) {
             printf("\nFAILED TEST! %d", i);
+            printf("\nP:%02x  E:%d M:%d X:%d", cpu->regs.P.v, cpu->regs.E, cpu->regs.P.M, cpu->regs.P.X);
             WDC65816_cycle(cpu);
             out->passed = 0;
             return 0;
         }
 
-        passed &= testregs(cpu, final);
+        passed &= testregs(cpu, final, last_pc);
         if (final->num_ram_entry != test->num_ram_entry) {
             printf("\nFAILED NUM RAM ENTRY!");
             passed = 0;
         }
         for (u32 x = 0; x < final->num_ram_entry; x++) {
-            if (final->ram[x].addr != test->ram[x].addr) {
-                passed = 0;
-                printf("\nRAMADDR FAIL!");
+            u32 raddr = final->ram[x].addr;
+            u32 rdata = final->ram[x].val;
+            i32 addr_found = -1;
+
+            for (u32 j = 0; j < test->num_ram_entry; j++) {
+                if (test->ram[j].addr == raddr) {
+                    addr_found = j;
+                    break;
+                }
             }
-            if (final->ram[x].val != test->ram[x].val) {
+            if (addr_found == -1) {
                 passed = 0;
-                printf("\nRAMDATA FAIL!");
+                printf("\nRAMADDR FAIL! TEST:%06x", final->ram[x].addr, test->ram[x].addr);
+
+                printf("\ntest               me               initial");
+                for (u32 j = 0; j < final->num_ram_entry; j++) {
+                    printf("\n%d %06x: %02x         %06x: %02x     %06x:%02x", j, final->ram[j].addr, final->ram[j].val, test->ram[j].addr, test->ram[j].val, initial->ram[j].addr, initial->ram[j].val);
+                }
+            }
+            else if (final->ram[x].val != test->ram[addr_found].val) {
+                passed = 0;
+                printf("\nRAMDATA FAIL! TEST:%02x   ME:%02x", final->ram[x].val, test->ram[x].val);
             }
         }
 

@@ -2779,7 +2779,7 @@ function decode_opcodes_c() {
     let funcstr = '';
 
     let IDT = '';
-    let tablstr = '\n\nWDC65816_ins_func wdc65816_decoded_opcodes[8][0x103] = {\n';
+    let tablstr = '\n\nWDC65816_ins_func wdc65816_decoded_opcodes[5][0x103] = {\n';
     for (let i = 0; i < 5; i++) {
         IDT = '    ';
         let E = (i == 4) ? 1 : 0;

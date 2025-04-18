@@ -5,15 +5,17 @@
 
 #include <string.h>
 #include "wdc65816.h"
+#include "wdc65816_generated_opcodes.h"
 
-extern WDC65816_ins_func wdc65816_decoded_opcodes[8][0x104];
+extern WDC65816_ins_func wdc65816_decoded_opcodes[5][0x103];
 
 WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
 {
     if (this->regs.E) {
-        return wdc65816_decoded_opcodes[7][this->regs.IR];
+        return wdc65816_decoded_opcodes[4][this->regs.IR];
     }
-    u32 flag = (this->regs.P.M << 1) | (this->regs.P.X << 2);
+    u32 flag = (this->regs.P.M) | (this->regs.P.X << 1);
+
     WDC65816_ins_func ret = wdc65816_decoded_opcodes[flag][this->regs.IR];
     if (ret == NULL) ret = wdc65816_decoded_opcodes[0][this->regs.IR];
     return ret;
