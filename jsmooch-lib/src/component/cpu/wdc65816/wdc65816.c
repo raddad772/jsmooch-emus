@@ -2,12 +2,41 @@
 // Created by . on 4/16/25.
 //
 
-
+#include <stdio.h>
 #include <string.h>
 #include "wdc65816.h"
-#include "wdc65816_generated_opcodes.h"
 
-extern WDC65816_ins_func wdc65816_decoded_opcodes[5][0x103];
+/*
+ * interrupt notes
+During WAI, When the Status Register I
+flag is set (IRQB disabled) the IRQB interrupt will cause the next instruction (following the WAI instruction) to
+be executed without going to the IRQB interrupt handler. This method results in the highest speed response
+to an IRQB input.
+
+ IRQB is level-sensitive
+ NMIB is edge-sensitive
+ *
+ */
+
+extern WDC65816_ins_func wdc65816_decoded_opcodes[5][0x104];
+
+void WDC65816_set_IRQ_level(struct WDC65816 *this, u32 level)
+{
+    this->regs.IRQ_pending = level;
+    if (level)
+        this->regs.interrupt_pending = 1;
+    else
+        this->regs.interrupt_pending = this->regs.NMI_pending;
+}
+
+void WDC65816_set_NMI_level(struct WDC65816 *this, u32 level)
+{
+    if ((this->regs.NMI_old == 0) && level) { // 0->1
+        this->regs.NMI_pending = 1;
+        this->regs.interrupt_pending = 1;
+    }
+    this->regs.NMI_old = level;
+}
 
 WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
 {
@@ -27,10 +56,25 @@ void WDC65816_cycle(struct WDC65816* this)
 
     this->regs.TCU++;
     if (this->regs.TCU == 1) {
-        this->trace.ins_PC = this->pins.Addr;
-        this->regs.IR = this->pins.D;
+        if (this->regs.interrupt_pending) {
+            if (this->regs.NMI_pending) {
+                this->regs.IR = WDC65816_OP_NMI;
+            }
+            else if (this->regs.IRQ_pending) {
+                if (this->regs.P.I) {
+                    this->regs.WAI = 0;
+                    printf("\nWAI exit because IRQ with I=1!");
+                }
+                else {
+                    this->regs.IR = WDC65816_OP_IRQ;
+                }
+            }
+        }
+        else {
+            this->trace.ins_PC = this->pins.Addr;
+            this->regs.IR = this->pins.D;
 
-
+        }
         this->regs.old_I = this->regs.P.I;
         this->ins = get_decoded_opcode(this);
         //ins_trace_format(this);

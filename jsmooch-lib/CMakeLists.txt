@@ -433,9 +433,11 @@ add_library(jsmooch-lib
         src/component/cpu/wdc65816/wdc65816_generated_opcodes.c
         src/component/cpu/spc700/spc700.c
         src/component/cpu/spc700/spc700.h
-        src/component/cpu/wdc65816/wdc65816_instructions.c
-        src/component/cpu/wdc65816/wdc65816_instructions.h
         src/component/cpu/wdc65816/wdc65816_generated_opcodes.h
+        src/component/cpu/spc700/spc700_boot_rom.h
+        src/system/snes/snes_clock.c
+        src/system/snes/snes_clock.h
+        src/component/cpu/spc700/spc700_generated_opcodes.c
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

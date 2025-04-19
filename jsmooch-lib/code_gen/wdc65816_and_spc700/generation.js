@@ -126,7 +126,7 @@ function generate_sm83_c() {
 
 function generate_spc700_c() {
     set_gentarget('c');
-    save_js('spc700_generated_opcodes.js', generate_spc700_core_c());
+    save_js('spc700_generated_opcodes.c', SPC_decode_opcodes_c());
 }
 
 

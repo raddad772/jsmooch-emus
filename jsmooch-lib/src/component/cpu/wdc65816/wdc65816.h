@@ -21,7 +21,6 @@ struct WDC65816_regs;
 struct WDC65816_pins;
 typedef void (*WDC65816_ins_func)(struct WDC65816_regs*, struct WDC65816_pins*);
 
-
 union WDC65816_P {
     struct {
         u8 C : 1;
@@ -42,7 +41,7 @@ struct WDC65816_regs {
     u16 IR; // Instruction register. Holds opcode.
     u8 TCU; // Timing Control Unit, counts up during execution. Set to 0 at instruction fetch, incremented every cycle thereafter
     u32 MD; // Memory Data Register, holds last known "good" RAM value from a read. Mostly this is not used correctly inside the emukator
-    u32 TR; // Temp Register, for operations
+    i32 TR; // Temp Register, for operations
     u32 TA; // Temporary register, for operations, usually used for addresses
     u8 skipped_cycle; // For when we...skip a cycle! For timing of jumps and such
     u8 STP; // Are we in STOP?
@@ -64,7 +63,8 @@ struct WDC65816_regs {
     u8 old_I; // old I flag, for use timing IRQs
     u8 NMI_pending;
     u8 IRQ_pending;
-    i32 NMI_count,IRQ_count, NMI_old, NMI_ack, IRQ_ack;
+    u32 interrupt_pending;
+    i32 NMI_old;
 };
 
 struct WDC65816_pins {
@@ -121,5 +121,7 @@ void WDC65816_init(struct WDC65816*, u64 *master_clock);
 void WDC65816_delete(struct WDC65816*);
 void WDC65816_reset(struct WDC65816*);
 void WDC65816_setup_tracing(struct WDC65816*, struct jsm_debug_read_trace *strct);
+void WDC65816_set_IRQ_level(struct WDC65816 *, u32 level);
+void WDC65816_set_NMI_level(struct WDC65816 *, u32 level);
 
 #endif //JSMOOCH_EMUS_WDC65816_H

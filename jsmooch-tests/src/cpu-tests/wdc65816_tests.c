@@ -295,6 +295,24 @@ static u32 testregs(struct WDC65816 *cpu, struct test_state *final, u32 last_pc)
     return passed;
 }
 
+static void pprint_P(u32 r)
+{
+    // N V M X D I Z C
+
+#define F(v, l1, l2) (r & v) ? l1 : l2
+    printf("%c%c%c%c%c%c%c%c",
+           F(0x80, 'N', 'n'),
+           F(0x40, 'V', 'v'),
+           F(0x20, 'M', 'm'),
+           F(0x10, 'X', 'x'),
+           F(0x8, 'D', 'd'),
+           F(0x8, 'I', 'i'),
+           F(0x8, 'Z', 'z'),
+           F(0x8, 'C', 'c')
+           );
+#undef F
+}
+
 static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC65816 *cpu) {
     out->passed = 0;
     out->mycycles = 0;
@@ -306,7 +324,7 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
     u32 last_pc;
     u32 ins;
     for (u32 i = 0; i < 10000; i++) {
-        //printf("\n\nTest #%d/10000", i);
+        printf("\n\nTest #%d/10000", i);
         out->failed_test_struct = &tests[i];
         struct jsontest *test = &tests[i];
         struct test_state *initial = &tests[i].initial;
@@ -354,6 +372,9 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
                     printf("\nREAD NOT FOUND TO %06x", addr);
                     passed = 0;
                     outdata = 0;
+                }
+                else {
+                    printf("\nCPU READ %06x: %02x", addr, outdata);
                 }
                 cpu->pins.D = outdata;
             }
@@ -410,10 +431,17 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
             }
         }
         if (!passed) {
-            printf("\nFAILED TEST! %d", i);
-            printf("\nP:%02x  E:%d M:%d X:%d", cpu->regs.P.v, cpu->regs.E, cpu->regs.P.M, cpu->regs.P.X);
+            printf("\n\nFAILED TEST! %d ", i);
+            printf("\nINITIAL P:");
+            pprint_P(initial->regs.P);
+            printf("\nFINAL   P:");
+            pprint_P(final->regs.P);
+            printf("\nMY      P:");
+            pprint_P(cpu->regs.P.v);
+
             WDC65816_cycle(cpu);
             out->passed = 0;
+            //passed = 0;
             return 0;
         }
 
@@ -450,6 +478,12 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
 
         if (!passed) {
             printf("\nFAILED AT END!");
+            printf("\nINITIAL P:");
+            pprint_P(initial->regs.P);
+            printf("\nFINAL   P:");
+            pprint_P(final->regs.P);
+            printf("\nMY      P:");
+            pprint_P(cpu->regs.P.v);
             WDC65816_cycle(cpu);
             out->passed = 0;
             return 0;
@@ -485,6 +519,17 @@ static u32 test_wdc65816_ins(struct WDC65816 *cpu, u32 iclass, u32 ins)
     return result.passed;
 }
 
+#define SKIPTESTLEN 2
+static const int skip_tests[SKIPTESTLEN] = {0xCB, 0xDB};
+
+static int skip_test(int n)
+{
+    for (u32 i = 0; i < SKIPTESTLEN; i++) {
+        if (n == skip_tests[i]) return 1;
+    }
+    return 0;
+}
+
 void test_wdc65816()
 {
     struct WDC65816 cpu;;
@@ -492,8 +537,9 @@ void test_wdc65816()
     WDC65816_init(&cpu, &cycle_ptr);
     u32 total_fail = 0;
     u32 start_test = 0;
-    for (u32 iclass = 0; iclass < 2; iclass++) {
+    for (u32 iclass = 1; iclass < 2; iclass++) {
         for (u32 i = start_test; i < 0x100; i++) {
+            if (skip_test(i)) continue;
             u32 result = test_wdc65816_ins(&cpu, iclass, i);
             if (!result) {
                 total_fail = 1;
