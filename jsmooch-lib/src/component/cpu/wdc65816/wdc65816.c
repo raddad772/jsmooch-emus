@@ -38,7 +38,7 @@ void WDC65816_set_NMI_level(struct WDC65816 *this, u32 level)
     this->regs.NMI_old = level;
 }
 
-WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
+static WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
 {
     if (this->regs.E) {
         return wdc65816_decoded_opcodes[4][this->regs.IR];

@@ -50,8 +50,6 @@ struct SPC700_regs {
     u16 SP, PC;
 };
 
-struct SNES_clock;
-
 struct SPC700 {
     struct SPC700_regs regs;
 
@@ -59,11 +57,12 @@ struct SPC700 {
     u8 (*read_apu)(void *, u16 addr);
     void (*write_apu)(void *, u16 addr, u8 val);
 
-    struct SNES_clock *clock;
+    u64 *clock;
 
     i32 cycles;
     u32 WAI, STP;
 
+    u8 dsp_regs[0x80];
 
     struct {
         u32 ROM_readable;
@@ -105,7 +104,7 @@ struct SPC700 {
 
 typedef void (*SPC700_ins_func)(struct SPC700 *);
 
-void SPC700_init(struct SPC700 *, struct SNES_clock *clock);
+void SPC700_init(struct SPC700 *, u64 *clock_ptr);
 void SPC700_reset(struct SPC700 *);
 void SPC700_cycle(struct SPC700 *this, i64 how_many);
 
