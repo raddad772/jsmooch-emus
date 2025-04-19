@@ -7,8 +7,6 @@
 static void SPC700_opcode_00(struct SPC700 *cpu) { // NOP 
     cpu->regs.opc_cycles = 2;
     // INS 44 ADDR MODE 0
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -21,8 +19,6 @@ static void SPC700_opcode_01(struct SPC700 *cpu) { // TCALL 0
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65502);
     cpu->regs.PC |= SPC700_read8(cpu, 65503) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -34,8 +30,6 @@ static void SPC700_opcode_02(struct SPC700 *cpu) { // SET1 dp.0
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x01;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -50,8 +44,6 @@ static void SPC700_opcode_03(struct SPC700 *cpu) { // BBS dp.0, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -64,8 +56,6 @@ static void SPC700_opcode_04(struct SPC700 *cpu) { // OR A, dp
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -80,8 +70,6 @@ static void SPC700_opcode_05(struct SPC700 *cpu) { // OR A, !abs
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -92,8 +80,6 @@ static void SPC700_opcode_06(struct SPC700 *cpu) { // OR A, (X)
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -108,8 +94,6 @@ static void SPC700_opcode_07(struct SPC700 *cpu) { // OR A, [dp+X]
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -121,8 +105,6 @@ static void SPC700_opcode_08(struct SPC700 *cpu) { // OR A, #
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -139,8 +121,6 @@ static void SPC700_opcode_09(struct SPC700 *cpu) { // OR dp, dp
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -157,8 +137,6 @@ static void SPC700_opcode_0A(struct SPC700 *cpu) { // OR1 C, m.b
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
     val &= 0x01;
     cpu->regs.P.C |= val;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -173,8 +151,6 @@ static void SPC700_opcode_0B(struct SPC700 *cpu) { // ASL d
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -191,8 +167,6 @@ static void SPC700_opcode_0C(struct SPC700 *cpu) { // ASL !abs
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -201,8 +175,6 @@ static void SPC700_opcode_0D(struct SPC700 *cpu) { // PUSH P
     // INS 51 ADDR MODE null
     SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.P.v & 0xFF));
     cpu->regs.SP &= 0xFF;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -218,8 +190,6 @@ static void SPC700_opcode_0E(struct SPC700 *cpu) { // TSET1 !abs
     cpu->regs.P.N = ((cpu->regs.A - cpu->regs.TR) & 0x80) >> 7;
     cpu->regs.TR |= cpu->regs.A;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -235,8 +205,6 @@ static void SPC700_opcode_0F(struct SPC700 *cpu) { // BRK i
     cpu->regs.P.I = 0;
     cpu->regs.P.B = 1;
     cpu->regs.PC = SPC700_read8(cpu, (0xFFDE) & 0xFFFF) + (SPC700_read8(cpu, ((0xFFDE) + 1) & 0xFFFF) << 8);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -249,8 +217,6 @@ static void SPC700_opcode_10(struct SPC700 *cpu) { // BPL r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -263,8 +229,6 @@ static void SPC700_opcode_11(struct SPC700 *cpu) { // TCALL i
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65500);
     cpu->regs.PC |= SPC700_read8(cpu, 65501) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -276,8 +240,6 @@ static void SPC700_opcode_12(struct SPC700 *cpu) { // CLR1 dp.0
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0xFE;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -292,8 +254,6 @@ static void SPC700_opcode_13(struct SPC700 *cpu) { // BBC dp.0
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -306,8 +266,6 @@ static void SPC700_opcode_14(struct SPC700 *cpu) { // OR A, dp+X
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -323,8 +281,6 @@ static void SPC700_opcode_15(struct SPC700 *cpu) { // OR A, !abs+X
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -340,8 +296,6 @@ static void SPC700_opcode_16(struct SPC700 *cpu) { // OR A, !abs+Y
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -356,8 +310,6 @@ static void SPC700_opcode_17(struct SPC700 *cpu) { // OR A, [dp]+Y
     cpu->regs.A |= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -373,8 +325,6 @@ static void SPC700_opcode_18(struct SPC700 *cpu) { // OR dp, #imm
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -387,8 +337,6 @@ static void SPC700_opcode_19(struct SPC700 *cpu) { // OR (X), (Y)
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -403,8 +351,6 @@ static void SPC700_opcode_1A(struct SPC700 *cpu) { // DECW dp
     cpu->regs.P.N = (cpu->regs.TR & 0x8000) >> 15;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR & 0xFF);
     SPC700_write8D(cpu, (cpu->regs.TA) + 1, ((cpu->regs.TR) >> 8) & 0xFF);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -420,8 +366,6 @@ static void SPC700_opcode_1B(struct SPC700 *cpu) { // ASL dp+X
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -432,8 +376,6 @@ static void SPC700_opcode_1C(struct SPC700 *cpu) { // ASL A
     cpu->regs.A = (cpu->regs.A << 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -443,8 +385,6 @@ static void SPC700_opcode_1D(struct SPC700 *cpu) { // DEC X
     cpu->regs.X = (cpu->regs.X - 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -456,12 +396,10 @@ static void SPC700_opcode_1E(struct SPC700 *cpu) { // CMP X, !abs
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.X - cpu->regs.TR;
+    i32 z = cpu->regs.X - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -475,8 +413,6 @@ static void SPC700_opcode_1F(struct SPC700 *cpu) { // JMP [!abs+X]
     cpu->regs.TR = SPC700_read8(cpu, (cpu->regs.TA) & 0xFFFF) + (SPC700_read8(cpu, ((cpu->regs.TA) + 1) & 0xFFFF) << 8);
     // INS 38 ADDR MODE undefined
     cpu->regs.PC = cpu->regs.TR;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -485,8 +421,6 @@ static void SPC700_opcode_20(struct SPC700 *cpu) { // CLRP i
     // INS 22 ADDR MODE 0
     cpu->regs.P.P = 0;
     cpu->regs.P.DO = 0;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -499,8 +433,6 @@ static void SPC700_opcode_21(struct SPC700 *cpu) { // TCALL 2
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65498);
     cpu->regs.PC |= SPC700_read8(cpu, 65499) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -512,8 +444,6 @@ static void SPC700_opcode_22(struct SPC700 *cpu) { // SET1 dp.1
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x02;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -528,8 +458,6 @@ static void SPC700_opcode_23(struct SPC700 *cpu) { // BBS dp.1, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -542,8 +470,6 @@ static void SPC700_opcode_24(struct SPC700 *cpu) { // AND A, dp
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -558,8 +484,6 @@ static void SPC700_opcode_25(struct SPC700 *cpu) { // AND A, !abs
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -570,8 +494,6 @@ static void SPC700_opcode_26(struct SPC700 *cpu) { // AND A, (X)
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -586,8 +508,6 @@ static void SPC700_opcode_27(struct SPC700 *cpu) { // AND A, [dp+X]
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -599,8 +519,6 @@ static void SPC700_opcode_28(struct SPC700 *cpu) { // AND A, #imm
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -617,8 +535,6 @@ static void SPC700_opcode_29(struct SPC700 *cpu) { // AND dp, dp
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -635,8 +551,6 @@ static void SPC700_opcode_2A(struct SPC700 *cpu) { // OR1 C, /m.b
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
     val &= 0x01;
     cpu->regs.P.C |= (val ? 0 : 1);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -652,8 +566,6 @@ static void SPC700_opcode_2B(struct SPC700 *cpu) { // ROL dp
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -671,8 +583,6 @@ static void SPC700_opcode_2C(struct SPC700 *cpu) { // ROL !abs
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -681,8 +591,6 @@ static void SPC700_opcode_2D(struct SPC700 *cpu) { // PUSH A
     // INS 51 ADDR MODE null
     SPC700_write8(cpu, 0x100 + cpu->regs.SP--, cpu->regs.A);
     cpu->regs.SP &= 0xFF;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -698,8 +606,6 @@ static void SPC700_opcode_2E(struct SPC700 *cpu) { // CBNE dp, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -710,8 +616,6 @@ static void SPC700_opcode_2F(struct SPC700 *cpu) { // BRA r
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
     cpu->regs.opc_cycles += 2;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -724,8 +628,6 @@ static void SPC700_opcode_30(struct SPC700 *cpu) { // BMI r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -738,8 +640,6 @@ static void SPC700_opcode_31(struct SPC700 *cpu) { // TCALL 3
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65496);
     cpu->regs.PC |= SPC700_read8(cpu, 65497) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -751,8 +651,6 @@ static void SPC700_opcode_32(struct SPC700 *cpu) { // CLR1 dp.1
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0xFD;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -767,8 +665,6 @@ static void SPC700_opcode_33(struct SPC700 *cpu) { // BBC dp.1
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -781,8 +677,6 @@ static void SPC700_opcode_34(struct SPC700 *cpu) { // AND A, dp+X
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -798,8 +692,6 @@ static void SPC700_opcode_35(struct SPC700 *cpu) { // AND A, !abs+X
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -815,8 +707,6 @@ static void SPC700_opcode_36(struct SPC700 *cpu) { // AND A, !abs+Y
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -831,8 +721,6 @@ static void SPC700_opcode_37(struct SPC700 *cpu) { // AND A, [dp]+Y
     cpu->regs.A &= (cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -848,8 +736,6 @@ static void SPC700_opcode_38(struct SPC700 *cpu) { // AND dp, #imm
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -862,8 +748,6 @@ static void SPC700_opcode_39(struct SPC700 *cpu) { // AND (X), (Y)
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -878,8 +762,6 @@ static void SPC700_opcode_3A(struct SPC700 *cpu) { // INCW dp
     cpu->regs.P.N = (cpu->regs.TR & 0x8000) >> 15;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR & 0xFF);
     SPC700_write8D(cpu, (cpu->regs.TA) + 1, ((cpu->regs.TR) >> 8) & 0xFF);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -896,8 +778,6 @@ static void SPC700_opcode_3B(struct SPC700 *cpu) { // ROL dp+X
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -909,8 +789,6 @@ static void SPC700_opcode_3C(struct SPC700 *cpu) { // ROL A
     cpu->regs.A = ((cpu->regs.A << 1) | carry) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -920,8 +798,6 @@ static void SPC700_opcode_3D(struct SPC700 *cpu) { // INC X
     cpu->regs.X = (cpu->regs.X + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -931,12 +807,10 @@ static void SPC700_opcode_3E(struct SPC700 *cpu) { // CMP X, dp
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.X - cpu->regs.TR;
+    i32 z = cpu->regs.X - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -952,8 +826,6 @@ static void SPC700_opcode_3F(struct SPC700 *cpu) { // CALL !abs
     SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = cpu->regs.TA;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -962,8 +834,6 @@ static void SPC700_opcode_40(struct SPC700 *cpu) { // SETP i
     // INS 59 ADDR MODE 0
     cpu->regs.P.P = 1;
     cpu->regs.P.DO = 0x100;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -976,8 +846,6 @@ static void SPC700_opcode_41(struct SPC700 *cpu) { // TCALL 4
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65494);
     cpu->regs.PC |= SPC700_read8(cpu, 65495) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -989,8 +857,6 @@ static void SPC700_opcode_42(struct SPC700 *cpu) { // SET1 dp.2
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x04;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1005,8 +871,6 @@ static void SPC700_opcode_43(struct SPC700 *cpu) { // BBS dp.2, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1019,8 +883,6 @@ static void SPC700_opcode_44(struct SPC700 *cpu) { // EOR A, dp
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1035,8 +897,6 @@ static void SPC700_opcode_45(struct SPC700 *cpu) { // EOR A, !abs
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1047,8 +907,6 @@ static void SPC700_opcode_46(struct SPC700 *cpu) { // EOR A, (X)
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1063,8 +921,6 @@ static void SPC700_opcode_47(struct SPC700 *cpu) { // EOR A, [dp+X]
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1076,8 +932,6 @@ static void SPC700_opcode_48(struct SPC700 *cpu) { // EOR A, #imm
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1094,8 +948,6 @@ static void SPC700_opcode_49(struct SPC700 *cpu) { // EOR dp, dp
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1112,8 +964,6 @@ static void SPC700_opcode_4A(struct SPC700 *cpu) { // AND1 m.b
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
     val &= 0x01;
     cpu->regs.P.C &= val;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1128,8 +978,6 @@ static void SPC700_opcode_4B(struct SPC700 *cpu) { // LSR dp
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1146,8 +994,6 @@ static void SPC700_opcode_4C(struct SPC700 *cpu) { // LSR !abs
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1156,8 +1002,6 @@ static void SPC700_opcode_4D(struct SPC700 *cpu) { // PUSH X
     // INS 51 ADDR MODE null
     SPC700_write8(cpu, 0x100 + cpu->regs.SP--, cpu->regs.X);
     cpu->regs.SP &= 0xFF;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1173,8 +1017,6 @@ static void SPC700_opcode_4E(struct SPC700 *cpu) { // TCLR1 !abs
     cpu->regs.P.N = ((cpu->regs.A - cpu->regs.TR) & 0x80) >> 7;
     cpu->regs.TR &= (~cpu->regs.A) & 0xFF;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1188,8 +1030,6 @@ static void SPC700_opcode_4F(struct SPC700 *cpu) { // PCALL #imm
     SPC700_write8(cpu, 0x100 + cpu->regs.SP--, (cpu->regs.PC & 0xFF));
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = cpu->regs.TR + 0xFF00;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1202,8 +1042,6 @@ static void SPC700_opcode_50(struct SPC700 *cpu) { // BVC r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1216,8 +1054,6 @@ static void SPC700_opcode_51(struct SPC700 *cpu) { // TCALL 5
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65492);
     cpu->regs.PC |= SPC700_read8(cpu, 65493) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1229,8 +1065,6 @@ static void SPC700_opcode_52(struct SPC700 *cpu) { // CLR1 dp.2
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0xFB;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1245,8 +1079,6 @@ static void SPC700_opcode_53(struct SPC700 *cpu) { // BBC dp.2
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1259,8 +1091,6 @@ static void SPC700_opcode_54(struct SPC700 *cpu) { // EOR A, dp+X
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1276,8 +1106,6 @@ static void SPC700_opcode_55(struct SPC700 *cpu) { // EOR A, !abs+X
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1293,8 +1121,6 @@ static void SPC700_opcode_56(struct SPC700 *cpu) { // EOR A, !abs+Y
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1309,8 +1135,6 @@ static void SPC700_opcode_57(struct SPC700 *cpu) { // EOR A, [dp]+Y
     cpu->regs.A ^= cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1326,8 +1150,6 @@ static void SPC700_opcode_58(struct SPC700 *cpu) { // EOR dp, #imm
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     cpu->regs.P.N = ((cpu->regs.TA2) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1340,8 +1162,6 @@ static void SPC700_opcode_59(struct SPC700 *cpu) { // EOR (X), (Y)
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1353,12 +1173,10 @@ static void SPC700_opcode_5A(struct SPC700 *cpu) { // CMPW
     cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.TA+1);
     cpu->regs.TR += (cpu->regs.TA << 8);
     // INS 25 ADDR MODE undefined
-    u32 z = ((cpu->regs.Y << 8) + cpu->regs.A) - cpu->regs.TR;
+    i32 z = ((cpu->regs.Y << 8) + cpu->regs.A) - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFFFF) == 0);
     cpu->regs.P.N = (z & 0x8000) >> 15;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1374,8 +1192,6 @@ static void SPC700_opcode_5B(struct SPC700 *cpu) { // LSR dp+X
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1386,8 +1202,6 @@ static void SPC700_opcode_5C(struct SPC700 *cpu) { // LSR A
     cpu->regs.A >>= 1;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1396,8 +1210,6 @@ static void SPC700_opcode_5D(struct SPC700 *cpu) { // MOV X, A
     cpu->regs.X = cpu->regs.A;
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1409,12 +1221,10 @@ static void SPC700_opcode_5E(struct SPC700 *cpu) { // CMP Y, !abs
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.Y - cpu->regs.TR;
+    i32 z = cpu->regs.Y - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1425,8 +1235,6 @@ static void SPC700_opcode_5F(struct SPC700 *cpu) { // JMP !abs
     cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.PC = cpu->regs.TA;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1434,8 +1242,6 @@ static void SPC700_opcode_60(struct SPC700 *cpu) { // CLRC i
     cpu->regs.opc_cycles = 2;
     // INS 21 ADDR MODE 0
     cpu->regs.P.C = 0;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1448,8 +1254,6 @@ static void SPC700_opcode_61(struct SPC700 *cpu) { // TCALL 6
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65490);
     cpu->regs.PC |= SPC700_read8(cpu, 65491) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1461,8 +1265,6 @@ static void SPC700_opcode_62(struct SPC700 *cpu) { // SET1 dp.3
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x08;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1477,8 +1279,6 @@ static void SPC700_opcode_63(struct SPC700 *cpu) { // BBS dp.3, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1488,12 +1288,10 @@ static void SPC700_opcode_64(struct SPC700 *cpu) { // CMP A, dp
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1505,12 +1303,10 @@ static void SPC700_opcode_65(struct SPC700 *cpu) { // CMP A, !abs
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1518,12 +1314,10 @@ static void SPC700_opcode_66(struct SPC700 *cpu) { // CMP A, (X)
     cpu->regs.opc_cycles = 3;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1535,12 +1329,10 @@ static void SPC700_opcode_67(struct SPC700 *cpu) { // CMP A, [dp+X]
     cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1549,12 +1341,10 @@ static void SPC700_opcode_68(struct SPC700 *cpu) { // CMP A, #i
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1567,12 +1357,10 @@ static void SPC700_opcode_69(struct SPC700 *cpu) { // CMP dp, dp
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
     cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.TA2 - cpu->regs.TR;
+    i32 z = cpu->regs.TA2 - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1589,8 +1377,6 @@ static void SPC700_opcode_6A(struct SPC700 *cpu) { // AND1 C, /m.b
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
     val = (~val) & 0x01;
     cpu->regs.P.C &= val;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1606,8 +1392,6 @@ static void SPC700_opcode_6B(struct SPC700 *cpu) { // ROR dp
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1625,8 +1409,6 @@ static void SPC700_opcode_6C(struct SPC700 *cpu) { // ROR !abs
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1635,8 +1417,6 @@ static void SPC700_opcode_6D(struct SPC700 *cpu) { // PUSH Y
     // INS 51 ADDR MODE null
     SPC700_write8(cpu, 0x100 + cpu->regs.SP--, cpu->regs.Y);
     cpu->regs.SP &= 0xFF;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1654,8 +1434,6 @@ static void SPC700_opcode_6E(struct SPC700 *cpu) { // DBNZ dp, r
         cpu->regs.opc_cycles += 2;
     }
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1666,8 +1444,6 @@ static void SPC700_opcode_6F(struct SPC700 *cpu) { // RET i
     cpu->regs.PC = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
     cpu->regs.PC += SPC700_read8(cpu, 0x100 + cpu->regs.SP) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1680,8 +1456,6 @@ static void SPC700_opcode_70(struct SPC700 *cpu) { // BVS r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1694,8 +1468,6 @@ static void SPC700_opcode_71(struct SPC700 *cpu) { // TCALL 7
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65488);
     cpu->regs.PC |= SPC700_read8(cpu, 65489) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1707,8 +1479,6 @@ static void SPC700_opcode_72(struct SPC700 *cpu) { // CLR1 dp.3
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0xF7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1723,8 +1493,6 @@ static void SPC700_opcode_73(struct SPC700 *cpu) { // BBC dp.3
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1734,12 +1502,10 @@ static void SPC700_opcode_74(struct SPC700 *cpu) { // CMP A, dp+X
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1752,12 +1518,10 @@ static void SPC700_opcode_75(struct SPC700 *cpu) { // CMP A, !abs+X
     cpu->regs.TA += cpu->regs.X;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1770,12 +1534,10 @@ static void SPC700_opcode_76(struct SPC700 *cpu) { // CMP A, !abs+Y
     cpu->regs.TA += cpu->regs.Y;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1787,12 +1549,10 @@ static void SPC700_opcode_77(struct SPC700 *cpu) { // CMP A, [dp]+Y
     cpu->regs.TA += cpu->regs.Y;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.A - cpu->regs.TR;
+    i32 z = cpu->regs.A - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1804,12 +1564,10 @@ static void SPC700_opcode_78(struct SPC700 *cpu) { // CMP dp, #imm
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.TA2 - cpu->regs.TR;
+    i32 z = cpu->regs.TA2 - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1818,12 +1576,10 @@ static void SPC700_opcode_79(struct SPC700 *cpu) { // CMP (X), (Y)
     cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.TR - cpu->regs.TA;
+    i32 z = cpu->regs.TR - cpu->regs.TA;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1849,8 +1605,6 @@ static void SPC700_opcode_7A(struct SPC700 *cpu) { // ADDW YA, dp
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.Y = z & 0xFF;
     cpu->regs.P.Z = +(cpu->regs.A == 0 && cpu->regs.Y == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1867,8 +1621,6 @@ static void SPC700_opcode_7B(struct SPC700 *cpu) { // ROR dp+X
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1880,8 +1632,6 @@ static void SPC700_opcode_7C(struct SPC700 *cpu) { // ROR A
     cpu->regs.A = (carry << 7) | (cpu->regs.A >> 1);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1890,8 +1640,6 @@ static void SPC700_opcode_7D(struct SPC700 *cpu) { // MOV A, X
     cpu->regs.A = cpu->regs.X;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1901,12 +1649,10 @@ static void SPC700_opcode_7E(struct SPC700 *cpu) { // CMP Y, dp
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.Y - cpu->regs.TR;
+    i32 z = cpu->regs.Y - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1920,8 +1666,6 @@ static void SPC700_opcode_7F(struct SPC700 *cpu) { // RET1 i
     cpu->regs.PC = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
     cpu->regs.PC += SPC700_read8(cpu, 0x100 + cpu->regs.SP) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1929,8 +1673,6 @@ static void SPC700_opcode_80(struct SPC700 *cpu) { // SETC i
     cpu->regs.opc_cycles = 2;
     // INS 58 ADDR MODE 0
     cpu->regs.P.C = 1;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1943,8 +1685,6 @@ static void SPC700_opcode_81(struct SPC700 *cpu) { // TCALL 8
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65486);
     cpu->regs.PC |= SPC700_read8(cpu, 65487) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1956,8 +1696,6 @@ static void SPC700_opcode_82(struct SPC700 *cpu) { // SET1 dp.4
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x10;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1972,8 +1710,6 @@ static void SPC700_opcode_83(struct SPC700 *cpu) { // BBS dp.4, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -1990,8 +1726,6 @@ static void SPC700_opcode_84(struct SPC700 *cpu) { // ADC A, dp
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2010,8 +1744,6 @@ static void SPC700_opcode_85(struct SPC700 *cpu) { // ADC !abs
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2026,8 +1758,6 @@ static void SPC700_opcode_86(struct SPC700 *cpu) { // ADC A, (X)
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2046,8 +1776,6 @@ static void SPC700_opcode_87(struct SPC700 *cpu) { // ADC A, [dp+X]
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2063,8 +1791,6 @@ static void SPC700_opcode_88(struct SPC700 *cpu) { // ADC A, #imm
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2085,8 +1811,6 @@ static void SPC700_opcode_89(struct SPC700 *cpu) { // ADC dp, dp
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2103,8 +1827,6 @@ static void SPC700_opcode_8A(struct SPC700 *cpu) { // EOR1 C, m.b
     u32 val = (cpu->regs.TA & mask) >> cpu->regs.TR;
     val &= 0x01;
     cpu->regs.P.C ^= val;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2118,8 +1840,6 @@ static void SPC700_opcode_8B(struct SPC700 *cpu) { // DEC dp
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2135,8 +1855,6 @@ static void SPC700_opcode_8C(struct SPC700 *cpu) { // DEC !abs
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2147,8 +1865,6 @@ static void SPC700_opcode_8D(struct SPC700 *cpu) { // MOV Y, #imm
     cpu->regs.Y = cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2158,8 +1874,6 @@ static void SPC700_opcode_8E(struct SPC700 *cpu) { // POP P
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
     cpu->regs.TR = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
     SPC700_P_setbyte(&cpu->regs.P, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2170,8 +1884,6 @@ static void SPC700_opcode_8F(struct SPC700 *cpu) { // MOV d, #imm
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2184,8 +1896,6 @@ static void SPC700_opcode_90(struct SPC700 *cpu) { // BCC r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2198,8 +1908,6 @@ static void SPC700_opcode_91(struct SPC700 *cpu) { // TCALL 9
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65484);
     cpu->regs.PC |= SPC700_read8(cpu, 65485) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2211,8 +1919,6 @@ static void SPC700_opcode_92(struct SPC700 *cpu) { // CLR1 dp.4
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0xEF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2227,8 +1933,6 @@ static void SPC700_opcode_93(struct SPC700 *cpu) { // BBC dp.4
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2245,8 +1949,6 @@ static void SPC700_opcode_94(struct SPC700 *cpu) { // ADC A, dp+X
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2266,8 +1968,6 @@ static void SPC700_opcode_95(struct SPC700 *cpu) { // ADC A, !abs+X
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2287,8 +1987,6 @@ static void SPC700_opcode_96(struct SPC700 *cpu) { // ADC A, !abs+Y
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2307,8 +2005,6 @@ static void SPC700_opcode_97(struct SPC700 *cpu) { // ADC A, [dp]+Y
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2328,8 +2024,6 @@ static void SPC700_opcode_98(struct SPC700 *cpu) { // ADC dp, #imm
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2346,8 +2040,6 @@ static void SPC700_opcode_99(struct SPC700 *cpu) { // ADC (X), (Y)
     cpu->regs.TR = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2375,8 +2067,6 @@ static void SPC700_opcode_9A(struct SPC700 *cpu) { // SUBW YA, dp
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.Y = z & 0xFF;
     cpu->regs.P.Z = +(cpu->regs.Y == 0 && cpu->regs.A == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2391,8 +2081,6 @@ static void SPC700_opcode_9B(struct SPC700 *cpu) { // DEC dp+X
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2402,8 +2090,6 @@ static void SPC700_opcode_9C(struct SPC700 *cpu) { // DEC A
     cpu->regs.A = (cpu->regs.A - 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2412,8 +2098,6 @@ static void SPC700_opcode_9D(struct SPC700 *cpu) { // MOV X, SP
     cpu->regs.X = cpu->regs.SP;
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2431,8 +2115,6 @@ static void SPC700_opcode_9E(struct SPC700 *cpu) { // DIV YA, X
     }
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2442,8 +2124,6 @@ static void SPC700_opcode_9F(struct SPC700 *cpu) { // XCN i
     cpu->regs.A = ((cpu->regs.A << 4) | (cpu->regs.A >> 4)) & 0xFF;
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2451,8 +2131,6 @@ static void SPC700_opcode_A0(struct SPC700 *cpu) { // EI i
     cpu->regs.opc_cycles = 3;
     // INS 33 ADDR MODE 0
     cpu->regs.P.I = 1;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2465,8 +2143,6 @@ static void SPC700_opcode_A1(struct SPC700 *cpu) { // TCALL 10
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65482);
     cpu->regs.PC |= SPC700_read8(cpu, 65483) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2478,8 +2154,6 @@ static void SPC700_opcode_A2(struct SPC700 *cpu) { // SET1 dp.5
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x20;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2494,8 +2168,6 @@ static void SPC700_opcode_A3(struct SPC700 *cpu) { // BBS dp.5, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2505,16 +2177,14 @@ static void SPC700_opcode_A4(struct SPC700 *cpu) { // SBC A, dp
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2526,16 +2196,14 @@ static void SPC700_opcode_A5(struct SPC700 *cpu) { // SBC A, !abs
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2543,16 +2211,14 @@ static void SPC700_opcode_A6(struct SPC700 *cpu) { // SBC A, (X)
     cpu->regs.opc_cycles = 3;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2564,16 +2230,14 @@ static void SPC700_opcode_A7(struct SPC700 *cpu) { // SBC A, [dp+X]
     cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2582,16 +2246,14 @@ static void SPC700_opcode_A8(struct SPC700 *cpu) { // SBC A, #imm
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2604,8 +2266,8 @@ static void SPC700_opcode_A9(struct SPC700 *cpu) { // SBC dp, dp
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
     cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.TA2) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.TA2) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.TA2) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.TA2) ^ y)) & ((cpu->regs.TA2) ^ z)) & 0x80) >> 7;
@@ -2613,8 +2275,6 @@ static void SPC700_opcode_A9(struct SPC700 *cpu) { // SBC dp, dp
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2628,8 +2288,6 @@ static void SPC700_opcode_AA(struct SPC700 *cpu) { // MOV1 C, m.b
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.TA & 0x1FFF);
     // INS 41 ADDR MODE 17
     cpu->regs.P.C = ((cpu->regs.TA) >> (cpu->regs.TR)) & 1;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2643,8 +2301,6 @@ static void SPC700_opcode_AB(struct SPC700 *cpu) { // INC dp
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2660,8 +2316,6 @@ static void SPC700_opcode_AC(struct SPC700 *cpu) { // INC !abs
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2670,12 +2324,10 @@ static void SPC700_opcode_AD(struct SPC700 *cpu) { // CMP Y, #imm
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.Y - cpu->regs.TR;
+    i32 z = cpu->regs.Y - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2684,8 +2336,6 @@ static void SPC700_opcode_AE(struct SPC700 *cpu) { // POP A
     // INS 50 ADDR MODE null
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
     cpu->regs.A = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2693,8 +2343,6 @@ static void SPC700_opcode_AF(struct SPC700 *cpu) { // MOV (X)+, A
     cpu->regs.opc_cycles = 4;
     SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.A);
     cpu->regs.X = (cpu->regs.X + 1) & 0xFF;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2707,8 +2355,6 @@ static void SPC700_opcode_B0(struct SPC700 *cpu) { // BCS r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2721,8 +2367,6 @@ static void SPC700_opcode_B1(struct SPC700 *cpu) { // TCALL 11
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65480);
     cpu->regs.PC |= SPC700_read8(cpu, 65481) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2734,8 +2378,6 @@ static void SPC700_opcode_B2(struct SPC700 *cpu) { // CLR1 dp.5
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0xDF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2750,8 +2392,6 @@ static void SPC700_opcode_B3(struct SPC700 *cpu) { // BBC dp.5
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2761,16 +2401,14 @@ static void SPC700_opcode_B4(struct SPC700 *cpu) { // SBC A, dp+X
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2783,16 +2421,14 @@ static void SPC700_opcode_B5(struct SPC700 *cpu) { // SBC A, !abs+X
     cpu->regs.TA += cpu->regs.X;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2805,16 +2441,14 @@ static void SPC700_opcode_B6(struct SPC700 *cpu) { // SBC A, !abs+Y
     cpu->regs.TA += cpu->regs.Y;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA & 0xFFFF);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2826,16 +2460,14 @@ static void SPC700_opcode_B7(struct SPC700 *cpu) { // SBC A, [dp]+Y
     cpu->regs.TA += cpu->regs.Y;
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.TA);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.A) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.A) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.A) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.A) ^ y)) & ((cpu->regs.A) ^ z)) & 0x80) >> 7;
     cpu->regs.P.N = (z & 0x80) >> 7;
     cpu->regs.A = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2847,8 +2479,8 @@ static void SPC700_opcode_B8(struct SPC700 *cpu) { // SBC dp, #imm
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA2 = SPC700_read8D(cpu, cpu->regs.TA);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TR) & 0xFF;
-    u32 z = (cpu->regs.TA2) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TR) & 0xFF;
+    i32 z = (cpu->regs.TA2) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.TA2) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.TA2) ^ y)) & ((cpu->regs.TA2) ^ z)) & 0x80) >> 7;
@@ -2856,8 +2488,6 @@ static void SPC700_opcode_B8(struct SPC700 *cpu) { // SBC dp, #imm
     cpu->regs.TA2 = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TA2) == 0);
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2866,8 +2496,8 @@ static void SPC700_opcode_B9(struct SPC700 *cpu) { // SBC (X), (Y)
     cpu->regs.TA = SPC700_read8D(cpu, cpu->regs.Y);
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.X);
     // INS 56 ADDR MODE undefined
-    u32 y = (~cpu->regs.TA) & 0xFF;
-    u32 z = (cpu->regs.TR) + y + cpu->regs.P.C;
+    i32 y = (~cpu->regs.TA) & 0xFF;
+    i32 z = (cpu->regs.TR) + y + cpu->regs.P.C;
     cpu->regs.P.C = +(z > 0xFF);
     cpu->regs.P.H = (((cpu->regs.TR) ^ y ^ z) & 0x10) >> 4;
     cpu->regs.P.V = (((~((cpu->regs.TR) ^ y)) & ((cpu->regs.TR) ^ z)) & 0x80) >> 7;
@@ -2875,8 +2505,6 @@ static void SPC700_opcode_B9(struct SPC700 *cpu) { // SBC (X), (Y)
     cpu->regs.TR = z & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2887,9 +2515,7 @@ static void SPC700_opcode_BA(struct SPC700 *cpu) { // MOVW YA, dp
     cpu->regs.A = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.Y = SPC700_read8D(cpu, cpu->regs.TA + 1);
     cpu->regs.P.N = (cpu->regs.Y & 0x80) >> 7;
-    cpu->regs.P.Z = +(0 == cpu->regs.A == cpu->regs.Y);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
+    cpu->regs.P.Z = (!cpu->regs.A && !cpu->regs.Y);
 }
 
 
@@ -2904,8 +2530,6 @@ static void SPC700_opcode_BB(struct SPC700 *cpu) { // INC dp+X
     cpu->regs.P.Z = +((cpu->regs.TR) == 0);
     cpu->regs.P.N = ((cpu->regs.TR) & 0x80) >> 7;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2915,16 +2539,12 @@ static void SPC700_opcode_BC(struct SPC700 *cpu) { // INC A
     cpu->regs.A = (cpu->regs.A + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
 static void SPC700_opcode_BD(struct SPC700 *cpu) { // MOV SP, X
     cpu->regs.opc_cycles = 2;
     cpu->regs.SP = cpu->regs.X;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2941,8 +2561,6 @@ static void SPC700_opcode_BE(struct SPC700 *cpu) { // DAS A
     cpu->regs.A &= 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2952,8 +2570,6 @@ static void SPC700_opcode_BF(struct SPC700 *cpu) { // MOV A, (X)+
     cpu->regs.X = (cpu->regs.X + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2961,8 +2577,6 @@ static void SPC700_opcode_C0(struct SPC700 *cpu) { // DI
     cpu->regs.opc_cycles = 3;
     // INS 31 ADDR MODE 0
     cpu->regs.P.I = 0;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2975,8 +2589,6 @@ static void SPC700_opcode_C1(struct SPC700 *cpu) { // TCALL 12
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65478);
     cpu->regs.PC |= SPC700_read8(cpu, 65479) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -2988,8 +2600,6 @@ static void SPC700_opcode_C2(struct SPC700 *cpu) { // SET1 dp.6
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x40;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3004,8 +2614,6 @@ static void SPC700_opcode_C3(struct SPC700 *cpu) { // BBS dp.6, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3014,8 +2622,6 @@ static void SPC700_opcode_C4(struct SPC700 *cpu) { // MOV d, A
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3026,16 +2632,12 @@ static void SPC700_opcode_C5(struct SPC700 *cpu) { // MOV !abs, A
     cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
 static void SPC700_opcode_C6(struct SPC700 *cpu) { // MOV (X), A
     cpu->regs.opc_cycles = 4;
     SPC700_write8D(cpu, (cpu->regs.X), cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3046,8 +2648,6 @@ static void SPC700_opcode_C7(struct SPC700 *cpu) { // MOV [dp+X], A
     cpu->regs.TA += cpu->regs.X;
     cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TA)) + (SPC700_read8D(cpu, (cpu->regs.TA) + 1) << 8);
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3056,12 +2656,10 @@ static void SPC700_opcode_C8(struct SPC700 *cpu) { // CMP X, #i
     cpu->regs.TR = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     // INS 24 ADDR MODE undefined
-    u32 z = cpu->regs.X - cpu->regs.TR;
+    i32 z = cpu->regs.X - cpu->regs.TR;
     cpu->regs.P.C = +(z >= 0);
     cpu->regs.P.Z = +((z & 0xFF) == 0);
     cpu->regs.P.N = (z & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3072,8 +2670,6 @@ static void SPC700_opcode_C9(struct SPC700 *cpu) { // MOV !abs, X
     cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.X);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3089,8 +2685,6 @@ static void SPC700_opcode_CA(struct SPC700 *cpu) { // MOV1 m.b, C
     // INS 41 ADDR MODE 1
     cpu->regs.TA2 = cpu->regs.P.C ? cpu->regs.TA2 | (cpu->regs.P.C << cpu->regs.TR) : cpu->regs.TA2 & ((~(1 << cpu->regs.TR)) & 0xFF);
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3099,8 +2693,6 @@ static void SPC700_opcode_CB(struct SPC700 *cpu) { // MOV d, Y
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.Y);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3111,8 +2703,6 @@ static void SPC700_opcode_CC(struct SPC700 *cpu) { // MOV !a, Y
     cpu->regs.TA += SPC700_read8(cpu, cpu->regs.PC++) << 8;
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.Y);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3123,8 +2713,6 @@ static void SPC700_opcode_CD(struct SPC700 *cpu) { // MOV X, #imm
     cpu->regs.X = cpu->regs.TR;
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3133,8 +2721,6 @@ static void SPC700_opcode_CE(struct SPC700 *cpu) { // POP X
     // INS 50 ADDR MODE null
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
     cpu->regs.X = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3145,8 +2731,6 @@ static void SPC700_opcode_CF(struct SPC700 *cpu) { // MUL YA
     cpu->regs.Y = (YA >> 8) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3159,8 +2743,6 @@ static void SPC700_opcode_D0(struct SPC700 *cpu) { // BNE r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3173,8 +2755,6 @@ static void SPC700_opcode_D1(struct SPC700 *cpu) { // TCALL 13
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65476);
     cpu->regs.PC |= SPC700_read8(cpu, 65477) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3186,8 +2766,6 @@ static void SPC700_opcode_D2(struct SPC700 *cpu) { // CLR1 dp.6
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0xBF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3202,8 +2780,6 @@ static void SPC700_opcode_D3(struct SPC700 *cpu) { // BBC dp.6
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3212,8 +2788,6 @@ static void SPC700_opcode_D4(struct SPC700 *cpu) { // MOV dp+X, A
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA + cpu->regs.X), cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3225,8 +2799,6 @@ static void SPC700_opcode_D5(struct SPC700 *cpu) { // MOV !abs+X, A
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.X;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3238,8 +2810,6 @@ static void SPC700_opcode_D6(struct SPC700 *cpu) { // MOV !abs+Y, A
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TA += cpu->regs.Y;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3250,8 +2820,6 @@ static void SPC700_opcode_D7(struct SPC700 *cpu) { // MOV [dp]+Y, A
     cpu->regs.TA = SPC700_read8D(cpu, (cpu->regs.TR)) + (SPC700_read8D(cpu, (cpu->regs.TR) + 1) << 8);
     cpu->regs.TA = (cpu->regs.TA + cpu->regs.Y) & 0xFFFF;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.A);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3260,8 +2828,6 @@ static void SPC700_opcode_D8(struct SPC700 *cpu) { // MOV dp, X
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.X);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3270,8 +2836,6 @@ static void SPC700_opcode_D9(struct SPC700 *cpu) { // MOV dp+Y, X
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA + cpu->regs.Y), cpu->regs.X);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3281,8 +2845,6 @@ static void SPC700_opcode_DA(struct SPC700 *cpu) { // MOVW d, YA
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.A);
     SPC700_write8D(cpu, (cpu->regs.TA + 1), cpu->regs.Y);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3291,8 +2853,6 @@ static void SPC700_opcode_DB(struct SPC700 *cpu) { // MOV dp+X, Y
     cpu->regs.TA = SPC700_read8(cpu, cpu->regs.PC++);
     cpu->regs.PC &= 0xFFFF;
     SPC700_write8D(cpu, (cpu->regs.TA + cpu->regs.X), cpu->regs.Y);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3302,8 +2862,6 @@ static void SPC700_opcode_DC(struct SPC700 *cpu) { // DEC Y
     cpu->regs.Y = (cpu->regs.Y - 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3312,8 +2870,6 @@ static void SPC700_opcode_DD(struct SPC700 *cpu) { // MOV A, Y
     cpu->regs.A = cpu->regs.Y;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3329,8 +2885,6 @@ static void SPC700_opcode_DE(struct SPC700 *cpu) { // CBNE dp+X, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3346,8 +2900,6 @@ static void SPC700_opcode_DF(struct SPC700 *cpu) { // DAA A
     }
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3356,8 +2908,6 @@ static void SPC700_opcode_E0(struct SPC700 *cpu) { // CLRV i
     // INS 23 ADDR MODE 0
     cpu->regs.P.V = 0;
     cpu->regs.P.H = 0;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3370,8 +2920,6 @@ static void SPC700_opcode_E1(struct SPC700 *cpu) { // TCALL 14
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65474);
     cpu->regs.PC |= SPC700_read8(cpu, 65475) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3383,8 +2931,6 @@ static void SPC700_opcode_E2(struct SPC700 *cpu) { // SET1 dp.7
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR |= 0x80;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3399,8 +2945,6 @@ static void SPC700_opcode_E3(struct SPC700 *cpu) { // BBS dp.7, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3411,8 +2955,6 @@ static void SPC700_opcode_E4(struct SPC700 *cpu) { // MOV A, dp
     cpu->regs.A = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3425,8 +2967,6 @@ static void SPC700_opcode_E5(struct SPC700 *cpu) { // MOV A, !abs
     cpu->regs.A = SPC700_read8(cpu, cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3435,8 +2975,6 @@ static void SPC700_opcode_E6(struct SPC700 *cpu) { // MOV A, (X)
     cpu->regs.A = SPC700_read8D(cpu, cpu->regs.X);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3448,8 +2986,6 @@ static void SPC700_opcode_E7(struct SPC700 *cpu) { // MOV A, [dp+X]
     cpu->regs.A = SPC700_read8(cpu, cpu->regs.TA2);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3459,8 +2995,6 @@ static void SPC700_opcode_E8(struct SPC700 *cpu) { // MOV A, #imm
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3473,8 +3007,6 @@ static void SPC700_opcode_E9(struct SPC700 *cpu) { // MOV X, !abs
     cpu->regs.X = SPC700_read8(cpu, cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3494,8 +3026,6 @@ static void SPC700_opcode_EA(struct SPC700 *cpu) { // NOT1 m.b
     else
         cpu->regs.TA2 |= mask;
     SPC700_write8(cpu, cpu->regs.TA, cpu->regs.TA2);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3506,8 +3036,6 @@ static void SPC700_opcode_EB(struct SPC700 *cpu) { // MOV Y, dp
     cpu->regs.Y = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3520,8 +3048,6 @@ static void SPC700_opcode_EC(struct SPC700 *cpu) { // MOV Y, !abs
     cpu->regs.Y = SPC700_read8(cpu, cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3529,8 +3055,6 @@ static void SPC700_opcode_ED(struct SPC700 *cpu) { // NOTC i
     cpu->regs.opc_cycles = 3;
     // INS 46 ADDR MODE 0
     cpu->regs.P.C = cpu->regs.P.C ? 0 : 1;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3539,8 +3063,6 @@ static void SPC700_opcode_EE(struct SPC700 *cpu) { // POP Y
     // INS 50 ADDR MODE null
     cpu->regs.SP = (cpu->regs.SP + 1) & 0xFF;
     cpu->regs.Y = SPC700_read8(cpu, 0x100 + cpu->regs.SP);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3548,8 +3070,6 @@ static void SPC700_opcode_EF(struct SPC700 *cpu) { // SLEEP
     cpu->regs.opc_cycles = 3;
     // INS 60 ADDR MODE 0
     cpu->WAI = 1;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3562,8 +3082,6 @@ static void SPC700_opcode_F0(struct SPC700 *cpu) { // BEQ r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3576,8 +3094,6 @@ static void SPC700_opcode_F1(struct SPC700 *cpu) { // TCALL 15
     cpu->regs.SP &= 0xFF;
     cpu->regs.PC = SPC700_read8(cpu, 65472);
     cpu->regs.PC |= SPC700_read8(cpu, 65473) << 8;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3589,8 +3105,6 @@ static void SPC700_opcode_F2(struct SPC700 *cpu) { // CLR1 dp.7
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TA);
     cpu->regs.TR &= 0x7F;
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3605,8 +3119,6 @@ static void SPC700_opcode_F3(struct SPC700 *cpu) { // BBC dp.n, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3617,8 +3129,6 @@ static void SPC700_opcode_F4(struct SPC700 *cpu) { // MOV A, dp+X
     cpu->regs.A = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3631,8 +3141,6 @@ static void SPC700_opcode_F5(struct SPC700 *cpu) { // MOV !a+X
     cpu->regs.A = SPC700_read8(cpu, (cpu->regs.TA + cpu->regs.X) & 0xFFFF);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3645,8 +3153,6 @@ static void SPC700_opcode_F6(struct SPC700 *cpu) { // MOV !a+Y
     cpu->regs.A = SPC700_read8(cpu, (cpu->regs.TA + cpu->regs.Y) & 0xFFFF);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3659,8 +3165,6 @@ static void SPC700_opcode_F7(struct SPC700 *cpu) { // MOV A, [dp]+Y
     cpu->regs.A = SPC700_read8(cpu, cpu->regs.TA);
     cpu->regs.P.Z = +((cpu->regs.A) == 0);
     cpu->regs.P.N = ((cpu->regs.A) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3671,8 +3175,6 @@ static void SPC700_opcode_F8(struct SPC700 *cpu) { // MOV X, dp
     cpu->regs.X = SPC700_read8D(cpu, cpu->regs.TR);
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3683,8 +3185,6 @@ static void SPC700_opcode_F9(struct SPC700 *cpu) { // MOV X, dp+Y
     cpu->regs.X = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.Y);
     cpu->regs.P.Z = +((cpu->regs.X) == 0);
     cpu->regs.P.N = ((cpu->regs.X) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3696,8 +3196,6 @@ static void SPC700_opcode_FA(struct SPC700 *cpu) { // MOV dp, dp
     cpu->regs.PC &= 0xFFFF;
     cpu->regs.TR = SPC700_read8D(cpu, cpu->regs.TR);
     SPC700_write8D(cpu, (cpu->regs.TA), cpu->regs.TR);
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3708,8 +3206,6 @@ static void SPC700_opcode_FB(struct SPC700 *cpu) { // MOV Y, dp+X
     cpu->regs.Y = SPC700_read8D(cpu, cpu->regs.TA + cpu->regs.X);
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3719,8 +3215,6 @@ static void SPC700_opcode_FC(struct SPC700 *cpu) { // INC Y
     cpu->regs.Y = (cpu->regs.Y + 1) & 0xFF;
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3729,8 +3223,6 @@ static void SPC700_opcode_FD(struct SPC700 *cpu) { // MOV Y, A
     cpu->regs.Y = cpu->regs.A;
     cpu->regs.P.Z = +((cpu->regs.Y) == 0);
     cpu->regs.P.N = ((cpu->regs.Y) & 0x80) >> 7;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3744,8 +3236,6 @@ static void SPC700_opcode_FE(struct SPC700 *cpu) { // DBNZ Y, r
         cpu->regs.PC = (cpu->regs.PC + (u32)(i8)cpu->regs.TR) & 0xFFFF;
         cpu->regs.opc_cycles += 2;
     }
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 
@@ -3753,8 +3243,6 @@ static void SPC700_opcode_FF(struct SPC700 *cpu) { // STOP
     cpu->regs.opc_cycles = 2;
     // INS 61 ADDR MODE 0
     cpu->STP = 1;
-    cpu->regs.IR = SPC700_read8(cpu, cpu->regs.PC);
-    cpu->regs.PC = (cpu->regs.PC + 1) & 0xFFFF;
 }
 
 

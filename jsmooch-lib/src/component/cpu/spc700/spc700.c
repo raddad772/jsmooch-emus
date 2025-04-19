@@ -26,8 +26,6 @@ void SPC700_reset(struct SPC700 *this)
     }
 
     this->regs.PC = SPC700_boot_rom[62] + (SPC700_boot_rom[63] << 8);
-    this->regs.IR = SPC700_boot_rom[this->regs.PC - 0xFFC0];
-    this->regs.PC++;
 
     this->regs.SP = 0xEF;
     this->regs.P.v = 2;
@@ -97,6 +95,8 @@ void SPC700_cycle(struct SPC700 *this, i64 how_many) {
             return;
         }
 
+        this->regs.IR = SPC700_read8(this, this->regs.PC);
+        this->regs.PC = (this->regs.PC + 1) & 0xFFFF;
         SPC700_ins_func fptr = get_decoded_opcode(this->regs.IR);
         fptr(this);
         (*this->clock) += this->regs.opc_cycles;
@@ -231,9 +231,11 @@ static void writeIO(struct SPC700 *this, u32 addr, u32 val)
 
 u8 SPC700_read8(struct SPC700 *this, u32 addr)
 {
-    if ((addr >= 0x00F1) && (addr <= 0x00FF)) return readIO(this, addr);
-    if ((addr >= 0xFFC0) && this->io.ROM_readable) return SPC700_boot_rom[addr - 0xFFC0];
-    return this->RAM[addr & 0xFFFF];
+    //if ((addr >= 0x00F1) && (addr <= 0x00FF)) return readIO(this, addr);
+    //if ((addr >= 0xFFC0) && this->io.ROM_readable) return SPC700_boot_rom[addr - 0xFFC0];
+    u8 val = this->RAM[addr & 0xFFFF];
+    printf("\nCPU READ:%04x %02x", addr, val);
+    return val;
 }
 
 u8 SPC700_read8D(struct SPC700 *this, u32 addr)
@@ -243,12 +245,13 @@ u8 SPC700_read8D(struct SPC700 *this, u32 addr)
 
 void SPC700_write8(struct SPC700 *this, u32 addr, u32 val)
 {
-    if ((addr >= 0x00F1) && (addr <= 0x00FF))
-        writeIO(this, addr, val);
+    printf("\nCPU WRITE:%04x %02x", addr, val);
+    //if ((addr >= 0x00F1) && (addr <= 0x00FF))
+    //    writeIO(this, addr, val);
     this->RAM[addr & 0xFFFF] = val;
 }
 
 void SPC700_write8D(struct SPC700 *this, u32 addr, u32 val)
 {
-    SPC700_write8(this, addr, val);
+    SPC700_write8(this, (addr & 0xFF) + this->regs.P.DO, val);
 }

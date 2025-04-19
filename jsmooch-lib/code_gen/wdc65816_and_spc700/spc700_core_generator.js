@@ -99,7 +99,7 @@ class SPC_funcgen {
     }
 
     ADC(who, y) {
-        this.addl('let z = (' + who + ') + (' + y + ') + regs.P.C;');
+        this.addl('u32 z = (' + who + ') + (' + y + ') + regs.P.C;');
         this.addl('regs.P.C = +(z > 0xFF);');
         this.addl('regs.P.H = (((' + who + ') ^ (' + y + ') ^ z) & 0x10) >>> 4;');
         this.addl('regs.P.V = (((~((' + who + ') ^ (' + y + ' ))) & ((' + who + ') ^ z)) & 0x80) >>> 7;');
@@ -109,8 +109,8 @@ class SPC_funcgen {
     }
 
     SBC(who, y) {
-        this.addl('let y = (~' + y + ') & 0xFF;');
-        this.addl('let z = (' + who + ') + y + regs.P.C;');
+        this.addl('i32 y = (~' + y + ') & 0xFF;');
+        this.addl('i32 z = (' + who + ') + y + regs.P.C;');
         this.addl('regs.P.C = +(z > 0xFF);');
         this.addl('regs.P.H = (((' + who + ') ^ y ^ z) & 0x10) >>> 4;');
         this.addl('regs.P.V = (((~((' + who + ') ^ y)) & ((' + who + ') ^ z)) & 0x80) >>> 7;');
@@ -245,7 +245,7 @@ class SPC_funcgen {
     }
 
     CMP(operand1, operand2) {
-        this.addl('let z = ' + operand1 + ' - ' + operand2 + ';');
+        this.addl('i32 z = ' + operand1 + ' - ' + operand2 + ';');
         this.addl('regs.P.C = +(z >= 0);');
         this.addl('regs.P.Z = +((z & 0xFF) === 0);');
         this.addl('regs.P.N = (z & 0x80) >>> 7;');
@@ -253,7 +253,7 @@ class SPC_funcgen {
 
     // YA, TR
     CMPW() {
-        this.addl('let z = ((regs.Y << 8) + regs.A) - regs.TR;');
+        this.addl('i32 z = ((regs.Y << 8) + regs.A) - regs.TR;');
         this.addl('regs.P.C = +(z >= 0);');
         this.addl('regs.P.Z = +((z & 0xFFFF) === 0);');
         this.addl('regs.P.N = (z & 0x8000) >>> 15;');
@@ -577,6 +577,7 @@ class SPC_funcgen {
                 this.OR(operand, operand2);
                 break;
             case SPC_MN.NOP:
+                //this.fetch_TR();
                 break;
             case SPC_MN.BRK:
                 this.BRK();
@@ -1170,7 +1171,7 @@ class SPC_funcgen {
                 this.fetch_TA();
                 this.load16_2D('regs.TA', 'regs.A', 'regs.Y');
                 this.addl('regs.P.N = (regs.Y & 0x80) >>> 7;');
-                this.addl('regs.P.Z = +(0 === regs.A === regs.Y);');
+                this.addl('regs.P.Z = (!regs.A && !regs.Y);');
                 break;
             case 0xDA: // dp, YA
                 this.fetch_TA();
@@ -1205,7 +1206,7 @@ class SPC_funcgen {
     }
 
     finished() {
-        this.fetch_from_PC_and_inc('regs.IR');
+        //this.fetch_from_PC_and_inc('regs.IR');
         this.addl1('}')
         return this.outstr;
     }
