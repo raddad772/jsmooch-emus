@@ -231,10 +231,9 @@ static void writeIO(struct SPC700 *this, u32 addr, u32 val)
 
 u8 SPC700_read8(struct SPC700 *this, u32 addr)
 {
-    //if ((addr >= 0x00F1) && (addr <= 0x00FF)) return readIO(this, addr);
-    //if ((addr >= 0xFFC0) && this->io.ROM_readable) return SPC700_boot_rom[addr - 0xFFC0];
+    if ((addr >= 0x00F1) && (addr <= 0x00FF)) return readIO(this, addr);
+    if ((addr >= 0xFFC0) && this->io.ROM_readable) return SPC700_boot_rom[addr - 0xFFC0];
     u8 val = this->RAM[addr & 0xFFFF];
-    printf("\nCPU READ:%04x %02x", addr, val);
     return val;
 }
 
@@ -245,9 +244,8 @@ u8 SPC700_read8D(struct SPC700 *this, u32 addr)
 
 void SPC700_write8(struct SPC700 *this, u32 addr, u32 val)
 {
-    printf("\nCPU WRITE:%04x %02x", addr, val);
-    //if ((addr >= 0x00F1) && (addr <= 0x00FF))
-    //    writeIO(this, addr, val);
+    if ((addr >= 0x00F1) && (addr <= 0x00FF))
+        writeIO(this, addr, val);
     this->RAM[addr & 0xFFFF] = val;
 }
 
