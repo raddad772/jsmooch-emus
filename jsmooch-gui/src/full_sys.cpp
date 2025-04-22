@@ -169,13 +169,13 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
         case SYS_GENESIS_JAP:
         case SYS_GENESIS_USA:
         case SYS_MEGADRIVE_PAL:
-        case SYS_SNES:
         case SYS_NES:
         case SYS_BBC_MICRO:
         case SYS_GG:
         case SYS_ATARI2600:
         case SYS_SMS1:
         case SYS_SMS2:
+        case SYS_SNES:
             has_bios = 0;
             break;
         default:
@@ -253,6 +253,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/nds", BASER_PATH);
             *worked = 1;
             break;
+        case SYS_SNES:
+            snprintf(out, out_sz, "%s/snes", BASER_PATH);
+            *worked = 1;
+            break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
@@ -269,7 +273,6 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             snprintf(out, out_sz, "%s/gg", BASER_PATH);
             *worked = 1;
             break;
-        case SYS_SNES:
         case SYS_BBC_MICRO:
             *worked = 0;
             break;
@@ -870,6 +873,9 @@ void full_system::load_default_ROM()
 
             //dbg_enable_trace();
 
+            break;
+        case SYS_SNES:
+            worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

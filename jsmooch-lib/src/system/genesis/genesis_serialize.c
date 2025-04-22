@@ -102,7 +102,6 @@ static void serialize_vdp(struct genesis *this, struct serialized_state *state) 
     S(sprite_collision);
     S(sprite_overflow);
     S(cycle);
-    S(sc_count);
     S(sc_slot);
     S(sc_array);
     S(sc_skip);
@@ -262,7 +261,6 @@ static void deserialize_vdp(struct genesis* this, struct serialized_state *state
     L(sprite_collision);
     L(sprite_overflow);
     L(cycle);
-    L(sc_count);
     L(sc_slot);
     L(sc_array);
     L(sc_skip);

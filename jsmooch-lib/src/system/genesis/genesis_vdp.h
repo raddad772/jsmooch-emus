@@ -139,7 +139,7 @@ struct genesis_vdp {
     // there's...h32, h40, vblank/off
     enum slot_kinds slot_array[4][212];
 
-    u32 sc_count, sc_slot;
+    u32 sc_slot;
     u32 sc_array, sc_skip;
 
     u16 CRAM[64]; // 64 colors total on screen + background

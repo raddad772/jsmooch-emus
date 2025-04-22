@@ -90,6 +90,7 @@ struct SPC700 {
             struct dbglog_view *view;
             u32 id;
         } dbglog;
+        u32 ok;
 
     } trace;
 
@@ -105,6 +106,7 @@ struct SPC700 {
 typedef void (*SPC700_ins_func)(struct SPC700 *);
 
 void SPC700_init(struct SPC700 *, u64 *clock_ptr);
+void SPC700_delete(struct SPC700*);
 void SPC700_reset(struct SPC700 *);
 void SPC700_cycle(struct SPC700 *this, i64 how_many);
 
@@ -112,5 +114,7 @@ u8 SPC700_read8(struct SPC700 *, u32 addr);
 u8 SPC700_read8D(struct SPC700 *, u32 addr);
 void SPC700_write8(struct SPC700 *, u32 addr, u32 val);
 void SPC700_write8D(struct SPC700 *, u32 addr, u32 val);
+
+void SPC700_setup_tracing(struct SPC700* this, struct jsm_debug_read_trace *strct);
 
 #endif //JSMOOCH_EMUS_SPC700_H

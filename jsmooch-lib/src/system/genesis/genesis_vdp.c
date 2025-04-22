@@ -484,7 +484,6 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
     this->vdp.line.screen_x = 0;
     this->vdp.line.screen_y = this->clock.vdp.vcount;
 
-    this->vdp.sc_count = 0;
     this->vdp.sc_slot = 0;
     this->vdp.fetcher.vscroll_latch[0] = this->vdp.VSRAM[0];
     this->vdp.fetcher.vscroll_latch[1] = this->vdp.VSRAM[1];

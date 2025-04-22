@@ -440,6 +440,15 @@ add_library(jsmooch-lib
         src/component/cpu/spc700/spc700_disassembler.h
         src/component/cpu/wdc65816/wdc65816_disassembler.c
         src/component/cpu/wdc65816/wdc65816_disassembler.h
+        src/system/snes/snes_mem.c
+        src/system/snes/snes_mem.h
+        src/system/snes/snesdefs.h
+        src/system/snes/snes_cart.c
+        src/system/snes/snes_cart.h
+        src/system/snes/snes_ppu.c
+        src/system/snes/snes_ppu.h
+        src/system/snes/r5a22.c
+        src/system/snes/r5a22.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

@@ -6,6 +6,7 @@
 #include "system/gb/gb.h"
 #include "system/nes/nes.h"
 #include "system/nds/nds.h"
+#include "system/snes/snes.h"
 #include "system/sms_gg/sms_gg.h"
 #include "system/dreamcast/dreamcast.h"
 #include "system/ps1/ps1.h"
@@ -34,6 +35,9 @@ struct jsm_system* new_system(enum jsm_systems which)
             break;
         case SYS_NDS:
             NDS_new(out);
+            break;
+        case SYS_SNES:
+            SNES_new(out);
             break;
         case SYS_GENESIS_JAP:
         case SYS_GENESIS_USA:
@@ -118,6 +122,9 @@ void jsm_delete(struct jsm_system* jsm)
             break;
         case SYS_NDS:
             NDS_delete(jsm);
+            break;
+        case SYS_SNES:
+            SNES_delete(jsm);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

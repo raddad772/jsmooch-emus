@@ -16,7 +16,14 @@ void SPC700_init(struct SPC700 *this, u64 *clock_ptr)
 {
     memset(this, 0, sizeof(*this));
     this->clock = clock_ptr;
+    jsm_string_init(&this->trace.str, 1000);
 }
+
+void SPC700_delete(struct SPC700* this)
+{
+    jsm_string_delete(&this->trace.str);
+}
+
 
 void SPC700_reset(struct SPC700 *this)
 {
@@ -252,4 +259,12 @@ void SPC700_write8(struct SPC700 *this, u32 addr, u32 val)
 void SPC700_write8D(struct SPC700 *this, u32 addr, u32 val)
 {
     SPC700_write8(this, (addr & 0xFF) + this->regs.P.DO, val);
+}
+
+void SPC700_setup_tracing(struct SPC700* this, struct jsm_debug_read_trace *strct)
+{
+    this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
+    this->trace.strct.ptr = strct->ptr;
+    this->trace.strct.read_trace = strct->read_trace;
+    this->trace.ok = 1;
 }
