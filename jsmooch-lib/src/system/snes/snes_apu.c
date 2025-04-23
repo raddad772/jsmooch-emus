@@ -34,6 +34,7 @@ static void SNES_APU_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
     if (num < 1) num = 1;
     snes->clock.apu.cycle.next += ((long double)num * snes->clock.apu.cycle.stride);
     snes->apu.cpu.cycles = 0;*/
+    snes->clock.apu.cycle.next += snes->clock.apu.cycle.stride;
     scheduler_only_add_abs(&snes->scheduler, (i64)snes->clock.apu.cycle.next, 0, snes, &SNES_APU_cycle, NULL);
 }
 

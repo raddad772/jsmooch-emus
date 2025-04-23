@@ -129,22 +129,11 @@ static void read_opts(struct jsm_system *jsm, struct SNES* this)
     this->opts.vdp.ex_trace = w->checkbox.value;*/
 }
 
-static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct SNES *this = (struct SNES *)ptr;
-    //             // Index = (z80-1 * x) + vdp-1
-    // TODO: this
-}
-
 static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    /*struct SNES *this = (struct SNES *)ptr;
-    this->block_cycles_to_run += key;
-    while (this->block_cycles_to_run > 0) {
-        this->block_cycles_to_run -= this->clock.cpu.divider;
-        this->clock.master_cycle_count += this->clock.cpu.divider;
-        if (dbg.do_break) break;
-    }*/
+    struct SNES *this = (struct SNES *)ptr;
+
+    this->clock.master_cycle_count = this->scheduler.first_event->timecode;
 }
 
 void SNES_new(JSM)
@@ -154,7 +143,7 @@ void SNES_new(JSM)
     populate_opts(jsm);
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.nothing);
     this->scheduler.max_block_size = 20;
-    this->scheduler.run.func = &block_step;
+    this->scheduler.run.func = &run_block;
     this->scheduler.run.ptr = this;
     SNES_clock_init(&this->clock);
     SNES_mem_init(this);

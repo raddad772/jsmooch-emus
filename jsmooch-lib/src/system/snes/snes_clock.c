@@ -23,6 +23,8 @@ static void fill_timing_ntsc(struct SNES_clock *this)
     this->timing.line.hdma_position = 1104;
     this->timing.line.hblank_start = 277 * 4;
     this->timing.line.hblank_stop = 21 * 4;
+
+    this->cpu.divider = 6;
 }
 
 void SNES_clock_init(struct SNES_clock *this)

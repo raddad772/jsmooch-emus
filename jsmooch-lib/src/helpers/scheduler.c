@@ -329,7 +329,7 @@ void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
         while(this->loop_start_clock >= e->timecode) {
             i64 jitter = this->loop_start_clock - e->timecode;
             this->first_event = e->next;
-            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, this->loop_start_clock, current_time(this));
+            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld tag:%d", e->id, e->next ? e->next->id : 0, e->timecode, this->loop_start_clock, current_time(this), e->tag);
             if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
             e->next = NULL;
             e->bound_func.func(e->bound_func.ptr, e->key, current_time(this), (u32) jitter);
@@ -375,7 +375,7 @@ void scheduler_from_event_adjust_master_clock(struct scheduler_t *this, i64 howm
 {
     // If called from an event, this will accurately adjust the clock.
     // If called from inside a cycle block, this may cause jitter; adjust there as well!
-    assert(!this->in_event);
+    assert(this->in_event);
     *(this->clock) += howmany;
     this->loop_start_clock = current_time(this);
 }
