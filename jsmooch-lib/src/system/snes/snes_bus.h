@@ -21,16 +21,29 @@
 #include "snes_cart.h"
 #include "snes_ppu.h"
 #include "r5a22.h"
+#include "snes_apu.h"
+
+struct snesched_item;
+struct SNES;
+typedef void (*snesched_callback)(struct SNES *, struct snesched_item *);
+
+#define NUM_SNESCHED 12
+
+// >> 2 = 1,2,3
 
 struct SNES {
     struct R5A22 r5a22;
-    struct SPC700 spc700;
+    struct SNES_APU apu;
     struct scheduler_t scheduler;
     struct SNES_clock clock;
     struct SNES_cart cart;
     struct SNES_PPU ppu;
 
     struct SNES_mem mem;
+
+
+    i32 block_cycles_to_run;
+
 
     struct {
         struct cvec* IOs;

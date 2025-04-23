@@ -204,11 +204,11 @@ void SNES_wdc65816_write(struct SNES *this, u32 addr, u32 val)
 
 u32 SNES_spc700_read(struct SNES *this, u32 addr, u32 old, u32 has_effect)
 {
-    return SPC700_read8(&this->spc700, addr);
+    return SPC700_read8(&this->apu.cpu, addr);
 }
 
 void SNES_spc700_write(struct SNES *this, u32 addr, u32 val)
 {
-    SPC700_write8(&this->spc700, addr, val);
+    SPC700_write8(&this->apu.cpu, addr, val);
 }
 

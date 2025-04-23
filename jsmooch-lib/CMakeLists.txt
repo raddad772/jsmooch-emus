@@ -449,6 +449,10 @@ add_library(jsmooch-lib
         src/system/snes/snes_ppu.h
         src/system/snes/r5a22.c
         src/system/snes/r5a22.h
+        src/system/snes/snes_apu.c
+        src/system/snes/snes_apu.h
+        src/system/snes/snes_debugger.c
+        src/system/snes/snes_debugger.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

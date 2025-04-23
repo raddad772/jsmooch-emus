@@ -19,10 +19,11 @@
 #include "helpers/debugger/debugger.h"
 
 #include "snes.h"
-//#include "snes_debugger.h"
+#include "snes_debugger.h"
 #include "snes_bus.h"
 #include "snes_cart.h"
-//#include "snes_ppu.h"
+#include "snes_ppu.h"
+#include "snes_apu.h"
 
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
@@ -135,25 +136,23 @@ static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     // TODO: this
 }
 
-
-/*static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
+static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct SNES *this = (struct SNES *)ptr;
+    /*struct SNES *this = (struct SNES *)ptr;
     this->block_cycles_to_run += key;
     while (this->block_cycles_to_run > 0) {
-        block_step(this);
-        this->block_cycles_to_run -= this->clock.vdp.clock_divisor;
+        this->block_cycles_to_run -= this->clock.cpu.divider;
+        this->clock.master_cycle_count += this->clock.cpu.divider;
         if (dbg.do_break) break;
-    }
-}*/
+    }*/
+}
 
 void SNES_new(JSM)
 {
     struct SNES* this = (struct SNES*)malloc(sizeof(struct SNES));
     memset(this, 0, sizeof(*this));
     populate_opts(jsm);
-    //create_scheduling_lookup_table(this);
-    scheduler_init(&this->scheduler, &this->clock.master_cycle_count, NULL);
+    scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->clock.nothing);
     this->scheduler.max_block_size = 20;
     this->scheduler.run.func = &block_step;
     this->scheduler.run.ptr = this;
@@ -162,9 +161,9 @@ void SNES_new(JSM)
     SNES_cart_init(this);
 
     R5A22_init(&this->r5a22, &this->clock.master_cycle_count);
-    SPC700_init(&this->spc700, &this->clock.master_cycle_count);
+    SNES_APU_init(this);
     //SNES_cart_init(&this->cart);
-    //SNES_PPU_init(this); // must be after m68k init
+    SNES_PPU_init(this); // must be after m68k init
 
     snprintf(jsm->label, sizeof(jsm->label), "SNES");
 
@@ -175,7 +174,7 @@ void SNES_new(JSM)
 
     dt.read_trace = &read_trace_spc700;
 
-    SPC700_setup_tracing(&this->spc700, &dt);
+    SPC700_setup_tracing(&this->apu.cpu, &dt);
 
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
@@ -194,8 +193,7 @@ void SNES_new(JSM)
     jsm->describe_io = &SNESJ_describe_io;
     jsm->set_audiobuf = &SNESJ_set_audiobuf;
     jsm->sideload = NULL;
-    //jsm->setup_debugger_interface = &SNESJ_setup_debugger_interface;
-    jsm->setup_debugger_interface = NULL;
+    jsm->setup_debugger_interface = &SNESJ_setup_debugger_interface;
     //jsm->save_state = SNESJ_save_state;
     //jsm->load_state = SNESJ_load_state;
     jsm->save_state = NULL;
@@ -206,8 +204,9 @@ void SNES_delete(JSM) {
     JTHIS;
 
     R5A22_delete(&this->r5a22);
-    SPC700_delete(&this->spc700);
+    SNES_APU_delete(this);
     SNES_cart_delete(this);
+    SNES_PPU_delete(this);
 
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
@@ -305,7 +304,10 @@ static void schedule_first(struct SNES *this)
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
     scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);*/
+
+    SNES_APU_schedule_first(this);
     SNES_PPU_schedule_first(this);
+    R5A22_schedule_first(this);
 }
 
 static void SNESIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
@@ -435,8 +437,8 @@ void SNESJ_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
-    out->x = this->clock.ppu.h;
-    out->scanline = this->clock.ppu.v;
+    out->x = (i32)((this->clock.ppu.scanline_start / this->clock.master_cycle_count) >> 2) - 21;
+    out->scanline = this->clock.ppu.y;
     out->master_cycle = this->clock.master_cycle_count;
 }
 
@@ -444,8 +446,7 @@ void SNESJ_reset(JSM)
 {
     JTHIS;
     R5A22_reset(&this->r5a22);
-    SPC700_reset(&this->spc700);
-    this->clock.apu.next_sample = 0;
+    SNES_APU_reset(this);
     SNES_PPU_reset(this);
 
     scheduler_clear(&this->scheduler);

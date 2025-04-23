@@ -53,7 +53,9 @@ struct scheduler_t {
 
     struct scheduled_bound_function run;
 
+    u32 in_event;
     i64 cycles_left_to_run;
+    i64 loop_start_clock;
     u64 *clock, *waitstates;
 
     u64 id_counter;
@@ -90,5 +92,7 @@ u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, vo
 u64 scheduler_only_add_abs_w_tag(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag);
 
 struct scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr);
+
+void scheduler_from_event_adjust_master_clock(struct scheduler_t *, i64 howmany);
 
 #endif //JSMOOCH_EMUS_SCHEDULER_H

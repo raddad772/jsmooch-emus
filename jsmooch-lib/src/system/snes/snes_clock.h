@@ -8,8 +8,9 @@
 #include <helpers/int.h>
 
 struct SNES_clock {
-    u64 master_cycle_count;
+    u64 master_cycle_count, nothing;
     u64 master_frame;
+    u32 rev;
 
 
     struct {
@@ -20,7 +21,9 @@ struct SNES_clock {
     struct {
         i32 divider;
         i32 has;
-        u32 h, v;
+        u32 y;
+        u32 field, vblank_active;
+        u64 scanline_start;
     } ppu;
 
     struct {
@@ -28,8 +31,13 @@ struct SNES_clock {
         long double has;
         long double ratio;
 
-        long double next_sample;
-        long double sample_stride;
+        struct {
+            long double next, stride;
+        } sample;
+
+        struct {
+            long double next, stride;
+        } cycle;
     } apu;
 
     struct {
@@ -40,6 +48,11 @@ struct SNES_clock {
         } frame;
         struct {
             u32 master_cycles;
+
+            u32 hblank_start, hblank_stop;
+            u32 dram_refresh;
+
+            u32 hdma_setup_position, hdma_position;
         } line;
         struct {
             u32 master_cycles;

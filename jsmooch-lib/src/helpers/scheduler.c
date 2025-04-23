@@ -264,12 +264,14 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         // Then, discharge any waiting events.
         // Then, if we hace any, run some cycles.
         struct scheduler_event *e = this->first_event;
-        i64 loop_start_clock = current_time(this);
+        this->loop_start_clock = current_time(this);
 
-        while(loop_start_clock >= e->timecode) {
-            i64 jitter = loop_start_clock - e->timecode;
+        this->in_event = 1;
+        while(this->loop_start_clock >= e->timecode) {
+            i64 jitter = this->loop_start_clock - e->timecode;
             this->first_event = e->next;
-            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, loop_start_clock, current_time(this));
+            i64 d = this->loop_start_clock;
+            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, this->loop_start_clock, current_time(this));
             if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
             e->next = NULL;
             e->bound_func.func(e->bound_func.ptr, e->key, current_time(this), (u32) jitter);
@@ -282,7 +284,15 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
             //pprint_list(ww, this);
             e = this->first_event;
             if (e == NULL) {
+                this->in_event = 0;
                 return;
+            }
+
+            this->loop_start_clock = current_time(this);
+            d = this->loop_start_clock - d;
+            if (d != 0) {
+                this->cycles_left_to_run -= d;
+                if (this->cycles_left_to_run <= 0) break;
             }
         }
 
@@ -290,16 +300,18 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
         if (this->cycles_left_to_run <= 0) break;
 
         // Now...Run cycles!
-        u64 num_cycles_to_run = e->timecode - loop_start_clock;
+        u64 num_cycles_to_run = e->timecode - this->loop_start_clock;
         if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
         if (num_cycles_to_run > this->cycles_left_to_run) num_cycles_to_run = this->cycles_left_to_run;
+        this->in_event = 0;
         this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);
-        i64 cycles_run = current_time(this) - loop_start_clock;
+        i64 cycles_run = current_time(this) - this->loop_start_clock;
         this->cycles_left_to_run -= (i64)cycles_run;
     }
     if (dbg.do_break) {
         this->cycles_left_to_run = 0;
     }
+    this->in_event = 0;
 }
 
 void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
@@ -311,12 +323,13 @@ void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
         // Then, discharge any waiting events.
         // Then, if we hace any, run some cycles.
         struct scheduler_event *e = this->first_event;
-        i64 loop_start_clock = current_time(this);
+        this->loop_start_clock = current_time(this);
 
-        while(loop_start_clock >= e->timecode) {
-            i64 jitter = loop_start_clock - e->timecode;
+        this->in_event = 1;
+        while(this->loop_start_clock >= e->timecode) {
+            i64 jitter = this->loop_start_clock - e->timecode;
             this->first_event = e->next;
-            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, loop_start_clock, current_time(this));
+            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, this->loop_start_clock, current_time(this));
             if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
             e->next = NULL;
             e->bound_func.func(e->bound_func.ptr, e->key, current_time(this), (u32) jitter);
@@ -328,26 +341,43 @@ void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
             //char ww[50];
             //snprintf(ww, sizeof(ww), "after run %lld", idn);
             //pprint_list(ww, this);
-            if (etag == tag) return;
+            if (etag == tag) {
+                this->in_event = 0;
+                return;
+            }
 
             e = this->first_event;
 
             if (e == NULL) {
+                this->in_event = 0;
                 return;
             }
+
+            this->loop_start_clock = current_time(this);
         }
 
         // Now...Run cycles!
-        u64 num_cycles_to_run = e->timecode - loop_start_clock;
+        u64 num_cycles_to_run = e->timecode - this->loop_start_clock;
         if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
+        this->in_event = 0;
         this->run.func(this->run.ptr, num_cycles_to_run, *this->clock, 0);
-        //i64 cycles_run = current_time(this) - loop_start_clock;
+        //i64 cycles_run = current_time(this) - this->loop_start_clock;
         //printf("\nCYCLES RUN:%lld", cycles_run);
         //this->cycles_left_to_run -= (i64)cycles_run;
     }
     if (dbg.do_break) {
         this->cycles_left_to_run = 0;
     }
+    this->in_event = 0;
+}
+
+void scheduler_from_event_adjust_master_clock(struct scheduler_t *this, i64 howmany)
+{
+    // If called from an event, this will accurately adjust the clock.
+    // If called from inside a cycle block, this may cause jitter; adjust there as well!
+    assert(!this->in_event);
+    *(this->clock) += howmany;
+    this->loop_start_clock = current_time(this);
 }
 
 

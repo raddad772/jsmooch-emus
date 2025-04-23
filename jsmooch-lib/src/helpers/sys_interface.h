@@ -71,7 +71,7 @@ struct machine_description {
 
 struct framevars {
     u64 master_frame;
-    u32 x;
+    i32 x;
     u32 scanline;
     u32 last_used_buffer;
     u64 master_cycle;
