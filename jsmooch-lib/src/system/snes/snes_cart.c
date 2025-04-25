@@ -7,6 +7,7 @@
 
 #include "snes_cart.h"
 #include "snes_bus.h"
+#include "snes_mem.h"
 
 void SNES_cart_init(struct SNES *this)
 {
@@ -90,6 +91,8 @@ u32 SNES_cart_load_ROM_from_RAM(struct SNES* this, char* fil, u64 fil_sz, struct
     sram->persistent = 1;
     sram->requested_size = this->cart.header.sram_size;
     sram->fill_value = 0xFF;
+
+    SNES_mem_cart_inserted(this);
 
     return 0;
 }

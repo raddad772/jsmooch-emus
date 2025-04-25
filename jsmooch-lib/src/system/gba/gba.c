@@ -152,7 +152,11 @@ void GBA_delete(struct jsm_system *jsm)
 u32 GBAJ_finish_frame(JSM)
 {
     JTHIS;
+   this->audio.main_waveform = cpg(this->dbg.waveforms.main);
 
+    for (u32 i = 0; i < 6; i++) {
+        this->audio.waveforms[i] = cpg(this->dbg.waveforms.chan[i]);
+    }
     u64 current_frame = this->clock.master_frame;
     while (this->clock.master_frame == current_frame) {
         GBAJ_finish_scanline(jsm);
@@ -406,8 +410,7 @@ static void sample_audio(struct GBA* this, u32 num_cycles)
             }
             this->audio.buf->upos++;
         }
-        // TODO: optimize the heck out of this. cpg is taking huge amounts of time, slowing us down by 60%!
-        struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
+        struct debug_waveform *dw = this->audio.main_waveform;
         if (mc >= (u64)dw->user.next_sample_cycle) {
             if (dw->user.buf_pos < dw->samples_requested) {
                 dw->user.next_sample_cycle += dw->user.cycle_stride;
@@ -416,10 +419,10 @@ static void sample_audio(struct GBA* this, u32 num_cycles)
             }
         }
 
-        dw = cpg(this->dbg.waveforms.chan[0]);
+        dw = this->audio.waveforms[0];
         if (mc >= (u64)dw->user.next_sample_cycle) {
             for (int j = 0; j < 6; j++) {
-                dw = cpg(this->dbg.waveforms.chan[j]);
+                dw = this->audio.waveforms[j];
                 if (dw->user.buf_pos < dw->samples_requested) {
                     dw->user.next_sample_cycle += dw->user.cycle_stride;
                     float sv = GBA_APU_sample_channel(this, j);

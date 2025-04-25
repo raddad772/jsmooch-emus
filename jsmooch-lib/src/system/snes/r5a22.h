@@ -12,13 +12,38 @@ struct R5A22 {
     u32 ROMspeed;
 
     struct {
-        u32 nmi_hold, nmi_line, nmi_transition;
-
-        u32 irq_lock, irq_hold, irq_line, irq_transition;
-
         u32 dma_pending, hdma_pending, dma_running, hdma_running, dma_active;
+        u32 irq_line, hirq_line;
         u32 auto_joypad_counter;
+
+        u32 nmi_flag;
+        u32 irq_flag;
+        u32 hirq_status, virq_status;
     } status;
+
+    struct {
+        struct {
+            u64 sched_id;
+            u32 sched_still;
+        } setup;
+    } hdma;
+
+    struct {
+        u32 wrmpya, wrmpyb, wrdiva, wrdivb, rddiv, rdmpy, htime, vtime;
+        u32 auto_joypad_poll, hirq_enable, virq_enable, irq_enable;
+        u32 hcounter, vcounter;
+        u32 nmi_enable;
+        u32 pio;
+        u32 joy1, joy2, joy3, joy4;
+    } io;
+
+    struct {
+        u32 counters;
+    } latch;
+
+    struct {
+        i32 mpyctr, divctr, shift;
+    } alu;
 
     struct {
         struct R5A22_DMA_CHANNEL {
@@ -29,6 +54,13 @@ struct R5A22 {
             u32 took_cycles, index, unknown_byte;
             struct R5A22_DMA_CHANNEL *next;
         } channels[8];
+        u32 hdma_enabled;
+
+        struct {
+            u64 id;
+            u32 still;
+        } sched;
+
     } dma;
 };
 
@@ -44,6 +76,7 @@ void R5A22_setup_tracing(struct R5A22 *, struct jsm_debug_read_trace *strct);
 void R5A22_set_IRQ_level(struct R5A22 *, u32 level);
 void R5A22_set_NMI_level(struct R5A22 *, u32 level);
 void R5A22_schedule_first(struct SNES *);
-
-
+void R5A22_update_irq(struct SNES *);
+void R5A22_update_nmi(struct SNES *);
+void R5A22_hblank(struct SNES *, u32 which);
 #endif //JSMOOCH_EMUS_R5A22_H

@@ -11,6 +11,7 @@ struct SNES_clock {
     u64 master_cycle_count, nothing;
     u64 master_frame;
     u32 rev;
+    u32 dma_counter;
 
 
     struct {
@@ -22,7 +23,7 @@ struct SNES_clock {
         i32 divider;
         i32 has;
         u32 y;
-        u32 field, vblank_active;
+        u32 field, vblank_active, hblank_active;
         u64 scanline_start;
     } ppu;
 

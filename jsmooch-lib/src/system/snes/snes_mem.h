@@ -47,5 +47,6 @@ u32 SNES_wdc65816_read(struct SNES *, u32 addr, u32 old, u32 has_effect);
 void SNES_wdc65816_write(struct SNES *, u32 addr, u32 val);
 u32 SNES_spc700_read(struct SNES *, u32 addr, u32 old, u32 has_effect);
 void SNES_spc700_write(struct SNES *, u32 addr, u32 val);
+void SNES_mem_cart_inserted(struct SNES *);
 
 #endif //JSMOOCH_EMUS_SNES_MEM_H

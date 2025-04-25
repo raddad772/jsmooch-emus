@@ -140,6 +140,8 @@ struct GBA {
         double master_cycles_per_audio_sample;
         double next_sample_cycle;
         struct audiobuf *buf;
+        struct debug_waveform *waveforms[6];
+        struct debug_waveform *main_waveform;
     } audio;
 
     struct {

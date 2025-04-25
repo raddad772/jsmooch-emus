@@ -37,7 +37,15 @@ struct SNES_PPU {
         u32 vram_addr;
         u32 vram_increment_step;
         u32 wram_addr;
+
+        u32 hcounter, vcounter;
     } io;
+
+    struct {
+        u64 sched_id;
+        u32 still_sched;
+    } hirq;
+
 };
 
 struct SNES;

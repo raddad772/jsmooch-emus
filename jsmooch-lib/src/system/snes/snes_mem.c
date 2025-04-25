@@ -16,11 +16,17 @@ static void write_bad(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_b
 static u32 read_bad(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
     printf("\nWARN BAD READ %06x", addr);
+    static int num = 0;
+    num++;
+    if (num > 10) {
+        dbg_break("BECAUSE", this->clock.master_cycle_count);
+    }
     return old;
 }
 
 static void clear_map(struct SNES *this)
 {
+    printf("\nCLEAR MAP!");
     for (u32 i = 0; i < 0x1000; i++) {
         this->mem.read[i] = &read_bad;
         this->mem.write[i] = &write_bad;
@@ -47,13 +53,17 @@ static u32 read_WRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struc
 
 static void write_loROM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
 {
-    printf("\nWARN LOROM WRITE NOT IN");
+    static int a = 1;
+    if (a) {
+        a = 0;
+        printf("\nWARNING writes to ROM area!");
+    }
 }
 
 static u32 read_loROM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
-    printf("\nWARN LOROM READ NOT IN");
-    return 0;
+    addr = ((addr & 0xFFF) + bl->offset) & (this->cart.ROM.size - 1);
+    return ((u8 *)this->cart.ROM.ptr)[addr];
 }
 
 static void write_SRAM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
@@ -96,6 +106,7 @@ static void map_lorom(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_
             this->mem.blockmap[b].offset = offset;
             this->mem.read[b] = &read_loROM;
             this->mem.write[b] = &write_loROM;
+            //printf("\nMap %06x with offset %04x", (c << 16) | i, offset);
             offset += 0x1000;
             if (offset >= this->mem.ROMSize) offset = 0;
         }
@@ -135,6 +146,8 @@ static void map_wram(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_s
             u32 b = (c << 4) | (i >> 12);
             this->mem.blockmap[b].kind = SMB_WRAM;
             this->mem.blockmap[b].offset = offset;
+            this->mem.read[b] = &read_WRAM;
+            this->mem.write[b] = &write_WRAM;
             offset += 0x1000;
         }
     }
@@ -157,6 +170,7 @@ static void map_lorom_sram(struct SNES *this)
 static void setup_mem_map_lorom(struct SNES *this)
 {
     clear_map(this);
+    printf("\nMEM MAPPING!");
 
     sys_map(this);
 
@@ -177,7 +191,7 @@ static void setup_mem_map_hirom(struct SNES *this)
     printf("\nHIROM NOT SUPPORT!");
 }
 
-void SNES_mem_cart_inserted(struct SNES *this, struct SNES_cart *cart)
+void SNES_mem_cart_inserted(struct SNES *this)
 {
     this->mem.ROMSizebit = this->cart.header.rom_sizebit;
     this->mem.SRAMSizebit = this->cart.header.sram_sizebit;

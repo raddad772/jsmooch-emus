@@ -62,8 +62,11 @@ void WDC65816_cycle(struct WDC65816* this)
             }
             else if (this->regs.IRQ_pending) {
                 if (this->regs.P.I) {
-                    this->regs.WAI = 0;
-                    printf("\nWAI exit because IRQ with I=1!");
+                    if (this->regs.WAI) {
+                        printf("\nWAI exit because IRQ with I=1!");
+                        this->regs.WAI = 0;
+                    }
+                    else return;
                 }
                 else {
                     this->regs.IR = WDC65816_OP_IRQ;

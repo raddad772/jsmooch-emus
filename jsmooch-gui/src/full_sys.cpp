@@ -802,6 +802,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/m7_ex.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/mos_demo.gba", nullptr);
 
+            worked = grab_ROM(&ROMs, which, "poke_song_player.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sram.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "flash64.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "flash128.gba", nullptr);
@@ -821,7 +822,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pcrysound.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!

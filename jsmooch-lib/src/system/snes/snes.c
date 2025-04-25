@@ -324,16 +324,16 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->fps = 60.0988;
     d->fps_override_hint = 60;
 
-    d->pixelometry.cols.left_hblank = 0; // 0
-    d->pixelometry.cols.visible = 1280;  // 320x224   *4
-    d->pixelometry.cols.max_visible = 1280;  // 320x224    *4
-    d->pixelometry.cols.right_hblank = 430; // 107.5, ick   *4
+    d->pixelometry.cols.left_hblank = 21;
+    d->pixelometry.cols.visible = 256;
+    d->pixelometry.cols.max_visible = 256;
+    d->pixelometry.cols.right_hblank = 277;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
-    d->pixelometry.rows.visible = 240;
-    d->pixelometry.rows.max_visible = 240;
-    d->pixelometry.rows.bottom_vblank = 76;
+    d->pixelometry.rows.visible = 224;
+    d->pixelometry.rows.max_visible = 224;
+    d->pixelometry.rows.bottom_vblank = 38;
     d->pixelometry.offset.y = 0;
 
     d->geometry.physical_aspect_ratio.width = 4;

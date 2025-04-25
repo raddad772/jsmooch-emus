@@ -377,10 +377,4 @@ void scheduler_from_event_adjust_master_clock(struct scheduler_t *this, i64 howm
     // If called from inside a cycle block, this may cause jitter; adjust there as well!
     assert(this->in_event);
     *(this->clock) += howmany;
-    this->loop_start_clock = current_time(this);
 }
-
-
-/*
- * TODO: make it so
- */
