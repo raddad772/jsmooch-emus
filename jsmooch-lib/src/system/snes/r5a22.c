@@ -49,17 +49,91 @@ void R5A22_delete(struct R5A22 *this)
     WDC65816_delete(&this->cpu);
 }
 
-static u32 dma_reg_read(struct SNES *this, u32 addr, u32 old, u32 has_effect)
+static u32 dma_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect)
 {
-    printf("\nWARN DMA REG READ NOT DONE YET %04x", addr);
-    return 0;
+    struct R5A22_DMA_CHANNEL *ch = &snes->r5a22.dma.channels[(addr >> 4) & 7];
+    switch(addr & 0xFF8F) {
+        case 0x4300: // DMAPx
+            return (ch->transfer_mode) | (ch->fixed_transfer << 3) | (ch->reverse_transfer << 4) | (ch->unused << 5) | (ch->indirect << 6) || (ch->direction << 7);
+        case 0x4301:
+            return ch->target_address;
+        case 0x4302:
+            return ch->source_address & 0xFF;
+        case 0x4303:
+            return (ch->source_address >> 8) & 0xFF;
+        case 0x4304:
+            return ch->source_bank;
+        case 0x4305:
+            return ch->transfer_size & 0xFF;
+        case 0x4306:
+            return (ch->transfer_size >> 8) & 0xFF;
+        case 0x4307:
+            return ch->indirect_bank;
+        case 0x4308:
+            return ch->hdma_address & 0xFF;
+        case 0x4309:
+            return (ch->hdma_address >> 8) & 0xFF;
+        case 0x430a:
+            return ch->line_counter;
+        case 0x430b:
+            return ch->unknown_byte;
+        case 0x430f:
+            return ch->unknown_byte;
+        
+    }
+    return old;
 }
 
 
-static void dma_reg_write(struct SNES *this, u32 addr, u32 val)
+static void dma_reg_write(struct SNES *snes, u32 addr, u32 val)
 {
-    printf("\nWARN DMA REG WRITE NOT DONE YET %04x %02x", addr, val);
-
+    struct R5A22_DMA_CHANNEL *ch = &snes->r5a22.dma.channels[(addr >> 4) & 7];
+    switch(addr & 0xFF8F) {
+        case 0x4300: // DMAPx various controls
+            ch->transfer_mode = val & 7;
+            ch->fixed_transfer = (val >> 3) & 1;
+            ch->reverse_transfer = (val >> 4) & 1;
+            ch->unused = (val >> 5) & 1;
+            ch->indirect = (val >> 6) & 1;
+            ch->direction = (val >> 7) & 1;
+            return;
+        case 0x4301:
+            ch->target_address = val;
+            return;
+        case 0x4302:
+            ch->source_address = (ch->source_address & 0xFF00) | val;
+            return;
+        case 0x4303:
+            ch->source_address = (val << 8) | (ch->source_address & 0xFF);
+            return;
+        case 0x4304:
+            ch->source_bank = val;
+            return;
+        case 0x4305:
+            ch->transfer_size = (ch->transfer_size & 0xFF00) | val;
+            return;
+        case 0x4306:
+            ch->transfer_size = (val << 8) | (ch->transfer_size & 0xFF);
+            return;
+        case 0x4307:
+            ch->indirect_bank = val;
+            return;
+        case 0x4308:
+            ch->hdma_address = (ch->hdma_address & 0xFF00) | val;
+            return;
+        case 0x4309:
+            ch->hdma_address = (val << 8) | (ch->hdma_address & 0xFF);
+            return;
+        case 0x430A:
+            ch->line_counter = val;
+            return;
+        case 0x430B:
+            ch->unknown_byte = val;
+            return;
+        case 0x430F:
+            ch->unknown_byte = val;
+            return;
+    }
 }
 
 void R5A22_update_irq(struct SNES *snes) {
@@ -101,21 +175,6 @@ static void latch_ppu_counters(struct SNES *snes)
     snes->ppu.io.vcounter = snes->clock.ppu.y;
     snes->ppu.io.hcounter = (snes->clock.master_cycle_count - snes->clock.ppu.scanline_start) >> 2;
     snes->ppu.latch.counters = 1;
-}
-
-static void hdma_pending_setup(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    // TODO: what!?
-    struct SNES *snes = (struct SNES *)ptr;
-    struct R5A22 *this = &snes->r5a22;
-
-    snes->clock.dma_counter = 0;
-    if (!this->status.dma_running) {
-        snes->clock.dma_counter += (snes->clock.master_cycle_count & 7);
-    }
-    this->status.hdma_pending = 0;
-    //hdma_run(snes);
-    scheduler_from_event_adjust_master_clock(&snes->scheduler, snes->clock.dma_counter);
 }
 
 static void dma_start(struct SNES *snes)
@@ -354,6 +413,61 @@ static void cycle_cpu(struct SNES *snes)
     }
 }
 
+static inline u32 validA(u32 addr)
+{
+    if ((addr & 0x40FF00) == 0x2100) return false;
+    if ((addr & 0x40FE00) == 0x4000) return false;
+    if ((addr & 0x40FFE0) == 0x4200) return false;
+    return (addr & 0x40FF80) != 0x4300;
+}
+
+static inline u32 dma_readA(struct SNES *snes, u32 addr) {
+    scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
+    return validA(addr) ? SNES_wdc65816_read(snes, addr, 0, 1) : 0;
+}
+
+static inline u32 dma_readB(struct SNES *snes, u32 addr, u32 valid) {
+    scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
+    return valid ? SNES_wdc65816_read(snes, 0x2100 | addr, 0, 1) : 0;
+}
+
+static inline void dma_writeA(struct SNES *snes, u32 addr, u32 val) {
+    if (validA(addr)) SNES_wdc65816_write(snes, addr, val);
+}
+
+static inline void dma_writeB(struct SNES *snes, u32 addr, u32 val, u32 valid)
+{
+    if (valid) SNES_wdc65816_write(snes, addr, val);
+}
+
+static void dma_transfer(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch, u32 addrA, u32 index, u32 hdma_mode)
+{
+    u32 addrB = ch->target_address;
+    switch(ch->transfer_mode) {
+        case 1:
+        case 5:
+            addrB += (index & 1);
+            break;
+        case 3:
+        case 7:
+            addrB += (index >> 1) & 1;
+            break;
+        case 4:
+            addrB += index;
+            break;
+    }
+    u32 valid = addrB != 0x80 || ((addrA & 0xFE0000) != 0x7E0000 && (addrA & 0x40E000) != 0x0000);
+    u32 data;
+    if (ch->direction == 0) {
+        data = dma_readA(snes, addrA);
+        dma_writeB(snes, addrB, data, valid);
+    }
+    else {
+        data = dma_readB(snes, addrB, valid);
+        dma_writeA(snes, addrA, data);
+    }
+}
+
 static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
 {
     u32 nc = 0;
@@ -361,7 +475,7 @@ static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
         if (this->index == 0) { // 8 cycles for setup
             nc += 8;
         }
-        //dma_transfer(snes, this, (this->source_bank << 16) | this->source_address, this->index);
+        dma_transfer(snes, this, (this->source_bank << 16) | this->source_address, this->index, 0);
         this->index++;
         nc += 8;
         if (!this->fixed_transfer) {
@@ -379,6 +493,32 @@ static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
     return 0;
 }
 
+static void hdma_transfer_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
+{
+    static const int HDMA_LENGTHS[8] = {1, 2, 2, 4, 4, 4, 2, 4};
+    ch->dma_enable = 0;
+    if (!ch->hdma_do_transfer) return;
+    for (u32 index = 0; index < HDMA_LENGTHS[ch->transfer_mode]; index++) {
+        u32 addr;
+        if (ch->indirect) {
+            addr = (ch->indirect_bank << 16) | ch->indirect_address;
+            ch->indirect_address = (ch->indirect_address + 1) & 0xFFFF;
+        }
+        else {
+            addr = (ch->source_bank << 16) | ch->source_address;
+            ch->source_address = (ch->source_address + 1) & 0xFFFF;
+        }
+        dma_transfer(snes, ch, addr, index, 1);
+    }
+}
+
+static void hdma_advance_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
+{
+    ch->line_counter--;
+    ch->hdma_do_transfer = (ch->line_counter & 0x80) >> 7;
+    SNES_hdma_reload_ch(snes, ch);
+}
+
 static u32 dma_run(struct SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
@@ -386,7 +526,13 @@ static u32 dma_run(struct SNES *snes)
     u32 howmany = 0;
     for (u32 n = 0; n < 8; n++) {
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
-        if (ch->dma_enable) {
+        if (ch->hdma_enable && !ch->hdma_completed) {
+            hdma_transfer_ch(snes, ch);
+            if (ch->hdma_enable && !ch->hdma_completed) {
+                hdma_advance_ch(snes, ch);
+            }
+        }
+        else if (ch->dma_enable) {
             any_going++;
             dma_run_ch(snes, ch);
         }

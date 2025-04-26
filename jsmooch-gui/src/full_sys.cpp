@@ -731,7 +731,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
@@ -740,7 +740,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tloz.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dq9.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "fighting_fantasy.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "kirbycc.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "kirbycc.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mp_hunters_rev1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "okami_den.nds", nullptr); // try again after sprites
             //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);

@@ -89,7 +89,7 @@ static u32 hdma_is_finished(struct R5A22_DMA_CHANNEL *this)
 
 }
 
-static u32 hdma_reload_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
+u32 SNES_hdma_reload_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
 {
     u32 cn = 8;
     u32 data = SNES_wdc65816_read(snes, (ch->source_bank << 16 | ch->hdma_address), 0, 1);
@@ -125,7 +125,7 @@ static u32 hdma_setup_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
     ch->dma_enable = 0; // Stomp on DMA if HDMA runs
     ch->hdma_enable = ch->source_address;
     ch->line_counter = 0;
-    return hdma_reload_ch(snes, ch);
+    return SNES_hdma_reload_ch(snes, ch);
 }
 
 static void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -138,9 +138,20 @@ static void hdma_setup(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_from_event_adjust_master_clock(&snes->scheduler, cn);
 }
 
+static u32 hdma_is_enabled(struct SNES *snes)
+{
+    for (u32 n = 0; n < 8; n++) {
+        if (snes->r5a22.dma.channels[n].hdma_enable) return 1;
+    }
+    return 0;
+}
+
 static void hdma(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-
+    struct SNES *snes = (struct SNES *)ptr;
+    if (hdma_is_enabled(snes)) {
+        snes->r5a22.status.dma_running = 1;
+    }
 }
 
 static void assert_hirq(void *ptr, u64 key, u64 clock, u32 jitter)
