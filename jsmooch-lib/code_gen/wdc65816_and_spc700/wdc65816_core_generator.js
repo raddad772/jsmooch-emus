@@ -63,7 +63,7 @@ var WDC_PINS_SEPERATE_PDV = false;
 let CONSOLE_TRACE = true;
 
 
-function replace_for_C(whatr) {
+function wdc_replace_for_C(whatr) {
     if (whatr.includes('getbyte()')) {
         console.log('ARGH1!!!', whatr);
     }
@@ -377,7 +377,7 @@ class WDC_switchgen {
     }
 
     addl(what) {
-        this.outstr += this.indent1 + replace_for_C(what) + '\n';
+        this.outstr += this.indent1 + wdc_replace_for_C(what) + '\n';
     }
 
     addr_to_ta_pbr() {
@@ -2743,7 +2743,7 @@ function func_name(opcode, E, M, X)
 function generate_instruction_table(indent, E, M, X, last) {
     let ostr = '{';
     let num = 0;
-    for (let opcode = 0; opcode < WDC_MAX_OPCODE; opcode++) {
+    for (let opcode = 0; opcode <= WDC_MAX_OPCODE; opcode++) {
         if (num === 0) {
             ostr += indent;
         }

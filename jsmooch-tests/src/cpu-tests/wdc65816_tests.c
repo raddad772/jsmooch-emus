@@ -495,6 +495,7 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
 
 static u32 test_wdc65816_ins(struct WDC65816 *cpu, u32 iclass, u32 ins)
 {
+    printf("\nYO?");
     printf("\n\nTesting instruction %02x.%c", ins, iclass ? 'e' : 'n');
     char path[500];
     construct_path(path, iclass, ins);

@@ -87,8 +87,8 @@ int main()
 {
     dbg_init();
     dbg.trace_on = 0;
-    test_spc700();
-    //test_wdc65816();
+    //test_spc700();
+    test_wdc65816();
     //z80_drag_race();
     //test_scheduler();
     //test_sm83();

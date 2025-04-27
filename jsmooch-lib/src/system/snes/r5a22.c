@@ -169,7 +169,7 @@ void R5A22_update_nmi(struct SNES *snes)
     WDC65816_set_NMI_level(&this->cpu, this->io.nmi_enable && this->status.nmi_flag);
 }
 
-static void latch_ppu_counters(struct SNES *snes)
+void SNES_latch_ppu_counters(struct SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     snes->ppu.io.vcounter = snes->clock.ppu.y;
@@ -215,7 +215,7 @@ void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_bl
             R5A22_update_nmi(snes);
             return;
         case 0x4201: // WRIO, a weird one
-            if ((!(this->io.pio & 0x80)) && !(val & 0x80)) latch_ppu_counters(snes);
+            if ((!(this->io.pio & 0x80)) && !(val & 0x80)) SNES_latch_ppu_counters(snes);
             this->io.pio = val;
             return;
         case 0x4202:

@@ -802,7 +802,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tonc/m7_ex.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/mos_demo.gba", nullptr);
 
-            worked = grab_ROM(&ROMs, which, "poke_song_player.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "poke_song_player.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sram.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "flash64.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "flash128.gba", nullptr);
@@ -811,7 +811,7 @@ void full_system::load_default_ROM()
 
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
+            worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
