@@ -58,15 +58,17 @@ void WDC65816_cycle(struct WDC65816* this)
     if (this->regs.TCU == 1) {
         if (this->regs.interrupt_pending) {
             if (this->regs.NMI_pending) {
+                this->regs.NMI_pending = 0;
                 this->regs.IR = WDC65816_OP_NMI;
+                this->regs.interrupt_pending = this->regs.IRQ_pending;
             }
             else if (this->regs.IRQ_pending) {
-                if (this->regs.P.I) {
-                    if (this->regs.WAI) {
+                if (this->regs.P.I) { // If interrupts are disabled...
+                    if (this->regs.WAI) { // Just resume next instruction if WAI ing
                         printf("\nWAI exit because IRQ with I=1!");
                         this->regs.WAI = 0;
                     }
-                    else return;
+                    // Here: IRQ is pending, IRQs are disabled, and not in WAI state. So do nothing here
                 }
                 else {
                     this->regs.IR = WDC65816_OP_IRQ;

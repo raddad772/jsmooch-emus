@@ -317,17 +317,13 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->standard = JSS_NTSC;
     d->enabled = 1;
 
-    // 320x224 or 256x224, but, can be x448, and because 256 and 320 can change in the middle of a line, we will do a special output
-
-    // 1280 x 448 output resolution so that changes mid-line are fine, scaled down
-
     d->fps = 60.0988;
     d->fps_override_hint = 60;
 
-    d->pixelometry.cols.left_hblank = 21;
-    d->pixelometry.cols.visible = 256;
-    d->pixelometry.cols.max_visible = 256;
-    d->pixelometry.cols.right_hblank = 277;
+    d->pixelometry.cols.left_hblank = 42;
+    d->pixelometry.cols.visible = 512;
+    d->pixelometry.cols.max_visible = 512;
+    d->pixelometry.cols.right_hblank = 42;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
@@ -394,8 +390,8 @@ void SNESJ_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(256 * 224 * 2);
-    d->display.output[1] = malloc(256 * 224 * 2);
+    d->display.output[0] = malloc(512 * 224 * 2);
+    d->display.output[1] = malloc(512 * 224 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_crt(&d->display);

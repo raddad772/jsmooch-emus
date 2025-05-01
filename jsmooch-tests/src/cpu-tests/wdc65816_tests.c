@@ -495,7 +495,6 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
 
 static u32 test_wdc65816_ins(struct WDC65816 *cpu, u32 iclass, u32 ins)
 {
-    printf("\nYO?");
     printf("\n\nTesting instruction %02x.%c", ins, iclass ? 'e' : 'n');
     char path[500];
     construct_path(path, iclass, ins);
@@ -537,8 +536,8 @@ void test_wdc65816()
     u64 cycle_ptr = 0;
     WDC65816_init(&cpu, &cycle_ptr);
     u32 total_fail = 0;
-    u32 start_test = 0;
-    for (u32 iclass = 1; iclass < 2; iclass++) {
+    u32 start_test = 1;
+    for (u32 iclass = 0; iclass < 1; iclass++) {
         for (u32 i = start_test; i < 0x100; i++) {
             if (skip_test(i)) continue;
             u32 result = test_wdc65816_ins(&cpu, iclass, i);

@@ -6,6 +6,8 @@
 #include "snes_ppu.h"
 #include "snes_bus.h"
 
+#include "helpers/multisize_memaccess.c"
+
 #define PPU_src_BG1 0
 #define PPU_src_BG2 1
 #define PPU_src_BG3 2
@@ -14,10 +16,29 @@
 #define PPU_src_OBJ2 5
 #define PPU_src_COL 6
 
+static int did_math = 0;
+static u64 gfxshift[256];
+
+static void do_math()
+{
+    did_math = 1;
+    u32 space;
+    for (u32 rep = 0; rep < 3; rep++) {
+        for (u64 i = 0; i < 256; i++) {
+            u64 shift = 0;
+            u64 v = 0;
+            for (u64 bn = 0; bn < 8; bn++) {
+                v = (v << 8) | ((i >> shift) & 1);
+                shift++;
+            }
+            gfxshift[i] = v;
+        }
+    }
+}
 
 void SNES_PPU_init(struct SNES *this)
 {
-    
+    if (!did_math) do_math();
 }
 
 void SNES_PPU_delete(struct SNES *this)
@@ -155,6 +176,57 @@ static void update_video_mode(struct SNES_PPU *this)
 				}
 				break;
 		}
+        static const u32 twidth[4] = { 32, 64, 32, 64};
+        static const u32 theight[4] = { 32, 32, 64, 64 };
+        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+            struct SNES_PPU_BG *bg = &this->bg[bgnum];
+            bg->cols = twidth[bg->io.screen_size];
+            bg->rows = theight[bg->io.screen_size];
+            bg->col_mask = bg->cols - 1;
+            bg->row_mask = bg->rows - 1;
+            bg->tile_px = bg->io.tile_size ? 16 : 8;
+            bg->scroll_shift = bg->io.tile_size ? 4 : 3;
+            bg->tile_px_mask = bg->tile_px - 1;
+
+            bg->pixels_h = bg->cols * bg->tile_px;
+            bg->pixels_v = bg->rows * bg->tile_px;
+            bg->pixels_h_mask = bg->pixels_h - 1;
+            bg->pixels_v_mask = bg->pixels_v - 1;
+
+            bg->palette_offset = 0;
+            switch(bg->tile_mode) {
+                case SPTM_BPP2:
+                    bg->palette_offset = 0;
+                    if (this->io.bg_mode == 0) {
+                        bg->palette_offset = 0x20 * bgnum;
+                    }
+                    bg->palette_shift = 2; // * 4
+                    bg->palette_mask = 7;
+                    bg->num_planes = 1;
+                    bg->tile_bytes = 0x10;
+                    bg->tile_row_bytes = 2;
+                    break;
+                case SPTM_BPP4:
+                    bg->palette_shift = 4; // * 16
+                    bg->palette_mask = 7;
+                    bg->num_planes = 2;
+                    bg->tile_bytes = 0x20;
+                    bg->tile_row_bytes = 4;
+                    break;
+                case SPTM_BPP8:
+                    bg->palette_shift = 0; //
+                    bg->palette_mask = 0;
+                    bg->num_planes = 4;
+                    bg->tile_bytes = 0x40;
+                    bg->tile_row_bytes = 8;
+                    break;
+                case SPTM_inactive:
+                    break;
+                case SPTM_mode7:
+                    printf("\nWARN MODE7 NOT IMPLEMENT");
+                    break;
+            }
+        }
 }
 
 void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_block *bl) {
@@ -197,6 +269,7 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
         case 0x2105: { // BGMODE
             u32 old_bg_mode = this->io.bg_mode;
             this->io.bg_mode = val & 7;
+            printf("\nBG MODE %d", this->io.bg_mode);
             if (old_bg_mode != this->io.bg_mode) {
                 printf("\nNEW BG MODE %d", this->io.bg_mode);
             }
@@ -205,6 +278,7 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             this->bg[1].io.tile_size = (val >> 5) & 1;
             this->bg[2].io.tile_size = (val >> 6) & 1;
             this->bg[3].io.tile_size = (val >> 7) & 1;
+            printf("\nTILE SIZES: %d %d %d %d", this->bg[0].io.tile_size, this->bg[1].io.tile_size, this->bg[2].io.tile_size, this->bg[3].io.tile_size);
             update_video_mode(this);
             return;
         }
@@ -229,6 +303,7 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             struct SNES_PPU_BG *bg = &this->bg[bgnum];
             bg->io.screen_size = val & 3;
             bg->io.screen_addr = (val << 8) & 0x7C00;
+            update_video_mode(this);
             return;
         }
         case 0x210B: // BG12NBA
@@ -348,7 +423,7 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             else {
                 this->latch.cgram_addr = 0;
                 this->CGRAM[this->io.cgram_addr] = ((val & 0x7F) << 8) | this->latch.cgram;
-                printf("\nCRAM WRITE %03x: %04x", this->io.cgram_addr, ((val & 0x7F) << 8) | this->latch.cgram);
+                //printf("\nCRAM WRITE %02x: %04x", this->io.cgram_addr, ((val & 0x7F) << 8) | this->latch.cgram);
                 this->io.cgram_addr = (this->io.cgram_addr + 1) & 0xFF;
             }
             return;
@@ -586,6 +661,162 @@ static void dram_refresh(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_from_event_adjust_master_clock(&this->scheduler, 40);
 }
 
+struct slice {
+    struct SNES_PPU_px px[16];
+    u32 priority;
+};
+
+
+static void fetch_slice(struct SNES *snes, struct SNES_PPU_BG *bg, u32 coarse_col, u32 row, struct slice *slice)
+{
+    struct SNES_PPU *this = &snes->ppu;
+    // fetch entry from nametable
+    u32 coarse_row = row >> bg->scroll_shift;
+    u32 fine_row = row & bg->tile_px_mask;
+    u32 nt_addr = bg->io.screen_addr;
+
+    u32 hires = this->io.bg_mode == 5 || this->io.bg_mode == 6;
+    u32 tile_height = 3 + bg->io.tile_size;
+    u32 tile_width = !hires ? tile_height : 4;
+
+    u32 screen_x = bg->io.screen_size & 1 ? 0x400 : 0;
+    u32 screen_y = bg->io.screen_size & 2 ? 32 << (5 + (bg->io.screen_size & 1)) : 0;
+
+    u32 tx = coarse_col;
+    u32 ty = coarse_row;
+
+    u32 offset = ((ty & 0x1F) << 5) | (tx & 0x1F);
+    if (tx & 0x20) offset += screen_x;
+    if (ty & 0x20) offset += screen_y;
+
+    // 64 bytes per line
+    // but in 64-wide mode, there's
+    /*nt_addr += (64 * coarse_row) + (2 * coarse_col);
+    if ((bg->cols == 64) && (coarse_col & 1)) {
+        // left and right-hand tables
+        nt_addr += (64 * bg->rows);
+    }*/
+
+    u32 entry = snes->ppu.VRAM[bg->io.screen_addr + offset];
+    u32 vflip = (entry >> 15) & 1;
+    u32 hflip = (entry >> 14) & 1;
+    u32 priority = (entry >> 13) & 1;
+    u32 palette = (entry >> 10) & 7;
+    u32 tile_num = entry & 1023;
+
+    if (vflip) fine_row = bg->tile_px_mask - fine_row;
+    slice->priority = priority;
+    u32 pal_base = bg->palette_offset + ((palette & bg->palette_mask) << bg->palette_shift);
+
+    // So we have to get the bitplanes of the correct row.
+    // If tiles are 16x16 and we're on , we pick the "next" tile
+    u32 block_x = 0, block_y = 0;
+    if (bg->io.tile_size) {
+        if (fine_row > 7) nt_addr += bg->tile_bytes * 0x10;
+    }
+    nt_addr += ((fine_row & 7) * bg->tile_row_bytes);
+    i32 tile_x = hflip ? bg->tile_px_mask : 0;
+    i32 tile_add = hflip ? -1 : 1;
+    // Now grab 1-2 8-pixel slices
+    u64 pixel_data = 0;
+    for (u32 slice_num = 0; slice_num < bg->io.tile_size+1; slice_num++) {
+        u32 my_addr = nt_addr;
+        my_addr += (slice_num ^ hflip) * bg->tile_bytes;
+        if (slice_num && bg->io.tile_size) pixel_data <<= 8;
+
+        // Grab 1-4 2-planes of data
+        for (u32 plane_num = 0; plane_num < bg->num_planes; plane_num++) {
+            u16 pixels = snes->ppu.VRAM[my_addr >> 1];
+            u64 data = gfxshift[pixels & 0xFF];
+            data |= gfxshift[pixels >> 1] << 1;
+            pixel_data |= data << (2 * plane_num);
+            my_addr++;
+        }
+    }
+
+    const u64 mask[3] = { 3, 15, 255};
+    const u64 shift[3] = { 2, 4, 8 };
+    for (u32 pnum = 0; pnum < bg->tile_px; pnum++) {
+        u32 c = pixel_data & mask[bg->tile_mode];
+        pixel_data >>= shift[bg->tile_mode];
+        slice->px[tile_x].has = c != 0;
+        slice->px[tile_x].color = pal_base + c;
+        tile_x += tile_add;
+    }
+}
+
+static inline void render_to_bgbuffer(struct SNES *snes, struct SNES_PPU_BG *bg, struct slice *slice, u32 start, u32 end)
+{
+    for (u32 i = start; i < end; i++) {
+        bg->line[bg->screen_x].has = slice->px[i].has;
+        bg->line[bg->screen_x].color = slice->px[i].color;
+        bg->screen_x++;
+        if (bg->screen_x >= 256) return;
+    }
+}
+
+static void draw_bg_line(struct SNES *snes, u32 bgnum, u32 y)
+{
+    struct SNES_PPU *this = &snes->ppu;
+    struct SNES_PPU_BG *bg = &this->bg[bgnum];
+    memset(bg->line, 0, sizeof(bg->line));
+    if (bg->tile_mode == SPTM_inactive) return;
+    if (!bg->main_enable && !bg->sub_enable) return;
+
+    // So for a 256-pixel screen, we must do 33 fetches. 1 for 0-7 pixels off the left side, the rest for normal stuff
+    // Kinda like we do on the Sega Genesis, because we can.
+
+    u32 voffset_per_tile = this->io.bg_mode == 2 || this->io.bg_mode == 4 || this->io.bg_mode == 6;
+    u32 direct_color_mode = this->color_math.direct_color && bgnum == 0 && ((this->io.bg_mode == 3) || (this->io.bg_mode == 4));
+    u32 color_shift = 3 + bg->io.tile_size;
+    // if it's 16 wide or tall, then that scroll is going to go half as far.
+    bg->screen_x = 0;
+    u32 xscrl = bg->io.hoffset & bg->pixels_h_mask;
+
+    u32 fine_x = xscrl & bg->tile_px_mask;
+    u32 col_coarse = (xscrl >> bg->scroll_shift) & bg->pixels_h_mask;
+    u32 row = (y + bg->io.voffset) & bg->pixels_v_mask;
+
+    struct slice slice;
+
+    // render left column
+    fetch_slice(snes, bg, col_coarse, row, &slice);
+    col_coarse = (col_coarse + 1) & (bg->col_mask);
+    render_to_bgbuffer(snes, bg, &slice, bg->tile_px_mask - fine_x, bg->tile_px);
+
+    // render the rest
+    while (bg->screen_x < 256) {
+        fetch_slice(snes, bg, col_coarse, row, &slice);
+        render_to_bgbuffer(snes, bg, &slice, 0, 15);
+        col_coarse = (col_coarse + 1) & (bg->col_mask);
+    }
+}
+
+static void draw_sprite_line(struct SNES *snes)
+{
+    struct SNES_PPU *this = &snes->ppu;
+}
+
+static void draw_line(struct SNES *snes)
+{
+    // Draw sprite line
+    struct SNES_PPU *this = &snes->ppu;
+    draw_sprite_line(snes);
+    draw_bg_line(snes, 0, snes->clock.ppu.y);
+    draw_bg_line(snes, 1, snes->clock.ppu.y);
+    draw_bg_line(snes, 2, snes->clock.ppu.y);
+    draw_bg_line(snes, 3, snes->clock.ppu.y);
+    u16 *line_output = this->cur_output + (snes->clock.ppu.y * 512);
+    for (u32 x = 0; x < 256; x++) {
+        u16 c = this->bg[2].line[x].color;
+        if (x == 90) c = 0x7FFF;
+        if (snes->clock.ppu.y == 100) c = 0x7FFF;
+        line_output[x*2] = c;
+        line_output[(x*2)+1] = c;
+    }
+}
+
+
 static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *snes = (struct SNES *)ptr;
@@ -597,10 +828,10 @@ static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
     if (key == 0) {
         // Draw bg
         // Output bg &  sprite
-
+        if (snes->clock.ppu.y < 224)
+            draw_line(snes);
     }
-    else {
-        // Draw next sprite linebuffer!
+    else { // HBLANK before end of line.
     }
 
     // Do hblank DMA? no this is scheduled
