@@ -43,9 +43,10 @@ void GBA_PPU_reset(struct GBA *this)
     this->ppu.bg[3].pa = 1 << 8; this->ppu.bg[3].pd = 1 << 8;
 }
 
-static void vblank(struct GBA *this, u32 val)
+static void vblank(void *ptr, u64 val, u64 clock, u32 jitter)
 {
     //pprint_palette_ram(this);
+    struct GBA *this = (struct GBA *)ptr;
     this->clock.ppu.vblank_active = val;
     if (val) {
         u32 old_IF = this->io.IF;
@@ -54,6 +55,10 @@ static void vblank(struct GBA *this, u32 val)
             DBG_EVENT(DBG_GBA_EVENT_SET_VBLANK_IRQ);
             GBA_eval_irqs(this);
         }
+        GBA_check_dma_at_vblank(this);
+    }
+    else {
+
     }
 }
 
@@ -74,66 +79,6 @@ static void hblank(struct GBA *this, u32 val)
         if (old_IF != this->io.IF) {
             GBA_eval_irqs(this);
             DBG_EVENT(DBG_GBA_EVENT_SET_LINECOUNT_IRQ);
-        }
-    }
-}
-
-void GBA_PPU_new_frame(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct GBA *this = (struct GBA *)ptr;
-    debugger_report_frame(this->dbg.interface);
-    this->clock.ppu.y = 0;
-    this->ppu.cur_output = ((u16 *)this->ppu.display->output[this->ppu.display->last_written ^ 1]);
-    this->ppu.display->last_written ^= 1;
-    this->clock.master_frame++;
-    vblank(this, 0);
-    u64 cur = clock - jitter;
-    scheduler_only_add_abs_w_tag(&this->scheduler, cur + MASTER_CYCLES_PER_FRAME, 0, this, &GBA_PPU_new_frame, NULL, 2);
-}
-
-void GBA_PPU_new_scanline(struct GBA*this)
-{
-    if (this->dbg.events.view.vec) {
-        debugger_report_line(this->dbg.interface, this->clock.ppu.y);
-    }
-    hblank(this, 0);
-    this->clock.ppu.scanline_start = this->clock.master_cycle_count;
-    struct GBA_PPU_bg *bg;
-
-    if (this->clock.ppu.y == 0) { // Reset some mosaic counter
-        for (u32 i = 0; i < 4; i++) {
-            bg = &this->ppu.bg[i];
-            bg->mosaic_y = 0;
-            bg->last_y_rendered = 159;
-        }
-        this->ppu.mosaic.bg.y_counter = 0;
-        this->ppu.mosaic.bg.y_current = 0;
-        this->ppu.mosaic.obj.y_counter = 0;
-        this->ppu.mosaic.obj.y_current = 0;
-        memset(this->dbg_info.bg_scrolls, 0, sizeof(this->dbg_info.bg_scrolls));
-        /*for (u32 bgnum = 0; bgnum < 4; bgnum++) {
-            for (u32 line = 0; line < 1024; line++) {
-                memset(&this->dbg_info.bg_scrolls[bgnum].lines[0], 0, 1024 * 128);
-            }
-        }*/
-    }
-    if (this->clock.ppu.y < 160) {
-        struct GBA_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
-        for (u32 i = 2; i < 4; i++) {
-            bg = &this->ppu.bg[i];
-            struct GBA_DBG_line_bg *dbgbg = &dbgl->bg[i];
-            if ((this->clock.ppu.y == 0) || bg->x_written) {
-                bg->x_lerp = bg->x;
-                dbgbg->reset_x = 1;
-            }
-            dbgbg->x_lerp = bg->x_lerp;
-
-            if ((this->clock.ppu.y == 0) || (bg->y_written)) {
-                bg->y_lerp = bg->y;
-                dbgbg->reset_y = 1;
-            }
-            dbgbg->y_lerp = bg->y_lerp;
-            bg->x_written = bg->y_written = 0;
         }
     }
 }
@@ -1080,38 +1025,53 @@ static void process_button_IRQ(struct GBA *this)
     }
 }
 
-void GBA_PPU_finish_scanline(struct GBA*this)
-{
-    // do stuff, then
-    if (this->clock.ppu.y == 0) {
-        process_button_IRQ(this);
-    }
-    this->clock.ppu.hblank_active = 0;
-    this->clock.ppu.y++;
-    if (this->clock.ppu.y == 160) {
-        GBA_check_dma_at_vblank(this);
-        vblank(this, 1);
-    }
-    if (this->clock.ppu.y == 227) {
-        this->clock.ppu.vblank_active = 0;
-    }
-}
-
-
-
-void GBA_PPU_schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
+void GBA_PPU_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct GBA *this = (struct GBA *)ptr;
-    u64 cur = clock - jitter;
-    scheduler_only_add_abs(&this->scheduler, cur + MASTER_CYCLES_BEFORE_HBLANK, 1, this, &GBA_PPU_hblank, NULL);
-    scheduler_only_add_abs_w_tag(&this->scheduler, cur + MASTER_CYCLES_PER_SCANLINE, 0, this, &GBA_PPU_hblank, NULL, 1);
-    GBA_PPU_new_scanline(this);
+    i64 cur_clock = clock - jitter;
+    i64 start_clock = cur_clock;
+    for (u32 line = 0; line < 228; line++) {
+        if (line == 160) {
+            scheduler_only_add_abs(&this->scheduler, cur_clock, 1, this, &vblank, NULL);
+        }
+        if (line == 227) {
+            scheduler_only_add_abs(&this->scheduler, cur_clock, 0, this, &vblank, NULL);
+        }
+
+        scheduler_only_add_abs(&this->scheduler, cur_clock+MASTER_CYCLES_BEFORE_HBLANK, 1, this, &GBA_PPU_hblank, NULL);
+        scheduler_only_add_abs_w_tag(&this->scheduler, cur_clock+MASTER_CYCLES_PER_SCANLINE, 0, this, &GBA_PPU_hblank, NULL, 1);
+        cur_clock += MASTER_CYCLES_PER_SCANLINE;
+
+    }
+    scheduler_only_add_abs_w_tag(&this->scheduler, start_clock+MASTER_CYCLES_PER_FRAME, 0, this, &GBA_PPU_schedule_frame, NULL, 2);
+
+    // Do new-frame stuff
+    struct GBA_PPU_bg *bg;
+
+    for (u32 i = 0; i < 4; i++) {
+        bg = &this->ppu.bg[i];
+        bg->mosaic_y = 0;
+        bg->last_y_rendered = 159;
+    }
+    this->ppu.mosaic.bg.y_counter = 0;
+    this->ppu.mosaic.bg.y_current = 0;
+    this->ppu.mosaic.obj.y_counter = 0;
+    this->ppu.mosaic.obj.y_current = 0;
+    memset(this->dbg_info.bg_scrolls, 0, sizeof(this->dbg_info.bg_scrolls));
+
+    debugger_report_frame(this->dbg.interface);
+    this->clock.ppu.y = 0;
+    this->ppu.cur_output = ((u16 *)this->ppu.display->output[this->ppu.display->last_written ^ 1]);
+    this->ppu.display->last_written ^= 1;
+    this->clock.master_frame++;
+    process_button_IRQ(this);
 }
 
 
 void GBA_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct GBA *this = (struct GBA *)ptr;
+
     if (key == 1) { // mid-scanline
         if (this->clock.ppu.y < 160) {
             // Copy debug data
@@ -1178,9 +1138,33 @@ void GBA_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter)
         // Check if we have any DMA transfers that need to go...
         GBA_check_dma_at_hblank(this);
     }
-    else {
-        GBA_PPU_finish_scanline(this);
-        GBA_PPU_schedule_scanline(this, 0, clock, jitter);
+    else { // end of scanline/new scanline
+        this->clock.ppu.y++;
+        if (this->dbg.events.view.vec) {
+            debugger_report_line(this->dbg.interface, this->clock.ppu.y);
+        }
+        hblank(this, 0);
+        this->clock.ppu.scanline_start = this->clock.master_cycle_count;
+        struct GBA_PPU_bg *bg;
+        if (this->clock.ppu.y < 160) {
+            struct GBA_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
+            for (u32 i = 2; i < 4; i++) {
+                bg = &this->ppu.bg[i];
+                struct GBA_DBG_line_bg *dbgbg = &dbgl->bg[i];
+                if ((this->clock.ppu.y == 0) || bg->x_written) {
+                    bg->x_lerp = bg->x;
+                    dbgbg->reset_x = 1;
+                }
+                dbgbg->x_lerp = bg->x_lerp;
+
+                if ((this->clock.ppu.y == 0) || (bg->y_written)) {
+                    bg->y_lerp = bg->y;
+                    dbgbg->reset_y = 1;
+                }
+                dbgbg->y_lerp = bg->y_lerp;
+                bg->x_written = bg->y_written = 0;
+            }
+        }
     }
 }
 

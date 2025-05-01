@@ -226,8 +226,8 @@ Host  sp_svc    sp_irq    sp_svc    zerofilled area       return address
 
 static void schedule_first(struct GBA *this)
 {
-    GBA_PPU_schedule_scanline(this, 0, 0, 0);
-    scheduler_only_add_abs_w_tag(&this->scheduler, MASTER_CYCLES_PER_FRAME, 0, this, &GBA_PPU_new_frame, NULL, 2);
+    GBA_PPU_schedule_frame(this, 0, 0, 0);
+
 }
 
 void GBAJ_reset(JSM)
