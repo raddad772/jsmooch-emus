@@ -114,10 +114,6 @@ void GBA_PPU_init(struct GBA*);
 void GBA_PPU_delete(struct GBA*);
 void GBA_PPU_reset(struct GBA*);
 
-void GBA_PPU_start_scanline(struct GBA*); // Called on scanline start
-void GBA_PPU_hblank(struct GBA*); // Called at hblank time
-void GBA_PPU_finish_scanline(struct GBA*); // Called on scanline end, to render and do housekeeping
-
 u32 GBA_PPU_mainbus_read_palette(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
 u32 GBA_PPU_mainbus_read_VRAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
 u32 GBA_PPU_mainbus_read_OAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 has_effect);
@@ -126,5 +122,8 @@ void GBA_PPU_mainbus_write_palette(struct GBA*, u32 addr, u32 sz, u32 access, u3
 void GBA_PPU_mainbus_write_VRAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
 void GBA_PPU_mainbus_write_OAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
 void GBA_PPU_mainbus_write_IO(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
-
+void GBA_PPU_new_frame(void *ptr, u64 key, u64 clock, u32 jitter);
+void GBA_PPU_new_scanline(struct GBA *);
+void GBA_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter);
+void GBA_PPU_schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter);
 #endif //JSMOOCH_EMUS_GBA_PPU_H

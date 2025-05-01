@@ -15,6 +15,12 @@
 #include "gba_ppu.h"
 #include "gba_debugger.h"
 
+#define MASTER_CYCLES_PER_SCANLINE 1232
+#define HBLANK_CYCLES 226
+#define MASTER_CYCLES_BEFORE_HBLANK (MASTER_CYCLES_PER_SCANLINE - HBLANK_CYCLES)
+#define MASTER_CYCLES_PER_FRAME (228 * MASTER_CYCLES_PER_SCANLINE)
+#define SCANLINE_HBLANK 1006
+
 void GBA_PPU_init(struct GBA *this)
 {
     memset(&this->ppu, 0, sizeof(this->ppu));
@@ -72,17 +78,20 @@ static void hblank(struct GBA *this, u32 val)
     }
 }
 
-static void new_frame(struct GBA *this)
+void GBA_PPU_new_frame(void *ptr, u64 key, u64 clock, u32 jitter)
 {
+    struct GBA *this = (struct GBA *)ptr;
     debugger_report_frame(this->dbg.interface);
     this->clock.ppu.y = 0;
     this->ppu.cur_output = ((u16 *)this->ppu.display->output[this->ppu.display->last_written ^ 1]);
     this->ppu.display->last_written ^= 1;
     this->clock.master_frame++;
     vblank(this, 0);
+    u64 cur = clock - jitter;
+    scheduler_only_add_abs_w_tag(&this->scheduler, cur + MASTER_CYCLES_PER_FRAME, 0, this, &GBA_PPU_new_frame, NULL, 2);
 }
 
-void GBA_PPU_start_scanline(struct GBA*this)
+void GBA_PPU_new_scanline(struct GBA*this)
 {
     if (this->dbg.events.view.vec) {
         debugger_report_line(this->dbg.interface, this->clock.ppu.y);
@@ -1044,77 +1053,6 @@ static void draw_line5(struct GBA *this, u16 *line_output)
     }
 }
 
-void GBA_PPU_hblank(struct GBA*this)
-{
-    // Now draw line!
-    if (this->clock.ppu.y < 160) {
-        // Copy debug data
-        struct GBA_DBG_line *l = &this->dbg_info.line[this->clock.ppu.y];
-        l->bg_mode = this->ppu.io.bg_mode;
-        for (u32 bgn = 0; bgn < 4; bgn++) {
-            struct GBA_PPU_bg *bg = &this->ppu.bg[bgn];
-            struct GBA_DBG_line_bg *mdbg = &l->bg[bgn];
-            mdbg->htiles = bg->htiles;
-            mdbg->vtiles = bg->vtiles;
-            mdbg->hscroll = bg->hscroll;
-            mdbg->vscroll = bg->vscroll;
-            mdbg->display_overflow = bg->display_overflow;
-            mdbg->screen_base_block = bg->screen_base_block;
-            mdbg->character_base_block = bg->character_base_block;
-            mdbg->bpp8 = bg->bpp8;
-            mdbg->priority = bg->priority;
-            if (bgn >= 2) {
-                mdbg->hpos = bg->x;
-                mdbg->vpos = bg->y;
-                mdbg->pa = bg->pa;
-                mdbg->pb = bg->pb;
-                mdbg->pc = bg->pc;
-                mdbg->pd = bg->pd;
-            }
-        }
-
-        // Actually draw the line
-        u16 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);
-        if (this->ppu.io.force_blank) {
-            memset(line_output, 0xFF, 480);
-            return;
-        }
-        memset(line_output, 0, 480);
-        switch (this->ppu.io.bg_mode) {
-            case 0:
-                draw_line0(this, line_output);
-                break;
-            case 1:
-                draw_line1(this, line_output);
-                break;
-            case 2:
-                draw_line2(this, line_output);
-                break;
-            case 3:
-                draw_line3(this, line_output);
-                break;
-            case 4:
-                draw_line4(this, line_output);
-                break;
-            case 5:
-                draw_line5(this, line_output);
-                break;
-            default:
-                assert(1 == 2);
-        }
-    }
-    else {
-        calculate_windows_vflag(this);
-    }
-
-    // It's cleared at cycle 0 and set at cycle 1007
-    hblank(this, 1);
-
-    // Check if we have any DMA transfers that need to go...
-    GBA_check_dma_at_hblank(this);
-}
-
-
 static void process_button_IRQ(struct GBA *this)
 {
     if (this->io.button_irq.enable) {
@@ -1134,14 +1072,13 @@ static void process_button_IRQ(struct GBA *this)
         u32 old_IF = this->io.IF;
         if (care_about) this->io.IF |= (1 << 12);
         else this->io.IF &= ~(1 << 12);
-            //printf("\nCARE_ABOUT? %d BITS:%d BUTTONS:%d CONDITION:%d", care_about, bits, this->io.button_irq.buttons, this->io.button_irq.condition);
+        //printf("\nCARE_ABOUT? %d BITS:%d BUTTONS:%d CONDITION:%d", care_about, bits, this->io.button_irq.buttons, this->io.button_irq.condition);
         if (old_IF != this->io.IF) {
             if (this->io.IF) printf("\nTRIGGERING THE INTERRUPT...");
             GBA_eval_irqs(this);
         }
     }
 }
-
 
 void GBA_PPU_finish_scanline(struct GBA*this)
 {
@@ -1158,10 +1095,95 @@ void GBA_PPU_finish_scanline(struct GBA*this)
     if (this->clock.ppu.y == 227) {
         this->clock.ppu.vblank_active = 0;
     }
-    if (this->clock.ppu.y == 228) {
-        new_frame(this);
+}
+
+
+
+void GBA_PPU_schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct GBA *this = (struct GBA *)ptr;
+    u64 cur = clock - jitter;
+    scheduler_only_add_abs(&this->scheduler, cur + MASTER_CYCLES_BEFORE_HBLANK, 1, this, &GBA_PPU_hblank, NULL);
+    scheduler_only_add_abs_w_tag(&this->scheduler, cur + MASTER_CYCLES_PER_SCANLINE, 0, this, &GBA_PPU_hblank, NULL, 1);
+    GBA_PPU_new_scanline(this);
+}
+
+
+void GBA_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct GBA *this = (struct GBA *)ptr;
+    if (key == 1) { // mid-scanline
+        if (this->clock.ppu.y < 160) {
+            // Copy debug data
+            struct GBA_DBG_line *l = &this->dbg_info.line[this->clock.ppu.y];
+            l->bg_mode = this->ppu.io.bg_mode;
+            for (u32 bgn = 0; bgn < 4; bgn++) {
+                struct GBA_PPU_bg *bg = &this->ppu.bg[bgn];
+                struct GBA_DBG_line_bg *mdbg = &l->bg[bgn];
+                mdbg->htiles = bg->htiles;
+                mdbg->vtiles = bg->vtiles;
+                mdbg->hscroll = bg->hscroll;
+                mdbg->vscroll = bg->vscroll;
+                mdbg->display_overflow = bg->display_overflow;
+                mdbg->screen_base_block = bg->screen_base_block;
+                mdbg->character_base_block = bg->character_base_block;
+                mdbg->bpp8 = bg->bpp8;
+                mdbg->priority = bg->priority;
+                if (bgn >= 2) {
+                    mdbg->hpos = bg->x;
+                    mdbg->vpos = bg->y;
+                    mdbg->pa = bg->pa;
+                    mdbg->pb = bg->pb;
+                    mdbg->pc = bg->pc;
+                    mdbg->pd = bg->pd;
+                }
+            }
+
+            // Actually draw the line
+            u16 *line_output = this->ppu.cur_output + (this->clock.ppu.y * OUT_WIDTH);
+            if (this->ppu.io.force_blank) {
+                memset(line_output, 0xFF, 480);
+                return;
+            }
+            memset(line_output, 0, 480);
+            switch (this->ppu.io.bg_mode) {
+                case 0:
+                    draw_line0(this, line_output);
+                    break;
+                case 1:
+                    draw_line1(this, line_output);
+                    break;
+                case 2:
+                    draw_line2(this, line_output);
+                    break;
+                case 3:
+                    draw_line3(this, line_output);
+                    break;
+                case 4:
+                    draw_line4(this, line_output);
+                    break;
+                case 5:
+                    draw_line5(this, line_output);
+                    break;
+                default:
+                    assert(1 == 2);
+            }
+        } else {
+            calculate_windows_vflag(this);
+        }
+
+        // It's cleared at cycle 0 and set at cycle 1007
+        hblank(this, 1);
+
+        // Check if we have any DMA transfers that need to go...
+        GBA_check_dma_at_hblank(this);
+    }
+    else {
+        GBA_PPU_finish_scanline(this);
+        GBA_PPU_schedule_scanline(this, 0, clock, jitter);
     }
 }
+
 
 static u32 GBA_PPU_read_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {

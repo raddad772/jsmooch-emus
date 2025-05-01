@@ -80,11 +80,18 @@ static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
     return GBA_mainbus_read(this, addr, sz, this->io.cpu.open_bus_data, 0);
 }
 
+static void block_step(void *ptr, u64 key, u64 clock, u32 jitter);
+
 void GBA_new(struct jsm_system *jsm)
 {
     struct GBA* this = (struct GBA*)malloc(sizeof(struct GBA));
     memset(this, 0, sizeof(*this));
-    ARM7TDMI_init(&this->cpu, &this->clock.master_cycle_count, &this->waitstates.current_transaction, NULL);
+
+    scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->waitstates.current_transaction);
+    this->scheduler.max_block_size = 20;
+    this->scheduler.run.func = &block_step;
+    this->scheduler.run.ptr = this;
+    ARM7TDMI_init(&this->cpu, &this->clock.master_cycle_count, &this->waitstates.current_transaction, &this->scheduler);
     this->cpu.read_ptr = this;
     this->cpu.write_ptr = this;
     this->cpu.read = &GBA_mainbus_read;
@@ -157,12 +164,8 @@ u32 GBAJ_finish_frame(JSM)
     for (u32 i = 0; i < 6; i++) {
         this->audio.waveforms[i] = cpg(this->dbg.waveforms.chan[i]);
     }
-    u64 current_frame = this->clock.master_frame;
-    while (this->clock.master_frame == current_frame) {
-        GBAJ_finish_scanline(jsm);
-        if (dbg.do_break) break;
-    }
-    //struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[4]);
+    scheduler_run_til_tag(&this->scheduler, 2);
+
     return this->ppu.display->last_written;
 }
 
@@ -221,6 +224,12 @@ Host  sp_svc    sp_irq    sp_svc    zerofilled area       return address
     ARM7TDMI_reload_pipeline(&this->cpu);
 }
 
+static void schedule_first(struct GBA *this)
+{
+    GBA_PPU_schedule_scanline(this, 0, 0, 0);
+    scheduler_only_add_abs_w_tag(&this->scheduler, MASTER_CYCLES_PER_FRAME, 0, this, &GBA_PPU_new_frame, NULL, 2);
+}
+
 void GBAJ_reset(JSM)
 {
     JTHIS;
@@ -228,13 +237,15 @@ void GBAJ_reset(JSM)
     GBA_clock_reset(&this->clock);
     GBA_PPU_reset(this);
 
-
     for (u32 i = 0; i < 4; i++) {
         this->io.SIO.multi[i] = 0xFFFF;
     }
     this->io.SIO.send = 0xFFFF;
 
     skip_BIOS(this);
+
+    scheduler_clear(&this->scheduler);
+    schedule_first(this);
     printf("\nGBA reset!");
 }
 
@@ -465,6 +476,11 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
     }
 }
 
+static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    cycle_DMA_and_CPU(ptr, key);
+}
+
 u64 GBA_clock_current(struct GBA *this)
 {
     return this->clock.master_cycle_count + this->waitstates.current_transaction;
@@ -473,22 +489,14 @@ u64 GBA_clock_current(struct GBA *this)
 u32 GBAJ_finish_scanline(JSM)
 {
     JTHIS;
-    GBA_PPU_start_scanline(this);
-    if (dbg.do_break) return 0;
-    cycle_DMA_and_CPU(this, MASTER_CYCLES_BEFORE_HBLANK);
-    if (dbg.do_break) return 0;
-    GBA_PPU_hblank(this);
-    if (dbg.do_break) return 0;
-    cycle_DMA_and_CPU(this, HBLANK_CYCLES);
-    if (dbg.do_break) return 0;
-    GBA_PPU_finish_scanline(this);
-    return 0;
+    scheduler_run_til_tag(&this->scheduler, 1);
+    return this->ppu.display->last_written;
 }
 
 static u32 GBAJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    ARM7TDMI_run_noIRQcheck(&this->cpu);
+    scheduler_run_for_cycles(&this->scheduler, howmany);
     return 0;
 }
 

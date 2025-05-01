@@ -275,7 +275,7 @@ static void create_scheduling_lookup_table(struct genesis *this)
     }
 }
 
-static inline void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
+static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis *this = (struct genesis *)ptr;
     //             // Index = (z80-1 * x) + vdp-1
