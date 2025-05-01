@@ -63,6 +63,7 @@ struct SNES {
         DBG_EVENT_VIEW
 
         DBG_IMAGE_VIEWS_START
+            MDBG_IMAGE_VIEW(palettes)
         DBG_IMAGE_VIEWS_END
 
         DBG_WAVEFORM_START(apu)

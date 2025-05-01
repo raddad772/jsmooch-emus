@@ -19,7 +19,7 @@ static u32 read_bad(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct
     static int num = 0;
     num++;
     if (num > 100) {
-        dbg_break("BECAUSE", this->clock.master_cycle_count);
+        //dbg_break("BECAUSE", this->clock.master_cycle_count);
     }
     return old;
 }

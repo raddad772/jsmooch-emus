@@ -9,7 +9,7 @@
 #include "helpers/cvec.h"
 
 struct SNES_PPU_px {
-    u8 has;
+    u8 has, source;
     u8 priority;
     u16 color;
 };
@@ -55,7 +55,7 @@ struct SNES_PPU {
     } color_math;
 
     struct SNES_PPU_BG {
-        struct SNES_PPU_px line[256];
+        struct SNES_PPU_px main[256], sub[256];
 
         u32 enabled;
         u32 bpp;
@@ -67,13 +67,14 @@ struct SNES_PPU {
         u32 scroll_shift;
         u32 pixels_h, pixels_v;
         u32 pixels_h_mask, pixels_v_mask;
+        u32 tiledata_index;
 
-        u32 palette_offset, palette_shift, palette_mask;
+        u32 palette_offset, palette_base, palette_shift, palette_mask;
         u32 num_planes;
         u32 tile_bytes, tile_row_bytes;
 
         struct {
-            u32 enable;
+            u32 enable, counter, size;
         } mosaic;
 
         struct {
