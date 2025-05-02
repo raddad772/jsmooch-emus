@@ -49,13 +49,16 @@ static void vblank(void *ptr, u64 val, u64 clock, u32 jitter)
     struct GBA *this = (struct GBA *)ptr;
     this->clock.ppu.vblank_active = val;
     if (val) {
+        GBA_check_dma_at_vblank(this);
         u32 old_IF = this->io.IF;
         this->io.IF |= this->ppu.io.vblank_irq_enable && val;
         if (old_IF != this->io.IF) {
             DBG_EVENT(DBG_GBA_EVENT_SET_VBLANK_IRQ);
             GBA_eval_irqs(this);
         }
-        GBA_check_dma_at_vblank(this);
+    }
+    else {
+
     }
 }
 
@@ -1078,11 +1081,7 @@ static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
         GBA_check_dma_at_hblank(this);
     }
     else { // end of scanline/new scanline
-        this->clock.ppu.y++;
-        if (this->dbg.events.view.vec) {
-            debugger_report_line(this->dbg.interface, this->clock.ppu.y);
-        }
-
+        // GBA_PPU_finish_scanline()
         u32 old_IF = this->io.IF;
         this->io.IF |= ((this->ppu.io.vcount_at == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable) << 2;
         if (old_IF != this->io.IF) {
@@ -1090,20 +1089,33 @@ static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
             GBA_eval_irqs(this);
         }
 
+
+        this->clock.ppu.y++;
+        if (this->dbg.events.view.vec) {
+            debugger_report_line(this->dbg.interface, this->clock.ppu.y);
+        }
+
+        // ==160 check DMA at vblank
+        // == 227, vblank_active = 0
+        // == 228, new_frame() goes here. whcih would set y==0
+        // THEN
+        //  hblank(0)
+
         this->clock.ppu.scanline_start = this->clock.master_cycle_count;
         struct GBA_PPU_bg *bg;
+        // IF Y == 0 reset mosaics goes here
         if (this->clock.ppu.y < 160) {
             struct GBA_DBG_line *dbgl = &this->dbg_info.line[this->clock.ppu.y];
             for (u32 i = 2; i < 4; i++) {
                 bg = &this->ppu.bg[i];
                 struct GBA_DBG_line_bg *dbgbg = &dbgl->bg[i];
-                if ((this->clock.ppu.y == 0) || bg->x_written) {
+                if ((this->clock.ppu.y == 1) || bg->x_written) {
                     bg->x_lerp = bg->x;
                     dbgbg->reset_x = 1;
                 }
                 dbgbg->x_lerp = bg->x_lerp;
 
-                if ((this->clock.ppu.y == 0) || (bg->y_written)) {
+                if ((this->clock.ppu.y == 1) || (bg->y_written)) {
                     bg->y_lerp = bg->y;
                     dbgbg->reset_y = 1;
                 }

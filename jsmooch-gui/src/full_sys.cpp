@@ -783,7 +783,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "thumb.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "retaddr.gba", nullptr);
 
-            //worked = grab_ROM(&ROMs, which, "tonc/first.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/hello.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m3_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/pageflip.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/bm_modes.gba", nullptr);
@@ -816,11 +816,11 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROM`s, which, "duke3d.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "fzero.gba", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
