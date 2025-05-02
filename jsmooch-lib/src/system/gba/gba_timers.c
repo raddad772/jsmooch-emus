@@ -6,7 +6,7 @@
 #include "gba_bus.h"
 
 u32 GBA_timer_enabled(struct GBA *this, u32 tn) {
-    return this->timer[tn].enabled;
+    return GBA_clock_current(this) >= this->timer[tn].enable_at;
 }
 
 static inline u32 timer_reload_ticks(u32 reload)
@@ -24,7 +24,7 @@ u32 GBA_read_timer(struct GBA *this, u32 tn)
     if (!GBA_timer_enabled(this, tn) || t->cascade) return t->val_at_stop;
 
     // Timer is enabled, so, check how many cycles we have had...
-    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (timer_reload_ticks(t->reload));
+    u64 ticks_passed = ((current_time - 1) - t->enable_at) >> t->shift;
     u32 v = t->val_at_stop + ticks_passed;
     return v;
 }
@@ -45,12 +45,12 @@ static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitt
 static void overflow_timer(struct GBA *this, u32 tn, u64 current_time) {
     struct GBA_TIMER *t = &this->timer[tn];
     t->enable_at = current_time;
+    t->val_at_stop = t->reload;
     t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
     t->overflow_at = t->enable_at + t->reload_ticks;
     if (!t->cascade)
         t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn, this, &timer_overflow, &t->sch_scheduled_still);
 
-    t->val_at_stop = t->reload;
     if (t->irq_on_overflow) {
         u32 old_IF = this->io.IF;
         this->io.IF |= 1 << 1 << (3 + tn);
@@ -95,7 +95,7 @@ void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter)
         scheduler_delete_if_exist(&this->scheduler, t->sch_id);
         t->sch_id = 0;
     }
-    t->enabled = 0;
+    t->enable_at = 0xFFFFFFFFFFFFFFFF;
     t->overflow_at = 0xFFFFFFFFFFFFFFFF;
 
     // Setup timer settings
@@ -106,16 +106,20 @@ void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter)
         case 2: t->shift = 8; break;
         case 3: t->shift = 10; break;
     }
-    t->enabled = ((val >> 7) & 1);
+    u32 old_enable = GBA_timer_enabled(this, tn);
+    u32 new_enable = ((val >> 7) & 1);
     u32 old_cascade = t->cascade;
     t->cascade = (val >> 2) & 1;
     t->irq_on_overflow = (val >> 6) & 1;
 
     // Schedule new overflow if necessary
-    if (t->enabled && !t->cascade) {
-        t->enable_at = cur_clock;
-        t->enabled = 1;
-        t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
+    if (!old_enable && new_enable) {
+        t->val_at_stop = t->reload;
+    }
+    if (new_enable && !t->cascade) {
+        t->enable_at = cur_clock + 1;
+        // TODO: PROBLEM HERE. our timer may be anywhere not necessarily at reload, duh.
+        t->reload_ticks = timer_reload_ticks(t->val_at_stop) << t->shift;
         t->overflow_at = cur_clock + t->reload_ticks;
         t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn, this, &timer_overflow, &t->sch_scheduled_still);
     }

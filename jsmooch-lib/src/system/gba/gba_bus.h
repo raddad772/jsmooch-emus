@@ -136,7 +136,6 @@ struct GBA {
 
         u32 shift;
 
-        u32 enabled; // cycle # we'll be enabled at
         u64 enable_at;
         u64 overflow_at; // cycle # we'll overflow at
         u64 sch_id;
