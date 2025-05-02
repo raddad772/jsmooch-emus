@@ -949,17 +949,13 @@ void GBA_APU_cycle(struct GBA*this)
 
     // 64 CPU clocks per sample = 262kHz
     // and then divisor...
-    if (this->apu.clocks.divider_16 == 0) { // /16=1Mhz
-        // Tick PSG!
-        tick_psg(this);
+    tick_psg(this);
 
-        // Further divide by more for samples...
-        if (this->apu.divider2.counter == 0) {
-            this->apu.fifo[0].output = this->apu.fifo[0].sample;
-            this->apu.fifo[1].output = this->apu.fifo[1].sample;
-            sample_psg(this);
-        }
-        this->apu.divider2.counter = (this->apu.divider2.counter + 1) & this->apu.divider2.mask;
+    // Further divide by more for samples...
+    if (this->apu.divider2.counter == 0) {
+        this->apu.fifo[0].output = this->apu.fifo[0].sample;
+        this->apu.fifo[1].output = this->apu.fifo[1].sample;
+        sample_psg(this);
     }
-    this->apu.clocks.divider_16 = (this->apu.clocks.divider_16 + 1) & 15;
+    this->apu.divider2.counter = (this->apu.divider2.counter + 1) & this->apu.divider2.mask;
 }
