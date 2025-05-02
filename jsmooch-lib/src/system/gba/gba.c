@@ -456,7 +456,7 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     else {
         if (this->io.halted) {
             this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
-            this->waitstates.current_transaction += 4;
+            this->waitstates.current_transaction += this->io.halted ? key : 1;
         }
         else {
             ARM7TDMI_IRQcheck(&this->cpu, 0);
