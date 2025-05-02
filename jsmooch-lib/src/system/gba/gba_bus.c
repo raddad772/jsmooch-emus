@@ -525,7 +525,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400010A:
         case 0x0400010E: {
             u32 tn = (addr >> 2) & 3;
-            GBA_timer_write_cnt(this, tn, val);
+            scheduler_add_or_run_abs(&this->scheduler, GBA_clock_current(this) + 1, (tn << 24) | val, this, &GBA_timer_write_cnt, NULL);
             return; }
         case 0x04000100: this->timer[0].reload = (this->timer[0].reload & 0xFF00) | val; return;
         case 0x04000104: this->timer[1].reload = (this->timer[1].reload & 0xFF00) | val; return;
@@ -751,7 +751,7 @@ void GBA_bus_init(struct GBA *this)
     for (u32 i = 0; i < 4; i++) {
         struct GBA_TIMER *t = &this->timer[i];
         t->overflow_at = 0xFFFFFFFFFFFFFFFF;
-        t->enable_at = 0xFFFFFFFFFFFFFFFF;
+        t->enabled = 0;
     }
     for (u32 i = 0; i < 16; i++) {
         this->mem.read[i] = &busrd_invalid;
