@@ -57,9 +57,13 @@ void GBAJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
         this->audio.master_cycles_per_audio_sample = ((float)(MASTER_CYCLES_PER_FRAME / (float)ab->samples_len));
-        this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (struct debug_waveform *)cvec_get(this->dbg.waveforms.main.vec, this->dbg.waveforms.main.index);
-        this->apu.ext_enable = wf->ch_output_enabled;
+        this->audio.next_sample_cycle_max = 0;
+
+        struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
+        this->audio.master_cycles_per_max_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[0]);
+        this->audio.master_cycles_per_min_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
     }
 
     // PSG
@@ -88,7 +92,7 @@ void GBA_new(struct jsm_system *jsm)
     memset(this, 0, sizeof(*this));
 
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->waitstates.current_transaction);
-    this->scheduler.max_block_size = 20;
+    this->scheduler.max_block_size = 8;
     this->scheduler.run.func = &block_step;
     this->scheduler.run.ptr = this;
     ARM7TDMI_init(&this->cpu, &this->clock.master_cycle_count, &this->waitstates.current_transaction, &this->scheduler);
@@ -224,10 +228,72 @@ Host  sp_svc    sp_irq    sp_svc    zerofilled area       return address
     ARM7TDMI_reload_pipeline(&this->cpu);
 }
 
+static void tick_APU(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct GBA *this = (struct GBA *)ptr;
+    GBA_APU_cycle(this);
+    i64 cur = clock - jitter;
+    scheduler_only_add_abs(&this->scheduler, cur + 16, 0, this, &tick_APU, NULL);
+}
+
+
+static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter) {
+    struct GBA *this = (struct GBA *) ptr;
+    if (this->audio.buf) {
+
+        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
+        scheduler_only_add_abs(&this->scheduler, (i64) this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
+        if (this->audio.buf->upos < this->audio.buf->samples_len) {
+            ((float *) (this->audio.buf->ptr))[this->audio.buf->upos] = GBA_APU_mix_sample(this, 0);
+        }
+        this->audio.buf->upos++;
+    }
+
+}
+
+static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct GBA *this = (struct GBA *)ptr;
+
+    struct debug_waveform *dw = this->audio.main_waveform;
+
+    if (dw->user.buf_pos < dw->samples_requested) {
+        dw->user.next_sample_cycle += dw->user.cycle_stride;
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = GBA_APU_mix_sample(this, 1);
+        dw->user.buf_pos++;
+    }
+
+    this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+}
+
+static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct GBA *this = (struct GBA *)ptr;
+
+    struct debug_waveform *dw;
+    for (int j = 0; j < 6; j++) {
+        dw = cpg(this->dbg.waveforms.chan[j]);
+        if (dw->user.buf_pos < dw->samples_requested) {
+            float sv = GBA_APU_sample_channel(this, j);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
+            dw->user.buf_pos++;
+            assert(dw->user.buf_pos < 410);
+        }
+    }
+
+    this->audio.next_sample_cycle_min += this->audio.master_cycles_per_min_sample;
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
+}
+
+
 static void schedule_first(struct GBA *this)
 {
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
+    scheduler_only_add_abs(&this->scheduler, 16, 0, this, &tick_APU, NULL);
     GBA_PPU_schedule_frame(this, 0, 0, 0);
-
 }
 
 void GBAJ_reset(JSM)
@@ -408,44 +474,6 @@ static void tick_timers(struct GBA *this, u32 num_ticks) {
     }
 }
 
-static void sample_audio(struct GBA* this, u32 num_cycles)
-{
-    for (u64 i = 0; i < num_cycles; i++) {
-        GBA_APU_cycle(this);
-
-        u64 mc = this->clock.master_cycle_count + i;
-        if (this->audio.buf && (mc >= (u64) this->audio.next_sample_cycle)) {
-            this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-            if (this->audio.buf->upos < this->audio.buf->samples_len) {
-                ((float *)(this->audio.buf->ptr))[this->audio.buf->upos] = GBA_APU_mix_sample(this, 0);
-            }
-            this->audio.buf->upos++;
-        }
-        struct debug_waveform *dw = this->audio.main_waveform;
-        if (mc >= (u64)dw->user.next_sample_cycle) {
-            if (dw->user.buf_pos < dw->samples_requested) {
-                dw->user.next_sample_cycle += dw->user.cycle_stride;
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = GBA_APU_mix_sample(this, 1);
-                dw->user.buf_pos++;
-            }
-        }
-
-        dw = this->audio.waveforms[0];
-        if (mc >= (u64)dw->user.next_sample_cycle) {
-            for (int j = 0; j < 6; j++) {
-                dw = this->audio.waveforms[j];
-                if (dw->user.buf_pos < dw->samples_requested) {
-                    dw->user.next_sample_cycle += dw->user.cycle_stride;
-                    float sv = GBA_APU_sample_channel(this, j);
-                    ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
-                    dw->user.buf_pos++;
-                    assert(dw->user.buf_pos < 410);
-                }
-            }
-        }
-    }
-}
-
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {
     // add in DMA here
@@ -465,7 +493,6 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
             }
         }
         tick_timers(this, this->waitstates.current_transaction);
-        sample_audio(this, this->waitstates.current_transaction);
         this->scanline_cycles_to_execute -= (i32)this->waitstates.current_transaction;
         this->clock.master_cycle_count += this->waitstates.current_transaction;
 
