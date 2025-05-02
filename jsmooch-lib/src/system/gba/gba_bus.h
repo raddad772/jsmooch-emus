@@ -130,6 +130,8 @@ struct GBA {
 
         u64 enable_at; // cycle # we'll be enabled at
         u64 overflow_at; // cycle # we'll overflow at
+        u64 sch_id;
+        u32 sch_scheduled_still;
         u32 cascade;
         u16 val_at_stop;
         u32 irq_on_overflow;

@@ -453,6 +453,9 @@ add_library(jsmooch-lib
         src/system/snes/snes_apu.h
         src/system/snes/snes_debugger.c
         src/system/snes/snes_debugger.h
+        src/system/gba/gba_timers.c
+        src/system/gba/gba_timers.c
+        src/system/gba/gba_timers.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

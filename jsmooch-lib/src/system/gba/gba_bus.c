@@ -5,25 +5,8 @@
 
 #include "gba_apu.h"
 #include "gba_bus.h"
+#include "gba_timers.h"
 #include "helpers/multisize_memaccess.c"
-
-static u32 timer_reload_ticks(u32 reload)
-{
-    // So it overflows at 0x100
-    // reload value is 0xFD
-    // 0xFD ^ 0xFF = 2
-    // How many ticks til 0x100? 256 - 253 = 3, correct!
-    // 100. 256 - 100 = 156, correct!
-    // Unfortunately if we set 0xFFFF, we need 0x1000 tiks...
-    // ok but what about when we set 255? 256 - 255 = 1 which is wrong
-    if (reload == 0xFFFF) return 0x10000;
-    return 0x10000 - reload;
-}
-
-
-static u32 timer_enabled(struct GBA *this, u32 tn) {
-    return GBA_clock_current(this) >= this->timer[tn].enable_at;
-}
 
 static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
@@ -199,18 +182,6 @@ static u32 DMA_CH_NUM(u32 addr)
     return 3;
 }
 
-static u32 read_timer(struct GBA *this, u32 tn)
-{
-    struct GBA_TIMER *t = &this->timer[tn];
-    u64 current_time = this->clock.master_cycle_count + this->waitstates.current_transaction;
-    if (!timer_enabled(this, tn) || t->cascade) return t->val_at_stop;
-
-    // Timer is enabled, so, check how many cycles we have had...
-    u64 ticks_passed = (((current_time - 1) - t->enable_at) >> t->shift) % (timer_reload_ticks(t->reload));
-    u32 v = t->reload + ticks_passed;
-    return v;
-}
-
 static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     if (addr < 0x4000060) return GBA_PPU_mainbus_read_IO(this, addr, sz, access, has_effect);
     if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_read_IO(this, addr, sz, access, has_effect);
@@ -258,15 +229,14 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
             v |= ch->io.enable << 7;
             return v;}
 
-
-        case 0x04000100: return (read_timer(this, 0) >> 0) & 0xFF;
-        case 0x04000101: return (read_timer(this, 0) >> 8) & 0xFF;
-        case 0x04000104: return (read_timer(this, 1) >> 0) & 0xFF;
-        case 0x04000105: return (read_timer(this, 1) >> 8) & 0xFF;
-        case 0x04000108: return (read_timer(this, 2) >> 0) & 0xFF;
-        case 0x04000109: return (read_timer(this, 2) >> 8) & 0xFF;
-        case 0x0400010C: return (read_timer(this, 3) >> 0) & 0xFF;
-        case 0x0400010D: return (read_timer(this, 3) >> 8) & 0xFF;
+        case 0x04000100: return (GBA_read_timer(this, 0) >> 0) & 0xFF;
+        case 0x04000101: return (GBA_read_timer(this, 0) >> 8) & 0xFF;
+        case 0x04000104: return (GBA_read_timer(this, 1) >> 0) & 0xFF;
+        case 0x04000105: return (GBA_read_timer(this, 1) >> 8) & 0xFF;
+        case 0x04000108: return (GBA_read_timer(this, 2) >> 0) & 0xFF;
+        case 0x04000109: return (GBA_read_timer(this, 2) >> 8) & 0xFF;
+        case 0x0400010C: return (GBA_read_timer(this, 3) >> 0) & 0xFF;
+        case 0x0400010D: return (GBA_read_timer(this, 3) >> 8) & 0xFF;
 
         case 0x04000103: // TIMERCNT upper, not used.
         case 0x04000107:
@@ -282,7 +252,7 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
             u32 v = this->timer[tn].divider.io;
             v |= this->timer[tn].cascade << 2;
             v |= this->timer[tn].irq_on_overflow << 6;
-            v |= timer_enabled(this, tn) << 7;
+            v |= GBA_timer_enabled(this, tn) << 7;
             return v;
         }
 
@@ -555,34 +525,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400010A:
         case 0x0400010E: {
             u32 tn = (addr >> 2) & 3;
-            struct GBA_TIMER *t = &this->timer[tn];
-            u32 old_enable = timer_enabled(this, tn);
-            t->divider.io = val & 3;
-            switch(val & 3) {
-                case 0: t->shift = 0; break;
-                case 1: t->shift = 6; break;
-                case 2: t->shift = 8; break;
-                case 3: t->shift = 10; break;
-            }
-            u32 new_enable = ((val >> 7) & 1);
-            if (old_enable && !new_enable) { // turn off
-                t->val_at_stop = read_timer(this, tn);
-                t->enable_at = 0xFFFFFFFFFFFFFFFF; // the infinite future!
-                t->overflow_at = 0xFFFFFFFFFFFFFFFF;
-            }
-            u32 old_cascade = t->cascade;
-            t->cascade = (val >> 2) & 1;
-            if (old_cascade && !t->cascade && (old_enable == new_enable == 1)) { // update overflow time
-                t->enable_at = GBA_clock_current(this);
-                t->overflow_at = t->enable_at + (timer_reload_ticks(t->val_at_stop) << t->shift);
-            }
-            if (!old_enable && new_enable) { // turn on
-                t->enable_at = GBA_clock_current(this) + 1;
-                t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
-                t->overflow_at = t->enable_at + t->reload_ticks;
-                t->val_at_stop = t->reload;
-            }
-            t->irq_on_overflow = (val >> 6) & 1;
+            GBA_timer_write_cnt(this, tn, val);
             return; }
         case 0x04000100: this->timer[0].reload = (this->timer[0].reload & 0xFF00) | val; return;
         case 0x04000104: this->timer[1].reload = (this->timer[1].reload & 0xFF00) | val; return;

@@ -420,60 +420,6 @@ static u32 dma_go(struct GBA *this) {
     return 0;
 }
 
-static u32 timer_enabled(struct GBA *this, u32 tn) {
-    return GBA_clock_current(this) >= this->timer[tn].enable_at;
-}
-
-
-static void overflow_timer(struct GBA *this, u32 tn, u64 current_time);
-
-static void cascade_timer_step(struct GBA *this, u32 tn, u64 current_time)
-{
-    //printf("\nCASCADE TIMER STEP!");
-    struct GBA_TIMER *t = &this->timer[tn];
-    t->val_at_stop = (t->val_at_stop + 1) & 0xFFFF;
-    if (t->val_at_stop == 0) {
-        overflow_timer(this, tn, current_time);
-    }
-}
-
-static void overflow_timer(struct GBA *this, u32 tn, u64 current_time) {
-    struct GBA_TIMER *t = &this->timer[tn];
-    t->enable_at = current_time;
-    t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
-    t->overflow_at = t->enable_at + t->reload_ticks;
-
-    t->val_at_stop = t->reload;
-    if (t->irq_on_overflow) {
-        //printf("\nIRQ!");
-        this->io.IF |= 1 << (3 + tn);
-        GBA_eval_irqs(this);
-    }
-    if (this->apu.fifo[0].timer_id == tn) GBA_APU_sound_FIFO(this, 0);
-    if (this->apu.fifo[1].timer_id == tn) GBA_APU_sound_FIFO(this, 1);
-
-    if (tn < 3) {
-        // Check for cascade!
-        struct GBA_TIMER *tp1 = &this->timer[tn+1];
-        if (timer_enabled(this, tn+1) && tp1->cascade) {
-            cascade_timer_step(this, tn+1, current_time);
-        }
-    }
-}
-
-static void tick_timers(struct GBA *this, u32 num_ticks) {
-    for (u32 ticks = 0; ticks < num_ticks; ticks++) {
-        u64 current_time = this->clock.master_cycle_count + ticks;
-        // Check for overflow...
-        for (u32 tn = 0; tn < 4; tn++) {
-            struct GBA_TIMER *t = &this->timer[tn];
-            if (!t->cascade && (current_time >= t->overflow_at)) {
-                overflow_timer(this, tn, current_time);
-            }
-        }
-    }
-}
-
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {
     // add in DMA here
@@ -492,7 +438,6 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
                 ARM7TDMI_run_noIRQcheck(&this->cpu);
             }
         }
-        tick_timers(this, this->waitstates.current_transaction);
         this->scanline_cycles_to_execute -= (i32)this->waitstates.current_transaction;
         this->clock.master_cycle_count += this->waitstates.current_transaction;
 
