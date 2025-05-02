@@ -34,6 +34,7 @@ static void GBAJ_describe_io(JSM, struct cvec* IOs);
 #define HBLANK_CYCLES 226
 #define MASTER_CYCLES_BEFORE_HBLANK (MASTER_CYCLES_PER_SCANLINE - HBLANK_CYCLES)
 #define MASTER_CYCLES_PER_FRAME (228 * MASTER_CYCLES_PER_SCANLINE)
+#define MASTER_CYCLES_PER_SECOND (MASTER_CYCLES_PER_FRAME * 60)
 #define SCANLINE_HBLANK 1006
 
 static u32 timer_reload_ticks(u32 reload)
@@ -164,11 +165,22 @@ u32 GBAJ_finish_frame(JSM)
 {
     JTHIS;
    this->audio.main_waveform = cpg(this->dbg.waveforms.main);
+#ifdef GBA_STATS
+    u64 arm_start = this->timing.arm_cycles;
+#endif
 
     for (u32 i = 0; i < 6; i++) {
         this->audio.waveforms[i] = cpg(this->dbg.waveforms.chan[i]);
     }
     scheduler_run_til_tag(&this->scheduler, 2);
+
+#ifdef GBA_STATS
+    u64 arm_num_cycles = (this->timing.arm_cycles - arm_start) * 60;
+    double arm_div = (double)16767 / (double)arm_num_cycles;
+    double arm_spd = (1008.0 / arm_div) * 100.0;
+    printf("\nSCANLINE:%d FRAME:%lld", this->clock.ppu.y, this->clock.master_frame);
+    printf("\nEFFECTIVE ARM FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", arm_num_cycles, arm_div, arm_spd);
+#endif
 
     return this->ppu.display->last_written;
 }
@@ -452,6 +464,9 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
         }
     }
     this->clock.master_cycle_count += this->waitstates.current_transaction;
+#ifdef GBA_STATS
+    this->timing.arm_cycles += this->waitstates.current_transaction;
+#endif
     this->waitstates.current_transaction = 0;
 }
 

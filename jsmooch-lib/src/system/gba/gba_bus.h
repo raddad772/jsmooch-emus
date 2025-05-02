@@ -5,6 +5,8 @@
 #ifndef JSMOOCH_EMUS_GBA_BUS_H
 #define JSMOOCH_EMUS_GBA_BUS_H
 
+//#define GBA_STATS
+
 #include "gba_clock.h"
 #include "gba_ppu.h"
 #include "gba_apu.h"
@@ -85,6 +87,12 @@ struct GBA {
         u32 described_inputs;
         i64 cycles_left;
     } jsm;
+
+#ifdef GBA_STATS
+    struct {
+        u64 arm_cycles;
+    } timing;
+#endif
 
     i32 scanline_cycles_to_execute;
 
