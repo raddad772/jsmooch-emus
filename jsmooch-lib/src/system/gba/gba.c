@@ -316,18 +316,12 @@ void GBAJ_reset(JSM)
 
 static void raise_irq_for_dma(struct GBA *this, u32 num)
 {
-    u32 shift = 8 + num;
-    this->io.IF |= (1 << shift);
+    this->io.IF |= 1 << (8 + num);
     GBA_eval_irqs(this);
 }
 
 static u32 dma_go_ch(struct GBA *this, u32 num) {
     struct GBA_DMA_ch *ch = &this->dma[num];
-    if (ch->run_counter && ch->io.enable) {
-        ch->run_counter--;
-        if (ch->run_counter == 0) GBA_dma_start(ch, num, 0);
-        else return 0;
-    }
     if ((ch->io.enable) && (ch->op.started)) {
         if (ch->op.sz == 2) {
             u16 value;
@@ -342,12 +336,6 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
                 }
                 this->waitstates.current_transaction++;
             }
-            /*if (num == 3){
-               if (((ch->op.dest_addr >= 0x0d000000) && (ch->op.dest_addr < 0x0d100000)) ||
-                       (ch->op.src_addr >= 0x0d000000) && (ch->op.src_addr < 0x0d100000)) {
-                   printf("\nDMA TRANSFER %d from %08x to %08x (%d/%d)", value & 1, ch->op.src_addr, ch->op.dest_addr, (ch->op.dest_addr - ch->io.dest_addr)>>1, ch->io.word_count);
-               }
-            }*/
 
             GBA_mainbus_write(this, ch->op.dest_addr, 2, ch->op.dest_access, value);
         }
