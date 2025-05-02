@@ -286,7 +286,6 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
 }
 
-
 static void schedule_first(struct GBA *this)
 {
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
@@ -450,7 +449,22 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 
 static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    cycle_DMA_and_CPU(ptr, key);
+    struct GBA *this = (struct GBA *)ptr;
+    this->waitstates.current_transaction = 0;
+    if (dma_go(this)) {
+    }
+    else {
+        if (this->io.halted) {
+            this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
+            this->waitstates.current_transaction += 4;
+        }
+        else {
+            ARM7TDMI_IRQcheck(&this->cpu, 0);
+            ARM7TDMI_run_noIRQcheck(&this->cpu);
+        }
+    }
+    this->clock.master_cycle_count += this->waitstates.current_transaction;
+    this->waitstates.current_transaction = 0;
 }
 
 u64 GBA_clock_current(struct GBA *this)
