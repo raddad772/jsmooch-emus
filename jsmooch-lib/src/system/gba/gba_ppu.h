@@ -124,6 +124,5 @@ void GBA_PPU_mainbus_write_OAM(struct GBA*, u32 addr, u32 sz, u32 access, u32 va
 void GBA_PPU_mainbus_write_IO(struct GBA*, u32 addr, u32 sz, u32 access, u32 val);
 void GBA_PPU_new_frame(void *ptr, u64 key, u64 clock, u32 jitter);
 void GBA_PPU_new_scanline(struct GBA *);
-void GBA_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter);
 void GBA_PPU_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter);
 #endif //JSMOOCH_EMUS_GBA_PPU_H
