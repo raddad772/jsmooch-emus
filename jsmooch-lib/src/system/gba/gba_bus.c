@@ -6,6 +6,7 @@
 #include "gba_apu.h"
 #include "gba_bus.h"
 #include "gba_timers.h"
+#include "gba_dma.h"
 #include "helpers/multisize_memaccess.c"
 
 static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
@@ -81,32 +82,6 @@ static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
     cW[sz](this->WRAM_slow, addr & 0x3FFFF, val);
-}
-
-void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i, u32 is_sound)
-{
-    ch->op.started = 1;
-    u32 mask = ch->io.transfer_size ? ~3 : ~1;
-    mask &= 0x0FFFFFFF;
-    //u32 mask = 0x0FFFFFFF;
-    if (ch->op.first_run) {
-        ch->op.dest_addr = ch->io.dest_addr & mask;
-        ch->op.src_addr = ch->io.src_addr & mask;
-    }
-    else if (ch->io.dest_addr_ctrl == 3) {
-        ch->op.dest_addr = ch->io.dest_addr & mask;
-    }
-    ch->op.word_count = ch->io.word_count;
-    ch->op.sz = ch->io.transfer_size ? 4 : 2;
-    ch->op.word_mask = i == 3 ? 0xFFFF : 0x3FFF;
-    ch->op.dest_access = ARM7P_nonsequential | ARM7P_dma;
-    ch->op.src_access = ARM7P_nonsequential | ARM7P_dma;
-    ch->op.is_sound = is_sound;
-    if (is_sound) {
-        ch->op.sz = 4;
-        ch->io.dest_addr_ctrl = 2;
-        ch->op.word_count = 4;
-    }
 }
 
 static void set_waitstates(struct GBA *this) {
@@ -481,7 +456,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000BC: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
         case 0x040000BD: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
         case 0x040000BE: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000BF: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case 0x040000BF: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); printf("\nDMA1 ADDR WRITE %07X", this->dma[1].io.src_addr); return; // DMA source address ch0
         case 0x040000C0: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
         case 0x040000C1: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
         case 0x040000C2: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0

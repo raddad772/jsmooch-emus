@@ -9,11 +9,20 @@
 #include "gba.h"
 #include "gba_bus.h"
 #include "gba_debugger.h"
+#include "gba_timers.h"
 
 #define JTHIS struct GBA* this = (struct GBA*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 #define THIS struct GBA* this
+
+#define MASTER_CYCLES_PER_SCANLINE 1232
+#define HBLANK_CYCLES 226
+#define MASTER_CYCLES_BEFORE_HBLANK (MASTER_CYCLES_PER_SCANLINE - HBLANK_CYCLES)
+#define MASTER_CYCLES_PER_FRAME (228 * MASTER_CYCLES_PER_SCANLINE)
+#define MASTER_CYCLES_PER_SECOND (MASTER_CYCLES_PER_FRAME * 60)
+#define SCANLINE_HBLANK 1006
+
 
 static void create_and_bind_registers_ARM7TDMI(struct GBA* this, struct disassembly_view *dv)
 {
@@ -194,6 +203,28 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
     *htiles = 1;
     *vtiles = 1;
 #undef T
+}
+
+static void render_image_view_sys_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct GBA *this = (struct GBA *) ptr;
+    //memset(ptr, 0, out_width * 4 * 10);
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *) cvec_get(&dview->options, 0))->textbox;
+    debugger_widgets_textbox_clear(tb);
+#define spf(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
+    for (u32 i = 0; i < 4; i++) {
+        struct GBA_TIMER *t = &this->timer[i];
+        spf("\nTimer:%d  enabled:%d  shift:%d  reload:%04x  cur:%04x", i, GBA_timer_enabled(this, i), t->shift, t->reload, GBA_read_timer(this, i));
+        u32 fifo=0;
+        if (this->apu.fifo[0].timer_id == i) { fifo = 1; spf("  sound_fifo_A"); }
+        if (this->apu.fifo[1].timer_id == i) { fifo = 1; spf("  sound_fifo_B"); }
+        if (fifo) {
+            u32 freq = MASTER_CYCLES_PER_SECOND;
+            u32 r = t->reload_ticks;
+            freq /= r;
+            spf("  calc_freq:%dhz  ", freq);
+        }
+    }
+#undef spf
 }
 
 static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *my_ptr, u32 out_width) {
@@ -1284,6 +1315,28 @@ static void setup_waveforms_view(struct GBA* this, struct debugger_interface *db
 }
 
 
+static void setup_image_view_sys_info(struct GBA *this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.sys_info = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.sys_info);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 10;
+    iv->height = 10;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 10, 10 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_sys_info;
+
+    snprintf(iv->label, sizeof(iv->label), "Sys Info");
+
+    debugger_widgets_add_textbox(&dview->options, "blah!", 1);
+}
+
 void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
@@ -1311,4 +1364,5 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     setup_image_view_window(this, dbgr, 1);
     setup_image_view_window(this, dbgr, 2);
     setup_image_view_window(this, dbgr, 3);
+    setup_image_view_sys_info(this, dbgr);
 }

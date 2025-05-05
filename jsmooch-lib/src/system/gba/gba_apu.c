@@ -7,7 +7,7 @@
 #include "helpers/int.h"
 #include "gba_bus.h"
 #include "gba_apu.h"
-
+#include "gba_dma.h"
 
 static i32 sq_duty[4][8] = {
         { 0, 0, 0, 0, 0, 0, 0, 1 }, // 00 - 12.5%

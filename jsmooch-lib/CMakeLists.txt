@@ -456,6 +456,8 @@ add_library(jsmooch-lib
         src/system/gba/gba_timers.c
         src/system/gba/gba_timers.c
         src/system/gba/gba_timers.h
+        src/system/gba/gba_dma.c
+        src/system/gba/gba_dma.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

@@ -8,6 +8,7 @@
 
 #include "gba.h"
 #include "gba_bus.h"
+#include "gba_dma.h"
 #include "gba_debugger.h"
 
 #include "helpers/debugger/debugger.h"
@@ -166,7 +167,9 @@ u32 GBAJ_finish_frame(JSM)
     JTHIS;
    this->audio.main_waveform = cpg(this->dbg.waveforms.main);
 #ifdef GBA_STATS
+    u64 master_start = this->clock.master_cycle_count;
     u64 arm_start = this->timing.arm_cycles;
+    u64 tm0_start = this->timing.timer0_cycles;
 #endif
 
     for (u32 i = 0; i < 6; i++) {
@@ -175,11 +178,19 @@ u32 GBAJ_finish_frame(JSM)
     scheduler_run_til_tag(&this->scheduler, 2);
 
 #ifdef GBA_STATS
+    u64 master_num_cycles = (this->clock.master_cycle_count - master_start) * 60;
     u64 arm_num_cycles = (this->timing.arm_cycles - arm_start) * 60;
-    double arm_div = (double)16767 / (double)arm_num_cycles;
-    double arm_spd = (1008.0 / arm_div) * 100.0;
-    printf("\nSCANLINE:%d FRAME:%lld", this->clock.ppu.y, this->clock.master_frame);
+    u64 tm0_num_cycles = (this->timing.timer0_cycles - tm0_start) * 60;
+    double master_div = (double)MASTER_CYCLES_PER_SECOND / (double)master_num_cycles;
+    double arm_div = (double)MASTER_CYCLES_PER_SECOND / (double)arm_num_cycles;
+    double tm0_div = (double)MASTER_CYCLES_PER_SECOND / (double)tm0_num_cycles;
+    double arm_spd = (arm_div) * 100.0;
+    double tm0_spd = ((double)this->timer[0].reload_ticks / tm0_div) * 100.0;
+    double master_spd = master_div * 100.0;
+    printf("\n\nSCANLINE:%d FRAME:%lld", this->clock.ppu.y, this->clock.master_frame);
+    printf("\nEFFECTIVE MASTER FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", master_num_cycles, master_div, master_spd);
     printf("\nEFFECTIVE ARM FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", arm_num_cycles, arm_div, arm_spd);
+    printf("\nEFFECTIVE TIMER0 FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", tm0_num_cycles, tm0_div, tm0_spd);
 #endif
 
     return this->ppu.display->last_written;
@@ -326,98 +337,6 @@ void GBAJ_reset(JSM)
     printf("\nGBA reset!");
 }
 
-static void raise_irq_for_dma(struct GBA *this, u32 num)
-{
-    this->io.IF |= 1 << (8 + num);
-    GBA_eval_irqs(this);
-}
-
-static u32 dma_go_ch(struct GBA *this, u32 num) {
-    struct GBA_DMA_ch *ch = &this->dma[num];
-    if ((ch->io.enable) && (ch->op.started)) {
-        if (ch->op.sz == 2) {
-            u16 value;
-            if (ch->op.src_addr >= 0x02000000) {
-                value = GBA_mainbus_read(this, ch->op.src_addr, 2, ch->op.src_access, 1);
-                ch->io.open_bus = (value << 16) | value;
-            } else {
-                if (ch->op.dest_addr & 2) {
-                    value = ch->io.open_bus >> 16;
-                } else {
-                    value = ch->io.open_bus & 0xFFFF;
-                }
-                this->waitstates.current_transaction++;
-            }
-
-            GBA_mainbus_write(this, ch->op.dest_addr, 2, ch->op.dest_access, value);
-        }
-        else {
-            if (ch->op.src_addr >= 0x02000000)
-                ch->io.open_bus = GBA_mainbus_read(this, ch->op.src_addr, 4, ch->op.src_access, 1);
-            else
-                this->waitstates.current_transaction++;
-            GBA_mainbus_write(this, ch->op.dest_addr, 4, ch->op.dest_access, ch->io.open_bus);
-        }
-
-        ch->op.src_access = ARM7P_sequential | ARM7P_dma;
-        ch->op.dest_access = ARM7P_sequential | ARM7P_dma;
-
-        switch(ch->io.src_addr_ctrl) {
-            case 0: // increment
-                ch->op.src_addr = (ch->op.src_addr + ch->op.sz) & 0x0FFFFFFF;
-                if (num == 0) ch->op.src_addr &= 0x07FFFFFF;
-                break;
-            case 1: // decrement
-                ch->op.src_addr = (ch->op.src_addr - ch->op.sz) & 0x0FFFFFFF;
-                if (num == 0) ch->op.src_addr &= 0x07FFFFFF;
-                break;
-            case 2: // constant
-                break;
-            case 3: // prohibited
-                printf("\nPROHIBITED!");
-                break;
-        }
-
-        switch(ch->io.dest_addr_ctrl) {
-            case 0: // increment
-                ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
-                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
-                break;
-            case 1: // decrement
-                ch->op.dest_addr = (ch->op.dest_addr - ch->op.sz) & 0x0FFFFFFF;
-                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
-                break;
-            case 2: // constant
-                break;
-            case 3: // increment & reload on repeat
-                ch->op.dest_addr = (ch->op.dest_addr + ch->op.sz) & 0x0FFFFFFF;
-                if (num < 3) ch->op.dest_addr &= 0x07FFFFFF;
-                break;
-        }
-
-        ch->op.word_count = (ch->op.word_count - 1) & ch->op.word_mask;
-        if (ch->op.word_count == 0) {
-            ch->op.started = 0; // Disable
-            ch->op.first_run = 0;
-            if (ch->io.irq_on_end) {
-                raise_irq_for_dma(this, num);
-            }
-
-            if (!ch->io.repeat) {
-                ch->io.enable = 0;
-            }
-        }
-        return 1;
-    }
-    return 0;
-}
-
-static u32 dma_go(struct GBA *this) {
-    for (u32 i = 0; i < 4; i++) {
-        if (dma_go_ch(this, i)) return 1;
-    }
-    return 0;
-}
 
 static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
 {
@@ -425,7 +344,7 @@ static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
     this->scanline_cycles_to_execute += (i32)num_cycles;
     while(this->scanline_cycles_to_execute > 0) {
         this->waitstates.current_transaction = 0;
-        if (dma_go(this)) {
+        if (GBA_dma_go(this)) {
         }
         else {
             if (this->io.halted) {
@@ -451,7 +370,7 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct GBA *this = (struct GBA *)ptr;
     this->waitstates.current_transaction = 0;
-    if (dma_go(this)) {
+    if (GBA_dma_go(this)) {
     }
     else {
         if (this->io.halted) {

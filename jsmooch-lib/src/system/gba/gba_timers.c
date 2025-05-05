@@ -9,14 +9,6 @@ u32 GBA_timer_enabled(struct GBA *this, u32 tn) {
     return GBA_clock_current(this) >= this->timer[tn].enable_at;
 }
 
-static inline u32 timer_reload_ticks(u32 reload)
-{
-    // So it overflows at 0x100
-    if (reload == 0xFFFF) return 0x10000;
-    return 0x10000 - reload;
-}
-
-
 u32 GBA_read_timer(struct GBA *this, u32 tn)
 {
     struct GBA_TIMER *t = &this->timer[tn];
@@ -44,9 +36,12 @@ static void timer_overflow(void *ptr, u64 timer_num, u64 current_clock, u32 jitt
 
 static void overflow_timer(struct GBA *this, u32 tn, u64 current_time) {
     struct GBA_TIMER *t = &this->timer[tn];
+#ifdef GBA_STATS
+    if (tn == 0) this->timing.timer0_cycles++;
+#endif
     t->enable_at = current_time;
     t->val_at_stop = t->reload;
-    t->reload_ticks = timer_reload_ticks(t->reload) << t->shift;
+    t->reload_ticks = GBA_timer_reload_ticks(t->reload) << t->shift;
     t->overflow_at = t->enable_at + t->reload_ticks;
     if (!t->cascade)
         t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn, this, &timer_overflow, &t->sch_scheduled_still);
@@ -119,7 +114,7 @@ void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter)
     if (new_enable && !t->cascade) {
         t->enable_at = cur_clock + 1;
         // TODO: PROBLEM HERE. our timer may be anywhere not necessarily at reload, duh.
-        t->reload_ticks = timer_reload_ticks(t->val_at_stop) << t->shift;
+        t->reload_ticks = GBA_timer_reload_ticks(t->val_at_stop) << t->shift;
         t->overflow_at = cur_clock + t->reload_ticks;
         t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn, this, &timer_overflow, &t->sch_scheduled_still);
     }
