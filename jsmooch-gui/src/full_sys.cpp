@@ -816,7 +816,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
@@ -854,7 +854,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mmz.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "drill_dozer.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "driv3r.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
             //worked = grab_ROM(&ROMs, which, "lunar_legend.gba", nullptr);

@@ -1084,13 +1084,8 @@ static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
         // GBA_PPU_finish_scanline()
         u32 old_IF = this->io.IF;
         this->io.IF |= ((this->ppu.io.vcount_at == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable) << 2;
-        if ((this->ppu.io.vcount_at == this->clock.ppu.y) && this->ppu.io.vcount_irq_enable) {
-            printf("\nVOCUNT IRQ AT %d", this->clock.ppu.y);
-        }
-
         if (old_IF != this->io.IF) {
             DBG_EVENT(DBG_GBA_EVENT_SET_LINECOUNT_IRQ);
-            printf("\nSET VCOUNT IRQ");
             GBA_eval_irqs(this);
         }
 
