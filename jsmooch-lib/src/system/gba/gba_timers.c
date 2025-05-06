@@ -103,7 +103,6 @@ void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter)
     }
     u32 old_enable = GBA_timer_enabled(this, tn);
     u32 new_enable = ((val >> 7) & 1);
-    u32 old_cascade = t->cascade;
     t->cascade = (val >> 2) & 1;
     t->irq_on_overflow = (val >> 6) & 1;
 
@@ -113,7 +112,6 @@ void GBA_timer_write_cnt(void *ptr, u64 tn_and_val, u64 clock, u32 jitter)
     }
     if (new_enable && !t->cascade) {
         t->enable_at = cur_clock + 1;
-        // TODO: PROBLEM HERE. our timer may be anywhere not necessarily at reload, duh.
         t->reload_ticks = GBA_timer_reload_ticks(t->val_at_stop) << t->shift;
         t->overflow_at = cur_clock + t->reload_ticks;
         t->sch_id = scheduler_add_or_run_abs(&this->scheduler, t->overflow_at, tn, this, &timer_overflow, &t->sch_scheduled_still);
