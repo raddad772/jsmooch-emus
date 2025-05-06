@@ -10,7 +10,11 @@
 struct GBA_DMA_ch;
 struct GBA;
 
-void GBA_dma_start(struct GBA_DMA_ch *ch, u32 i, u32 is_sound);
-u32 GBA_dma_go(struct GBA *this);
+
+void GBA_DMA_start(struct GBA *, struct GBA_DMA_ch *ch);
+void GBA_DMA_cnt_written(struct GBA *, struct GBA_DMA_ch *ch, u32 old_enable);
+void GBA_DMA_init(struct GBA *this);
+u32 GBA_DMA_go(struct GBA *);
+void GBA_DMA_on_modify_write(struct GBA_DMA_ch *ch);
 
 #endif //JSMOOCH_EMUS_GBA_DMA_H

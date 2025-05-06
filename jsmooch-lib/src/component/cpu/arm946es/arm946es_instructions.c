@@ -657,7 +657,7 @@ void ARM946ES_ins_data_proc_register_shift(struct ARM946ES *this, u32 opcode)
 
 void ARM946ES_ins_undefined_instruction(struct ARM946ES *this, u32 opcode)
 {
-    printf("\nARM UNDEFINED INS!");
+    printf("\nARM9 UNDEFINED INS!");
     assert(1==2);
     this->regs.R_und[1] = this->regs.PC - 4;
     this->regs.SPSR_und = this->regs.CPSR.u;

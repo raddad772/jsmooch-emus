@@ -449,7 +449,7 @@ void GBA_APU_sound_FIFO(struct GBA *this, u32 num) {
     if (fifo->len <= 16) {
         struct GBA_DMA_ch *c = &this->dma[1 + num];
         if ((c->io.enable) && (c->io.start_timing == 3)) {
-            GBA_dma_start(c, 1 + num, 1);
+            GBA_DMA_start(this, c);
         }
     }
 }

@@ -117,16 +117,18 @@ struct GBA {
         struct {
             u32 started;
             u32 word_count;
-            u32 word_mask;
             u32 src_addr;
             u32 dest_addr;
+            u32 word_mask;
             u32 src_access, dest_access;
             u32 sz;
-            u32 first_run;
             u32 is_sound;
         } op;
-        u32 run_counter;
+        i32 src_add, dest_add;
+        u32 num;
     } dma[4];
+    u32 dma_bit_mask;
+
 
     struct GBA_TIMER {
         struct {

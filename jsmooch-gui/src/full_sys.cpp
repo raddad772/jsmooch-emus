@@ -784,6 +784,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "retaddr.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "tonc/hello.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tonc/dma_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/m3_demo.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/pageflip.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tonc/bm_modes.gba", nullptr);
@@ -815,7 +816,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "metroid_fusion.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "doom2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "duke3d.gba", nullptr); // works great!
@@ -841,7 +842,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "armfrag.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "hm_fomt.gba", nullptr); // needs work! RTC, flash
-            worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
+            //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
             //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great

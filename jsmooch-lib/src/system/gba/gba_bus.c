@@ -371,12 +371,10 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
     }
     switch(addr) {
         case 0x04000200: // IE lo-byte
-            this->io.IE = (this->io.IE & 0xFF00) | (val & 0xFF);
+            this->io.IE = (this->io.IE & 0xFF00) | val;
             GBA_eval_irqs(this);
             return;
         case 0x04000201: // IE hi-byte
-            mask <<= 8;
-            val <<= 8;
             this->io.IE = (this->io.IE & 0xFF) | (val << 8);
             GBA_eval_irqs(this);
             return;
@@ -456,7 +454,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000BC: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
         case 0x040000BD: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
         case 0x040000BE: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000BF: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); printf("\nDMA1 ADDR WRITE %07X", this->dma[1].io.src_addr); return; // DMA source address ch0
+        case 0x040000BF: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
         case 0x040000C0: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
         case 0x040000C1: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
         case 0x040000C2: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
@@ -521,9 +519,11 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000C6:
         case 0x040000D2:
         case 0x040000DE: {
-            struct GBA_DMA_ch *ch = &this->dma[DMA_CH_NUM(addr)];
+            u32 chn = DMA_CH_NUM(addr);
+            struct GBA_DMA_ch *ch = &this->dma[chn];
             ch->io.dest_addr_ctrl = (val >> 5) & 3;
             ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 2) | ((val >> 7) & 1);
+            GBA_DMA_on_modify_write(ch);
             return;}
         case 0x040000BB:
         case 0x040000C7:
@@ -539,12 +539,8 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
             ch->io.irq_on_end = (val >> 6) & 1;
             u32 old_enable = ch->io.enable;
             ch->io.enable = (val >> 7) & 1;
-            if ((ch->io.enable == 1) && (old_enable == 0)) {
-                ch->op.first_run = 1;
-                if (ch->io.start_timing == 0) {
-                    GBA_dma_start(ch, chnum, 0);
-                }
-            }
+            GBA_DMA_cnt_written(this, ch, old_enable);
+            GBA_DMA_on_modify_write(ch);
             return;}
 
         case 0x04000120: this->io.SIO.multi[0] = (this->io.SIO.multi[0] & 0xFF00) | val; return;
@@ -855,7 +851,7 @@ void GBA_check_dma_at_hblank(struct GBA *this)
                 if (this->clock.ppu.y >= 160) continue;
             }
             //printf("\nDMA HBLANK START %d", i);
-            GBA_dma_start(ch, i, 0);
+            GBA_DMA_start(this, ch);
         }
     }
     // And if it's channel 3 and "special", if we're in the correct lines.
@@ -896,7 +892,7 @@ void GBA_check_dma_at_vblank(struct GBA *this)
     for (u32 i = 0; i < 4; i++) {
         struct GBA_DMA_ch *ch = &this->dma[i];
         if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
-            GBA_dma_start(ch, i, 0);
+            GBA_DMA_start(this, ch);
         }
     }
 }

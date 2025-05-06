@@ -48,7 +48,7 @@ static void overflow_timer(struct GBA *this, u32 tn, u64 current_time) {
 
     if (t->irq_on_overflow) {
         u32 old_IF = this->io.IF;
-        this->io.IF |= 1 << 1 << (3 + tn);
+        this->io.IF |= 8 << tn;
         if (old_IF != this->io.IF) {
             GBA_eval_irqs(this);
         }

@@ -104,6 +104,7 @@ void GBA_new(struct jsm_system *jsm)
     this->cpu.write = &GBA_mainbus_write;
     this->cpu.fetch_ptr = this;
     this->cpu.fetch_ins = &GBA_mainbus_fetchins;
+    GBA_DMA_init(this);
     GBA_bus_init(this);
     GBA_clock_init(&this->clock);
     GBA_cart_init(&this->cart);
@@ -338,39 +339,11 @@ void GBAJ_reset(JSM)
 }
 
 
-static void cycle_DMA_and_CPU(struct GBA *this, u32 num_cycles)
-{
-    // add in DMA here
-    this->scanline_cycles_to_execute += (i32)num_cycles;
-    while(this->scanline_cycles_to_execute > 0) {
-        this->waitstates.current_transaction = 0;
-        if (GBA_dma_go(this)) {
-        }
-        else {
-            if (this->io.halted) {
-                this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
-                this->waitstates.current_transaction++;
-            }
-            else {
-                ARM7TDMI_IRQcheck(&this->cpu, 0);
-                ARM7TDMI_run_noIRQcheck(&this->cpu);
-            }
-        }
-        this->scanline_cycles_to_execute -= (i32)this->waitstates.current_transaction;
-        this->clock.master_cycle_count += this->waitstates.current_transaction;
-
-        if (dbg.do_break) {
-            this->scanline_cycles_to_execute = 0;
-            break;
-        }
-    }
-}
-
 static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct GBA *this = (struct GBA *)ptr;
     this->waitstates.current_transaction = 0;
-    if (GBA_dma_go(this)) {
+    if (GBA_DMA_go(this)) {
     }
     else {
         if (this->io.halted) {
