@@ -110,13 +110,13 @@ void GBA_cart_write_eeprom(struct GBA*this, u32 addr, u32 sz, u32 access, u32 va
         serial_add(e, val & 1);
         if (e->serial.sz == 2) {
             if (e->serial.data == 3) { // Read request!
-                e->addr_bus_size = this->dma[3].io.word_count - 3;
+                e->addr_bus_size = this->dma.channel[3].io.word_count - 3;
                 e->mode = STATE_GET_ADDR | STATE_CONSUME_BIT | STATE_OUTPUT_JUNK_NIBBLE | STATE_READ;
                 serial_clear(e);
                 return;
             }
             else if (e->serial.data == 2) {
-                e->addr_bus_size = this->dma[3].io.word_count - 67;
+                e->addr_bus_size = this->dma.channel[3].io.word_count - 67;
                 e->mode = STATE_GET_ADDR | STATE_WRITE | STATE_CONSUME_BIT;
                 serial_clear(e);
                 return;

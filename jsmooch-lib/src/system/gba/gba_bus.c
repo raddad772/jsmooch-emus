@@ -12,6 +12,10 @@
 static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
     this->waitstates.current_transaction++;
+    if (addr == 0x83001888) {
+        int a = 4;
+        a++;
+    }
     //dbg.var++;
     //if (dbg.var > 15) dbg_break("too many bad reads", this->clock.master_cycle_count);
     u32 v = GBA_open_bus_byte(this, addr);
@@ -175,7 +179,7 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
         case 0x040000C6:
         case 0x040000D2:
         case 0x040000DE: {
-            struct GBA_DMA_ch *ch = &this->dma[DMA_CH_NUM(addr)];
+            struct GBA_DMA_ch *ch = &this->dma.channel[DMA_CH_NUM(addr)];
             u32 v = ch->io.dest_addr_ctrl << 5;
             v |= ch->io.src_addr_ctrl << 7;
             return v;}
@@ -194,7 +198,7 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
         case 0x040000D3:
         case 0x040000DF: {
             u32 chnum = DMA_CH_NUM(addr);
-            struct GBA_DMA_ch *ch = &this->dma[chnum];
+            struct GBA_DMA_ch *ch = &this->dma.channel[chnum];
             u32 v = (ch->io.src_addr_ctrl >> 1) & 1;
             v |= ch->io.repeat << 1;
             v |= ch->io.transfer_size << 2;
@@ -442,50 +446,50 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x0400021F: // not used
             return;
 
-        case 0x040000B0: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000B1: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000B2: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000B3: this->dma[0].io.src_addr = (this->dma[0].io.src_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
-        case 0x040000B4: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000B5: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000B6: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000B7: this->dma[0].io.dest_addr = (this->dma[0].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+        case 0x040000B0: this->dma.channel[0].io.src_addr = (this->dma.channel[0].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000B1: this->dma.channel[0].io.src_addr = (this->dma.channel[0].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000B2: this->dma.channel[0].io.src_addr = (this->dma.channel[0].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000B3: this->dma.channel[0].io.src_addr = (this->dma.channel[0].io.src_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+        case 0x040000B4: this->dma.channel[0].io.dest_addr = (this->dma.channel[0].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000B5: this->dma.channel[0].io.dest_addr = (this->dma.channel[0].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000B6: this->dma.channel[0].io.dest_addr = (this->dma.channel[0].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000B7: this->dma.channel[0].io.dest_addr = (this->dma.channel[0].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
 
-        case 0x040000BC: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000BD: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000BE: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000BF: this->dma[1].io.src_addr = (this->dma[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
-        case 0x040000C0: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000C1: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000C2: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000C3: this->dma[1].io.dest_addr = (this->dma[1].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+        case 0x040000BC: this->dma.channel[1].io.src_addr = (this->dma.channel[1].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000BD: this->dma.channel[1].io.src_addr = (this->dma.channel[1].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000BE: this->dma.channel[1].io.src_addr = (this->dma.channel[1].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000BF: this->dma.channel[1].io.src_addr = (this->dma.channel[1].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case 0x040000C0: this->dma.channel[1].io.dest_addr = (this->dma.channel[1].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000C1: this->dma.channel[1].io.dest_addr = (this->dma.channel[1].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000C2: this->dma.channel[1].io.dest_addr = (this->dma.channel[1].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000C3: this->dma.channel[1].io.dest_addr = (this->dma.channel[1].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
 
-        case 0x040000C8: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000C9: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000CA: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000CB: this->dma[2].io.src_addr = (this->dma[2].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
-        case 0x040000CC: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000CD: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000CE: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000CF: this->dma[2].io.dest_addr = (this->dma[2].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
+        case 0x040000C8: this->dma.channel[2].io.src_addr = (this->dma.channel[2].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000C9: this->dma.channel[2].io.src_addr = (this->dma.channel[2].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000CA: this->dma.channel[2].io.src_addr = (this->dma.channel[2].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000CB: this->dma.channel[2].io.src_addr = (this->dma.channel[2].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case 0x040000CC: this->dma.channel[2].io.dest_addr = (this->dma.channel[2].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000CD: this->dma.channel[2].io.dest_addr = (this->dma.channel[2].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000CE: this->dma.channel[2].io.dest_addr = (this->dma.channel[2].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000CF: this->dma.channel[2].io.dest_addr = (this->dma.channel[2].io.dest_addr & 0x00FFFFFF) | ((val & 0x07) << 24); return; // DMA source address ch0
 
-        case 0x040000D4: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000D5: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000D6: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000D7: this->dma[3].io.src_addr = (this->dma[3].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
-        case 0x040000D8: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
-        case 0x040000D9: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
-        case 0x040000DA: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
-        case 0x040000DB: this->dma[3].io.dest_addr = (this->dma[3].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case 0x040000D4: this->dma.channel[3].io.src_addr = (this->dma.channel[3].io.src_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000D5: this->dma.channel[3].io.src_addr = (this->dma.channel[3].io.src_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000D6: this->dma.channel[3].io.src_addr = (this->dma.channel[3].io.src_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000D7: this->dma.channel[3].io.src_addr = (this->dma.channel[3].io.src_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
+        case 0x040000D8: this->dma.channel[3].io.dest_addr = (this->dma.channel[3].io.dest_addr & 0xFFFFFF00) | (val << 0); return; // DMA source address ch0
+        case 0x040000D9: this->dma.channel[3].io.dest_addr = (this->dma.channel[3].io.dest_addr & 0xFFFF00FF) | (val << 8); return; // DMA source address ch0
+        case 0x040000DA: this->dma.channel[3].io.dest_addr = (this->dma.channel[3].io.dest_addr & 0xFF00FFFF) | (val << 16); return; // DMA source address ch0
+        case 0x040000DB: this->dma.channel[3].io.dest_addr = (this->dma.channel[3].io.dest_addr & 0x00FFFFFF) | ((val & 0x0F) << 24); return; // DMA source address ch0
 
-        case 0x040000B8: this->dma[0].io.word_count = (this->dma[0].io.word_count & 0x3F00) | (val << 0); return;
-        case 0x040000B9: this->dma[0].io.word_count = (this->dma[0].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
-        case 0x040000C4: this->dma[1].io.word_count = (this->dma[1].io.word_count & 0x3F00) | (val << 0); return;
-        case 0x040000C5: this->dma[1].io.word_count = (this->dma[1].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
-        case 0x040000D0: this->dma[2].io.word_count = (this->dma[2].io.word_count & 0x3F00) | (val << 0); return;
-        case 0x040000D1: this->dma[2].io.word_count = (this->dma[2].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
-        case 0x040000DC: this->dma[3].io.word_count = (this->dma[3].io.word_count & 0xFF00) | (val << 0); return;
-        case 0x040000DD: this->dma[3].io.word_count = (this->dma[3].io.word_count & 0xFF) | ((val & 0xFF) << 8); return;
+        case 0x040000B8: this->dma.channel[0].io.word_count = (this->dma.channel[0].io.word_count & 0x3F00) | (val << 0); return;
+        case 0x040000B9: this->dma.channel[0].io.word_count = (this->dma.channel[0].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case 0x040000C4: this->dma.channel[1].io.word_count = (this->dma.channel[1].io.word_count & 0x3F00) | (val << 0); return;
+        case 0x040000C5: this->dma.channel[1].io.word_count = (this->dma.channel[1].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case 0x040000D0: this->dma.channel[2].io.word_count = (this->dma.channel[2].io.word_count & 0x3F00) | (val << 0); return;
+        case 0x040000D1: this->dma.channel[2].io.word_count = (this->dma.channel[2].io.word_count & 0xFF) | ((val & 0x3F) << 8); return;
+        case 0x040000DC: this->dma.channel[3].io.word_count = (this->dma.channel[3].io.word_count & 0xFF00) | (val << 0); return;
+        case 0x040000DD: this->dma.channel[3].io.word_count = (this->dma.channel[3].io.word_count & 0xFF) | ((val & 0xFF) << 8); return;
 
         case 0x04000103: // TMRxCNT upper half unused
         case 0x04000107:
@@ -520,7 +524,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000D2:
         case 0x040000DE: {
             u32 chn = DMA_CH_NUM(addr);
-            struct GBA_DMA_ch *ch = &this->dma[chn];
+            struct GBA_DMA_ch *ch = &this->dma.channel[chn];
             ch->io.dest_addr_ctrl = (val >> 5) & 3;
             ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 2) | ((val >> 7) & 1);
             GBA_DMA_on_modify_write(ch);
@@ -530,7 +534,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
         case 0x040000D3:
         case 0x040000DF: {
             u32 chnum = DMA_CH_NUM(addr);
-            struct GBA_DMA_ch *ch = &this->dma[chnum];
+            struct GBA_DMA_ch *ch = &this->dma.channel[chnum];
             ch->io.src_addr_ctrl = (ch->io.src_addr_ctrl & 1) | ((val & 1) << 1);
             ch->io.repeat = (val >> 1) & 1;
             ch->io.transfer_size = (val >> 2) & 1;
@@ -842,8 +846,8 @@ void GBA_check_dma_at_hblank(struct GBA *this)
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
-        struct GBA_DMA_ch *ch = &this->dma[i];
-        if ((ch->io.enable) && (!ch->op.started) && ((ch->io.start_timing == 2) || ((i == 3) && (ch->io.start_timing == 3)))) {
+        struct GBA_DMA_ch *ch = &this->dma.channel[i];
+        if ((ch->io.enable) && (!ch->latch.started) && ((ch->io.start_timing == 2) || ((i == 3) && (ch->io.start_timing == 3)))) {
             if (ch->io.start_timing == 3) { // SPECIAL VIDEO MODE CH3 only goes 2-162 weirdly...
                 if ((this->clock.ppu.y < 2) || (this->clock.ppu.y > 162)) continue;
             }
@@ -890,8 +894,8 @@ void GBA_check_dma_at_vblank(struct GBA *this)
 {
     // Check if any DMA channels are at enabled=1, started=0, time=hblank
     for (u32 i = 0; i < 4; i++) {
-        struct GBA_DMA_ch *ch = &this->dma[i];
-        if ((ch->io.enable) && (!ch->op.started) && (ch->io.start_timing == 1)) {
+        struct GBA_DMA_ch *ch = &this->dma.channel[i];
+        if ((ch->io.enable) && (!ch->latch.started) && (ch->io.start_timing == 1)) {
             GBA_DMA_start(this, ch);
         }
     }
