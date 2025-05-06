@@ -128,7 +128,7 @@ struct GBA {
         } channel[4];
         struct {
             u32 normal;
-            u32 hdma;
+            u32 hblank;
             u32 vblank;
         } bit_mask;
     } dma;
@@ -235,5 +235,7 @@ void GBA_check_dma_at_hblank(struct GBA *);
 void GBA_check_dma_at_vblank(struct GBA *);
 u32 GBA_open_bus_byte(struct GBA *, u32 addr);
 u32 GBA_open_bus(struct GBA *this, u32 addr, u32 sz);
+void GBA_block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter);
+void GBA_block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter);
 
 #endif //JSMOOCH_EMUS_GBA_BUS_H

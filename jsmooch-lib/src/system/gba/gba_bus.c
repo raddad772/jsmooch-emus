@@ -516,7 +516,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
 
 
         case 0x04000300: { this->io.POSTFLG = val; return; }
-        case 0x04000301: { this->io.halted = 1; return; }
+        case 0x04000301: { this->io.halted = 1; this->scheduler.run.func = &GBA_block_step_halted;  return; }
 
         // DMA enable 0->1 while start timing = 0 will start it
         case 0x040000BA:

@@ -834,7 +834,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);
@@ -854,7 +854,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mmz.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "mmz3.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "drill_dozer.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "driv3r.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
             //worked = grab_ROM(&ROMs, which, "lunar_legend.gba", nullptr);

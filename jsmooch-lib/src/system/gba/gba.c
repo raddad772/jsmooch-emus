@@ -86,8 +86,6 @@ static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz) {
     return GBA_mainbus_read(this, addr, sz, this->io.cpu.open_bus_data, 0);
 }
 
-static void block_step(void *ptr, u64 key, u64 clock, u32 jitter);
-
 void GBA_new(struct jsm_system *jsm)
 {
     struct GBA* this = (struct GBA*)malloc(sizeof(struct GBA));
@@ -95,7 +93,7 @@ void GBA_new(struct jsm_system *jsm)
 
     scheduler_init(&this->scheduler, &this->clock.master_cycle_count, &this->waitstates.current_transaction);
     this->scheduler.max_block_size = 8;
-    this->scheduler.run.func = &block_step;
+    this->scheduler.run.func = &GBA_block_step_cpu;
     this->scheduler.run.ptr = this;
     ARM7TDMI_init(&this->cpu, &this->clock.master_cycle_count, &this->waitstates.current_transaction, &this->scheduler);
     this->cpu.read_ptr = this;
@@ -339,22 +337,26 @@ void GBAJ_reset(JSM)
 }
 
 
-static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
+void GBA_block_step_halted(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct GBA *this = (struct GBA *)ptr;
+    this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
+    if (!this->io.halted) {
+        this->waitstates.current_transaction = 1;
+        this->scheduler.run.func = &GBA_block_step_cpu;
+    }
+    else {
+        this->clock.master_cycle_count = this->scheduler.first_event->timecode;
+        this->waitstates.current_transaction = 0;
+    }
+}
+
+void GBA_block_step_cpu(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct GBA *this = (struct GBA *)ptr;
     this->waitstates.current_transaction = 0;
-    if (GBA_DMA_go(this)) {
-    }
-    else {
-        if (this->io.halted) {
-            this->io.halted &= ((!!(this->io.IF & this->io.IE)) ^ 1);
-            this->waitstates.current_transaction += this->io.halted ? key : 1;
-        }
-        else {
-            ARM7TDMI_IRQcheck(&this->cpu, 0);
-            ARM7TDMI_run_noIRQcheck(&this->cpu);
-        }
-    }
+    ARM7TDMI_IRQcheck(&this->cpu, 0);
+    ARM7TDMI_run_noIRQcheck(&this->cpu);
     this->clock.master_cycle_count += this->waitstates.current_transaction;
 #ifdef GBA_STATS
     this->timing.arm_cycles += this->waitstates.current_transaction;

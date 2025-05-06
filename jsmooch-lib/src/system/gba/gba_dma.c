@@ -8,6 +8,18 @@
 static void eval_bit_masks(struct GBA *this)
 {
     // TODO: this
+    this->dma.bit_mask.vblank = this->dma.bit_mask.hblank = this->dma.bit_mask.normal = 0;
+    for (u32 i = 0; i < 4; i++) {
+        struct GBA_DMA_ch *ch = &this->dma.channel[i];
+        if (ch->io.enable && ch->latch.started) // currently-running DMA
+            this->dma.bit_mask.normal |= 1 << i;
+        if (ch->io.enable && ch->io.start_timing == 1)
+            this->dma.bit_mask.vblank |= 1 << i;
+        if (ch->io.enable && ch->io.start_timing == 2)
+            this->dma.bit_mask.hblank |= 1 << i;
+    }
+    if (this->dma.bit_mask.normal) this->scheduler.run.func = &GBA_block_step_dma;
+    else this->scheduler.run.func = &GBA_block_step_cpu;
 }
 
 void GBA_DMA_init(struct GBA *this)
@@ -60,7 +72,6 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
         ch->latch.word_count = (ch->latch.word_count - 1) & ch->word_mask;
         if (ch->latch.word_count == 0) {
             ch->latch.started = 0; // Disable running
-            eval_bit_masks(this);
 
             if (ch->io.irq_on_end) {
                 raise_irq_for_dma(this, num);
@@ -78,17 +89,37 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
             else if (!ch->io.repeat) {
                 ch->io.enable = 0;
             }
+            eval_bit_masks(this);
         }
         return 1;
     }
     return 0;
 }
 
-u32 GBA_DMA_go(struct GBA *this) {
-    for (u32 i = 0; i < 4; i++) {
-        if (dma_go_ch(this, i)) return 1;
-    }
-    return 0;
+static const u32 hipri[16] = {
+        0, // 0000
+        0, // 0001
+        1, // 0010
+        0, // 0011
+        2, // 0100
+        0, // 0101
+        1, // 0110
+        0, // 0111
+        3, // 1000
+        0, // 1001
+        1, // 1010
+        0, // 1011
+        2, // 1100
+        0, // 1101
+        1, // 1110
+        0, // 1111
+};
+
+void GBA_block_step_dma(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct GBA *this = (struct GBA *)ptr;
+    u32 chn = hipri[this->dma.bit_mask.normal];
+    dma_go_ch(this, chn);
 }
 
 void GBA_DMA_start(struct GBA *gba, struct GBA_DMA_ch *ch)
