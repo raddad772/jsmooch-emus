@@ -56,7 +56,6 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
         ch->latch.dest_access = ARM7P_sequential | ARM7P_dma;
 
         ch->latch.src_addr += ch->src_add;
-        assert(ch->latch.src_addr < 0x80000000);
         ch->latch.dest_addr += ch->dest_add;
         ch->latch.word_count = (ch->latch.word_count - 1) & ch->word_mask;
         if (ch->latch.word_count == 0) {
@@ -135,6 +134,4 @@ void GBA_DMA_on_modify_write(struct GBA_DMA_ch *ch)
     static const i32 dst[2][4] = { { 2, -2, 0, 2}, {4, -4, 0, 4} };
     ch->dest_add = ch->is_sound ? 0 : dst[ch->io.transfer_size][ch->io.dest_addr_ctrl];
     ch->src_add = src[ch->io.transfer_size][ch->io.src_addr_ctrl];
-    assert(ch->io.transfer_size < 2);
-    assert(ch->io.src_addr_ctrl < 4);
 }
