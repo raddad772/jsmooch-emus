@@ -5,6 +5,7 @@
 #include <string.h>
 #include "snes_bus.h"
 #include "r5a22.h"
+#include "snes_debugger.h"
 
 void R5A22_init(struct R5A22 *this, u64 *master_cycle_count)
 {
@@ -402,13 +403,15 @@ static void cycle_cpu(struct SNES *snes)
     WDC65816_cycle(&this->cpu);
     u32 cpu_addr = (this->cpu.pins.BA << 16) | this->cpu.pins.Addr;
     snes->clock.cpu.divider = this->cpu.pins.PDV ? mem_timing(cpu_addr, this->ROMspeed) : 6;
-
     if (this->cpu.pins.PDV) { // Read/write. THIS ONLY WORKS FOR PDV MODE not expanded pins
         if (this->cpu.pins.RW) { // Write
+            dbgloglog(snes, SNES_CAT_WDC_WRITE, DBGLS_INFO, "%06x   (write) %02x", cpu_addr, this->cpu.pins.D);
+
             SNES_wdc65816_write(snes, cpu_addr, this->cpu.pins.D);
         }
         else { // Read
             this->cpu.pins.D = SNES_wdc65816_read(snes, cpu_addr, this->cpu.pins.D, 1);
+            dbgloglog(snes, SNES_CAT_WDC_READ, DBGLS_INFO, "%06x   (read) %02x", cpu_addr, this->cpu.pins.D);
         }
     }
 }
@@ -541,19 +544,18 @@ static u32 dma_run(struct SNES *snes)
     return 0;
 }
 
-static void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
+void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *snes = (struct SNES *)ptr;
     struct R5A22 *this = &snes->r5a22;
-    u64 cur = clock - jitter;
-
+    //u64 cur = clock - jitter;
+    //scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.cpu.divider, 0, snes, &R5A22_cycle, NULL);
     if (this->status.dma_running) dma_run(snes);
     else cycle_cpu(snes);
     cycle_alu(snes);
-    scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.cpu.divider, 0, snes, &R5A22_cycle, NULL);
 }
 
 void R5A22_schedule_first(struct SNES *snes)
 {
-    scheduler_only_add_abs(&snes->scheduler, 8, 0, snes, &R5A22_cycle, NULL);
+    //scheduler_only_add_abs(&snes->scheduler, 8, 0, snes, &R5A22_cycle, NULL);
 }

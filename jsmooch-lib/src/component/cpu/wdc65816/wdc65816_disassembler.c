@@ -8,9 +8,24 @@
 
 #include "wdc65816_disassembler.h"
 
+
+enum  {
+    RA_lo = 1,
+    RA_hi = 2,
+    RA = 4,
+    RD = 8,
+    RX = 0x10,
+    RY = 0x20,
+    RP = 0x40,
+    RPBR = 0x80,
+    RS = 0x100,
+    RDBR = 0x200
+} WDC_regs;
+
+
 static inline u32 inc_addr16of24(u32 addr)
 {
-    return (addr | 0xFF0000) | ((addr + 1) & 0xFFFF);
+    return (addr & 0xFF0000) | ((addr + 1) & 0xFFFF);
 }
 
 static u32 read(u32 addr, struct jsm_debug_read_trace *rt)
@@ -50,7 +65,7 @@ static u32 read_op_long(u32 addr, struct jsm_debug_read_trace *rt) {
     return data | (read_op_word(addr, rt) << 8);
 }
 
-#define ARGS char *buf, u32 addr, u32 e, u32 m, u32 x, struct WDC65816_regs *r, struct jsm_debug_read_trace *rt, u32 *ins_len
+#define ARGS char *buf, u32 addr, u32 e, u32 m, u32 x, struct WDC65816_regs *r, struct jsm_debug_read_trace *rt, u32 *ins_len, u32 *rp
 
 static i32 do_absolute(ARGS)
 {
@@ -280,17 +295,20 @@ static i32 do_stack_indirect(ARGS) {
     return (i32)((r->DBR << 16) + read_word((n + r->S) & 0xFFFF, rt) + r->Y);
 }
 
-u32 WDC65816_disassemble(u32 addr, struct WDC65816_regs *r, u32 e, u32 m, u32 x, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+u32 WDC65816_disassemble(u32 addr, struct WDC65816_regs *r, u32 e, u32 m, u32 x, struct jsm_debug_read_trace *rt, struct jsm_string *out, struct WDC65816_ctxt *ct)
 {
     char buf[50];
     char *mnemonic;
     u32 opcode = read_byte(addr, rt);
     addr = inc_addr16of24(addr);
+    u32 tct = 0;
+    u32 *rptr = &tct;
+    if (ct) rptr = &ct->regs;
 
     i32 effective = -1;
     u32 ins_len = 0;
 
-#define dasm(num, mnm, func) case num: mnemonic = mnm; effective = do_##func(buf, addr, e, m, x, r, rt, &ins_len); break
+#define dasm(num, mnm, func) case num: mnemonic = mnm; effective = do_##func(buf, addr, e, m, x, r, rt, &ins_len, rptr); break
 
     switch(opcode) {
         dasm(0x00, "brk", immediate);
@@ -555,10 +573,10 @@ u32 WDC65816_disassemble(u32 addr, struct WDC65816_regs *r, u32 e, u32 m, u32 x,
     }
 
 #undef dasm
-    u32 l = jsm_string_sprintf(out, "%s %s", buf);
+    u32 l = jsm_string_sprintf(out, "%s %s", mnemonic, buf);
     if (effective != -1) {
         effective &= 0xFFFFFF;
-        while (l < 24) l += jsm_string_sprintf(out, " ");
+        while (l < 14) l += jsm_string_sprintf(out, " ");
         jsm_string_sprintf(out, "[%06x]", effective);
     }
     

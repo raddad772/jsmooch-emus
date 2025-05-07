@@ -657,6 +657,7 @@ static void new_scanline(struct SNES* this, u64 cur_clock)
 static void dram_refresh(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *this = (struct SNES *)ptr;
+    printf("\nDRAM REFRESH start at %lld add 40! REAL CLOCK:%lld", clock - jitter, this->clock.master_cycle_count);
     scheduler_from_event_adjust_master_clock(&this->scheduler, 40);
 }
 
@@ -991,6 +992,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 
     // hblank DMA setup, 12-20ish
     if (!vblank) {
+        snes->clock.timing.line.hdma_setup_position = snes->clock.rev == 1 ? 12 + 8 - (snes->clock.master_cycle_count & 7) : 12 + (snes->clock.master_cycle_count & 7);
         scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hdma_setup_position, 0, snes, &hdma_setup, NULL);
     }
 
@@ -998,7 +1000,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hblank_stop, 0, snes, &hblank, NULL);
 
     // DRAM refresh - ~510 ish
-    snes->clock.timing.line.dram_refresh = snes->clock.rev == 1 ? 12 + 8 - (snes->clock.master_cycle_count & 7) : 12 + (snes->clock.master_cycle_count & 7);
+    printf("\nSCHEDULE DRAM REFRESH FOR %lld. CUR:%lld, DRAM_REFRESH:%d", cur + snes->clock.timing.line.dram_refresh, cur, snes->clock.timing.line.dram_refresh);
     scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.dram_refresh, 0, snes, &dram_refresh, NULL);
 
 

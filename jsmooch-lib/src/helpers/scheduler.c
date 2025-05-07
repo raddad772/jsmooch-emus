@@ -317,6 +317,7 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
 {
     assert(this->first_event);
+    printf("\nRUN TIL TAG!");
 
     while(!dbg.do_break) {
         // First, check if there's no events.
@@ -355,6 +356,7 @@ void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
 
             this->loop_start_clock = current_time(this);
         }
+
 
         // Now...Run cycles!
         u64 num_cycles_to_run = e->timecode - this->loop_start_clock;

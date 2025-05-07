@@ -133,7 +133,8 @@ static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *this = (struct SNES *)ptr;
 
-    this->clock.master_cycle_count = this->scheduler.first_event->timecode;
+    R5A22_cycle(this, 0, 0, 0);
+    this->clock.master_cycle_count += this->clock.cpu.divider;
 }
 
 void SNES_new(JSM)
@@ -146,6 +147,7 @@ void SNES_new(JSM)
     this->scheduler.run.func = &run_block;
     this->scheduler.run.ptr = this;
     SNES_clock_init(&this->clock);
+    this->clock.nothing = 0;
     SNES_mem_init(this);
     SNES_cart_init(this);
 

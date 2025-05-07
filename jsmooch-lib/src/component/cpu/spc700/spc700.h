@@ -82,13 +82,15 @@ struct SPC700 {
 
     struct {
         struct jsm_debug_read_trace strct;
-        struct jsm_string str;
+        struct jsm_string str, str2;
         u32 ins_PC;
         i32 source_id;
 
         struct {
             struct dbglog_view *view;
             u32 id;
+
+            u32 id_read, id_write;
         } dbglog;
         u32 ok;
 

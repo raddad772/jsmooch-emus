@@ -70,6 +70,7 @@ struct SNES {
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(8)
         DBG_WAVEFORM_END(psg)
+        DBG_LOG_VIEW
 
     DBG_END
     struct {

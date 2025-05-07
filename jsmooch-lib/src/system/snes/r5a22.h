@@ -80,5 +80,6 @@ void R5A22_update_irq(struct SNES *);
 void R5A22_update_nmi(struct SNES *);
 void R5A22_hblank(struct SNES *, u32 which);
 void SNES_latch_ppu_counters(struct SNES *snes);
+void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 
 #endif //JSMOOCH_EMUS_R5A22_H

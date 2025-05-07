@@ -69,6 +69,36 @@ static void setup_image_view_palettes(struct SNES* this, struct debugger_interfa
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
+static void setup_dbglog(struct debugger_interface *dbgr, struct SNES *this)
+{
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
+    struct debugger_view *dview = cpg(p);
+    struct dbglog_view *dv = &dview->dbglog;
+    this->dbg.dvptr = dv;
+    snprintf(dv->name, sizeof(dv->name), "Trace");
+    dv->has_extra = 1;
+
+    static const u32 wdc_color = 0x8080FF;
+    static const u32 spc_color = 0x80FF80;
+
+    struct dbglog_category_node *root = dbglog_category_get_root(dv);
+    struct dbglog_category_node *wdc = dbglog_category_add_node(dv, root, "WDC65816", NULL, 0, 0);
+    dbglog_category_add_node(dv, wdc, "Instruction Trace", "WDC65816", SNES_CAT_WDC_INSTRUCTION, wdc_color);
+    this->r5a22.cpu.trace.dbglog.view = dv;
+    this->r5a22.cpu.trace.dbglog.id = SNES_CAT_WDC_INSTRUCTION;
+    dbglog_category_add_node(dv, wdc, "Reads", "wdc_read", SNES_CAT_WDC_READ, wdc_color);
+    dbglog_category_add_node(dv, wdc, "Writes", "wdc_write", SNES_CAT_WDC_WRITE, wdc_color);
+
+    struct dbglog_category_node *spc = dbglog_category_add_node(dv, root, "SPC700", NULL, 0, 0);
+    dbglog_category_add_node(dv, spc, "Instruction Trace", "SPC700", SNES_CAT_SPC_INSTRUCTION, spc_color);
+    this->apu.cpu.trace.dbglog.view = dv;
+    this->apu.cpu.trace.dbglog.id = SNES_CAT_SPC_INSTRUCTION;
+    dbglog_category_add_node(dv, spc, "Reads", "spc_read", SNES_CAT_SPC_READ, spc_color);
+    this->apu.cpu.trace.dbglog.id_read = SNES_CAT_SPC_READ;
+    dbglog_category_add_node(dv, spc, "Writes", "spc_write", SNES_CAT_SPC_WRITE, spc_color);
+    this->apu.cpu.trace.dbglog.id_write = SNES_CAT_SPC_WRITE;
+}
+
 
 void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
@@ -76,7 +106,9 @@ void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 4;
+    cvec_lock_reallocs(&dbgr->views);
 
+    setup_dbglog(dbgr, this);
     setup_image_view_palettes(this, dbgr);
 
 }

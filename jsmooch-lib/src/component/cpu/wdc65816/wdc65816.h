@@ -17,6 +17,10 @@
 #define WDC65816_OP_IRQ 0x102
 #define WDC65816_OP_ABORT 0x101
 
+struct WDC65816_ctxt {
+    u32 regs; // bits 0-15: regs 0-15. bit 16: CPSR, etc...
+};
+
 struct WDC65816_regs;
 struct WDC65816_pins;
 typedef void (*WDC65816_ins_func)(struct WDC65816_regs*, struct WDC65816_pins*);
@@ -94,7 +98,7 @@ struct WDC65816 {
 
     struct {
         struct jsm_debug_read_trace strct;
-        struct jsm_string str;
+        struct jsm_string str, str2;
         u32 ok;
         u32 ins_PC;
         u32 PCO;
