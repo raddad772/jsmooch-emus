@@ -412,7 +412,6 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
         case 0x2121: // Color RAM address
             this->io.cgram_addr = val;
             this->latch.cgram_addr = 0;
-            printf("\nCGRAM ADDR SET %d", this->io.cgram_addr);
             return;
         case 0x2122: // Color RAM data
             if (this->latch.cgram_addr == 0) {
@@ -422,7 +421,6 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             else {
                 this->latch.cgram_addr = 0;
                 this->CGRAM[this->io.cgram_addr] = ((val & 0x7F) << 8) | this->latch.cgram;
-                printf("\nCRAM WRITE %02x: %04x", this->io.cgram_addr, ((val & 0x7F) << 8) | this->latch.cgram);
                 this->io.cgram_addr = (this->io.cgram_addr + 1) & 0xFF;
             }
             return;
@@ -657,7 +655,6 @@ static void new_scanline(struct SNES* this, u64 cur_clock)
 static void dram_refresh(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *this = (struct SNES *)ptr;
-    printf("\nDRAM REFRESH start at %lld add 40! REAL CLOCK:%lld", clock - jitter, this->clock.master_cycle_count);
     scheduler_from_event_adjust_master_clock(&this->scheduler, 40);
 }
 
@@ -707,8 +704,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
 {
     struct SNES_PPU *this = &snes->ppu;
     struct SNES_PPU_BG *bg = &this->bg[source];
-    memset(bg->main, 0, sizeof(bg->main));
-    memset(bg->sub, 0, sizeof(bg->sub));
+    memset(bg->line, 0, sizeof(bg->line));
     if (bg->tile_mode == SPTM_inactive) return;
     if (!bg->main_enable && !bg->sub_enable) return;
     if (bg->tile_mode == SPTM_mode7) return draw_bg_line_mode7(snes, y, source);
@@ -736,6 +732,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
 
     if (hires) {
         hscroll <<= 1;
+        // TODO: this?
         //if (this->io.interlace) y = y << 1 | +(cache.control.field && !bg.mosaic_enable);
     }
     if (bg->mosaic.enable) {
@@ -828,29 +825,68 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
             if (!mosaic_palette) continue;
 
             if (!hires) {
-                if (bg->main_enable && mosaic_priority > bg->main[x].priority) // && !PPUF_window_above[x]
-                    setpx(&bg->main[x], source, mosaic_priority, mosaic_color);
-                if (bg->sub_enable && mosaic_priority > bg->sub[x].priority) // && !PPUF_window_below[x]
-                    setpx(&bg->sub[x], source, mosaic_priority, mosaic_color);
+                if (mosaic_priority > bg->line[x].priority) // && !PPUF_window_above[x]
+                    setpx(&bg->line[x], source, mosaic_priority, mosaic_color);
             } else {
-                i32 bx = x >> 1;
                 if (x & 1) {
-                    if (bg->main_enable && mosaic_priority > bg->main[bx].priority) // && !PPUF_window_above[bx]
-                        setpx(&bg->main[bx], source, mosaic_priority, mosaic_color);
+                    if (mosaic_priority > bg->line[x].priority) // && !PPUF_window_above[bx]
+                        setpx(&bg->line[x], source, mosaic_priority, mosaic_color);
                 } else {
-                    if (bg->sub_enable && mosaic_priority > bg->sub[bx].priority) // !PPUF_window_below[bx] &&
-                        setpx(&bg->sub[bx], source, mosaic_priority, mosaic_color);
+                    if (bg->sub_enable && mosaic_priority > bg->line[x].priority) // !PPUF_window_below[bx] &&
+                        setpx(&bg->line[x], source, mosaic_priority, mosaic_color);
                 }
             }
         }
     }
+}
 
+static void color_math(struct SNES_PPU *this, struct SNES_PPU_px *main, struct SNES_PPU_px *sub)
+{
+    i32 mr = main->color & 0x1F;
+    i32 mg = (main->color >> 5) & 0x1F;
+    i32 mb = (main->color >> 10) & 0x1F;
+    i32 sr = sub->color & 0x1F;
+    i32 sg = (sub->color >> 5) & 0x1F;
+    i32 sb = (sub->color >> 10) & 0x1F;
+
+    if (this->color_math.math_mode) {
+        // 1 = sub
+        mr -= sr;
+        mg -= sg;
+        mb -= sb;
+    }
+    else {
+        mr += sr;
+        mg += sg;
+        mb += sb;
+    }
+    if (mr < 0) mr = 0;
+    if (mg < 0) mg = 0;
+    if (mb < 0) mb = 0;
+    if (this->color_math.halve) {
+        mr >>= 1;
+        mg >>= 1;
+        mb >>= 1;
+    }
+    if (mr > 0x1F) mr = 0x1F;
+    if (mg > 0x1F) mg = 0x1F;
+    if (mb > 0x1F) mb = 0x1F;
+    main->color = mr | (mg << 5) | (mb << 10);
 }
 
 static void draw_sprite_line(struct SNES *snes)
 {
     struct SNES_PPU *this = &snes->ppu;
+    memset(this->obj.line, 0, sizeof(this->obj.line));
 }
+
+#define SRC_BG1 0
+#define SRC_BG2 1
+#define SRC_BG3 2
+#define SRC_BG4 3
+#define SRC_OBJ_PAL03 4
+#define SRC_OBJ_PAL47 5
+#define SRC_BACK 6
 
 static void draw_line(struct SNES *snes)
 {
@@ -863,10 +899,47 @@ static void draw_line(struct SNES *snes)
     draw_bg_line(snes, 3, snes->clock.ppu.y);
     u16 *line_output = this->cur_output + (snes->clock.ppu.y * 512);
     for (u32 x = 0; x < 256; x++) {
-        u16 c = this->bg[0].main[x].color;
-        if (x == 90) c = 0x7FFF;
-        if (snes->clock.ppu.y == 100) c = 0x7FFF;
-        if (this->bg[2].main[x].has) c = 0x3FFF;
+        struct SNES_PPU_px main_px = {.source=SRC_BACK};
+        struct SNES_PPU_px sub_px = {.source=SRC_BACK};
+        sub_px.priority = 12;
+        sub_px.color = this->color_math.fixed_color;
+        sub_px.has = 0;
+        main_px.priority = 12;
+        main_px.color = this->CGRAM[0];
+        main_px.has = 0;
+        for (u32 bgnum = 0; bgnum < 4; bgnum++) {
+            struct SNES_PPU_BG *bg = &this->bg[bgnum];
+            struct SNES_PPU_px *cmp = &bg->line[x];
+            if (bg->main_enable && cmp->has && (main_px.priority > bg->priority[0])) {
+                main_px.color = cmp->color;
+                main_px.has = 1;
+                main_px.priority = bg->priority[0];
+                main_px.source = bgnum;
+            }
+            if (this->color_math.blend_mode && bg->sub_enable && cmp->has && (sub_px.priority > bg->priority[1])) {
+                sub_px.color = cmp->color;
+                sub_px.has = 1;
+                sub_px.priority = bg->priority[1];
+                sub_px.source = bgnum;
+            }
+        }
+        struct SNES_PPU_px *cmp = &this->obj.line[x];
+        if (this->obj.main_enable && cmp->has && (main_px.priority > cmp->priority)) {
+            main_px.color = cmp->color;
+            main_px.has = 1;
+            main_px.priority = cmp->priority;
+            main_px.source = cmp->palette < 4 ? SRC_OBJ_PAL03 : SRC_OBJ_PAL47;
+        }
+        if (this->color_math.blend_mode && this->obj.sub_enable && cmp->has && (sub_px.priority > cmp->priority)) {
+            sub_px.color = cmp->color;
+            sub_px.has = 1;
+            sub_px.priority = cmp->priority;
+            sub_px.source = cmp->palette < 4 ? SRC_OBJ_PAL03 : SRC_OBJ_PAL47;
+        }
+
+        if (this->color_math.enable[main_px.source]) color_math(this, &main_px, &sub_px);
+
+        u16 c = main_px.color;
         line_output[x*2] = c;
         line_output[(x*2)+1] = c;
     }
@@ -1000,7 +1073,6 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hblank_stop, 0, snes, &hblank, NULL);
 
     // DRAM refresh - ~510 ish
-    printf("\nSCHEDULE DRAM REFRESH FOR %lld. CUR:%lld, DRAM_REFRESH:%d", cur + snes->clock.timing.line.dram_refresh, cur, snes->clock.timing.line.dram_refresh);
     scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.dram_refresh, 0, snes, &dram_refresh, NULL);
 
 

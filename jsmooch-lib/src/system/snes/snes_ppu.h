@@ -11,6 +11,7 @@
 struct SNES_PPU_px {
     u8 has, source;
     u8 priority;
+    u8 palette;
     u16 color;
 };
 
@@ -39,6 +40,7 @@ struct SNES_PPU {
         u32 main_enable, sub_enable;
         u32 priority[4];
         u32 range_overflow, time_overflow;
+        struct SNES_PPU_px line[256];
     } obj;
 
     struct {
@@ -55,7 +57,7 @@ struct SNES_PPU {
     } color_math;
 
     struct SNES_PPU_BG {
-        struct SNES_PPU_px main[256], sub[256];
+        struct SNES_PPU_px line[256];
 
         u32 enabled;
         u32 bpp;

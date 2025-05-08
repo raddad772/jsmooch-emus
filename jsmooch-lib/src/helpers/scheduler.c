@@ -317,7 +317,6 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
 void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
 {
     assert(this->first_event);
-    printf("\nRUN TIL TAG!");
 
     while(!dbg.do_break) {
         // First, check if there's no events.
@@ -377,6 +376,6 @@ void scheduler_from_event_adjust_master_clock(struct scheduler_t *this, i64 howm
 {
     // If called from an event, this will accurately adjust the clock.
     // If called from inside a cycle block, this may cause jitter; adjust there as well!
-    assert(this->in_event);
+    //assert(this->in_event);
     *(this->clock) += howmany;
 }

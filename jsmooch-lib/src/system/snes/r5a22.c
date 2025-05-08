@@ -435,12 +435,14 @@ static inline u32 dma_readB(struct SNES *snes, u32 addr, u32 valid) {
 }
 
 static inline void dma_writeA(struct SNES *snes, u32 addr, u32 val) {
-    if (validA(addr)) SNES_wdc65816_write(snes, addr, val);
+    if (validA(addr)) {
+        SNES_wdc65816_write(snes, addr, val);
+    }
 }
 
 static inline void dma_writeB(struct SNES *snes, u32 addr, u32 val, u32 valid)
 {
-    if (valid) SNES_wdc65816_write(snes, addr, val);
+    if (valid) SNES_wdc65816_write(snes, 0x2100 | addr, val);
 }
 
 static void dma_transfer(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch, u32 addrA, u32 index, u32 hdma_mode)
@@ -526,14 +528,12 @@ static u32 dma_run(struct SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     u32 any_going = 0;
-    u32 howmany = 0;
     for (u32 n = 0; n < 8; n++) {
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
         if (ch->hdma_enable && !ch->hdma_completed) {
             hdma_transfer_ch(snes, ch);
-            if (ch->hdma_enable && !ch->hdma_completed) {
-                hdma_advance_ch(snes, ch);
-            }
+            any_going++;
+            hdma_advance_ch(snes, ch);
         }
         else if (ch->dma_enable) {
             any_going++;
