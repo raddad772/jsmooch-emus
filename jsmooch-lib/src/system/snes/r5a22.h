@@ -53,6 +53,7 @@ struct R5A22 {
             u32 hdma_address, line_counter, hdma_completed, hdma_do_transfer;
             u32 took_cycles, index, unknown_byte;
             struct R5A22_DMA_CHANNEL *next;
+            u32 num;
         } channels[8];
         u32 hdma_enabled;
 

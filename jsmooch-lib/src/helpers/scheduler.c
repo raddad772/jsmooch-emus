@@ -356,6 +356,10 @@ void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
             this->loop_start_clock = current_time(this);
         }
 
+        if (dbg.do_break) {
+            this->cycles_left_to_run = 0;
+            break;
+        }
 
         // Now...Run cycles!
         u64 num_cycles_to_run = e->timecode - this->loop_start_clock;

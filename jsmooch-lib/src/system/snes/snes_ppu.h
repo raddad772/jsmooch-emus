@@ -140,7 +140,7 @@ struct SNES_PPU {
 
         struct {
             u32 addr, priority;
-            u32 base_addr;
+            //u32 base_addr;
         } oam;
 
         struct {

@@ -21,6 +21,81 @@
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
+static void render_image_view_tilemaps(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct SNES *this = (struct SNES *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct debugger_widget_radiogroup *layernum = &((struct debugger_widget *) cvec_get(&dview->options,
+                                                                                        0))->radiogroup;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 1024);
+
+
+}
+
+static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct SNES *this = (struct SNES *) ptr;
+    if (this->clock.master_frame == 0) return;
+    struct debugger_widget_radiogroup *layernum = &((struct debugger_widget *) cvec_get(&dview->options,
+                                                                                        0))->radiogroup;
+    struct debugger_widget_radiogroup *attrkind = &((struct debugger_widget *) cvec_get(&dview->options,
+                                                                                        1))->radiogroup;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *) cvec_get(&dview->options, 2))->textbox;
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 224);
+
+    debugger_widgets_textbox_clear(tb);
+    for (u32 y = 0; y < 224; y++) {
+        //struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
+        u32 *out_line = outbuf + (y * out_width);
+        struct SNES_PPU_px *px_line;
+        if (layernum->value < 4) {
+            px_line = this->dbg_info.line[y].bg[layernum->value].px;
+        }
+        else {
+            px_line = this->dbg_info.line[y].sprite_px;
+        }
+        for (u32 x = 0; x < 256; x++) {
+            switch(attrkind->value) {
+                case 0: // color
+                    if (px_line[x].has) {
+                        u32 c = px_line[x].color;
+                        out_line[x] = gba_to_screen(c);
+                    }
+                    else {
+                        out_line[x] = 0xFF000000;
+                    }
+                    break;
+                case 1: // has
+                    out_line[x] = 0xFF000000 | (px_line[x].has * 0xFFFFFF);
+                    break;
+                case 2: { // priority
+                    u32 v = px_line[x].priority + 1;
+                    assert(v < 13);
+                    float f = ((float)v) / 13.0f;
+                    f *= 255.0f;
+                    v = (u32)f;
+                    out_line[x] = v | (v << 8) | (v << 16) | 0xFF000000;
+                    break; }
+                case 3: { // BG mode
+                    if (px_line[x].has) {
+                        //u32 v = px_line[x].dbg_mode;
+                        // red   purple     yellow     white
+                    }
+                    break; }
+                case 4: { // sp_translucent
+                    break; }
+                case 5: { // BPP. 4=red, 8=green, 16=blue
+                    break; }
+            }
+        }
+    }
+
+}
+
 static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct SNES *this = (struct SNES *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -99,6 +174,67 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct SNES *this)
     this->apu.cpu.trace.dbglog.id_write = SNES_CAT_SPC_WRITE;
 }
 
+static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_interface *dbgr) {
+    struct debugger_view *dview;
+    this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.ppu_layers);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 1024;
+    iv->height = 1024;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2) {0, 0};
+    iv->viewport.p[1] = (struct ivec2) {1024, 1024};
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_tilemaps;
+    snprintf(iv->label, sizeof(iv->label), "PPU Tilemaps");
+
+    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Layer", 1, 0, 0);
+    debugger_widget_radiogroup_add_button(rg, "BG1", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "BG2", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "BG3", 2, 1);
+    debugger_widget_radiogroup_add_button(rg, "BG4", 3, 1);
+
+}
+
+    static void setup_image_view_ppu_layers(struct SNES *this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.ppu_layers);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 256;
+    iv->height = 224;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 256, 224 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_ppu_layers;
+    snprintf(iv->label, sizeof(iv->label), "PPU Layer View");
+
+    struct debugger_widget *rg = debugger_widgets_add_radiogroup(&dview->options, "Layer", 1, 0, 0);
+    debugger_widget_radiogroup_add_button(rg, "BG1", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "BG2", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "BG3", 2, 1);
+    debugger_widget_radiogroup_add_button(rg, "BG4", 3, 1);
+    debugger_widget_radiogroup_add_button(rg, "OBJ", 4, 1);
+
+    rg = debugger_widgets_add_radiogroup(&dview->options, "View", 1, 0, 0);
+    debugger_widget_radiogroup_add_button(rg, "RGB", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "Has", 1, 1);
+    debugger_widget_radiogroup_add_button(rg, "Priority", 2, 1);
+    debugger_widget_radiogroup_add_button(rg, "Mode", 3, 1);
+    debugger_widget_radiogroup_add_button(rg, "Sp.Trnslcnt.", 4, 0);
+    debugger_widget_radiogroup_add_button(rg, "BPP", 5, 1);
+
+    debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
+}
+
 
 void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
@@ -110,5 +246,6 @@ void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
 
     setup_dbglog(dbgr, this);
     setup_image_view_palettes(this, dbgr);
-
+    setup_image_view_ppu_layers(this, dbgr);
+    setup_image_view_ppu_tilemaps(this, dbgr);
 }

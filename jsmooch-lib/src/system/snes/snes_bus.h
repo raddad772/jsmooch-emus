@@ -64,6 +64,8 @@ struct SNES {
 
         DBG_IMAGE_VIEWS_START
             MDBG_IMAGE_VIEW(palettes)
+            MDBG_IMAGE_VIEW(ppu_layers)
+            MDBG_IMAGE_VIEW(tilemaps)
         DBG_IMAGE_VIEWS_END
 
         DBG_WAVEFORM_START(apu)
@@ -83,6 +85,16 @@ struct SNES {
 
     struct {
     } opts;
+
+    struct {
+        struct SNES_DBG_LINE {
+            struct SNES_DBG_line_bg {
+                struct SNES_PPU_px px[256];
+                u32 enabled, mode, bpp8;
+            } bg[4];
+            struct SNES_PPU_px sprite_px[256];
+        } line[224];
+    } dbg_info;
 };
 
 #endif //JSMOOCH_EMUS_SNES_BUS_H

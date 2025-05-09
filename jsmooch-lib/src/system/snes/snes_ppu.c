@@ -61,7 +61,8 @@ static void write_oam(struct SNES *snes, struct SNES_PPU *this, u32 addr, u32 va
         printf("\nWARN OAM BAD WRITE TIME");
         return;
     }
-    this->OAM[addr] = val;
+    printf("\nWRITE OAM %02x: %02x", addr, val);
+    this->OAM[addr % 0x220] = val;
 }
 
 static u32 get_addr_by_map(struct SNES_PPU *this)
@@ -244,11 +245,11 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             this->io.obj.tile_addr = (val << 13) & 0x6000;
             return;
         case 0x2102: // OAMADDL
-            this->io.oam.base_addr = (this->io.oam.base_addr & 0xFE00) | (val << 1);
+            this->io.oam.addr = (this->io.oam.addr & 0xFE00) | (val << 1);
             this->obj.first = this->io.oam.priority ? (this->io.oam.addr >> 2) & 0x7F : 0;
             return;
         case 0x2103: // OAMADDH
-            this->io.oam.base_addr = (this->io.oam.base_addr & 0x1FE) | ((val & 1) << 9);
+            this->io.oam.addr = (this->io.oam.addr & 0x1FE) | ((val & 1) << 9);
             this->io.oam.priority = (val >> 7) & 1;
             this->obj.first = this->io.oam.priority ? (this->io.oam.addr >> 2) & 0x7F : 0;
             return;
@@ -637,6 +638,7 @@ u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct S
             return r; }
     }
     printf("\nUNIMPLEMENTED PPU READ FROM %04x", addr);
+    //dbg_break("PPU", snes->clock.master_cycle_count);
     return 0;
 }
 
@@ -705,9 +707,12 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
     struct SNES_PPU *this = &snes->ppu;
     struct SNES_PPU_BG *bg = &this->bg[source];
     memset(bg->line, 0, sizeof(bg->line));
-    if (bg->tile_mode == SPTM_inactive) return;
-    if (!bg->main_enable && !bg->sub_enable) return;
-    if (bg->tile_mode == SPTM_mode7) return draw_bg_line_mode7(snes, y, source);
+    if ((bg->tile_mode == SPTM_inactive) || (!bg->main_enable && !bg->sub_enable)) {
+        return;
+    }
+    if (bg->tile_mode == SPTM_mode7) {
+        return draw_bg_line_mode7(snes, y, source);
+    }
 
     u32 hires = this->io.bg_mode == 5 || this->io.bg_mode == 6;
     u32 offset_per_tile_mode = this->io.bg_mode == 2 || this->io.bg_mode == 4 || this->io.bg_mode == 6;
@@ -880,7 +885,7 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
     memset(this->obj.line, 0, sizeof(this->obj.line));
 
     if (!this->obj.main_enable && !this->obj.sub_enable) return;
-    static const u32 spwidth[8][2] = { // [this->io.obj.sz][sprite_sz] }
+    static const i32 spwidth[8][2] = { // [this->io.obj.sz][sprite_sz] }
             {8, 16},
             {8, 32},
             {8, 64},
@@ -890,7 +895,7 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
             {16, 32},
             {16, 32}
     };
-    static const u32 spheight[8][2] = {
+    static const i32 spheight[8][2] = {
             {8, 16},
             {8, 32},
             {8, 64},
@@ -910,8 +915,8 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
         u32 oamaddr = 512 + (sn >> 2);
         u32 bd = this->OAM[oamaddr] >> (2 * (sn & 3));
         u32 obj_sz = (bd >> 1) & 1;
-        u32 height = spheight[this->io.obj.sz][obj_sz];
-        u32 width = spwidth[this->io.obj.sz][obj_sz];
+        i32 height = spheight[this->io.obj.sz][obj_sz];
+        i32 width = spwidth[this->io.obj.sz][obj_sz];
 
         oamaddr = sn << 2;
         i32 sp_left_x = this->OAM[oamaddr++] | ((bd & 1) << 7);
@@ -940,18 +945,39 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
         u32 num_h_tiles = width >> 3;
         i32 sx = sp_left_x;
 
+        if (vflip) sp_line = (height - 1) - sp_line;
+        i32 px_xxor = hflip ? (width - 1) : 0;
+        i32 tile_xxor = hflip ? ((width >> 3) - 1) : 0;
+        i32 in_sp_x = 0;
+        u32 block_y = sp_line >> 3;
+        u32 tile_y = sp_line & 7;
+
+        u32 tile_addr = this->io.obj.tile_addr;
+        u32 character_x = tn & 15;
+        u32 character_y = (((tn >> 4) + (sp_line >> 3)) & 15) << 4;
 
         for (u32 n = 0; n < num_h_tiles; n++) {
+            u32 block_x = n ^ tile_xxor;
             if (tile_limit < 1) return;
+            u32 addr = tile_addr + ((character_y + (character_x + block_x & 15)) << 4);
+            addr = (addr & 0x7FF0) + tile_y;
+            u32 data = this->VRAM[addr] | (this->VRAM[(addr + 8) & 0x7FFF]) << 16;
             for (u32 pxn = 0; pxn < 8; pxn++) {
-                if ((sx >= 0) && (sx < 256)) {
-                    struct SNES_PPU_px *px = &this->obj.line[sx];
-                    px->has = 1;
-                    px->priority = prio;
-                    px->color = 0x7FFF;
-                    px->palette = pal;
+                i32 rx = sx + (in_sp_x ^ px_xxor);
+                if ((rx >= 0) && (rx < 256)) {
+                    u32 color = (data >> pxn) & 1;
+                    color += (data >> (pxn + 7)) & 2;
+                    color += (data >> (pxn + 14)) & 4;
+                    color += (data >> (pxn + 21)) & 8;
+                    if (color != 0) {
+                        struct SNES_PPU_px *px = &this->obj.line[rx];
+                        px->has = 1;
+                        px->priority = prio;
+                        px->color = this->CGRAM[pal_offset + color];
+                        px->palette = pal;
+                    }
                 }
-                sx++;
+                in_sp_x++;
             }
             tile_limit--;
         }
@@ -970,11 +996,18 @@ static void draw_line(struct SNES *snes)
 {
     // Draw sprite line
     struct SNES_PPU *this = &snes->ppu;
+    //printf("\nDraw line %d", snes->clock.ppu.y);
+    if (snes->clock.ppu.y == 0 ) memset(&snes->dbg_info.line, 0, sizeof(snes->dbg_info.line));
+
     draw_sprite_line(snes, snes->clock.ppu.y);
     draw_bg_line(snes, 0, snes->clock.ppu.y);
     draw_bg_line(snes, 1, snes->clock.ppu.y);
     draw_bg_line(snes, 2, snes->clock.ppu.y);
     draw_bg_line(snes, 3, snes->clock.ppu.y);
+    for (u32 i = 0; i < 4; i++) {
+        memcpy(snes->dbg_info.line[snes->clock.ppu.y].bg[i].px, this->bg[i].line, sizeof(this->bg[i].line));
+    }
+    memcpy(snes->dbg_info.line[snes->clock.ppu.y].sprite_px, this->obj.line, sizeof(this->obj.line));
     u16 *line_output = this->cur_output + (snes->clock.ppu.y * 512);
     for (u32 x = 0; x < 256; x++) {
         struct SNES_PPU_px main_px = {.source=SRC_BACK};
@@ -1070,7 +1103,7 @@ u32 SNES_hdma_reload_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
         ch->hdma_address++;
 
         ch->hdma_completed = ch->line_counter == 0;
-        ch->hdma_address = !ch->hdma_completed;
+        ch->hdma_do_transfer = !ch->hdma_completed;
 
         if (ch->indirect) {
             cn += 8;
@@ -1181,9 +1214,11 @@ static void vblank(void *ptr, u64 key, u64 cur_clock, u32 jitter)
     snes->clock.ppu.vblank_active = key;
     snes->r5a22.status.nmi_flag = key;
     if (!key) { // VBLANK off at start of frame
+        //printf("\nNMI OFF");
         snes->ppu.obj.range_overflow = snes->ppu.obj.time_overflow = 0;
     }
     else { // VBLANK on partway through frame
+        //printf("\nNMI ON");
     }
     R5A22_update_nmi(snes);
 }

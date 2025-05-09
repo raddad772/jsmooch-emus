@@ -11,8 +11,9 @@ void R5A22_init(struct R5A22 *this, u64 *master_cycle_count)
 {
     memset(this, 0, sizeof(*this));
     WDC65816_init(&this->cpu, master_cycle_count);
-    for (u32 i = 0; i < 7; i++) {
-        this->dma.channels[i].next = &this->dma.channels[i+1];
+    for (u32 i = 0; i < 8; i++) {
+        this->dma.channels[i].num = i;
+        if (i < 7) this->dma.channels[i].next = &this->dma.channels[i+1];
     }
 }
 
@@ -88,7 +89,8 @@ static u32 dma_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect)
 
 static void dma_reg_write(struct SNES *snes, u32 addr, u32 val)
 {
-    struct R5A22_DMA_CHANNEL *ch = &snes->r5a22.dma.channels[(addr >> 4) & 7];
+    u32 cnum = (addr >> 4) & 7;
+    struct R5A22_DMA_CHANNEL *ch = &snes->r5a22.dma.channels[cnum];
     switch(addr & 0xFF8F) {
         case 0x4300: // DMAPx various controls
             ch->transfer_mode = val & 7;
@@ -106,6 +108,7 @@ static void dma_reg_write(struct SNES *snes, u32 addr, u32 val)
             return;
         case 0x4303:
             ch->source_address = (val << 8) | (ch->source_address & 0xFF);
+            if (cnum == 7) printf("\nSET DMA%d SRC ADDR %04x", cnum, ch->source_address);
             return;
         case 0x4304:
             ch->source_bank = val;
@@ -182,7 +185,9 @@ static void dma_start(struct SNES *snes)
 {
     struct R5A22 *this = &snes->r5a22;
     for (u32 n = 0; n < 8; n++) {
-        this->dma.channels[n].index = 0;
+        struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
+        if (ch->dma_enable) printf("\nDMA%d ENABLE:%d SRC:%04x SZ:%d", n, ch->dma_enable, ch->source_address, ch->transfer_size);
+        ch->index = 0;
     }
 }
 
@@ -191,7 +196,9 @@ static void dma_pending_setup(void *ptr, u64 key, u64 clock, u32 jitter)
     struct SNES *snes = (struct SNES *)ptr;
     struct R5A22 *this = &snes->r5a22;
 
-    if (!this->status.dma_running) dma_start(snes);
+    if (!this->status.dma_running) {
+        dma_start(snes);
+    }
     this->status.dma_pending = 0;
     this->status.dma_running = 1;
 }
@@ -263,7 +270,9 @@ void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_bl
             return;
         case 0x420B:
             for (u32 n = 0; n < 8; n++) {
-                this->dma.channels[n].dma_enable = (val >> n) & 1;
+                struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
+                ch->dma_enable = (val >> n) & 1;
+                //if (this->dma.channels[n].dma_enable)
             }
             if (val != 0) {
                 if (this->dma.sched.still)
@@ -349,7 +358,7 @@ u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct 
         case 0x421F:
             return ((this->io.joy4) >> 8) & 0xFF;
     }
-    printf("\nR5A22 MISS READ TO %04x", addr);
+    printf("\nR5A22 MISS READ TO %06x", addr);
     return 0;
 }
 
@@ -466,10 +475,12 @@ static void dma_transfer(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch, u32 ad
     if (ch->direction == 0) {
         data = dma_readA(snes, addrA);
         dma_writeB(snes, addrB, data, valid);
+        //printf("\nDMA%d from %04x to 21%02x len:%d", ch->num, addrA, addrB, ch->transfer_size);
     }
     else {
         data = dma_readB(snes, addrB, valid);
         dma_writeA(snes, addrA, data);
+        //printf("\nDMA%d from 21%02x to %04x", ch->num, addrB, addrA);
     }
 }
 
@@ -504,6 +515,7 @@ static void hdma_transfer_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
     ch->dma_enable = 0;
     if (!ch->hdma_do_transfer) return;
     for (u32 index = 0; index < HDMA_LENGTHS[ch->transfer_mode]; index++) {
+        if (dbg.do_break) return;
         u32 addr;
         if (ch->indirect) {
             addr = (ch->indirect_bank << 16) | ch->indirect_address;
@@ -530,9 +542,9 @@ static u32 dma_run(struct SNES *snes)
     u32 any_going = 0;
     for (u32 n = 0; n < 8; n++) {
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
+        if (dbg.do_break) return any_going;
         if (ch->hdma_enable && !ch->hdma_completed) {
             hdma_transfer_ch(snes, ch);
-            //any_going++;
             hdma_advance_ch(snes, ch);
         }
         else if (ch->dma_enable) {

@@ -876,6 +876,7 @@ static void setup_image_view_ppu_layers(struct NDS *this, struct debugger_interf
 
     debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
 }
+
 static void setup_image_view_ppu_info(struct NDS *this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
