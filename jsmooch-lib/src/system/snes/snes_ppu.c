@@ -61,7 +61,6 @@ static void write_oam(struct SNES *snes, struct SNES_PPU *this, u32 addr, u32 va
         printf("\nWARN OAM BAD WRITE TIME");
         return;
     }
-    printf("\nWRITE OAM %02x: %02x", addr, val);
     this->OAM[addr % 0x220] = val;
 }
 
@@ -957,8 +956,8 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
         u32 character_y = (((tn >> 4) + (sp_line >> 3)) & 15) << 4;
 
         for (u32 n = 0; n < num_h_tiles; n++) {
-            u32 block_x = n ^ tile_xxor;
             if (tile_limit < 1) return;
+            u32 block_x = n ^ tile_xxor;
             u32 addr = tile_addr + ((character_y + (character_x + block_x & 15)) << 4);
             addr = (addr & 0x7FF0) + tile_y;
             u32 data = this->VRAM[addr] | (this->VRAM[(addr + 8) & 0x7FFF]) << 16;
@@ -1128,7 +1127,7 @@ static u32 hdma_setup_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
     if (!ch->hdma_enable) return 0;
 
     ch->dma_enable = 0; // Stomp on DMA if HDMA runs
-    ch->hdma_enable = ch->source_address;
+    ch->hdma_address = ch->source_address;
     ch->line_counter = 0;
     return SNES_hdma_reload_ch(snes, ch);
 }

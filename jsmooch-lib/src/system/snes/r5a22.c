@@ -108,7 +108,6 @@ static void dma_reg_write(struct SNES *snes, u32 addr, u32 val)
             return;
         case 0x4303:
             ch->source_address = (val << 8) | (ch->source_address & 0xFF);
-            if (cnum == 7) printf("\nSET DMA%d SRC ADDR %04x", cnum, ch->source_address);
             return;
         case 0x4304:
             ch->source_bank = val;
@@ -186,7 +185,7 @@ static void dma_start(struct SNES *snes)
     struct R5A22 *this = &snes->r5a22;
     for (u32 n = 0; n < 8; n++) {
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
-        if (ch->dma_enable) printf("\nDMA%d ENABLE:%d SRC:%04x SZ:%d", n, ch->dma_enable, ch->source_address, ch->transfer_size);
+        //if (ch->dma_enable) printf("\nDMA%d ENABLE:%d SRC:%04x SZ:%d", n, ch->dma_enable, ch->source_address, ch->transfer_size);
         ch->index = 0;
     }
 }
@@ -531,6 +530,7 @@ static void hdma_transfer_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
 
 static void hdma_advance_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
 {
+    if (!(ch->hdma_enable && !ch->hdma_completed)) return;
     ch->line_counter--;
     ch->hdma_do_transfer = (ch->line_counter & 0x80) >> 7;
     SNES_hdma_reload_ch(snes, ch);
