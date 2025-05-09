@@ -532,7 +532,7 @@ static u32 dma_run(struct SNES *snes)
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
         if (ch->hdma_enable && !ch->hdma_completed) {
             hdma_transfer_ch(snes, ch);
-            any_going++;
+            //any_going++;
             hdma_advance_ch(snes, ch);
         }
         else if (ch->dma_enable) {

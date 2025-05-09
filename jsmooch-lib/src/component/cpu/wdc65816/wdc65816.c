@@ -113,7 +113,7 @@ void WDC65816_cycle(struct WDC65816* this)
     if (this->regs.STP) return;
 
     this->regs.TCU++;
-    if (this->regs.TCU == 1) {
+    if ((this->regs.TCU == 1) || (this->regs.WAI)) {
         if (this->regs.interrupt_pending) {
             if (this->regs.NMI_pending) {
                 this->regs.NMI_pending = 0;

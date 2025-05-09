@@ -874,10 +874,88 @@ static void color_math(struct SNES_PPU *this, struct SNES_PPU_px *main, struct S
     main->color = mr | (mg << 5) | (mb << 10);
 }
 
-static void draw_sprite_line(struct SNES *snes)
+static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
 {
     struct SNES_PPU *this = &snes->ppu;
     memset(this->obj.line, 0, sizeof(this->obj.line));
+
+    if (!this->obj.main_enable && !this->obj.sub_enable) return;
+    static const u32 spwidth[8][2] = { // [this->io.obj.sz][sprite_sz] }
+            {8, 16},
+            {8, 32},
+            {8, 64},
+            {16, 32},
+            {16, 64},
+            {32, 64},
+            {16, 32},
+            {16, 32}
+    };
+    static const u32 spheight[8][2] = {
+            {8, 16},
+            {8, 32},
+            {8, 64},
+            {16, 32},
+            {16, 64},
+            {32, 64},
+            {32, 64},
+            {32, 32}
+    };
+    u32 item_limit = 32;
+    u32 tile_limit = 34;
+    for (u32 mbn = 0; mbn < 0x80; mbn++) {
+        if ((item_limit < 1) || (tile_limit < 1)) return;
+        u32 sn = (mbn + this->obj.first) & 0x7F;
+
+
+        u32 oamaddr = 512 + (sn >> 2);
+        u32 bd = this->OAM[oamaddr] >> (2 * (sn & 3));
+        u32 obj_sz = (bd >> 1) & 1;
+        u32 height = spheight[this->io.obj.sz][obj_sz];
+        u32 width = spwidth[this->io.obj.sz][obj_sz];
+
+        oamaddr = sn << 2;
+        i32 sp_left_x = this->OAM[oamaddr++] | ((bd & 1) << 7);
+        i32 sp_right_x = sp_left_x + width - 1;
+        if (sp_left_x > 255) sp_left_x -= 512;
+        if (sp_right_x > 255) sp_right_x -= 512;
+        i32 sp_top_y = this->OAM[oamaddr++];
+        if (sp_top_y > 223) sp_top_y -= 256;
+
+        if ((sp_right_x) < 0) continue;
+        i32 sp_line = ppu_y - sp_top_y;
+        if ((sp_line < 0) || (sp_line > height)) continue;
+
+        item_limit--;
+
+        u32 tn = this->OAM[oamaddr++];
+        u32 attr = this->OAM[oamaddr];
+
+        // Determine if sprite is on this line...
+        u32 vflip = (attr >> 7) & 1;
+        u32 hflip = (attr >> 6) & 1;
+        u32 prio = (attr >> 4) & 3;
+        u32 pal = (attr >> 1) & 7;
+        tn |= (attr & 1) << 8;
+        u32 pal_offset = 128 + (pal << 4);
+        u32 num_h_tiles = width >> 3;
+        i32 sx = sp_left_x;
+
+
+        for (u32 n = 0; n < num_h_tiles; n++) {
+            if (tile_limit < 1) return;
+            for (u32 pxn = 0; pxn < 8; pxn++) {
+                if ((sx >= 0) && (sx < 256)) {
+                    struct SNES_PPU_px *px = &this->obj.line[sx];
+                    px->has = 1;
+                    px->priority = prio;
+                    px->color = 0x7FFF;
+                    px->palette = pal;
+                }
+                sx++;
+            }
+            tile_limit--;
+        }
+    }
 }
 
 #define SRC_BG1 0
@@ -892,7 +970,7 @@ static void draw_line(struct SNES *snes)
 {
     // Draw sprite line
     struct SNES_PPU *this = &snes->ppu;
-    draw_sprite_line(snes);
+    draw_sprite_line(snes, snes->clock.ppu.y);
     draw_bg_line(snes, 0, snes->clock.ppu.y);
     draw_bg_line(snes, 1, snes->clock.ppu.y);
     draw_bg_line(snes, 2, snes->clock.ppu.y);
@@ -924,7 +1002,7 @@ static void draw_line(struct SNES *snes)
             }
         }
         struct SNES_PPU_px *cmp = &this->obj.line[x];
-        if (this->obj.main_enable && cmp->has && (main_px.priority > cmp->priority)) {
+        if (this->obj.main_enable && this->obj.main_enable && cmp->has && (main_px.priority > cmp->priority)) {
             main_px.color = cmp->color;
             main_px.has = 1;
             main_px.priority = cmp->priority;
