@@ -204,6 +204,7 @@ static void dma_pending_setup(void *ptr, u64 key, u64 clock, u32 jitter)
 
 void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_block *bl)
 {
+    addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) { return dma_reg_write(snes, addr, val); return; }
     struct R5A22 *this = &snes->r5a22;
 
@@ -305,6 +306,7 @@ void R5A22_hblank(struct SNES *snes, u32 which)
 
 u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
+    addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) return dma_reg_read(snes, addr, old, has_effect );
     struct R5A22 *this = &snes->r5a22;
     u32 val;
