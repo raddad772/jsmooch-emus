@@ -718,7 +718,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
 
     u32 direct_color_mode = this->color_math.direct_color && source == 0 && (this->io.bg_mode == 3 || this->io.bg_mode == 4);
     u32 color_shift = 3 + bg->tile_mode;
-    u32 width = 256 << hires;
+    i32 width = 256 << hires;
     //console.log('RENDERING PPU y:', y, 'BG MODE', this->io.bg_mode);
 
     u32 tile_height = 3 + bg->io.tile_size;
@@ -733,7 +733,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
     u32 vscroll = bg->io.voffset;
     u32 hmask = (width << bg->io.tile_size << (bg->io.screen_size & 1)) - 1;
     u32 vmask = (width << bg->io.tile_size << ((bg->io.screen_size & 2) >> 1)) - 1;
-    printf("\nBG%d HSCROLL:%d VSCROLL:%d HMASK:%d VMASK:%d", source, hscroll, vscroll, hmask, vmask);
+    //if (snes->clock.ppu.y == 40 && source == 0) printf("\nHSCROLL:%d VSCROLL:%d", hscroll, vscroll);
 
     if (hires) {
         hscroll <<= 1;
