@@ -283,10 +283,10 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
         case 0x2106: {// MOSAIC
             u32 latchbit = this->bg[0].mosaic.enable | this->bg[1].mosaic.enable | this->bg[2].mosaic.enable |
                            this->bg[3].mosaic.enable;
-            this->bg[0].mosaic.enable = (val >> 0) & 1;
+            /*this->bg[0].mosaic.enable = (val >> 0) & 1;
             this->bg[1].mosaic.enable = (val >> 1) & 1;
             this->bg[2].mosaic.enable = (val >> 2) & 1;
-            this->bg[3].mosaic.enable = (val >> 3) & 1;
+            this->bg[3].mosaic.enable = (val >> 3) & 1;*/
             this->io.mosaic.size = ((val >> 4) & 15) + 1;
             if (!latchbit && (val & 15)) {
                 this->mosaic.counter = this->io.mosaic.size + 1;
@@ -731,8 +731,9 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
 
     u32 hscroll = bg->io.hoffset;
     u32 vscroll = bg->io.voffset;
-    u32 hmask = (width << bg->io.tile_size << (!!(bg->io.screen_size & 1))) - 1;
-    u32 vmask = (width << bg->io.tile_size << (!!(bg->io.screen_size & 2))) - 1;
+    u32 hmask = (width << bg->io.tile_size << (bg->io.screen_size & 1)) - 1;
+    u32 vmask = (width << bg->io.tile_size << ((bg->io.screen_size & 2) >> 1)) - 1;
+    printf("\nBG%d HSCROLL:%d VSCROLL:%d HMASK:%d VMASK:%d", source, hscroll, vscroll, hmask, vmask);
 
     if (hires) {
         hscroll <<= 1;
@@ -740,6 +741,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
         //if (this->io.interlace) y = y << 1 | +(cache.control.field && !bg.mosaic_enable);
     }
     if (bg->mosaic.enable) {
+        //printf("\nWHAT ENABLED?");
         y -= (this->io.mosaic.size - bg->mosaic.counter) << (hires && this->io.interlace);
     }
 
