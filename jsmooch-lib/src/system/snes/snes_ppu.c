@@ -977,10 +977,8 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
         //sp->x &= 511;
         sp_line &= 255;
 
-        //i32 px_xxor = hflip ? (width - 1) : 0;
         i32 tile_xxor = sp->hflip ? ((width >> 3) - 1) : 0;
         i32 in_sp_x = 0;
-        //u32 block_y = sp_line >> 3;
         u32 tile_y = sp_line & 7;
 
         u32 tile_addr = this->io.obj.tile_addr + sp->name_select_add;
@@ -994,8 +992,7 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
             addr = (addr & 0x7FF0) + tile_y;
             u32 data = this->VRAM[addr] | (this->VRAM[(addr + 8) & 0x7FFF]) << 16;
             for (u32 pxn = 0; pxn < 8; pxn++) {
-                i32 rx = sp->x + in_sp_x;// ^ px_xxor);
-                //i32 rx = sx + in_sp_x;
+                i32 rx = sp->x + in_sp_x;
                 if ((rx >= 0) && (rx < 256)) {
                     u32 mpx = sp->hflip ? pxn : 7 - pxn;
                     u32 color = (data >> mpx) & 1;
