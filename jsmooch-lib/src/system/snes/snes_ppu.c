@@ -1027,7 +1027,7 @@ static void draw_line(struct SNES *snes)
     // Draw sprite line
     struct SNES_PPU *this = &snes->ppu;
     //printf("\nDraw line %d", snes->clock.ppu.y);
-    if (snes->clock.ppu.y == 0 ) memset(&snes->dbg_info.line, 0, sizeof(snes->dbg_info.line));
+    if (snes->clock.ppu.y == 0) memset(&snes->dbg_info.line, 0, sizeof(snes->dbg_info.line));
 
     draw_sprite_line(snes, snes->clock.ppu.y);
     draw_bg_line(snes, 0, snes->clock.ppu.y);

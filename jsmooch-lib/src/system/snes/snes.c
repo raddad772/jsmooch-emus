@@ -2,15 +2,6 @@
 // Created by . on 2/11/25.
 //
 
-#include "snes.h"
-
-
-#define TAG_SCANLINE 1
-#define TAG_FRAME 2
-
-//
-// Created by . on 6/1/24.
-//
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -362,11 +353,11 @@ void SNESJ_describe_io(JSM, struct cvec *IOs)
     // controllers
     struct physical_io_device *c1 = cvec_push_back(this->jsm.IOs);
     struct physical_io_device *c2 = cvec_push_back(this->jsm.IOs);
-    //SNES_controller_6button_init(&this->controller1, &this->clock.master_cycle_count);
-    //SNES6_setup_pio(c1, 0, "Player 1", 1);
-    //SNES3_setup_pio(c2, 1, "Player 2", 0);
-    //this->controller1.pio = c1;
-    //this->controller2.pio = c2;
+    SNES_joypad_init(&this->controller1);
+    SNES_joypad_init(&this->controller2);
+    SNES_joypad_setup_pio(c1, 0, "Player 1", 1);
+    this->controller1.pio = c1;
+    this->controller2.pio = c2;
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -404,7 +395,7 @@ void SNESJ_describe_io(JSM, struct cvec *IOs)
     setup_audio(IOs);
 
     this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
-    //SNES_controllerport_connect(&this->io.controller_port1, SNES_controller_6button, &this->controller1);
+    SNES_controllerport_connect(&this->r5a22.controller_port[0], SNES_CK_standard, &this->controller1);
     //SNES_controllerport_connect(&this->io.controller_port2, SNES_controller_3button, &this->controller2);
 }
 

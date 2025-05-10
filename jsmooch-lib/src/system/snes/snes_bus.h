@@ -13,7 +13,7 @@
 #include "component/cpu/spc700/spc700.h"
 #include "helpers/scheduler.h"
 #include "helpers/sys_interface.h"
-
+#include "component/controller/snes/snes_joypad.h"
 
 #include "snes.h"
 #include "snes_clock.h"
@@ -38,6 +38,8 @@ struct SNES {
     struct SNES_clock clock;
     struct SNES_cart cart;
     struct SNES_PPU ppu;
+
+    struct SNES_joypad controller1, controller2;
 
     struct SNES_mem mem;
 

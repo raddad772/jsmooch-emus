@@ -6,9 +6,11 @@
 #define JSMOOCH_EMUS_R5A22_H
 #include "helpers/int.h"
 #include "component/cpu/wdc65816/wdc65816.h"
+#include "snes_controller_port.h"
 
 struct R5A22 {
     struct WDC65816 cpu;
+    struct SNES_controller_port controller_port[2];
     u32 ROMspeed;
 
     struct {

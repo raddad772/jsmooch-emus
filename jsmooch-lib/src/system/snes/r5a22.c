@@ -210,7 +210,8 @@ void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_bl
 
     switch(addr) {
         case 0x4016:
-            // TODO: controller latch;
+            SNES_controllerport_latch(snes, 0, 0);
+            SNES_controllerport_latch(snes, 1, 0);
             break;
         case 0x4200: // IRQ control
             this->io.auto_joypad_poll = val & 1;
@@ -313,9 +314,9 @@ u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct 
 
     switch(addr) {
         case 0x4016: // controller 1 data
-            return 0xFF;
+            return SNES_controllerport_data(snes, 0);
         case 0x4017: // controller 2 data
-            return 0xFF;
+            return SNES_controllerport_data(snes, 1);
         case 0x4210: // NMI/version read
             val = old & 0x70;
             val |= this->status.nmi_flag << 7;
@@ -569,7 +570,47 @@ void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
     cycle_alu(snes);
 }
 
+static void auto_joypad_edge(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct SNES *snes = (struct SNES *)ptr;
+    struct R5A22 *this = &snes->r5a22;
+    u64 cur = clock - jitter;
+
+    scheduler_only_add_abs(&snes->scheduler, cur + 128, 0, snes, &auto_joypad_edge, NULL);
+
+    if (!this->io.auto_joypad_poll) return;
+    u64 hcounter = (cur - snes->clock.ppu.scanline_start) >> 2;
+    if ((snes->clock.ppu.y == 223) && (hcounter >= 130) && (hcounter <= 256)) {
+        this->status.auto_joypad_counter = 0;
+    }
+    if (this->status.auto_joypad_counter >= 33) return;
+
+    if (this->status.auto_joypad_counter == 0) {
+        SNES_controllerport_latch(snes, 0, 1);
+        SNES_controllerport_latch(snes, 1, 1);
+    }
+
+    if (this->status.auto_joypad_counter == 1) {
+        SNES_controllerport_latch(snes, 0, 0);
+        SNES_controllerport_latch(snes, 1, 0);
+
+        this->io.joy1 = this->io.joy2 = this->io.joy3 = this->io.joy4 = 0;
+    }
+
+    if (this->status.auto_joypad_counter >= 2 && (!(this->status.auto_joypad_counter & 1))) {
+        u32 p0 = SNES_controllerport_data(snes, 0);
+        u32 p1 = SNES_controllerport_data(snes, 1);
+
+        this->io.joy1 = ((this->io.joy1 << 1) | (p0 & 1)) & 0xFFFF;
+        this->io.joy2 = ((this->io.joy2 << 1) | (p1 & 1)) & 0xFFFF;
+        this->io.joy3 = ((this->io.joy3 << 1) | ((p0 >> 1) & 1)) & 0xFFFF;
+        this->io.joy4 = ((this->io.joy4 << 1) | ((p1 >> 1) & 1)) & 0xFFFF;
+    }
+    this->status.auto_joypad_counter++;
+
+}
+
 void R5A22_schedule_first(struct SNES *snes)
 {
-    //scheduler_only_add_abs(&snes->scheduler, 8, 0, snes, &R5A22_cycle, NULL);
+    scheduler_only_add_abs(&snes->scheduler, 128, 0, snes, &auto_joypad_edge, NULL);
 }
