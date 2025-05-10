@@ -41,6 +41,15 @@ struct SNES_PPU {
         u32 priority[4];
         u32 range_overflow, time_overflow;
         struct SNES_PPU_px line[256];
+
+        struct SNES_PPU_sprite {
+            i32 x, y;
+            u32 tile_num;
+            u32 name_select_add;
+            u32 hflip, vflip;
+            u32 priority, palette, pal_offset;
+            u32 size;
+        } items[128];
     } obj;
 
     struct {
