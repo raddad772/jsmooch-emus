@@ -2251,6 +2251,7 @@ function WDC_generate_instruction_function(indent, opcode_info, E, M, X) {
             ag.addl('regs.STP = true;');
             break;
         case WDC_AM.Id: // WAI
+            ag.addcycle(1);
             ag.addl('regs.WAI = 1;');
             ag.addcycle(2);
             ag.addl('if (regs.WAI) {');
@@ -2259,7 +2260,6 @@ function WDC_generate_instruction_function(indent, opcode_info, E, M, X) {
             ag.addl('}');
             ag.addr_to_PC();
             ag.RPDV(0, 0, 0, 0);
-            ag.addl('if (!regs.IRQ_pending && !regs.NMI_pending) regs.TCU--;')
             ag.addcycle(3);
             ag.addl('regs.PC = (regs.PC + 1) & 0xFFFF;');
             break;

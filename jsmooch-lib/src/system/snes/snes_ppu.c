@@ -267,6 +267,7 @@ static void update_video_mode(struct SNES_PPU *this)
 }
 
 void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_block *bl) {
+    addr &= 0xFFFF;
     u32 addre;
     struct SNES_PPU *this = &snes->ppu;
     if (addr >= 0x2140 && addr < 0x217F) { return SNES_APU_write(snes, addr, val); }
@@ -595,7 +596,7 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
     static int num = 0;
     num++;
     if (num == 10) {
-        dbg_break("PPU WRITE TOOMANYBAD", snes->clock.master_cycle_count);
+        //dbg_break("PPU WRITE TOOMANYBAD", snes->clock.master_cycle_count);
     }
 }
 
@@ -606,6 +607,7 @@ static u32 mode7_mul(struct SNES_PPU *this)
 
 u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
+    addr &= 0xFFFF;
     struct SNES_PPU *this = &snes->ppu;
     if (addr >= 0x2140 && addr < 0x217F) { return SNES_APU_read(snes, addr, old, has_effect); }
     u32 result;
@@ -1035,9 +1037,9 @@ static void draw_line(struct SNES *snes)
     draw_bg_line(snes, 2, snes->clock.ppu.y);
     draw_bg_line(snes, 3, snes->clock.ppu.y);
     for (u32 i = 0; i < 4; i++) {
-        memcpy(snes->dbg_info.line[snes->clock.ppu.y].bg[i].px, this->bg[i].line, sizeof(this->bg[i].line));
+        //memcpy(snes->dbg_info.line[snes->clock.ppu.y].bg[i].px, this->bg[i].line, sizeof(this->bg[i].line));
     }
-    memcpy(snes->dbg_info.line[snes->clock.ppu.y].sprite_px, this->obj.line, sizeof(this->obj.line));
+    //memcpy(snes->dbg_info.line[snes->clock.ppu.y].sprite_px, this->obj.line, sizeof(this->obj.line));
     u16 *line_output = this->cur_output + (snes->clock.ppu.y * 512);
     for (u32 x = 0; x < 256; x++) {
         struct SNES_PPU_px main_px = {.source=SRC_BACK};

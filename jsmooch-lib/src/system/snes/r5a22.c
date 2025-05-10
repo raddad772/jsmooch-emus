@@ -252,7 +252,7 @@ void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_bl
         case 0x4016:
             SNES_controllerport_latch(snes, 0, 0);
             SNES_controllerport_latch(snes, 1, 0);
-            break;
+            return;
         case 0x4200: {// IRQ control
             u32 old_joypad_poll = this->io.auto_joypad_poll;
             this->io.auto_joypad_poll = val & 1;
@@ -411,6 +411,7 @@ u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct 
             return ((this->io.joy4) >> 8) & 0xFF;
     }
     printf("\nR5A22 MISS READ TO %06x", addr);
+    dbg_break("R5A22 MISS READ", snes->clock.master_cycle_count);
     return 0;
 }
 

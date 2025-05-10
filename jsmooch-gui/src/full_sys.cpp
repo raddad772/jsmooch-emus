@@ -877,7 +877,9 @@ void full_system::load_default_ROM()
 
             break;
         case SYS_SNES:
-            worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // works!
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

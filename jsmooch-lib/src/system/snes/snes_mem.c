@@ -18,8 +18,8 @@ static u32 read_bad(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct
     printf("\nWARN BAD READ %06x", addr);
     static int num = 0;
     num++;
-    if (num > 100) {
-        //dbg_break("BECAUSE", this->clock.master_cycle_count);
+    if (num > 0) {
+//        dbg_break("BECAUSE", this->clock.master_cycle_count);
     }
     return old;
 }
@@ -43,12 +43,12 @@ void SNES_mem_init(struct SNES *this)
 //typedef u32 (*SNES_memmap_read)(struct SNES *, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl);
 static void write_WRAM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
 {
-    this->mem.WRAM[(addr & 0xFFF) + bl->offset] = val;
+    this->mem.WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF] = val;
 }
 
 static u32 read_WRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
-    return this->mem.WRAM[(addr & 0xFFF) + bl->offset];
+    return this->mem.WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF];
 }
 
 static void write_loROM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
@@ -62,21 +62,20 @@ static void write_loROM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap
 
 static u32 read_loROM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
-    addr = ((addr & 0xFFF) + bl->offset) & (this->cart.ROM.size - 1);
+    addr = ((addr & 0xFFF) + bl->offset) % this->cart.ROM.size;
     return ((u8 *)this->cart.ROM.ptr)[addr];
 }
 
 static void write_SRAM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
 {
-    ((u8 *)this->cart.SRAM->data)[addr & this->cart.header.sram_mask] = val;
+    ((u8 *)this->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & this->cart.header.sram_mask] = val;
     this->cart.SRAM->dirty = 1;
 }
 
 static u32 read_SRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
-    return ((u8 *)this->cart.SRAM->data)[addr & this->cart.header.sram_mask];
+    return ((u8 *)this->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & this->cart.header.sram_mask];
 }
-
 
 static void map_generic(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset, enum SMB_kind kind, SNES_memmap_read rfunc, SNES_memmap_write wfunc) {
     for (u32 c = bank_start; c <= bank_end; c++) {

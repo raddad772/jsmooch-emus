@@ -88,6 +88,7 @@ static void advance_timers(struct SPC700 *this, i32 cycles)
                 this->timers[2].counter = 0;
                 this->timers[2].out = (this->timers[2].out + 1) & 15;
             }
+            this->timers[2].divider -= 16;
         }
     }
 }

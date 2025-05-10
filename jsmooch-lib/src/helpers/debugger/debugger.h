@@ -17,7 +17,7 @@ extern "C" {
 #include "helpers/jsm_string.h"
 
 #define MAX_DBGLOG_IDS 200
-#define MAX_DBGLOG_LINES 1000
+#define MAX_DBGLOG_LINES 100000
 
 #define TRACEC_WHITE 0
 #define TRACEC_DEFAULT TRACEC_WHITE

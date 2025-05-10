@@ -20,6 +20,11 @@ to an IRQB input.
 
 extern WDC65816_ins_func wdc65816_decoded_opcodes[5][0x104];
 
+static void eval_WAI(struct WDC65816 *this)
+{
+    if (this->regs.interrupt_pending) this->regs.WAI = 0;
+}
+
 void WDC65816_set_IRQ_level(struct WDC65816 *this, u32 level)
 {
     this->regs.IRQ_pending = level;
@@ -27,6 +32,7 @@ void WDC65816_set_IRQ_level(struct WDC65816 *this, u32 level)
         this->regs.interrupt_pending = 1;
     else
         this->regs.interrupt_pending = this->regs.NMI_pending;
+    eval_WAI(this);
 }
 
 void WDC65816_set_NMI_level(struct WDC65816 *this, u32 level)
@@ -36,6 +42,7 @@ void WDC65816_set_NMI_level(struct WDC65816 *this, u32 level)
         this->regs.interrupt_pending = 1;
     }
     this->regs.NMI_old = level;
+    eval_WAI(this);
 }
 
 static WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
@@ -52,12 +59,13 @@ static WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
 
 static void pprint_context(struct WDC65816 *this, struct jsm_string *out)
 {
-    jsm_string_sprintf(out, "%c%c  A:%04x  D:%04x  X:%04x  Y:%04x  DBR:%02x  PBR:%02x  P:%c%c%c%c%c%c",
+    jsm_string_sprintf(out, "%c%c  A:%04x  D:%04x  X:%04x  Y:%04x  DBR:%02x  PBR:%02x  S:%04x, P:%c%c%c%c%c%c",
         this->regs.P.M ? 'M' : 'm',
         this->regs.P.X ? 'X' : 'x',
         this->regs.C, this->regs.D,
         this->regs.X, this->regs.Y,
         this->regs.DBR, this->regs.PBR,
+        this->regs.S,
         this->regs.P.C ? 'C' : 'c',
         this->regs.P.Z ? 'Z' : 'z',
         this->regs.P.I ? 'I' : 'i',
@@ -108,34 +116,37 @@ static void wdc_trace_format(struct WDC65816 *this)
     }
 }
 
+static void irqdump(struct WDC65816 *this, u32 nmi)
+{
+    printf("\nAT %s. PC:%06x  D:%04x  X:%04x  Y:%04x  S:%04x  E:%d  WAI:%d  cyc:%lld", nmi ? "NMI" : "IRQ", (this->regs.PBR << 16) | this->regs.PC, this->regs.D, this->regs.X, this->regs.Y, this->regs.S, this->regs.E, this->regs.WAI, *this->master_clock);
+}
+
 void WDC65816_cycle(struct WDC65816* this)
 {
     if (this->regs.STP) return;
 
     this->regs.TCU++;
-    if ((this->regs.TCU == 1) || (this->regs.WAI)) {
-        if (this->regs.interrupt_pending) {
+    if (this->regs.TCU == 1) {
+        if (this->regs.NMI_pending || (this->regs.IRQ_pending && !this->regs.P.I)) {
             if (this->regs.NMI_pending) {
                 this->regs.NMI_pending = 0;
                 this->regs.IR = WDC65816_OP_NMI;
+                //irqdump(this, 1);
                 this->regs.interrupt_pending = this->regs.IRQ_pending;
             }
             else if (this->regs.IRQ_pending) {
-                if (this->regs.P.I) { // If interrupts are disabled...
-                    if (this->regs.WAI) { // Just resume next instruction if WAI ing
-                        printf("\nWAI exit because IRQ with I=1!");
-                        this->regs.WAI = 0;
-                    }
-                    // Here: IRQ is pending, IRQs are disabled, and not in WAI state. So do nothing here
-                }
-                else {
-                    this->regs.IR = WDC65816_OP_IRQ;
-                }
+                this->regs.IR = WDC65816_OP_IRQ;
+                //irqdump(this, 0);
             }
+            this->regs.WAI = 0;
         }
         else {
             this->trace.ins_PC = (this->pins.BA << 16) | this->pins.Addr;
             this->regs.IR = this->pins.D;
+            if ((this->regs.IR == 0) || ((this->trace.ins_PC >= 0x003113) && (this->trace.ins_PC < 0x003cff))) {
+                printf("\nCRAP!");
+                dbg_break("IR=0", *this->master_clock);
+            }
         }
         this->regs.old_I = this->regs.P.I;
         this->ins = get_decoded_opcode(this);

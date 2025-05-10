@@ -8688,21 +8688,22 @@ static void WDC65816_opcode_CA_mx(struct WDC65816_regs *regs, struct WDC65816_pi
 static void WDC65816_opcode_CB_mx(struct WDC65816_regs *regs, struct WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=0 X=0
+            case 1: // 1
         regs->WAI = 1;
-            case 1: // 2
+                break;
+            case 2: // 2
         if (regs->WAI) {
             regs->TCU--;
             break;
         }
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         pins->PDV = 0;
-        if (!regs->IRQ_pending && !regs->NMI_pending) regs->TCU--;
                 break;
-            case 2: // 3
+            case 3: // 3
         regs->PC = (regs->PC + 1) & 0xFFFF;
         // Following is auto-generated code for instruction finish
                 break;
-            case 3: // cleanup
+            case 4: // cleanup
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         regs->PC = (regs->PC + 1) & 0xFFFF;
         pins->PDV = 1;
@@ -19435,21 +19436,22 @@ static void WDC65816_opcode_CA_Mx(struct WDC65816_regs *regs, struct WDC65816_pi
 static void WDC65816_opcode_CB_Mx(struct WDC65816_regs *regs, struct WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=1 X=0
+            case 1: // 1
         regs->WAI = 1;
-            case 1: // 2
+                break;
+            case 2: // 2
         if (regs->WAI) {
             regs->TCU--;
             break;
         }
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         pins->PDV = 0;
-        if (!regs->IRQ_pending && !regs->NMI_pending) regs->TCU--;
                 break;
-            case 2: // 3
+            case 3: // 3
         regs->PC = (regs->PC + 1) & 0xFFFF;
         // Following is auto-generated code for instruction finish
                 break;
-            case 3: // cleanup
+            case 4: // cleanup
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         regs->PC = (regs->PC + 1) & 0xFFFF;
         pins->PDV = 1;
@@ -30508,21 +30510,22 @@ static void WDC65816_opcode_CA_mX(struct WDC65816_regs *regs, struct WDC65816_pi
 static void WDC65816_opcode_CB_mX(struct WDC65816_regs *regs, struct WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=0 X=1
+            case 1: // 1
         regs->WAI = 1;
-            case 1: // 2
+                break;
+            case 2: // 2
         if (regs->WAI) {
             regs->TCU--;
             break;
         }
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         pins->PDV = 0;
-        if (!regs->IRQ_pending && !regs->NMI_pending) regs->TCU--;
                 break;
-            case 2: // 3
+            case 3: // 3
         regs->PC = (regs->PC + 1) & 0xFFFF;
         // Following is auto-generated code for instruction finish
                 break;
-            case 3: // cleanup
+            case 4: // cleanup
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         regs->PC = (regs->PC + 1) & 0xFFFF;
         pins->PDV = 1;
@@ -41180,21 +41183,22 @@ static void WDC65816_opcode_CA_MX(struct WDC65816_regs *regs, struct WDC65816_pi
 static void WDC65816_opcode_CB_MX(struct WDC65816_regs *regs, struct WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=0 M=1 X=1
+            case 1: // 1
         regs->WAI = 1;
-            case 1: // 2
+                break;
+            case 2: // 2
         if (regs->WAI) {
             regs->TCU--;
             break;
         }
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         pins->PDV = 0;
-        if (!regs->IRQ_pending && !regs->NMI_pending) regs->TCU--;
                 break;
-            case 2: // 3
+            case 3: // 3
         regs->PC = (regs->PC + 1) & 0xFFFF;
         // Following is auto-generated code for instruction finish
                 break;
-            case 3: // cleanup
+            case 4: // cleanup
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         regs->PC = (regs->PC + 1) & 0xFFFF;
         pins->PDV = 1;
@@ -51608,21 +51612,22 @@ static void WDC65816_opcode_CA_E(struct WDC65816_regs *regs, struct WDC65816_pin
 static void WDC65816_opcode_CB_E(struct WDC65816_regs *regs, struct WDC65816_pins *pins) { // WAI i
         switch(regs->TCU) {
         // WAI i E=1 M=0 X=0
+            case 1: // 1
         regs->WAI = 1;
-            case 1: // 2
+                break;
+            case 2: // 2
         if (regs->WAI) {
             regs->TCU--;
             break;
         }
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         pins->PDV = 0;
-        if (!regs->IRQ_pending && !regs->NMI_pending) regs->TCU--;
                 break;
-            case 2: // 3
+            case 3: // 3
         regs->PC = (regs->PC + 1) & 0xFFFF;
         // Following is auto-generated code for instruction finish
                 break;
-            case 3: // cleanup
+            case 4: // cleanup
         pins->Addr = regs->PC; pins->BA = regs->PBR;
         regs->PC = (regs->PC + 1) & 0xFFFF;
         pins->PDV = 1;
