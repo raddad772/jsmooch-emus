@@ -83,6 +83,7 @@ u32 SNES_cart_load_ROM_from_RAM(struct SNES* this, char* fil, u64 fil_sz, struct
             break;
     }
     this->cart.header.sram_size = (1 << this->cart.header.sram_sizebit) * 1024;
+    this->cart.header.sram_mask = this->cart.header.sram_size - 1;
     printf("\nInternal name %s", this->cart.header.internal_name);
     printf("\nSRAM size %d bytes", this->cart.header.sram_size);
 

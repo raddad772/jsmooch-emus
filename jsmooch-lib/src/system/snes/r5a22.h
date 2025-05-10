@@ -16,7 +16,11 @@ struct R5A22 {
     struct {
         u32 dma_pending, hdma_pending, dma_running, hdma_running, dma_active;
         u32 irq_line, hirq_line;
-        u32 auto_joypad_counter;
+        struct {
+            u32 counter;
+            u64 sch_id;
+            u32 still_sched;
+        } auto_joypad;
 
         u32 nmi_flag;
         u32 irq_flag;

@@ -68,15 +68,14 @@ static u32 read_loROM(struct SNES *this, u32 addr, u32 old, u32 has_effect, stru
 
 static void write_SRAM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
 {
-    printf("\nWARN SRAM WRITE NOT IN");
+    ((u8 *)this->cart.SRAM->data)[addr & this->cart.header.sram_mask] = val;
+    this->cart.SRAM->dirty = 1;
 }
 
 static u32 read_SRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
-    printf("\nWARN SRAM READ NOT IN");
-    return 0;
+    return ((u8 *)this->cart.SRAM->data)[addr & this->cart.header.sram_mask];
 }
-
 
 
 static void map_generic(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset, enum SMB_kind kind, SNES_memmap_read rfunc, SNES_memmap_write wfunc) {

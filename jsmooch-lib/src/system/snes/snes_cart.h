@@ -16,6 +16,7 @@ struct SNES_cart {
         u32 version;
         u32 hi_speed;
         u32 rom_size, sram_size;
+        u32 sram_mask;
         u32 rom_sizebit, sram_sizebit;
         char internal_name[21];
         u32 lorom, hirom;
