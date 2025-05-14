@@ -379,7 +379,8 @@ u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct 
             if (has_effect) this->status.irq_flag = 0;
             return val;
         case 0x4212:
-            val = this->io.auto_joypad_poll && this->status.auto_joypad.counter < 33;
+            val = old & 0x3E;
+            val |= this->io.auto_joypad_poll && this->status.auto_joypad.counter < 33;
             val |= snes->clock.ppu.hblank_active << 6;
             val |= snes->clock.ppu.vblank_active << 7;
             return val;
@@ -467,13 +468,22 @@ static void cycle_cpu(struct SNES *snes)
     snes->clock.cpu.divider = this->cpu.pins.PDV ? mem_timing(cpu_addr, this->ROMspeed) : 6;
     if (this->cpu.pins.PDV) { // Read/write. THIS ONLY WORKS FOR PDV MODE not expanded pins
         if (this->cpu.pins.RW) { // Write
-            dbgloglog(snes, SNES_CAT_WDC_WRITE, DBGLS_INFO, "%06x   (write) %02x", cpu_addr, this->cpu.pins.D);
-
+            //if (((cpu_addr & 0xFFFF) >= 0x2140) && ((cpu_addr & 0xFFFF) < 0x2144)) {
+             //   dbgloglog(snes, SNES_CAT_WDC_WRITE, DBGLS_INFO, "%06x   (write MAIL%d) %02x", cpu_addr, cpu_addr & 3, this->cpu.pins.D);
+            //}
+            //else {
+                dbgloglog(snes, SNES_CAT_WDC_WRITE, DBGLS_INFO, "%06x   (write) %02x", cpu_addr, this->cpu.pins.D);
+            //}
             SNES_wdc65816_write(snes, cpu_addr, this->cpu.pins.D);
         }
         else { // Read
             this->cpu.pins.D = SNES_wdc65816_read(snes, cpu_addr, this->cpu.pins.D, 1);
-            dbgloglog(snes, SNES_CAT_WDC_READ, DBGLS_INFO, "%06x   (read) %02x", cpu_addr, this->cpu.pins.D);
+            //if (((cpu_addr & 0xFFFF) >= 0x2140) && ((cpu_addr & 0xFFFF) < 0x2144)) {
+            //    dbgloglog(snes, SNES_CAT_WDC_READ, DBGLS_INFO, "%06x   (read MAIL%d) %02x", cpu_addr, cpu_addr & 3, this->cpu.pins.D);
+            //}
+            //else {
+                dbgloglog(snes, SNES_CAT_WDC_READ, DBGLS_INFO, "%06x   (read) %02x", cpu_addr, this->cpu.pins.D);
+            //}
         }
     }
 }

@@ -960,11 +960,11 @@ class WDC_switchgen {
         this.addl('regs.PBR = 0;');
         this.SETX8();
         this.SETM8();
-        this.addl('regs.S = (regs.S & 0xFF) | 0x100;');
         this.addl('regs.E = 1;');
-        this.addl('regs.P.M = regs.P.X = regs.P.I = regs.P.C = 1;');
+        this.addl('regs.P.M = regs.P.X = regs.P.I = 1; regs.P.C = 0;');
         this.addl('regs.P.D = 0;');
         this.addl('regs.STP = regs.WAI = false;');
+        this.addl('regs.S = 0x1FF;');
 
         this.addcycle(8);
         this.addl('regs.PC = pins.D;')

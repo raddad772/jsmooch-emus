@@ -129,7 +129,8 @@ void dbg_flush()
 #endif
 #ifdef DBG_LOG_TO_FILE
     char fpath[250];
-    construct_path(fpath, sizeof(fpath), "r3000.txt");
+    printf("\nOUTPUTTING...");
+    construct_path(fpath, sizeof(fpath), "my_cpu.txt");
     if (dbg.first_flush) {
         dbg.first_flush = 0;
         remove(fpath);
@@ -138,6 +139,7 @@ void dbg_flush()
     fprintf(w, "%s", dbg.msg.ptr);
     fflush(w);
     fclose(w);
+    dbg_break("DID IT!", 0);
 #endif
     dbg_clear_msg();
 }

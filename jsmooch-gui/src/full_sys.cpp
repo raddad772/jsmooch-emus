@@ -878,8 +878,9 @@ void full_system::load_default_ROM()
             break;
         case SYS_SNES:
             //worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works! sprite issues
+            worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // nowork
+            //worked = grab_ROM(&ROMs, which, "run_saber.sfc", nullptr); //
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
@@ -1525,7 +1526,7 @@ void full_system::do_frame() {
             if (b && sys->set_audiobuf) audio.commit_emu_buffer();
         }
         sys->get_framevars(sys, &fv);
-        dbg_flush();
+        //dbg_flush();
         sync_persistent_storage();
         //TODO: here
     }

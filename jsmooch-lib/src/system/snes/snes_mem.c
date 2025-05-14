@@ -62,8 +62,8 @@ static void write_loROM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap
 
 static u32 read_loROM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
-    addr = ((addr & 0xFFF) + bl->offset) % this->cart.ROM.size;
-    return ((u8 *)this->cart.ROM.ptr)[addr];
+    u32 maddr = ((addr & 0xFFF) + bl->offset) % this->cart.ROM.size;
+    return ((u8 *)this->cart.ROM.ptr)[maddr];
 }
 
 static void write_SRAM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
@@ -97,6 +97,7 @@ static void map_loram(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_
 static void map_lorom(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
 {
     u32 offset = 0;
+    printf("\nROMsize: %06x", this->mem.ROMSize);
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
@@ -171,11 +172,17 @@ static void setup_mem_map_lorom(struct SNES *this)
     printf("\nMEM MAPPING!");
 
     sys_map(this);
-
-    map_lorom(this, 0x00, 0x3F, 0x8000, 0xFFFF);
-    map_lorom(this, 0x40, 0x7F, 0x8000, 0xFFFF);
-    map_lorom(this, 0x80, 0xBF, 0x8000, 0xFFFF);
-    map_lorom(this, 0xC0, 0xFF, 0x8000, 0xFFFF);
+    if (this->mem.ROMSize > (2 * 1024 * 1024)) {
+        printf("\nBLROM MAPPING!");
+        map_lorom(this, 0x00, 0x7F, 0x8000, 0xFFFF);
+        map_lorom(this, 0x80, 0xFF, 0x8000, 0xFFFF);
+    }
+    else {
+        map_lorom(this, 0x00, 0x3F, 0x8000, 0xFFFF);
+        map_lorom(this, 0x40, 0x7F, 0x8000, 0xFFFF);
+        map_lorom(this, 0x80, 0xBF, 0x8000, 0xFFFF);
+        map_lorom(this, 0xC0, 0xFF, 0x8000, 0xFFFF);
+    }
 
     map_lorom_sram(this);
     map_loram(this, 0x00, 0x3F, 0x0000, 0x1FFF, 0);

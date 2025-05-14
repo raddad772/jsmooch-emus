@@ -11204,11 +11204,11 @@ static void WDC65816_opcode_100_mx(struct WDC65816_regs *regs, struct WDC65816_p
         regs->PBR = 0;
         regs->X &= 0xFF;
         regs->Y &= 0xFF;
-        regs->S = (regs->S & 0xFF) | 0x100;
         regs->E = 1;
-        regs->P.M = regs->P.X = regs->P.I = regs->P.C = 1;
+        regs->P.M = regs->P.X = regs->P.I = 1; regs->P.C = 0;
         regs->P.D = 0;
         regs->STP = regs->WAI = 0;
+        regs->S = 0x1FF;
                 break;
             case 6: // 8
         regs->PC = pins->D;
@@ -21705,11 +21705,11 @@ static void WDC65816_opcode_100_Mx(struct WDC65816_regs *regs, struct WDC65816_p
         regs->PBR = 0;
         regs->X &= 0xFF;
         regs->Y &= 0xFF;
-        regs->S = (regs->S & 0xFF) | 0x100;
         regs->E = 1;
-        regs->P.M = regs->P.X = regs->P.I = regs->P.C = 1;
+        regs->P.M = regs->P.X = regs->P.I = 1; regs->P.C = 0;
         regs->P.D = 0;
         regs->STP = regs->WAI = 0;
+        regs->S = 0x1FF;
                 break;
             case 6: // 8
         regs->PC = pins->D;
@@ -33007,11 +33007,11 @@ static void WDC65816_opcode_100_mX(struct WDC65816_regs *regs, struct WDC65816_p
         regs->PBR = 0;
         regs->X &= 0xFF;
         regs->Y &= 0xFF;
-        regs->S = (regs->S & 0xFF) | 0x100;
         regs->E = 1;
-        regs->P.M = regs->P.X = regs->P.I = regs->P.C = 1;
+        regs->P.M = regs->P.X = regs->P.I = 1; regs->P.C = 0;
         regs->P.D = 0;
         regs->STP = regs->WAI = 0;
+        regs->S = 0x1FF;
                 break;
             case 6: // 8
         regs->PC = pins->D;
@@ -43433,11 +43433,11 @@ static void WDC65816_opcode_100_MX(struct WDC65816_regs *regs, struct WDC65816_p
         regs->PBR = 0;
         regs->X &= 0xFF;
         regs->Y &= 0xFF;
-        regs->S = (regs->S & 0xFF) | 0x100;
         regs->E = 1;
-        regs->P.M = regs->P.X = regs->P.I = regs->P.C = 1;
+        regs->P.M = regs->P.X = regs->P.I = 1; regs->P.C = 0;
         regs->P.D = 0;
         regs->STP = regs->WAI = 0;
+        regs->S = 0x1FF;
                 break;
             case 6: // 8
         regs->PC = pins->D;
@@ -53873,11 +53873,11 @@ static void WDC65816_opcode_100_E(struct WDC65816_regs *regs, struct WDC65816_pi
         regs->PBR = 0;
         regs->X &= 0xFF;
         regs->Y &= 0xFF;
-        regs->S = (regs->S & 0xFF) | 0x100;
         regs->E = 1;
-        regs->P.M = regs->P.X = regs->P.I = regs->P.C = 1;
+        regs->P.M = regs->P.X = regs->P.I = 1; regs->P.C = 0;
         regs->P.D = 0;
         regs->STP = regs->WAI = 0;
+        regs->S = 0x1FF;
                 break;
             case 6: // 8
         regs->PC = pins->D;

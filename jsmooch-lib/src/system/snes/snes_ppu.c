@@ -87,7 +87,7 @@ static void write_oam(struct SNES *snes, struct SNES_PPU *this, u32 addr, u32 va
     }
     else {
         if (addr >= 544) {
-            printf("\nOVER 544 OAM!?");
+            printf("\nOVER 544 OAM!? %d", addr);
         }
         u32 n = (addr & 0x1F) << 2;
         snes->ppu.obj.items[n].x = (snes->ppu.obj.items[n].x & 0xFF) | ((val << 8) & 0x100);

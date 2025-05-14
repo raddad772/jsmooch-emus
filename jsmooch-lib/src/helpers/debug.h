@@ -18,6 +18,7 @@ extern "C" {
 //#define SH4_BRK 0x8c000100
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
+//#define SNES_LYCODER
 //#define LYCODER        // lycoder-format traces for easy winmerge
 //#define REICAST_DIFF
 

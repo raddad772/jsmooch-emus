@@ -40,11 +40,6 @@ u32 read_trace_wdc65816(void *ptr, u32 addr) {
     return SNES_wdc65816_read(this, addr, 0, 0);
 }
 
-u32 read_trace_spc700(void *ptr, u32 addr) {
-    struct SNES* this = (struct SNES*)ptr;
-    return SNES_spc700_read(this, addr, 0, 0);
-}
-
 static void setup_debug_waveform(struct debug_waveform *dw)
 {
     /*if (dw->samples_requested == 0) return;
@@ -153,8 +148,6 @@ void SNES_new(JSM)
     dt.read_trace = &read_trace_wdc65816;
     dt.ptr = (void*)this;
     R5A22_setup_tracing(&this->r5a22, &dt);
-
-    dt.read_trace = &read_trace_spc700;
 
     SPC700_setup_tracing(&this->apu.cpu, &dt);
 

@@ -6,6 +6,9 @@
 
 #include "snes_bus.h"
 
+//  ((0) + (4F * 8000)
+// ((addr & !0x8000) + (bank & !0x80) * 0x8000
+//  ((addr & 0x7FFF) + (bank & 0x7F) * 0x8000
 void SNES_APU_init(struct SNES *snes)
 {
     SPC700_init(&snes->apu.cpu, &snes->clock.master_cycle_count);
@@ -53,4 +56,6 @@ u32 SNES_APU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect)
 void SNES_APU_write(struct SNES *snes, u32 addr, u32 val)
 {
     snes->apu.cpu.io.CPUI[addr & 3] = val;
+    // APU (00F4) to CPU (0): AA
+    //printf("\nCPU (%04X) to APU (%d): %02X", addr & 0xFFFF, addr & 3, val);
 }
