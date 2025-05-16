@@ -23,7 +23,6 @@ struct SNES_PPU {
 
     u16 VRAM[0x8000];
     u16 CGRAM[256];
-    u8 OAM[544];
 
     struct SNES_PPU_WINDOW {
         u32 left, right;
@@ -45,7 +44,7 @@ struct SNES_PPU {
         struct SNES_PPU_sprite {
             i32 x, y;
             u32 tile_num;
-            u32 name_select_add;
+            u32 name_select, name_select_add;
             u32 hflip, vflip;
             u32 priority, palette, pal_offset;
             u32 size;

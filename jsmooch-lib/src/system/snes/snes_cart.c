@@ -70,7 +70,6 @@ u32 SNES_cart_load_ROM_from_RAM(struct SNES* this, char* fil, u64 fil_sz, struct
     if (this->cart.header.mapping_mode == 0x20) this->cart.header.lorom = 1;
     printf("\nLOROM? %d", this->cart.header.lorom);
     u32 num_address_lines = (u32)ceil(log2((double)fil_sz));
-    this->cart.header.bank_mask = (((1 << (num_address_lines - 16)) - 1) << 16) | 0xFFFF;
     switch(ver) {
         case 1:
             read_ver1_header(this);

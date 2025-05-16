@@ -70,10 +70,10 @@ struct SNES {
             MDBG_IMAGE_VIEW(tilemaps)
         DBG_IMAGE_VIEWS_END
 
-        DBG_WAVEFORM_START(apu)
+        DBG_WAVEFORM_START1
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(8)
-        DBG_WAVEFORM_END(psg)
+        DBG_WAVEFORM_END1
         DBG_LOG_VIEW
 
     DBG_END

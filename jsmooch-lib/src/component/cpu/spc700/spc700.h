@@ -54,10 +54,11 @@ struct SPC700 {
     struct SPC700_regs regs;
 
     void *read_ptr, *write_ptr;
-    u8 (*read_apu)(void *, u16 addr);
-    void (*write_apu)(void *, u16 addr, u8 val);
+    u8 (*read_dsp)(void *, u16 addr);
+    void (*write_dsp)(void *, u16 addr, u8 val);
 
     u64 *clock;
+    u64 int_clock;
 
     i32 cycles;
     u32 WAI, STP;

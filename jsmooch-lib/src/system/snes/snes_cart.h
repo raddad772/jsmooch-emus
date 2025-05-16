@@ -21,7 +21,6 @@ struct SNES_cart {
         char internal_name[21];
         u32 lorom, hirom;
         u32 offset;
-        u32 bank_mask;
     } header;
     struct persistent_store *SRAM;
 };

@@ -40,56 +40,37 @@ u32 read_trace_wdc65816(void *ptr, u32 addr) {
     return SNES_wdc65816_read(this, addr, 0, 0);
 }
 
-static void setup_debug_waveform(struct debug_waveform *dw)
+static void setup_debug_waveform(struct SNES *snes, struct debug_waveform *dw)
 {
-    /*if (dw->samples_requested == 0) return;
+    if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
-    dw->user.buf_pos = 0;*/
+    dw->user.cycle_stride = ((float)snes->clock.timing.frame.master_cycles / (float)dw->samples_requested);
+    dw->user.buf_pos = 0;
 }
 
 void SNESJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
-    /*this->audio.buf = ab;
+    this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
+        this->audio.master_cycles_per_audio_sample = ((float)this->clock.timing.frame.master_cycles / (float)ab->samples_len);
         this->audio.next_sample_cycle_max = 0;
-        struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-        this->audio.master_cycles_per_max_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+        struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
+        this->audio.master_cycles_per_max_sample = (float)this->clock.timing.frame.master_cycles / (float)wf->samples_requested;
 
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
-        this->audio.master_cycles_per_min_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[0]);
+        this->audio.master_cycles_per_min_sample = (float)this->clock.timing.frame.master_cycles / (float)wf->samples_requested;
     }
 
-    // PSG
-    struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-    setup_debug_waveform(wf);
-    this->psg.ext_enable = wf->ch_output_enabled;
-    if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
-    this->clock.psg.clock_divisor = wf->clock_divider;
-    for (u32 i = 0; i < 4; i++) {
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
-        setup_debug_waveform(wf);
-        if (i < 3) {
-            this->psg.sw[i].ext_enable = wf->ch_output_enabled;
-        }
-        else
-            this->psg.noise.ext_enable = wf->ch_output_enabled;
+    struct debug_waveform *wf = cpg(this->dbg.waveforms.main);
+    setup_debug_waveform(this, wf);
+    this->apu.dsp.ext_enable = wf->ch_output_enabled;
+    for (u32 i = 0; i < 8; i++) {
+        wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        setup_debug_waveform(this, wf);
+        this->apu.dsp.channel[i].ext_enable = wf->ch_output_enabled;
     }
 
-    // ym2612
-    wf = cpg(this->dbg.waveforms_ym2612.main);
-    this->ym2612.ext_enable = wf->ch_output_enabled;
-    setup_debug_waveform(wf);
-    if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
-    this->clock.ym2612.clock_divisor = wf->clock_divider;
-    for (u32 i = 0; i < 6; i++) {
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
-        setup_debug_waveform(wf);
-        this->ym2612.channel[i].ext_enable = wf->ch_output_enabled;
-    }
-*/
 }
 
 static void populate_opts(struct jsm_system *jsm)
@@ -139,7 +120,6 @@ void SNES_new(JSM)
 
     R5A22_init(&this->r5a22, &this->clock.master_cycle_count);
     SNES_APU_init(this);
-    //SNES_cart_init(&this->cart);
     SNES_PPU_init(this); // must be after m68k init
 
     snprintf(jsm->label, sizeof(jsm->label), "SNES");
@@ -204,81 +184,59 @@ static inline float i16_to_float(i16 val)
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    /*struct SNES* this = (struct SNES *)ptr;
+    struct SNES* this = (struct SNES *)ptr;
     if (this->audio.buf) {
         this->audio.cycles++;
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
         if (this->audio.buf->upos < this->audio.buf->samples_len) {
             i32 v = 0;
-            if (this->psg.ext_enable)
-                v += (i32)(SN76489_mix_sample(&this->psg, 0) >> 5);
-            if (this->ym2612.ext_enable)
-                v += (i32)this->ym2612.mix.mono_output;
+            v += (i32)SNES_APU_mix_sample(&this->apu, 0);
             ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
         }
         this->audio.buf->upos++;
-    }*/
+    }
 }
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    /*struct SNES *this = (struct SNES *)ptr;
+    struct SNES *this = (struct SNES *)ptr;
 
-    // PSG
-    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
+    struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
     if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->psg, 1));
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SNES_APU_mix_sample(&this->apu, 1));
         dw->user.buf_pos++;
     }
 
-    // YM2612
-    dw = cpg(this->dbg.waveforms_ym2612.main);
-    if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output << 3);
-        dw->user.buf_pos++;
-    }
     this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);*/
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
 }
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    /*struct SNES *this = (struct SNES *)ptr;
+    struct SNES *this = (struct SNES *)ptr;
 
     // PSG
-    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.chan[0]);
-    for (int j = 0; j < 4; j++) {
-        dw = cpg(this->dbg.waveforms_psg.chan[j]);
+    struct debug_waveform *dw = cpg(this->dbg.waveforms.chan[0]);
+    for (int j = 0; j < 8; j++) {
+        dw = cpg(this->dbg.waveforms.chan[j]);
         if (dw->user.buf_pos < dw->samples_requested) {
-            i16 sv = SN76489_sample_channel(&this->psg, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+            i16 sv = this->apu.dsp.channel[j].samples.data[this->apu.dsp.channel[j].samples.head];
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
             dw->user.buf_pos++;
         }
     }
 
-    // YM2612
-    for (int j = 0; j < 6; j++) {
-        dw = cpg(this->dbg.waveforms_ym2612.chan[j]);
-        if (dw->user.buf_pos < dw->samples_requested) {
-            dw->user.next_sample_cycle += dw->user.cycle_stride;
-            i16 sv = ym2612_sample_channel(&this->ym2612, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv << 2);
-            dw->user.buf_pos++;
-        }
-    }
     this->audio.next_sample_cycle_min += this->audio.master_cycles_per_min_sample;
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);*/
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
 }
 
 
 static void schedule_first(struct SNES *this)
 {
-    /*scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
-    scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);*/
 
     SNES_APU_schedule_first(this);
     SNES_PPU_schedule_first(this);
@@ -431,8 +389,21 @@ u32 SNESJ_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
-
+#ifdef DO_STATS
+    u64 spc_start = this->apu.cpu.int_clock;
+    u64 wdc_start = this->r5a22.cpu.int_clock;
+#endif
     scheduler_run_til_tag(&this->scheduler, TAG_FRAME);
+#ifdef DO_STATS
+    u64 spc_num_cycles = (this->apu.cpu.int_clock - spc_start) * 60;
+    u64 wdc_num_cycles = (this->r5a22.cpu.int_clock - wdc_start) * 60;
+    double spc_div = (double)this->clock.timing.frame.master_cycles / (double)spc_num_cycles;
+    double wdc_div = (double)this->clock.timing.frame.master_cycles / (double)wdc_num_cycles;
+    printf("\nSCANLINE:%d FRAME:%lld", this->clock.ppu.y, this->clock.master_frame);
+    printf("\n\nEFFECTIVE 65816 FREQ IS %lld. RUNNING AT SPEED",wdc_num_cycles);
+    printf("\nEFFECTIVE SPC700 FREQ IS %lld. RUNNING AT SPEED", spc_num_cycles);
+
+#endif
     return this->ppu.display->last_written;
 }
 

@@ -123,6 +123,7 @@ static void irqdump(struct WDC65816 *this, u32 nmi)
 
 void WDC65816_cycle(struct WDC65816* this)
 {
+    this->int_clock++;
     if (this->regs.STP) return;
 
     this->regs.TCU++;

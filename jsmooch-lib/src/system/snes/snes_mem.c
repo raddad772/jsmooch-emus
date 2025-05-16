@@ -97,7 +97,6 @@ static void map_loram(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_
 static void map_lorom(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
 {
     u32 offset = 0;
-    printf("\nROMsize: %06x", this->mem.ROMSize);
     for (u32 c = bank_start; c <= bank_end; c++) {
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);

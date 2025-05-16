@@ -236,6 +236,80 @@ static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_int
 }
 
 
+static void setup_waveforms(struct SNES* this, struct debugger_interface *dbgr)
+{
+    this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(this->dbg.waveforms.view);
+    struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
+    snprintf(wv->name, sizeof(wv->name), "S-APU");
+
+    struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Output");
+    dw->kind = dwk_main;
+    dw->samples_requested = 400;
+    dw->default_clock_divider = 1008;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 1");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 2");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 3");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 4");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 5");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 6");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[6] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 7");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+    dw = cvec_push_back(&wv->waveforms);
+    debug_waveform_init(dw);
+    this->dbg.waveforms.chan[7] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    snprintf(dw->name, sizeof(dw->name), "Voice 8");
+    dw->kind = dwk_channel;
+    dw->samples_requested = 200;
+
+}
+
+
 void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
@@ -245,6 +319,7 @@ void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     cvec_lock_reallocs(&dbgr->views);
 
     setup_dbglog(dbgr, this);
+    setup_waveforms(this, dbgr);
     setup_image_view_palettes(this, dbgr);
     setup_image_view_ppu_layers(this, dbgr);
     setup_image_view_ppu_tilemaps(this, dbgr);

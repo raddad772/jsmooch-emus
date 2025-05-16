@@ -153,6 +153,7 @@ void SPC700_cycle(struct SPC700 *this, i64 how_many) {
         fptr(this);
         (*this->clock) += this->regs.opc_cycles;
         this->cycles -= this->regs.opc_cycles;
+        this->int_clock += this->regs.opc_cycles;
         advance_timers(this, this->regs.opc_cycles);
     }
 }
@@ -163,16 +164,6 @@ void SPC700_sync_to(struct SPC700 *this, i64 to_what)
     i64 cycles = (i64)floorl((apu_clock - this->clock->apu.has) / 24.0) + 1;
     if (cycles < 1) return;
     SPC700_cycle(this, cycles);*/
-}
-
-static u8 DSP_read_reg(struct SPC700 *this, u32 addr)
-{
-    return this->dsp_regs[addr & 0x7F];
-}
-
-static void DSP_write_reg(struct SPC700 *this, u32 addr, u32 val)
-{
-    this->dsp_regs[addr & 0x7F] = val;
 }
 
 static u8 readIO(struct SPC700 *this, u32 addr)
@@ -191,7 +182,7 @@ static u8 readIO(struct SPC700 *this, u32 addr)
         case 0xF2:
             return this->io.DSPADDR;
         case 0xF3:
-            return DSP_read_reg(this, this->io.DSPADDR);
+            return this->read_dsp(this->read_ptr, this->io.DSPADDR);
         case 0xF4:
             return this->io.CPUI[0];
         case 0xF5:
@@ -245,7 +236,7 @@ static void writeIO(struct SPC700 *this, u32 addr, u32 val)
             this->io.DSPADDR = val;
             return;
         case 0xF3:
-            DSP_write_reg(this, this->io.DSPADDR, val);
+            this->write_dsp(this->write_ptr, this->io.DSPADDR, val);
             return;
         case 0xF4:
         case 0xF5:

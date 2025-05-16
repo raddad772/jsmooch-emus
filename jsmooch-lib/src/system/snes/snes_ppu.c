@@ -16,29 +16,8 @@
 #define PPU_src_OBJ2 5
 #define PPU_src_COL 6
 
-static int did_math = 0;
-static u64 gfxshift[256];
-
-static void do_math()
-{
-    did_math = 1;
-    u32 space;
-    for (u32 rep = 0; rep < 3; rep++) {
-        for (u64 i = 0; i < 256; i++) {
-            u64 shift = 0;
-            u64 v = 0;
-            for (u64 bn = 0; bn < 8; bn++) {
-                v = (v << 8) | ((i >> shift) & 1);
-                shift++;
-            }
-            gfxshift[i] = v;
-        }
-    }
-}
-
 void SNES_PPU_init(struct SNES *this)
 {
-    if (!did_math) do_math();
 }
 
 void SNES_PPU_delete(struct SNES *this)
@@ -53,7 +32,30 @@ void SNES_PPU_reset(struct SNES *this)
 
 static u32 read_oam(struct SNES_PPU *this, u32 addr)
 {
-    return this->OAM[addr];
+    u32 n;
+    if (!(addr & 0x200)) {
+        n = addr >> 2;
+        addr &= 3;
+        switch(addr) {
+            case 0:
+                return this->obj.items[n].x & 0xFF;
+            case 1:
+                return this->obj.items[n].y & 0xFF;
+            case 2:
+                return this->obj.items[n].tile_num;
+        }
+        return (this->obj.items[n].name_select) | (this->obj.items[n].palette << 1) | (this->obj.items[n].priority << 4) | (this->obj.items[n].hflip << 6) | (this->obj.items[n].vflip << 7);
+    } else {
+        n = (addr & 0x1F) << 2;
+        return (this->obj.items[n].x >> 8) |
+        ((this->obj.items[n+1].x >> 8) << 2) |
+        ((this->obj.items[n+2].x >> 8) << 4) |
+        ((this->obj.items[n+3].x >> 8) << 6) |
+        (this->obj.items[n].size << 1) |
+        (this->obj.items[n+1].size << 3) |
+        (this->obj.items[n+2].size << 5) |
+        (this->obj.items[n+3].size << 7);
+    }
 }
 
 static void write_oam(struct SNES *snes, struct SNES_PPU *this, u32 addr, u32 val) {
@@ -61,33 +63,36 @@ static void write_oam(struct SNES *snes, struct SNES_PPU *this, u32 addr, u32 va
         printf("\nWARN OAM BAD WRITE TIME");
         return;
     }
-    this->OAM[addr % 0x220] = val;
     if (addr < 0x200) { // 0-0x1FF
         u32 n = addr >> 2;
-        struct SNES_PPU_sprite *sp = &snes->ppu.obj.items[n];
-        switch(addr & 3) {
-            case 0:
-                 sp->x = (sp->x & 0x100) | val;
-                 return;
-            case 1:
-                sp->y = val + 1;
-                return;
-            case 2:
-                sp->tile_num = val;
-                return;
-            default:
-                sp->name_select_add = 1 + ((val & 1) << 12);
-                sp->palette = (val >> 1) & 7;
-                sp->pal_offset = 128 + (sp->palette << 4);
-                sp->priority = (val >> 4) & 3;
-                sp->hflip = (val >> 6) & 1;
-                sp->vflip = (val >> 7) & 1;
-                return;
+        if (n < 128) {
+            struct SNES_PPU_sprite *sp = &snes->ppu.obj.items[n];
+            switch (addr & 3) {
+                case 0:
+                    sp->x = (sp->x & 0x100) | val;
+                    return;
+                case 1:
+                    sp->y = val + 1;
+                    return;
+                case 2:
+                    sp->tile_num = val;
+                    return;
+                default:
+                    sp->name_select = val & 1;
+                    sp->name_select_add = 1 + ((val & 1) << 12);
+                    sp->palette = (val >> 1) & 7;
+                    sp->pal_offset = 128 + (sp->palette << 4);
+                    sp->priority = (val >> 4) & 3;
+                    sp->hflip = (val >> 6) & 1;
+                    sp->vflip = (val >> 7) & 1;
+                    return;
+            }
         }
     }
     else {
         if (addr >= 544) {
             printf("\nOVER 544 OAM!? %d", addr);
+            return;
         }
         u32 n = (addr & 0x1F) << 2;
         snes->ppu.obj.items[n].x = (snes->ppu.obj.items[n].x & 0xFF) | ((val << 8) & 0x100);
@@ -397,11 +402,11 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             this->io.vram.increment_mode = (val >> 7) & 1;
             return; }
         case 0x2116: // VRAM address lo
-            this->io.vram.addr = (this->io.vram.addr & 0xFF00) + val;
+            this->io.vram.addr = (this->io.vram.addr & 0xFF00) | val;
             this->latch.vram = this->VRAM[get_addr_by_map(this)];
             return;
         case 0x2117: // VRAM address hi
-            this->io.vram.addr = (val << 8) + (this->io.vram.addr & 0xFF);
+            this->io.vram.addr = (val << 8) | (this->io.vram.addr & 0xFF);
             this->latch.vram = this->VRAM[get_addr_by_map(this)];
             return;
         case 0x2118: // VRAM data lo
@@ -579,14 +584,14 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             return;
 
         case 0x2180: // WRAM access port
-            SNES_wdc65816_write(snes, 0x7E0000 | this->io.wram_addr++, val);
-            if (this->io.wram_addr > 0x1FFFF) this->io.wram_addr = 0;
+            SNES_wdc65816_write(snes, 0x7E0000 | this->io.wram_addr, val);
+            this->io.wram_addr = (this->io.wram_addr + 1) & 0x1FFFF;
             return;
         case 0x2181: // WRAM addr low
-            this->io.wram_addr = (this->io.wram_addr & 0xFFF00) + val;
+            this->io.wram_addr = (this->io.wram_addr & 0x1FF00) + val;
             return;
         case 0x2182: // WRAM addr med
-            this->io.wram_addr = (val << 8) + (this->io.wram_addr & 0xF00FF);
+            this->io.wram_addr = (val << 8) + (this->io.wram_addr & 0x100FF);
             return;
         case 0x2183: // WRAM bank
             this->io.wram_addr = ((val & 1) << 16) | (this->io.wram_addr & 0xFFFF);
@@ -625,6 +630,7 @@ u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct S
             if (snes->r5a22.io.pio & 0x80) SNES_latch_ppu_counters(snes);
             return old;
         case 0x2138: {// OAMDATAREAD
+            printf("\nREAD!");
             u32 data = read_oam(this, this->io.oam.addr);
             this->io.oam.addr = (this->io.oam.addr + 1) & 0x3FF;
             this->obj.first = this->io.oam.priority ? (this->io.oam.addr >> 2) & 0x7F : 0;
@@ -637,7 +643,7 @@ u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct S
             }
             return result;
         case 0x213A: // VMDATAREADH
-            result = (this->latch.vram >> 8) &0xFF;
+            result = (this->latch.vram >> 8) & 0xFF;
             if (this->io.vram.increment_mode == 1) {
                 this->latch.vram = this->VRAM[get_addr_by_map(this)];
                 this->io.vram.addr = (this->io.vram.addr + this->io.vram.increment_step) & 0x7FFF;

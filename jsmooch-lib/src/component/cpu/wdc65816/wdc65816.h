@@ -95,6 +95,7 @@ struct WDC65816 {
     struct WDC65816_regs regs;
 
     u64 *master_clock;
+    u64 int_clock;
 
     struct {
         struct jsm_debug_read_trace strct;

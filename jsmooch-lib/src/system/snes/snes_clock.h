@@ -33,12 +33,16 @@ struct SNES_clock {
         long double ratio;
 
         struct {
-            long double next, stride;
+            long double next, stride, pitch_ratio;
         } sample;
 
         struct {
             long double next, stride;
         } cycle;
+
+        struct {
+
+        };
     } apu;
 
     struct {
