@@ -49,6 +49,15 @@ static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_fi
     u8 header = *buf;
     buf++;
     u32 left_shift = (header >> 4) & 15; // BEFORE BRR decoding
+/*
+					static unsigned char const shifts [16 * 2] = {
+						13,12,12,12,12,12,12,12,12,12,12, 12, 12, 16, 16, 16,
+						 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 11, 11
+					};
+					int const scale = brr_header >> 4;
+					int const right_shift = shifts [scale];
+					int const left_shift  = shifts [scale + 16];
+ */
     dest->loop = (header >> 1) & 1;
     dest->end = header & 1;
     u32 filter_num = (header >> 2) & 3;
