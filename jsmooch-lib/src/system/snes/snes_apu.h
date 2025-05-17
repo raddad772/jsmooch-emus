@@ -35,20 +35,68 @@ struct SNES_APU {
 
             struct {
                 long double next_sample, stride;
-                u32 counter;
+                u64 sch_id;
+                u32 sch_still;
             } pitch;
 
             struct {
-                u8 VOLL, VOLR, PITCHL, PITCHH, SRCN, ADSR1, ADSR2, GAIN, ENVX, OUTX;
+                u8 VOLL, VOLR, PITCHL, PITCHH, SRCN, ENVX, OUTX;
+                union {
+                    struct {
+                        u8 attack_rate : 4;
+                        u8 decay_rate : 3;
+                        u8 adsr_on : 1;
+                    };
+                    u8 v;
+                } ADSR1;
+                union {
+                    struct {
+                        u8 sustain_rate : 5;
+                        u8 sustain_level : 3;
+                    };
+                    u8 v;
+                } ADSR2;
+                union {
+                    struct {
+                        u8 gain_rate : 5;
+                        u8 gain_mode : 2;
+                        u8 custom_gain : 1;
+                    } custom;
+                    struct {
+                        u8 fixed_vol : 7;
+                        u8 custom_gain : 1;
+                    } direct;
+                    u8 v;
+                } GAIN;
             } io;
+
+            struct {
+                enum {
+                    SDEM_attack,
+                    SDEM_decay,
+                    SDEM_sustain,
+                    SDEM_release
+                } state;
+
+                u32 attack_rate;
+                u32 attack_step;
+                u32 decay_rate;
+                u32 decay_step;
+                u32 sustain_rate;
+                u32 sustain_level;
+
+                i32 attenuation;
+
+                u64 sch_id;
+                u32 sch_still;
+
+                long double next_update, stride;
+            } env;
 
             struct SNES_APU_sample sample_data;
             struct SNES_APU_filter filter;
 
             u8 ended;
-
-            u64 sch_id;
-            u32 sch_still;
         } channel[8];
 
         struct {

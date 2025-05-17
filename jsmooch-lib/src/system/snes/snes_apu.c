@@ -9,6 +9,20 @@
 // ratio for one to the other =
 
 
+static const int env_periods[32] = {
+        0x7FFFFFFF, 2048, 1536,
+        1280, 1024, 768,
+        640, 512, 384,
+        320, 256, 192,
+        160, 128, 96,
+        80, 64, 48,
+        40, 32, 24,
+        20, 16, 12,
+        10, 8, 6,
+        5, 4, 3,
+        2, 1
+};
+
 static inline void calculate_sample_addr(struct SNES *snes, struct SNES_APU_ch *ch)
 {
     u16 brr_entry = ((snes->apu.dsp.io.DIR << 8) + (ch->io.SRCN << 4)) & 0xFFFF;
@@ -54,8 +68,16 @@ static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_fi
             static const int filter_s0_shift[4] = { 0, 4, 5, 6};
             static const int filter_s1_mul[4] = { 0, 0, 15, 13};
             nibble += ((filter->prev[0] * filter_s0_mul[filter_num]) >> filter_s0_shift[filter_num]) + ((filter->prev[1] * filter_s1_mul[filter_num]) >> 4);
-            if (nibble < -32768) nibble = -32768;
-            if (nibble > 32767) nibble = 32767;
+            if (nibble < -16384) nibble = -32768;
+            if (nibble > 16383) nibble = 32767;
+
+            if (nibble > 0x4000) {
+                nibble += -0x8000;
+            }
+            if (nibble < 0x4000) {
+                nibble += -8000;
+                nibble = -nibble;
+            }
 
             dest->decoded[tn] = nibble;
             filter->prev[1] = filter->prev[0];
@@ -81,15 +103,18 @@ static u8 read_voice(struct SNES *snes, struct SNES_APU_ch *ch, u8 param)
         case 4:
             return ch->io.SRCN;
         case 5:
-            return ch->io.ADSR1;
+            return ch->io.ADSR1.v;
         case 6:
-            return ch->io.ADSR2;
+            return ch->io.ADSR2.v;
         case 7:
-            return ch->io.GAIN;
+            return ch->io.GAIN.v;
         case 8:
+            // TODO: implement this. should set to upper 7 of 11 bit attenuation
             return ch->io.ENVX;
         case 9:
+            // TODO: implement this. should set to upper 8 bits of current sample after env but before vxvol
             return ch->io.OUTX;
+
     }
     printf("\nMISSED READ VOICE ATTR %d CH:%d", param, ch->num);
     return 0;
@@ -170,6 +195,78 @@ static u8 read_DSP(void *ptr, u16 addr)
     return 0;
 }
 
+static void ch_do_env(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct SNES *snes = (struct SNES *)ptr;
+    struct SNES_APU_ch *ch = &snes->apu.dsp.channel[key];
+    if (ch->io.ADSR1.adsr_on && ch->env.state == SDEM_release && ch->env.attenuation == 0) {
+        // No need to keep subtracting from 0
+        return;
+    }
+
+    u32 rate = 0;
+    i32 mod = 0;
+    if (ch->io.ADSR1.adsr_on || ch->env.state == SDEM_release) {
+        switch (ch->env.state) {
+            case SDEM_attack:
+                rate = (ch->env.attack_rate * 2) + 1;
+                if (rate == 31) mod = 1024;
+                else mod = 32;
+                break;
+            case SDEM_decay:
+                rate = (ch->env.decay_rate * 2) + 16;
+                mod = -(((ch->env.attenuation - 1) >> 8) + 1);
+                break;
+            case SDEM_sustain:
+                rate = ch->env.sustain_rate;
+                mod = -(((ch->env.attenuation - 1) >> 8) + 1);
+                break;
+            case SDEM_release:
+                rate = 31;
+                mod = -8;
+                break;
+        }
+        ch->env.attenuation += mod;
+
+        // Update phase
+        if (ch->env.state == SDEM_attack && ch->env.attenuation >= 0x7E0) {
+            ch->env.attenuation = (ch->env.attenuation > 0x7FF) ? 0x7FFF : ch->env.attenuation;
+            ch->env.state = SDEM_decay;
+        }
+        if (ch->env.state == SDEM_decay && ch->env.attenuation <= ch->env.sustain_level) {
+            ch->env.state = SDEM_sustain;
+        }
+    }
+    else {
+        if (!ch->io.GAIN.custom.custom_gain) {
+            ch->env.attenuation = (ch->io.GAIN.direct.fixed_vol << 4);
+            return;
+        }
+        rate = ch->io.GAIN.custom.gain_rate;
+        switch(ch->io.GAIN.custom.gain_mode) {
+            case 0:
+                mod = -32;
+                break;
+            case 1:
+                mod = -(((ch->env.attenuation - 1) >> 8) + 1);
+                break;
+            case 2:
+                mod = 32;
+                break;
+            case 3:
+                mod = ch->env.attenuation < 0x600 ? 32 : 8;
+                break;
+        }
+        ch->env.attenuation += mod;
+    }
+    if (ch->env.attenuation < 0) ch->env.attenuation = 0;
+    if (ch->env.attenuation > 0x7FF) ch->env.attenuation = 0x7FF;
+
+    ch->env.stride = (long double)env_periods[rate] * snes->clock.apu.cycle.stride;
+    ch->env.next_update += ch->env.stride;
+    ch->env.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->env.next_update, ch->num, snes, &ch_do_env, &ch->env.sch_still);
+}
+
 static void ch_do_sample(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *snes = (struct SNES *)ptr;
@@ -194,28 +291,79 @@ static void ch_do_sample(void *ptr, u64 key, u64 clock, u32 jitter)
     }
 
     ch->samples.head = (ch->samples.head + 1) & 3;
-    ch->samples.data[ch->samples.head] = ch->sample_data.decoded[ch->sample_data.pos] >> 3; // TODO: add ADSR etc.;;
+    i32 smp = ch->sample_data.decoded[ch->sample_data.pos];
+    smp *= (ch->env.attenuation) / 0x800;
+    ch->io.OUTX = (smp >> 7) & 0xFF;
+    // now apply VxVOL
+
+    // smp = smp * vol / 128;
+    i32 vol = (ch->io.VOLL + ch->io.VOLR) >> 1;
+
+    ch->samples.data[ch->samples.head] = (i16)((smp * vol) >> 7);
     ch->sample_data.pos++;
 
     ch->pitch.next_sample += ch->pitch.stride;
-    ch->sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->pitch.next_sample, key, snes, &ch_do_sample, &ch->sch_still);
+    ch->pitch.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->pitch.next_sample, key, snes, &ch_do_sample, &ch->pitch.sch_still);
 }
+
+static void schedule_env(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate)
+{
+    // rate is # of 1mhz cycles so
+    ch->env.stride = (long double)env_periods[rate] * snes->clock.apu.cycle.stride;
+    ch->env.next_update = snes->clock.master_cycle_count + ch->env.stride;
+    ch->env.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->env.next_update, ch->num, snes, &ch_do_env, &ch->env.sch_still);
+}
+
 
 static inline void schedule_ch(struct SNES *snes, struct SNES_APU_ch *ch, u32 pitch)
 {
-    ch->pitch.stride = pitch * snes->clock.apu.sample.pitch_ratio;
+    u32 hz = (pitch * 32000) / 0x1000;
+    ch->pitch.stride = (long double)snes->clock.timing.second.master_cycles / (long double)hz;
+
     ch->pitch.next_sample = ((long double)snes->clock.master_cycle_count) + ch->pitch.stride;
-    ch->sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->pitch.next_sample, ch->num, snes, &ch_do_sample, &ch->sch_still);
+    ch->pitch.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->pitch.next_sample, ch->num, snes, &ch_do_sample, &ch->pitch.sch_still);
+}
+
+static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate) {
+    if (ch->env.sch_still) scheduler_delete_if_exist(&snes->scheduler, ch->env.sch_id);
+    if (!ch->io.ADSR1.adsr_on && !ch->io.GAIN.custom.custom_gain) {
+        ch->env.attenuation = ch->io.GAIN.direct.fixed_vol << 4;
+        rate = 0;
+    }
+    if (rate) {
+        schedule_env(snes, ch, rate);
+    }
 }
 
 static void update_pitch(struct SNES *snes, struct SNES_APU_ch *ch, u32 old_pitch)
 {
     u32 new_pitch = (ch->io.PITCHH << 8) | ch->io.PITCHL;
-    if ((old_pitch == new_pitch) && (ch->sch_still)) return;
-    if (ch->sch_still) scheduler_delete_if_exist(&snes->scheduler, ch->sch_id);
+    if ((old_pitch == new_pitch) && (ch->pitch.sch_still)) return;
+    if (ch->pitch.sch_still) scheduler_delete_if_exist(&snes->scheduler, ch->pitch.sch_id);
     if (new_pitch) {
         schedule_ch(snes, ch, new_pitch);
     }
+}
+
+static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch)
+{
+    if (ch->io.ADSR1.adsr_on || ch->env.state == SDEM_release) { // ADSR mode
+        switch (ch->env.state) {
+            case SDEM_attack:
+                return (ch->env.attack_rate * 2) + 1;
+            case SDEM_decay:
+                return (ch->env.decay_rate * 2) + 16;
+            case SDEM_sustain:
+                return ch->env.sustain_rate;
+            case SDEM_release:
+                return 31;
+        }
+    }
+    else if (ch->io.GAIN.custom.custom_gain) {
+        return ch->io.GAIN.custom.gain_rate;
+    }
+    return 0;
+
 }
 
 static void write_voice(struct SNES *snes, struct SNES_APU_ch * ch, u8 param, u8 val)
@@ -242,13 +390,20 @@ static void write_voice(struct SNES *snes, struct SNES_APU_ch * ch, u8 param, u8
             calculate_sample_addr(snes, ch);
             return;
         case 5:
-            ch->io.ADSR1 = val;
+            ch->io.ADSR1.v = val;
+            ch->env.attack_rate = ch->io.ADSR1.attack_rate;
+            ch->env.decay_rate = ch->io.ADSR1.decay_rate;
+            update_envelope(snes, ch, calc_env_rate(snes, ch));
             return;
         case 6:
-            ch->io.ADSR2 = val;
+            ch->io.ADSR2.v = val;
+            ch->env.sustain_rate = ch->io.ADSR2.sustain_level;
+            ch->env.sustain_level = (ch->io.ADSR2.sustain_level + 1) << 8;
+            update_envelope(snes, ch, calc_env_rate(snes, ch));
             return;
         case 7:
-            ch->io.GAIN = val;
+            ch->io.GAIN.v = val;
+            update_envelope(snes, ch, calc_env_rate(snes, ch));
             return;
         case 8:
             ch->io.ENVX = val;
@@ -269,6 +424,9 @@ static void keyon(struct SNES *snes, u32 ch_num)
     ch->sample_data.end = 0; // Make sure we don't immediately end
     update_pitch(snes, ch, (ch->io.PITCHH << 8) | ch->io.PITCHL);
 
+    ch->env.state = SDEM_attack;
+    update_envelope(snes, ch, calc_env_rate(snes, ch));
+
     // TODO: set envelope to attack
 }
 
@@ -276,6 +434,8 @@ static void keyoff(struct SNES *snes, u32 ch_num)
 {
     struct SNES_APU_ch *ch = &snes->apu.dsp.channel[ch_num];
     // TODO: set envelope to release
+    ch->env.state = SDEM_release;
+    update_envelope(snes, ch, calc_env_rate(snes, ch));
 }
 
 static void write_DSP(void *ptr, u16 addr, u8 val)
@@ -403,13 +563,13 @@ static void CPU_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
 {
-    // TODO: envelope etc.
+    // do envelope updates...
+
 }
 
 static void DSP_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *snes = (struct SNES *)ptr;
-
 
     for (u32 i = 0; i < 8; i++) {
         struct SNES_APU_ch *ch = &snes->apu.dsp.channel[i];
@@ -450,7 +610,6 @@ i16 SNES_APU_mix_sample(struct SNES_APU *this, u32 is_debug)
 {
     i32 out = 0;
     //if (!this->dsp.ext_enable || this->dsp.io.FLG.mute_all) return 0;
-
 
     for (u32 i = 0; i < 8; i++) {
         struct SNES_APU_ch *ch = &this->dsp.channel[i];
