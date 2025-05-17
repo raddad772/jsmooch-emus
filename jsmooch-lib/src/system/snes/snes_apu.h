@@ -40,7 +40,8 @@ struct SNES_APU {
             } pitch;
 
             struct {
-                u8 VOLL, VOLR, PITCHL, PITCHH, SRCN, ENVX, OUTX;
+                u8 PITCHL, PITCHH, SRCN, ENVX, OUTX;
+                i32 VOLL, VOLR;
                 union {
                     struct {
                         u8 attack_rate : 4;

@@ -199,8 +199,10 @@ static void ch_do_env(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *snes = (struct SNES *)ptr;
     struct SNES_APU_ch *ch = &snes->apu.dsp.channel[key];
+    //printf("\nDO ENV %lld STATE:%d ATTENUATION:%d", key, ch->env.state, ch->env.attenuation);
     if (ch->io.ADSR1.adsr_on && ch->env.state == SDEM_release && ch->env.attenuation == 0) {
         // No need to keep subtracting from 0
+        //printf("\nEARLY EXIT ON RELEASE");
         return;
     }
 
@@ -292,7 +294,8 @@ static void ch_do_sample(void *ptr, u64 key, u64 clock, u32 jitter)
 
     ch->samples.head = (ch->samples.head + 1) & 3;
     i32 smp = ch->sample_data.decoded[ch->sample_data.pos];
-    smp *= (ch->env.attenuation) / 0x800;
+    smp *= (ch->env.attenuation);
+    smp >>= 11;
     ch->io.OUTX = (smp >> 7) & 0xFF;
     // now apply VxVOL
 
@@ -370,10 +373,10 @@ static void write_voice(struct SNES *snes, struct SNES_APU_ch * ch, u8 param, u8
 {
     switch(param) {
         case 0:
-            ch->io.VOLL = val;
+            ch->io.VOLL = SIGNe8to32(val);
             return;
         case 1:
-            ch->io.VOLR = val;
+            ch->io.VOLR = SIGNe8to32(val);
             return;
         case 2: {
             u32 old_pitch = (ch->io.PITCHH << 8) | ch->io.PITCHL;
@@ -423,17 +426,16 @@ static void keyon(struct SNES *snes, u32 ch_num)
     ch->sample_data.next_read_addr = ch->sample_data.start_addr; // Start at start of sample
     ch->sample_data.end = 0; // Make sure we don't immediately end
     update_pitch(snes, ch, (ch->io.PITCHH << 8) | ch->io.PITCHL);
-
+    //printf("\nKEYON %d", ch_num);
     ch->env.state = SDEM_attack;
+    if (ch->io.ADSR1.adsr_on) ch->env.attenuation = 0;
     update_envelope(snes, ch, calc_env_rate(snes, ch));
-
-    // TODO: set envelope to attack
 }
 
 static void keyoff(struct SNES *snes, u32 ch_num)
 {
     struct SNES_APU_ch *ch = &snes->apu.dsp.channel[ch_num];
-    // TODO: set envelope to release
+    //printf("\nKEYOFF %d", ch_num);
     ch->env.state = SDEM_release;
     update_envelope(snes, ch, calc_env_rate(snes, ch));
 }
@@ -479,7 +481,6 @@ static void write_DSP(void *ptr, u16 addr, u8 val)
             if (this->io.FLG.soft_reset) {
                 printf("\nWARN SOFT RESET DSP");
             }
-            printf("\nMUTE ALL? %d", this->io.FLG.mute_all);
             return;
         case 0x0D:
             this->io.EFB = val;
@@ -609,11 +610,11 @@ void SNES_APU_write(struct SNES *snes, u32 addr, u32 val)
 i16 SNES_APU_mix_sample(struct SNES_APU *this, u32 is_debug)
 {
     i32 out = 0;
-    //if (!this->dsp.ext_enable || this->dsp.io.FLG.mute_all) return 0;
+    if (!this->dsp.ext_enable || this->dsp.io.FLG.mute_all) return 0;
 
     for (u32 i = 0; i < 8; i++) {
         struct SNES_APU_ch *ch = &this->dsp.channel[i];
-        //if (!ch->ext_enable) continue;
+        if (!ch->ext_enable || !ch->env.attenuation) continue;
 
         out += ch->samples.data[ch->samples.head];
     }

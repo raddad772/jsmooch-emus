@@ -224,7 +224,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
         dw = cpg(this->dbg.waveforms.chan[j]);
         if (dw->user.buf_pos < dw->samples_requested) {
             i16 sv = this->apu.dsp.channel[j].samples.data[this->apu.dsp.channel[j].samples.head];
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv << 2);
             dw->user.buf_pos++;
         }
     }
@@ -291,7 +291,7 @@ static void setup_audio(struct cvec* IOs)
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
     //chan->sample_rate = 32000;
-    chan->sample_rate = 53335;
+    chan->sample_rate = 64000;
     chan->low_pass_filter = 16000;
 }
 
