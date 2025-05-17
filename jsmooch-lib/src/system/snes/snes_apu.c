@@ -614,7 +614,7 @@ i16 SNES_APU_mix_sample(struct SNES_APU *this, u32 is_debug)
 
     for (u32 i = 0; i < 8; i++) {
         struct SNES_APU_ch *ch = &this->dsp.channel[i];
-        if (!ch->ext_enable || !ch->env.attenuation) continue;
+        if (!ch->ext_enable || !ch->env.attenuation || ch->ended) continue;
 
         out += ch->samples.data[ch->samples.head];
     }
