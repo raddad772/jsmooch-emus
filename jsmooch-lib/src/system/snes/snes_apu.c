@@ -449,12 +449,12 @@ void SNES_APU_write(struct SNES *snes, u32 addr, u32 val)
 i16 SNES_APU_mix_sample(struct SNES_APU *this, u32 is_debug)
 {
     i32 out = 0;
-    if (!this->dsp.ext_enable || this->dsp.io.FLG.mute_all) return 0;
+    //if (!this->dsp.ext_enable || this->dsp.io.FLG.mute_all) return 0;
 
 
     for (u32 i = 0; i < 8; i++) {
         struct SNES_APU_ch *ch = &this->dsp.channel[i];
-        if (!ch->ext_enable) continue;
+        //if (!ch->ext_enable) continue;
 
         out += ch->samples.data[ch->samples.head];
     }

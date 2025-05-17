@@ -192,7 +192,9 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
         if (this->audio.buf->upos < this->audio.buf->samples_len) {
             i32 v = 0;
             v += (i32)SNES_APU_mix_sample(&this->apu, 0);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
+            //if ((this->audio.cycles & 7) < 4) v = 0;
+            //else v = 32767;
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float(v);
         }
         this->audio.buf->upos++;
     }
@@ -288,7 +290,8 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 32000;
+    //chan->sample_rate = 32000;
+    chan->sample_rate = 53335;
     chan->low_pass_filter = 16000;
 }
 
@@ -387,6 +390,7 @@ void SNESJ_reset(JSM)
 
 u32 SNESJ_finish_frame(JSM)
 {
+    //printf("\nNEW FRAME FINISH");
     JTHIS;
     read_opts(jsm, this);
 #ifdef DO_STATS

@@ -8,7 +8,7 @@
 #include "helpers/int.h"
 #include "helpers/audiobuf.h"
 
-#define MAX_AUDIO_BUFS 5
+#define MAX_AUDIO_BUFS 10
 
 struct wkrr;
 struct audiowrap {

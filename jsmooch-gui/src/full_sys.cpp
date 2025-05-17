@@ -824,7 +824,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pcrysound.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "advance_guardian_heroes.gba", nullptr); // works!
@@ -834,7 +834,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);
@@ -1522,10 +1522,15 @@ void full_system::do_frame() {
 
         struct framevars fv = {};
         if (!dbg.do_break) {
-            if (b && sys->set_audiobuf) sys->set_audiobuf(sys, b);
+            if (b && sys->set_audiobuf) {
+                //printf("\nSetting EMU into audiobuf %d", audio.bufs.emu.current);
+                sys->set_audiobuf(sys, b);
+            }
             debugger_pre_frame();
             sys->finish_frame(sys);
-            if (b && sys->set_audiobuf) audio.commit_emu_buffer();
+            if (b && sys->set_audiobuf) {
+                audio.commit_emu_buffer();
+            }
         }
         sys->get_framevars(sys, &fv);
         //dbg_flush();

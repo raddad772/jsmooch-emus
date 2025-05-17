@@ -34,6 +34,7 @@ static int get_s16_audio_samples(audiowrap *me, u16 *output, u32 frameCount)
     int total_samples = 0;
     struct audiobuf *b = me->get_buf_for_playback();
     if (!b) {
+        //printf("\n!b!");
         return 0;
     }
     u32 lenleft = frameCount;
@@ -54,11 +55,14 @@ static int get_s16_audio_samples(audiowrap *me, u16 *output, u32 frameCount)
         if (b->upos >= b->samples_len) {
             b->finished = 1;
             b = me->get_buf_for_playback();
-            if (!b) break;
+            if (!b) {
+                //printf("\nEARLY BREAK");
+                break;
+            }
         }
     }
-    /*if (lenleft > 0)
-        printf("\nOOPS! SHORT %d SAMPLES!", lenleft);*/
+    //if (lenleft > 0)
+        //printf("\nOOPS! SHORT %d SAMPLES!", lenleft);
     return total_samples;
 }
 
@@ -236,12 +240,13 @@ struct audiobuf *audiowrap::get_buf_for_playback()
     if (bufs.playback.current != -1) {
         //printf("\nRETURN BUFFER %d FOR PLAYBACK:", bufs.playback.current);
         assert((bufs.playback.current >= 0) && (bufs.playback.current < MAX_AUDIO_BUFS));
+        //printf("\nGet buffer %d for playback", bufs.playback.current);
         return &bufs.items[bufs.playback.current];
     }
     if (bufs.emu.len < 1)
     {
-        //if (playing)
-            //printf("\nOUT OF AUDIO BUFFERS FOR PLAYBACK!");
+        if (playing)
+            printf("\nOUT OF AUDIO BUFFERS FOR PLAYBACK!");
         return nullptr;
     }
     int pos = (int)bufs.emu.head;
