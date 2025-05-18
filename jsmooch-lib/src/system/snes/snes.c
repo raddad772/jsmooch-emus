@@ -223,8 +223,8 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
     for (int j = 0; j < 8; j++) {
         dw = cpg(this->dbg.waveforms.chan[j]);
         if (dw->user.buf_pos < dw->samples_requested) {
-            i16 sv = this->apu.dsp.channel[j].samples.data[this->apu.dsp.channel[j].samples.head];
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv << 2);
+            i16 sv = this->apu.dsp.channel[j].sample;
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
             dw->user.buf_pos++;
         }
     }

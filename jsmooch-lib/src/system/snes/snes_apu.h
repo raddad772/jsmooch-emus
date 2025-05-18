@@ -10,6 +10,7 @@
 struct SNES_APU_sample {
     i16 decoded[16];
     u8 pos;
+    u8 first_or_loop;
     u8 filter_pos;
     u8 loop, end;
 
@@ -18,7 +19,7 @@ struct SNES_APU_sample {
 };
 
 struct SNES_APU_filter {
-    i16 prev[2];
+    i32 prev[4];
 };
 
 struct SNES_APU {
@@ -28,15 +29,13 @@ struct SNES_APU {
         struct SNES_APU_ch {
             u32 num, ext_enable;
 
-            struct {
-                i16 data[4];
-                u32 head;
-            } samples;
+            i16 sample;
 
             struct {
                 long double next_sample, stride;
                 u64 sch_id;
                 u32 sch_still;
+                u32 counter;
             } pitch;
 
             struct {
@@ -101,7 +100,7 @@ struct SNES_APU {
         } channel[8];
 
         struct {
-            i32 level;
+            i16 level;
             u32 rate;
             long double next_update, stride;
             u64 sch_id;
