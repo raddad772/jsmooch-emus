@@ -509,9 +509,10 @@ static void write_DSP(void *ptr, u16 addr, u8 val)
         case 0x6C:
             this->io.FLG.u = val;
             if (this->io.FLG.soft_reset) {
+                this->io.FLG.soft_reset = 0;
                 for (u32 i = 0; i < 8; i++) {
-                    keyoff(snes, i);
                     this->channel[i].env.attenuation = 0;
+                    keyoff(snes, i);
                 }
             }
             update_noise(snes);
@@ -527,6 +528,13 @@ static void write_DSP(void *ptr, u16 addr, u8 val)
             return;
         case 0x2D:
             this->io.PMON = val & 0xFE; // TODO: FF?
+            if (this->io.PMON) {
+                static int a = 0;
+                if (a < 5) {
+                    a++;
+                    printf("\nWARN PMON ENABLED FOR S-DSP!");
+                }
+            }
             return;
         case 0x3D:
             this->io.NON = val;
