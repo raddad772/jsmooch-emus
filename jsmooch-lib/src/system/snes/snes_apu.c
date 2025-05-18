@@ -50,7 +50,7 @@ static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_fi
     buf++;
     if (dest->first_or_loop) {
         dest->first_or_loop = 0;
-        header = 0;
+        header = 0x0;
     }
     u32 scale = (header >> 4) & 15; // BEFORE BRR decoding
     dest->loop = (header >> 1) & 1;
@@ -463,6 +463,8 @@ static void keyon(struct SNES *snes, u32 ch_num)
     ch->sample_data.loop = 0;
     ch->sample_data.first_or_loop = 1;
 
+    ch->pitch.counter = 0;
+
     assert(ch->sample_data.next_read_addr < (0xFFFF - 8));
     BRR_decode(snes->apu.cpu.RAM + ch->sample_data.next_read_addr, &ch->sample_data, &ch->filter);
     if (ch->sample_data.end) snes->apu.dsp.io.ENDX |= (1 << ch->num);
@@ -626,6 +628,7 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
         assert(0);
     }
     if (ch->ended) return;
+    u32 sample_num = (ch->pitch.counter >> 12) & 15;
     ch->pitch.counter += step;
     if (ch->pitch.counter > 0xFFFF) {
         // next BRR block
@@ -644,7 +647,6 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
         ch->sample_data.next_read_addr = (ch->sample_data.next_read_addr + 9) & 0xFFFF;
     }
 
-    u32 sample_num = (ch->pitch.counter >> 12) & 15;
     i32 smp;
     if (snes->apu.dsp.io.NON & (1 << ch->num)) smp = snes->apu.dsp.noise.level;
     else smp = ch->sample_data.decoded[sample_num];
@@ -654,7 +656,7 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
     // smp = smp * vol / 128;
     i32 vol = (ch->io.VOLL + ch->io.VOLR) >> 1;
 
-    ch->sample = (i16)((smp * vol) >> 7);
+    ch->sample = (i16)((smp * vol) >> 8);
     //ch->sample_data.pos++;
 
 
@@ -718,7 +720,7 @@ i16 SNES_APU_mix_sample(struct SNES_APU *this, u32 is_debug)
         if (!ch->ext_enable || !ch->env.attenuation || ch->ended) continue;
 
         i32 smp;
-        smp = ch->sample;
+        smp = ch->sample >> 1;
         out += smp;
         if (out < -32768) out = -32768;
         if (out > 32767) out = 32767;
