@@ -18,7 +18,7 @@ struct SNES_APU_sample {
 };
 
 struct SNES_APU_filter {
-    i32 prev[2];
+    i16 prev[2];
 };
 
 struct SNES_APU {
@@ -101,8 +101,16 @@ struct SNES_APU {
         } channel[8];
 
         struct {
+            i32 level;
+            u32 rate;
+            long double next_update, stride;
+            u64 sch_id;
+            u32 sch_still;
+        } noise;
+
+        struct {
             u8 MVOLL, MVOLR, EVOLL, EVOLR, KON, KOFF, ESA, EDL, FIR[8];
-            u8 EFB, unused, PMON, NON, EON, DIR;
+            u8 EFB, unused, PMON, NON, EON, DIR, ENDX;
             union {
                 struct {
                     u8 noise_freq : 5;
