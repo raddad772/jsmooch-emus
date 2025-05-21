@@ -3,7 +3,7 @@
 //
 
 #include "snes_apu.h"
-
+#include "gauss_table.h"
 #include "snes_bus.h"
 
 // ratio for one to the other =
@@ -45,6 +45,7 @@ static void calculate_sample_addrs(struct SNES *snes)
 //  ((addr & 0x7FFF) + (bank & 0x7F) * 0x8000
 static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_filter *filter)
 {
+    dest->cur_decode_buf ^= 1;
     dest->pos = 0;
     u8 header = *buf;
     buf++;
@@ -58,45 +59,39 @@ static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_fi
     u32 filter_num = (header >> 2) & 3;
     u32 tn = 0;
     for (u32 i = 0; i < 8; i++) {
-        i8 data = (i8)*buf;
+        u8 data = *buf;
         buf++;
         for (u32 num = 0; num < 2; num++) {
             i32 nibble = (i32)((data & 0xF0) >> 4);
             data <<= 4;
-            //nibble = SIGNe4to32(nibble);
+            nibble = SIGNe4to32(nibble);
             if (scale <= 12) {
                 nibble <<= scale;
                 nibble >>= 1;
             } else {
                 nibble &= ~0x7FF;
             }
+            i32 prev1 = filter->prev[0] >> 1;
+            i32 prev2 = filter->prev[1] >> 1;
             switch(filter_num) {
                 case 0:
                     break;
                 case 1:
-                    nibble += filter->prev[0] >> 1;
-                    nibble += (-filter->prev[0]) >> 5;
+                    nibble += prev1 + (-prev1 >> 4);
                     break;
                 case 2:
-                    nibble += filter->prev[0];
-                    nibble -= filter->prev[1] >> 1;
-                    nibble += filter->prev[1] >> 5;
-                    nibble += (filter->prev[0] * -3) >> 6;
+                    nibble += (prev1 << 1) + ((-((prev1 << 1) + prev1)) >> 5) - prev2 + (prev2 >> 4);
                     break;
                 case 3:
-                    nibble += filter->prev[0];
-                    nibble -= filter->prev[1] >> 1;
-                    nibble += (filter->prev[0] * -13) >> 7;
-                    nibble += ((filter->prev[1] >> 1) * 3) >> 4;
+                    nibble += (prev1 << 1) + ((-(prev1 + (prev1 << 2) + (prev1 << 3))) >> 6) - prev2 +
+                              (((prev2 << 1) + prev2) >> 4);
                     break;
             }
             if (nibble < -32768) nibble = -32768;
             if (nibble > 32767) nibble = 32767;
-            //nibble = (i16)((u16)nibble << 1);
+            nibble = (i16)(nibble * 2);
 
-            dest->decoded[tn++] = (i16)nibble;
-            filter->prev[3] = filter->prev[2];
-            filter->prev[2] = filter->prev[1];
+            dest->decoded[dest->cur_decode_buf][tn++] = (i16)(nibble);
             filter->prev[1] = filter->prev[0];
             filter->prev[0] = (i16)nibble;
         }
@@ -422,6 +417,10 @@ static void write_voice(struct SNES *snes, struct SNES_APU_ch * ch, u8 param, u8
             return;
         case 5:
             ch->io.ADSR1.v = val;
+            if (!ch->io.ADSR1.adsr_on) {
+                printf("\nGAIN set on ch %d", ch->num);
+            }
+
             ch->env.attack_rate = ch->io.ADSR1.attack_rate;
             ch->env.decay_rate = ch->io.ADSR1.decay_rate;
             update_envelope(snes, ch, calc_env_rate(snes, ch));
@@ -466,7 +465,7 @@ static void keyon(struct SNES *snes, u32 ch_num)
     ch->sample_data.next_read_addr = (ch->sample_data.next_read_addr + 9) & 0xFFFF;
 
     ch->env.state = SDEM_attack;
-    if (ch->io.ADSR1.adsr_on) ch->env.attenuation = 0;
+    if (ch->io.ADSR1.adsr_on || ch->io.GAIN.custom.custom_gain) ch->env.attenuation = 0;
     update_envelope(snes, ch, calc_env_rate(snes, ch));
 }
 
@@ -614,6 +613,31 @@ static void CPU_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
     scheduler_only_add_abs(&snes->scheduler, (i64)snes->clock.apu.cycle.next, 0, snes, &CPU_cycle, NULL);
 }
 
+
+static i16 gaussian_me_up(struct SNES *snes, struct SNES_APU_ch *ch)
+{
+    i32 sample_num = (i32)((ch->pitch.counter >> 12) & 15);
+    u32 g_index = (ch->pitch.counter >> 4) & 0xFF;
+    u32 bufn = ch->sample_data.cur_decode_buf;
+    i32 new = ch->sample_data.decoded[bufn][sample_num];
+    sample_num--; if (sample_num < 0) { sample_num = 15; bufn ^= 1; }
+    i32 old = ch->sample_data.decoded[bufn][sample_num];
+    sample_num--; if (sample_num < 0) { sample_num = 15; bufn ^= 1; }
+    i32 older = ch->sample_data.decoded[bufn][sample_num];
+    sample_num--; if (sample_num < 0) { sample_num = 15; bufn ^= 1; }
+    i32 oldest = ch->sample_data.decoded[bufn][sample_num];
+
+    i32 out = (gauss_table[0xFF-g_index] * oldest) >> 10;
+    out += (gauss_table[0x1FF-g_index] * older) >> 10;
+    out += (gauss_table[0x100+g_index] * old) >> 10;
+    out += (gauss_table[g_index] * new) >> 10;
+    out >>= 1;
+    if (out < -16384) out = -16384;
+    if (out > 16383) out = 16383;
+
+    return out;
+}
+
 static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
 {
     // do pitch updates!
@@ -623,7 +647,6 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
         assert(0);
     }
     if (ch->ended) return;
-    u32 sample_num = (ch->pitch.counter >> 12) & 15;
     ch->pitch.counter += step;
     if (ch->pitch.counter > 0xFFFF) {
         // next BRR block
@@ -634,7 +657,7 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
                 ch->ended = 1;
                 return;
             }
-            ch->sample_data.first_or_loop = 1;
+            //ch->sample_data.first_or_loop = 1;
         }
         assert(ch->sample_data.next_read_addr < (0xFFFF - 8));
         BRR_decode(snes->apu.cpu.RAM + ch->sample_data.next_read_addr, &ch->sample_data, &ch->filter);
@@ -644,7 +667,7 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
 
     i32 smp;
     if (snes->apu.dsp.io.NON & (1 << ch->num)) smp = snes->apu.dsp.noise.level;
-    else smp = ch->sample_data.decoded[sample_num];
+    else smp = gaussian_me_up(snes, ch);
     smp = (smp * ch->env.attenuation) >> 11;
     ch->io.OUTX = (smp >> 7) & 0xFF;
 

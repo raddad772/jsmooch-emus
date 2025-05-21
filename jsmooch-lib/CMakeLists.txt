@@ -462,6 +462,7 @@ add_library(jsmooch-lib
         src/system/snes/snes_controller_port.h
         src/component/controller/snes/snes_joypad.c
         src/component/controller/snes/snes_joypad.h
+        src/system/snes/gauss_table.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

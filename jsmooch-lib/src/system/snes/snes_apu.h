@@ -8,7 +8,8 @@
 #include "component/cpu/spc700/spc700.h"
 
 struct SNES_APU_sample {
-    i16 decoded[16];
+    i16 decoded[2][16];
+    u32 cur_decode_buf;
     u8 pos;
     u8 first_or_loop;
     u8 filter_pos;
@@ -19,7 +20,7 @@ struct SNES_APU_sample {
 };
 
 struct SNES_APU_filter {
-    i32 prev[4];
+    i16 prev[2];
 };
 
 struct SNES_APU {
