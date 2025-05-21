@@ -58,46 +58,41 @@ static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_fi
     u32 filter_num = (header >> 2) & 3;
     u32 tn = 0;
     for (u32 i = 0; i < 8; i++) {
-        u8 data = *buf;
+        i8 data = (i8)*buf;
         buf++;
         for (u32 num = 0; num < 2; num++) {
-            i32 nibble = (i32)(((i8)data & 0xF0) >> 4);
+            i32 nibble = (i32)((data & 0xF0) >> 4);
             data <<= 4;
             //nibble = SIGNe4to32(nibble);
             if (scale <= 12) {
                 nibble <<= scale;
                 nibble >>= 1;
             } else {
-                nibble &= ~0x7ff;
+                nibble &= ~0x7FF;
             }
             switch(filter_num) {
                 case 0:
                     break;
                 case 1:
-                    //s += filter->prev[0] * 0.46875
                     nibble += filter->prev[0] >> 1;
                     nibble += (-filter->prev[0]) >> 5;
                     break;
-
                 case 2:
-                    //s += filter->prev[0] * 0.953125 - filter->prev[1] * 0.46875
                     nibble += filter->prev[0];
-                    nibble -= filter->prev[1];
-                    nibble += filter->prev[1] >> 4;
+                    nibble -= filter->prev[1] >> 1;
+                    nibble += filter->prev[1] >> 5;
                     nibble += (filter->prev[0] * -3) >> 6;
                     break;
-
                 case 3:
                     nibble += filter->prev[0];
-                    nibble -= filter->prev[1];
+                    nibble -= filter->prev[1] >> 1;
                     nibble += (filter->prev[0] * -13) >> 7;
-                    nibble += (filter->prev[1] * 3) >> 4;
+                    nibble += ((filter->prev[1] >> 1) * 3) >> 4;
                     break;
-
             }
             if (nibble < -32768) nibble = -32768;
             if (nibble > 32767) nibble = 32767;
-            nibble = (i16)((u16)nibble << 1);
+            //nibble = (i16)((u16)nibble << 1);
 
             dest->decoded[tn++] = (i16)nibble;
             filter->prev[3] = filter->prev[2];
