@@ -325,21 +325,18 @@ static void apu_write8(struct NDS *this, u32 addr, u32 val, struct NDS_APU_CH *c
         case R7_SOUNDxCNT+2: {
             val &= 0x7F;
             ch->io.pan = val;
+            // (0..127=left..right) (64=half volume on both speakers)
+            // 0 = 100% on left, 0% on right
+            // 127 = 100% on right, 0% on left
+            // 0...127 right
+            // 127 - 0...127 left
             if (val == 64) {
-                ch->io.left_pan = ch->io.right_pan = 63;
+                ch->io.left_pan = ch->io.right_pan = 64;
             }
             else {
-                if (val < 64) {
-                    ch->io.left_pan = 63;
-                    ch->io.right_pan = val;
-                }
-                else {
-                    ch->io.right_pan = 63;
-                    ch->io.left_pan = 127 - val;
-                }
+                ch->io.right_pan = ch->io.pan;
+                ch->io.left_pan = 127 - ch->io.pan;
             }
-            if (ch->io.right_pan == 63) ch->io.right_pan = 64;
-            if (ch->io.left_pan == 63) ch->io.left_pan = 64;
             return; }
 
         case R7_SOUNDxCNT+3: {
@@ -558,25 +555,29 @@ void NDS_master_sample_callback(void *ptr, u64 nothing, u64 cur_clock, u32 jitte
     for (u32 chn = 0; chn < 16; chn++) {
         struct NDS_APU_CH *ch = &this->apu.ch[chn];
         //i32 smp = ch->sample; //
-        i32 smp = ((ch->sample * (i32)ch->io.real_vol) >> 7) >> ch->io.vol_rshift;
+        i32 smp = (((i32)ch->sample * (i32)ch->io.real_vol) >> 7) >> ch->io.vol_rshift;
         // Current range, 16 bits.
-        spkr += smp;
-
-        left += (smp * ch->io.left_pan) >> 6;
-        right += (smp * ch->io.right_pan) >> 6;
+        //spkr += smp;
+        left += (smp * ch->io.left_pan) >> 7;
+        right += (smp * ch->io.right_pan) >> 7;
     }
-    spkr >>= 6;
-    if (spkr < -1024) spkr = -1024;
-    if (spkr > 1023) spkr = 1023;
-    if (left <= -32768) left = -32768;
-    if (left > 32767) left = 32767;
-    if (right <= -32768) right = -32768;
-    if (right > 32767) right = 32767;
+    //spkr >>= 6;
+    // >> 7 for master_vol divide, and another 6 for 16->10bit
+    left = (left * (i32)this->apu.io.master_vol) >> 13;
+    right = (right * (i32)this->apu.io.master_vol) >> 13;
+    //if (spkr < -1024) spkr = -1024;
+    //if (spkr > 1023) spkr = 1023;
+    if (left < -512) left = -512;
+    if (left > 511) left = 511;
+    if (right < -512) right = -512;
+    if (right > 511) right = 511;
     if (this->apu.buffer.len >= NDS_APU_MAX_SAMPLES) {
         printf("\nERROR SOUND OVERRUN!");
     }
     else {
-        this->apu.buffer.samples[this->apu.buffer.tail] = spkr;
+        this->apu.buffer.samples2[this->apu.buffer.tail] = left;
+        this->apu.buffer.tail = (this->apu.buffer.tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
+        this->apu.buffer.samples2[this->apu.buffer.tail] = right;
         this->apu.buffer.tail = (this->apu.buffer.tail + 1) & (NDS_APU_MAX_SAMPLES - 1);
         this->apu.buffer.len++;
     }

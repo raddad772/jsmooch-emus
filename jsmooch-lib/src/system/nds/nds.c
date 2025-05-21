@@ -286,14 +286,21 @@ static void sample_audio(struct NDS* this)
             printf("\nUNDERRUN %d SAMPLES!", this->audio.buf->samples_len - i);
             return;
         }
-        i32 smp = this->apu.buffer.samples[this->apu.buffer.head];
-        // Current range is -512 to 511, 10 bits.
-        //float s = ((((float)smp) + 512.0f) / 511.5f) - 1.0f;
-        float s = ((((float)smp) + 1024.0f) / 1023.5f) - 1.0f;
-        assert(s>=-1.0f && s<=1.0f);
-        *outptr = s;
-        outptr++;
+
+        i32 smp = this->apu.buffer.samples2[this->apu.buffer.head];
         this->apu.buffer.head = (this->apu.buffer.head + 1) & (NDS_APU_MAX_SAMPLES - 1);
+        // Current range is -512 to 511, 10 bits?
+        float l = ((((float)smp) + 512.0f) / 511.5f) - 1.0f;
+        assert(l>=-1.0f && l<=1.0f);
+
+        smp = this->apu.buffer.samples2[this->apu.buffer.head];
+        this->apu.buffer.head = (this->apu.buffer.head + 1) & (NDS_APU_MAX_SAMPLES - 1);
+        float r = ((((float)smp) + 512.0f) / 511.5f) - 1.0f;
+
+        *outptr = l;
+        outptr++;
+        *outptr = r;
+        outptr++;
         this->apu.buffer.len--;
     }
 }
@@ -535,6 +542,7 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->num = 2;
     chan->sample_rate = 32760; // uhhhh....yeah...lol
     chan->low_pass_filter = 16380;
 }

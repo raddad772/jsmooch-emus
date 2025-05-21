@@ -115,7 +115,7 @@ struct NDS_APU {
     } io;
 
     struct {
-        i32 samples[NDS_APU_MAX_SAMPLES];
+        i32 samples2[NDS_APU_MAX_SAMPLES];
         u32 len, head, tail;
         struct {
             u64 next_timecode;
