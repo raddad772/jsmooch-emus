@@ -29,7 +29,9 @@ struct SNES_APU {
         struct SNES_APU_ch {
             u32 num, ext_enable;
 
-            i16 sample;
+            struct {
+                i32 l, r;
+            } output;
 
             struct {
                 long double next_sample, stride;
@@ -122,11 +124,20 @@ struct SNES_APU {
         } io;
 
         struct {
+            i32 l, r;
+        } output;
+
+        struct {
             struct {
                 u64 sch_id;
                 u32 still_sched;
             } kon_clear, koff_clear;
         } scheduling;
+
+        struct {
+            void *ptr;
+            void (*func)(void *ptr, u64 key, u64 clock, u32 jitter);
+        } sample;
     } dsp;
 };
 
@@ -137,6 +148,5 @@ void SNES_APU_reset(struct SNES *);
 void SNES_APU_schedule_first(struct SNES *);
 u32 SNES_APU_read(struct SNES *, u32 addr, u32 old, u32 has_effect);
 void SNES_APU_write(struct SNES *, u32 addr, u32 val);
-i16 SNES_APU_mix_sample(struct SNES_APU *, u32 is_debug);
 
 #endif //JSMOOCH_EMUS_SNES_APU_H

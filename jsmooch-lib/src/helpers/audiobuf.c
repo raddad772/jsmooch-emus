@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <printf.h>
 
 #include "audiobuf.h"
 

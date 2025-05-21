@@ -44,9 +44,6 @@ struct SNES_clock {
             long double stride;
         } env;
 
-        struct {
-
-        };
     } apu;
 
     struct {

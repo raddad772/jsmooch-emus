@@ -31,13 +31,13 @@ typedef struct ResamplerCallbackData
 
 static int get_s16_audio_samples(audiowrap *me, u16 *output, u32 frameCount)
 {
-    int total_samples = 0;
+    int total_frames = 0;
     struct audiobuf *b = me->get_buf_for_playback();
     if (!b) {
         //printf("\n!b!");
         return 0;
     }
-    u32 lenleft = frameCount;
+    u32 lenleft = me->num_channels;
     u16 *outptr = output;
     while (lenleft > 0) {
         // Grab a sample...
@@ -49,7 +49,7 @@ static int get_s16_audio_samples(audiowrap *me, u16 *output, u32 frameCount)
             outptr++;
             smp++;
         }
-        total_samples++;
+        total_frames++;
         b->upos++;
         lenleft--;
         if (b->upos >= b->samples_len) {
@@ -63,7 +63,7 @@ static int get_s16_audio_samples(audiowrap *me, u16 *output, u32 frameCount)
     }
     //if (lenleft > 0)
         //printf("\nOOPS! SHORT %d SAMPLES!", lenleft);
-    return total_samples;
+    return total_frames;
 }
 
 
@@ -72,7 +72,7 @@ static size_t rsin_callback(void *user_data, cc_s16l *buffer, size_t total_frame
     // FEED DATA FOR THE RESAMPLER BEAST
     auto *me = (ResamplerCallbackData *)user_data;
 
-    return get_s16_audio_samples(me->audiowrapper, reinterpret_cast<u16 *>(buffer), (u32)(total_frames / me->audiowrapper->num_channels)) * me->audiowrapper->num_channels;
+    return get_s16_audio_samples(me->audiowrapper, reinterpret_cast<u16 *>(buffer), total_frames);// * me->audiowrapper->num_channels;
 }
 
 static cc_bool rsout_callback(void *user_data, const cc_s32f *frame, cc_u8f total_samples)
@@ -164,11 +164,11 @@ int audiowrap::init_wrapper(u32 in_num_channels, u32 in_sample_rate, u32 low_pas
     w->config = ma_device_config_init(ma_device_type_playback);
     w->config.playback.format   = ma_format_s16;   // Set to ma_format_unknown to use the device's native format.
     w->config.playback.channels = in_num_channels;               // Set to 0 to use the device's native channel count.
-    if (in_sample_rate > 48000) {
+    if (in_sample_rate != 48000) {
         printf("\nRESAMPLING! native rate:%d", in_sample_rate);
         resample = 1;
         w->config.sampleRate        = 48000;           // Set to 0 to use the device's native sample rate.
-        ClownResampler_HighLevel_Init(&resampler, 1, in_sample_rate, 48000, lpf);
+        ClownResampler_HighLevel_Init(&resampler, in_num_channels, in_sample_rate, 48000, lpf);
     }
     else {
         w->config.sampleRate = in_sample_rate;

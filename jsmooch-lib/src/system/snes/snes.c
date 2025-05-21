@@ -104,6 +104,27 @@ static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
     this->clock.master_cycle_count += this->clock.cpu.divider;
 }
 
+static inline float i16_to_float(i16 val)
+{
+    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
+}
+
+
+static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct SNES* this = (struct SNES *)ptr;
+    // TODO: make this stereo!
+    // TODO: make debug waveform also stereo
+    if (this->audio.buf) {
+        this->audio.cycles++;
+        if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float(this->apu.dsp.output.l);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = i16_to_float(this->apu.dsp.output.r);
+        }
+        this->audio.buf->upos+=2;
+    }
+}
+
 void SNES_new(JSM)
 {
     struct SNES* this = (struct SNES*)malloc(sizeof(struct SNES));
@@ -120,6 +141,8 @@ void SNES_new(JSM)
 
     R5A22_init(&this->r5a22, &this->clock.master_cycle_count);
     SNES_APU_init(this);
+    this->apu.dsp.sample.func = &sample_audio;
+    this->apu.dsp.sample.ptr = this;
     SNES_PPU_init(this); // must be after m68k init
 
     snprintf(jsm->label, sizeof(jsm->label), "SNES");
@@ -177,36 +200,14 @@ void SNES_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
-static inline float i16_to_float(i16 val)
-{
-    return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
-}
-
-static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct SNES* this = (struct SNES *)ptr;
-    if (this->audio.buf) {
-        this->audio.cycles++;
-        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-        scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-        if (this->audio.buf->upos < this->audio.buf->samples_len) {
-            i32 v = 0;
-            v += (i32)SNES_APU_mix_sample(&this->apu, 0);
-            //if ((this->audio.cycles & 7) < 4) v = 0;
-            //else v = 32767;
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float(v);
-        }
-        this->audio.buf->upos++;
-    }
-}
-
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct SNES *this = (struct SNES *)ptr;
 
     struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
     if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SNES_APU_mix_sample(&this->apu, 1));
+        i32 smp = (this->apu.dsp.output.l + this->apu.dsp.output.r) >> 1;
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(smp);
         dw->user.buf_pos++;
     }
 
@@ -223,7 +224,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
     for (int j = 0; j < 8; j++) {
         dw = cpg(this->dbg.waveforms.chan[j]);
         if (dw->user.buf_pos < dw->samples_requested) {
-            i16 sv = this->apu.dsp.channel[j].sample;
+            i16 sv = (this->apu.dsp.channel[j].output.l + this->apu.dsp.channel[j].output.r) >> 1;
             ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv);
             dw->user.buf_pos++;
         }
@@ -238,7 +239,7 @@ static void schedule_first(struct SNES *this)
 {
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
+    //scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
 
     SNES_APU_schedule_first(this);
     SNES_PPU_schedule_first(this);
@@ -290,8 +291,10 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    //chan->sample_rate = 32000;
-    chan->sample_rate = 64000;
+    chan->num = 2;
+    chan->left = chan->right = 1;
+    chan->sample_rate = 32000;
+    //chan->sample_rate = 64000;
     chan->low_pass_filter = 16000;
 }
 

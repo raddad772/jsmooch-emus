@@ -480,13 +480,16 @@ void full_system::setup_audio()
 {
     u32 srate = 0;
     u32 lpf = 0;
+    u32 num_chans =  0;
     for (u32 i = 0; i < cvec_len(&sys->IOs); i++) {
         struct physical_io_device *pio = (struct physical_io_device *)cvec_get(&sys->IOs, i);
-
         switch(pio->kind) {
             case HID_AUDIO_CHANNEL:
                 audiochans.push_back(&pio->audio_channel);
+                if (!pio->audio_channel.left && !pio->audio_channel.right) { pio->audio_channel.left = pio->audio_channel.right = 1; }
+                if (!pio->audio_channel.num) pio->audio_channel.num = 1;
                 srate = pio->audio_channel.sample_rate;
+                num_chans += pio->audio_channel.num;
                 lpf = pio->audio_channel.low_pass_filter;
                 break;
         }
@@ -495,7 +498,7 @@ void full_system::setup_audio()
         printf("\nNo audio channel found in full_sys!");
         return;
     }
-    audio.init_wrapper(audiochans.size(), srate, lpf);
+    audio.init_wrapper(num_chans, srate, lpf);
     audio.configure_for_fps(60);
 }
 

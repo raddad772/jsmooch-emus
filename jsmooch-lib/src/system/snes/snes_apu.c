@@ -157,9 +157,9 @@ static u8 read_DSP(void *ptr, u16 addr)
     struct SNES_APU_DSP *this = &snes->apu.dsp;
     switch (addr) {
         case 0x0c:
-            return this->io.MVOLL;
+            return this->io.MVOLL & 0xFF;
         case 0x1C:
-            return this->io.MVOLR;
+            return this->io.MVOLR & 0xFF;
         case 0x2C:
             return this->io.EVOLL;
         case 0x3C:
@@ -495,10 +495,10 @@ static void write_DSP(void *ptr, u16 addr, u8 val)
     struct SNES_APU_DSP *this = &snes->apu.dsp;
     switch (addr) {
         case 0x0c:
-            this->io.MVOLL = val;
+            this->io.MVOLL = SIGNe8to32(val);
             return;
         case 0x1C:
-            this->io.MVOLR = val;
+            this->io.MVOLR = SIGNe8to32(val);
             return;
         case 0x2C:
             this->io.EVOLL = val;
@@ -654,16 +654,41 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
     ch->io.OUTX = (smp >> 7) & 0xFF;
 
     // smp = smp * vol / 128;
-    i32 vol = (ch->io.VOLL + ch->io.VOLR) >> 1;
+    ch->output.l = (i16)((smp * ch->io.VOLL) >> 7);
+    ch->output.r = (i16)((smp * ch->io.VOLR) >> 7);
+    if (ch->output.l > 32767) ch->output.l = 32767;
+    if (ch->output.l < -32768) ch->output.l = -32768;
+    if (ch->output.r > 32767) ch->output.r = 32767;
+    if (ch->output.r < -32768) ch->output.r = -32768;
+}
 
-    ch->sample = (i16)((smp * vol) >> 8);
-    //ch->sample_data.pos++;
+static void mix_sample(struct SNES_APU *this)
+{
+    i32 out_l, out_r;
+    out_l = out_r = 0;
 
+    for (u32 i = 0; i < 8; i++) {
+        struct SNES_APU_ch *ch = &this->dsp.channel[i];
+        if (!ch->ext_enable || !ch->env.attenuation || ch->ended) continue;
 
-    // ch_do_sample(snes, ch->num, snes->clock.master_cycle_count, 0);
-    /*
-Counter.Bit15-12 indicates the current sample (within a BRR block).
-Counter.Bit11-3 are used as gaussian interpolation index.     */
+        out_l += ch->output.l;
+        out_r += ch->output.r;
+        if (out_l < -32768) out_l = -32768;
+        if (out_l > 32767) out_l = 32767;
+        if (out_r < -32768) out_r = -32768;
+        if (out_r > 32767) out_r = 32767;
+    }
+    out_l = (out_l * this->dsp.io.MVOLL) >> 7;
+    out_r = (out_r * this->dsp.io.MVOLR) >> 7;
+    if (out_l < -32768) out_l = -32768;
+    if (out_l > 32767) out_l = 32767;
+    if (out_r < -32768) out_r = -32768;
+    if (out_r > 32767) out_r = 32767;
+    if (!this->dsp.ext_enable || this->dsp.io.FLG.mute_all) {
+        out_l = out_r = 0;
+    }
+    this->dsp.output.l = out_l;
+    this->dsp.output.r = out_r;
 }
 
 static void DSP_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -675,8 +700,12 @@ static void DSP_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
         cycle_SNES_channel(snes, ch);
     }
 
+    mix_sample(&snes->apu);
+
     snes->clock.apu.sample.next += snes->clock.apu.sample.stride;
     scheduler_only_add_abs(&snes->scheduler, (i64)snes->clock.apu.sample.next, 0, snes, &DSP_cycle, NULL);
+
+    snes->apu.dsp.sample.func(snes->apu.dsp.sample.ptr, 0, clock, jitter);
 }
 
 void SNES_APU_schedule_first(struct SNES *snes)
@@ -695,8 +724,6 @@ void SNES_APU_schedule_first(struct SNES *snes)
         ch->io.ADSR1.adsr_on = 1;
         update_envelope(snes, ch, 0);
     }
-
-
 }
 
 u32 SNES_APU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect)
@@ -710,20 +737,3 @@ void SNES_APU_write(struct SNES *snes, u32 addr, u32 val)
 }
 
 
-i16 SNES_APU_mix_sample(struct SNES_APU *this, u32 is_debug)
-{
-    i32 out = 0;
-    if (!this->dsp.ext_enable || this->dsp.io.FLG.mute_all) return 0;
-
-    for (u32 i = 0; i < 8; i++) {
-        struct SNES_APU_ch *ch = &this->dsp.channel[i];
-        if (!ch->ext_enable || !ch->env.attenuation || ch->ended) continue;
-
-        i32 smp;
-        smp = ch->sample >> 1;
-        out += smp;
-        if (out < -32768) out = -32768;
-        if (out > 32767) out = 32767;
-    }
-    return out;
-}
