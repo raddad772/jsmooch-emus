@@ -17,7 +17,7 @@ static void fill_timing_ntsc(struct SNES_clock *this)
 
     this->apu.sample.stride = (long double)this->timing.second.master_cycles / 32000.0;
     this->apu.cycle.stride = (long double)this->timing.second.master_cycles / 1024000.0;
-    this->apu.env.stride = this->apu.sample.stride;
+    this->apu.env.stride = (long double)this->timing.second.master_cycles / 32000.0;
     //this->apu.sample.pitch_ratio =  (long double)this->timing.second.master_cycles / 131072000.0;
     this->apu.sample.pitch_ratio =  (long double)this->timing.second.master_cycles / 131072.0;
 

@@ -670,6 +670,7 @@ static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
     else smp = gaussian_me_up(snes, ch);
     smp = (smp * ch->env.attenuation) >> 11;
     ch->io.OUTX = (smp >> 7) & 0xFF;
+    ch->output.debug = smp;
 
     // smp = smp * vol / 128;
     ch->output.l = (i16)((smp * ch->io.VOLL) >> 7);

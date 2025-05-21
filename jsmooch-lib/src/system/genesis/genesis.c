@@ -555,7 +555,7 @@ static void setup_audio(struct cvec* IOs)
     chan->sample_rate = (MASTER_CYCLES_PER_FRAME * 60) / (7 * 144); // ~55kHz
     chan->left = chan->right = 1;
     chan->num = 2;
-    chan->low_pass_filter = 16000;
+    chan->low_pass_filter = 22000;
 }
 
 void genesisJ_describe_io(JSM, struct cvec *IOs)

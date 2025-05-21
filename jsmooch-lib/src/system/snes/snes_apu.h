@@ -32,6 +32,7 @@ struct SNES_APU {
 
             struct {
                 i32 l, r;
+                i16 debug;
             } output;
 
             struct {
