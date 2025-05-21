@@ -569,13 +569,12 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
 
         case 0x04000132:
             this->io.button_irq.buttons = (this->io.button_irq.buttons & 0b1100000000) | val;
-            printf("\nWRITE VAL TO 0:%d", val);
+
             return;
         case 0x04000133: {
             this->io.button_irq.buttons = (this->io.button_irq.buttons & 0xFF) | ((val & 0b11) << 8);
             u32 old_enable = this->io.button_irq.enable;
             this->io.button_irq.enable = (val >> 6) & 1;
-            printf("\nWRITE VAL TO 1:%d", val);
             if ((old_enable == 0) && this->io.button_irq.enable) {
                 printf("\nWARNING BUTTON IRQ ENABLED...");
             }

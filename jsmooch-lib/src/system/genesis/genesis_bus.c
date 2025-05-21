@@ -242,11 +242,6 @@ u8 genesis_z80_bus_read(struct genesis* this, u16 addr, u8 old, u32 has_effect)
 }
 
 
-static void genesis_z80_ym2612_write(struct genesis* this, u32 addr, u32 val)
-{
-    ym2612_write(&this->ym2612, addr & 3, val);
-}
-
 static void write_z80_bank_address_register(struct genesis* this, u32 val)
 {
     //state.bank = data.bit(0) << 8 | state.bank >> 1
@@ -264,7 +259,7 @@ static void genesis_z80_bus_write(struct genesis* this, u16 addr, u8 val, u32 is
     if (addr < 0x4000) // Reserved
         return;
     if (addr < 0x6000) {
-        genesis_z80_ym2612_write(this, addr, val);
+        ym2612_write(&this->ym2612, addr & 3, val);
         return;
     }
     if ((addr < 0x60FF) && (!is_m68k)) {

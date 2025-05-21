@@ -748,8 +748,10 @@ float GBA_APU_mix_sample(struct GBA*this, u32 is_debug)
         //s = (((float)(center + 1024)) / 2047.0f) - 1.0f;
         s = (float)(center << 5) / 32768.0f;
         //s = (((float)center) / 1024.0f);
-        assert(s <= 1.0f);
-        assert(s >= -1.0f);
+        this->apu.output.float_l = (float)(left << 6) / 32768.0f;
+        this->apu.output.float_r = (float)(right << 6) / 32768.0f;
+        assert(this->apu.output.float_l <= 1.0f);
+        assert(this->apu.output.float_l >= -1.0f);
     }
     return s;
 }

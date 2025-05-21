@@ -265,10 +265,12 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter) {
 
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         scheduler_only_add_abs(&this->scheduler, (i64) this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-        if (this->audio.buf->upos < this->audio.buf->samples_len) {
-            ((float *) (this->audio.buf->ptr))[this->audio.buf->upos] = GBA_APU_mix_sample(this, 0);
+        if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
+            GBA_APU_mix_sample(this, 0);
+            ((float *) (this->audio.buf->ptr))[this->audio.buf->upos] = this->apu.output.float_l;
+            ((float *) (this->audio.buf->ptr))[this->audio.buf->upos+1] = this->apu.output.float_r;
         }
-        this->audio.buf->upos++;
+        this->audio.buf->upos+=2;
     }
 
 }
@@ -436,6 +438,7 @@ static void setup_audio(struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    chan->num = 2;
     chan->sample_rate = 262144;
     chan->low_pass_filter = 24000;
 }

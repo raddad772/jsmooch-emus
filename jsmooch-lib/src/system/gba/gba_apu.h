@@ -31,6 +31,10 @@ struct GBA_APU {
         u32 frame_sequencer;
     } clocks;
 
+    struct {
+        float float_l, float_r;
+    } output;
+
 
     struct GBASNDCHAN {
         u32 ext_enable;
