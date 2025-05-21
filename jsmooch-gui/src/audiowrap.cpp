@@ -37,7 +37,7 @@ static int get_s16_audio_samples(audiowrap *me, u16 *output, u32 frameCount)
         //printf("\n!b!");
         return 0;
     }
-    u32 lenleft = me->num_channels;
+    u32 lenleft = frameCount;
     u16 *outptr = output;
     while (lenleft > 0) {
         // Grab a sample...

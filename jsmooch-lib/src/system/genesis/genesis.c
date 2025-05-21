@@ -420,15 +420,19 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
         this->audio.cycles++;
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-        if (this->audio.buf->upos < this->audio.buf->samples_len) {
-            i32 v = 0;
-            if (this->psg.ext_enable)
-                v += (i32)(SN76489_mix_sample(&this->psg, 0) >> 5);
-            if (this->ym2612.ext_enable)
-                v += (i32)this->ym2612.mix.mono_output;
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)v);
+        if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
+            i32 l = 0, r = 0;
+            if (this->psg.ext_enable) {
+                l = r = (i32)SN76489_mix_sample(&this->psg, 0) >> 5;
+            }
+            if (this->ym2612.ext_enable) {
+                l += (i32)this->ym2612.mix.left_output;
+                r += (i32)this->ym2612.mix.right_output;
+            }
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)l);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = i16_to_float((i16)r);
         }
-        this->audio.buf->upos++;
+        this->audio.buf->upos+=2;
     }
 }
 
@@ -549,6 +553,8 @@ static void setup_audio(struct cvec* IOs)
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
     chan->sample_rate = (MASTER_CYCLES_PER_FRAME * 60) / (7 * 144); // ~55kHz
+    chan->left = chan->right = 1;
+    chan->num = 2;
     chan->low_pass_filter = 16000;
 }
 

@@ -2,9 +2,6 @@
 // Created by . on 10/25/24.
 //
 
-// This is a straight port of the Ares code, to help
-//  me understand this cool beast.
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
