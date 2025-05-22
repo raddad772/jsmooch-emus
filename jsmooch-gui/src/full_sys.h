@@ -197,6 +197,15 @@ public:
     void save_state();
     void load_state();
     void do_frame();
+
+    void check_new_frame();
+    void advance_time(u32 cycles, u32 scanlines, u32 frames);
+    struct {
+        u64 cycles = {};
+        u32 scanlines = {};
+        u64 frames = 0xFFFFFFFFFFFFFFFF;
+        bool has_audio_buf = {};
+    } int_time = {};
     struct framevars get_framevars() const;
     void present();
     void events_view_present();

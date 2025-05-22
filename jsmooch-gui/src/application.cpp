@@ -929,9 +929,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     }
     u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
     if (fsys.state == FSS_play) {
-        for (u32 i = 0; i < frame_multi; i++) {
-            fsys.do_frame();
-        }
+        fsys.advance_time(0, 0, frame_multi);
         last_frame_was_whole = true;
         //fsys.events_view_present();
         fsys.has_played_once = true;
@@ -1003,24 +1001,28 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         }
         if (step_scanlines) {
             dbg_unbreak();
-            fsys.step_scanlines(steps[1]);
+            fsys.advance_time(0, steps[1], 0);
+            //fsys.step_scanlines(steps[1]);
             last_frame_was_whole = false;
         }
         if (step_clocks) {
             dbg_unbreak();
-            fsys.step_cycles(steps[0]);
+            //fsys.step_cycles(steps[0]);
+            fsys.advance_time(steps[0], 0, 0);
+
             last_frame_was_whole = false;
         }
         if (step_frames) {
             dbg_unbreak();
-            fsys.step_frames(steps[2]);
+            //fsys.step_frames(steps[2]);
+            fsys.advance_time(0, 0, steps[2]);
             last_frame_was_whole = true;
         }
-        if (step_seconds) {
+        /*if (step_seconds) {
             dbg_unbreak();
             fsys.step_seconds(steps[3]);
             last_frame_was_whole = false;
-        }
+        }*/
 
         framevars fv = fsys.get_framevars();
         ImGui::SameLine();

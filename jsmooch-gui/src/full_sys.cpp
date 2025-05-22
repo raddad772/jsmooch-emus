@@ -881,14 +881,14 @@ void full_system::load_default_ROM()
 
             break;
         case SYS_SNES:
-            //worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works! sprite issues
             //worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // gfx issues
             //worked = grab_ROM(&ROMs, which, "megamanx.sfc", nullptr); // some sound then notjing
             //worked = grab_ROM(&ROMs, which, "smwallstars.smc", nullptr); // seems to work!
             //worked = grab_ROM(&ROMs, which, "run_saber.sfc", nullptr); //
 
-            worked = grab_ROM(&ROMs, which, "contra3.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "contra3.sfc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "donkey_kong_c.smc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "donkey_kong_c2.smc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "fzero.smc", nullptr); // ?
@@ -1536,6 +1536,71 @@ void full_system::debugger_pre_frame() {
         }
     }
 }
+
+void full_system::check_new_frame() {
+    struct framevars fv;
+    sys->get_framevars(sys, &fv);
+    if (fv.master_frame != int_time.frames) {
+        if (sys->set_audiobuf && int_time.has_audio_buf) {
+            audio.commit_emu_buffer();
+            int_time.has_audio_buf = false;
+        }
+        struct audiobuf *b = audio.get_buf_for_emu();
+        if (b && sys->set_audiobuf) {
+            sys->set_audiobuf(sys, b);
+            int_time.has_audio_buf = true;
+        }
+        debugger_pre_frame();
+    }
+
+    sync_persistent_storage();
+    int_time.scanlines = fv.scanline;
+    int_time.cycles = fv.master_cycle;
+    int_time.frames = fv.master_frame;
+}
+
+void full_system::advance_time(u32 cycles, u32 scanlines, u32 frames)
+{
+    check_new_frame();
+    if (sys) {
+        if (dbg.do_break) {
+            printf("\nNO ADVANCe, DEBUG!");
+            return;
+        }
+        if (cycles > 0) {
+            sys->step_master(sys, cycles);
+            check_new_frame();
+            if (dbg.do_break) {
+                printf("\nNO ADVANCe, DEBUG!");
+                return;
+            }
+        }
+        if (scanlines) {
+            for (u32 i = 0; i < scanlines; i++) {
+                sys->finish_scanline(sys);
+                check_new_frame();
+                if (dbg.do_break) {
+                    printf("\nNO ADVANCe, DEBUG!");
+                    return;
+                }
+            }
+        }
+        if (frames > 0) {
+            for (u32 i = 0; i < frames; i++) {
+                sys->finish_frame(sys);
+                check_new_frame();
+                if (dbg.do_break) {
+                    printf("\nNO ADVANCe, DEBUG!");
+                    return;
+                }
+            }
+        }
+    }
+    else {
+        printf("\nCannot advance with no system.");
+    }
+}
+
 
 void full_system::do_frame() {
     if (sys) {
