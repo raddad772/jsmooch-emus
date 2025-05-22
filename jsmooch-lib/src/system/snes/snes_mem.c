@@ -94,6 +94,23 @@ static void map_loram(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_
     map_generic(this, bank_start, bank_end, addr_start, addr_end, offset, SMB_WRAM, &read_WRAM, &write_WRAM);
 }
 
+static void map_hirom(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end, u32 offset, u32 bank_mask)
+{
+    for (u32 c = bank_start; c <= bank_end; c++) {
+        for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
+            u32 b = (c << 4) | (i >> 12);
+            u32 mapaddr = ((c & bank_mask) << 16) | i;
+            mapaddr %= this->cart.header.rom_size;
+            this->mem.blockmap[b].kind = SMB_ROM;
+            this->mem.blockmap[b].offset = mapaddr;
+            this->mem.read[b] = &read_loROM;
+            this->mem.write[b] = &write_loROM;
+            //printf("\nMap %06x with offset %04x", (c << 16) | i, offset);
+        }
+    }
+}
+
+
 static void map_lorom(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
 {
     u32 offset = 0;
@@ -111,7 +128,7 @@ static void map_lorom(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_
     }
 }
 
-static void sys_map(struct SNES *this)
+static void sys_map_lo(struct SNES *this)
 {
     for (u32 bank = 0; bank < 0xFF; bank += 0x80) {
         map_loram(this, bank+0x00, bank+0x3F, 0x0000, 0x1FFF, 0);
@@ -119,6 +136,32 @@ static void sys_map(struct SNES *this)
         map_generic(this, bank+0x00, bank+0x3F, 0x4000, 0x5FFF, 0x4000, SMB_CPU, &R5A22_reg_read, &R5A22_reg_write);
     }
 }
+
+static void sys_map_hi(struct SNES *this)
+{
+    for (u32 bank = 0; bank < 0xFF; bank += 0x80) {
+        map_loram(this, bank + 0x00, bank + 0x3F, 0x0000, 0x1FFF, 0);
+        map_generic(this, bank + 0x00, bank + 0x3F, 0x2000, 0x3FFF, 0x2000, SMB_PPU, &SNES_PPU_read, &SNES_PPU_write);
+        map_generic(this, bank + 0x00, bank + 0x3F, 0x4000, 0x5FFF, 0x4000, SMB_CPU, &R5A22_reg_read, &R5A22_reg_write);
+    }
+}
+
+static void map_sram_hi(struct SNES *this, u32 bank_start, u32 bank_end)
+{
+    u32 offset = 0;
+    for (u32 c = bank_start; c <= bank_end; c++) {
+        for (u32 i = 0x6000; i < 0x7FFF; i += 0x1000) {
+            u32 b = (c << 4) | (i >> 12);
+            this->mem.blockmap[b].kind = SMB_SRAM;
+            this->mem.blockmap[b].offset = offset;
+            this->mem.read[b] = &read_SRAM;
+            this->mem.write[b] = &write_SRAM;
+            offset += 0x1000;
+            if (offset >= this->mem.SRAMSize) offset = 0;
+        }
+    }
+}
+
 
 static void map_sram(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_start, u32 addr_end)
 {
@@ -151,8 +194,16 @@ static void map_wram(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_s
     }
 }
 
+static void map_hirom_sram(struct SNES *this)
+{
+    u32 mask = this->cart.header.sram_mask;
+    map_sram_hi(this, 0x20, 0x3F);
+    map_sram_hi(this, 0xA0, 0xBF);
+}
+
 static void map_lorom_sram(struct SNES *this)
 {
+    // TODO: fix this
     u32 hi;
     if (this->mem.ROMSizebit > 11 || this->mem.SRAMSizebit > 5)
         hi = 0x7FFF;
@@ -170,7 +221,7 @@ static void setup_mem_map_lorom(struct SNES *this)
     clear_map(this);
     printf("\nMEM MAPPING!");
 
-    sys_map(this);
+    sys_map_lo(this);
     if (this->mem.ROMSize > (2 * 1024 * 1024)) {
         printf("\nBLROM MAPPING!");
         map_lorom(this, 0x00, 0x7F, 0x8000, 0xFFFF);
@@ -191,8 +242,29 @@ static void setup_mem_map_lorom(struct SNES *this)
 
 static void setup_mem_map_hirom(struct SNES *this)
 {
-    assert(1==2);
-    printf("\nHIROM NOT SUPPORT!");
+    clear_map(this);
+    printf("\nMEM MAPPING!");
+
+
+    sys_map_hi(this);
+
+    map_hirom(this, 0x00, 0x3F, 0x8000, 0xFFFF, 0, 0x3F);
+    map_hirom(this, 0x40, 0x7D, 0x0000, 0xFFFF, 0, 0x3F);
+    map_hirom(this, 0x80, 0xBF, 0x0000, 0xFFFF, 0, 0x3F);
+    map_hirom(this, 0xC0, 0xFF, 0x0000, 0xFFFF, 0, 0x3F);
+
+    map_loram(this, 0x00, 0x3F, 0x0000, 0x1FFF, 0);
+    map_loram(this, 0x80, 0xBF, 0x0000, 0x1FFF, 0);
+
+    map_hirom_sram(this);
+    map_wram(this, 0x7E, 0x7F, 0x0000, 0xFFFF);
+
+    // map SRAM to 6000-7FFF of 20-3F
+        // 0-$40, only upper half mapped to this, so 0x8000 offsets per bank
+    // so we basically map to the actual resolved address
+    // $40-7D, whole thing, 0x40
+
+
 }
 
 void SNES_mem_cart_inserted(struct SNES *this)

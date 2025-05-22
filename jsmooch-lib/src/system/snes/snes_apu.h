@@ -89,12 +89,16 @@ struct SNES_APU {
                 u32 sustain_rate;
                 u32 sustain_level;
 
+                u32 current_period;
+
                 i32 attenuation;
 
                 u64 sch_id;
                 u32 sch_still;
 
                 long double next_update, stride;
+
+                u32 counter;
             } env;
 
             struct SNES_APU_sample sample_data;

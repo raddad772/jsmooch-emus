@@ -7,6 +7,8 @@
 #include "snes_bus.h"
 
 // ratio for one to the other =
+static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate);
+static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch);
 
 
 static const int env_periods[32] = {
@@ -208,78 +210,81 @@ static void do_noise(void *ptr, u64 key, u64 clock, u32 jitter)
     this->noise.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)this->noise.next_update, 0, snes, &do_noise, &this->noise.sch_still);
 }
 
-static void ch_do_env(void *ptr, u64 key, u64 clock, u32 jitter)
+static void ch_update_env(struct SNES *snes, struct SNES_APU_ch *ch)
 {
-    struct SNES *snes = (struct SNES *)ptr;
-    struct SNES_APU_ch *ch = &snes->apu.dsp.channel[key];
     //printf("\nDO ENV %lld STATE:%d ATTENUATION:%d", key, ch->env.state, ch->env.attenuation);
-    if (ch->io.ADSR1.adsr_on && ch->env.state == SDEM_release && ch->env.attenuation == 0) {
-        // No need to keep subtracting from 0
-        //printf("\nEARLY EXIT ON RELEASE");
-        return;
-    }
-
-    u32 rate = 0;
-    i32 mod = 0;
-    if (ch->io.ADSR1.adsr_on || ch->env.state == SDEM_release) {
-        switch (ch->env.state) {
-            case SDEM_attack:
-                rate = (ch->env.attack_rate * 2) + 1;
-                if (rate == 31) mod = 1024;
-                else mod = 32;
-                break;
-            case SDEM_decay:
-                rate = (ch->env.decay_rate * 2) + 16;
-                mod = -(((ch->env.attenuation - 1) >> 8) + 1);
-                break;
-            case SDEM_sustain:
-                rate = ch->env.sustain_rate;
-                mod = -(((ch->env.attenuation - 1) >> 8) + 1);
-                break;
-            case SDEM_release:
-                rate = 31;
-                mod = -8;
-                break;
-        }
-        ch->env.attenuation += mod;
-
-        // Update phase
-        if (ch->env.state == SDEM_attack && ch->env.attenuation >= 0x7E0) {
-            ch->env.attenuation = (ch->env.attenuation > 0x7FF) ? 0x7FFF : ch->env.attenuation;
-            ch->env.state = SDEM_decay;
-        }
-        if (ch->env.state == SDEM_decay && ch->env.attenuation <= ch->env.sustain_level) {
-            ch->env.state = SDEM_sustain;
-        }
-    }
-    else {
-        if (!ch->io.GAIN.custom.custom_gain) {
-            ch->env.attenuation = (ch->io.GAIN.direct.fixed_vol << 4);
+    ch->env.counter++;
+    if (ch->env.counter >= ch->env.current_period) {
+        ch->env.counter = 0;
+        if (ch->io.ADSR1.adsr_on && ch->env.state == SDEM_release && ch->env.attenuation == 0) {
+            // No need to keep subtracting from 0
+            //printf("\nEARLY EXIT ON RELEASE");
             return;
         }
-        rate = ch->io.GAIN.custom.gain_rate;
-        switch(ch->io.GAIN.custom.gain_mode) {
-            case 0:
-                mod = -32;
-                break;
-            case 1:
-                mod = -(((ch->env.attenuation - 1) >> 8) + 1);
-                break;
-            case 2:
-                mod = 32;
-                break;
-            case 3:
-                mod = ch->env.attenuation < 0x600 ? 32 : 8;
-                break;
-        }
-        ch->env.attenuation += mod;
-    }
-    if (ch->env.attenuation < 0) ch->env.attenuation = 0;
-    if (ch->env.attenuation > 0x7FF) ch->env.attenuation = 0x7FF;
 
-    ch->env.stride = (long double)env_periods[rate] * snes->clock.apu.env.stride;
+        u32 rate = 0;
+        i32 mod = 0;
+        if (ch->io.ADSR1.adsr_on || ch->env.state == SDEM_release) {
+            switch (ch->env.state) {
+                case SDEM_attack:
+                    rate = (ch->env.attack_rate * 2) + 1;
+                    if (rate == 31) mod = 1024;
+                    else mod = 32;
+                    break;
+                case SDEM_decay:
+                    rate = (ch->env.decay_rate * 2) + 16;
+                    mod = -(((ch->env.attenuation - 1) >> 8) + 1);
+                    break;
+                case SDEM_sustain:
+                    rate = ch->env.sustain_rate;
+                    mod = -(((ch->env.attenuation - 1) >> 8) + 1);
+                    break;
+                case SDEM_release:
+                    rate = 31;
+                    mod = -8;
+                    break;
+            }
+            ch->env.attenuation += mod;
+
+            // Update phase
+            if (ch->env.state == SDEM_attack && ch->env.attenuation >= 0x7E0) {
+                ch->env.attenuation = (ch->env.attenuation > 0x7FF) ? 0x7FFF : ch->env.attenuation;
+                ch->env.state = SDEM_decay;
+                update_envelope(snes, ch, calc_env_rate(snes, ch));
+            }
+            if (ch->env.state == SDEM_decay && ch->env.attenuation <= ch->env.sustain_level) {
+                ch->env.state = SDEM_sustain;
+                update_envelope(snes, ch, calc_env_rate(snes, ch));
+            }
+        } else {
+            if (!ch->io.GAIN.custom.custom_gain) {
+                ch->env.attenuation = (ch->io.GAIN.direct.fixed_vol << 4);
+                return;
+            }
+            rate = ch->io.GAIN.custom.gain_rate;
+            ch->env.current_period = env_periods[rate];
+            switch (ch->io.GAIN.custom.gain_mode) {
+                case 0:
+                    mod = -32;
+                    break;
+                case 1:
+                    mod = -(((ch->env.attenuation - 1) >> 8) + 1);
+                    break;
+                case 2:
+                    mod = 32;
+                    break;
+                case 3:
+                    mod = ch->env.attenuation < 0x600 ? 32 : 8;
+                    break;
+            }
+            ch->env.attenuation += mod;
+        }
+        if (ch->env.attenuation < 0) ch->env.attenuation = 0;
+        if (ch->env.attenuation > 0x7FF) ch->env.attenuation = 0x7FF;
+    }
+    /*ch->env.stride = (long double)env_periods[rate] * snes->clock.apu.env.stride;
     ch->env.next_update += ch->env.stride;
-    ch->env.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->env.next_update, ch->num, snes, &ch_do_env, &ch->env.sch_still);
+    ch->env.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->env.next_update, ch->num, snes, &ch_do_env, &ch->env.sch_still);*/
 }
 
 /*static void ch_do_sample(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -323,24 +328,6 @@ static void ch_do_env(void *ptr, u64 key, u64 clock, u32 jitter)
     //ch->pitch.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->pitch.next_sample, key, snes, &ch_do_sample, &ch->pitch.sch_still);
 }*/
 
-static void schedule_env(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate)
-{
-    // rate is # of 1mhz cycles so
-    ch->env.stride = (long double)env_periods[rate] * snes->clock.apu.env.stride;
-    ch->env.next_update = snes->clock.master_cycle_count + ch->env.stride;
-    ch->env.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->env.next_update, ch->num, snes, &ch_do_env, &ch->env.sch_still);
-}
-
-
-/*static inline void schedule_ch(struct SNES *snes, struct SNES_APU_ch *ch, u32 pitch)
-{
-    u32 hz = (pitch * 32000) / 0x1000;
-    ch->pitch.stride = (long double)snes->clock.timing.second.master_cycles / (long double)hz;
-
-    ch->pitch.next_sample = ((long double)snes->clock.master_cycle_count) + ch->pitch.stride;
-    ch->pitch.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->pitch.next_sample, ch->num, snes, &ch_do_sample, &ch->pitch.sch_still);
-}*/
-
 static void update_noise(struct SNES *snes)
 {
     struct SNES_APU_DSP *this = &snes->apu.dsp;
@@ -352,16 +339,6 @@ static void update_noise(struct SNES *snes)
     }
 }
 
-static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate) {
-    if (ch->env.sch_still) scheduler_delete_if_exist(&snes->scheduler, ch->env.sch_id);
-    if (!ch->io.ADSR1.adsr_on && !ch->io.GAIN.custom.custom_gain) {
-        ch->env.attenuation = ch->io.GAIN.direct.fixed_vol << 4;
-        rate = 0;
-    }
-    if (rate) {
-        schedule_env(snes, ch, rate);
-    }
-}
 
 /*static void update_pitch(struct SNES *snes, struct SNES_APU_ch *ch, u32 old_pitch)
 {
@@ -393,6 +370,16 @@ static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch)
     return 0;
 
 }
+
+static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate) {
+    //if (ch->env.sch_still) scheduler_delete_if_exist(&snes->scheduler, ch->env.sch_id);
+    if (!ch->io.ADSR1.adsr_on && !ch->io.GAIN.custom.custom_gain) {
+        ch->env.attenuation = ch->io.GAIN.direct.fixed_vol << 4;
+        rate = 0;
+    }
+    ch->env.current_period = env_periods[rate];
+}
+
 
 static void write_voice(struct SNES *snes, struct SNES_APU_ch * ch, u8 param, u8 val)
 {
@@ -450,6 +437,7 @@ static void keyon(struct SNES *snes, u32 ch_num)
     struct SNES_APU_ch *ch = &snes->apu.dsp.channel[ch_num];
     ch->ended = 0;
     ch->pitch.counter = 0;
+    ch->env.counter = 0;
     ch->sample_data.pos = 15; // To force new block read
     ch->sample_data.next_read_addr = ch->sample_data.start_addr; // Start at start of sample
 
@@ -638,10 +626,8 @@ static i16 gaussian_me_up(struct SNES *snes, struct SNES_APU_ch *ch)
     return out;
 }
 
-static void cycle_SNES_channel(struct SNES *snes, struct SNES_APU_ch *ch)
+static void ch_update_sample(struct SNES *snes, struct SNES_APU_ch *ch)
 {
-    // do pitch updates!
-    // this is called @ 32kHz
     u32 step = (ch->io.PITCHH << 8) | ch->io.PITCHL;
     if (ch->num > 0 && snes->apu.dsp.io.PMON & (1 << ch->num)) {
         assert(0);
@@ -716,7 +702,8 @@ static void DSP_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 
     for (u32 i = 0; i < 8; i++) {
         struct SNES_APU_ch *ch = &snes->apu.dsp.channel[i];
-        cycle_SNES_channel(snes, ch);
+        ch_update_env(snes, ch);
+        ch_update_sample(snes, ch);
     }
 
     mix_sample(&snes->apu);

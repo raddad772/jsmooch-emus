@@ -704,6 +704,7 @@ void full_system::load_default_ROM()
             worked = 1;
             break;
         case SYS_NDS:
+            //worked = grab_ROM(&ROMs, which, "sims3.nds", nullptr); // save data corrupt complaint
             //worked = grab_ROM(&ROMs, which, "rockwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "armwrestler.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "libnds/print_both_screens.nds", nullptr);
@@ -827,7 +828,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mariokart.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "superstar.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sma4.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sma3.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pcrysound.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "airforce_delta_storm.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "advance_guardian_heroes.gba", nullptr); // works!
@@ -848,7 +849,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
-            //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
+            worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever.gba", nullptr); // works great!
@@ -880,12 +881,29 @@ void full_system::load_default_ROM()
 
             break;
         case SYS_SNES:
-            worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works! sprite issues
             //worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // gfx issues
             //worked = grab_ROM(&ROMs, which, "megamanx.sfc", nullptr); // some sound then notjing
             //worked = grab_ROM(&ROMs, which, "smwallstars.smc", nullptr); // seems to work!
             //worked = grab_ROM(&ROMs, which, "run_saber.sfc", nullptr); //
+
+            worked = grab_ROM(&ROMs, which, "contra3.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "donkey_kong_c.smc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "donkey_kong_c2.smc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "fzero.smc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "kirby_super.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "lostvikings.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "lostvikings2.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "mechwarrior.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "pilotwings.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "pockyrocky2.smc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "rotj.smc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "shadowrun.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "simcity.smc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "starfox.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "tetris_attack.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "tmnt4.sfc", nullptr); // ?
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
@@ -899,7 +917,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
-            worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
+            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!
@@ -967,7 +985,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "duke3d.bin", nullptr); // issues!
             //worked = grab_ROM(&ROMs, which, "star_cruiser.bin", nullptr); // seems fine? hard to say
             //worked = grab_ROM(&ROMs, which, "sonic_spinball.md", nullptr); // same sprite priority issue
-            //worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well
+            worked = grab_ROM(&ROMs, which, "sonic_3d_blast.md", nullptr); // FMV vibrates up and down. otherwise works well
             //worked = grab_ROM(&ROMs, which, "blockout.md", nullptr); // works well
             //worked = grab_ROM(&ROMs, which, "street_fighter_2_special_championship.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sprite_masking_test.bin", nullptr); // works great!

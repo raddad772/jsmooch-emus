@@ -245,8 +245,8 @@ struct audiobuf *audiowrap::get_buf_for_playback()
     }
     if (bufs.emu.len < 1)
     {
-        if (playing)
-            printf("\nOUT OF AUDIO BUFFERS FOR PLAYBACK!");
+        //if (playing)
+            //printf("\nOUT OF AUDIO BUFFERS FOR PLAYBACK!");
         return nullptr;
     }
     int pos = (int)bufs.emu.head;
