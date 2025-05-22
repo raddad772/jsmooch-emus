@@ -404,10 +404,6 @@ static void write_voice(struct SNES *snes, struct SNES_APU_ch * ch, u8 param, u8
             return;
         case 5:
             ch->io.ADSR1.v = val;
-            if (!ch->io.ADSR1.adsr_on) {
-                printf("\nGAIN set on ch %d", ch->num);
-            }
-
             ch->env.attack_rate = ch->io.ADSR1.attack_rate;
             ch->env.decay_rate = ch->io.ADSR1.decay_rate;
             update_envelope(snes, ch, calc_env_rate(snes, ch));

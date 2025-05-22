@@ -1202,7 +1202,8 @@ u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u3
     if (sz == 4) {
         this->waitstates.current_transaction++;
         addr &= ~3;
-    }    if (sz == 2) addr &= ~1;
+    }
+    if (sz == 2) addr &= ~1;
     addr &= 0x1FFFF;
     if (addr < 0x18000)
         return cR[sz](this->ppu.VRAM, addr);

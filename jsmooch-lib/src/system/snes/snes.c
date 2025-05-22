@@ -417,6 +417,7 @@ u32 SNESJ_finish_frame(JSM)
 u32 SNESJ_finish_scanline(JSM)
 {
     JTHIS;
+    read_opts(jsm, this);
     scheduler_run_til_tag(&this->scheduler, TAG_SCANLINE);
 
     return this->ppu.display->last_written;
@@ -425,6 +426,7 @@ u32 SNESJ_finish_scanline(JSM)
 u32 SNESJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
+    read_opts(jsm, this);
     scheduler_run_for_cycles(&this->scheduler, howmany);
     return 0;
 }

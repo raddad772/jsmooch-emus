@@ -100,6 +100,7 @@ static void map_hirom(struct SNES *this, u32 bank_start, u32 bank_end, u32 addr_
         for (u32 i = addr_start; i <= addr_end; i += 0x1000) {
             u32 b = (c << 4) | (i >> 12);
             u32 mapaddr = ((c & bank_mask) << 16) | i;
+            //printf("\nMAP %06X to %06X", (c << 16) | i, mapaddr);
             mapaddr %= this->cart.header.rom_size;
             this->mem.blockmap[b].kind = SMB_ROM;
             this->mem.blockmap[b].offset = mapaddr;
@@ -255,16 +256,9 @@ static void setup_mem_map_hirom(struct SNES *this)
 
     map_loram(this, 0x00, 0x3F, 0x0000, 0x1FFF, 0);
     map_loram(this, 0x80, 0xBF, 0x0000, 0x1FFF, 0);
-
     map_hirom_sram(this);
+
     map_wram(this, 0x7E, 0x7F, 0x0000, 0xFFFF);
-
-    // map SRAM to 6000-7FFF of 20-3F
-        // 0-$40, only upper half mapped to this, so 0x8000 offsets per bank
-    // so we basically map to the actual resolved address
-    // $40-7D, whole thing, 0x40
-
-
 }
 
 void SNES_mem_cart_inserted(struct SNES *this)

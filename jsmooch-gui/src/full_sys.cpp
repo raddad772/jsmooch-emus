@@ -888,16 +888,16 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "smwallstars.smc", nullptr); // seems to work!
             //worked = grab_ROM(&ROMs, which, "run_saber.sfc", nullptr); //
 
-            worked = grab_ROM(&ROMs, which, "contra3.sfc", nullptr); // ?
-            //worked = grab_ROM(&ROMs, which, "donkey_kong_c.smc", nullptr); // ?
-            //worked = grab_ROM(&ROMs, which, "donkey_kong_c2.smc", nullptr); // ?
-            //worked = grab_ROM(&ROMs, which, "fzero.smc", nullptr); // ?
-            //worked = grab_ROM(&ROMs, which, "kirby_super.sfc", nullptr); // ?
-            //worked = grab_ROM(&ROMs, which, "lostvikings.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "contra3.sfc", nullptr); // SA-1 not support
+            //worked = grab_ROM(&ROMs, which, "donkey_kong_c.smc", nullptr); // R logo appears, sound, then hangs
+            //worked = grab_ROM(&ROMs, which, "donkey_kong_c2.smc", nullptr); // blank screen
+            //worked = grab_ROM(&ROMs, which, "fzero.smc", nullptr); // no mode7 yet
+            //worked = grab_ROM(&ROMs, which, "kirby_super.sfc", nullptr); // SA-1
+            //worked = grab_ROM(&ROMs, which, "lostvikings.sfc", nullptr); // blank screen
             //worked = grab_ROM(&ROMs, which, "lostvikings2.sfc", nullptr); // ?
-            //worked = grab_ROM(&ROMs, which, "mechwarrior.sfc", nullptr); // ?
+            //worked = grab_ROM(&ROMs, which, "mechwarrior.sfc", nullptr); // lorom. corrupt gfx, gets semi i ngame?
             //worked = grab_ROM(&ROMs, which, "pilotwings.sfc", nullptr); // ?
-            //worked = grab_ROM(&ROMs, which, "pockyrocky2.smc", nullptr); // ?
+            worked = grab_ROM(&ROMs, which, "pockyrocky2.smc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "rotj.smc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "shadowrun.sfc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "simcity.smc", nullptr); // ?
