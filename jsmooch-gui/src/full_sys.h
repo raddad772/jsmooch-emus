@@ -214,10 +214,6 @@ public:
     void image_view_present(struct debugger_view *dview, struct my_texture &tex);
     void setup_wgpu();
     void setup_audio();
-    void step_seconds(int num);
-    void step_scanlines(int num);
-    void step_cycles(int num);
-    void step_frames(int num);
     void setup_tracing();
 private:
     void debugger_pre_frame();

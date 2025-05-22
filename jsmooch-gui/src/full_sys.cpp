@@ -1455,43 +1455,6 @@ void full_system::image_view_present(struct debugger_view *dview, struct my_text
     tex.upload_data(buf, tex.width*tex.height*4, tex.width, tex.height);
 }
 
-void full_system::step_frames(int num)
-{
-    for (u32 i = 0; i < num; i++) {
-        sys->finish_frame(sys);
-        if (dbg.do_break) break;
-    }
-}
-
-void full_system::step_seconds(int num)
-{
-    printf("\nNOT SUPPORT YET");
-}
-
-void full_system::step_scanlines(int num)
-{
-    sync_persistent_storage();
-    for (u32 i = 0; i < num; i++) {
-        if (dbg.do_break) break;
-        sys->finish_scanline(sys);
-    }
-}
-
-void full_system::step_cycles(int num)
-{
-    framevars fv{};
-    sync_persistent_storage();
-    if (dbg.do_break) return;
-    sys->get_framevars(sys, &fv);
-    u64 cur_frame = fv.master_frame;
-    sys->step_master(sys, num);
-    sys->get_framevars(sys, &fv);
-    u64 new_frame = fv.master_frame;
-    if (cur_frame != new_frame) {//
-        // frame_advanced();
-    }
-}
-
 ImVec2 full_system::output_size() const
 {
     float z = output.zoom ? 2.0f : 1.0f;
