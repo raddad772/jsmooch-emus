@@ -65,8 +65,8 @@ static u32 find_cart_header(struct SNES *this)
 {
     u32 first_offset = 0x7F00;
     // check for 0x20 non-0 bytes
-    if (check_offset(this, 0x7F00)) return 0x7F00;
-    if (check_offset(this, 0xFF00)) return 0xFF00;
+    //if (check_offset(this, 0xFF00)) return 0xFF00;
+    //if (check_offset(this, 0x7F00)) return 0x7F00;
     return 0x7F00;
 }
 

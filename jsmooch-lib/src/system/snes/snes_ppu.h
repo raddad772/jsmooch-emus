@@ -127,7 +127,7 @@ struct SNES_PPU {
     } latch;
 
     struct {
-        u32 hoffset, rhoffset, voffset, rvoffset;
+        i32 hoffset, rhoffset, voffset, rvoffset;
         i16 a, b, c, d;
         i16 x, rx, y, ry;
         u32 hflip, vflip, repeat;

@@ -709,10 +709,77 @@ struct slice {
     u32 priority;
 };
 
-
-static void draw_bg_line_mode7(struct SNES *snes, u32 source, u32 y)
+static inline u32 direct_color(u32 palette_index, u32 palette_color)
 {
-    
+    return ((palette_color << 2) & 0x001C) + ((palette_index << 1) & 2) +
+           ((palette_color << 4) & 0x380) + ((palette_index << 5) & 0x40) +
+           ((palette_color << 7) & 0x6000) + ((palette_index << 10) & 0x1000);
+}
+
+static inline void setpx(struct SNES_PPU_px *px, u32 source, u32 priority, u32 color)
+{
+    px->has = 1;
+    px->source = source;
+    px->priority = priority;
+    px->color = color;
+}
+
+static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
+{
+    struct SNES_PPU *this = &snes->ppu;
+    struct SNES_PPU_BG *bg = &this->bg[source];
+
+    y = this->mode7.vflip ? 255 - y : y;
+
+    u16 m_color = 0;
+    u32 m_counter = 1;
+    u32 m_palette = 0;
+    u8  m_priority = 0;
+
+    i32 hohc = (this->mode7.rhoffset - this->mode7.rx);
+    i32 vovc = (this->mode7.rvoffset - this->mode7.ry);
+    hohc = (hohc & 0x2000) ? (hohc & 0xFC00) : (hohc & 1023);
+    vovc = (vovc & 0x2000) ? (vovc & 0xFC00) : (vovc & 1023);
+
+    i32 origin_x = (this->mode7.a * hohc & ~63) + (this->mode7.b * vovc & ~63) + (this->mode7.b * y & ~63) + (this->mode7.rx << 8);
+    i32 origin_y = (this->mode7.c * hohc & ~63) + (this->mode7.d * vovc & ~63) + (this->mode7.d * y & ~63) + (this->mode7.ry << 8);
+
+    for (i32 sx = 0; sx < 256; sx++) {
+        i32 x = this->mode7.hflip ? 255 - sx : sx;
+        i32 pixel_x = (origin_x + this->mode7.a * x) >> 8;
+        i32 pixel_y = (origin_y + this->mode7.c * x) >> 8;
+
+        i32 tile_x = (pixel_x >> 3) & 127;
+        i32 tile_y = (pixel_y >> 3) & 127;
+        i32 out_of_bounds = ((pixel_x | pixel_y) & 0xFC00) == 0;
+        i32 tile_addr = tile_y * 128 + tile_x;
+        i32 pal_addr = ((pixel_y & 7) << 3) + (pixel_x & 7);
+        u32 tile = ((this->mode7.repeat == 3) && out_of_bounds) ? 0 : this->VRAM[tile_addr & 0x7FFF];
+        u32 palette = ((this->mode7.repeat == 2) && out_of_bounds) ? 0 : this->VRAM[(tile << 6 | pal_addr) & 0x7FFF] >> 8;
+
+        u32 priority;
+        if (source == 0)
+            priority = bg->priority[0];
+        else {// source == 1
+            priority = bg->priority[palette >> 7];
+            palette &= 0x7F;
+        }
+
+        if (--m_counter == 0) {
+            m_counter = bg->mosaic.enable ? bg->mosaic.size : 1;
+            m_palette = palette;
+            m_priority = priority;
+            if (this->color_math.direct_color && source == 0) {
+                m_color = direct_color(0, palette);
+            }
+            else {
+                m_color = this->CGRAM[palette];
+            }
+        }
+
+        if (!m_palette) continue;
+        setpx(&bg->line[sx], source, m_priority, m_color);
+    }
 }
 
 static u32 get_tile(struct SNES *snes, struct SNES_PPU_BG *bg, i32 hoffset, i32 voffset)
@@ -731,21 +798,6 @@ static u32 get_tile(struct SNES *snes, struct SNES_PPU_BG *bg, i32 hoffset, i32 
     return snes->ppu.VRAM[(bg->io.screen_addr + offset) & 0x7FFF];
 }        
 
-static inline u32 direct_color(u32 palette_index, u32 palette_color)
-{
-    return ((palette_color << 2) & 0x001C) + ((palette_index << 1) & 2) +
-           ((palette_color << 4) & 0x380) + ((palette_index << 5) & 0x40) +
-           ((palette_color << 7) & 0x6000) + ((palette_index << 10) & 0x1000);
-}
-
-static inline void setpx(struct SNES_PPU_px *px, u32 source, u32 priority, u32 color)
-{
-    px->has = 1;
-    px->source = source;
-    px->priority = priority;
-    px->color = color;
-}
-
 static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
 {
     struct SNES_PPU *this = &snes->ppu;
@@ -755,7 +807,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
         return;
     }
     if (bg->tile_mode == SPTM_mode7) {
-        return draw_bg_line_mode7(snes, y, source);
+        return draw_bg_line_mode7(snes, source, y);
     }
 
     u32 hires = this->io.bg_mode == 5 || this->io.bg_mode == 6;
