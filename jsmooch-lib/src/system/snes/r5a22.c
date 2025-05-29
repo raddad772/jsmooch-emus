@@ -367,6 +367,8 @@ u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct 
             return SNES_controllerport_data(snes, 0);
         case 0x4017: // controller 2 data
             return SNES_controllerport_data(snes, 1);
+        case 0x420C:
+            return old;
         case 0x4210: // NMI/version read
             val = old & 0x70;
             val |= this->status.nmi_flag << 7;

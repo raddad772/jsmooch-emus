@@ -16,7 +16,7 @@
 #define PPU_src_OBJ2 5
 #define PPU_src_COL 6
 
-void SNES_PPU_init(struct SNES *this)
+void SNES_PPU_init(struct SNES *snes)
 {
 }
 
@@ -25,9 +25,11 @@ void SNES_PPU_delete(struct SNES *this)
     
 }
 
-void SNES_PPU_reset(struct SNES *this)
+void SNES_PPU_reset(struct SNES *snes)
 {
-    
+    struct SNES_PPU *this = &snes->ppu;
+    this->mode7.a = this->mode7.d = 0x100;
+    this->mode7.b = this->mode7.c = 0;
 }
 
 static u32 read_oam(struct SNES_PPU *this, u32 addr)
@@ -257,7 +259,7 @@ static void update_video_mode(struct SNES_PPU *this)
                     break;
                 case SPTM_BPP8:
                     bg->palette_shift = 0; //
-                    bg->palette_mask = 0;
+                    bg->palette_mask = 0xFF;
                     bg->num_planes = 4;
                     bg->tile_bytes = 0x40;
                     bg->tile_row_bytes = 8;
@@ -265,7 +267,9 @@ static void update_video_mode(struct SNES_PPU *this)
                 case SPTM_inactive:
                     break;
                 case SPTM_mode7:
-                    printf("\nWARN MODE7 NOT IMPLEMENT");
+                    bg->palette_shift = 0;
+                    bg->palette_mask = 0xFF;
+                    bg->num_planes = 1;
                     break;
             }
         }
@@ -312,9 +316,9 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
         case 0x2105: { // BGMODE
             u32 old_bg_mode = this->io.bg_mode;
             this->io.bg_mode = val & 7;
-            if (old_bg_mode != this->io.bg_mode) {
+            /*if (old_bg_mode != this->io.bg_mode) {
                 printf("\nNEW BG MODE %d", this->io.bg_mode);
-            }
+            }*/
             this->io.bg_priority = (val >> 4) & 1;
             this->bg[0].io.tile_size = (val >> 4) & 1;
             this->bg[1].io.tile_size = (val >> 5) & 1;
@@ -595,6 +599,8 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             return;
         case 0x2183: // WRAM bank
             this->io.wram_addr = ((val & 1) << 16) | (this->io.wram_addr & 0xFFFF);
+            return;
+        case 0x2134:
             return;
     }
     printf("\nWARN SNES PPU WRITE NOT IN %04x %02x", addr, val);

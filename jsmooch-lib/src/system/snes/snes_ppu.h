@@ -128,8 +128,8 @@ struct SNES_PPU {
 
     struct {
         i32 hoffset, rhoffset, voffset, rvoffset;
-        i16 a, b, c, d;
-        i16 x, rx, y, ry;
+        i32 a, b, c, d;
+        i32 x, rx, y, ry;
         u32 hflip, vflip, repeat;
     } mode7;
     struct {

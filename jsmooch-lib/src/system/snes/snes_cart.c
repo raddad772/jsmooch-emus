@@ -67,7 +67,8 @@ static u32 find_cart_header(struct SNES *this)
     // check for 0x20 non-0 bytes
     //if (check_offset(this, 0xFF00)) return 0xFF00;
     //if (check_offset(this, 0x7F00)) return 0x7F00;
-    return 0x7F00;
+    //return 0x7F00;
+    return 0xFF00;
 }
 
 u32 SNES_cart_load_ROM_from_RAM(struct SNES* this, char* fil, u64 fil_sz, struct physical_io_device *pio)
