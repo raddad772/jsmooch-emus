@@ -204,6 +204,12 @@ struct audiobuf *audiowrap::get_buf_for_emu()
     //printf("\nRETURN BUFFER %d FOR EMU", bufs.emu.current);
     return &bufs.items[pos];
 }
+void audiowrap::discard_emulated_buffers() {
+    while(bufs.emu.len > 0) {
+        bufs.emu.len--;
+        bufs.emu.head = (bufs.emu.head + 1) % MAX_AUDIO_BUFS;
+    }
+}
 
 void audiowrap::commit_emu_buffer()
 {

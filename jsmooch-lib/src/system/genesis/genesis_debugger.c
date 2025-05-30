@@ -727,7 +727,7 @@ static void render_image_view_ym_info(struct debugger_interface *dbgr, struct de
 #define YN(x) (x) ? "yes" : "no"
     for (u32 chn = 0; chn < 6; chn++) {
         struct YM2612_CHANNEL *ch = &this->channel[chn];
-        tbp("\nch:%d  mode:", chn);
+        tbp("\nch:%d  mode:", chn+1);
         u32 single = 1;
         if ((ch->num == 2) && (ch->mode == YFM_multiple)) {
             tbp("multi-freq");
@@ -745,7 +745,7 @@ static void render_image_view_ym_info(struct debugger_interface *dbgr, struct de
 
         for (u32 opn = 0; opn < 4; opn++) {
             struct YM2612_OPERATOR *op = &ch->operator[opn];
-            tbp("\n--op:%d  out:%04x", opn, op->output & 0xFFFF);
+            tbp("\n--S%d  out:%04x", opn+1, op->output & 0xFFFF);
             if ((ch->num == 2) && (ch->mode == YFM_multiple)) {
                 tbp("  f_num:%d  octave:%d", op->f_num.value, op->block.value);
             }

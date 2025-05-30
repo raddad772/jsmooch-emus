@@ -199,6 +199,7 @@ public:
     void do_frame();
 
     void check_new_frame();
+    void discard_audio_buffers();
     void advance_time(u32 cycles, u32 scanlines, u32 frames);
     struct {
         u64 cycles = {};

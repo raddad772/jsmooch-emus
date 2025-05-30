@@ -14,6 +14,7 @@ struct wkrr;
 struct audiowrap {
     audiowrap();
     ~audiowrap();
+    void discard_emulated_buffers();
     int init_wrapper(u32 in_num_channels, u32 in_sample_rate, u32 low_pass_filter);
     void configure_for_fps(float fps);
     void commit_emu_buffer();

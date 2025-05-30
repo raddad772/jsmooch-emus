@@ -867,8 +867,8 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
     //which = SYS_GBA;
-    which = SYS_SNES;
-    //which = SYS_GENESIS_USA;
+    //which = SYS_SNES;
+    which = SYS_GENESIS_USA;
     //which = SYS_NDS;
     //which = SYS_NES;
     //which = SYS_GALAKSIJA;
@@ -929,13 +929,19 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
     if (hotkeys[1]) {
         fsys.load_state();
     }
+    static u32 key_was_down = 0;
     u32 frame_multi = ImGui::IsKeyDown(ImGuiKey_GraveAccent) ? FRAME_MULTI : 1;
     if (fsys.state == FSS_play) {
+        if (key_was_down && (frame_multi == 1)) {
+            // Discard audio buffers!
+            fsys.discard_audio_buffers();
+        }
         fsys.advance_time(0, 0, frame_multi);
         last_frame_was_whole = true;
         //fsys.events_view_present();
         fsys.has_played_once = true;
     }
+    key_was_down = frame_multi != 1;
     fsys.present();
 
     render_emu_window(fsys, io, frame_multi);

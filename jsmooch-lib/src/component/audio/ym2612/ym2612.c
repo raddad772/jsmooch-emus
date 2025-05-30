@@ -405,7 +405,7 @@ static u16 op_attenuation(struct YM2612_OPERATOR *op)
 static i16 run_op_output(struct YM2612_CHANNEL *ch, u32 opn, i32 mod_input)
 {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
-    u16 phase = (op->phase.output + mod_input) & 0x3FF;
+    u16 phase = (op->phase.output + ((mod_input & 0xFFFFFFFE) >> 1)) & 0x3FF;
 
     u32 sign = (phase >> 9) & 1;
     i32 sine_attenuation = sine[phase & 0x1FF];
@@ -447,59 +447,53 @@ static void run_ch(struct ym2612 *this, u32 chn)
     // Apply algorithm
     i32 out;
     switch(ch->algorithm) {
-        case 0: // S1 -> S2 -> S3 -> S4. // but they calculate 1-3-2-4
-            input = run_op_output(ch, 0, input0); // 1
-            run_op_output(ch, 2, ch->operator[1].output); // 3
-            input = run_op_output(ch, 1, input); // 2
-            out = run_op_output(ch, 3, input);
+        case 0: // S0 -> S1 -> S2 -> S3. // but they calculate 0-2-1-3
+            run_op_output(ch, 0, input0); // run 0
+            run_op_output(ch, 2, ch->operator[1].output); // run 2 with OLD 1
+            run_op_output(ch, 1, ch->operator[0].output); // run 1 with new 1
+            out = run_op_output(ch, 3, ch->operator[2].output); // run 3 with current 2
             break;
-        case 1: // (S1 + S2) -> S3 -> S4.   1 3 2 4
-            input = run_op_output(ch, 0, input0); // S1
-            input += ch->operator[1].output; // old S2
-            input = run_op_output(ch, 2, input); // S3 with (S1 + old S2)
-            run_op_output(ch, 2, ch->operator[0].output); // S2 with current S1 to updaet it
-            out = run_op_output(ch, 3, input); // S4
+        case 1: // (S0 + S1) -> S2 -> S3.   1 3 2 4
+            run_op_output(ch, 2, ch->operator[0].output + ch->operator[1].output);
+            run_op_output(ch, 0, input0);
+            run_op_output(ch, 1, 0);
+            out = run_op_output(ch, 3, ch->operator[2].output);
             break;
-        case 2: // S1 + (S2 -> S3) -> S4
-            input = run_op_output(ch, 2, ch->operator[1].output); // S3
-            run_op_output(ch, 1, 0); // S2
-            input += run_op_output(ch, 0, input0); // S1
-            out = run_op_output(ch, 3, input); // S4
+        case 2: // S0 + (S1 -> S2) -> S3
+            run_op_output(ch, 0, input0); // S1
+            run_op_output(ch, 2, ch->operator[1].output);
+            run_op_output(ch, 1, 0);
+            out = run_op_output(ch, 3, ch->operator[0].output + ch->operator[2].output); // S4
             break;
-        case 3: // (S1 -> S2) + S3 -> S4
-            input = run_op_output(ch, 0, input0);
-            input = run_op_output(ch, 1, input);
-            input += run_op_output(ch, 2, 0);
-            out = run_op_output(ch, 3, input);
+        case 3: // (S0 -> S1) + S2 -> S3
+            run_op_output(ch, 0, input0);
+            run_op_output(ch, 2, 0);
+            out = run_op_output(ch, 3, ch->operator[1].output + ch->operator[2].output);
+            run_op_output(ch, 1, ch->operator[0].output);
             break;
-        case 4: // (S1->S2) + (S3->S4)
-            input = run_op_output(ch, 0, input0);
-            input2 = run_op_output(ch, 2, 0);
-
-            input = run_op_output(ch, 1, input);
-            input2 = run_op_output(ch, 3, input2);
-            out = (input + input2);
+        case 4: // (S0->S1) + (S2->S3)
+            run_op_output(ch, 0, input0);
+            out = run_op_output(ch, 1, ch->operator[0].output);
+            run_op_output(ch, 2, 0);
+            out += run_op_output(ch, 3, ch->operator[2].output);
             break;
-        case 5: // S1 -> all(S2 + S3 + S4)
-            input0 = run_op_output(ch, 0, input0);
-            input = run_op_output(ch, 2, input0);
-            input += run_op_output(ch, 1, input0);
-            input += run_op_output(ch, 3, input0);
-            out = input;
+        case 5: // S0 -> all(S1 + S2 + S3)
+            out = run_op_output(ch, 2, ch->operator[0].output);
+            run_op_output(ch, 0, input0);
+            out += run_op_output(ch, 1, ch->operator[0].output);
+            out += run_op_output(ch, 3, ch->operator[0].output);
             break;
-        case 6: // (S1->S2) + S3 + S4
-            input0 = run_op_output(ch, 0, input0);
-            input = run_op_output(ch, 2, 0);
-            input += run_op_output(ch, 1, input0);
-            input += run_op_output(ch, 3, 0);
-            out = input;
+        case 6: // (S0->S1) + S2 + S3
+            run_op_output(ch, 0, input0);
+            out = run_op_output(ch, 1, ch->operator[0].output);
+            out += run_op_output(ch, 2, 0);
+            out += run_op_output(ch, 3, 0);
             break;
         case 7: // add all 4
-            input = run_op_output(ch, 0, input0);
-            input += run_op_output(ch, 2, 0);
-            input += run_op_output(ch, 1, 0);
-            input += run_op_output(ch, 3, 0);
-            out = input;
+            out = run_op_output(ch, 0, input0);
+            out += run_op_output(ch, 2, 0);
+            out += run_op_output(ch, 1, 0);
+            out += run_op_output(ch, 3, 0);
             break;
     }
     if (out < -8192) out = -8192;
