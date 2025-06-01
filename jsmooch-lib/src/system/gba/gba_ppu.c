@@ -1280,7 +1280,7 @@ void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u
     if (sz == 2) addr &= ~1;
     if (sz == 1) return;
     //if (addr < 0x07000400)
-        return cW[sz](this->ppu.OAM, addr & 0x3FF, val);
+    return cW[sz](this->ppu.OAM, addr & 0x3FF, val);
 
     //GBA_PPU_write_invalid(this, addr, sz, access, val);
 }

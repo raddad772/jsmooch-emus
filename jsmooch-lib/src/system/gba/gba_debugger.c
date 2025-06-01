@@ -1337,6 +1337,26 @@ static void setup_image_view_sys_info(struct GBA *this, struct debugger_interfac
     debugger_widgets_add_textbox(&dview->options, "blah!", 1);
 }
 
+static void setup_dbglog(struct debugger_interface *dbgr, struct GBA *this) {
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
+    struct debugger_view *dview = cpg(p);
+    struct dbglog_view *dv = &dview->dbglog;
+    this->dbg.dvptr = dv;
+    snprintf(dv->name, sizeof(dv->name), "Trace");
+    dv->has_extra = 1;
+
+    struct dbglog_category_node *root = dbglog_category_get_root(dv);
+    struct dbglog_category_node *arm7 = dbglog_category_add_node(dv, root, "ARM7TDMI", NULL, 0, 0);
+    dbglog_category_add_node(dv, arm7, "Instruction Trace", "ARM7", GBA_CAT_ARM7_INSTRUCTION, 0x80FF80);
+    this->cpu.trace.dbglog.view = dv;
+    this->cpu.trace.dbglog.id = GBA_CAT_ARM7_INSTRUCTION;
+    dbglog_category_add_node(dv, arm7, "Halt", "ARM7.H", GBA_CAT_ARM7_HALT, 0xA0AF80);
+
+    struct dbglog_category_node *dma = dbglog_category_add_node(dv, root, "DMA", NULL, 0, 0);
+    dbglog_category_add_node(dv, dma, "DMA Start", "dma.start", GBA_CAT_DMA_START, 0xFFFFFF);
+}
+
+
 void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
@@ -1345,10 +1365,11 @@ void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
 
+    setup_dbglog(dbgr, this);
     //setup_ARM7TDMI_disassembly(dbgr, this);
     setup_waveforms_view(this, dbgr);
     setup_events_view(this, dbgr);
-    setup_cpu_trace(dbgr, this);
+    //setup_cpu_trace(dbgr, this);
     setup_image_view_palettes(this, dbgr);
     setup_image_view_bg(this, dbgr, 0);
     setup_image_view_bg(this, dbgr, 1);

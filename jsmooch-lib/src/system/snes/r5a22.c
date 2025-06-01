@@ -185,7 +185,9 @@ static void dma_start(struct SNES *snes)
     struct R5A22 *this = &snes->r5a22;
     for (u32 n = 0; n < 8; n++) {
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[n];
-        //if (ch->dma_enable) printf("\nDMA%d ENABLE:%d SRC:%04x SZ:%d", n, ch->dma_enable, ch->source_address, ch->transfer_size);
+        if (ch->dma_enable) {
+            dbgloglog(snes, SNES_CAT_DMA_START, DBGLS_INFO, "DMA%d start. size:%d line:%d vram_addr:%04x", n, ch->transfer_size, snes->clock.ppu.y, snes->ppu.io.vram.addr);
+        }
         ch->index = 0;
     }
 }
@@ -499,12 +501,12 @@ static inline u32 validA(u32 addr)
 }
 
 static inline u32 dma_readA(struct SNES *snes, u32 addr) {
-    scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
+    //scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
     return validA(addr) ? SNES_wdc65816_read(snes, addr, 0, 1) : 0;
 }
 
 static inline u32 dma_readB(struct SNES *snes, u32 addr, u32 valid) {
-    scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
+    //scheduler_from_event_adjust_master_clock(&snes->scheduler, 8);
     return valid ? SNES_wdc65816_read(snes, 0x2100 | addr, 0, 1) : 0;
 }
 
@@ -539,11 +541,13 @@ static void dma_transfer(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch, u32 ad
     u32 data;
     if (ch->direction == 0) {
         data = dma_readA(snes, addrA);
+        dbgloglog(snes, SNES_CAT_DMA_WRITE, DBGLS_INFO, "DMA%d writeB addr:%04x val:%02X valid:%d tsize:%d index:%d vram_addr:%04x", ch->num, 0x2100 | addrB, data, valid, ch->transfer_size, ch->index, snes->ppu.io.vram.addr);
         dma_writeB(snes, addrB, data, valid);
         //printf("\nDMA%d from %04x to 21%02x len:%d", ch->num, addrA, addrB, ch->transfer_size);
     }
     else {
         data = dma_readB(snes, addrB, valid);
+        dbgloglog(snes, SNES_CAT_DMA_WRITE, DBGLS_INFO, "DMA%d writeA addr:%06x val:%02X tsize:%d index:%d", ch->num, addrA, data, ch->transfer_size, ch->index);
         dma_writeA(snes, addrA, data);
         //printf("\nDMA%d from 21%02x to %04x", ch->num, addrB, addrA);
     }
@@ -570,7 +574,9 @@ static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
     }
     this->dma_enable = this->transfer_size > 0;
 
-    scheduler_from_event_adjust_master_clock(&snes->scheduler, nc);
+    if (nc) {
+        scheduler_from_event_adjust_master_clock(&snes->scheduler, nc);
+    }
     return 0;
 }
 
@@ -628,7 +634,12 @@ void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
     struct R5A22 *this = &snes->r5a22;
     //u64 cur = clock - jitter;
     //scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.cpu.divider, 0, snes, &R5A22_cycle, NULL);
-    if (this->status.dma_running) dma_run(snes);
+    if (this->status.dma_running) {
+        //u64 before = snes->clock.master_cycle_count;
+        dma_run(snes);
+        //u64 dif = snes->clock.master_cycle_count - before;
+        //printf("\nDIF %lld", dif);
+    }
     else cycle_cpu(snes);
     cycle_alu(snes);
 }

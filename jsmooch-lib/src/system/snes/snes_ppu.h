@@ -8,11 +8,16 @@
 #include <helpers/int.h>
 #include "helpers/cvec.h"
 
-struct SNES_PPU_px {
-    u8 has, source;
-    u8 priority;
-    u8 palette;
-    u16 color;
+union SNES_PPU_px {
+    struct {
+        u32 color : 16;
+        u32 has : 1;
+        u32 palette : 3;
+        u32 priority : 4;
+        u32 source : 3;
+        u32 bpp : 2;
+    };
+    u32 v;
 };
 
 struct SNES_PPU {
@@ -21,8 +26,8 @@ struct SNES_PPU {
     struct cvec_ptr display_ptr;
     struct JSM_DISPLAY *display;
 
-    u16 VRAM[0x8000];
     u16 CGRAM[256];
+    u16 VRAM[0x8000];
 
     struct SNES_PPU_WINDOW {
         u32 left, right;
@@ -39,7 +44,7 @@ struct SNES_PPU {
         u32 main_enable, sub_enable;
         u32 priority[4];
         u32 range_overflow, time_overflow;
-        struct SNES_PPU_px line[256];
+        union SNES_PPU_px line[256];
 
         struct SNES_PPU_sprite {
             i32 x, y;
@@ -65,7 +70,7 @@ struct SNES_PPU {
     } color_math;
 
     struct SNES_PPU_BG {
-        struct SNES_PPU_px line[256];
+        union SNES_PPU_px line[256];
 
         u32 enabled;
         u32 bpp;

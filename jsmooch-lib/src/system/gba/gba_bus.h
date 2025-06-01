@@ -217,6 +217,7 @@ struct GBA {
             DBG_WAVEFORM_MAIN
             DBG_WAVEFORM_CHANS(6)
         DBG_WAVEFORM_END1
+        DBG_LOG_VIEW
     DBG_END
 
 };

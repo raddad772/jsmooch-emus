@@ -832,7 +832,7 @@ u32 GBA_mainbus_fetchins(void *ptr, u32 addr, u32 sz, u32 access)
 void GBA_mainbus_write(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
     struct GBA *this = (struct GBA *)ptr;
-    if (dbg.trace_on) trace_write(this, addr, sz, val);
+    //if (dbg.trace_on) trace_write(this, addr, sz, val);
     if (addr < 0x10000000) {
         //printf("\nWRITE addr:%08x sz:%d val:%08x", addr, sz, val);
         return this->mem.write[(addr >> 24) & 15](this, addr, sz, access, val);

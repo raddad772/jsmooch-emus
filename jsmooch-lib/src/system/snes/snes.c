@@ -427,7 +427,11 @@ u32 SNESJ_step_master(JSM, u32 howmany)
 {
     JTHIS;
     read_opts(jsm, this);
+    //printf("\nRUN FOR %d CYCLES:", howmany);
+    //u64 cur = this->clock.master_cycle_count;
     scheduler_run_for_cycles(&this->scheduler, howmany);
+    //u64 dif = this->clock.master_cycle_count - cur;
+    //printf("\nRAN %lld CYCLES", dif);
     return 0;
 }
 

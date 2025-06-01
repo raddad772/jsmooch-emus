@@ -866,9 +866,9 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_ZX_SPECTRUM_128K;
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
-    //which = SYS_GBA;
-    //which = SYS_SNES;
-    which = SYS_GENESIS_USA;
+    which = SYS_GBA;
+    ///which = SYS_SNES;
+    //which = SYS_GENESIS_USA;
     //which = SYS_NDS;
     //which = SYS_NES;
     //which = SYS_GALAKSIJA;
@@ -1015,6 +1015,7 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
         }
         if (step_clocks) {
             dbg_unbreak();
+            //printf("\nCYCLING %d", steps[0]);
             //fsys.step_cycles(steps[0]);
             fsys.advance_time(steps[0], 0, 0);
 

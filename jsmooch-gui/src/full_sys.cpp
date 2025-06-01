@@ -838,7 +838,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);
@@ -849,7 +849,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
-            worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever.gba", nullptr); // works great!
@@ -883,10 +883,10 @@ void full_system::load_default_ROM()
         case SYS_SNES:
             //worked = grab_ROM(&ROMs, which, "smw.sfc", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "link_to_the_past.sfc", nullptr); // works! sprite issues
-            //worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // gfx issues
+            worked = grab_ROM(&ROMs, which, "super_metroid.sfc", nullptr); // gfx issues
             //worked = grab_ROM(&ROMs, which, "megamanx.sfc", nullptr); // some sound then notjing
             //worked = grab_ROM(&ROMs, which, "smwallstars.smc", nullptr); // seems to work!
-            worked = grab_ROM(&ROMs, which, "chrono_trigger.sfc", nullptr); //
+            //worked = grab_ROM(&ROMs, which, "chrono_trigger.sfc", nullptr); //
             //worked = grab_ROM(&ROMs, which, "run_saber.sfc", nullptr); //
 
             //worked = grab_ROM(&ROMs, which, "contra3.sfc", nullptr); // SA-1 not support
@@ -916,10 +916,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
-            //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
-            worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
+            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!

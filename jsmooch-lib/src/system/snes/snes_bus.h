@@ -91,10 +91,10 @@ struct SNES {
     struct {
         struct SNES_DBG_LINE {
             struct SNES_DBG_line_bg {
-                struct SNES_PPU_px px[256];
+                union SNES_PPU_px px[256];
                 u32 enabled, mode, bpp8;
             } bg[4];
-            struct SNES_PPU_px sprite_px[256];
+            union SNES_PPU_px sprite_px[256];
         } line[224];
     } dbg_info;
 };

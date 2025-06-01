@@ -60,6 +60,9 @@ static u32 dma_go_ch(struct GBA *this, u32 num) {
                 ch->io.open_bus = GBA_mainbus_read(this, ch->latch.src_addr, 4, ch->latch.src_access, 1);
             else
                 this->waitstates.current_transaction++;
+            if ((ch->latch.dest_addr & 0x070003FF) == 0x07000004) {
+                printf("\nDMA READ FROM %08X TO OAM ENTRY. VALUE:%08X", ch->latch.src_addr, ch->io.open_bus);
+            }
             GBA_mainbus_write(this, ch->latch.dest_addr, 4, ch->latch.dest_access, ch->io.open_bus);
         }
 

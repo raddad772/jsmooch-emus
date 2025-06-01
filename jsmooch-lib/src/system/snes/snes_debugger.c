@@ -26,12 +26,47 @@ static void render_image_view_tilemaps(struct debugger_interface *dbgr, struct d
     if (this->clock.master_frame == 0) return;
     struct debugger_widget_radiogroup *layernum = &((struct debugger_widget *) cvec_get(&dview->options,
                                                                                         0))->radiogroup;
+    u32 ln = layernum->value;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
     memset(outbuf, 0, out_width * 4 * 1024);
 
+    for (u32 y = 0; y < 224; y++) {
+    }
+}
 
+static void print_layer_info(struct SNES *this, u32 bgnum, struct debugger_widget_textbox *tb)
+{
+    if (bgnum < 4) {
+        struct SNES_PPU_BG *bg = &this->ppu.bg[bgnum];
+        debugger_widgets_textbox_sprintf(tb, "\n-BG%d:", bgnum);
+        if (bg->main_enable) debugger_widgets_textbox_sprintf(tb, "main:on ");
+        else debugger_widgets_textbox_sprintf(tb, "main:off");
+        if (bg->sub_enable) debugger_widgets_textbox_sprintf(tb, " sub:on ");
+        else debugger_widgets_textbox_sprintf(tb, " sub:off");
+
+        debugger_widgets_textbox_sprintf(tb, "  bpp:");
+        switch(bg->tile_mode) {
+            case SPTM_BPP2:
+                debugger_widgets_textbox_sprintf(tb, "2  ");
+                break;
+            case SPTM_BPP4:
+                debugger_widgets_textbox_sprintf(tb, "4  ");
+                break;
+            case SPTM_BPP8:
+                debugger_widgets_textbox_sprintf(tb, "8  ");
+                break;
+            case SPTM_mode7:
+                debugger_widgets_textbox_sprintf(tb, "m7 ");
+                break;
+        }
+
+        debugger_widgets_textbox_sprintf(tb, "  mosaic:%d", bg->mosaic.enable);
+        debugger_widgets_textbox_sprintf(tb, "\n---hscroll:%d  vscroll:%d  scr_adr:%04x  tile_addr:%04x  pal_base:%d", bg->io.hoffset, bg->io.voffset, bg->io.screen_addr, bg->io.tiledata_addr, this->ppu.io.bg_mode == 0 ? bgnum << 5 : 0);
+        //debugger_widgets_textbox_sprintf(tb, "  priority:%",  bg->priority);
+
+    }
 }
 
 static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
@@ -41,6 +76,18 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
                                                                                         0))->radiogroup;
     struct debugger_widget_radiogroup *attrkind = &((struct debugger_widget *) cvec_get(&dview->options,
                                                                                         1))->radiogroup;
+
+    static const u32 tm_colors[8] = {
+            0xFF000000, // no texture/color
+            0xFFFF0000, // color 1, blue
+            0xFF0000FF, // color 2, red
+            0xFF00FF00, // color 3, green
+            0xFFFFFF00, // color 4, teal
+            0xFFFF00FF, // color 5, purple
+            0xFF00FFFF, // color 6, yellow
+            0xFFFFFFFF, // color 7, white
+    };
+
     struct debugger_widget_textbox *tb = &((struct debugger_widget *) cvec_get(&dview->options, 2))->textbox;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -48,10 +95,38 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
     memset(outbuf, 0, out_width * 4 * 224);
 
     debugger_widgets_textbox_clear(tb);
+
+    struct debugger_widget_colorkey *colorkey = &((struct debugger_widget *)cvec_get(&dview->options, 3))->colorkey;
+    print_layer_info(this, layernum->value, tb);
+
+    switch(attrkind->value) {
+        case 0: // Color output
+            debugger_widgets_colorkey_set_title(colorkey, "Output");
+            break;
+        case 1: // Has
+            debugger_widgets_colorkey_set_title(colorkey, "Has: white");
+            break;
+        case 2: // Priority
+            debugger_widgets_colorkey_set_title(colorkey, "Priority");
+            debugger_widgets_colorkey_add_item(colorkey, "No pixel", tm_colors[0]);
+            debugger_widgets_colorkey_add_item(colorkey, "Prio 0", tm_colors[1]);
+            debugger_widgets_colorkey_add_item(colorkey, "Prio 1", tm_colors[2]);
+            debugger_widgets_colorkey_add_item(colorkey, "Prio 2", tm_colors[3]);
+            debugger_widgets_colorkey_add_item(colorkey, "Prio 3", tm_colors[4]);
+            break;
+        case 3: // BPP
+            debugger_widgets_colorkey_set_title(colorkey, "BPP");
+            debugger_widgets_colorkey_add_item(colorkey, "No pixel", tm_colors[0]);
+            debugger_widgets_colorkey_add_item(colorkey, "2BPP", tm_colors[1]);
+            debugger_widgets_colorkey_add_item(colorkey, "4BPP", tm_colors[2]);
+            debugger_widgets_colorkey_add_item(colorkey, "8BPP", tm_colors[3]);
+            break;
+    }
+
+
     for (u32 y = 0; y < 224; y++) {
-        //struct NDS_RE_LINEBUFFER *lbuf = &this->re.out.linebuffer[y];
         u32 *out_line = outbuf + (y * out_width);
-        struct SNES_PPU_px *px_line;
+        union SNES_PPU_px *px_line;
         if (layernum->value < 4) {
             px_line = this->dbg_info.line[y].bg[layernum->value].px;
         }
@@ -74,22 +149,15 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
                     break;
                 case 2: { // priority
                     u32 v = px_line[x].priority + 1;
-                    assert(v < 13);
-                    float f = ((float)v) / 13.0f;
-                    f *= 255.0f;
-                    v = (u32)f;
-                    out_line[x] = v | (v << 8) | (v << 16) | 0xFF000000;
+                    assert(v < 5);
+                    out_line[x] = tm_colors[v];
                     break; }
-                case 3: { // BG mode
-                    if (px_line[x].has) {
-                        //u32 v = px_line[x].dbg_mode;
-                        // red   purple     yellow     white
-                    }
+                case 3: { // BPP
+                    u32 v = px_line[x].bpp;
+                    assert(v < 3);
+                    out_line[x] = tm_colors[v + 1];
                     break; }
-                case 4: { // sp_translucent
-                    break; }
-                case 5: { // BPP. 4=red, 8=green, 16=blue
-                    break; }
+
             }
         }
     }
@@ -155,14 +223,18 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct SNES *this)
 
     static const u32 wdc_color = 0x8080FF;
     static const u32 spc_color = 0x80FF80;
+    static const u32 dma_color = 0xFF8080;
+    static const u32 ppu_color = 0xFFFF80;
 
     struct dbglog_category_node *root = dbglog_category_get_root(dv);
-    struct dbglog_category_node *wdc = dbglog_category_add_node(dv, root, "WDC65816", NULL, 0, 0);
+    struct dbglog_category_node *wdc = dbglog_category_add_node(dv, root, "R5A22", NULL, 0, 0);
     dbglog_category_add_node(dv, wdc, "Instruction Trace", "WDC65816", SNES_CAT_WDC_INSTRUCTION, wdc_color);
     this->r5a22.cpu.trace.dbglog.view = dv;
     this->r5a22.cpu.trace.dbglog.id = SNES_CAT_WDC_INSTRUCTION;
     dbglog_category_add_node(dv, wdc, "Reads", "wdc_read", SNES_CAT_WDC_READ, wdc_color);
     dbglog_category_add_node(dv, wdc, "Writes", "wdc_write", SNES_CAT_WDC_WRITE, wdc_color);
+    dbglog_category_add_node(dv, wdc, "DMA Starts", "WDC65816", SNES_CAT_DMA_START, dma_color);
+    dbglog_category_add_node(dv, wdc, "DMA Writes", "WDC65816", SNES_CAT_DMA_WRITE, dma_color);
 
     struct dbglog_category_node *spc = dbglog_category_add_node(dv, root, "SPC700", NULL, 0, 0);
     dbglog_category_add_node(dv, spc, "Instruction Trace", "SPC700", SNES_CAT_SPC_INSTRUCTION, spc_color);
@@ -172,6 +244,11 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct SNES *this)
     this->apu.cpu.trace.dbglog.id_read = SNES_CAT_SPC_READ;
     dbglog_category_add_node(dv, spc, "Writes", "spc_write", SNES_CAT_SPC_WRITE, spc_color);
     this->apu.cpu.trace.dbglog.id_write = SNES_CAT_SPC_WRITE;
+
+    struct dbglog_category_node *ppu = dbglog_category_add_node(dv, root, "PPU", NULL, 0, 0);
+    dbglog_category_add_node(dv, ppu, "VRAM Write", "PPU", SNES_CAT_PPU_VRAM_WRITE, ppu_color);
+
+
 }
 
 static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_interface *dbgr) {
@@ -199,7 +276,7 @@ static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_int
 
 }
 
-    static void setup_image_view_ppu_layers(struct SNES *this, struct debugger_interface *dbgr)
+static void setup_image_view_ppu_layers(struct SNES *this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
@@ -228,11 +305,10 @@ static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_int
     debugger_widget_radiogroup_add_button(rg, "RGB", 0, 1);
     debugger_widget_radiogroup_add_button(rg, "Has", 1, 1);
     debugger_widget_radiogroup_add_button(rg, "Priority", 2, 1);
-    debugger_widget_radiogroup_add_button(rg, "Mode", 3, 1);
-    debugger_widget_radiogroup_add_button(rg, "Sp.Trnslcnt.", 4, 0);
-    debugger_widget_radiogroup_add_button(rg, "BPP", 5, 1);
+    debugger_widget_radiogroup_add_button(rg, "BPP", 3, 1);
 
     debugger_widgets_add_textbox(&dview->options, "Layer Info", 0);
+    struct debugger_widget *key = debugger_widgets_add_color_key(&dview->options, "Key", 1);
 }
 
 
