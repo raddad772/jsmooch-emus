@@ -153,6 +153,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io, u32 frame_m
     ImGui::End();
 }
 
+#define MEMORY_VIEW_DEFAULT_ENABLE 1
 #define EVENT_VIEWER_DEFAULT_ENABLE 0
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
@@ -160,6 +161,72 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io, u32 frame_m
 #define SOUND_VIEW_DEFAULT_ENABLE 0
 #define TRACE_VIEW_DEFAULT_ENABLE 0
 #define CONSOLE_VIEW_DEFAULT_ENABLE 1
+
+int hexfilter(ImGuiInputTextCallbackData *data)
+{
+    u32 c = data->EventChar;
+    if (!(((c >= '0') && (c <= '9')) || ((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F')))) return 1;
+
+    return 0;
+}
+
+void imgui_jsmooch_app::render_memory_view()
+{
+    if (fsys.memory.view && fsys.debugger_setup) {
+        struct managed_window *mw = register_managed_window(0x30000, mwk_debug_memory, "Memory Viewer", MEMORY_VIEW_DEFAULT_ENABLE);
+        struct memory_view *mv = fsys.memory.view;
+        u32 num_modules = memory_view_num_modules(mv);
+        if (mw->enabled && num_modules > 0) {
+            if (ImGui::Begin("Memory Viewer")) {
+                // Dropdown, numeric input, table
+                static ImGuiComboFlags flags = 0;
+                char *module_names[50];
+                for (u32 i = 0; i < num_modules; i++) {
+                    struct memory_view_module *mm = memory_view_get_module(mv, i);
+                    assert(mm);
+                    module_names[i] = mm->name;
+                }
+                int item_selected = mv->current_id;
+                if (ImGui::BeginCombo("Memory Select", module_names[mv->current_id], flags)) {
+                    for (int n = 0; n < num_modules; n++)
+                    {
+                        const bool is_selected = (item_selected == n);
+                        if (ImGui::Selectable(module_names[n], is_selected))
+                            item_selected = n;
+
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+                u32 old_selected = mv->current_id;
+                mv->current_id = item_selected;
+                struct memory_view_module *mm = memory_view_get_module(mv, mv->current_id);
+                if (old_selected != item_selected) {
+                    mv->addr_start &= (1 << (4 * mm->addr_digits)) - 1;
+                }
+
+                char format_string[20];
+                snprintf(format_string, 20, "%%0%dx", mm->addr_digits);
+
+                // Now get input
+                //ImGui::SameLine();
+                static char addr_str[18];
+                snprintf(addr_str, 18, format_string, mv->addr_start);
+                mm->input_buf = addr_str;
+
+                ImGui::InputText("Addr", addr_str, 18, ImGuiInputTextFlags_CallbackCharFilter, &hexfilter, mm);
+                addr_str[mm->addr_digits] = 0;
+                mv->addr_start = strtol(addr_str, NULL, 16);
+
+                // OK start clipper
+            }
+        }
+        ImGui::End(); // end window
+    }
+
+}
 
 void imgui_jsmooch_app::render_event_view()
 {
@@ -772,6 +839,7 @@ static void render_opt_view(struct full_system &fsys)
 void imgui_jsmooch_app::render_debug_views(ImGuiIO& io, bool update_dasm_scroll)
 {
     render_event_view();
+    render_memory_view();
     render_disassembly_views(update_dasm_scroll);
     render_dbglog_views(update_dasm_scroll);
     render_image_views();

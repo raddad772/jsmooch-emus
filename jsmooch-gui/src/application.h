@@ -16,6 +16,7 @@ enum managed_window_kind {
     mwk_debug_image,
     mwk_debug_disassembly,
     mwk_debug_events,
+    mwk_debug_memory,
     mwk_debug_dbglog
 };
 
@@ -41,6 +42,7 @@ struct imgui_jsmooch_app {
     void mainloop(ImGuiIO& io);
     void at_end();
     void render_debug_views(ImGuiIO& io, bool update_dasm_scroll);
+    void render_memory_view();
     void render_event_view();
     void render_image_views();
     void render_dbglog_views(bool update_dasm_scroll);

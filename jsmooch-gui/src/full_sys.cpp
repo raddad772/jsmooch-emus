@@ -1091,11 +1091,15 @@ void full_system::add_image_view(u32 idx)
 void full_system::setup_debugger_interface()
 {
     sys->setup_debugger_interface(sys, &dbgr);
+    debugger_setup = 1;
     for (u32 i = 0; i < cvec_len(&dbgr.views); i++) {
         auto view = (struct debugger_view *)cvec_get(&dbgr.views, i);
         switch(view->kind) {
             case dview_disassembly:
                 add_disassembly_view(i);
+                break;
+            case dview_memory:
+                memory.view = &view->memory;
                 break;
             case dview_events:
                 events.view = &view->events;
@@ -1348,6 +1352,8 @@ void full_system::pre_events_view_present()
         }
     }
 }
+
+
 
 void full_system::events_view_present()
 {

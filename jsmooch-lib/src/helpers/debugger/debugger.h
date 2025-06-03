@@ -118,6 +118,7 @@ struct memory_view_module {
     void *read_mem16_ptr;
     void (*read_mem16)(void *ptr, u32 addr, void *dest);
     char name[50];
+    char *input_buf;
 };
 
 struct memory_view {
@@ -127,6 +128,7 @@ struct memory_view {
 
     // Input
     u32 addr_start;
+    u32 current_id;
 
     u32 force_refresh;
 };

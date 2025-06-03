@@ -138,6 +138,8 @@ public:
 
     struct audiowrap audio{};
 
+    u32 debugger_setup{};
+
     full_system() {
         sys = nullptr;
         debugger_interface_init(&dbgr);
@@ -177,6 +179,9 @@ public:
         bool zoom, hide_overscan;
     } output{};
 
+    struct {
+        struct memory_view *view{};
+    } memory;
     struct {
         struct my_texture texture;
         struct events_view *view{};
