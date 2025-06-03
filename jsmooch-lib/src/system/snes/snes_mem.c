@@ -54,6 +54,7 @@ static u32 read_WRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struc
 static void write_loROM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
 {
     static int a = 1;
+    printf("\nWARNING writes to ROM area! %06x", addr);
     if (a) {
         a = 0;
         printf("\nWARNING writes to ROM area!");

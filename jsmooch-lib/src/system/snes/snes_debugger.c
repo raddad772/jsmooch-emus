@@ -302,7 +302,7 @@ static void setup_image_view_palettes(struct SNES* this, struct debugger_interfa
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
-static void setup_dbglog(struct debugger_interface *dbgr, struct SNES *this)
+static void setup_dbglog(struct SNES *this, struct debugger_interface *dbgr)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
     struct debugger_view *dview = cpg(p);
@@ -507,8 +507,46 @@ static void setup_waveforms(struct SNES* this, struct debugger_interface *dbgr)
 
 }
 
+static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr) {
+    // Setup events view
+    this->dbg.events.view = debugger_view_new(dbgr, dview_events);
+    struct debugger_view *dview = cpg(this->dbg.events.view);
+    struct events_view *ev = &dview->events;
 
-void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
+    ev->timing = ev_timing_master_clock;
+    ev->master_clocks.per_line = 1364;
+    ev->master_clocks.height = 262;
+    ev->master_clocks.ptr = &this->clock.master_cycle_count;
+
+    ev->associated_display = this->ppu.display_ptr;
+
+    for (u32 i = 0; i < 2; i++) {
+        ev->display[i].width = 341;
+        ev->display[i].height = 262;
+        ev->display[i].buf = NULL;
+        ev->display[i].frame_num = 0;
+    }
+    ev->associated_display = this->ppu.display_ptr;
+    cvec_grow_by(&ev->events, DBG_SNES_EVENT_MAX);
+    DEBUG_REGISTER_EVENT_CATEGORY("R5A22 events", DBG_SNES_CATEGORY_R5A22);
+    DEBUG_REGISTER_EVENT_CATEGORY("SPC700 events", DBG_SNES_CATEGORY_SPC700);
+    DEBUG_REGISTER_EVENT_CATEGORY("PPU events", DBG_SNES_CATEGORY_PPU);
+
+    DEBUG_REGISTER_EVENT("IRQ", 0xFF0000, DBG_SNES_CATEGORY_R5A22, DBG_SNES_EVENT_IRQ);
+    DEBUG_REGISTER_EVENT("NMI", 0x00FF00, DBG_SNES_CATEGORY_R5A22, DBG_SNES_EVENT_NMI);
+    DEBUG_REGISTER_EVENT("HDMA start", 0xC0B030, DBG_SNES_CATEGORY_R5A22, DBG_SNES_EVENT_HDMA_START);
+
+    DEBUG_REGISTER_EVENT("HIRQ", 0x00FFFF, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_HIRQ);
+    DEBUG_REGISTER_EVENT("VRAM write", 0xC030C0, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_WRITE_VRAM);
+    DEBUG_REGISTER_EVENT("SCROLL write", 0xFFFF00, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_WRITE_SCROLL);
+
+    debugger_report_frame(this->dbg.interface);
+}
+
+
+
+
+    void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
 
@@ -516,7 +554,8 @@ void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     dbgr->smallest_step = 4;
     cvec_lock_reallocs(&dbgr->views);
 
-    setup_dbglog(dbgr, this);
+    setup_dbglog(this, dbgr);
+    setup_events_view(this, dbgr);
     setup_waveforms(this, dbgr);
     setup_image_view_palettes(this, dbgr);
     setup_image_view_ppu_layers(this, dbgr);

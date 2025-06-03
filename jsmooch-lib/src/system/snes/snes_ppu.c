@@ -3,6 +3,7 @@
 //
 
 #include <string.h>
+#include "helpers/debugger/debugger.h"
 #include "snes_ppu.h"
 #include "snes_bus.h"
 #include "snes_debugger.h"
@@ -279,10 +280,7 @@ static void update_video_mode(struct SNES_PPU *this)
 static void write_VRAM(struct SNES *snes, u32 addr, u32 val)
 {
     addr &= 0x7FFF;
-    if (addr == 0x4000) {
-        if (dbg.trace_on) dbg_break("HERE I SAY", snes->clock.master_cycle_count);
-        //val = 0x30FF;
-    }
+    DBG_EVENT(DBG_SNES_EVENT_WRITE_VRAM);
     //if (addr == 0x51FB) dbg_break("WHAT@?", 0);
     dbgloglog(snes, SNES_CAT_PPU_VRAM_WRITE, DBGLS_INFO, "VRAM write %04x: %04x", addr, val);
     snes->ppu.VRAM[addr] = val;
@@ -427,16 +425,16 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             this->latch.vram = this->VRAM[get_addr_by_map(this)];
             return;
         case 0x2118: // VRAM data lo
-            if (!snes->clock.ppu.vblank_active && !this->io.force_blank) {
+            /*if (!snes->clock.ppu.vblank_active && !this->io.force_blank) {
                 printf("\nDISCARD WRITE ON VBLANK OR FORCE BLANK");
                 return;
-            }
+            }*/
             addre = get_addr_by_map(this);
             write_VRAM(snes, addre, (this->VRAM[addre] & 0xFF00) | (val & 0xFF));
             if (this->io.vram.increment_mode == 0) this->io.vram.addr = (this->io.vram.addr + this->io.vram.increment_step) & 0x7FFF;
             return;
         case 0x2119: // VRAM data hi
-            if (!snes->clock.ppu.vblank_active && !this->io.force_blank) return;
+            //if (!snes->clock.ppu.vblank_active && !this->io.force_blank) return;
             addre = get_addr_by_map(this);
             write_VRAM(snes, addre, (val << 8) | (this->VRAM[addre] & 0xFF));
             if (this->io.vram.increment_mode == 1) this->io.vram.addr = (this->io.vram.addr + this->io.vram.increment_step) & 0x7FFF;
@@ -704,6 +702,9 @@ u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct S
             return r; }
     }
     printf("\nUNIMPLEMENTED PPU READ FROM %04x", addr);
+    if (addr == 0x2000) {
+        dbg_break("PPU2k!", snes->clock.master_cycle_count);
+    }
     //dbg_break("PPU", snes->clock.master_cycle_count);
     return 0;
 }
@@ -717,6 +718,9 @@ static void new_scanline(struct SNES* this, u64 cur_clock)
     // TODO: hblank exit here too
     this->clock.ppu.scanline_start = cur_clock;
     this->clock.ppu.y++;
+    if (this->dbg.events.view.vec) {
+        debugger_report_line(this->dbg.interface, this->clock.ppu.y);
+    }
     this->r5a22.status.hirq_line = 0;
 }
 
@@ -1125,7 +1129,6 @@ static void draw_line(struct SNES *snes)
     struct SNES_PPU *this = &snes->ppu;
     //printf("\nDraw line %d", snes->clock.ppu.y);
     if (snes->clock.ppu.y == 0) memset(&snes->dbg_info.line, 0, sizeof(snes->dbg_info.line));
-
     draw_sprite_line(snes, snes->clock.ppu.y);
     draw_bg_line(snes, 0, snes->clock.ppu.y);
     draw_bg_line(snes, 1, snes->clock.ppu.y);
@@ -1310,6 +1313,7 @@ static void assert_hirq(void *ptr, u64 key, u64 clock, u32 jitter)
     struct R5A22 *this = &snes->r5a22;
     this->status.hirq_line = key;
     R5A22_update_irq(snes);
+    if (key) DBG_EVENT(DBG_SNES_EVENT_HIRQ);
 }
 
 static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -1374,12 +1378,20 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     //printf("\nNEW FRAME @%lld", cur);
     struct SNES* snes = (struct SNES*)ptr;
 
-    debugger_report_frame(snes->dbg.interface);
+    if (snes->dbg.events.view.vec) {
+        debugger_report_frame(snes->dbg.interface);
+    }
     snes->ppu.cur_output = ((u16 *)snes->ppu.display->output[snes->ppu.display->last_written ^ 1]);
     snes->clock.master_frame++;
 
     snes->clock.ppu.field ^= 1;
-    snes->clock.ppu.y = 0;
+    snes->clock.ppu.y = -1;
+
+    /*snes->clock.ppu.scanline_start = cur_clock;
+    if (snes->dbg.events.view.vec) {
+        debugger_report_line(snes->dbg.interface, 0);
+    }*/
+
     snes->clock.ppu.vblank_active = 0;
     snes->ppu.cur_output = snes->ppu.display->output[snes->ppu.display->last_written];
     memset(snes->ppu.cur_output, 0, 256*224*2);

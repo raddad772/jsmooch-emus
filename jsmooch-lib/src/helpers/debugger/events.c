@@ -172,7 +172,11 @@ void events_view_render(struct debugger_interface *dbgr, struct events_view *thi
         struct debugger_event *ev = cvec_get(&this->events, i);
         for (u32 j = 0; j < cvec_len(&ev->updates[ev->updates_index ^ 1]); j++) {
             struct debugger_event_update *upd = cvec_get(&ev->updates[ev->updates_index ^ 1], j);
-            assert(upd->scan_y < this->display[0].height);
+            //assert(upd->scan_y < this->display[0].height);
+            if (upd->scan_y >= this->display[0].height) {
+                printf("\nUPD OOB %d", upd->scan_y);
+                upd->scan_y = this->display[0].height - 1;
+            }
             switch(this->timing) {
                 case ev_timing_scanxy:
                     draw_box_3x3(buf, upd->scan_x, upd->scan_y, out_width, out_height, ev->color);

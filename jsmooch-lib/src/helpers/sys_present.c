@@ -388,7 +388,9 @@ void snes_present(struct physical_io_device *device, void *out_buf, u32 out_widt
         for (u32 rx = 0; rx < 512; rx++) {
             u32 x = rx;
             u32 di = ((y * 512) + x);
-            u32 b_out = outyw + x;
+            u32 b_out;
+            if (is_event_view_present) b_out = outyw + (x >> 1);
+            else b_out = outyw + x;
             u32 color = sneso[di];
             img32[b_out] = gba_to_screen(color);
         }
