@@ -469,7 +469,10 @@ int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const c
 void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_line);
 
 // Memory view functions
-void memory_view_add_module(struct debugger_interface *dbgr, struct memory_view *mv, const char *name, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
+void memory_view_add_module(struct debugger_interface *dbgr, struct memory_view *mv, const char *name, u32 id, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
+u32 memory_view_num_modules(struct memory_view *mv);
+struct memory_view_module *memory_view_get_module(struct memory_view *mv, u32 id);
+void memory_view_get_line(struct memory_view *mv, struct memory_view_module *mm, u32 addr, char *out);
 
 // Disassembly view functions
 int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines);

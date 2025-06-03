@@ -14,6 +14,7 @@ extern "C" {
 void memory_view_init(struct memory_view *);
 void memory_view_delete(struct memory_view *);
 
+
 #ifdef __cplusplus
 }
 #endif

@@ -537,8 +537,8 @@ static void setup_memory_view(struct SNES* this, struct debugger_interface *dbgr
     this->dbg.memory = debugger_view_new(dbgr, dview_memory);
     struct debugger_view *dview = cpg(this->dbg.memory);
     struct memory_view *mv = &dview->memory;
-    memory_view_add_module(dbgr, mv, "CPU Memory", 6, 0, 0xFFFFFF, this, &readcpumem);
-    memory_view_add_module(dbgr, mv, "VRAM", 4, 0, 0xFFFF, &this->ppu.VRAM, &readvram);
+    memory_view_add_module(dbgr, mv, "CPU Memory", 0, 6, 0, 0xFFFFFF, this, &readcpumem);
+    memory_view_add_module(dbgr, mv, "VRAM", 1, 4, 0, 0xFFFF, &this->ppu.VRAM, &readvram);
 }
 
 static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr) {
