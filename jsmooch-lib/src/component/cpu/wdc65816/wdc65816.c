@@ -132,12 +132,12 @@ void WDC65816_cycle(struct WDC65816* this)
             if (this->regs.NMI_pending) {
                 this->regs.NMI_pending = 0;
                 this->regs.IR = WDC65816_OP_NMI;
-                //irqdump(this, 1);
+                DBG_EVENT(this->dbg.events.NMI);
                 this->regs.interrupt_pending = this->regs.IRQ_pending;
             }
             else if (this->regs.IRQ_pending) {
                 this->regs.IR = WDC65816_OP_IRQ;
-                //irqdump(this, 0);
+                DBG_EVENT(this->dbg.events.IRQ);
             }
             this->regs.WAI = 0;
         }
@@ -193,6 +193,8 @@ void WDC65816_init(struct WDC65816* this, u64 *master_clock)
     jsm_string_init(&this->trace.str2, 200);
 
     DBG_EVENT_VIEW_INIT;
+    this->dbg.events.IRQ = -1;
+    this->dbg.events.NMI = -1;
 
     this->regs.S = 0x1FF;
 }

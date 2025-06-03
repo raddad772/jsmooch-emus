@@ -540,6 +540,10 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
     DEBUG_REGISTER_EVENT("VRAM write", 0xC030C0, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_WRITE_VRAM);
     DEBUG_REGISTER_EVENT("SCROLL write", 0xFFFF00, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_WRITE_SCROLL);
 
+    SET_EVENT_VIEW(this->r5a22.cpu);
+    this->r5a22.cpu.dbg.events.IRQ = DBG_SNES_EVENT_IRQ;
+    this->r5a22.cpu.dbg.events.NMI = DBG_SNES_EVENT_NMI;
+
     debugger_report_frame(this->dbg.interface);
 }
 

@@ -1344,7 +1344,6 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
     }
     R5A22_update_irq(snes);
 
-
     // HDMA - 1104 ish
     if (!vblank) {
         scheduler_only_add_abs(&snes->scheduler, cur + snes->clock.timing.line.hdma_position, 0, snes, &hdma, NULL);
@@ -1404,7 +1403,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     vblank(snes, 0, cur_clock, jitter);
 
     //set_clock_divisor(this);
-    scheduler_only_add_abs(&snes->scheduler, cur + (snes->clock.timing.line.master_cycles * 224), 1, snes, &vblank, NULL);
+    scheduler_only_add_abs(&snes->scheduler, cur + (snes->clock.timing.line.master_cycles * 225), 1, snes, &vblank, NULL);
     scheduler_only_add_abs_w_tag(&snes->scheduler, cur + snes->clock.timing.frame.master_cycles, 0, snes, &new_frame, NULL, 2);
 }
 

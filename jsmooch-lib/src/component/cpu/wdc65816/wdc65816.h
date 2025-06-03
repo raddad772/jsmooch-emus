@@ -115,7 +115,9 @@ struct WDC65816 {
     WDC65816_ins_func ins;
 
     DBG_START
-        DBG_EVENT_VIEW
+        DBG_EVENT_VIEW_START
+            IRQ, NMI
+        DBG_EVENT_VIEW_END
         DBG_TRACE_VIEW
     DBG_END
 

@@ -152,11 +152,13 @@ void R5A22_update_irq(struct SNES *snes) {
         this->status.irq_line = this->status.hirq_status && this->status.virq_status;
         if (!old_h_irq && !old_v_irq && this->status.irq_line) { // If we're firing...
             this->status.irq_flag = 1;
+            printf("\nHVIRQ FLAG LINE:%d CYCLE:%lld", snes->clock.ppu.y, snes->clock.master_cycle_count - snes->clock.ppu.scanline_start);
         }
     } else { // H or V
         // If we're firing...
         if ((!old_h_irq && this->status.hirq_status) || (!old_v_irq && this->status.virq_status)) {
             this->status.irq_flag = 1;
+            printf("\nIRQ FLAG LINE:%d CYCLE:%lld", snes->clock.ppu.y, snes->clock.master_cycle_count - snes->clock.ppu.scanline_start);
         }
         this->status.irq_line = this->status.hirq_status || this->status.virq_status;
     }
@@ -560,11 +562,11 @@ static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
     u32 nc = 0;
     if (this->transfer_size > 0) {
         if (this->index == 0) { // 8 cycles for setup
-            nc += 8;
+            nc += 4;
         }
         dma_transfer(snes, this, (this->source_bank << 16) | this->source_address, this->index, 0);
         this->index++;
-        nc += 8;
+        nc += 2;
         if (!this->fixed_transfer) {
             if (this->reverse_transfer)
                 this->source_address--;

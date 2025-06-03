@@ -29,6 +29,9 @@ extern "C" {
 
 
 #define DBG_EVENT_VIEW struct { struct cvec_ptr view; } events;
+#define DBG_EVENT_VIEW_START struct { struct cvec_ptr view; u32
+#define DBG_EVENT_VIEW_END ;} events;
+
 #define DBG_TRACE_VIEW struct trace_view *tvptr;
 #define DBG_LOG_VIEW struct dbglog_view *dvptr; u32 dv_id;
 #define DBG_IMAGE_VIEW(name) struct { struct cvec_ptr name; } image_views;
