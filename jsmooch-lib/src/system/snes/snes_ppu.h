@@ -10,14 +10,16 @@
 
 union SNES_PPU_px {
     struct {
-        u32 color : 16;
-        u32 has : 1;
-        u32 palette : 3;
-        u32 priority : 4;
-        u32 source : 3;
-        u32 bpp : 2;
+        u64 color : 16;
+        u64 has : 1;
+        u64 palette : 3;
+        u64 priority : 4;
+        u64 source : 3;
+        u64 bpp : 2;
+        u64 dbg_priority : 2;
+        u64 color_math_flags : 4;
     };
-    u32 v;
+    u64 v;
 };
 
 struct SNES_PPU {

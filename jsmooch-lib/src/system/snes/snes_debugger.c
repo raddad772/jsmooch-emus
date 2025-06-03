@@ -40,7 +40,7 @@ static void print_layer_info(struct SNES *this, u32 bgnum, struct debugger_widge
 {
     if (bgnum < 4) {
         struct SNES_PPU_BG *bg = &this->ppu.bg[bgnum];
-        debugger_widgets_textbox_sprintf(tb, "\n-BG%d:", bgnum);
+        debugger_widgets_textbox_sprintf(tb, "\n-BG%d:  bgmode:%d  ", bgnum, this->ppu.io.bg_mode);
         if (bg->main_enable) debugger_widgets_textbox_sprintf(tb, "main:on ");
         else debugger_widgets_textbox_sprintf(tb, "main:off");
         if (bg->sub_enable) debugger_widgets_textbox_sprintf(tb, " sub:on ");
@@ -148,14 +148,23 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
                     out_line[x] = 0xFF000000 | (px_line[x].has * 0xFFFFFF);
                     break;
                 case 2: { // priority
-                    u32 v = px_line[x].priority + 1;
-                    assert(v < 5);
-                    out_line[x] = tm_colors[v];
+                    if (px_line[x].has) {
+                        u32 v = px_line[x].dbg_priority + 1;
+                        out_line[x] = tm_colors[v];
+                    }
+                    else {
+                        out_line[x] = 0xFF000000;
+                    }
                     break; }
                 case 3: { // BPP
-                    u32 v = px_line[x].bpp;
-                    assert(v < 3);
-                    out_line[x] = tm_colors[v + 1];
+                    if (px_line[x].has) {
+                        u32 v = px_line[x].bpp;
+                        assert(v < 3);
+                        out_line[x] = tm_colors[v + 1];
+                    }
+                    else {
+                        out_line[x] = 0xFF000000;
+                    }
                     break; }
 
             }

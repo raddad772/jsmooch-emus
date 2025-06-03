@@ -127,7 +127,7 @@ static u32 get_addr_by_map(struct SNES_PPU *this)
 static void update_video_mode(struct SNES_PPU *this)
 {
 		//snes->clock.scanline.bottom_scanline = this->overscan ? 240 : 225;
-#define BGP(num, main, sub) this->bg[num].priority[0] = main; this->bg[num].priority[1] = sub
+#define BGP(num, sub, main) this->bg[num].priority[0] = main; this->bg[num].priority[1] = sub
 #define OBP(n0, n1, n2, n3) this->obj.priority[0] = n0; this->obj.priority[1] = n1; this->obj.priority[2] = n2; this->obj.priority[3] = n3
 		switch(this->io.bg_mode) {
 			case 0:
@@ -738,13 +738,14 @@ static inline u32 direct_color(u32 palette_index, u32 palette_color)
            ((palette_color << 7) & 0x6000) + ((palette_index << 10) & 0x1000);
 }
 
-static inline void setpx(union SNES_PPU_px *px, u32 source, u32 priority, u32 color, u32 bpp)
+static inline void setpx(union SNES_PPU_px *px, u32 source, u32 priority, u32 color, u32 bpp, u32 dbg_priority)
 {
     px->has = 1;
     px->source = source;
     px->priority = priority;
     px->color = color;
     px->bpp = bpp;
+    px->dbg_priority = dbg_priority;
 }
 
 static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
@@ -753,6 +754,7 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
     struct SNES_PPU_BG *bg = &this->bg[source];
 
     y = this->mode7.vflip ? 255 - y : y;
+    u32 dbp;
 
     u16 m_color = 0;
     u32 m_counter = 1;
@@ -781,10 +783,13 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
         u32 palette = ((this->mode7.repeat == 2) && out_of_bounds) ? 0 : this->VRAM[(tile << 6 | pal_addr) & 0x7FFF] >> 8;
 
         u32 priority;
-        if (source == 0)
+        if (source == 0) {
             priority = bg->priority[0];
+            dbp = 0;
+        }
         else {// source == 1
             priority = bg->priority[palette >> 7];
+            dbp = palette >> 7;
             palette &= 0x7F;
         }
 
@@ -801,7 +806,7 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
         }
 
         if (!m_palette) continue;
-        setpx(&bg->line[sx], source, m_priority, m_color, BPP_8);
+        setpx(&bg->line[sx], source, m_priority, m_color, BPP_8, dbp);
     }
 }
 
@@ -956,14 +961,14 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
 
             if (!hires) {
                 if (mosaic_priority > bg->line[x].priority) // && !PPUF_window_above[x]
-                    setpx(&bg->line[x], source, mosaic_priority, mosaic_color, bpp);
+                    setpx(&bg->line[x], source, mosaic_priority, mosaic_color, bpp, dbg_prio);
             } else {
                 if (x & 1) {
                     if (mosaic_priority > bg->line[x].priority) // && !PPUF_window_above[bx]
-                        setpx(&bg->line[x], source, mosaic_priority, mosaic_color, bpp);
+                        setpx(&bg->line[x], source, mosaic_priority, mosaic_color, bpp, dbg_prio);
                 } else {
                     if (bg->sub_enable && mosaic_priority > bg->line[x].priority) // !PPUF_window_below[bx] &&
-                        setpx(&bg->line[x], source, mosaic_priority, mosaic_color, bpp);
+                        setpx(&bg->line[x], source, mosaic_priority, mosaic_color, bpp, dbg_prio);
                 }
             }
         }
@@ -972,6 +977,7 @@ static void draw_bg_line(struct SNES *snes, u32 source, u32 y)
 
 static void color_math(struct SNES_PPU *this, union SNES_PPU_px *main, union SNES_PPU_px *sub)
 {
+    main->color_math_flags = 1;
     i32 mr = main->color & 0x1F;
     i32 mg = (main->color >> 5) & 0x1F;
     i32 mb = (main->color >> 10) & 0x1F;
@@ -984,6 +990,7 @@ static void color_math(struct SNES_PPU *this, union SNES_PPU_px *main, union SNE
         mr -= sr;
         mg -= sg;
         mb -= sb;
+        main->color_math_flags |= 2;
     }
     else {
         mr += sr;
@@ -994,6 +1001,7 @@ static void color_math(struct SNES_PPU *this, union SNES_PPU_px *main, union SNE
     if (mg < 0) mg = 0;
     if (mb < 0) mb = 0;
     if (this->color_math.halve) {
+        main->color_math_flags |= 4;
         mr >>= 1;
         mg >>= 1;
         mb >>= 1;
@@ -1091,6 +1099,7 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
                         px->has = 1;
                         px->source = 4; // OBJ = 4
                         px->priority = sp->priority;
+                        px->dbg_priority = sp->priority;
                         px->color = this->CGRAM[sp->pal_offset + color];
                         px->palette = sp->palette;
                     }
@@ -1136,19 +1145,22 @@ static void draw_line(struct SNES *snes)
         main_px.priority = 12;
         main_px.color = this->CGRAM[0];
         main_px.has = 0;
+#define MAINPRIO 0
+#define SUBPRIO 1
         for (u32 bgnum = 0; bgnum < 4; bgnum++) {
             struct SNES_PPU_BG *bg = &this->bg[bgnum];
             union SNES_PPU_px *cmp = &bg->line[x];
-            if (bg->main_enable && cmp->has && (main_px.priority > bg->priority[0])) {
+            if (bg->main_enable && cmp->has && (main_px.priority > cmp->priority)) {
                 main_px.color = cmp->color;
                 main_px.has = 1;
-                main_px.priority = bg->priority[0];
+                main_px.priority = cmp->priority;
                 main_px.source = bgnum;
+                main_px.dbg_priority = bg->priority[MAINPRIO];
             }
-            if (this->color_math.blend_mode && bg->sub_enable && cmp->has && (sub_px.priority > bg->priority[1])) {
+            if (this->color_math.blend_mode && bg->sub_enable && cmp->has && (sub_px.priority > cmp->priority)) {
                 sub_px.color = cmp->color;
                 sub_px.has = 1;
-                sub_px.priority = bg->priority[1];
+                sub_px.priority = cmp->priority;
                 sub_px.source = bgnum;
             }
         }
@@ -1166,6 +1178,7 @@ static void draw_line(struct SNES *snes)
             sub_px.source = cmp->palette < 4 ? SRC_OBJ_PAL03 : SRC_OBJ_PAL47;
         }
 
+        main_px.color_math_flags = 0;
         if (this->color_math.enable[main_px.source]) color_math(this, &main_px, &sub_px);
 
         u16 c = main_px.color;
