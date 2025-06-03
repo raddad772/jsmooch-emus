@@ -27,6 +27,7 @@ extern "C" {
 #define DBG_WAVEFORM_CHANS(x) struct cvec_ptr chan[x];
 #define DBG_WAVEFORM_END(x) } waveforms_##x;
 
+#define DBG_MEMORY_VIEW struct cvec_ptr memory;
 
 #define DBG_EVENT_VIEW struct { struct cvec_ptr view; } events;
 #define DBG_EVENT_VIEW_START struct { struct cvec_ptr view; u32

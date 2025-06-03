@@ -61,6 +61,7 @@ struct SNES {
                     *A, *X, *Y, *SP, *PC
         DBG_CPU_REG_END(spc700)
 
+        DBG_MEMORY_VIEW
 
         DBG_EVENT_VIEW
 

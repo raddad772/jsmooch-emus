@@ -507,6 +507,40 @@ static void setup_waveforms(struct SNES* this, struct debugger_interface *dbgr)
 
 }
 
+void readcpumem(void *ptr, u32 addr, void *dest)
+{
+    // Read 16 bytes from addr into dest
+    u8 *out = dest;
+    for (u32 i = 0; i < 16; i++) {
+        *out = SNES_wdc65816_read(ptr, (addr + i) & 0xFFFFFF, 0, 0);
+        out++;
+    }
+}
+
+void readvram(void *ptr, u32 addr, void *dest)
+{
+    u8 *vramptr = ptr;
+    addr &= 0xFFFF;
+    if (addr <= 0xFFF0) {
+        memcpy(dest, vramptr+addr, 16);
+    }
+    else {
+        u8 *out = dest;
+        for (u32 i = 0; i < 16; i++) {
+            *out = vramptr[(addr + i) & 0xFFFF];
+            out++;
+        }
+    }
+}
+
+static void setup_memory_view(struct SNES* this, struct debugger_interface *dbgr) {
+    this->dbg.memory = debugger_view_new(dbgr, dview_memory);
+    struct debugger_view *dview = cpg(this->dbg.memory);
+    struct memory_view *mv = &dview->memory;
+    memory_view_add_module(dbgr, mv, "CPU Memory", 6, 0, 0xFFFFFF, this, &readcpumem);
+    memory_view_add_module(dbgr, mv, "VRAM", 4, 0, 0xFFFF, &this->ppu.VRAM, &readvram);
+}
+
 static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr) {
     // Setup events view
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
@@ -560,6 +594,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
 
     setup_dbglog(this, dbgr);
     setup_events_view(this, dbgr);
+    setup_memory_view(this, dbgr);
     setup_waveforms(this, dbgr);
     setup_image_view_palettes(this, dbgr);
     setup_image_view_ppu_layers(this, dbgr);

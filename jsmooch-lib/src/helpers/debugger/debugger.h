@@ -32,7 +32,7 @@ enum debugger_view_kinds {
     dview_waveforms,
     dview_trace,
     dview_console,
-    dview_dbglog
+    dview_dbglog,
 };
 
 
@@ -109,6 +109,26 @@ struct cpu_reg_context {
     u32 is_bitflag;
     u32 index;
     int (*custom_render)(struct cpu_reg_context*, void *outbuf, size_t outbuf_sz);
+};
+
+struct memory_view_module {
+    u32 addr_start, addr_end;
+    u32 addr_digits;
+    u32 id;
+    void *read_mem16_ptr;
+    void (*read_mem16)(void *ptr, u32 addr, void *dest);
+    char name[50];
+};
+
+struct memory_view {
+    struct cvec modules;
+
+    // 16 bytes per row!
+
+    // Input
+    u32 addr_start;
+
+    u32 force_refresh;
 };
 
 struct disassembly_view {
@@ -417,6 +437,7 @@ struct debugger_view {
         struct trace_view trace;
         struct console_view console;
         struct dbglog_view dbglog;
+        struct memory_view memory;
     };
 };
 
@@ -446,6 +467,9 @@ void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, c
 void debugger_widgets_textbox_clear(struct debugger_widget_textbox *tb);
 int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const char *format, ...);
 void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_line);
+
+// Memory view functions
+void memory_view_add_module(struct debugger_interface *dbgr, struct memory_view *mv, const char *name, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
 
 // Disassembly view functions
 int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines);

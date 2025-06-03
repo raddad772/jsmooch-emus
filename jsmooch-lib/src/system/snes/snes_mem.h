@@ -32,7 +32,7 @@ struct SNES_mem {
     SNES_memmap_read read[0x1000];
     SNES_memmap_write write[0x1000];
 
-    u8 WRAM[128 * 1024];
+    u8 WRAM[0x20000];
 
     u32 ROMSizebit;
     u32 SRAMSizebit;

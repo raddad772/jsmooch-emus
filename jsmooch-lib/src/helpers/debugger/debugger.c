@@ -17,6 +17,7 @@
 #include "trace.h"
 #include "console.h"
 #include "dbglog.h"
+#include "memory.h"
 
 enum dvur {
     dvur_frame,
@@ -73,6 +74,10 @@ void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, 
             case dview_console:
             case dview_dbglog:
                 break;
+            case dview_memory: {
+                struct memory_view *mv = &dv->memory;
+                mv->force_refresh = 1;
+                break; }
             case dview_disassembly: {
                 struct disassembly_view *dview = &dv->disassembly;
                 disassembly_view_dirty_mem(dbgr, dview, mem_bus, addr_start, addr_end);
@@ -116,11 +121,12 @@ void debugger_view_init(struct debugger_view *this, enum debugger_view_kinds kin
         case dview_disassembly:
             disassembly_view_init(&this->disassembly);
             break;
+        case dview_memory:
+            memory_view_init(&this->memory);
+            break;
+
         case dview_events:
             events_view_init(&this->events);
-            break;
-        case dview_memory:
-            assert(1==2);
             break;
         case dview_waveforms:
             waveform_view_init(&this->waveform);
@@ -277,6 +283,9 @@ void debugger_view_delete(struct debugger_view *this)
         case dview_events:
             events_view_delete(&this->events);
             break;
+        case dview_memory:
+            memory_view_delete(&this->memory);
+            break;
         case dview_dbglog:
             dbglog_view_delete(&this->dbglog);
             break;
@@ -285,9 +294,6 @@ void debugger_view_delete(struct debugger_view *this)
             break;
         case dview_image:
             image_view_delete(&this->image);
-            break;
-        case dview_memory:
-            assert(1==2);
             break;
         case dview_waveforms:
             waveform_view_delete(&this->waveform);
