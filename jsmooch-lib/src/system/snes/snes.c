@@ -101,7 +101,6 @@ static void run_block(void *ptr, u64 key, u64 clock, u32 jitter)
     struct SNES *this = (struct SNES *)ptr;
 
     R5A22_cycle(this, 0, 0, 0);
-    this->clock.master_cycle_count += this->clock.cpu.divider;
 }
 
 static inline float i16_to_float(i16 val)

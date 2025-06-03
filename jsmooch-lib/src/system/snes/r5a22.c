@@ -562,11 +562,11 @@ static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
     u32 nc = 0;
     if (this->transfer_size > 0) {
         if (this->index == 0) { // 8 cycles for setup
-            nc += 4;
+            nc += 8;
         }
         dma_transfer(snes, this, (this->source_bank << 16) | this->source_address, this->index, 0);
         this->index++;
-        nc += 2;
+        nc += 8;
         if (!this->fixed_transfer) {
             if (this->reverse_transfer)
                 this->source_address--;
@@ -647,9 +647,14 @@ void R5A22_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
         dma_run(snes);
         //u64 dif = snes->clock.master_cycle_count - before;
         //printf("\nDIF %lld", dif);
+        cycle_alu(snes);
     }
-    else cycle_cpu(snes);
-    cycle_alu(snes);
+    else {
+        cycle_cpu(snes);
+        cycle_alu(snes);
+        snes->clock.master_cycle_count += snes->clock.cpu.divider;
+    }
+
 }
 
 void R5A22_schedule_first(struct SNES *snes)
