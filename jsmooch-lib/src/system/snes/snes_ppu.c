@@ -279,10 +279,10 @@ static void update_video_mode(struct SNES_PPU *this)
 static void write_VRAM(struct SNES *snes, u32 addr, u32 val)
 {
     addr &= 0x7FFF;
-    //if ((addr >= 0x51F0) && (addr < 0x5400)) {
-        //printf("\n%04X: %02X", addr, val);
+    if (addr == 0x4000) {
+        if (dbg.trace_on) dbg_break("HERE I SAY", snes->clock.master_cycle_count);
         //val = 0x30FF;
-    //}
+    }
     //if (addr == 0x51FB) dbg_break("WHAT@?", 0);
     dbgloglog(snes, SNES_CAT_PPU_VRAM_WRITE, DBGLS_INFO, "VRAM write %04x: %04x", addr, val);
     snes->ppu.VRAM[addr] = val;
@@ -1099,7 +1099,7 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
                         px->has = 1;
                         px->source = 4; // OBJ = 4
                         px->priority = sp->priority;
-                        px->dbg_priority = sp->priority;
+                        px->dbg_priority = sp->size;
                         px->color = this->CGRAM[sp->pal_offset + color];
                         px->palette = sp->palette;
                     }

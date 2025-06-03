@@ -393,7 +393,6 @@ void SNESJ_reset(JSM)
 
 u32 SNESJ_finish_frame(JSM)
 {
-    //printf("\nNEW FRAME FINISH");
     JTHIS;
     read_opts(jsm, this);
 #ifdef DO_STATS

@@ -69,6 +69,87 @@ static void print_layer_info(struct SNES *this, u32 bgnum, struct debugger_widge
     }
 }
 
+static void render_image_view_obj_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct SNES *this = (struct SNES *) ptr;
+    if (this->clock.master_frame == 0) return;
+
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 256);
+
+    u32 colormode = ((struct debugger_widget *) cvec_get(&dview->options,0))->radiogroup.value;
+
+    // 16x32 tiles per thing
+    // 4bpp, 8 pixels = 32 bits
+    // addr and addr+8
+
+    u32 x_start = 0;
+    for (u32 base_addr = 0; base_addr < 0x8000; base_addr += 0x2000) {
+        for (u32 row = 0; row < 32; row++) {
+            for (u32 col = 0; col < 16; col++) {
+                u32 tile_addr = base_addr + (((row << 4) | col) << 4);
+                u32 screen_x = x_start + (col * 8);
+                u32 base_y = row * 8;
+
+                // 8 lines now
+                for (u32 inner_y = 0; inner_y < 8; inner_y++) {
+                    u32 screen_y = inner_y + base_y;
+                    u32 get_addr = (tile_addr & 0x7FF0) + inner_y;
+                    u32 data = this->ppu.VRAM[get_addr] | (this->ppu.VRAM[(get_addr + 8) & 0x7FFF] << 16);
+                    u32 *bufpos = outbuf + (screen_y * out_width) + screen_x;
+                    for (u32 mpx = 0; mpx < 8; mpx++) {
+                        u32 color = 0;
+                        u32 c = (data >> mpx) & 1;
+                        c += (data >> (mpx + 7)) & 2;
+                        c += (data >> (mpx + 14)) & 4;
+                        c += (data >> (mpx + 21)) & 8;
+                        if (c == 0) {
+                            //
+                        }
+                        else { // c range here is 1-15
+                            switch(colormode) {
+                                default: {
+                                    static int a = 0;
+                                    if (a != colormode) {
+                                        printf("\nUNSUPPORT COLORMODE %d", colormode);
+                                        a = colormode;
+                                    }}
+                                    __attribute__ ((fallthrough));
+                                case 0: {// B&W
+                                    float r = ((float)c / 15.0f) * 255.0f;
+                                    c = (u32)r;
+                                    if (c > 0xFF) c = 0xFF;
+                                    color = (c << 16) | (c << 8) | c;
+                                    break; }
+
+                                case 1:
+                                case 2:
+                                case 3:
+                                case 4:
+                                case 5:
+                                case 6:
+                                case 7:
+                                case 8: {
+                                    u32 palnum = 8 + (colormode - 1);
+                                    c = (palnum << 4) | c;
+                                    color = gba_to_screen(this->ppu.CGRAM[c]);
+                                    break;
+                                }
+                            }
+                        }
+
+
+                        bufpos[mpx] = 0xFF000000 | color;
+                    }
+                }
+            }
+        }
+
+        x_start += (128 + 10);
+    }
+}
+
 static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct SNES *this = (struct SNES *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -260,7 +341,39 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct SNES *this)
 
 }
 
-static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_interface *dbgr) {
+static void setup_image_view_ppu_obj_tiles(struct SNES *this, struct debugger_interface *dbgr) {
+    struct debugger_view *dview;
+    this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.ppu_layers);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 542;
+    iv->height = 256;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2) {0, 0};
+    iv->viewport.p[1] = (struct ivec2) {542, 256};
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_obj_tiles;
+    snprintf(iv->label, sizeof(iv->label), "PPU OBJ Tiles");
+
+    struct debugger_widget *rg;
+    rg = debugger_widgets_add_radiogroup(&dview->options, "Color mode", 1, 0, 0);
+    debugger_widget_radiogroup_add_button(rg, "B&W", 0, 1);
+    debugger_widget_radiogroup_add_button(rg, "P0", 1, 0);
+    debugger_widget_radiogroup_add_button(rg, "P1", 2, 1);
+    debugger_widget_radiogroup_add_button(rg, "P2", 3, 1);
+    debugger_widget_radiogroup_add_button(rg, "P3", 4, 1);
+    debugger_widget_radiogroup_add_button(rg, "P4", 5, 0);
+    debugger_widget_radiogroup_add_button(rg, "P5", 6, 1);
+    debugger_widget_radiogroup_add_button(rg, "P6", 7, 1);
+    debugger_widget_radiogroup_add_button(rg, "P7", 8, 1);
+
+
+}
+
+    static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_interface *dbgr) {
     struct debugger_view *dview;
     this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
     dview = cpg(this->dbg.image_views.ppu_layers);
@@ -408,4 +521,5 @@ void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     setup_image_view_palettes(this, dbgr);
     setup_image_view_ppu_layers(this, dbgr);
     setup_image_view_ppu_tilemaps(this, dbgr);
+    setup_image_view_ppu_obj_tiles(this, dbgr);
 }
