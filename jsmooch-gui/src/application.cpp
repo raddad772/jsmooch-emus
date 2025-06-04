@@ -305,8 +305,8 @@ void imgui_jsmooch_app::render_memory_view() {
                 }
                 ImGui::EndTable();
             }
+            ImGui::End(); // end window
         }
-        ImGui::End(); // end window
     }
 
 }
