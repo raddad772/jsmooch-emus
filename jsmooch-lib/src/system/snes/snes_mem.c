@@ -15,11 +15,13 @@ static void write_bad(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_b
 
 static u32 read_bad(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
 {
-    printf("\nWARN BAD READ %06x", addr);
-    static int num = 0;
-    num++;
-    if (num > 0) {
+    if (has_effect) {
+        printf("\nWARN BAD READ %06x", addr);
+        static int num = 0;
+        num++;
+        if (num > 0) {
 //        dbg_break("BECAUSE", this->clock.master_cycle_count);
+        }
     }
     return old;
 }

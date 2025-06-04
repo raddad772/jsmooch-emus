@@ -170,10 +170,10 @@ int hexfilter(ImGuiInputTextCallbackData *data)
     return 0;
 }
 
-void imgui_jsmooch_app::render_memory_view()
-{
+void imgui_jsmooch_app::render_memory_view() {
     if (fsys.memory.view && fsys.debugger_setup) {
-        struct managed_window *mw = register_managed_window(0x30000, mwk_debug_memory, "Memory Viewer", MEMORY_VIEW_DEFAULT_ENABLE);
+        struct managed_window *mw = register_managed_window(0x30000, mwk_debug_memory, "Memory Viewer",
+                                                            MEMORY_VIEW_DEFAULT_ENABLE);
         struct memory_view *mv = fsys.memory.view;
         u32 num_modules = memory_view_num_modules(mv);
         if (mw->enabled && num_modules > 0) {
@@ -188,8 +188,7 @@ void imgui_jsmooch_app::render_memory_view()
                 }
                 int item_selected = mv->current_id;
                 if (ImGui::BeginCombo("Memory Select", module_names[mv->current_id], flags)) {
-                    for (int n = 0; n < num_modules; n++)
-                    {
+                    for (int n = 0; n < num_modules; n++) {
                         const bool is_selected = (item_selected == n);
                         if (ImGui::Selectable(module_names[n], is_selected))
                             item_selected = n;
@@ -220,7 +219,70 @@ void imgui_jsmooch_app::render_memory_view()
                 addr_str[mm->addr_digits] = 0;
                 mv->addr_start = strtol(addr_str, NULL, 16);
 
+                u32 old_top_displayed_line = mv->addr_start << 4;
+                u32 top_displayed_line = 0xFFFFFFFF;
+
                 // OK start clipper
+                static ImGuiTableFlags itflags =
+                        ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
+                        ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingStretchProp;
+
+                if (ImGui::BeginTable("mem_view_table", 3, itflags)) {
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                    ImGui::TableSetupColumn("Addr", ImGuiTableColumnFlags_None, mm->addr_digits);
+                    ImGui::TableSetupColumn("Data", ImGuiTableColumnFlags_None, 32 + 16);
+                    ImGui::TableSetupColumn("ASCII", ImGuiTableColumnFlags_None, 17);
+                    ImGui::TableHeadersRow();
+                    ImGuiListClipper clipper;
+                    u32 num_lines = (mm->addr_end - mm->addr_start) + 1;
+                    clipper.Begin(num_lines);
+                    u8 data_buf[16];
+                    char hex_buf[50];
+                    char ascii_buf[18];
+                    while (clipper.Step()) {
+                        printf("\nSTART:%d END:%d", clipper.DisplayStart, clipper.DisplayEnd);
+                        for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                            if ((clipper.DisplayStart != 0) && (clipper.DisplayEnd != 1) && (row < top_displayed_line)) top_displayed_line = row;
+                            memory_view_get_line(mm, row << 4, (char *)data_buf);
+                            hex_buf[0] = 0;
+                            ascii_buf[0] = 0;
+                            char *hp = hex_buf;
+                            char *ap = ascii_buf;
+                            for (u32 i = 0; i < 16; i++) {
+                                u32 db = data_buf[i];
+                                assert(db < 256);
+                                snprintf(hp, 50 - (i * 3), "%02X ", db);
+                                hp += 3;
+
+                                if ((db >= 32) && (db <= 126)) {
+
+                                }
+                                else {
+                                    db = '.';
+                                }
+                                snprintf(ap, 18 - i, "%c", db);
+                                ap++;
+                            }
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text(format_string, row << 4);
+
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::Text(" %s", hex_buf);
+
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text(" %s", ascii_buf);
+                        }
+                    }
+                    top_displayed_line <<= 4;
+                    static u32 old_displayed_line_gui = 0;
+                    if (old_top_displayed_line != top_displayed_line) {
+                        // Address changed here...
+                        mv->addr_start = top_displayed_line;
+                    }
+                    old_displayed_line_gui = top_displayed_line;
+                }
+                ImGui::EndTable();
             }
         }
         ImGui::End(); // end window

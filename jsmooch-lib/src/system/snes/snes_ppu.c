@@ -650,50 +650,56 @@ u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct S
             result = mode7_mul(this);
             return (result >> 16) & 0xFF;
         case 0x2137: // SLHV?
-            if (snes->r5a22.io.pio & 0x80) SNES_latch_ppu_counters(snes);
+            if (has_effect && (snes->r5a22.io.pio & 0x80)) SNES_latch_ppu_counters(snes);
             return old;
         case 0x2138: {// OAMDATAREAD
-            printf("\nREAD!");
             u32 data = read_oam(this, this->io.oam.addr);
-            this->io.oam.addr = (this->io.oam.addr + 1) & 0x3FF;
-            this->obj.first = this->io.oam.priority ? (this->io.oam.addr >> 2) & 0x7F : 0;
+            if (has_effect) {
+                this->io.oam.addr = (this->io.oam.addr + 1) & 0x3FF;
+                this->obj.first = this->io.oam.priority ? (this->io.oam.addr >> 2) & 0x7F : 0;
+            }
             return data; }
         case 0x2139: // VMDATAREADL
             result = this->latch.vram & 0xFF;
-            if (this->io.vram.increment_mode == 0) {
+            if (has_effect && this->io.vram.increment_mode == 0) {
                 this->latch.vram = this->VRAM[get_addr_by_map(this)];
                 this->io.vram.addr = (this->io.vram.addr + this->io.vram.increment_step) & 0x7FFF;
             }
             return result;
         case 0x213A: // VMDATAREADH
             result = (this->latch.vram >> 8) & 0xFF;
-            if (this->io.vram.increment_mode == 1) {
+            if (has_effect && (this->io.vram.increment_mode == 1)) {
                 this->latch.vram = this->VRAM[get_addr_by_map(this)];
                 this->io.vram.addr = (this->io.vram.addr + this->io.vram.increment_step) & 0x7FFF;
             }
             return result;
         case 0x213D: // OPVCT
-            if (this->latch.vcounter == 0) {
-                this->latch.vcounter = 1;
-                this->latch.ppu2.mdr = snes->clock.ppu.y;
-            } else {
-                this->latch.vcounter = 0;
-                this->latch.ppu2.mdr = (snes->clock.ppu.y >> 8) | (this->latch.ppu2.mdr & 0xFE);
+            if (has_effect) {
+                if (this->latch.vcounter == 0) {
+                    this->latch.vcounter = 1;
+                    this->latch.ppu2.mdr = snes->clock.ppu.y;
+                } else {
+                    this->latch.vcounter = 0;
+                    this->latch.ppu2.mdr = (snes->clock.ppu.y >> 8) | (this->latch.ppu2.mdr & 0xFE);
+                }
             }
             return this->latch.ppu2.mdr;
         case 0x213E: // STAT77
-            this->latch.ppu1.mdr = 1 | (this->obj.range_overflow << 6) | (this->obj.time_overflow << 7);
+            if (has_effect)
+                this->latch.ppu1.mdr = 1 | (this->obj.range_overflow << 6) | (this->obj.time_overflow << 7);
             return this->latch.ppu1.mdr;
         case 0x213F:
-            this->latch.hcounter = 0;
-            this->latch.vcounter = 0;
-            this->latch.ppu2.mdr &= 32;
-            this->latch.ppu2.mdr |= 0x03 | (snes->clock.ppu.field << 7);
-            if (!(snes->r5a22.io.pio & 0x80)) {
-                this->latch.ppu2.mdr |= 1 << 6;
-            } else {
-                this->latch.ppu2.mdr |= this->latch.counters << 6;
-                this->latch.counters = 0;
+            if (has_effect) {
+                this->latch.hcounter = 0;
+                this->latch.vcounter = 0;
+                this->latch.ppu2.mdr &= 32;
+                this->latch.ppu2.mdr |= 0x03 | (snes->clock.ppu.field << 7);
+                if (!(snes->r5a22.io.pio & 0x80)) {
+                    this->latch.ppu2.mdr |= 1 << 6;
+                } else {
+                    this->latch.ppu2.mdr |= this->latch.counters << 6;
+                    this->latch.counters = 0;
+                }
             }
             return this->latch.ppu2.mdr;
         case 0x2180: {// WRAM access port
@@ -704,11 +710,13 @@ u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct S
             }
             return r; }
     }
-    printf("\nUNIMPLEMENTED PPU READ FROM %04x", addr);
-    if (addr == 0x2000) {
-        dbg_break("PPU2k!", snes->clock.master_cycle_count);
+    if (has_effect) {
+        printf("\nUNIMPLEMENTED PPU READ FROM %04x", addr);
+        if (addr == 0x2000) {
+            dbg_break("PPU2k!", snes->clock.master_cycle_count);
+        }
+        //dbg_break("PPU", snes->clock.master_cycle_count);
     }
-    //dbg_break("PPU", snes->clock.master_cycle_count);
     return 0;
 }
 

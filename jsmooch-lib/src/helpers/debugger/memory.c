@@ -50,7 +50,7 @@ struct memory_view_module *memory_view_get_module(struct memory_view *mv, u32 id
     return NULL;
 }
 
-void memory_view_get_line(struct memory_view *mv, struct memory_view_module *mm, u32 addr, char *out)
+void memory_view_get_line(struct memory_view_module *mm, u32 addr, char *out)
 {
     memset(out, 0, 16);
     if (!mm) return;
