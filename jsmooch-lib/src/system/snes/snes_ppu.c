@@ -774,8 +774,10 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
 
     i32 hohc = (this->mode7.rhoffset - this->mode7.rx);
     i32 vovc = (this->mode7.rvoffset - this->mode7.ry);
-    hohc = (hohc & 0x2000) ? (hohc & 0xFC00) : (hohc & 1023);
-    vovc = (vovc & 0x2000) ? (vovc & 0xFC00) : (vovc & 1023);
+
+    // sign extend hohc and vovc
+    hohc = (hohc & 0x2000) ? (hohc | ~1023) : (hohc & 1023);
+    vovc = (vovc & 0x2000) ? (vovc | ~1023) : (vovc & 1023);
 
     i32 origin_x = (this->mode7.a * hohc & ~63) + (this->mode7.b * vovc & ~63) + (this->mode7.b * y & ~63) + (this->mode7.rx << 8);
     i32 origin_y = (this->mode7.c * hohc & ~63) + (this->mode7.d * vovc & ~63) + (this->mode7.d * y & ~63) + (this->mode7.ry << 8);
@@ -784,21 +786,20 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
         i32 x = this->mode7.hflip ? 255 - sx : sx;
         i32 pixel_x = (origin_x + this->mode7.a * x) >> 8;
         i32 pixel_y = (origin_y + this->mode7.c * x) >> 8;
-
         i32 tile_x = (pixel_x >> 3) & 127;
         i32 tile_y = (pixel_y >> 3) & 127;
-        i32 out_of_bounds = ((pixel_x | pixel_y) & 0xFC00) == 0;
-        i32 tile_addr = tile_y * 128 + tile_x;
+        i32 out_of_bounds = (pixel_x | pixel_y) & ~1023;
+        i32 tile_addr = (tile_y << 7) | tile_x;
         i32 pal_addr = ((pixel_y & 7) << 3) + (pixel_x & 7);
-        u32 tile = ((this->mode7.repeat == 3) && out_of_bounds) ? 0 : this->VRAM[tile_addr & 0x7FFF];
-        u32 palette = ((this->mode7.repeat == 2) && out_of_bounds) ? 0 : this->VRAM[(tile << 6 | pal_addr) & 0x7FFF] >> 8;
+        u32 tile = (((this->mode7.repeat == 3) && out_of_bounds) ? 0 : this->VRAM[tile_addr & 0x7FFF]) & 0xFF;
+        u32 palette = (((this->mode7.repeat == 2) && out_of_bounds) ? 0 : this->VRAM[(tile << 6 | pal_addr) & 0x7FFF] >> 8) & 0xFF;
 
         u32 priority;
         if (source == 0) {
             priority = bg->priority[0];
             dbp = 0;
         }
-        else {// source == 1
+        else {
             priority = bg->priority[palette >> 7];
             dbp = palette >> 7;
             palette &= 0x7F;
