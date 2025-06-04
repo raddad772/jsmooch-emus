@@ -214,10 +214,13 @@ void imgui_jsmooch_app::render_memory_view() {
                 static char addr_str[18];
                 snprintf(addr_str, 18, format_string, mv->addr_start);
                 mm->input_buf = addr_str;
+                u32 old_entered_address = mv->addr_start;
 
                 ImGui::InputText("Addr", addr_str, 18, ImGuiInputTextFlags_CallbackCharFilter, &hexfilter, mm);
                 addr_str[mm->addr_digits] = 0;
-                mv->addr_start = strtol(addr_str, NULL, 16);
+                u32 newly_entered_address = strtol(addr_str, NULL, 16) & 0xFFFFFFF0;
+                mv->addr_start = newly_entered_address;
+                u32 entered_address_changed = mv->addr_start != old_entered_address;
 
                 u32 old_top_displayed_line = mv->addr_start << 4;
                 u32 top_displayed_line = 0xFFFFFFFF;
@@ -234,16 +237,22 @@ void imgui_jsmooch_app::render_memory_view() {
                     ImGui::TableSetupColumn("ASCII", ImGuiTableColumnFlags_None, 17);
                     ImGui::TableHeadersRow();
                     ImGuiListClipper clipper;
-                    u32 num_lines = (mm->addr_end - mm->addr_start) + 1;
+                    u32 num_lines = ((mm->addr_end - mm->addr_start) + 1) >> 4;
                     clipper.Begin(num_lines);
                     u8 data_buf[16];
                     char hex_buf[50];
                     char ascii_buf[18];
+                    u32 old_end = 0;
+                    u32 j = 0;
                     while (clipper.Step()) {
-                        printf("\nSTART:%d END:%d", clipper.DisplayStart, clipper.DisplayEnd);
+                        if (j == 1) {
+                            if ((old_end == 1) && (clipper.DisplayStart == 1)) top_displayed_line = 0;
+                            else if (clipper.DisplayStart < top_displayed_line) top_displayed_line = clipper.DisplayStart;
+                        }
+
+                        old_end = clipper.DisplayEnd;
                         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
-                            if ((clipper.DisplayStart != 0) && (clipper.DisplayEnd != 1) && (row < top_displayed_line)) top_displayed_line = row;
-                            memory_view_get_line(mm, row << 4, (char *)data_buf);
+                            memory_view_get_line(mm, (row << 4) - mv->addr_start, (char *)data_buf);
                             hex_buf[0] = 0;
                             ascii_buf[0] = 0;
                             char *hp = hex_buf;
@@ -273,6 +282,7 @@ void imgui_jsmooch_app::render_memory_view() {
                             ImGui::TableSetColumnIndex(2);
                             ImGui::Text(" %s", ascii_buf);
                         }
+                        j++;
                     }
                     top_displayed_line <<= 4;
                     static u32 old_displayed_line_gui = 0;
@@ -281,6 +291,16 @@ void imgui_jsmooch_app::render_memory_view() {
                         mv->addr_start = top_displayed_line;
                     }
                     old_displayed_line_gui = top_displayed_line;
+                    if (entered_address_changed) {
+                        mv->addr_start = newly_entered_address;
+                    }
+                    float scrl;
+                    scrl = clipper.ItemsHeight * (float)(mv->addr_start >> 4);
+                    float cur_scroll = ImGui::GetScrollY();
+                    if (cur_scroll != scrl) {
+                        ImGui::SetScrollY(scrl);
+                    }
+
                 }
                 ImGui::EndTable();
             }
