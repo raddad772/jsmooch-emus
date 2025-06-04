@@ -142,39 +142,15 @@ void WDC65816_cycle(struct WDC65816* this)
             this->regs.WAI = 0;
         }
         else {
-#ifdef SNES_LYCODER
-            static int doit = 0;
-            /*if ((this->regs.PBR == 0x80) && (this->regs.PC == 0x844A) && !doit) {
-                doit = 1;
-                //dbg_break("doit!", 0);
-            }*/
-            //if (doit) {
-            if (*this->master_clock >= 49529195) {
-            //if (*this->master_clock != 0) {
-                    static char yo[300];
-                    snprintf(yo, 300, "\n %lld - C:%04X DBR:%02X D:%04X K|PC:%02X|%04X S:%04X X:%04X Y:%04X P:%02X E:%d  ins:%02X",
-                       *this->master_clock,
-                       this->regs.C,
-                       this->regs.DBR,
-                       this->regs.D,
-                       this->regs.PBR,
-                       this->regs.PC - 1,
-                       this->regs.S,
-                       this->regs.X,
-                       this->regs.Y,
-                       this->regs.P.v & 0xFF,
-                       this->regs.E,
-                       this->pins.D);
-                //dbg_printf("%s", yo);
-                printf("%s", yo);
-            }
-#endif
             this->trace.ins_PC = (this->pins.BA << 16) | this->pins.Addr;
             this->regs.IR = this->pins.D;
             if ((this->regs.IR == 0) || ((this->trace.ins_PC >= 0x003113) && (this->trace.ins_PC < 0x003cff))) {
                 printf("\nCRAP!");
                 dbg_break("IR=0", *this->master_clock);
             }
+            /*if (this->trace.ins_PC == 0x8B88D2) {
+                dbg_break("BKPT!", *this->master_clock);
+            }*/
         }
         this->regs.old_I = this->regs.P.I;
         this->ins = get_decoded_opcode(this);

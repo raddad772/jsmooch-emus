@@ -285,7 +285,7 @@ void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_bl
             this->io.wrmpya = val;
             return;
         case 0x4203:
-            this->io.wrmpyb = val;
+            this->io.rdmpy = 0;
             if (this->alu.mpyctr || this->alu.divctr) return;
             this->io.wrmpyb = val;
             this->io.rddiv = (this->io.wrmpyb << 8) | this->io.wrmpya;

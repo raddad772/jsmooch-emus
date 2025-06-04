@@ -127,7 +127,7 @@ struct memory_view {
     // 16 bytes per row!
 
     // Input
-    u32 addr_start;
+    u32 display_start_addr;
     u32 current_id;
 
     u32 force_refresh;

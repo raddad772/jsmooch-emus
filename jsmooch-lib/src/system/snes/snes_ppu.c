@@ -281,10 +281,6 @@ static void write_VRAM(struct SNES *snes, u32 addr, u32 val)
 {
     addr &= 0x7FFF;
     DBG_EVENT(DBG_SNES_EVENT_WRITE_VRAM);
-    if (addr == 0x4C50) {
-        printf("\nFRAME:%lld 4C50 WRITE", snes->clock.master_frame);
-        //dbg_break("WHAT@?", 0);
-    }
     dbgloglog(snes, SNES_CAT_PPU_VRAM_WRITE, DBGLS_INFO, "VRAM write %04x: %04x", addr, val);
     snes->ppu.VRAM[addr] = val;
 }

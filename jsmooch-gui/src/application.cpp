@@ -203,7 +203,7 @@ void imgui_jsmooch_app::render_memory_view() {
                 mv->current_id = item_selected;
                 struct memory_view_module *mm = memory_view_get_module(mv, mv->current_id);
                 if (old_selected != item_selected) {
-                    mv->addr_start &= (1 << (4 * mm->addr_digits)) - 1;
+                    mv->display_start_addr &= (1 << (4 * mm->addr_digits)) - 1;
                 }
 
                 char format_string[20];
@@ -212,17 +212,17 @@ void imgui_jsmooch_app::render_memory_view() {
                 // Now get input
                 //ImGui::SameLine();
                 static char addr_str[18];
-                snprintf(addr_str, 18, format_string, mv->addr_start);
+                snprintf(addr_str, 18, format_string, mv->display_start_addr);
                 mm->input_buf = addr_str;
-                u32 old_entered_address = mv->addr_start;
+                u32 old_entered_address = mv->display_start_addr;
 
                 ImGui::InputText("Addr", addr_str, 18, ImGuiInputTextFlags_CallbackCharFilter, &hexfilter, mm);
                 addr_str[mm->addr_digits] = 0;
                 u32 newly_entered_address = strtol(addr_str, NULL, 16) & 0xFFFFFFF0;
-                mv->addr_start = newly_entered_address;
-                u32 entered_address_changed = mv->addr_start != old_entered_address;
+                mv->display_start_addr = newly_entered_address;
+                u32 entered_address_changed = mv->display_start_addr != old_entered_address;
 
-                u32 old_top_displayed_line = mv->addr_start << 4;
+                u32 old_top_displayed_line = mv->display_start_addr << 4;
                 u32 top_displayed_line = 0xFFFFFFFF;
 
                 // OK start clipper
@@ -252,7 +252,8 @@ void imgui_jsmooch_app::render_memory_view() {
 
                         old_end = clipper.DisplayEnd;
                         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
-                            memory_view_get_line(mm, (row << 4) - mv->addr_start, (char *)data_buf);
+                            u32 addr = (row << 4) - mm->addr_start;
+                            memory_view_get_line(mm, addr, (char *)data_buf);
                             hex_buf[0] = 0;
                             ascii_buf[0] = 0;
                             char *hp = hex_buf;
@@ -288,14 +289,14 @@ void imgui_jsmooch_app::render_memory_view() {
                     static u32 old_displayed_line_gui = 0;
                     if (old_top_displayed_line != top_displayed_line) {
                         // Address changed here...
-                        mv->addr_start = top_displayed_line;
+                        mv->display_start_addr = top_displayed_line;
                     }
                     old_displayed_line_gui = top_displayed_line;
                     if (entered_address_changed) {
-                        mv->addr_start = newly_entered_address;
+                        mv->display_start_addr = newly_entered_address;
                     }
                     float scrl;
-                    scrl = clipper.ItemsHeight * (float)(mv->addr_start >> 4);
+                    scrl = clipper.ItemsHeight * (float)(mv->display_start_addr >> 4);
                     float cur_scroll = ImGui::GetScrollY();
                     if (cur_scroll != scrl) {
                         ImGui::SetScrollY(scrl);
