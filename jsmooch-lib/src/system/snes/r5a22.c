@@ -22,6 +22,7 @@ static void dma_reset(struct R5A22 *this)
     for (u32 i = 0; i < 8; i++) {
         struct R5A22_DMA_CHANNEL *ch = &this->dma.channels[i];
         memset(ch, 0, sizeof(*ch));
+        ch->num = i;
         if (i < 7) ch->next = &this->dma.channels[i+1];
     }
 }
@@ -545,12 +546,32 @@ static void dma_transfer(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch, u32 ad
     u32 data;
     if (ch->direction == 0) {
         data = dma_readA(snes, addrA);
-        dbgloglog(snes, SNES_CAT_DMA_WRITE, DBGLS_INFO, "DMA%d A->B addrA:%06x addrB:%04x val:%02X valid:%d tsize:%d index:%d vram_addr:%04x", ch->num, addrA, 0x2100 | addrB, data, valid, ch->transfer_size, ch->index, snes->ppu.io.vram.addr);
+        if (!hdma_mode) {
+            dbgloglog(snes, SNES_CAT_DMA_WRITE, DBGLS_INFO,
+                      "DMA%d A->B addrA:%06x addrB:%04x val:%02X valid:%d tsize:%d index:%d vram_addr:%04x", ch->num,
+                      addrA, 0x2100 | addrB, data, valid, ch->transfer_size, ch->index, snes->ppu.io.vram.addr);
+        }
+        else {
+            dbgloglog(snes, SNES_CAT_HDMA_WRITE, DBGLS_INFO,
+                      "HDMA%d A->B addrA:%06x  addrB:%04x  val:%02X  valid:%d  tsize:%d  index:%d  line_ctr:%02x  y:%d", ch->num,
+                      addrA, 0x2100 | addrB, data, valid, ch->transfer_size, ch->index, ch->line_counter, snes->clock.ppu.y);
+        }
         dma_writeB(snes, addrB, data, valid);
         //printf("\nDMA%d from %04x to 21%02x len:%d", ch->num, addrA, addrB, ch->transfer_size);
     }
     else {
         data = dma_readB(snes, addrB, valid);
+        if (!hdma_mode) {
+            dbgloglog(snes, SNES_CAT_DMA_WRITE, DBGLS_INFO,
+                      "DMA%d B->A addrA:%06x addrB:%04x val:%02X tsize:%d index:%d", ch->num, addrA, 0x2100 | addrB,
+                      data, ch->transfer_size, ch->index);
+        }
+        else {
+            dbgloglog(snes, SNES_CAT_HDMA_WRITE, DBGLS_INFO,
+                      "HDMA%d B->A addrA:%06x  addrB:%04x  val:%02X  tsize:%d  index:%d  line_ctr:%02x  y:%d", ch->num, addrA, 0x2100 | addrB,
+                      data, ch->transfer_size, ch->index, ch->line_counter, snes->clock.ppu.y);
+
+        }
         dbgloglog(snes, SNES_CAT_DMA_WRITE, DBGLS_INFO, "DMA%d B->A addrA:%06x addrB:%04x val:%02X tsize:%d index:%d", ch->num, addrA, 0x2100 | addrB, data, ch->transfer_size, ch->index);
         dma_writeA(snes, addrA, data);
         //printf("\nDMA%d from 21%02x to %04x", ch->num, addrB, addrA);
@@ -604,6 +625,7 @@ static void hdma_transfer_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
             ch->source_address = (ch->source_address + 1) & 0xFFFF;
         }
         dma_transfer(snes, ch, addr, index, 1);
+        snes->clock.master_cycle_count += 8;
     }
 }
 

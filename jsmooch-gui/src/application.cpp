@@ -302,8 +302,8 @@ void imgui_jsmooch_app::render_memory_view() {
                         ImGui::SetScrollY(scrl);
                     }
 
+                    ImGui::EndTable();
                 }
-                ImGui::EndTable();
             }
             ImGui::End(); // end window
         }

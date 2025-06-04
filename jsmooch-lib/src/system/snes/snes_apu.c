@@ -282,51 +282,7 @@ static void ch_update_env(struct SNES *snes, struct SNES_APU_ch *ch)
         if (ch->env.attenuation < 0) ch->env.attenuation = 0;
         if (ch->env.attenuation > 0x7FF) ch->env.attenuation = 0x7FF;
     }
-    /*ch->env.stride = (long double)env_periods[rate] * snes->clock.apu.env.stride;
-    ch->env.next_update += ch->env.stride;
-    ch->env.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->env.next_update, ch->num, snes, &ch_do_env, &ch->env.sch_still);*/
 }
-
-/*static void ch_do_sample(void *ptr, u64 key, u64 clock, u32 jitter)
-{
-    struct SNES *snes = (struct SNES *)ptr;
-    struct SNES_APU_ch *ch = &snes->apu.dsp.channel[key];
-
-    if (ch->ended) {
-        return;
-    }
-
-    if (ch->sample_data.pos >= 15) { // sample has ended, or attack JUST started.
-        if (ch->sample_data.end) {
-            ch->sample_data.next_read_addr = ch->sample_data.loop_addr;
-            if (!ch->sample_data.loop) {
-                ch->ended = 1;
-                return;
-            }
-        }
-
-        assert(ch->sample_data.next_read_addr < (0xFFFF - 8));
-        BRR_decode(snes->apu.cpu.RAM + ch->sample_data.next_read_addr, &ch->sample_data, &ch->filter);
-        if (ch->sample_data.end) snes->apu.dsp.io.ENDX |= (1 << ch->num);
-        ch->sample_data.next_read_addr = (ch->sample_data.next_read_addr + 9) & 0xFFFF;
-    }
-
-    ch->samples.head = (ch->samples.head + 1) & 3;
-    i32 smp;
-    if (snes->apu.dsp.io.NON & (1 << ch->num)) smp = (i16)(snes->apu.dsp.noise.level << 1);
-    else smp = ch->sample_data.decoded[ch->sample_data.pos];
-    smp = (smp * ch->env.attenuation) >> 11;
-    ch->io.OUTX = (smp >> 7) & 0xFF;
-
-    // smp = smp * vol / 128;
-    i32 vol = (ch->io.VOLL + ch->io.VOLR) >> 1;
-
-    ch->samples.data[ch->samples.head] = (i16)((smp * vol) >> 7);
-    ch->sample_data.pos++;
-
-    //ch->pitch.next_sample += ch->pitch.stride;
-    //ch->pitch.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)ch->pitch.next_sample, key, snes, &ch_do_sample, &ch->pitch.sch_still);
-}*/
 
 static void update_noise(struct SNES *snes)
 {
@@ -338,17 +294,6 @@ static void update_noise(struct SNES *snes)
         this->noise.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)this->noise.next_update, 0, snes, &do_noise, &this->noise.sch_still);
     }
 }
-
-
-/*static void update_pitch(struct SNES *snes, struct SNES_APU_ch *ch, u32 old_pitch)
-{
-    u32 new_pitch = (ch->io.PITCHH << 8) | ch->io.PITCHL;
-    if ((old_pitch == new_pitch) && (ch->pitch.sch_still)) return;
-    if (ch->pitch.sch_still) scheduler_delete_if_exist(&snes->scheduler, ch->pitch.sch_id);
-    if (new_pitch) {
-        schedule_ch(snes, ch, new_pitch);
-    }
-}*/
 
 static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch)
 {
@@ -372,7 +317,6 @@ static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch)
 }
 
 static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate) {
-    //if (ch->env.sch_still) scheduler_delete_if_exist(&snes->scheduler, ch->env.sch_id);
     if (!ch->io.ADSR1.adsr_on && !ch->io.GAIN.custom.custom_gain) {
         ch->env.attenuation = ch->io.GAIN.direct.fixed_vol << 4;
         rate = 0;

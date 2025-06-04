@@ -128,7 +128,7 @@ static u32 get_addr_by_map(struct SNES_PPU *this)
 static void update_video_mode(struct SNES_PPU *this)
 {
 		//snes->clock.scanline.bottom_scanline = this->overscan ? 240 : 225;
-#define BGP(num, sub, main) this->bg[num].priority[0] = main; this->bg[num].priority[1] = sub
+#define BGP(num, lo, hi) this->bg[num-1].priority[0] = lo; this->bg[num-1].priority[1] = hi
 #define OBP(n0, n1, n2, n3) this->obj.priority[0] = n0; this->obj.priority[1] = n1; this->obj.priority[2] = n2; this->obj.priority[3] = n3
 		switch(this->io.bg_mode) {
 			case 0:
@@ -136,27 +136,24 @@ static void update_video_mode(struct SNES_PPU *this)
 				this->bg[1].tile_mode = SPTM_BPP2;
 				this->bg[2].tile_mode = SPTM_BPP2;
 				this->bg[3].tile_mode = SPTM_BPP2;
-				BGP(0, 8, 11);
-				BGP(1, 7, 10);
-				BGP(2, 2, 5);
-				BGP(3, 1, 4);
-				OBP(3, 6, 9, 12);
+				BGP(1, 5, 2);
+				BGP(2, 6, 3);
+				BGP(3, 11, 8);
+				BGP(4, 12, 9);
+				OBP(10, 7, 4, 1);
 				break;
 			case 1:
 				this->bg[0].tile_mode = SPTM_BPP4;
 				this->bg[1].tile_mode = SPTM_BPP4;
 				this->bg[2].tile_mode = SPTM_BPP2;
 				this->bg[3].tile_mode = SPTM_inactive;
+                BGP(1, 5, 2);
+                BGP(2, 6, 3);
+                OBP(10, 7, 4, 1);
 				if (this->io.bg_priority) {
-					BGP(0, 5, 8);
-					BGP(1, 4, 7);
-					BGP(2, 1, 10);
-					OBP(2, 3, 6, 9);
+					BGP(3, 12, 8);
 				} else {
-					BGP(0, 6, 9);
-					BGP(1, 5, 8);
-					BGP(2, 1, 3);
-					OBP(2, 4, 7, 10);
+					BGP(3, 11, 0);
 				}
 				break;
 			case 2:
@@ -164,62 +161,53 @@ static void update_video_mode(struct SNES_PPU *this)
 				this->bg[1].tile_mode = SPTM_BPP4;
 				this->bg[2].tile_mode = SPTM_inactive;
 				this->bg[3].tile_mode = SPTM_inactive;
-				BGP(0, 6, 9);
-				BGP(1, 5, 8);
-				OBP(2, 4, 7, 10);
+				BGP(1, 8, 2);
+				BGP(2, 11, 5);
+				OBP(10, 7, 4, 1);
 				break;
 			case 3:
 				this->bg[0].tile_mode = SPTM_BPP8;
 				this->bg[1].tile_mode = SPTM_BPP4;
 				this->bg[2].tile_mode = SPTM_inactive;
 				this->bg[3].tile_mode = SPTM_inactive;
-				BGP(0, 3, 7);
-				BGP(1, 1, 5);
-				OBP(2, 4, 6, 8);
+				BGP(1, 8, 2);
+				BGP(2, 11, 5);
+                OBP(10, 7, 4, 1);
 				break;
 			case 4:
 				this->bg[0].tile_mode = SPTM_BPP8;
 				this->bg[1].tile_mode = SPTM_BPP2;
 				this->bg[2].tile_mode = SPTM_inactive;
 				this->bg[3].tile_mode = SPTM_inactive;
-				BGP(0, 3, 7);
-				BGP(1, 1, 5);
-				OBP(2, 4, 6, 8);
+                BGP(1, 8, 2);
+                BGP(2, 11, 5);
+                OBP(10, 7, 4, 1);
 				break;
 			case 5:
 				this->bg[0].tile_mode = SPTM_BPP4;
 				this->bg[1].tile_mode = SPTM_BPP2;
 				this->bg[2].tile_mode = SPTM_inactive;
 				this->bg[3].tile_mode = SPTM_inactive;
-				BGP(0, 3, 7);
-				BGP(1, 1, 5);
-				OBP(2, 4, 6, 8);
+                BGP(1, 8, 2);
+                BGP(2, 11, 5);
+                OBP(10, 7, 4, 1);
 				break;
 			case 6:
 				this->bg[0].tile_mode = SPTM_BPP4;
 				this->bg[1].tile_mode = SPTM_inactive;
 				this->bg[2].tile_mode = SPTM_inactive;
 				this->bg[3].tile_mode = SPTM_inactive;
-				BGP(0, 2, 5);
-				OBP(1, 3, 4, 6);
+                BGP(1, 8, 2);
+                OBP(10, 7, 4, 1);
 				break;
 			case 7:
-				if (!this->io.extbg) {
-					this->bg[0].tile_mode = SPTM_mode7;
-					this->bg[1].tile_mode = SPTM_inactive;
-					this->bg[2].tile_mode = SPTM_inactive;
-					this->bg[3].tile_mode = SPTM_inactive;
-					BGP(0, 2, 2);
-					OBP(1, 3, 4, 5);
-				} else {
-					this->bg[0].tile_mode = SPTM_mode7;
-					this->bg[1].tile_mode = SPTM_mode7;
-					this->bg[2].tile_mode = SPTM_inactive;
-					this->bg[3].tile_mode = SPTM_inactive;
-					BGP(0, 3, 3);
-					BGP(1, 1, 5);
-					OBP(2, 4, 6, 7);
-				}
+                this->bg[0].tile_mode = SPTM_mode7;
+                this->bg[1].tile_mode = this->io.extbg ? SPTM_mode7 : SPTM_inactive;
+                this->bg[2].tile_mode = SPTM_inactive;
+                this->bg[3].tile_mode = SPTM_inactive;
+                BGP(1, 8, 8);
+                BGP(2, 5, 11);
+                OBP(10, 7, 4, 1);
 				break;
 		}
         static const u32 twidth[4] = { 32, 64, 32, 64};
@@ -326,9 +314,9 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
         case 0x2105: { // BGMODE
             u32 old_bg_mode = this->io.bg_mode;
             this->io.bg_mode = val & 7;
-            /*if (old_bg_mode != this->io.bg_mode) {
+            if (old_bg_mode != this->io.bg_mode) {
                 printf("\nNEW BG MODE %d", this->io.bg_mode);
-            }*/
+            }
             this->io.bg_priority = (val >> 4) & 1;
             this->bg[0].io.tile_size = (val >> 4) & 1;
             this->bg[1].io.tile_size = (val >> 5) & 1;
@@ -590,6 +578,7 @@ void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_blo
             if (val & 0x20) this->color_math.fixed_color = (this->color_math.fixed_color & 0x7FE0) | (val & 31);
             if (val & 0x40) this->color_math.fixed_color = (this->color_math.fixed_color & 0x7C1F) | ((val & 31) << 5);
             if (val & 0x80) this->color_math.fixed_color = (this->color_math.fixed_color & 0x3FF) | ((val & 31) << 10);
+            DBG_EVENT(DBG_SNES_EVENT_WRITE_COLDATA);
             return;
         case 0x2133: // SETINI
             this->io.interlace = val & 1;
@@ -792,6 +781,9 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
         i32 tile_addr = (tile_y << 7) | tile_x;
         i32 pal_addr = ((pixel_y & 7) << 3) + (pixel_x & 7);
         u32 tile = (((this->mode7.repeat == 3) && out_of_bounds) ? 0 : this->VRAM[tile_addr & 0x7FFF]) & 0xFF;
+        if ((sx == 12) && (y == 96)) {
+            printf("\npx:%d  py:%d  tile_addr:%04x  tile_val:%02x", pixel_x, pixel_y, tile_addr, tile);
+        }
         u32 palette = (((this->mode7.repeat == 2) && out_of_bounds) ? 0 : this->VRAM[(tile << 6 | pal_addr) & 0x7FFF] >> 8) & 0xFF;
 
         u32 priority;
@@ -1110,8 +1102,8 @@ static void draw_sprite_line(struct SNES *snes, i32 ppu_y)
                         union SNES_PPU_px *px = &this->obj.line[rx];
                         px->has = 1;
                         px->source = 4; // OBJ = 4
-                        px->priority = sp->priority;
-                        px->dbg_priority = sp->size;
+                        px->priority = this->obj.priority[sp->priority];
+                        px->dbg_priority = sp->priority;
                         px->color = this->CGRAM[sp->pal_offset + color];
                         px->palette = sp->palette;
                     }
@@ -1150,10 +1142,10 @@ static void draw_line(struct SNES *snes)
     for (u32 x = 0; x < 256; x++) {
         union SNES_PPU_px main_px = {.source=SRC_BACK};
         union SNES_PPU_px sub_px = {.source=SRC_BACK};
-        sub_px.priority = 12;
+        sub_px.priority = 15;
         sub_px.color = this->color_math.fixed_color;
         sub_px.has = 0;
-        main_px.priority = 12;
+        main_px.priority = 15;
         main_px.color = this->CGRAM[0];
         main_px.has = 0;
 #define MAINPRIO 0

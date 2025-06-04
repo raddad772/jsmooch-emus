@@ -41,6 +41,9 @@ static void print_layer_info(struct SNES *this, u32 bgnum, struct debugger_widge
     if (bgnum < 4) {
         struct SNES_PPU_BG *bg = &this->ppu.bg[bgnum];
         debugger_widgets_textbox_sprintf(tb, "\n-BG%d:  bgmode:%d  ", bgnum, this->ppu.io.bg_mode);
+        //if (this->ppu.io.bg_mode == 7) {
+            debugger_widgets_textbox_sprintf(tb, "  dc:%d  ", this->ppu.color_math.direct_color);
+        //}
         if (bg->main_enable) debugger_widgets_textbox_sprintf(tb, "main:on ");
         else debugger_widgets_textbox_sprintf(tb, "main:off");
         if (bg->sub_enable) debugger_widgets_textbox_sprintf(tb, " sub:on ");
@@ -323,8 +326,9 @@ static void setup_dbglog(struct SNES *this, struct debugger_interface *dbgr)
     this->r5a22.cpu.trace.dbglog.id = SNES_CAT_WDC_INSTRUCTION;
     dbglog_category_add_node(dv, wdc, "Reads", "wdc_read", SNES_CAT_WDC_READ, wdc_color);
     dbglog_category_add_node(dv, wdc, "Writes", "wdc_write", SNES_CAT_WDC_WRITE, wdc_color);
-    dbglog_category_add_node(dv, wdc, "DMA Starts", "WDC65816", SNES_CAT_DMA_START, dma_color);
-    dbglog_category_add_node(dv, wdc, "DMA Writes", "WDC65816", SNES_CAT_DMA_WRITE, dma_color);
+    dbglog_category_add_node(dv, wdc, "DMA Starts", "DMA", SNES_CAT_DMA_START, dma_color);
+    dbglog_category_add_node(dv, wdc, "DMA Writes", "DMA", SNES_CAT_DMA_WRITE, dma_color);
+    dbglog_category_add_node(dv, wdc, "HDMA Writes", "HDMA", SNES_CAT_HDMA_WRITE, dma_color);
 
     struct dbglog_category_node *spc = dbglog_category_add_node(dv, root, "SPC700", NULL, 0, 0);
     dbglog_category_add_node(dv, spc, "Instruction Trace", "SPC700", SNES_CAT_SPC_INSTRUCTION, spc_color);
@@ -572,6 +576,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
 
     DEBUG_REGISTER_EVENT("HIRQ", 0x00FFFF, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_HIRQ);
     DEBUG_REGISTER_EVENT("VRAM write", 0xC030C0, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_WRITE_VRAM);
+    DEBUG_REGISTER_EVENT("COLDATA write", 0xFFFF00, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_WRITE_COLDATA);
     DEBUG_REGISTER_EVENT("SCROLL write", 0xFFFF00, DBG_SNES_CATEGORY_PPU, DBG_SNES_EVENT_WRITE_SCROLL);
 
     SET_EVENT_VIEW(this->r5a22.cpu);

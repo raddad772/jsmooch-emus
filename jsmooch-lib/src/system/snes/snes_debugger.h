@@ -23,6 +23,7 @@ enum SNES_DBLOG_CATEGORIES {
     SNES_CAT_WDC_WRITE,
     SNES_CAT_DMA_START,
     SNES_CAT_DMA_WRITE,
+    SNES_CAT_HDMA_WRITE,
     SNES_CAT_SPC_INSTRUCTION,
     SNES_CAT_SPC_READ,
     SNES_CAT_SPC_WRITE,
@@ -39,10 +40,11 @@ enum SNES_DBLOG_CATEGORIES {
 #define DBG_SNES_EVENT_HDMA_START 2
 #define DBG_SNES_EVENT_WRITE_VRAM 3
 #define DBG_SNES_EVENT_WRITE_SCROLL 4
-#define DBG_SNES_EVENT_HIRQ 5
+#define DBG_SNES_EVENT_WRITE_COLDATA 5
+#define DBG_SNES_EVENT_HIRQ 6
 
 
-#define DBG_SNES_EVENT_MAX 6
+#define DBG_SNES_EVENT_MAX 7
 
 
 #define dbgloglog(wth, r_cat, r_severity, r_format, ...) if (wth->dbg.dvptr->ids_enabled[r_cat]) { dbglog_view_add_printf(wth->dbg.dvptr, r_cat, wth->clock.master_cycle_count, r_severity, r_format, __VA_ARGS__); dbglog_view_extra_printf(wth->dbg.dvptr, ""); }
