@@ -72,21 +72,10 @@ static void serialize_clock(struct genesis *this, struct serialized_state *state
     S(vdp.hblank_fast);
     S(vdp.field);
     S(vdp.clock_divisor);
-    S(vdp.cycles_til_clock);
     S(vdp.bottom_rendered_line);
 
-    S(psg.cycles_til_clock);
     S(psg.clock_divisor);
 
-    S(m68k.clock_divisor);
-    S(m68k.cycles_til_clock);
-
-    S(z80.clock_divisor);
-    S(z80.cycles_til_clock);
-
-    S(timing.cycles_per_second);
-    S(timing.cycles_per_frame);
-    S(timing.fps);
 #undef S
 }
 
@@ -302,21 +291,10 @@ static void deserialize_clock(struct genesis* this, struct serialized_state *sta
     L(vdp.hblank_fast);
     L(vdp.field);
     L(vdp.clock_divisor);
-    L(vdp.cycles_til_clock);
     L(vdp.bottom_rendered_line);
 
-    L(psg.cycles_til_clock);
     L(psg.clock_divisor);
 
-    L(m68k.clock_divisor);
-    L(m68k.cycles_til_clock);
-
-    L(z80.clock_divisor);
-    L(z80.cycles_til_clock);
-
-    L(timing.cycles_per_second);
-    L(timing.cycles_per_frame);
-    L(timing.fps);
 #undef L
 }
 

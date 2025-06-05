@@ -29,14 +29,13 @@ struct genesis_clock {
         u32 hblank_fast;
         u32 field;
         i32 clock_divisor;
-        i32 cycles_til_clock;
-
+        u32 vblank_on_line;
         u32 bottom_rendered_line;
+        u32 bottom_max_rendered_line;
     } vdp;
 
     struct {
         u64 next_clock;
-        i32 cycles_til_clock;
         i32 clock_divisor;
     } psg;
 
@@ -46,19 +45,19 @@ struct genesis_clock {
     } ym2612;
 
     struct {
-        i32 clock_divisor;
-        i32 cycles_til_clock;
-    } m68k;
+        struct {
+            u32 cycles_per;
+        } scanline;
 
-    struct {
-        i32 clock_divisor;
-        i32 cycles_til_clock;
-    } z80;
+        struct {
+            u32 cycles_per;
+            u32 scanlines_per;
+        } frame;
 
-    struct {
-        u32 cycles_per_second;
-        u32 cycles_per_frame;
-        u32 fps;
+        struct {
+            u32 frames_per;
+            u32 cycles_per;
+        } second;
     } timing;
 };
 

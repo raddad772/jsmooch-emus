@@ -56,6 +56,7 @@ struct genesis {
     } timing;
 
     struct scheduler_t scheduler;
+    u32 PAL;
     struct gensched_item scheduler_lookup[NUM_GENSCHED * 2];
     u16 scheduler_index;
 

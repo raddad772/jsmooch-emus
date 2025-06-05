@@ -36,22 +36,7 @@ static u32 genesisJ_step_master(JSM, u32 howmany);
 static void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs);
 static void genesisJ_describe_io(JSM, struct cvec* IOs);
 
-#define MASTER_CYCLES_PER_SCANLINE 3420
-#define NTSC_SCANLINES 262
 
-// 896040
-#define MASTER_CYCLES_PER_FRAME (MASTER_CYCLES_PER_SCANLINE*NTSC_SCANLINES)
-#define MASTER_CYCLES_PER_SECOND (MASTER_CYCLES_PER_FRAME*60)
-
-// SMS/GG has 179208, so genesis master clock is *5
-// Sn76489 divider on SMS/GG is 48, so 48*5 = 240
-#define SN76489_DIVIDER 240
-
-
-/*
-    u32 (*read_trace)(void *,u32);
-    u32 (*read_trace_m68k)(void *,u32,u32,u32);
- */
 u32 read_trace_z80(void *ptr, u32 addr) {
     struct genesis* this = (struct genesis*)ptr;
     return genesis_z80_bus_read(this, addr, this->z80.pins.D, 0);
@@ -62,11 +47,11 @@ u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
     return genesis_mainbus_read(this, addr, UDS, LDS, this->io.m68k.open_bus_data, 0);
 }
 
-static void setup_debug_waveform(struct debug_waveform *dw)
+static void setup_debug_waveform(struct genesis *this, struct debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = ((float)MASTER_CYCLES_PER_FRAME / (float)dw->samples_requested);
+    dw->user.cycle_stride = ((float)this->clock.timing.frame.cycles_per / (float)dw->samples_requested);
     dw->user.buf_pos = 0;
 }
 
@@ -75,24 +60,24 @@ void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     JTHIS;
     this->audio.buf = ab;
     if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)MASTER_CYCLES_PER_FRAME / (float)ab->samples_len);
+        this->audio.master_cycles_per_audio_sample = ((float)this->clock.timing.frame.cycles_per / (float)ab->samples_len);
         this->audio.next_sample_cycle_max = 0;
         struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-        this->audio.master_cycles_per_max_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+        this->audio.master_cycles_per_max_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
 
         wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
-        this->audio.master_cycles_per_min_sample = (float)MASTER_CYCLES_PER_FRAME / (float)wf->samples_requested;
+        this->audio.master_cycles_per_min_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
     }
 
     // PSG
     struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-    setup_debug_waveform(wf);
+    setup_debug_waveform(this, wf);
     this->psg.ext_enable = wf->ch_output_enabled;
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
     this->clock.psg.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 4; i++) {
         wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
-        setup_debug_waveform(wf);
+        setup_debug_waveform(this, wf);
         if (i < 3) {
             this->psg.sw[i].ext_enable = wf->ch_output_enabled;
         }
@@ -103,12 +88,12 @@ void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     // ym2612
     wf = cpg(this->dbg.waveforms_ym2612.main);
     this->ym2612.ext_enable = wf->ch_output_enabled;
-    setup_debug_waveform(wf);
+    setup_debug_waveform(this, wf);
     if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
     this->clock.ym2612.clock_divisor = wf->clock_divider;
     for (u32 i = 0; i < 6; i++) {
         wf = (struct debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
-        setup_debug_waveform(wf);
+        setup_debug_waveform(this, wf);
         this->ym2612.channel[i].ext_enable = wf->ch_output_enabled;
     }
 
@@ -148,7 +133,7 @@ static void c_vdp_z80_m68k(struct genesis *this, struct gensched_item *e)
     this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
 
-    assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
+    //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
 static void c_z80_vdp_m68k(struct genesis *this, struct gensched_item *e)
@@ -161,7 +146,7 @@ static void c_z80_vdp_m68k(struct genesis *this, struct gensched_item *e)
 
     this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
-    assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
+    //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
 static void c_vdp_m68k(struct genesis *this, struct gensched_item *e)
@@ -171,7 +156,7 @@ static void c_vdp_m68k(struct genesis *this, struct gensched_item *e)
 
     this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
-    assert((e->clk_add_m68k+e->clk_add_vdp) == 7);
+    //assert((e->clk_add_m68k+e->clk_add_vdp) == 7);
 }
 
 static void c_z80_m68k(struct genesis *this, struct gensched_item *e)
@@ -181,7 +166,7 @@ static void c_z80_m68k(struct genesis *this, struct gensched_item *e)
 
     this->clock.master_cycle_count += e->clk_add_m68k;
     genesis_cycle_m68k(this);
-    assert((e->clk_add_m68k+e->clk_add_z80) == 7);
+    //assert((e->clk_add_m68k+e->clk_add_z80) == 7);
 }
 
 static void c_m68k(struct genesis *this, struct gensched_item *e)
@@ -312,6 +297,7 @@ void genesis_new(JSM, enum jsm_systems kind)
     this->scheduler.run.func = &block_step;
     this->scheduler.run.ptr = this;
 
+    this->PAL = kind == SYS_MEGADRIVE_PAL;
     Z80_init(&this->z80, 0);
     M68k_init(&this->m68k, 1);
     genesis_clock_init(&this->clock, kind);
@@ -516,17 +502,13 @@ static void genesisIO_unload_cart(JSM)
 {
 }
 
-static void setup_crt(struct JSM_DISPLAY *d)
+static void setup_crt(struct genesis *this, struct JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
 
-    // 320x224 or 256x224, but, can be x448, and because 256 and 320 can change in the middle of a line, we will do a special output
-
-    // 1280 x 448 output resolution so that changes mid-line are fine, scaled down
-
-    d->fps = 60.0988;
-    d->fps_override_hint = 60;
+    d->fps = this->PAL ? 50 : 60.0988;
+    d->fps_override_hint = this->clock.timing.second.frames_per;
 
     d->pixelometry.cols.left_hblank = 0; // 0
     d->pixelometry.cols.visible = 1280;  // 320x224   *4
@@ -535,27 +517,33 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
-    d->pixelometry.rows.visible = 240;
-    d->pixelometry.rows.max_visible = 240;
-    d->pixelometry.rows.bottom_vblank = 76;
+    d->pixelometry.rows.visible = this->clock.vdp.bottom_max_rendered_line;
+    d->pixelometry.rows.max_visible = this->clock.vdp.bottom_max_rendered_line;
+    d->pixelometry.rows.bottom_vblank = 76; // TODO: update these for PAL. they're currently not really used
     d->pixelometry.offset.y = 0;
 
-    d->geometry.physical_aspect_ratio.width = 4;
-    d->geometry.physical_aspect_ratio.height = 3;
+    if (this->PAL) {
+        d->geometry.physical_aspect_ratio.width = 5;
+        d->geometry.physical_aspect_ratio.height = 4;
+    }
+    else {
+        d->geometry.physical_aspect_ratio.width = 4;
+        d->geometry.physical_aspect_ratio.height = 3;
+    }
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(struct cvec* IOs)
+static void setup_audio(struct genesis *this, struct cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = (MASTER_CYCLES_PER_FRAME * 60) / (7 * 144); // ~55kHz
+    chan->sample_rate = (this->clock.timing.frame.cycles_per * this->clock.timing.second.frames_per) / (this->clock.vdp.clock_divisor); // ~55kHz
     chan->left = chan->right = 1;
     chan->num = 2;
-    chan->low_pass_filter = 22000;
+    chan->low_pass_filter = 18500;
 }
 
 void genesisJ_describe_io(JSM, struct cvec *IOs)
@@ -600,18 +588,18 @@ void genesisJ_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(1280 * 448 * 2);
-    d->display.output[1] = malloc(1280 * 448 * 2);
+    d->display.output[0] = malloc(1280 * 480 * 2);
+    d->display.output[1] = malloc(1280 * 480 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
-    setup_crt(&d->display);
+    setup_crt(this, &d->display);
     this->vdp.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
     this->clock.current_back_buffer = 0;
     this->clock.current_front_buffer = 1;
     this->vdp.cur_output = (u16 *)(d->display.output[0]);
 
-    setup_audio(IOs);
+    setup_audio(this, IOs);
 
     this->vdp.display = &((struct physical_io_device *)cpg(this->vdp.display_ptr))->display;
     genesis_controllerport_connect(&this->io.controller_port1, genesis_controller_6button, &this->controller1);

@@ -927,7 +927,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "contra_hc_jp.md", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "sor2.md", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
+            worked = grab_ROM(&ROMs, which, "s1built.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "batman.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "gen_test_ym.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "outrun2019.bin", nullptr); // works!

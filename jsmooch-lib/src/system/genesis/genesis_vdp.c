@@ -22,10 +22,6 @@
 
 
 
-#define MASTER_CYCLES_PER_SCANLINE 3420
-#define NTSC_SCANLINES 262
-#define MASTER_CYCLES_PER_FRAME (MASTER_CYCLES_PER_SCANLINE * NTSC_SCANLINES)
-
 #define PLANE_A 0
 #define PLANE_B 1
 #define PLANE_WINDOW 2
@@ -34,23 +30,6 @@
 #define SC_ARRAY_H40      1
 #define SC_ARRAY_DISABLED 2 // H32 timing
 #define SC_ARRAY_H40_VBLANK 3
-
-
-#define MCLOCKS_PER_LINE 3420
-#define DEBUG_PIXELS_PER_LINE 440
-#define DEBUG_MCLOCK_DIVISOR (MCLOCKS_PER_LINE / DEBUG_PIXELS_PER_LINE)
-//#define MCLOCKS_PER_LINE 3400
-
-#define SC_HSYNC_GOES_OFF_H32 24
-#define SC_HSYNC_GOES_OFF_H40 12
-#define SC_HSYNC_GOES_ON_H32 658
-#define SC_HSYNC_GOES_ON_H40 788
-
-/*#define SC_SLOW_SLOTS 662
-#define HSYNC_GOES_OFF (SC_HSYNC_GOES_OFF * 5)
-#define HSYNC_GOES_ON (SC_HSYNC_GOES_ON*5)
-#define SLOW_MCLOCKS_START (SC_SLOW_SLOTS*5)
-#define HBLANK_START 1280*/
 
 
 //    UDS<<2 + LDS           neither   just LDS   just UDS    UDS+LDS
@@ -331,8 +310,8 @@ static inline void latch_hcounter(struct genesis* this)
 
 static void do_vcounter(struct genesis* this)
 {
-    if ((this->clock.vdp.vcount >= 0) && (this->clock.vdp.vcount <= 224)) {
-        // Do down counter if we're not in line 0 or 225
+    if ((this->clock.vdp.vcount >= 0) && (this->clock.vdp.vcount <= (1+this->clock.vdp.bottom_rendered_line))) {
+        // Do down counter if we're not in line 0 or 224
         if (this->vdp.irq.hblank.counter == 0) {
             this->vdp.irq.hblank.pending = 1;
             latch_hcounter(this);
@@ -349,7 +328,7 @@ static void hblank(struct genesis* this, u32 new_value)
 
 static void set_sc_array(struct genesis* this)
 {
-    if (((this->clock.vdp.vblank_active) && (this->clock.vdp.vcount != 261)) || (!this->vdp.io.enable_display)) {
+    if (((this->clock.vdp.vblank_active) && (this->clock.vdp.vcount != (this->clock.timing.frame.scanlines_per-1))) || (!this->vdp.io.enable_display)) {
         this->vdp.sc_array = SC_ARRAY_DISABLED + this->vdp.latch.h40;
     }
     else this->vdp.sc_array = this->vdp.latch.h40;
@@ -381,7 +360,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     this->clock.master_frame++;
 
     this->clock.vdp.field ^= 1;
-    this->clock.vdp.vcount = 0;
+    this->clock.vdp.vcount = -1;
     this->clock.vdp.vblank_active = 0;
     this->vdp.cur_output = this->vdp.display->output[this->vdp.display->last_written];
     memset(this->vdp.cur_output, 0, 1280*240*2);
@@ -394,9 +373,9 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 
     this->vdp.display->scan_y = 0;
     this->vdp.display->scan_x = 0;
-    if (this->clock.vdp.vcount == 0) {
-        scheduler_only_add_abs_w_tag(&this->scheduler, cur + MASTER_CYCLES_PER_FRAME, 0, this, &new_frame, NULL, 2);
-    }
+    //if (this->clock.vdp.vcount == 0) {
+        scheduler_only_add_abs_w_tag(&this->scheduler, cur + this->clock.timing.frame.cycles_per, 0, this, &new_frame, NULL, 2);
+    //}
 
     set_clock_divisor(this);
 }
@@ -420,6 +399,7 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
     // We use info from last line to render this one, before we reset it!
     render_sprites(this);
     this->clock.vdp.vcount++;
+    //if (this->clock.vdp.vcount == 0) printf("\nNEW SCANLINE %d clk:%lld", this->clock.vdp.vcount, this->clock.master_cycle_count);
     this->vdp.sc_slot = 0;
     set_clock_divisor(this);
 
@@ -434,9 +414,10 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
     this->vdp.display->scan_y++;
     this->vdp.display->scan_x = 0;
     this->vdp.cur_pixel = this->clock.vdp.vcount * 1280;
-    assert(this->vdp.cur_pixel < (1280*300));
-    assert(this->clock.vdp.vcount < 280);
-    if (this->clock.vdp.vcount < 224) {
+    assert(this->vdp.cur_pixel < (1280*312));
+    // 281, 282
+    assert(this->clock.vdp.vcount < 312);
+    if (this->clock.vdp.vcount < this->clock.vdp.bottom_rendered_line) {
         this->vdp.line.screen_x = 0;
 
         // Set up the current row's fetcher...
@@ -467,7 +448,6 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
         r->hscroll[1] = this->vdp.fetcher.hscroll[1];
 
         if (this->clock.vdp.vcount == 0) {
-            struct genesis_vdp_debug_row *b = &this->vdp.debug.output_rows[223];
             i32 col = -1;
             for (u32 i = 0; i < 21; i++) {
                 u32 vscrolls[2];
@@ -488,18 +468,16 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
     this->vdp.fetcher.vscroll_latch[0] = this->vdp.VSRAM[0];
     this->vdp.fetcher.vscroll_latch[1] = this->vdp.VSRAM[1];
 
-    switch(this->clock.vdp.vcount) {
-        case 0:
-            genesis_VDP_vblank(this, 0);
-            break;
-        case 0xE0: // vblank start
-            genesis_VDP_vblank(this, 1);
-            genesis_z80_interrupt(this, 1); // Z80 asserts vblank interrupt for 2573 mclocks
-            scheduler_only_add_abs(&this->scheduler, this->clock.master_cycle_count + 2573, 0, this, &gen_z80_interrupt_off, NULL);
-            break;
+    if (this->clock.vdp.vcount == 0) {
+        genesis_VDP_vblank(this, 0);
+    }
+    else if (this->clock.vdp.vcount == this->clock.vdp.vblank_on_line) {
+        genesis_VDP_vblank(this, 1);
+        genesis_z80_interrupt(this, 1); // Z80 asserts vblank interrupt for 2573 mclocks
+        scheduler_only_add_abs(&this->scheduler, this->clock.master_cycle_count + 2573, 0, this, &gen_z80_interrupt_off, NULL);
     }
     //if (this->clock.vdp.vcount == 0) latch_hcounter(this);
-    if (this->clock.vdp.vcount >= 225) latch_hcounter(this); // in vblank, continually reload. TODO: make dependent on vblank
+    else if (this->clock.vdp.vcount >= (this->clock.vdp.bottom_rendered_line+2)) latch_hcounter(this); // in vblank, continually reload. TODO: make dependent on vblank
     else do_vcounter(this);
     set_sc_array(this);
 }
@@ -509,7 +487,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis *this = (struct genesis*)ptr;
     u64 cur = clock - jitter;
-    u64 next_scanline = cur + MASTER_CYCLES_PER_SCANLINE;
+    u64 next_scanline = cur + this->clock.timing.scanline.cycles_per;
     scheduler_only_add_abs_w_tag(&this->scheduler, next_scanline, 0, this, &schedule_scanline, NULL, 1);
     new_scanline(this, cur);
 }
@@ -518,7 +496,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 void genesis_VDP_schedule_first(struct genesis *this)
 {
     schedule_scanline(this, 0, 0, 0);
-    scheduler_only_add_abs_w_tag(&this->scheduler, MASTER_CYCLES_PER_FRAME, 0, this, &new_frame, NULL, 2);
+    scheduler_only_add_abs_w_tag(&this->scheduler, this->clock.timing.frame.cycles_per, 0, this, &new_frame, NULL, 2);
 }
 
 
@@ -587,7 +565,8 @@ static void write_vdp_reg(struct genesis* this, u16 rn, u16 val)
             vdp->dma.enable = (val >> 4) & 1;
             vdp->io.cell30 = (val >> 3) & 1;
             // TODO: handle more bits
-            if (vdp->io.cell30) printf("\nWARNING PAL DISPLAY 240 SELECTED");
+            this->clock.vdp.bottom_rendered_line = vdp->io.cell30 ? 239 : 223;
+            this->clock.vdp.vblank_on_line = this->clock.vdp.bottom_rendered_line + 1;
             vdp->io.mode5 = (val >> 2) & 1;
             if (!vdp->io.mode5) printf("\nWARNING MODE5 DISABLED");
 
@@ -896,7 +875,7 @@ void genesis_VDP_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct genesis *this = (struct genesis*)ptr;
     u64 cur = clock - jitter;
-    u64 next_frame = cur + MASTER_CYCLES_PER_FRAME;
+    u64 next_frame = cur + this->clock.timing.frame.cycles_per;
     scheduler_only_add_abs_w_tag(&this->scheduler, next_frame, 0, this, &genesis_VDP_schedule_frame, NULL, 2);
 }
 
@@ -1358,8 +1337,8 @@ static inline u32 sprite_tile_index(u32 tile_x, u32 tile_y, u32 hsize, u32 vsize
 static void render_sprites(struct genesis *this)
 {
     // Render sprites for the next line!
-    u32 vc = (this->clock.vdp.vcount == 261) ? 0 : this->clock.vdp.vcount + 1;
-    if (vc >= 224) return;
+    u32 vc = (this->clock.vdp.vcount == (this->clock.timing.frame.scanlines_per-1)) ? 0 : this->clock.vdp.vcount + 1;
+    if (vc > this->clock.vdp.bottom_rendered_line) return;
 
     memset(&this->vdp.sprite_line_buf[0], 0, sizeof(this->vdp.sprite_line_buf));
 
@@ -1548,7 +1527,7 @@ static void output_16(struct genesis* this)
 
 static void render_16_more(struct genesis* this)
 {
-    if (this->clock.vdp.vcount >= 224) return;
+    if (this->clock.vdp.vcount > this->clock.vdp.bottom_rendered_line) return;
     // Fetch a slice
     u32 vscrolls[2];
     get_vscrolls(this, this->vdp.fetcher.column, vscrolls);
@@ -1585,7 +1564,7 @@ static void render_left_column(struct genesis* this)
 {
     // Fetch left column. Discard xscroll pixels, render the rest.
     //printf("\nRENDER LEFT COLUMN line:%d", this->clock.vdp.vcount);
-    if (this->clock.vdp.vcount >= 224) return;
+    if (this->clock.vdp.vcount > this->clock.vdp.bottom_rendered_line) return;
     u32 plane_wrap = (8 * this->vdp.io.foreground_width) - 1;
 
     u32 vscrolls[2];

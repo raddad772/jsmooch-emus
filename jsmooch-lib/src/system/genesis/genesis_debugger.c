@@ -668,7 +668,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
 
         for (u32 sec = 1; sec < 21; sec++) {
             u32 my = (top->vscroll[plane_num][sec]) & v_mask;
-            u32 bottom_my = (my + 223) & v_mask;
+            u32 bottom_my = (my + 239) & v_mask;
             u32 *top_y_pointer = outbuf + (my * out_width);
             u32 *bottom_y_pointer = outbuf + (bottom_my * out_width);
             for (u32 i = 0; i < 16; i++) {
@@ -681,7 +681,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
         u32 vscroll = top->vscroll[plane_num][1];
 
         // Now we do left and right lines!
-        for (u32 mline = 1; mline < 223; mline++) {
+        for (u32 mline = 1; mline < 239; mline++) {
             u32 y = (mline + vscroll) & v_mask;
             u32 *line_ptr = outbuf + (y * out_width);
             struct genesis_vdp_debug_row *row = &this->vdp.debug.output_rows[mline];
@@ -806,7 +806,7 @@ static void render_image_view_output(struct debugger_interface *dbgr, struct deb
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
-    memset(outbuf, 0, out_width*(4*224)); // Clear out 224 lines
+    memset(outbuf, 0, out_width*(4*240)); // Clear out 240 lines
 
     struct debugger_widget *shade_normal_b_w = (struct debugger_widget *)cvec_get(&dview->options, 0);
     struct debugger_widget *shade_shadow_r_w =(struct debugger_widget *)cvec_get(&dview->options, 1);
@@ -834,7 +834,7 @@ static void render_image_view_output(struct debugger_interface *dbgr, struct deb
     u32 highlight_bg = highlight_bg_w->checkbox.value;
     u16 *geno = (u16 *)this->vdp.display->output[this->vdp.display->last_written];
 
-    for (u32 sy = 0; sy < 224; sy++) {
+    for (u32 sy = 0; sy < 240; sy++) {
         u32 h40 = this->vdp.debug.output_rows[sy].h40;
         u32 sx_max = h40 ? 320 : 256;
         u16 *geno_row_ptr = geno + (sy * 1280);
@@ -1039,7 +1039,7 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
     // Now shade in non-visible space slightly green
     u32 top = 0x80;
     u32 left = 0x80;
-    u32 bottom = top + 224;
+    u32 bottom = top + 240;
     u32 right = left + (this->vdp.io.h40 ? 320 : 256);
     u32 *line_ptr = outbuf;
     for (u32 y = 0; y < 511; y++) {
@@ -1231,7 +1231,7 @@ static void setup_image_view_output(struct genesis* this, struct debugger_interf
     struct image_view *iv = &dview->image;
 
     iv->width = 1280;
-    iv->height = 224;
+    iv->height = 240;
     iv->viewport.exists = 1;
     iv->viewport.enabled = 1;
     iv->viewport.p[0] = (struct ivec2){ 0, 0 };

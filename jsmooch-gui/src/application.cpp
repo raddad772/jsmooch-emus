@@ -153,7 +153,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io, u32 frame_m
     ImGui::End();
 }
 
-#define MEMORY_VIEW_DEFAULT_ENABLE 1
+#define MEMORY_VIEW_DEFAULT_ENABLE 0
 #define EVENT_VIEWER_DEFAULT_ENABLE 0
 #define DISASM_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
@@ -1018,8 +1018,8 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
     //which = SYS_GBA;
-    which = SYS_SNES;
-    //which = SYS_GENESIS_USA;
+    //which = SYS_SNES;
+    which = SYS_GENESIS_USA;
     //which = SYS_NDS;
     //which = SYS_NES;
     //which = SYS_GALAKSIJA;
