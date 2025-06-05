@@ -85,6 +85,8 @@ struct genesis_cart {
         u32 region_usa;
     } header;
 
+    u32 bank_offset[8];
+
     enum genesis_cart_kinds kind;
 
     struct persistent_store *SRAM;

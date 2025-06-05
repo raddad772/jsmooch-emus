@@ -51,6 +51,9 @@ void genesis_cart_init(struct genesis_cart* this)
     *this = (struct genesis_cart) {}; // Set all fields to 0
 
     buf_init(&this->ROM);
+    for (u32 i = 0; i < 8; i++) {
+        this->bank_offset[i] = i << 19;
+    }
 }
 
 void genesis_cart_delete(struct genesis_cart *this)
@@ -156,8 +159,11 @@ void genesis_cart_write(struct genesis_cart *this, u32 addr, u32 mask, u32 val, 
 // Carts are read in 16 bits at a time
 u16 genesis_cart_read(struct genesis_cart *this, u32 addr, u32 mask, u32 has_effect, u32 SRAM_enable)
 {
-    u8* ptr = &((u8 *)this->ROM.ptr)[addr % this->ROM.size];
-    u16 v = 0;
+    u32 saddr = addr & 0x7FFFF;
+    u32 offs = this->bank_offset[(addr >> 19) & 7];
+    u32 rom_addr = (saddr + offs) % this->ROM.size;
+    u8* ptr = &((u8 *)this->ROM.ptr)[rom_addr];
+    u32 v;
 
     if (addr < 0x200000) {
         v = ((ptr[0] << 8) | ptr[1]);
@@ -297,8 +303,7 @@ u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil
         CK("SEGA TERA68K", sega_cart_tera68k);
         CK("SEGA TERA286", sega_cart_tera286);
 #undef CK
-    assert(this->kind == sega_cart_genesis);
-    if (this->kind == sega_cart_invalid) {
+    if ((this->kind != sega_cart_genesis) && (this->kind != sega_cart_ssf)) {
         printf("\nError loading Sega Genesis cart");
         return 0;
     }

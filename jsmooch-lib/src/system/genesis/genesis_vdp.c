@@ -1171,7 +1171,7 @@ static void get_vscrolls(struct genesis* this, int column, u32 *planes)
     }
     //u32 col = (u32)column << 1;
     u32 col = (u32)column << 1;
-    assert(col<20);
+    //assert(col<21);
     planes[0] = this->vdp.VSRAM[col];
     planes[1] = this->vdp.VSRAM[col+1];
 }

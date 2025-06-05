@@ -1277,7 +1277,7 @@ static u32 hdma_setup_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
 
     ch->dma_enable = 0; // Stomp on DMA if HDMA runs
     ch->hdma_address = ch->source_address;
-    ch->line_counter = 0;
+    //ch->line_counter = 0;
     return SNES_hdma_reload_ch(snes, ch);
 }
 

@@ -166,8 +166,7 @@ u16 genesis_mainbus_read(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 o
     return old;
 }
 
-void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 val)
-{
+void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16 val) {
     u32 mask = UDSMASK;
     if (addr < 0x400000) {
         genesis_cart_write(&this->cart, addr, mask, val, this->io.SRAM_enabled);
@@ -184,10 +183,43 @@ void genesis_mainbus_write(struct genesis* this, u32 addr, u32 UDS, u32 LDS, u16
         genesis_mainbus_write_a1k(this, addr, val, mask);
         return;
     }
-    if (addr == 0xA130F0) {
-        if (this->cart.ROM.size > 0x200000)
-            this->io.SRAM_enabled = val & 1;
-        return;
+    if ((addr == 0xA130F0) && (this->cart.ROM.size > 0x200000)) {
+        this->io.SRAM_enabled = val & 1;
+    }
+
+    if (this->cart.kind == sega_cart_ssf) {
+        switch(addr) {
+            case 0xA130F2:
+                this->cart.bank_offset[1] = (val & 0xFF) << 19;
+                break;
+            case 0xA130F4:
+                this->cart.bank_offset[2] = (val & 0xFF) << 19;
+                break;
+            case 0xA130F6:
+                this->cart.bank_offset[3] = (val & 0xFF) << 19;
+                break;
+            case 0xA130F8:
+                this->cart.bank_offset[4] = (val & 0xFF) << 19;
+                break;
+            case 0xA130FA:
+                this->cart.bank_offset[5] = (val & 0xFF) << 19;
+                break;
+            case 0xA130FC:
+                this->cart.bank_offset[6] = (val & 0xFF) << 19;
+                break;
+            case 0xA130FE:
+                this->cart.bank_offset[7] = (val & 0xFF) << 19;
+                break;
+            case 0xA130F1:
+            case 0xA130F3:
+            case 0xA130F5:
+            case 0xA130F7:
+            case 0xA130F9:
+            case 0xA130FB:
+            case 0xA130FD:
+                printf("\nWARN ACCESS SSF2 REGS ODD!");
+                break;
+        }
     }
     if ((addr >= 0xC00000) && (addr < 0xFF0000)) {
         genesis_VDP_mainbus_write(this, addr, val, mask);

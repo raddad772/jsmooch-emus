@@ -916,11 +916,12 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sor3.md", nullptr);
             //worked = grab_ROM(&ROMs, which, "xmen.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "window.bin", nullptr); // works!
-            worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
             //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "overdrive2.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!
