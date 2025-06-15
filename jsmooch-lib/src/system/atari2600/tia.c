@@ -633,7 +633,7 @@ void TIA_run_cycle(struct atari_TIA* this)
                 break;
             case 0b011100: // hcount 16, reset hblank RHB. output begins 4 cycles after this. so start a new scanline here
                 new_scanline(this);
-                start_playfield(this, 0);
+                //start_playfield(this, 0);
                 this->x = 0;
                 this->hblank = 0;
                 break;
@@ -641,7 +641,7 @@ void TIA_run_cycle(struct atari_TIA* this)
                 this->hblank = 0;
                 break;
             case 0b101100: // hcount=36, CNT. either starts playfield again as normal, or reverse-shifted when REF is set
-                start_playfield(this, 1);
+                //start_playfield(this, 1);
                 break;
             case 0b010100: // hblank/// SHB
                 this->hblank = 1;
@@ -660,7 +660,7 @@ void TIA_run_cycle(struct atari_TIA* this)
                 // TODO: draw output!
                 p->scan_divisor = (p->scan_divisor - 1) & 0x0F;
                 if (p->scan_divisor == 0) {
-                    p->scan_divisor = p->scan_dutyl
+                    p->scan_divisor = p->scan_duty;
                     p->scan_counter = (p->scan_counter + 1) & 3;
                 }
             }

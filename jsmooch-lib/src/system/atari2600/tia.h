@@ -78,6 +78,7 @@ struct atari_TIA {
     } io;
 
     struct atari_TIA_M {
+        u32 hm;
         u32 size;
         i32 start_counter;
         i32 starting, counter;
@@ -87,9 +88,15 @@ struct atari_TIA {
         u32 enable;
         u32 locked_to_player;
     } m[2];
+    struct atari_TIA_ball {
+        u32 counter, output, enable[2], delay, size, hm;
+    } ball;
+
     struct atari_TIA_P {
         u32 copy, enable;
         u32 start_counter, starting, counter, pixel_counter, width_counter;
+        u32 GRP[2], delay;
+        u32 hm;
 
         u32 count, phase;
         u32 scan_counter, scan_counting;
