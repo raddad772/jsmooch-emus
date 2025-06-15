@@ -436,7 +436,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     /* YM2612 */
     dw = cpg(this->dbg.waveforms_ym2612.main);
     if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output << 3);
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output);
         dw->user.buf_pos++;
     }
     this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
@@ -543,7 +543,7 @@ static void setup_audio(struct genesis *this, struct cvec* IOs)
     chan->sample_rate = (this->clock.timing.frame.cycles_per * this->clock.timing.second.frames_per) / (this->clock.vdp.clock_divisor); // ~55kHz
     chan->left = chan->right = 1;
     chan->num = 2;
-    chan->low_pass_filter = 18500;
+    chan->low_pass_filter = 24000;
 }
 
 void genesisJ_describe_io(JSM, struct cvec *IOs)

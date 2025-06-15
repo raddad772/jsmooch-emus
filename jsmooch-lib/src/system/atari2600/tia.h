@@ -22,59 +22,14 @@ struct atari_TIA {
     u32 cpu_RDY;
 
     u32 hcounter;
+    u32 pcounter;
     u32 vcounter;
+    u32 CLK;
     u32 master_frame;
     u32 frames_since_restart;
+    u32 clock_div;
 
-    struct {
-        u32 output;
-    } playfield;
-
-    struct TIA_p{
-        u32 size;
-        i32 counter;
-        i32 pixel_counter;
-        i32 width_counter;
-        u32 GRP[2];
-        i32 hm;
-        i32 delay; // VDELP
-        u32 reflect; // REFP
-
-        u32 copy;
-        u32 start_counter;
-        u32 starting;
-
-        u32 output; // current pixel output value
-    } p[2];
-
-    struct TIA_m {
-        u32 size;
-        i32 counter;
-        u32 enable;
-        i32 hm;
-        u32 locked_to_player;
-
-        u32 copy;
-        u32 start_counter;
-        u32 starting;
-
-        i32 pixel_counter;
-        i32 width_counter;
-
-        u32 output; // current pixel output value
-    } m[2];
-
-    struct TIA_ball {
-        u32 size;
-        i32 counter;
-        u32 enable[2];
-
-        u32 output;
-        i32 delay;
-
-        i32 hm;
-    } ball;
-
+    u32 hblank, x, hsync;
 
     struct {
         u32 vblank_in_lines;
@@ -121,6 +76,28 @@ struct atari_TIA {
 
         u32 INPT[6];
     } io;
+
+    struct atari_TIA_M {
+        u32 size;
+        i32 start_counter;
+        i32 starting, counter;
+        i32 width_counter;
+        i32 output;
+        i32 pixel_counter;
+        u32 enable;
+        u32 locked_to_player;
+    } m[2];
+    struct atari_TIA_P {
+        u32 copy, enable;
+        u32 start_counter, starting, counter, pixel_counter, width_counter;
+
+        u32 count, phase;
+        u32 scan_counter, scan_counting;
+        u32 reflect;
+        u32 output; // 0 or 1
+        u32 size;
+        i32 scan_divisor, scan_duty;
+    } p[2];
 
     struct atari_TIA_WQ_item {
         u32 active;

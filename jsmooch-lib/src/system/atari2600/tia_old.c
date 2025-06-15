@@ -204,14 +204,6 @@ static void TIA_WQ_finish(struct atari_TIA* this, struct atari_TIA_WQ_item* item
             this->io.pf &= 0xFFF;
             this->io.pf |= (val & 0xFF) << 12;
             return;
-        case 0x10: // RESP0 reset player 0 <strobe>
-            this->p[0].count = 0;
-            this->p[0].phase = this->CLK & 3;
-            return;
-        case 0x11: // RESP1 reset player 1 <strobe>
-            this->p[1].count = 0;
-            this->p[1].phase = this->CLK & 3;
-            return;
         case 0x1B: // GRP0 graphics player 0
             this->p[0].GRP[0] = val;
             this->p[1].GRP[1] = this->p[1].GRP[0];
@@ -356,8 +348,6 @@ static void TIA_write(struct atari_TIA* this, u32 addr, u32 *data)
         DELAY(0x0D, 2);
         DELAY(0x0E, 2);
         DELAY(0x0F, 2);
-        DELAY(0x10, 5);
-        DELAY(0x11, 5);
         DELAY(0x1B, 1);
         DELAY(0x1C, 1);
         DELAY(0x1D, 1);
@@ -388,6 +378,7 @@ static void TIA_write(struct atari_TIA* this, u32 addr, u32 *data)
             this->p[1].size = val & 7;
             this->m[1].size = (val >> 4) & 3;
             return;
+            return;
         case 0x06: // COLUP0 colum-lum player 0 missile 0
             this->io.COLUP0 = (val >> 1) & 0x7F;
             return;
@@ -402,6 +393,12 @@ static void TIA_write(struct atari_TIA* this, u32 addr, u32 *data)
             return;
         case 0x0A: // CTRLPF control playfield ball size & collissions
             this->io.CTRLPF.u = val & 0b110111;
+            return;
+        case 0x10: // RESP0 reset player 0 <strobe>
+            this->p[0].counter = -4;
+            return;
+        case 0x11: // RESP1 reset player 1 <strobe>
+            this->p[1].counter = -4;
             return;
         case 0x12: // RESM0 reset missile 0 <strobe>
             this->m[0].counter = -4;
@@ -447,6 +444,12 @@ static void TIA_write(struct atari_TIA* this, u32 addr, u32 *data)
             return;
     }
 #undef DELAY
+}
+
+void TIA_bus_cycle(struct atari_TIA* this, u32 addr, u32 *data, u32 rw)
+{
+    if (rw == 0) *data = TIA_read(this, addr, data);
+    else TIA_write(this, addr, data);
 }
 
 static void TIA_new_frame(struct atari_TIA* this)
@@ -564,29 +567,6 @@ static u32 get_missile_pixel(struct atari_TIA* this, u32 msx, u32 missile_num)
     return msx < (this->m[missile_num].counter + missile_size);
 }
 
-
-//
-// Created by . on 4/14/24.
-//
-
-#include <string.h>
-#include "stdio.h"
-
-#include "tia.h"
-#include "atari2600.h"
-
-#define dprintf(...) (void)(0)
-
-static u32 pcount(u32 state)
-{
-    u32 feedback = ((state >> 1) ^ state ^ 1) & 1;
-    state = (feedback << 5) | (state >> 1);
-    if (state == 0x3F) state = 0; // illegal condition, state=0
-    if (state == 0b101010) state = 0; // state #57 = state=0
-    return state;
-}
-
-
 void TIA_new_line(struct atari_TIA* this)
 {
     this->cpu_RDY = 0;
@@ -603,92 +583,86 @@ void TIA_new_line(struct atari_TIA* this)
     }
 }
 
-static void new_scanline(struct atari_TIA *this)
-{
-    this->CLK = 0;
-    this->hcounter = 0;
-
-}
-
 void TIA_run_cycle(struct atari_TIA* this)
 {
     // A frame is...
     // 40 lines vsync
     // 192 lines NTSC
     //
-    // TIA write queue
     TIA_WQ_cycle(this);
-    // clock divisor of 4
-    this->clock_div++;
-    u32 doquad = 0;
-    if ((this->clock_div & 3) == 0) {
-        switch (this->hcounter) {
-            case 0b111100: // hcount 4, SHS (set H-Sync)
-                this->hsync = 1;
-                break;
-            case 0b110111: // hcount 8, reset h-sync, RHS
-                this->hsync = 0;
-                break;
-            case 0b001111: // hcount 12 colorburst RCB
-                break;
-            case 0b011100: // hcount 16, reset hblank RHB. output begins 4 cycles after this. so start a new scanline here
-                new_scanline(this);
-                start_playfield(this, 0);
-                this->x = 0;
-                this->hblank = 0;
-                break;
-            case 0b010111: // hcount 18: late RHB LRHB
-                this->hblank = 0;
-                break;
-            case 0b101100: // hcount=36, CNT. either starts playfield again as normal, or reverse-shifted when REF is set
-                start_playfield(this, 1);
-                break;
-            case 0b010100: // hblank/// SHB
-                this->hblank = 1;
-                break;
-        }
-    }
-    this->hcounter = pcount(this->hcounter);
+    u32 hblank = (this->io.hmoved && (this->hcounter < 76)) || this->hcounter < 68;
+    i32 screen_x = (i32)this->hcounter - 68;
+    i32 screen_y = (i32)this->vcounter - 20; // 40 for PAL
 
-    // Every CLK
-    if (!this->hblank) { // clock players, missiles, etc.
-        for (u32 pnum = 0; pnum < 2; pnum++) {
-            struct atari_TIA_P *p = &this->p[pnum];
-            u32 pc = p->count;
-            p->count = pcount(pc);
-            if (p->scan_counting) {
-                // TODO: draw output!
-                p->scan_divisor = (p->scan_divisor - 1) & 0x0F;
-                if (p->scan_divisor == 0) {
-                    p->scan_divisor = p->scan_dutyl
-                    p->scan_counter = (p->scan_counter + 1) & 3;
-                }
-            }
-            if ((this->clock_div & 3) == p->phase) {
-                if (p->count == 0b010110) p->count = 0;
-                switch (pc) {
-                    case 0b111000: // Start draw NUSIZ 001
-                        if (p->size & 1)
-                        break;
-                    case 0b101111: // Start draw NUSIZ 01
-
-                        break;
-                    case 0b111001: // Start draw (NUSIZ 1)
-                        break;
-                    case 0b101101: // RESET, start main draw
-                        break;
-                }
-            }
-        }
-        this->x++;
+    if (!hblank) {
+        ball_step(this, 1);
+        p_step(this, 0, 1);
+        p_step(this, 1, 1);
+        m_step(this, 0, 1);
+        m_step(this, 1, 1);
     }
 
-    this->CLK++;
+    u8 color = this->io.COLUBK;
+
+    u32 pf, ball, m0, m1, p0, p1;
+
+    // "run" the playfield
+
+    if ((screen_x > 0) && ((screen_x % 4) == 0)) { // every 4 pixels...
+        u32 pos = screen_x >> 2;
+        u32 bnum = (!this->io.CTRLPF.mirror || pos < 20) ? (pos % 20) : (19 - (pos % 20));
+        this->playfield.output = (this->io.pf >> bnum) & 1;
+    }
+
+    // Get playfield pixel
+    pf = this->playfield.output;
+
+    // Get p0 pixel
+    //p0 = get_player_pixel(this, screen_x, 0);
+    p0 = this->p[0].output;
+
+    p1 = this->p[1].output;
+
+    // Get ball pixel
+    ball = this->ball.output;
+
+    // Get m0 pixel
+    m0 = this->m[0].output;
+    m1 = this->m[1].output;
+
+    // Do collisions
+    this->col.m0_p0 |= m0 & p0;
+    this->col.m0_p1 |= m0 & p1;
+    this->col.m1_p0 |= m1 & p0;
+    this->col.m1_p1 |= m1 & p1;
+    this->col.p0_pf |= p0 & pf;
+    this->col.p0_ball |= p0 & ball;
+    this->col.p1_pf |= p1 & pf;
+    this->col.p1_ball |= p1 & ball;
+    this->col.m0_pf |= m0 & pf;
+    this->col.m0_ball |= m0 & ball;
+    this->col.m1_pf |= m1 & pf;
+    this->col.m1_ball |= m1 & ball;
+    this->col.ball_pf |= ball & pf;
+    this->col.p0_p1 |= p0 & p1;
+    this->col.m0_m1 |= m0 & m1;
+
+    // Convert pixels to the 4 colors
+
+    if(!this->io.CTRLPF.priority && (pf || ball)) color = this->io.COLUPF;
+    if(p1 || m1) color = this->io.COLUP1;
+    if(p0 || m0) color = this->io.COLUP0;
+    if(this->io.CTRLPF.priority && (pf || ball))  color = this->io.COLUPF;
+
+    if ((screen_x >= 0) && (screen_x < 160) && (screen_y >= 0) && (screen_y < 228)) { // 228 for NTSC, 243 for PAL
+        if (this->io.vblank || hblank) color = 0;
+        /*if (screen_x == 100) color = 19;
+        if (screen_y == 100) color = 19;*/
+        u32 bo = (screen_y * 160) + screen_x;
+        this->cur_output[bo] = color;
+    }
+
+    this->hcounter++;
+    if (this->hcounter >= 228) TIA_new_line(this);
 }
 
-
-void TIA_bus_cycle(struct atari_TIA *this, u32 addr, u32 *data, u32 rw)
-{
-    if (rw == 0) *data = TIA_read(this, addr, data);
-    else TIA_write(this, addr, data);
-}

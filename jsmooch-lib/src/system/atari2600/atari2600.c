@@ -11,6 +11,7 @@
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/m6502_opcodes.h"
 
+#include "atari2600_bus.h"
 #include "atari2600.h"
 #include "cart.h"
 
@@ -153,8 +154,8 @@ static void setup_crt(struct JSM_DISPLAY *d)
 
     d->pixelometry.cols.left_hblank = 1;
     d->pixelometry.cols.right_hblank = 85;
-    d->pixelometry.cols.visible = 256;
-    d->pixelometry.cols.max_visible = 256;
+    d->pixelometry.cols.visible = 240;
+    d->pixelometry.cols.max_visible = 240;
     d->pixelometry.offset.x = 1;
 
     d->pixelometry.rows.top_vblank = 1;
@@ -365,34 +366,6 @@ u32 atari2600J_finish_frame(JSM)
     return 0; // TODO this->tia.last_used_buffer;
 }
 
-void CPU_run_cycle(struct atari2600* this)
-{
-    if (this->tia.cpu_RDY) return; // CPU is halted until next scanline
-
-    M6502_cycle(&this->cpu);
-
-    this->CPU_bus.Addr.u = this->cpu.pins.Addr & 0x1FFF;
-    this->CPU_bus.RW = this->cpu.pins.RW;
-    this->CPU_bus.D = this->cpu.pins.D;
-
-    if (this->CPU_bus.Addr.a12) // cart. a12=1
-        atari2600_cart_bus_cycle(&this->cart, this->CPU_bus.Addr.u, &this->CPU_bus.D, this->CPU_bus.RW);
-    else if ((this->CPU_bus.Addr.a9 && this->CPU_bus.Addr.a7) || this->CPU_bus.Addr.a7) // RIOT, RIOT RAM
-        M6532_bus_cycle(&this->riot, this->CPU_bus.Addr.u, &this->CPU_bus.D, this->CPU_bus.RW);
-    else if (this->CPU_bus.Addr.a9 == 0) { // TIA
-        TIA_bus_cycle(&this->tia, this->CPU_bus.Addr.u, &this->CPU_bus.D, this->CPU_bus.RW);
-    }
-    else {
-        printf("\nMISSED ADDR2 %04x %d %d", this->CPU_bus.Addr.u, this->CPU_bus.Addr.a7, this->CPU_bus.Addr.a9);
-    }
-    this->cpu.pins.D = this->CPU_bus.D;
-
-
-    /*if (this->tracing) { TODO
-        //dbg.traces.add(TRACERS.M6502, this->clock->trace_cycles, trace_format_write('MOS', MOS_COLOR, this->clock->trace_cycles, this->cpu.pins.Addr, this->cpu.pins.D));
-    }*/
-
-}
 
 u32 atari2600J_finish_scanline(JSM)
 {
@@ -416,7 +389,7 @@ u32 atari2600J_step_master(JSM, u32 howmany)
     if (howmany > 1) atari2600_map_inputs(jsm);
     while (this->cycles_left > 0) {
         if ((this->master_clock % 3) == 0)
-            CPU_run_cycle(this);
+            atari2600_CPU_run_cycle(this);
         TIA_run_cycle(&this->tia);
         M6532_cycle(&this->riot);
 

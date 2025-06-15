@@ -352,9 +352,9 @@ void genesis_VDP_vblank(struct genesis* this, u32 new_value)
 static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 {
     u64 cur = cur_clock - jitter;
-    //printf("\nNEW FRAME @%lld", cur);
     struct genesis* this = (struct genesis*)ptr;
 
+    this->clock.vdp.frame_start = cur;
     debugger_report_frame(this->dbg.interface);
     this->vdp.cur_output = ((u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1]);
     this->clock.master_frame++;
@@ -374,6 +374,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     this->vdp.display->scan_y = 0;
     this->vdp.display->scan_x = 0;
     //if (this->clock.vdp.vcount == 0) {
+    //printf("\nSCHEDULE NEXT FRAME FOR %lld", cur + this->clock.timing.frame.cycles_per);
         scheduler_only_add_abs_w_tag(&this->scheduler, cur + this->clock.timing.frame.cycles_per, 0, this, &new_frame, NULL, 2);
     //}
 
@@ -399,7 +400,7 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
     // We use info from last line to render this one, before we reset it!
     render_sprites(this);
     this->clock.vdp.vcount++;
-    //if (this->clock.vdp.vcount == 0) printf("\nNEW SCANLINE %d clk:%lld", this->clock.vdp.vcount, this->clock.master_cycle_count);
+    //printf("\nNEW SCANLINE %d clk:%lld", this->clock.vdp.vcount, this->clock.master_cycle_count);
     this->vdp.sc_slot = 0;
     set_clock_divisor(this);
 
@@ -496,6 +497,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 clock, u32 jitter)
 void genesis_VDP_schedule_first(struct genesis *this)
 {
     schedule_scanline(this, 0, 0, 0);
+    printf("\nFIRST NF FOR %d", this->clock.timing.frame.cycles_per);
     scheduler_only_add_abs_w_tag(&this->scheduler, this->clock.timing.frame.cycles_per, 0, this, &new_frame, NULL, 2);
 }
 
@@ -887,7 +889,7 @@ static u16 read_control_port(struct genesis* this, u16 old, u32 has_effect)
     // Ares 360c  1000001100
     // Me   3688  1010001000
 
-    u16 v = 0; // NTSC only for now
+    u16 v = this->PAL;
     v |= this->vdp.command.pending << 1; // no DMA yet
     v |= this->clock.vdp.hblank_active << 2;
     v |= (this->clock.vdp.vblank_active || (1 ^ this->vdp.io.enable_display)) << 3;
@@ -1095,7 +1097,8 @@ void genesis_VDP_reset(struct genesis* this)
 {
     this->vdp.io.h40 = 1; // H40 mode to start
     this->clock.vdp.hblank_active = this->clock.vdp.vblank_active = 0;
-    this->clock.vdp.hcount = this->clock.vdp.vcount = 0;
+    this->clock.vdp.hcount = 0;
+    this->clock.vdp.vcount = -1;
     this->vdp.cur_output = (u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1];
     this->clock.current_back_buffer = this->vdp.display->last_written ^ 1;
     this->clock.current_front_buffer = this->vdp.display->last_written;

@@ -11,7 +11,6 @@ struct SNES_clock {
     u64 master_cycle_count, nothing;
     u64 master_frame;
     u32 rev;
-    u32 dma_counter;
 
 
     struct {

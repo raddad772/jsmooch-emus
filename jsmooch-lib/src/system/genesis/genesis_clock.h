@@ -32,6 +32,7 @@ struct genesis_clock {
         u32 vblank_on_line;
         u32 bottom_rendered_line;
         u32 bottom_max_rendered_line;
+        u64 frame_start;
     } vdp;
 
     struct {

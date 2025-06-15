@@ -21,6 +21,17 @@ struct ym2612 {
     enum OPN2_variant variant;
     struct {
         i32 left_output, right_output, mono_output; // Current mixed sample
+
+        struct {
+            struct {
+                i32 left, right;
+            } sample;
+
+            struct {
+                i32 left, right;
+            } output;
+        } filter;
+
         u64 last_master_clock_op0;
     } mix;
     u32 ext_enable;

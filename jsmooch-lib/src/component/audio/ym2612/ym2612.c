@@ -216,7 +216,7 @@ u16 lfo_am(u8 lfo_counter, u8 ams)
 
 static void mix_sample(struct ym2612*this)
 {
-    i32 left = 0, right = 0;
+    i64 left = 0, right = 0;
     for (u32 i = 0; i < 6; i++) {
         struct YM2612_CHANNEL *ch = &this->channel[i];
         if (ch->ext_enable) {
@@ -225,22 +225,19 @@ static void mix_sample(struct ym2612*this)
             if (ch->right_enable) right += smp;
         }
     }
-    // 14-bit samples, 6 of them though, so we are at 17 bits, so shift right by 1
-    left /= 6;
-    right /= 6;
-    this->mix.left_output = left;
-    this->mix.right_output = right;
-    this->mix.mono_output = (left + right) >> 1;
+    //left >>= 2;
+    //right >>= 2;
 
-    if (this->mix.mono_output < -8192) {
-        printf("\n%d", this->mix.mono_output);
-        this->mix.mono_output = -8192;
-    }
-    if (this->mix.mono_output > 8191) {
-        printf("\n%d", this->mix.mono_output);
-        this->mix.mono_output = 8191;
+    this->mix.left_output = (i32)((left + this->mix.filter.sample.left) * 0x250C + this->mix.filter.output.left + 0xB5E8) >> 16;
+    this->mix.filter.sample.left = left;
+    this->mix.filter.output.left = this->mix.left_output;
 
-    }
+    this->mix.right_output = (i32)((right + this->mix.filter.sample.right) * 0x250C + this->mix.filter.output.right + 0xB5E8) >> 16;
+    this->mix.filter.sample.right = right;
+    this->mix.filter.output.right = this->mix.right_output;
+
+    this->mix.mono_output = (left + right) >> 2;
+
 }
 
 

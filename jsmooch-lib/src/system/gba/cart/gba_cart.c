@@ -33,7 +33,6 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 static u32 prefetch_stop(struct GBA *this)
 {
-    //return 0;
     // So we need to cover a few cases here...
     // "If ROM data/SRAM/FLASH is accessed in a cycle, where the prefetch unit
     //  is active and finishing a half-word access, then a one-cycle penalty applies."
@@ -97,7 +96,6 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
 
     // If we got here, prefetch is enabled.
     i64 tt = (i64)GBA_clock_current(this);
-    // This is fine as non-sequential. Sequential is always paid for upfront
     i64 this_cycles = (sz == 4) ? this->waitstates.timing32[1][page] : this->waitstates.timing16[1][page];
     // If we are at the next prefetch addr, and it's code...
     if (this->cart.prefetch.last_access != 0xFFFFFFFFFFFFFFFF)
@@ -107,7 +105,6 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
     }
 
     if (addr == this->cart.prefetch.next_addr && (access & ARM7P_code)) {
-        // Add cycles since last visit
         // Subtract # of cycles of this access
         this->cart.prefetch.cycles_banked -= this_cycles;
         // if we don't have enough...

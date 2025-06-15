@@ -465,6 +465,10 @@ add_library(jsmooch-lib
         src/system/snes/gauss_table.h
         src/helpers/debugger/memory.c
         src/helpers/debugger/memory.h
+        src/system/atari2600/atari2600_bus.c
+        src/system/atari2600/atari2600_bus.h
+        src/component/cpu/huc6280/huc6280.c
+        src/component/cpu/huc6280/huc6280.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
