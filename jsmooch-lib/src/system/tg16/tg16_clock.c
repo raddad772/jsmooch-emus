@@ -2,6 +2,7 @@
 // Created by . on 6/18/25.
 //
 
+#include <string.h>
 #include "tg16_clock.h"
 
 /*
@@ -18,7 +19,12 @@ VCE pixel clocks:
 
 void TG16_clock_init(struct TG16_clock *this)
 {
-    u64 master_freq = 21477270;
+    memset(this, 0, sizeof(*this));
+    TG16_clock_reset(this);
+}
+
+void TG16_clock_reset(struct TG16_clock *this)
+{
     this->timing.second.frames = 60;
     this->timing.frame.lines = 262;
 
@@ -26,7 +32,7 @@ void TG16_clock_init(struct TG16_clock *this)
     u64 per_line = 1368; // = 1368
 
     u64 per_frame = per_line * this->timing.second.frames;
-    master_freq = per_frame * this->timing.second.frames;
+    u64 master_freq = per_frame * this->timing.second.frames;
 
     this->timing.scanline.cycles = per_line;
     this->timing.frame.cycles = per_frame;

@@ -481,6 +481,9 @@ add_library(jsmooch-lib
         src/system/tg16/tg16_debugger.h
         src/component/gpu/huc6260/huc6260.c
         src/component/gpu/huc6260/huc6260.h
+        src/component/cpu/huc6280/huc6280_misc.h
+        src/component/cpu/huc6280/huc6280_opcodes.c
+        src/component/cpu/huc6280/huc6280_opcodes.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
