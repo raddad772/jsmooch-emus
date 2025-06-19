@@ -26,7 +26,7 @@ union HUC6280_P {
 struct HUC6280_regs {
     union HUC6280_P P;
     u32 A, X, Y;
-    u32 SP, PC;
+    u32 S, PC;
 
     u32 MPR[8];
 
