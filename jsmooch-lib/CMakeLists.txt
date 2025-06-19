@@ -469,6 +469,18 @@ add_library(jsmooch-lib
         src/system/atari2600/atari2600_bus.h
         src/component/cpu/huc6280/huc6280.c
         src/component/cpu/huc6280/huc6280.h
+        src/system/tg16/tg16.c
+        src/system/tg16/tg16.h
+        src/system/tg16/tg16_bus.c
+        src/system/tg16/tg16_bus.h
+        src/component/gpu/huc6270/huc6270.c
+        src/component/gpu/huc6270/huc6270.h
+        src/system/tg16/tg16_clock.c
+        src/system/tg16/tg16_clock.h
+        src/system/tg16/tg16_debugger.c
+        src/system/tg16/tg16_debugger.h
+        src/component/gpu/huc6260/huc6260.c
+        src/component/gpu/huc6260/huc6260.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

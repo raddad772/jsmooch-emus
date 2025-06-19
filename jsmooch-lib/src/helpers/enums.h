@@ -26,6 +26,7 @@ enum jsm_systems {
     SYS_GBA,
     SYS_NDS,
     SYS_GALAKSIJA,
+    SYS_TURBOGRAFX16
 };
 
 enum jsm_regions {

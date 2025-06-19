@@ -540,7 +540,7 @@ static void setup_audio(struct genesis *this, struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = (this->clock.timing.frame.cycles_per * this->clock.timing.second.frames_per) / (this->clock.vdp.clock_divisor); // ~55kHz
+    chan->sample_rate = (this->clock.timing.frame.cycles_per * this->clock.timing.second.frames_per) / (this->clock.ym2612.clock_divisor); // ~55kHz
     chan->left = chan->right = 1;
     chan->num = 2;
     chan->low_pass_filter = 24000;

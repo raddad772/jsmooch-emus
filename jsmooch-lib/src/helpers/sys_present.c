@@ -374,6 +374,29 @@ static u32 genesis_color_lookup[4][8] =  {
         {0,0,0,0,0,0,0,0}
 };
 
+void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
+{
+    u16 *tg16o = (u16 *)device->display.output[device->display.last_written];
+    u32 w = out_width;//256 - (overscan_left + overscan_right);
+    u32 *img32 = (u32 *) out_buf;
+    if (is_event_view_present) memset(out_buf, 0, out_width*out_height*4);
+    // TODO: update this for variable screen sizes
+    for (u32 ry = 0; ry < 224; ry++) {
+        u32 y = ry;
+        u32 outyw = y * w;
+        for (u32 rx = 0; rx < 256; rx++) {
+            u32 x = rx;
+            u32 di = ((y * 256) + x);
+            u32 b_out;
+            if (is_event_view_present) b_out = outyw + (x >> 1);
+            else b_out = outyw + x;
+            u32 color = tg16o[di];
+            img32[b_out] = gba_to_screen(color);
+        }
+    }
+}
+
+
 void snes_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
     u16 *sneso = (u16 *)device->display.output[device->display.last_written];
@@ -524,6 +547,9 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
             break;
         case SYS_SNES:
             snes_present(display, out_buf, out_width, out_height, is_event_view_present);
+            break;
+        case SYS_TURBOGRAFX16:
+            tg16_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

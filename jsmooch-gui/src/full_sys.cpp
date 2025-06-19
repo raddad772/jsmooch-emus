@@ -176,6 +176,7 @@ u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
         case SYS_SMS1:
         case SYS_SMS2:
         case SYS_SNES:
+        case SYS_TURBOGRAFX16:
             has_bios = 0;
             break;
         default:
@@ -255,6 +256,10 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
             break;
         case SYS_SNES:
             snprintf(out, out_sz, "%s/snes", BASER_PATH);
+            *worked = 1;
+            break;
+        case SYS_TURBOGRAFX16:
+            snprintf(out, out_sz, "%s/tg16", BASER_PATH);
             *worked = 1;
             break;
         case SYS_GENESIS_USA:
@@ -908,6 +913,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tetris_attack.sfc", nullptr); // ?
             //worked = grab_ROM(&ROMs, which, "tmnt4.sfc", nullptr); // cant even load ROM?
             break;
+        case SYS_TURBOGRAFX16:
+            worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
+            break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
         case SYS_MEGADRIVE_PAL:
@@ -920,9 +928,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
-            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
+            worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
-            worked = grab_ROM(&ROMs, which, "overdrive2.bin", nullptr);
+            //worked = grab_ROM(&ROMs, which, "overdrive2.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ristar.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "castlevania_b.md", nullptr); // works!

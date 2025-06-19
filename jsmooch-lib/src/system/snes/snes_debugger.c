@@ -17,7 +17,7 @@
 #define JTHIS struct SNES* this = (struct SNES*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
-#define THIS struct genesis* this
+#define THIS struct SNES* this
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
@@ -589,7 +589,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
 
 
 
-    void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
+void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
 

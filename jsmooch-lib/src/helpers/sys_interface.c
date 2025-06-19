@@ -19,6 +19,7 @@
 #include "helpers/debugger/debugger.h"
 #include "system/gba/gba.h"
 #include "system/galaksija/galaksija.h"
+#include "system/tg16/tg16.h"
 
 struct jsm_system* new_system(enum jsm_systems which)
 {
@@ -38,6 +39,9 @@ struct jsm_system* new_system(enum jsm_systems which)
             break;
         case SYS_SNES:
             SNES_new(out);
+            break;
+        case SYS_TURBOGRAFX16:
+            TG16_new(out, which);
             break;
         case SYS_GENESIS_JAP:
         case SYS_GENESIS_USA:
@@ -125,6 +129,9 @@ void jsm_delete(struct jsm_system* jsm)
             break;
         case SYS_SNES:
             SNES_delete(jsm);
+            break;
+        case SYS_TURBOGRAFX16:
+            TG16_delete(jsm);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
