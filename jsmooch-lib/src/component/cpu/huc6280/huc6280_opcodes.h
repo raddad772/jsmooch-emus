@@ -1,0 +1,8 @@
+//
+// Created by . on 6/19/25.
+//
+
+#ifndef JSMOOCH_EMUS_HUC6280_OPCODES_H
+#define JSMOOCH_EMUS_HUC6280_OPCODES_H
+
+#endif //JSMOOCH_EMUS_HUC6280_OPCODES_H

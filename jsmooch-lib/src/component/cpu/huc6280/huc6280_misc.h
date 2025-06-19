@@ -1,0 +1,8 @@
+//
+// Created by . on 6/19/25.
+//
+
+#ifndef JSMOOCH_EMUS_HUC6280_MISC_H
+#define JSMOOCH_EMUS_HUC6280_MISC_H
+
+#endif //JSMOOCH_EMUS_HUC6280_MISC_H
