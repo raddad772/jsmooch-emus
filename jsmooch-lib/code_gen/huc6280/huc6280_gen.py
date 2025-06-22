@@ -229,6 +229,12 @@ def StoreImplied(ag: huc6280_switchgen, data: str) -> str:
 
     return ag.finished()
 
+def Clear(ag: huc6280_switchgen, dt):
+    ag.addcycle('yo')
+    ag.addl(dt + ' = 0;')
+
+    return ag.finished()
+
 def ResetMemoryBit(ag: huc6280_switchgen, bitnum):
     ag.operand('regs->TA')
     ag.addcycle('idle')
@@ -251,10 +257,77 @@ def Immediate(ag: huc6280_switchgen, ins_func, dt):
     ins_func(ag, dt, 'regs->TA')
     return ag.finished()
 
+def AbsoluteModify(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None):
+    ag.addcycle('YES!')
+    ag.operand('regs->TA')
+    ag.operand('regs->TR[0]')
+    ag.addl('regs->TA |= regs->TR[0] << 8;')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    if inx is not None:
+        ag.addl('regs->TA = (regs->TA + (' + inx + ')) & 0xFFFF;')
+    ag.load16('regs->TR[0]', 'regs->TA')
+    ins_func(ag, 'regs->TR[1]', 'regs->TR[0]')
+    ag.store16('regs->TA', 'regs->TR[1]', last=True)
+
+    return ag.finished()
 
 def Implied(ag: huc6280_switchgen, ins_func, dt):
     ag.addcycle('only!')
     ins_func(ag, dt, dt)
+
+    return ag.finished()
+
+def BranchIfBitReset(ag: huc6280_switchgen, bitnum: str):
+    ag.addcycle('YO!')
+    ag.operand('regs->TA')
+    ag.operand('regs->TR[0]')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.load8('regs->TR[1]', 'regs->TA')
+    ag.addl('regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);')
+    ag.addl('regs->TR[0] = (regs->TR[1] & (1 << ' + bitnum + ')) != 0;')
+    ag.addl('if (!regs->TR[0]) regs->TCU += 2;')
+    ag.addcycle('idle');
+    ag.addcycle('idle');
+    ag.cleanup()
+    ag.addl('if (regs->TR[0]) regs->PC = regs->TA;')
+    return ag.finished()
+
+def Branch(ag: huc6280_switchgen, expr):
+    ag.addcycle('C1')
+    ag.addl('regs->TR[0] = ' + expr + ';');
+    ag.operand('regs->TA')
+    ag.addl("if (!regs->TR[0]) regs->TCU += 2;");
+    ag.addcycle('idle')
+    ag.cleanup()
+    ag.addl('if (regs->TR[0]) regs->PC = (regs->PC + regs->TA) & 0xFFFF;')
+    return ag.finished()
+
+def IndirectYRead(ag: huc6280_switchgen, ins_func, dt):
+    ag.addcycle('BOO')
+    ag.operand('regs->TA')
+    ag.addcycle('idle')
+    ag.load8('regs->TR[0]', 'regs->TA')
+    ag.addl('regs->TA = (regs->TA + 1) & 0xFF;')
+    ag.load8('regs->TR[1]', 'regs->TA')
+    ag.addcycle('idle')
+    ag.addl('regs->TA = regs->TR[0] | (regs->TR[1] << 8);')
+    ag.addl('regs->TA = (regs->TA + regs->Y) & 0xFFFF;')
+    ag.load16('regs->TR[0]', 'regs->TA', last=True)
+    ins_func(ag, dt, 'regs->TR[0]')
+    return ag.finished()
+
+def AbsoluteRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None):
+    ag.addcycle('YOULL NEVER FIND ME')
+    ag.operand('regs->TA')
+    ag.operand('regs->TR[0]')
+    ag.addl('regs->TA |= regs->TR[0] << 8;')
+    ag.addcycle('idle')
+    if inx is not None:
+        ag.addl('regs->TA = (regs->TA + ' + inx + ') & 0xFFFF;')
+    ag.load16('regs->TR[0]', 'regs->TA', last=True);
+    ins_func(ag, dt, 'regs->TR[0]')
 
     return ag.finished()
 
@@ -386,6 +459,12 @@ def ZeroPageReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
 
     return ag.finished()
 
+def al_TRB(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('regs->P.Z = (regs->A & (' + source + ')) == 0;')
+    ag.addl('regs->P.V = ((' + source + ') >> 6) & 1;')
+    ag.addl('regs->P.N = ((' + source + ') >> 7) & 1;')
+    if dest is not None:
+        ag.addl(dest + ' = ~regs->A & (' + source + ');')
 
 def al_ORA(ag: huc6280_switchgen, dest: str, source: str) -> None:
     ag.addl(dest + ' = regs->A | (' + source + ');')
@@ -476,16 +555,22 @@ def write_instruction(outfile, opcode, tbit):
                 am = 'immediate_memory'
             elif myopc == 0x0D:
                 r = AbsoluteReadMemory(ag, al)
+                am = 'absolute_read_memory'
             elif myopc == 0x11:
                 r = IndirectYReadMemory(ag, al)
+                am = 'indirect_y_read_memory'
             elif myopc == 0x12:
                 r = IndirectReadMemory(ag, al, None)
+                am = 'indirect_read_memory'
             elif myopc == 0x15:
                 r = ZeroPageReadMemory(ag, al, 'regs->X')
+                am = 'zero_page_read_memory'
             elif myopc == 0x19:
                 r = AbsoluteReadMemory(ag, al, 'regs->Y')
+                am = 'absolute_read_memory'
             elif myopc == 0x1D:
                 r = AbsoluteReadMemory(ag, al, 'regs->X')
+                am = 'absolute_read_memory'
 
     if len(r) < 1:
         if opcode == 0x00:
@@ -512,77 +597,493 @@ def write_instruction(outfile, opcode, tbit):
             r = Implied(ag, al_ASL, 'regs->A')
         elif opcode == 0x0B:
             r = NOP(ag)
-        '''elif opcode == 0x0C:
-            r =
+        elif opcode == 0x0C:
+            r = AbsoluteModify(ag, al_TSB)
         elif opcode == 0x0D:
-            r =
+            r = AbsoluteRead(ag, al_ORA, 'regs->A')
         elif opcode == 0x0E:
-            r =
+            r = AbsoluteModify(ag, al_ASL)
         elif opcode == 0x0F:
+            r = BranchIfBitReset(ag, '0')
+        elif opcode == 0x10:
+            r = Branch(ag, '!regs->P.N')
+        elif opcode == 0x11:
+            r = IndirectYRead(ag, al_ORA, 'regs->A')
+        elif opcode == 0x12:
+            r = IndirectRead(ag, al_ORA, 'regs->A')
+        elif opcode == 0x13:
+            r = StoreImplied(ag, '0x1FEE02')
+        elif opcode == 0x14:
+            r = ZeroPageModify(ag, al_TRB)
+        elif opcode == 0x15:
+            r = ZeroPageRead(ag, al_ORA, 'regs->A', 'regs->X')
+        elif opcode == 0x16:
+            r = ZeroPageModify(ag, al_ASL, 'regs->X')
+        elif opcode == 0x17:
+            r = ResetMemoryBit(ag, '1')
+        elif opcode == 0x18:
+            r = Clear(ag, 'regs->P.C')
+        elif opcode == 0x19:
+            r = AbsoluteRead(ag, al_ORA, 'regs->A', 'regs->Y')
+        '''elif opcode == 0x1A:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x1B:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x1C:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x1D:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x1E:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x1F:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x20:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x1:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x2:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x3:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x4:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x5:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x6:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x7:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x8:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x9:
             r =
-        elif opcode == 0x:
+        elif opcode == 0xA:
             r =
-        elif opcode == 0x:
+        elif opcode == 0xB:
             r =
-        elif opcode == 0x:
+        elif opcode == 0xC:
             r =
-        elif opcode == 0x:
+        elif opcode == 0xD:
             r =
-        elif opcode == 0x:
+        elif opcode == 0xE:
             r =
-        elif opcode == 0x:
+        elif opcode == 0xF:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x0:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x1:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x2:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x3:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x4:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x5:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x6:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x7:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x8:
             r =
-        elif opcode == 0x:
+        elif opcode == 0x9:
             r =
-        elif opcode == 0x:
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
+            r =
+        elif opcode == 0x0:
+            r =
+        elif opcode == 0x1:
+            r =
+        elif opcode == 0x2:
+            r =
+        elif opcode == 0x3:
+            r =
+        elif opcode == 0x4:
+            r =
+        elif opcode == 0x5:
+            r =
+        elif opcode == 0x6:
+            r =
+        elif opcode == 0x7:
+            r =
+        elif opcode == 0x8:
+            r =
+        elif opcode == 0x9:
+            r =
+        elif opcode == 0xA:
+            r =
+        elif opcode == 0xB:
+            r =
+        elif opcode == 0xC:
+            r =
+        elif opcode == 0xD:
+            r =
+        elif opcode == 0xE:
+            r =
+        elif opcode == 0xF:
             r ='''
 
     if len(r) > 0:
