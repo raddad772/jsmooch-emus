@@ -29,8 +29,9 @@ struct HUC6280_regs {
     u32 S, PC;
 
     u32 MPR[8];
+    u32 MPL;
 
-    u32 TR[3], TA;
+    u32 TR[8], TA;
     u32 TCU;
 
     u32 NMI_old, NMI_level_detected, do_NMI;
@@ -38,7 +39,7 @@ struct HUC6280_regs {
 };
 
 struct HUC6280_pins {
-    u32 D, Addr, RW, M, NMI, IRQ;
+    u32 D, Addr, RW, M, NMI, IRQ, BM;
 };
 
 struct HUC6280 {

@@ -604,12 +604,13 @@ void full_system::load_default_ROM()
         case SYS_NES:
             //worked = grab_ROM(&ROMs, which, "apu_test.nes", nullptr);
             //NROM
+            worked = grab_ROM(&ROMs, which, "drmario.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "mario.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "dkong.nes", nullptr);
 
             // MMC3
             //worked = grab_ROM(&ROMs, which, "kirby.nes", nullptr);
-            worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mario3.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "gauntlet.nes", nullptr);
             //worked = grab_ROM(&ROMs, which, "recca.nes", nullptr);
 
@@ -669,11 +670,11 @@ void full_system::load_default_ROM()
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
-            //worked = grab_ROM(&ROMs, which, "drmario.gb", nullptr);
+            worked = grab_ROM(&ROMs, which, "drmario.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);

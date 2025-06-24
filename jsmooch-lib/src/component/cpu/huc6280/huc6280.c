@@ -17,7 +17,7 @@ void HUC6280_delete(struct HUC6280 *this)
 
 void HUC6280_reset(struct HUC6280 *this)
 {
-
+    this->regs.MPR[7] = 0;
 }
 
 void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct)

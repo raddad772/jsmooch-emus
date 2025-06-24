@@ -1009,7 +1009,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_ATARI2600;
     //which = SYS_GBC;
     //which = SYS_APPLEIIe;
-    //which = SYS_DMG;
+    which = SYS_DMG;
     //which = SYS_PS1;
     //which = SYS_SMS2;
     //which = SYS_GG;

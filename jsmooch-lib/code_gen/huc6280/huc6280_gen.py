@@ -143,6 +143,15 @@ class huc6280_switchgen:
         self.load16(dest, 'regs->PC', 'operand', last=last)
         self.inc_PC()
 
+    def pull(self, wha: str, last: bool = False) -> None:
+        self.addl('regs->S = (regs->S + 1) & 0xFF;')
+        self.addl('pins->Addr = regs->MPR[1] | 0x100 | regs->S;')
+        if not last:
+            self.cleanup()
+        else:
+            self.addcycle('pull')
+        self.addl(wha + ' = pins->D;')
+
     def push(self, wha: str, last: bool = False) -> None:
         self.addl('pins->Addr = regs->MPR[1] | 0x100 | regs->S;')
         self.addl('pins->D = ' + wha + ';')
@@ -229,11 +238,13 @@ def StoreImplied(ag: huc6280_switchgen, data: str) -> str:
 
     return ag.finished()
 
+
 def Clear(ag: huc6280_switchgen, dt):
     ag.addcycle('yo')
     ag.addl(dt + ' = 0;')
 
     return ag.finished()
+
 
 def ResetMemoryBit(ag: huc6280_switchgen, bitnum):
     ag.operand('regs->TA')
@@ -245,6 +256,27 @@ def ResetMemoryBit(ag: huc6280_switchgen, bitnum):
     ag.store8('regs->TA', 'regs->TR[0]', last=True)
     return ag.finished()
 
+def JumpIndirect(ag: huc6280_switchgen, inx: Optional[str]) -> str:
+    ag.addcycle('grawf!')
+    ag.operand('regs->TA')
+    ag.operand('regs->TR[0]')
+    ag.addl('regs->TA |= regs->TR[0] << 8;')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    if inx is not None:
+        ag.addl('regs->TA = (regs->TA + ' + inx + ') & 0xFFFF;')
+    ag.load16('regs->PC', 'regs->TA')
+    ag.addl('regs->TA = (regs->TA + 1) & 0xFFFF;')
+    ag.load16('regs->TR[0]', 'regs->TA')
+    ag.addl('regs->PC |= regs->TR[0] << 8;')
+
+def Pull(ag: huc6280_switchgen, dt: str):
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.pull(dt, True)
+    ag.setz(dt)
+    ag.setn(dt)
+    return ag.finished()
 
 def Push(ag: huc6280_switchgen, dt: str):
     ag.addcycle('idle')
@@ -256,6 +288,7 @@ def Immediate(ag: huc6280_switchgen, ins_func, dt):
     ag.operand("regs->TA", True)
     ins_func(ag, dt, 'regs->TA')
     return ag.finished()
+
 
 def AbsoluteModify(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None):
     ag.addcycle('YES!')
@@ -272,11 +305,27 @@ def AbsoluteModify(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None):
 
     return ag.finished()
 
+
 def Implied(ag: huc6280_switchgen, ins_func, dt):
     ag.addcycle('only!')
     ins_func(ag, dt, dt)
 
     return ag.finished()
+
+
+def CallAbsolute(ag: huc6280_switchgen):
+    ag.addcycle('huh')
+    ag.operand('regs->TA')
+    ag.operand('regs->TR[0]')
+    ag.addl('regs->TA |= regs->TR[0] << 8;')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addl('regs->PC = (regs->PC - 1) & 0xFFFF;')
+    ag.push('regs->PC >> 8')
+    ag.push('regs->PC & 0xFF', last=True)
+    ag.addl('regs->PC = regs->TA;')
+    return ag.finished()
+
 
 def BranchIfBitReset(ag: huc6280_switchgen, bitnum: str):
     ag.addcycle('YO!')
@@ -294,7 +343,67 @@ def BranchIfBitReset(ag: huc6280_switchgen, bitnum: str):
     ag.addl('if (regs->TR[0]) regs->PC = regs->TA;')
     return ag.finished()
 
-def Branch(ag: huc6280_switchgen, expr):
+def al_TII(ag: huc6280_switchgen) -> None:
+    ag.addl('regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;') # source
+    ag.addl('regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;') # target
+
+def al_TAI(ag: huc6280_switchgen) -> None:
+    ag.addl('regs->TR[0] += regs->TR[3] ? -1 : 1;')
+    ag.addl('regs->TR[0] &= 0xFFFF;')
+    ag.addl('regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;')
+
+def al_TDD(ag: huc6280_switchgen) -> None:
+    ag.addl('regs->TR[0] = (regs->TR[0] - 1) & 0xFFFF;')
+    ag.addl('regs->TR[1] = (regs->TR[1] - 1) & 0xFFFF;')
+
+def al_TIA(ag: huc6280_switchgen) -> None:
+    ag.addl('regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;')
+    ag.addl('regs->TR[1] += regs->TR[3] ? -1 : 1;')
+    ag.addl('regs->TR[1] &= 0xFFFF;')
+
+def al_TIN(ag: huc6280_switchgen) -> None:
+    ag.addl('regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;')
+
+def BlockMove(ag: huc6280_switchgen, ifunc) -> str:
+    ag.addcycle('start')
+    ag.operand('regs->TR[0]') # 0=source
+    ag.operand('regs->TR[5]')
+    ag.addl('regs->TR[0] |= regs->TR[5] << 8;')
+    ag.operand('regs->TR[1]') # 1=target
+    ag.operand('regs->TR[5]')
+    ag.addl('regs->TR[1] |= regs->TR[5] << 8;')
+    ag.operand('regs->TR[2]') # 2=length
+    ag.operand('regs->TR[5]')
+    ag.addl('regs->TR[2] |= regs->TR[5] << 8;')
+    ag.push('regs->Y')
+    ag.push('regs->A')
+    ag.push('regs->X')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addl('pins->BM = 1;')
+    ag.addl('regs->TR[3] = 0;') # 3=alternate
+
+    # Now we start the loop ...
+    ag.load16('regs->TR[4]', 'regs->TR[0]')
+    ag.store16('regs->TR[1]', 'regs->TR[4]')
+    ifunc(ag)
+    ag.addl('regs->TR[3] ^= 1;')
+    ag.addcycle('idle in loop')
+    ag.addcycle('idle in loop')
+    ag.addcycle('idle in loop')
+    ag.addcycle('idle in loop')
+    ag.addl('regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;')
+    ag.addl('if (regs->TR[2]) regs->TCU -= 6; // TESTME!')
+    ag.pull('regs->X')
+    ag.addl('pins->BM = 0;')
+    ag.pull('regs->A')
+    ag.pull('regs->Y', last=True)
+
+    return ag.finished()
+
+def Branch(ag: huc6280_switchgen, expr) -> str:
     ag.addcycle('C1')
     ag.addl('regs->TR[0] = ' + expr + ';');
     ag.operand('regs->TA')
@@ -303,6 +412,7 @@ def Branch(ag: huc6280_switchgen, expr):
     ag.cleanup()
     ag.addl('if (regs->TR[0]) regs->PC = (regs->PC + regs->TA) & 0xFFFF;')
     return ag.finished()
+
 
 def IndirectYRead(ag: huc6280_switchgen, ins_func, dt):
     ag.addcycle('BOO')
@@ -318,6 +428,7 @@ def IndirectYRead(ag: huc6280_switchgen, ins_func, dt):
     ins_func(ag, dt, 'regs->TR[0]')
     return ag.finished()
 
+
 def AbsoluteRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None):
     ag.addcycle('YOULL NEVER FIND ME')
     ag.operand('regs->TA')
@@ -326,15 +437,17 @@ def AbsoluteRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None)
     ag.addcycle('idle')
     if inx is not None:
         ag.addl('regs->TA = (regs->TA + ' + inx + ') & 0xFFFF;')
-    ag.load16('regs->TR[0]', 'regs->TA', last=True);
+    ag.load16('regs->TR[0]', 'regs->TA', last=True)
     ins_func(ag, dt, 'regs->TR[0]')
 
     return ag.finished()
+
 
 def NOP(ag: huc6280_switchgen):
     ag.addcycle('yo')
 
     return ag.finished()
+
 
 def ZeroPageRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None) -> str:
     ag.operand('regs->TA')
@@ -343,6 +456,13 @@ def ZeroPageRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None)
         ag.addl('regs->TA = (regs->TA + (' + inx + ')) & 0xFF;')
     ag.load8('regs->TR[0]', 'regs->TA')
     ins_func(ag, dt, 'regs->TR[0]')
+    return ag.finished()
+
+def PullP(ag: huc6280_switchgen) -> str:
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.pull('regs->P.v', last=True)
+    ag.addl('regs->P.v |= 0x10;')
     return ag.finished()
 
 def ZeroPageModify(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None) -> str:
@@ -442,6 +562,114 @@ def ImmediateMemory(ag: huc6280_switchgen, ins_func) -> str:
 
     return ag.finished()
 
+def Set(ag: huc6280_switchgen, dt) -> str:
+    ag.addcycle('ha')
+    ag.cleanup()
+    ag.addl(dt + ' = 1;')
+    return ag.finished()
+
+def BranchSubroutine(ag: huc6280_switchgen) -> str:
+    ag.addcycle('start')
+    ag.operand('regs->TA')
+    ag.addl('regs->TA = (u32)(i8)regs->TA;')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addl('regs->TR[0] = (regs->PC - 1) & 0xFFFF;')
+    ag.push('regs->TR[0] >> 8')
+    ag.addl('regs->PC += regs->TA;')
+    ag.push('regs->TR[0] & 0xFF', last=True)
+
+    return ag.finished()
+
+def ChangeSpeedLow(ag: huc6280_switchgen) -> str:
+    ag.addcycle('start')
+    ag.addl('regs->clock_div = 12;')
+    ag.addcycle('idle')
+
+    return ag.finished()
+
+def ChangeSpeedHigh(ag: huc6280_switchgen) -> str:
+    ag.addcycle('start')
+    ag.addl('regs->clock_div = 3;')
+    ag.addcycle('idle')
+
+    return ag.finished()
+
+def ReturnFromSubroutine(ag: huc6280_switchgen) -> str:
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.pull('regs->PC')
+    ag.pull('regs->TA')
+    ag.addl('regs->PC |= regs->TA << 8;')
+    ag.addcycle('idle')
+    ag.addl('regs->PC = (regs->PC + 1) & 0xFFFF;')
+    return ag.finished()
+
+def ZeroPageWrite(ag: huc6280_switchgen, dt: str, inx: Optional[str]) -> str:
+    ag.addcycle('start')
+    ag.operand('regs->TA')
+    if inx is not None:
+        ag.addl('regs->TA = (regs->TA + ' + inx + ') & 0xFF;')
+    ag.addcycle('idle')
+    ag.store8('regs->TA', dt, last=True)
+
+    return ag.finished()
+
+def TransferAccumulatorToMPR(ag: huc6280_switchgen) -> str:
+    ag.addcycle('start')
+    ag.operand('regs->TA')
+
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addl('for (u32 i = 0; i < 8; i++) {')
+    ag.addl('    u32 shifted = 1 << i;')
+    ag.addl('    if (regs->TA & shifted) {')
+    ag.addl('        regs->MPR[i] = regs->A;')
+    ag.addl('        regs->MPL = regs->A;')
+    ag.addl('    }')
+    ag.addl('}')
+    ag.addcycle('idle')
+
+    return ag.finished()
+
+def TransferMPRToAccumulator(ag: huc6280_switchgen) -> str:
+    ag.addcycle('start')
+    ag.operand('regs->TR[0]')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.cleanup()
+    ag.addl('if (regs->TR[0]) regs->MPL = 0xFF;')
+    ag.addl('for (u32 i = 0; i < 8; i++) { // inspired by Ares handling')
+    ag.addl('    u32 shift = 1 << i;')
+    ag.addl('    if (regs->TR[0] & i) regs->MPL &= (regs->MPR[i] >> 13);')
+    ag.addl('}')
+    ag.addl('regs->A = regs->MPL;')
+    return ag.finished()
+
+def ReturnFromInterrupt(ag: huc6280_switchgen) -> str:
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.pull('regs->P.u')
+    ag.pull('regs->PC')
+    ag.pull('regs->TA', last=True)
+    ag.addl('regs->PC |= regs->TA << 8;')
+    return ag.finished()
+
+
+def JumpAbsolute(ag: huc6280_switchgen) -> str:
+    ag.addcycle('start')
+    ag.operand('regs->TA')
+    ag.operand('regs->TR[0]')
+    ag.addl('regs->TA |= regs->TR[0] << 8;')
+    ag.addcycle('idle')
+    ag.cleanup()
+    ag.addl('regs->PC = regs->TA;')
+
+    return ag.finished()
 
 def ZeroPageReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None) -> str:
     ag.addcycle('start!')
@@ -459,18 +687,65 @@ def ZeroPageReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
 
     return ag.finished()
 
-def al_TRB(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+
+
+def al_TRB(ag: huc6280_switchgen, dest: Optional[str], source: str):
     ag.addl('regs->P.Z = (regs->A & (' + source + ')) == 0;')
     ag.addl('regs->P.V = ((' + source + ') >> 6) & 1;')
     ag.addl('regs->P.N = ((' + source + ') >> 7) & 1;')
     if dest is not None:
         ag.addl(dest + ' = ~regs->A & (' + source + ');')
 
+
+def al_DEC(ag: huc6280_switchgen, dest: str, source: str):
+    ag.addl(dest + ' = ((' + dest + ') - 1) & 0xFF;')
+    ag.setz(dest)
+    ag.setn(dest)
+
+def al_INC(ag: huc6280_switchgen, dest: str, source: str):
+    ag.addl(dest + ' = ((' + dest + ') + 1) & 0xFF;')
+    ag.setz(dest)
+    ag.setn(dest)
+
+
+def al_BIT(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('regs->P.V = ((' + source + ') >> 6) & 1;')
+    ag.addl('regs->P.N = ((' + source + ') >> 7) & 1;')
+    if dest is not None:
+        ag.addl(dest + ' = (regs->A & (' + source + ')) == 0;')
+
+
 def al_ORA(ag: huc6280_switchgen, dest: str, source: str) -> None:
     ag.addl(dest + ' = regs->A | (' + source + ');')
     ag.setz(dest)
     ag.setn(dest)
 
+def al_LSR(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('regs->P.C = (' + source + ') & 1;')
+    if dest is None:
+        ag.addl('u32 o;')
+        dest = 'o'
+    ag.addl(dest + ' = (' + source + ') >> 1;')
+    ag.setz(dest)
+    ag.setn(dest)
+
+def al_ROR(ag: huc6280_switchgen, dest: Optional[str], source: str):
+    ag.addl('u32 c = regs->P.C << 7;')
+    ag.addl('regs->P.C = ((' + source + ') >> 7) & 1;')
+    ag.addl('c = ((' + source + ') << 7) | c;')
+    ag.addl('regs->P.Z = c == 0;')
+    ag.addl('regs->P.Z = (c >> 7) & 1;')
+    if dest is not None:
+        ag.addl(dest + ' = c;')
+
+def al_ROL(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('u32 c = regs->P.C;')
+    ag.addl('regs->P.C = ((' + source + ') >> 7) & 1;')
+    ag.addl(source + ' = ((' + source + ' << 1) & 0xFF) | c;')
+    ag.addl('regs->P.Z = ' + source + ' == 0;')
+    ag.addl('regs->P.N = ((' + source + ') >> 7) & 1;')
+    if dest is not None:
+        ag.addl(dest + ' = (' + source + ');')
 
 def al_AND(ag: huc6280_switchgen, dest: str, source: str) -> None:
     ag.addl(dest + ' = regs->A & (' + source + ');')
@@ -625,465 +900,465 @@ def write_instruction(outfile, opcode, tbit):
             r = Clear(ag, 'regs->P.C')
         elif opcode == 0x19:
             r = AbsoluteRead(ag, al_ORA, 'regs->A', 'regs->Y')
-        '''elif opcode == 0x1A:
-            r =
+        elif opcode == 0x1A:
+            r = Implied(ag, al_INC, 'regs->A')
         elif opcode == 0x1B:
-            r =
+            r = NOP(ag)
         elif opcode == 0x1C:
-            r =
+            r = AbsoluteModify(ag, al_TRB)
         elif opcode == 0x1D:
-            r =
+            r = AbsoluteRead(ag, al_ORA, 'regs->A', 'regs->X')
         elif opcode == 0x1E:
-            r =
+            r = AbsoluteModify(ag, al_ASL, 'regs->X')
         elif opcode == 0x1F:
-            r =
+            r = BranchIfBitReset(ag, '1')
         elif opcode == 0x20:
+            r = CallAbsolute(ag)
+        elif opcode == 0x21:
+            r = IndirectRead(ag, al_AND, 'regs->A', 'regs->X')
+        elif opcode == 0x22:
+            r = Swap(ag, 'regs->A', 'regs->X')
+        elif opcode == 0x23:
+            r = StoreImplied(ag, '0x1FE004')
+        elif opcode == 0x24:
+            r = ZeroPageRead(ag, al_BIT, 'regs->A')
+        elif opcode == 0x25:
+            r = ZeroPageRead(ag, al_AND, 'regs->A')
+        elif opcode == 0x26:
+            r = ZeroPageModify(ag, al_ROL)
+        elif opcode == 0x27:
+            r = ResetMemoryBit(ag, '2')
+        elif opcode == 0x28:
+            r = PullP(ag)
+        elif opcode == 0x29:
+            r = Immediate(ag, al_AND, 'regs->A')
+        elif opcode == 0x2A:
+            r = Implied(ag, al_ROL, 'regs->A')
+        elif opcode == 0x2B:
+            r = NOP(ag)
+        elif opcode == 0x2C:
+            r = AbsoluteRead(ag, al_BIT, 'regs->A')
+        elif opcode == 0x2D:
+            r = AbsoluteRead(ag, al_AND, 'regs->A')
+        elif opcode == 0x2E:
+            r = AbsoluteModify(ag, al_ROL)
+        elif opcode == 0x2F:
+            r = BranchIfBitReset(ag, '2')
+        elif opcode == 0x30:
+            r = Branch(ag, 'regs->P.N')
+        elif opcode == 0x31:
+            r = IndirectYRead(ag, al_AND, 'regs->A')
+        elif opcode == 0x32:
+            r = IndirectRead(ag, al_AND, 'regs->A')
+        elif opcode == 0x33:
+            r = NOP(ag)
+        elif opcode == 0x34:
+            r = ZeroPageRead(ag, al_BIT, 'regs->A', 'regs->X')
+        elif opcode == 0x35:
+            r = ZeroPageRead(ag, al_AND, 'regs->A', 'regs->X')
+        elif opcode == 0x36:
+            r = ZeroPageModify(ag, al_ROL, 'regs->X')
+        elif opcode == 0x37:
+            r = ResetMemoryBit(ag, '3')
+        elif opcode == 0x38:
+            r = Set(ag, 'regs->P.C')
+        elif opcode == 0x39:
+            r = AbsoluteRead(ag, al_AND, 'regs->A', 'regs->Y')
+        elif opcode == 0x3A:
+            r = Implied(ag, al_DEC, 'regs->A')
+        elif opcode == 0x3B:
+            r = NOP(ag)
+        elif opcode == 0x3C:
+            r = AbsoluteRead(ag, al_BIT, 'regs->A', 'regs->X')
+        elif opcode == 0x3D:
+            r = AbsoluteRead(ag, al_AND, 'regs->A', 'regs->X')
+        elif opcode == 0x3E:
+            r = AbsoluteModify(ag, al_ROL, 'regs->X')
+        elif opcode == 0x3F:
+            r = BranchIfBitReset(ag, '3')
+        elif opcode == 0x40:
+            r = ReturnFromInterrupt(ag)
+        elif opcode == 0x41:
+            r = IndirectRead(ag, al_EOR, 'regs->A', 'regs->X')
+        elif opcode == 0x42:
+            r = Swap(ag, 'regs->A', 'regs->Y')
+        elif opcode == 0x43:
+            r = TransferMPRToAccumulator(ag)
+        elif opcode == 0x44:
+            r = BranchSubroutine(ag)
+        elif opcode == 0x45:
+            r = ZeroPageRead(ag, al_EOR, 'regs->A')
+        elif opcode == 0x46:
+            r = ZeroPageModify(ag, al_LSR)
+        elif opcode == 0x47:
+            r = ResetMemoryBit(ag, '4')
+        elif opcode == 0x48:
+            r = Push(ag, 'regs->A')
+        elif opcode == 0x49:
+            r = Immediate(ag, al_EOR, 'regs->A')
+        elif opcode == 0x4A:
+            r = Implied(ag, al_LSR, 'regs->A')
+        elif opcode == 0x4B:
+            r = NOP(ag)
+        elif opcode == 0x4C:
+            r = JumpAbsolute(ag)
+        elif opcode == 0x4D:
+            r = AbsoluteRead(ag, al_EOR, 'regs->A')
+        elif opcode == 0x4E:
+            r = AbsoluteModify(ag, al_LSR)
+        elif opcode == 0x4F:
+            r = BranchIfBitReset(ag, '4')
+        elif opcode == 0x50:
+            r = Branch(ag, '!this->regs.P.V')
+        elif opcode == 0x51:
+            r = IndirectYRead(ag, al_EOR, 'regs->A')
+        elif opcode == 0x52:
+            r = IndirectRead(ag, al_EOR, 'regs->A')
+        elif opcode == 0x53:
+            r = TransferAccumulatorToMPR(ag)
+        elif opcode == 0x54:
+            r = ChangeSpeedLow(ag)
+        elif opcode == 0x55:
+            r = ZeroPageRead(ag, al_EOR, 'regs->A', 'regs->X')
+        elif opcode == 0x56:
+            r = ZeroPageModify(ag, al_EOR, 'regs->A', 'regs->X')
+        elif opcode == 0x57:
+            r = ResetMemoryBit(ag, '5')
+        elif opcode == 0x58:
+            r = Clear(ag, 'regs->P.I')
+        elif opcode == 0x59:
+            r = AbsoluteRead(ag, al_EOR, 'regs->A', 'regs->Y')
+        elif opcode == 0x5A:
+            r = Push(ag, 'regs->Y')
+        elif opcode == 0x5B:
+            r = NOP(ag)
+        elif opcode == 0x5C:
+            r = NOP(ag)
+        elif opcode == 0x5D:
+            r = AbsoluteRead(ag, al_EOR, 'regs->A', 'regs->X')
+        elif opcode == 0x5E:
+            r = AbsoluteModify(ag, al_LSR, 'regs->X')
+        elif opcode == 0x5F:
+            r = BranchIfBitReset(ag, '5')
+        elif opcode == 0x60:
+            r = ReturnFromSubroutine(ag)
+        elif opcode == 0x61:
+            r = IndirectRead(ag, al_ADC, 'regs->A', 'regs->X')
+        elif opcode == 0x62:
+            r = Clear(ag, 'regs->A')
+        elif opcode == 0x63:
+            r = NOP(ag)
+        elif opcode == 0x64:
+            r = ZeroPageWrite(ag, '0')
+        elif opcode == 0x65:
+            r = ZeroPageRead(ag, al_ADC, 'regs->A')
+        elif opcode == 0x66:
+            r = ZeroPageModify(ag, al_ROR)
+        elif opcode == 0x67:
+            r = ResetMemoryBit(ag, '6')
+        elif opcode == 0x68:
+            r = Pull(ag, 'regs->A')
+        elif opcode == 0x69:
+            r = Immediate(ag, al_ADC, 'regs->A')
+        elif opcode == 0x6A:
+            r = Implied(ag, al_ROR, 'regs->A')
+        elif opcode == 0x6B:
+            r = NOP(ag)
+        elif opcode == 0x6C:
+            r = JumpIndirect(ag)
+        elif opcode == 0x6D:
+            r = AbsoluteRead(ag, al_ADC, 'regs->A')
+        elif opcode == 0x6E:
+            r = AbsoluteModify(ag, al_ROR)
+        elif opcode == 0x6F:
+            r = BranchIfBitReset(ag, '6')
+        elif opcode == 0x70:
+            r = Branch(ag, 'regs->P.V')
+        elif opcode == 0x71:
+            r = IndirectYRead(ag, al_ADC, 'regs->A')
+        elif opcode == 0x72:
+            r = IndirectRead(ag, al_ADC, 'regs->A')
+        elif opcode == 0x73:
+            r = BlockMove(ag, al_TII)
+        elif opcode == 0x74:
+            r = ZeroPageWrite(ag, '0', 'regs->X')
+        elif opcode == 0x75:
+            r = ZeroPageRead(ag, al_ADC, 'regs->A', 'regs->X')
+        elif opcode == 0x76:
+            r = ZeroPageModify(ag, al_ROR, 'regs->X')
+        elif opcode == 0x77:
+            r = ResetMemoryBit(ag, '7')
+        elif opcode == 0x78:
+            r = Set(ag, 'regs->P.I')
+        elif opcode == 0x79:
+            r = AbsoluteRead(ag, al_ADC, 'regs->A', 'regs->Y')
+        elif opcode == 0x7A:
+            r = Pull(ag, 'regs->Y')
+        elif opcode == 0x7B:
+            r = NOP(ag)
+        elif opcode == 0x7C:
+            r = JumpIndirect(ag, 'regs->X')
+        elif opcode == 0x7D:
+            r = AbsoluteRead(ag, al_ADC, 'regs->A', 'regs->X')
+        elif opcode == 0x7E:
+            r = AbsoluteModify(ag, al_ROR, 'regs->X')
+        elif opcode == 0x7F:
+            r = BranchIfBitReset(ag, '7')
+        elif opcode == 0x80:
+            r = Branch(ag, '1')
+        elif opcode == 0x81:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0x82:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0x83:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0x84:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0x85:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0x86:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0x87:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0x88:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0x89:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0x8A:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0x8B:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0x8C:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0x8D:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0x8E:
             r =
-        elif opcode == 0xE:
+        elif opcode == 0x8F:
             r =
-        elif opcode == 0xF:
+        elif opcode == 0x90:
             r =
-        elif opcode == 0x0:
+        elif opcode == 0x91:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0x92:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0x93:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0x94:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0x95:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0x96:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0x97:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0x98:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0x99:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0x9A:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0x9B:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0x9C:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0x9D:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0x9E:
             r =
-        elif opcode == 0xE:
+        elif opcode == 0x9F:
             r =
-        elif opcode == 0xF:
+        elif opcode == 0xA0:
             r =
-        elif opcode == 0x0:
+        elif opcode == 0xA1:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0xA2:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0xA3:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0xA4:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0xA5:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0xA6:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0xA7:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0xA8:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0xA9:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0xAA:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0xAB:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0xAC:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0xAD:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0xAE:
             r =
-        elif opcode == 0xE:
+        elif opcode == 0xAF:
             r =
-        elif opcode == 0xF:
+        elif opcode == 0xB0:
             r =
-        elif opcode == 0x0:
+        elif opcode == 0xB1:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0xB2:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0xB3:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0xB4:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0xB5:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0xB6:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0xB7:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0xB8:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0xB9:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0xBA:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0xBB:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0xBC:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0xBD:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0xBE:
             r =
-        elif opcode == 0xE:
+        elif opcode == 0xBF:
             r =
-        elif opcode == 0xF:
+        elif opcode == 0xC0:
             r =
-        elif opcode == 0x0:
+        elif opcode == 0xC1:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0xC2:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0xC3:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0xC4:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0xC5:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0xC6:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0xC7:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0xC8:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0xC9:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0xCA:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0xCB:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0xCC:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0xCD:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0xCE:
             r =
-        elif opcode == 0xE:
+        elif opcode == 0xCF:
             r =
-        elif opcode == 0xF:
+        elif opcode == 0xD0:
             r =
-        elif opcode == 0x0:
+        elif opcode == 0xD1:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0xD2:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0xD3:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0xD4:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0xD5:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0xD6:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0xD7:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0xD8:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0xD9:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0xDA:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0xDB:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0xDC:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0xDD:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0xDE:
             r =
-        elif opcode == 0xE:
+        elif opcode == 0xDF:
             r =
-        elif opcode == 0xF:
+        elif opcode == 0xE0:
             r =
-        elif opcode == 0x0:
+        elif opcode == 0xE1:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0xE2:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0xE3:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0xE4:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0xE5:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0xE6:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0xE7:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0xE8:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0xE9:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0xEA:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0xEB:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0xEC:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0xED:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0xEE:
             r =
-        elif opcode == 0xE:
+        elif opcode == 0xEF:
             r =
-        elif opcode == 0xF:
+        elif opcode == 0xF0:
             r =
-        elif opcode == 0x0:
+        elif opcode == 0xF1:
             r =
-        elif opcode == 0x1:
+        elif opcode == 0xF2:
             r =
-        elif opcode == 0x2:
+        elif opcode == 0xF3:
             r =
-        elif opcode == 0x3:
+        elif opcode == 0xF4:
             r =
-        elif opcode == 0x4:
+        elif opcode == 0xF5:
             r =
-        elif opcode == 0x5:
+        elif opcode == 0xF6:
             r =
-        elif opcode == 0x6:
+        elif opcode == 0xF7:
             r =
-        elif opcode == 0x7:
+        elif opcode == 0xF8:
             r =
-        elif opcode == 0x8:
+        elif opcode == 0xF9:
             r =
-        elif opcode == 0x9:
+        elif opcode == 0xFA:
             r =
-        elif opcode == 0xA:
+        elif opcode == 0xFB:
             r =
-        elif opcode == 0xB:
+        elif opcode == 0xFC:
             r =
-        elif opcode == 0xC:
+        elif opcode == 0xFD:
             r =
-        elif opcode == 0xD:
+        elif opcode == 0xFE:
             r =
-        elif opcode == 0xE:
-            r =
-        elif opcode == 0xF:
-            r =
-        elif opcode == 0x0:
-            r =
-        elif opcode == 0x1:
-            r =
-        elif opcode == 0x2:
-            r =
-        elif opcode == 0x3:
-            r =
-        elif opcode == 0x4:
-            r =
-        elif opcode == 0x5:
-            r =
-        elif opcode == 0x6:
-            r =
-        elif opcode == 0x7:
-            r =
-        elif opcode == 0x8:
-            r =
-        elif opcode == 0x9:
-            r =
-        elif opcode == 0xA:
-            r =
-        elif opcode == 0xB:
-            r =
-        elif opcode == 0xC:
-            r =
-        elif opcode == 0xD:
-            r =
-        elif opcode == 0xE:
-            r =
-        elif opcode == 0xF:
-            r =
-        elif opcode == 0x0:
-            r =
-        elif opcode == 0x1:
-            r =
-        elif opcode == 0x2:
-            r =
-        elif opcode == 0x3:
-            r =
-        elif opcode == 0x4:
-            r =
-        elif opcode == 0x5:
-            r =
-        elif opcode == 0x6:
-            r =
-        elif opcode == 0x7:
-            r =
-        elif opcode == 0x8:
-            r =
-        elif opcode == 0x9:
-            r =
-        elif opcode == 0xA:
-            r =
-        elif opcode == 0xB:
-            r =
-        elif opcode == 0xC:
-            r =
-        elif opcode == 0xD:
-            r =
-        elif opcode == 0xE:
-            r =
-        elif opcode == 0xF:
-            r =
-        elif opcode == 0x0:
-            r =
-        elif opcode == 0x1:
-            r =
-        elif opcode == 0x2:
-            r =
-        elif opcode == 0x3:
-            r =
-        elif opcode == 0x4:
-            r =
-        elif opcode == 0x5:
-            r =
-        elif opcode == 0x6:
-            r =
-        elif opcode == 0x7:
-            r =
-        elif opcode == 0x8:
-            r =
-        elif opcode == 0x9:
-            r =
-        elif opcode == 0xA:
-            r =
-        elif opcode == 0xB:
-            r =
-        elif opcode == 0xC:
-            r =
-        elif opcode == 0xD:
-            r =
-        elif opcode == 0xE:
-            r =
-        elif opcode == 0xF:
-            r =
-        elif opcode == 0x0:
-            r =
-        elif opcode == 0x1:
-            r =
-        elif opcode == 0x2:
-            r =
-        elif opcode == 0x3:
-            r =
-        elif opcode == 0x4:
-            r =
-        elif opcode == 0x5:
-            r =
-        elif opcode == 0x6:
-            r =
-        elif opcode == 0x7:
-            r =
-        elif opcode == 0x8:
-            r =
-        elif opcode == 0x9:
-            r =
-        elif opcode == 0xA:
-            r =
-        elif opcode == 0xB:
-            r =
-        elif opcode == 0xC:
-            r =
-        elif opcode == 0xD:
-            r =
-        elif opcode == 0xE:
-            r =
-        elif opcode == 0xF:
-            r =
-        elif opcode == 0x0:
-            r =
-        elif opcode == 0x1:
-            r =
-        elif opcode == 0x2:
-            r =
-        elif opcode == 0x3:
-            r =
-        elif opcode == 0x4:
-            r =
-        elif opcode == 0x5:
-            r =
-        elif opcode == 0x6:
-            r =
-        elif opcode == 0x7:
-            r =
-        elif opcode == 0x8:
-            r =
-        elif opcode == 0x9:
-            r =
-        elif opcode == 0xA:
-            r =
-        elif opcode == 0xB:
-            r =
-        elif opcode == 0xC:
-            r =
-        elif opcode == 0xD:
-            r =
-        elif opcode == 0xE:
-            r =
-        elif opcode == 0xF:
-            r =
-        elif opcode == 0x0:
-            r =
-        elif opcode == 0x1:
-            r =
-        elif opcode == 0x2:
-            r =
-        elif opcode == 0x3:
-            r =
-        elif opcode == 0x4:
-            r =
-        elif opcode == 0x5:
-            r =
-        elif opcode == 0x6:
-            r =
-        elif opcode == 0x7:
-            r =
-        elif opcode == 0x8:
-            r =
-        elif opcode == 0x9:
-            r =
-        elif opcode == 0xA:
-            r =
-        elif opcode == 0xB:
-            r =
-        elif opcode == 0xC:
-            r =
-        elif opcode == 0xD:
-            r =
-        elif opcode == 0xE:
-            r =
-        elif opcode == 0xF:
+        elif opcode == 0xFF:
             r ='''
 
     if len(r) > 0:
