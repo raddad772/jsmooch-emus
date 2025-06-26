@@ -125,8 +125,8 @@ void TG16_new(JSM, enum jsm_systems kind)
     this->scheduler.run.func = &block_step;
     this->scheduler.run.ptr = this;
 
-    HUC6280_init(&this->cpu);
     TG16_clock_init(&this->clock);
+    HUC6280_init(&this->cpu, &this->scheduler, this->clock.timing.second.cycles);
     //TG16_cart_init(&this->cart);
     HUC6270_init(&this->vdc);
     HUC6260_init(&this->vce);
@@ -266,6 +266,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 static void schedule_first(struct TG16 *this)
 {
     printf("\nDO SCHEDULE_FIRST");
+    HUC6280_schedule_first(&this->cpu, 0);
     /*scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);

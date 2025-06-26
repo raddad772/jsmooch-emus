@@ -7,6 +7,9 @@
 
 #include "helpers/int.h"
 #include "helpers/debug.h"
+#include "helpers/scheduler.h"
+
+#include "huc6280_opcodes.h"
 
 union HUC6280_P {
     struct {
@@ -23,6 +26,16 @@ union HUC6280_P {
     u8 u;
 };
 
+union HUC6280_IRQ_reg {
+    struct {
+        u8 IRQ2 : 1;
+        u8 IRQ1 : 1;
+        u8 TIQ : 1;
+    };
+
+    u8 u;
+};
+
 struct HUC6280_regs {
     union HUC6280_P P;
     u32 A, X, Y;
@@ -34,19 +47,46 @@ struct HUC6280_regs {
     u32 TR[8], TA;
     u32 TCU;
 
-    u32 NMI_old, NMI_level_detected, do_NMI;
     u32 do_IRQ;
+
+    u32 IR;
+
+    u32 timer_startstop;
+
+    union HUC6280_IRQ_reg IRQR, IRQD;
+
 
     u32 clock_div;
 };
 
 struct HUC6280_pins {
-    u32 D, Addr, RW, M, NMI, IRQ, BM;
+    u32 D, Addr, RW, M, BM, IRQ1, IRQ2, TIQ; // M is MRQ. BM is BlockMove.
 };
 
 struct HUC6280 {
     struct HUC6280_regs regs;
     struct HUC6280_pins pins;
+    struct scheduler_t *scheduler;
+    HUC6280_ins_func current_instruction;
+    u32 PCO;
+
+    void *read_ptr, *write_ptr, *read_io_ptr, *write_io_ptr;
+    u32 (*read_func)(void *ptr, u32 addr, u32 old, u32 has_effect);
+    u32 (*read_io_func)(void *ptr);
+    void (*write_func)(void *ptr, u32 addr, u32 val);
+    void (*write_io_func)(void *ptr, u32 val);
+
+    struct {
+        u8 counter, reload;
+        u64 sch_id;
+        u32 still_sch;
+
+        u64 sch_interval;
+    } timer;
+
+    struct {
+        u8 buffer;
+    } io;
 
     struct {
         struct jsm_debug_read_trace strct;
@@ -59,17 +99,26 @@ struct HUC6280 {
             u32 id;
 
             u32 id_read, id_write;
+
         } dbglog;
         u32 ok;
+        u64 my_cycles;
 
     } trace;
 };
 
-void HUC6280_init(struct HUC6280 *);
+void HUC6280_init(struct HUC6280 *, struct scheduler_t *scheduler, u64 clocks_per_second);
 void HUC6280_delete(struct HUC6280 *);
 void HUC6280_reset(struct HUC6280 *);
 void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct);
 void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins);
-void HUC6280_poll_NMI_only(struct HUC6280_regs *regs, struct HUC6280_pins *pins);
+
+
+void HUC6280_schedule_first(struct HUC6280 *, u64 clock);
+
+void HUC6280_cycle(struct HUC6280 *); // Only really affects "CPU-ish" stuff
+
+// Internal cycle, handles catching IO or scheduling
+void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 
 #endif //JSMOOCH_EMUS_HUC6280_H
