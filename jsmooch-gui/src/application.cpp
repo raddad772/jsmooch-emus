@@ -1009,7 +1009,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_ATARI2600;
     //which = SYS_GBC;
     //which = SYS_APPLEIIe;
-    which = SYS_DMG;
+    //which = SYS_DMG;
     //which = SYS_PS1;
     //which = SYS_SMS2;
     //which = SYS_GG;
@@ -1017,7 +1017,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_ZX_SPECTRUM_128K;
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
-    //which = SYS_GBA;
+    which = SYS_GBA;
     //which = SYS_SNES;
     //which = SYS_GENESIS_USA;
     //which = SYS_MEGADRIVE_PAL;

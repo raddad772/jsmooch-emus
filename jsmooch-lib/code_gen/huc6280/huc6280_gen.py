@@ -104,6 +104,10 @@ class huc6280_switchgen:
         self.addr_to_PC()
         self.addl('regs->PC = (regs->PC + 1) & 0xFFFF;')
 
+    def addr_to_S_then_dec(self):
+        self.addl('pins->Addr = regs->S | 0x100;')
+        self.addl('regs->S = (regs->S - 1) & 0xFF;')
+
     def addr_to(self, what: str):
         self.addl('pins->Addr = (' + what + ');')
 
@@ -188,12 +192,21 @@ def hex2(yo):
     return f'{yo:02X}'
 
 
-def C_func_name(mn, mo, tbit):
-    return 'HUC6280_ins_' + hex2(mo) + '_' + mn + '_t' + str(tbit)
+def C_func_name(mo, tbit):
+    if mo < 0x100:
+        return 'HUC6280_ins_' + hex2(mo) + '_' + '_t' + str(tbit)
+    if mo == 0x100:
+        return 'HUC6280_ins_RESET_t' + str(tbit)
+    if mo == 0x101:
+        return 'HUC6280_ins_IRQ2_t' + str(tbit)
+    if mo == 0x102:
+        return 'HUC6280_ins_IRQ1_t' + str(tbit)
+    if mo == 0x103:
+        return 'HUC6280_ins_TIQ_t' + str(tbit)
 
 
-def C_func_sig(mn, mo, tbit):
-    return 'static void ' + C_func_name(mn, mo, tbit) + '(struct HUC6280_regs *regs, struct HUC6280_pins *pins)'
+def C_func_sig(mo, tbit):
+    return 'static void ' + C_func_name(mo, tbit) + '(struct HUC6280_regs *regs, struct HUC6280_pins *pins)'
 
 
 def IndirectYReadMemory(ag: huc6280_switchgen, ins_func) -> str:
@@ -378,6 +391,59 @@ def CallAbsolute(ag: huc6280_switchgen):
     return ag.finished()
 
 
+def S_RESET(ag: huc6280_switchgen) -> str:
+    ag.addcycle('3')
+    ag.RW(0, 0, force=True)
+    ag.addr_to_S_then_dec()
+
+    ag.addcycle('4')
+    ag.addr_to_S_then_dec()
+
+    ag.addcycle('5')
+    ag.addr_to_S_then_dec()
+
+    ag.addcycle('6')
+    ag.addr_to_S_then_dec()
+
+    ag.addcycle('7')
+    ag.addl('regs->MPR[7] = 0;')
+    ag.addl('regs->MPL = 0;')
+    ag.addl('regs->P.I = regs->P.B = 1;')
+    ag.addl('regs->P.D = regs->P.T = 0;')
+    ag.addl('regs->clock_div = 12;')
+    ag.addl('pins->Addr = 0x1FFE;')
+
+    ag.addcycle('8')
+    ag.addl('regs->PC = pins->D;')
+    ag.addl('pins->Addr++;')
+
+    ag.addcycle('9')
+    ag.cleanup()
+    ag.addl('regs->PC |= pins->D << 8;')
+
+    return ag.finished()
+
+
+def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
+    ag.addcycle('yo')
+    ag.push('regs->PC >> 8')
+    ag.push('regs->PC & 0xFF')
+    ag.push('regs->P.u & 0xEF')
+    ag.addl('regs->P.I = 1;')
+    ag.addl('regs->P.D = 0;')
+    ag.addl('regs->P.T = 0;')
+    ag.addl('regs->TA = ' + vector + ';')
+    ag.load16('regs->PC', 'regs->TA')
+    ag.addl('regs->TA++;')
+    ag.load16('regs->TR[0]', 'regs->TA', last=True)
+    ag.addl('regs->PC |= regs->TR[0] << 8;')
+
+    return ag.finished()
+
+
 def BranchIfBitSet(ag: huc6280_switchgen, bitnum: str) -> str:
     ag.addcycle('YO!')
     ag.operand('regs->TA')
@@ -537,7 +603,7 @@ def TestZeroPage(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
     if inx is not None:
         ag.addl('regs->TR[1] = (regs->TR[1] + 1) & 0xFF;')
     ag.load8('regs->TA', 'regs->TR[1]')
-    ag.addl('regs->P.Z = (regs->TR[0] & regs->TA] == 0;')
+    ag.addl('regs->P.Z = (regs->TR[0] & regs->TA) == 0;')
     ag.addl('regs->P.V = (regs->TA >> 6) & 1;')
     ag.addl('regs->P.N = (regs->TA >> 7) & 1;')
 
@@ -603,8 +669,8 @@ def ZeroPageRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None)
 def PullP(ag: huc6280_switchgen) -> str:
     ag.addcycle('idle')
     ag.addcycle('idle')
-    ag.pull('regs->P.v', last=True)
-    ag.addl('regs->P.v |= 0x10;')
+    ag.pull('regs->P.u', last=True)
+    ag.addl('regs->P.u |= 0x10;')
     return ag.finished()
 
 
@@ -841,6 +907,26 @@ def ZeroPageReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
     return ag.finished()
 
 
+def al_CMP(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('regs->P.Z = (regs->A & (' + source + ')) == 0;')
+    ag.addl('regs->P.V = ((' + source + ') >> 6) & 1;')
+    ag.addl('regs->P.N = ((' + source + ') >> 7) & 1;')
+
+
+def al_CPX(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('u32 o = regs->X - (' + source + ');')
+    ag.addl('regs->P.C = ((o >> 8) & 1) ^ 1;')
+    ag.addl('regs->P.Z = (o & 0xFF) == 0;')
+    ag.addl('regs->P.N = (o >> 7) & 1;')
+
+
+def al_CPY(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('u32 o = regs->Y - (' + source + ');')
+    ag.addl('regs->P.C = ((o >> 8) & 1) ^ 1;')
+    ag.addl('regs->P.Z = (o & 0xFF) == 0;')
+    ag.addl('regs->P.N = (o >> 7) & 1;')
+
+
 def al_TRB(ag: huc6280_switchgen, dest: Optional[str], source: str):
     ag.addl('regs->P.Z = (regs->A & (' + source + ')) == 0;')
     ag.addl('regs->P.V = ((' + source + ') >> 6) & 1;')
@@ -889,6 +975,7 @@ def al_LD(ag: huc6280_switchgen, dest: Optional[str], source: str):
     ag.addl('regs->P.N = (' + source + ' >> 7) & 1;')
     if dest is not None:
         ag.addl(dest + ' = ' + source + ';')
+
 
 def al_ROR(ag: huc6280_switchgen, dest: Optional[str], source: str):
     ag.addl('u32 c = regs->P.C << 7;')
@@ -940,6 +1027,27 @@ def al_ASL(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
         ag.addl(dest + ' = ' + source + ';')
 
 
+def al_SBC(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl('u8 r = ' + source + ' ^ 0xFF;')
+    ag.addl('i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;')
+    ag.addl('if (!regs->P.D) {')
+    ag.addl('    regs->P.C = (out >> 8) & 1;')
+    ag.addl('    regs->P.V = ((~(regs->A ^ (' + source + ')) & (regs->A & out)) >> 7) & 1;')
+    ag.addl('    regs->TCU++;')
+    ag.addl('}')
+    ag.addl('else {')
+    ag.addl('    u8 lo = (regs->A & 15) + ((' + source + ') & 15) + regs->P.C;')
+    ag.addl('    regs->P.C = out > 0xFF;')
+    ag.addl('    if (out <= 0xFF) out -= 0x60;')
+    ag.addl('    if (lo <= 0x0F) out -= 6;')
+    ag.addl('}')
+    ag.setz('out')
+    ag.setn('out')
+    if dest is not None:
+        ag.addl(dest + ' = out;')
+    ag.addcycle('idle')
+
+
 def al_ADC(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
     ag.addl('i16 out = (i16)regs->A + (i16)(' + source + ') + (i16)regs->P.C;')
     ag.addl('if (!regs->P.D) {')
@@ -958,6 +1066,29 @@ def al_ADC(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
     if dest is not None:
         ag.addl(dest + ' = out;')
     ag.addcycle('idle')
+
+
+def write_instruction_table(outfile):
+    num_on_line = 0
+    out = 'HUC6280_ins_func HUC6280_decoded_opcodes[2][0x104] = {\n    '
+    for tbit in range(0, 2):
+        for i in range(0, 0x100 + 4):
+            if num_on_line == 0:
+                out += '    '
+            else:
+                out += '  '
+
+            out += '&' + C_func_name(i, tbit)
+            if i == 0x103 and tbit == 1:
+                pass
+            else:
+                out += ','
+            num_on_line += 1
+            if num_on_line >= 8:
+                num_on_line = 0
+                out += '\n  '
+    out += '\n};\n'
+    outfile.write(out)
 
 
 def write_instruction(outfile, opcode, tbit):
@@ -1172,7 +1303,7 @@ def write_instruction(outfile, opcode, tbit):
         elif opcode == 0x4F:
             r = BranchIfBitReset(ag, '4')
         elif opcode == 0x50:
-            r = Branch(ag, '!this->regs.P.V')
+            r = Branch(ag, '!regs->P.V')
         elif opcode == 0x51:
             r = IndirectYRead(ag, al_EOR, 'regs->A')
         elif opcode == 0x52:
@@ -1395,137 +1526,145 @@ def write_instruction(outfile, opcode, tbit):
             r = AbsoluteRead(ag, al_LD, 'regs->X', 'regs->Y')
         elif opcode == 0xBF:
             r = BranchIfBitSet(ag, '3')
-        '''elif opcode == 0xC0:
-            r =
+        elif opcode == 0xC0:
+            r = Immediate(ag, al_CPY, 'regs->Y')
         elif opcode == 0xC1:
-            r =
+            r = IndirectRead(ag, al_CMP, 'regs->A', 'regs->X')
         elif opcode == 0xC2:
-            r =
+            r = Clear(ag, 'regs->Y')
         elif opcode == 0xC3:
-            r =
+            r = BlockMove(ag, al_TDD)
         elif opcode == 0xC4:
-            r =
+            r = ZeroPageRead(ag, al_CPY, 'regs->Y')
         elif opcode == 0xC5:
-            r =
+            r = ZeroPageRead(ag, al_CMP, 'regs->A')
         elif opcode == 0xC6:
-            r =
+            r = ZeroPageModify(ag, al_DEC)
         elif opcode == 0xC7:
-            r =
+            r = SetMemoryBit(ag, '4')
         elif opcode == 0xC8:
-            r =
+            r = Implied(ag, al_INC, 'regs->Y')
         elif opcode == 0xC9:
-            r =
+            r = Immediate(ag, al_CMP, 'regs->A')
         elif opcode == 0xCA:
-            r =
+            r = Implied(ag, al_DEC, 'regs->X')
         elif opcode == 0xCB:
-            r =
+            r = NOP(ag)
         elif opcode == 0xCC:
-            r =
+            r = AbsoluteRead(ag, al_CPY, 'regs->Y')
         elif opcode == 0xCD:
-            r =
+            r = AbsoluteRead(ag, al_CMP, 'regs->A')
         elif opcode == 0xCE:
-            r =
+            r = AbsoluteModify(ag, al_DEC)
         elif opcode == 0xCF:
-            r =
+            r = BranchIfBitSet(ag, '4')
         elif opcode == 0xD0:
-            r =
+            r = Branch(ag, '!regs->P.Z')
         elif opcode == 0xD1:
-            r =
+            r = IndirectYRead(ag, al_CMP, 'regs->A')
         elif opcode == 0xD2:
-            r =
+            r = IndirectRead(ag, al_CMP, 'regs->A')
         elif opcode == 0xD3:
-            r =
+            r = BlockMove(ag, al_TIN)
         elif opcode == 0xD4:
-            r =
+            r = ChangeSpeedHigh(ag)
         elif opcode == 0xD5:
-            r =
+            r = ZeroPageRead(ag, al_CMP, 'regs->A', 'regs->X')
         elif opcode == 0xD6:
-            r =
+            r = ZeroPageModify(ag, al_DEC, 'regs->X')
         elif opcode == 0xD7:
-            r =
+            r = SetMemoryBit(ag, '5')
         elif opcode == 0xD8:
-            r =
+            r = Clear(ag, 'regs->P.D')
         elif opcode == 0xD9:
-            r =
+            r = AbsoluteRead(ag, al_CMP, 'regs->A', 'regs->Y')
         elif opcode == 0xDA:
-            r =
+            r = Push(ag, 'regs->X')
         elif opcode == 0xDB:
-            r =
+            r = NOP(ag)
         elif opcode == 0xDC:
-            r =
+            r = NOP(ag)
         elif opcode == 0xDD:
-            r =
+            r = AbsoluteRead(ag, al_CMP, 'regs->A', 'regs->X')
         elif opcode == 0xDE:
-            r =
+            r = AbsoluteModify(ag, al_DEC, 'regs->X')
         elif opcode == 0xDF:
-            r =
+            r = BranchIfBitSet(ag, '5')
         elif opcode == 0xE0:
-            r =
+            r = Immediate(ag, al_CPX, 'regs->X')
         elif opcode == 0xE1:
-            r =
+            r = IndirectRead(ag, al_SBC, 'regs->A', 'regs->X')
         elif opcode == 0xE2:
-            r =
+            r = NOP(ag)
         elif opcode == 0xE3:
-            r =
+            r = BlockMove(ag, al_TIA)
         elif opcode == 0xE4:
-            r =
+            r = ZeroPageRead(ag, al_CPX, 'regs->X')
         elif opcode == 0xE5:
-            r =
+            r = ZeroPageRead(ag, al_SBC, 'regs->A')
         elif opcode == 0xE6:
-            r =
+            r = ZeroPageModify(ag, al_INC)
         elif opcode == 0xE7:
-            r =
+            r = SetMemoryBit(ag, '6')
         elif opcode == 0xE8:
-            r =
+            r = Implied(ag, al_INC, 'regs->X')
         elif opcode == 0xE9:
-            r =
+            r = Immediate(ag, al_SBC, 'regs->A')
         elif opcode == 0xEA:
-            r =
+            r = NOP(ag)
         elif opcode == 0xEB:
-            r =
+            r = NOP(ag)
         elif opcode == 0xEC:
-            r =
+            r = AbsoluteRead(ag, al_CPX, 'regs->X')
         elif opcode == 0xED:
-            r =
+            r = AbsoluteRead(ag, al_SBC, 'regs->A')
         elif opcode == 0xEE:
-            r =
+            r = AbsoluteModify(ag, al_INC)
         elif opcode == 0xEF:
-            r =
+            r = BranchIfBitSet(ag, '6')
         elif opcode == 0xF0:
-            r =
+            r = Branch(ag, 'regs->P.Z')
         elif opcode == 0xF1:
-            r =
+            r = IndirectYRead(ag, al_SBC, 'regs->A')
         elif opcode == 0xF2:
-            r =
+            r = IndirectRead(ag, al_SBC, 'regs->A')
         elif opcode == 0xF3:
-            r =
+            r = BlockMove(ag, al_TAI)
         elif opcode == 0xF4:
-            r =
+            r = Set(ag, 'regs->P.T')
         elif opcode == 0xF5:
-            r =
+            r = ZeroPageRead(ag, al_SBC, 'regs->A', 'regs->X')
         elif opcode == 0xF6:
-            r =
+            r = ZeroPageModify(ag, al_INC, 'regs->X')
         elif opcode == 0xF7:
-            r =
+            r = SetMemoryBit(ag, '7')
         elif opcode == 0xF8:
-            r =
+            r = Set(ag, 'regs->P.D')
         elif opcode == 0xF9:
-            r =
+            r = AbsoluteRead(ag, al_SBC, 'regs->A', 'regs->Y')
         elif opcode == 0xFA:
-            r =
+            r = Pull(ag, 'regs->X')
         elif opcode == 0xFB:
-            r =
+            r = NOP(ag)
         elif opcode == 0xFC:
-            r =
+            r = NOP(ag)
         elif opcode == 0xFD:
-            r =
+            r = AbsoluteRead(ag, al_SBC, 'regs->A', 'regs->X')
         elif opcode == 0xFE:
-            r =
+            r = AbsoluteModify(ag, al_INC, 'regs->X')
         elif opcode == 0xFF:
-            r ='''
+            r = BranchIfBitSet(ag, '7')
+        elif opcode == 0x100:  # RESET
+            r = S_RESET(ag)
+        elif opcode == 0x101:  # IRQ2
+            r = S_IRQ(ag, '0xFFF6')
+        elif opcode == 0x102:  # IRQ
+            r = S_IRQ(ag, '0xFFF8')
+        elif opcode == 0x103:
+            r = S_IRQ(ag, '0xFFFA')
 
     if len(r) > 0:
-        mystr = '// ' + am + '\n' + C_func_sig(mn, opcode, tbit) + '\n{\n' + r + '\n\n'
+        mystr = '// ' + am + '\n' + C_func_sig(opcode, tbit) + '\n{\n' + r + '\n\n'
         outfile.write(mystr)
 
 
@@ -1548,8 +1687,12 @@ def main():
         outfile.write('}\n')
 
         for tbit in range(0, 2):
-            for i in range(0, 0x100 + 3):
+            for i in range(0, 0x100 + 4):
                 write_instruction(outfile, i, tbit)
+
+        outfile.write('\n\n')
+
+        write_instruction_table(outfile)
 
 
 if __name__ == '__main__':

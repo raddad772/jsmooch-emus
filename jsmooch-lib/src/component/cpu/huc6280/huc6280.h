@@ -36,6 +36,8 @@ struct HUC6280_regs {
 
     u32 NMI_old, NMI_level_detected, do_NMI;
     u32 do_IRQ;
+
+    u32 clock_div;
 };
 
 struct HUC6280_pins {
