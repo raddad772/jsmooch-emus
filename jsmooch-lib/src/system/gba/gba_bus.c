@@ -40,8 +40,8 @@ static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
 
 static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     this->waitstates.current_transaction++;
-    if (addr < 0x40000) {
-        if (this->cpu.regs.R[15] < 0x40000) {
+    if (addr < 0x4000) {
+        if (this->cpu.regs.R[15] < 0x4000) {
             u32 v = cR[sz](this->BIOS.data, addr);
             this->io.bios_open_bus = v;
             return v;
