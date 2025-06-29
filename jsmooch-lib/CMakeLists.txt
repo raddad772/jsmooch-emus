@@ -484,6 +484,7 @@ add_library(jsmooch-lib
         src/component/cpu/huc6280/huc6280_misc.h
         src/component/cpu/huc6280/huc6280_opcodes.c
         src/component/cpu/huc6280/huc6280_opcodes.h
+        src/component/cpu/m680x0-fast/m680x0.h
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")

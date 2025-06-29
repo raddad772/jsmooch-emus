@@ -196,7 +196,7 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
 void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
     struct HUC6280* this = (struct HUC6280 *)ptr;
     u64 cur = clock - jitter;
-    if (this->pins.M && !this->pins.RW) {
+    if (this->pins.RD) {
         if (this->pins.Addr >= 0xFF0800)
             this->pins.D = internal_read(this, this->pins.Addr, 1);
         else
@@ -205,7 +205,7 @@ void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
 
     HUC6280_cycle(this);
 
-    if (this->pins.M && this->pins.RW) {
+    if (this->pins.WR) {
         if (this->pins.Addr >= 0xFF0800)
             internal_write(this, this->pins.Addr, this->pins.D);
         else

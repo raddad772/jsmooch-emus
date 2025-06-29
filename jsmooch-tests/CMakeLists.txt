@@ -33,6 +33,7 @@ add_executable(jsmooch-tests
         src/cpu-tests/spc700_tests.c
         src/cpu-tests/spc700_tests.h
         src/cpu-tests/spc700_tests.c
+        src/cpu-tests/huc6280_tests.c
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src ${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)

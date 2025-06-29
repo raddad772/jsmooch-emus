@@ -24,7 +24,8 @@ class huc6280_switchgen:
         self.no_T_at_end = False
         self.override_IRQ = False
         self.outstr = ''
-        self.old_rw = 0
+        self.old_rd = 0
+        self.old_wr = 0
         self.old_m = 0
         self.next_cyclewhat = None
         self.clear(indent)
@@ -40,7 +41,8 @@ class huc6280_switchgen:
         self.no_RW_at_end = False
         self.has_custom_end = False
         self.override_IRQ = False
-        self.old_rw = 0
+        self.old_rd = 0
+        self.old_wr = 0
         self.no_T_at_end = False
         self.old_m = 0
         self.indent4 = '    ' + self.indent3
@@ -86,16 +88,16 @@ class huc6280_switchgen:
         self.addl('regs->TCU = 0;')
         self.addl('break;')
 
-    def RW(self, rw: int, mem: int, force: bool = False):
-        if rw != self.old_rw or mem != self.old_m or force:
+    def RW(self, rd: int, wr: int, force: bool = False):
+        if rd != self.old_rd or wr != self.old_wr or force:
             x = ''
-            if self.old_rw != rw:
-                x = 'pins->RW = ' + str(rw) + '; '
-            if self.old_m != mem:
-                x += 'pins->M = ' + str(mem) + ';'
+            if self.old_rd != rd or force:
+                x = 'pins->RD = ' + str(rd) + '; '
+            if self.old_wr != wr or force:
+                x = 'pins->WR = ' + str(wr) + '; '
             self.addl(x)
-            self.old_rw = rw
-            self.old_m = mem
+            self.old_rd = rd
+            self.old_wr = wr
 
     def addr_to_PC(self):
         self.addl('pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);')
@@ -700,8 +702,8 @@ def Swap(ag: huc6280_switchgen, data1, data2) -> str:
 
 
 def IndirectRead(ag: huc6280_switchgen, ins_func, dta: Optional[str] = None, inx: Optional[str] = None) -> str:
-    ag.operand('regs->TA')
     ag.addcycle('idle')
+    ag.operand('regs->TA')
     if inx is not None:
         ag.addcycle('regs->TA = (regs->TA + (' + inx + ')) & 0xFF;')
     ag.load8('regs->TR[0]', 'regs->TA')

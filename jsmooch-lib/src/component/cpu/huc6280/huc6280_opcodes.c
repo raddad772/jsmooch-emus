@@ -10,9 +10,9 @@ static void HUC6280_ins_00__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -35,15 +35,15 @@ static void HUC6280_ins_00__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// push
             regs->P.T = 0; regs->P.D = 0; regs->P.I = 1;
             pins->Addr = regs->MPR[(0xFFF6)>>13] | ((0xFFF6) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->PC = pins->D;
             pins->Addr = regs->MPR[(0xFFF7)>>13] | ((0xFFF7) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TA << 8;
             // Following is auto-generated code for instruction finish
             break; }
@@ -63,39 +63,39 @@ static void HUC6280_ins_00__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_01__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -108,7 +108,7 @@ static void HUC6280_ins_01__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -133,7 +133,7 @@ static void HUC6280_ins_02__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -149,10 +149,10 @@ static void HUC6280_ins_03__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -161,13 +161,13 @@ static void HUC6280_ins_03__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = 0x1FE000;
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -182,9 +182,9 @@ static void HUC6280_ins_04__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -194,11 +194,11 @@ static void HUC6280_ins_04__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 o = (regs->TR[0]) & regs->A;
             regs->P.Z = o == 0;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -206,13 +206,13 @@ static void HUC6280_ins_04__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]) | regs->A;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -227,9 +227,9 @@ static void HUC6280_ins_05__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -237,11 +237,11 @@ static void HUC6280_ins_05__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -250,7 +250,7 @@ static void HUC6280_ins_05__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -265,9 +265,9 @@ static void HUC6280_ins_06__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -277,11 +277,11 @@ static void HUC6280_ins_06__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = (regs->TR[0] << 1) & 0xFF;
             regs->P.Z = (regs->TR[0]) == 0;
@@ -289,13 +289,13 @@ static void HUC6280_ins_06__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -311,10 +311,10 @@ static void HUC6280_ins_07__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -326,21 +326,21 @@ static void HUC6280_ins_07__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 0);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -363,7 +363,7 @@ static void HUC6280_ins_08__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -379,7 +379,7 @@ static void HUC6280_ins_09__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->A = regs->A | (regs->TA);
             regs->P.Z = (regs->A) == 0;
@@ -413,7 +413,7 @@ static void HUC6280_ins_0A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -433,7 +433,7 @@ static void HUC6280_ins_0B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -449,19 +449,19 @@ static void HUC6280_ins_0C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -472,10 +472,10 @@ static void HUC6280_ins_0C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -486,13 +486,13 @@ static void HUC6280_ins_0C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]) | regs->A;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -508,19 +508,19 @@ static void HUC6280_ins_0D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -529,7 +529,7 @@ static void HUC6280_ins_0D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -553,19 +553,19 @@ static void HUC6280_ins_0E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -576,10 +576,10 @@ static void HUC6280_ins_0E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -590,13 +590,13 @@ static void HUC6280_ins_0E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -612,19 +612,19 @@ static void HUC6280_ins_0F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -634,11 +634,11 @@ static void HUC6280_ins_0F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 0)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -652,7 +652,7 @@ static void HUC6280_ins_0F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -669,10 +669,10 @@ static void HUC6280_ins_10__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.N;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -686,7 +686,7 @@ static void HUC6280_ins_10__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -702,10 +702,10 @@ static void HUC6280_ins_11__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -713,24 +713,24 @@ static void HUC6280_ins_11__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -752,37 +752,37 @@ static void HUC6280_ins_11__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_12__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -795,7 +795,7 @@ static void HUC6280_ins_12__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -811,10 +811,10 @@ static void HUC6280_ins_13__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -823,13 +823,13 @@ static void HUC6280_ins_13__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = 0x1FEE02;
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -844,9 +844,9 @@ static void HUC6280_ins_14__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -856,24 +856,24 @@ static void HUC6280_ins_14__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->TR[1] = ~regs->A & (regs->TR[0]);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -888,9 +888,9 @@ static void HUC6280_ins_15__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -899,11 +899,11 @@ static void HUC6280_ins_15__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -912,7 +912,7 @@ static void HUC6280_ins_15__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -927,9 +927,9 @@ static void HUC6280_ins_16__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -940,11 +940,11 @@ static void HUC6280_ins_16__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = (regs->TR[0] << 1) & 0xFF;
             regs->P.Z = (regs->TR[0]) == 0;
@@ -952,13 +952,13 @@ static void HUC6280_ins_16__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -974,10 +974,10 @@ static void HUC6280_ins_17__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -989,21 +989,21 @@ static void HUC6280_ins_17__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 1);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1024,7 +1024,7 @@ static void HUC6280_ins_18__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1040,19 +1040,19 @@ static void HUC6280_ins_19__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1062,7 +1062,7 @@ static void HUC6280_ins_19__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -1093,7 +1093,7 @@ static void HUC6280_ins_1A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1113,7 +1113,7 @@ static void HUC6280_ins_1B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1129,19 +1129,19 @@ static void HUC6280_ins_1C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1152,10 +1152,10 @@ static void HUC6280_ins_1C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -1165,13 +1165,13 @@ static void HUC6280_ins_1C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = ~regs->A & (regs->TR[0]);
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1187,19 +1187,19 @@ static void HUC6280_ins_1D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1209,7 +1209,7 @@ static void HUC6280_ins_1D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -1233,19 +1233,19 @@ static void HUC6280_ins_1E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1257,10 +1257,10 @@ static void HUC6280_ins_1E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -1271,13 +1271,13 @@ static void HUC6280_ins_1E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1293,19 +1293,19 @@ static void HUC6280_ins_1F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1315,11 +1315,11 @@ static void HUC6280_ins_1F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 1)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -1333,7 +1333,7 @@ static void HUC6280_ins_1F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1349,19 +1349,19 @@ static void HUC6280_ins_20__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// huh
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1386,7 +1386,7 @@ static void HUC6280_ins_20__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 9: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1400,39 +1400,39 @@ static void HUC6280_ins_20__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_21__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -1445,7 +1445,7 @@ static void HUC6280_ins_21__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1470,7 +1470,7 @@ static void HUC6280_ins_22__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1486,10 +1486,10 @@ static void HUC6280_ins_23__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -1498,13 +1498,13 @@ static void HUC6280_ins_23__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = 0x1FE004;
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1519,9 +1519,9 @@ static void HUC6280_ins_24__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -1529,11 +1529,11 @@ static void HUC6280_ins_24__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -1542,7 +1542,7 @@ static void HUC6280_ins_24__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1557,9 +1557,9 @@ static void HUC6280_ins_25__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -1567,11 +1567,11 @@ static void HUC6280_ins_25__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -1580,7 +1580,7 @@ static void HUC6280_ins_25__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1595,9 +1595,9 @@ static void HUC6280_ins_26__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -1607,11 +1607,11 @@ static void HUC6280_ins_26__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = ((regs->TR[0] << 1) & 0xFF) | c;
@@ -1620,13 +1620,13 @@ static void HUC6280_ins_26__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1642,10 +1642,10 @@ static void HUC6280_ins_27__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -1657,21 +1657,21 @@ static void HUC6280_ins_27__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 2);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1699,7 +1699,7 @@ static void HUC6280_ins_28__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1715,7 +1715,7 @@ static void HUC6280_ins_29__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->A = regs->A & (regs->TA);
             regs->P.Z = (regs->A) == 0;
@@ -1750,7 +1750,7 @@ static void HUC6280_ins_2A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1770,7 +1770,7 @@ static void HUC6280_ins_2B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1786,19 +1786,19 @@ static void HUC6280_ins_2C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1807,7 +1807,7 @@ static void HUC6280_ins_2C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -1831,19 +1831,19 @@ static void HUC6280_ins_2D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1852,7 +1852,7 @@ static void HUC6280_ins_2D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -1876,19 +1876,19 @@ static void HUC6280_ins_2E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1899,10 +1899,10 @@ static void HUC6280_ins_2E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -1914,13 +1914,13 @@ static void HUC6280_ins_2E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1936,19 +1936,19 @@ static void HUC6280_ins_2F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -1958,11 +1958,11 @@ static void HUC6280_ins_2F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 2)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -1976,7 +1976,7 @@ static void HUC6280_ins_2F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -1993,10 +1993,10 @@ static void HUC6280_ins_30__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.N;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -2010,7 +2010,7 @@ static void HUC6280_ins_30__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2026,10 +2026,10 @@ static void HUC6280_ins_31__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -2037,24 +2037,24 @@ static void HUC6280_ins_31__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -2076,37 +2076,37 @@ static void HUC6280_ins_31__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_32__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -2119,7 +2119,7 @@ static void HUC6280_ins_32__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2139,7 +2139,7 @@ static void HUC6280_ins_33__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2154,9 +2154,9 @@ static void HUC6280_ins_34__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -2165,11 +2165,11 @@ static void HUC6280_ins_34__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -2178,7 +2178,7 @@ static void HUC6280_ins_34__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2193,9 +2193,9 @@ static void HUC6280_ins_35__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -2204,11 +2204,11 @@ static void HUC6280_ins_35__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -2217,7 +2217,7 @@ static void HUC6280_ins_35__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2232,9 +2232,9 @@ static void HUC6280_ins_36__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -2245,11 +2245,11 @@ static void HUC6280_ins_36__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = ((regs->TR[0] << 1) & 0xFF) | c;
@@ -2258,13 +2258,13 @@ static void HUC6280_ins_36__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2280,10 +2280,10 @@ static void HUC6280_ins_37__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -2295,21 +2295,21 @@ static void HUC6280_ins_37__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 3);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2330,7 +2330,7 @@ static void HUC6280_ins_38__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2346,19 +2346,19 @@ static void HUC6280_ins_39__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -2368,7 +2368,7 @@ static void HUC6280_ins_39__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -2399,7 +2399,7 @@ static void HUC6280_ins_3A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2419,7 +2419,7 @@ static void HUC6280_ins_3B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2435,19 +2435,19 @@ static void HUC6280_ins_3C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -2457,7 +2457,7 @@ static void HUC6280_ins_3C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -2481,19 +2481,19 @@ static void HUC6280_ins_3D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -2503,7 +2503,7 @@ static void HUC6280_ins_3D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -2527,19 +2527,19 @@ static void HUC6280_ins_3E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -2551,10 +2551,10 @@ static void HUC6280_ins_3E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -2566,13 +2566,13 @@ static void HUC6280_ins_3E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2588,19 +2588,19 @@ static void HUC6280_ins_3F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -2610,11 +2610,11 @@ static void HUC6280_ins_3F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 3)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -2628,7 +2628,7 @@ static void HUC6280_ins_3F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2666,7 +2666,7 @@ static void HUC6280_ins_40__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2680,39 +2680,39 @@ static void HUC6280_ins_40__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_41__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -2725,7 +2725,7 @@ static void HUC6280_ins_41__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2750,7 +2750,7 @@ static void HUC6280_ins_42__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2766,10 +2766,10 @@ static void HUC6280_ins_43__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -2789,7 +2789,7 @@ static void HUC6280_ins_43__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2805,10 +2805,10 @@ static void HUC6280_ins_44__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -2837,7 +2837,7 @@ static void HUC6280_ins_44__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 9: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2852,9 +2852,9 @@ static void HUC6280_ins_45__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -2862,11 +2862,11 @@ static void HUC6280_ins_45__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -2875,7 +2875,7 @@ static void HUC6280_ins_45__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2890,9 +2890,9 @@ static void HUC6280_ins_46__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -2902,24 +2902,24 @@ static void HUC6280_ins_46__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = (regs->TR[0]) & 1;
             regs->TR[1] = (regs->TR[0]) >> 1;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2935,10 +2935,10 @@ static void HUC6280_ins_47__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -2950,21 +2950,21 @@ static void HUC6280_ins_47__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 4);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -2987,7 +2987,7 @@ static void HUC6280_ins_48__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3003,7 +3003,7 @@ static void HUC6280_ins_49__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->A = regs->A ^ (regs->TA);
             regs->P.Z = (regs->A) == 0;
@@ -3036,7 +3036,7 @@ static void HUC6280_ins_4A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3056,7 +3056,7 @@ static void HUC6280_ins_4B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3072,19 +3072,19 @@ static void HUC6280_ins_4C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3098,7 +3098,7 @@ static void HUC6280_ins_4C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3114,19 +3114,19 @@ static void HUC6280_ins_4D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3135,7 +3135,7 @@ static void HUC6280_ins_4D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -3159,19 +3159,19 @@ static void HUC6280_ins_4E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3182,10 +3182,10 @@ static void HUC6280_ins_4E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -3195,13 +3195,13 @@ static void HUC6280_ins_4E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3217,19 +3217,19 @@ static void HUC6280_ins_4F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3239,11 +3239,11 @@ static void HUC6280_ins_4F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 4)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -3257,7 +3257,7 @@ static void HUC6280_ins_4F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3274,10 +3274,10 @@ static void HUC6280_ins_50__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.V;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -3291,7 +3291,7 @@ static void HUC6280_ins_50__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3307,10 +3307,10 @@ static void HUC6280_ins_51__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -3318,24 +3318,24 @@ static void HUC6280_ins_51__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -3357,37 +3357,37 @@ static void HUC6280_ins_51__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_52__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -3400,7 +3400,7 @@ static void HUC6280_ins_52__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3416,10 +3416,10 @@ static void HUC6280_ins_53__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -3442,7 +3442,7 @@ static void HUC6280_ins_53__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3465,7 +3465,7 @@ static void HUC6280_ins_54__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3480,9 +3480,9 @@ static void HUC6280_ins_55__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -3491,11 +3491,11 @@ static void HUC6280_ins_55__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -3504,7 +3504,7 @@ static void HUC6280_ins_55__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3519,9 +3519,9 @@ static void HUC6280_ins_56__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -3532,24 +3532,24 @@ static void HUC6280_ins_56__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = (regs->TR[0]) & 1;
             regs->TR[1] = (regs->TR[0]) >> 1;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3565,10 +3565,10 @@ static void HUC6280_ins_57__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -3580,21 +3580,21 @@ static void HUC6280_ins_57__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 5);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3615,7 +3615,7 @@ static void HUC6280_ins_58__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3631,19 +3631,19 @@ static void HUC6280_ins_59__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3653,7 +3653,7 @@ static void HUC6280_ins_59__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -3684,7 +3684,7 @@ static void HUC6280_ins_5A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3704,7 +3704,7 @@ static void HUC6280_ins_5B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3724,7 +3724,7 @@ static void HUC6280_ins_5C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3740,19 +3740,19 @@ static void HUC6280_ins_5D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3762,7 +3762,7 @@ static void HUC6280_ins_5D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
@@ -3786,19 +3786,19 @@ static void HUC6280_ins_5E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3810,10 +3810,10 @@ static void HUC6280_ins_5E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -3823,13 +3823,13 @@ static void HUC6280_ins_5E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3845,19 +3845,19 @@ static void HUC6280_ins_5F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -3867,11 +3867,11 @@ static void HUC6280_ins_5F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 5)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -3885,7 +3885,7 @@ static void HUC6280_ins_5F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3921,7 +3921,7 @@ static void HUC6280_ins_60__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -3935,39 +3935,39 @@ static void HUC6280_ins_60__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_61__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -3994,7 +3994,7 @@ static void HUC6280_ins_61__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4015,7 +4015,7 @@ static void HUC6280_ins_62__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4035,7 +4035,7 @@ static void HUC6280_ins_63__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4051,10 +4051,10 @@ static void HUC6280_ins_64__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -4063,13 +4063,13 @@ static void HUC6280_ins_64__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4084,9 +4084,9 @@ static void HUC6280_ins_65__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -4094,11 +4094,11 @@ static void HUC6280_ins_65__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -4121,7 +4121,7 @@ static void HUC6280_ins_65__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4136,9 +4136,9 @@ static void HUC6280_ins_66__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -4148,11 +4148,11 @@ static void HUC6280_ins_66__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C << 7;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             c = ((regs->TR[0]) << 7) | c;
@@ -4161,13 +4161,13 @@ static void HUC6280_ins_66__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4183,10 +4183,10 @@ static void HUC6280_ins_67__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -4198,21 +4198,21 @@ static void HUC6280_ins_67__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 6);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4241,7 +4241,7 @@ static void HUC6280_ins_68__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4257,7 +4257,7 @@ static void HUC6280_ins_69__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             i16 out = (i16)regs->A + (i16)(regs->TA) + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -4306,7 +4306,7 @@ static void HUC6280_ins_6A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4326,7 +4326,7 @@ static void HUC6280_ins_6B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4342,19 +4342,19 @@ static void HUC6280_ins_6C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// grawf!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -4365,19 +4365,19 @@ static void HUC6280_ins_6C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// load16
             regs->TR[0] = pins->D;
@@ -4387,7 +4387,7 @@ static void HUC6280_ins_6C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 12: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4403,19 +4403,19 @@ static void HUC6280_ins_6D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -4424,7 +4424,7 @@ static void HUC6280_ins_6D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -4462,19 +4462,19 @@ static void HUC6280_ins_6E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -4485,10 +4485,10 @@ static void HUC6280_ins_6E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -4500,13 +4500,13 @@ static void HUC6280_ins_6E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4522,19 +4522,19 @@ static void HUC6280_ins_6F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -4544,11 +4544,11 @@ static void HUC6280_ins_6F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 6)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -4562,7 +4562,7 @@ static void HUC6280_ins_6F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4579,10 +4579,10 @@ static void HUC6280_ins_70__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.V;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -4596,7 +4596,7 @@ static void HUC6280_ins_70__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4612,10 +4612,10 @@ static void HUC6280_ins_71__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -4623,24 +4623,24 @@ static void HUC6280_ins_71__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -4676,37 +4676,37 @@ static void HUC6280_ins_71__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_72__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -4733,7 +4733,7 @@ static void HUC6280_ins_72__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4749,57 +4749,57 @@ static void HUC6280_ins_73__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -4831,19 +4831,19 @@ static void HUC6280_ins_73__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
@@ -4876,7 +4876,7 @@ static void HUC6280_ins_73__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4892,10 +4892,10 @@ static void HUC6280_ins_74__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -4905,13 +4905,13 @@ static void HUC6280_ins_74__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4926,9 +4926,9 @@ static void HUC6280_ins_75__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -4937,11 +4937,11 @@ static void HUC6280_ins_75__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -4964,7 +4964,7 @@ static void HUC6280_ins_75__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -4979,9 +4979,9 @@ static void HUC6280_ins_76__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -4992,11 +4992,11 @@ static void HUC6280_ins_76__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C << 7;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             c = ((regs->TR[0]) << 7) | c;
@@ -5005,13 +5005,13 @@ static void HUC6280_ins_76__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5027,10 +5027,10 @@ static void HUC6280_ins_77__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -5042,21 +5042,21 @@ static void HUC6280_ins_77__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 7);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5077,7 +5077,7 @@ static void HUC6280_ins_78__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5093,19 +5093,19 @@ static void HUC6280_ins_79__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5115,7 +5115,7 @@ static void HUC6280_ins_79__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -5166,7 +5166,7 @@ static void HUC6280_ins_7A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5186,7 +5186,7 @@ static void HUC6280_ins_7B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5202,19 +5202,19 @@ static void HUC6280_ins_7C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// grawf!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5226,19 +5226,19 @@ static void HUC6280_ins_7C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// load16
             regs->TR[0] = pins->D;
@@ -5248,7 +5248,7 @@ static void HUC6280_ins_7C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 12: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5264,19 +5264,19 @@ static void HUC6280_ins_7D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5286,7 +5286,7 @@ static void HUC6280_ins_7D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -5324,19 +5324,19 @@ static void HUC6280_ins_7E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5348,10 +5348,10 @@ static void HUC6280_ins_7E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -5363,13 +5363,13 @@ static void HUC6280_ins_7E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5385,19 +5385,19 @@ static void HUC6280_ins_7F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5407,11 +5407,11 @@ static void HUC6280_ins_7F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 7)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -5425,7 +5425,7 @@ static void HUC6280_ins_7F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5442,10 +5442,10 @@ static void HUC6280_ins_80__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = 1;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -5459,7 +5459,7 @@ static void HUC6280_ins_80__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5475,10 +5475,10 @@ static void HUC6280_ins_81__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -5487,30 +5487,30 @@ static void HUC6280_ins_81__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X )) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             break; }
         case 7: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5531,7 +5531,7 @@ static void HUC6280_ins_82__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5547,19 +5547,19 @@ static void HUC6280_ins_83__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yick
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[1] = pins->D;
@@ -5571,11 +5571,11 @@ static void HUC6280_ins_83__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 8: {// idle
             pins->Addr = regs->MPR[1] | (regs->TR[1]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->TR[0] & regs->TA) == 0;
             regs->P.V = (regs->TA >> 6) & 1;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -5584,7 +5584,7 @@ static void HUC6280_ins_83__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5600,10 +5600,10 @@ static void HUC6280_ins_84__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -5612,13 +5612,13 @@ static void HUC6280_ins_84__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->Y;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5634,10 +5634,10 @@ static void HUC6280_ins_85__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -5646,13 +5646,13 @@ static void HUC6280_ins_85__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5668,10 +5668,10 @@ static void HUC6280_ins_86__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -5680,13 +5680,13 @@ static void HUC6280_ins_86__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->X;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5702,10 +5702,10 @@ static void HUC6280_ins_87__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -5717,21 +5717,21 @@ static void HUC6280_ins_87__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 0;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5754,7 +5754,7 @@ static void HUC6280_ins_88__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5770,7 +5770,7 @@ static void HUC6280_ins_89__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.V = ((regs->TA) >> 6) & 1;
             regs->P.N = ((regs->TA) >> 7) & 1;
@@ -5802,7 +5802,7 @@ static void HUC6280_ins_8A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5822,7 +5822,7 @@ static void HUC6280_ins_8B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5838,19 +5838,19 @@ static void HUC6280_ins_8C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5860,13 +5860,13 @@ static void HUC6280_ins_8C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->Y;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5882,19 +5882,19 @@ static void HUC6280_ins_8D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5904,13 +5904,13 @@ static void HUC6280_ins_8D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5926,19 +5926,19 @@ static void HUC6280_ins_8E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5948,13 +5948,13 @@ static void HUC6280_ins_8E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->X;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -5970,19 +5970,19 @@ static void HUC6280_ins_8F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -5992,11 +5992,11 @@ static void HUC6280_ins_8F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 0)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -6010,7 +6010,7 @@ static void HUC6280_ins_8F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6027,10 +6027,10 @@ static void HUC6280_ins_90__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.C;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6044,7 +6044,7 @@ static void HUC6280_ins_90__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6060,10 +6060,10 @@ static void HUC6280_ins_91__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// I AM ALIVE
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6071,31 +6071,31 @@ static void HUC6280_ins_91__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TR[0]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TR[1]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= regs->TR[1] << 8;
             break; }
         case 7: {// idle
             regs->TA = (regs->TR[0] + regs->Y) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6111,10 +6111,10 @@ static void HUC6280_ins_92__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6122,30 +6122,30 @@ static void HUC6280_ins_92__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             break; }
         case 7: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6161,28 +6161,28 @@ static void HUC6280_ins_93__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yarp
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
@@ -6195,7 +6195,7 @@ static void HUC6280_ins_93__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 10: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->TR[2] & regs->TR[0]) == 0;
             regs->P.V = (regs->TR[2] >> 6) & 1;
             regs->P.N = (regs->TR[2] >> 7) & 1;
@@ -6219,10 +6219,10 @@ static void HUC6280_ins_94__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6232,13 +6232,13 @@ static void HUC6280_ins_94__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->Y;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6254,10 +6254,10 @@ static void HUC6280_ins_95__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6267,13 +6267,13 @@ static void HUC6280_ins_95__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6289,10 +6289,10 @@ static void HUC6280_ins_96__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6302,13 +6302,13 @@ static void HUC6280_ins_96__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->X;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6324,10 +6324,10 @@ static void HUC6280_ins_97__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6339,21 +6339,21 @@ static void HUC6280_ins_97__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 1;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6376,7 +6376,7 @@ static void HUC6280_ins_98__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6392,19 +6392,19 @@ static void HUC6280_ins_99__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -6415,13 +6415,13 @@ static void HUC6280_ins_99__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TA = (regs->TA + regs->Y ) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6442,7 +6442,7 @@ static void HUC6280_ins_9A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6462,7 +6462,7 @@ static void HUC6280_ins_9B__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6478,19 +6478,19 @@ static void HUC6280_ins_9C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -6500,13 +6500,13 @@ static void HUC6280_ins_9C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6522,19 +6522,19 @@ static void HUC6280_ins_9D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -6545,13 +6545,13 @@ static void HUC6280_ins_9D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TA = (regs->TA + regs->X ) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6567,19 +6567,19 @@ static void HUC6280_ins_9E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -6590,13 +6590,13 @@ static void HUC6280_ins_9E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TA = (regs->TA + regs->X ) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6612,19 +6612,19 @@ static void HUC6280_ins_9F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -6634,11 +6634,11 @@ static void HUC6280_ins_9F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 1)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -6652,7 +6652,7 @@ static void HUC6280_ins_9F__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6668,7 +6668,7 @@ static void HUC6280_ins_A0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = regs->TA == 0;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -6691,39 +6691,39 @@ static void HUC6280_ins_A0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_A1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -6736,7 +6736,7 @@ static void HUC6280_ins_A1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6752,7 +6752,7 @@ static void HUC6280_ins_A2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = regs->TA == 0;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -6777,19 +6777,19 @@ static void HUC6280_ins_A3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yick
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[1] = pins->D;
@@ -6802,11 +6802,11 @@ static void HUC6280_ins_A3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 8: {// idle
             regs->TR[1] = (regs->TR[1] + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TR[1]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->TR[0] & regs->TA) == 0;
             regs->P.V = (regs->TA >> 6) & 1;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -6815,7 +6815,7 @@ static void HUC6280_ins_A3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6830,9 +6830,9 @@ static void HUC6280_ins_A4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -6840,11 +6840,11 @@ static void HUC6280_ins_A4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -6853,7 +6853,7 @@ static void HUC6280_ins_A4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6868,9 +6868,9 @@ static void HUC6280_ins_A5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -6878,11 +6878,11 @@ static void HUC6280_ins_A5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -6891,7 +6891,7 @@ static void HUC6280_ins_A5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6906,9 +6906,9 @@ static void HUC6280_ins_A6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -6916,11 +6916,11 @@ static void HUC6280_ins_A6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -6929,7 +6929,7 @@ static void HUC6280_ins_A6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6945,10 +6945,10 @@ static void HUC6280_ins_A7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -6960,21 +6960,21 @@ static void HUC6280_ins_A7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 2;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -6997,7 +6997,7 @@ static void HUC6280_ins_A8__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7013,7 +7013,7 @@ static void HUC6280_ins_A9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = regs->TA == 0;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -7045,7 +7045,7 @@ static void HUC6280_ins_AA__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7065,7 +7065,7 @@ static void HUC6280_ins_AB__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7081,19 +7081,19 @@ static void HUC6280_ins_AC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7102,7 +7102,7 @@ static void HUC6280_ins_AC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -7126,19 +7126,19 @@ static void HUC6280_ins_AD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7147,7 +7147,7 @@ static void HUC6280_ins_AD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -7171,19 +7171,19 @@ static void HUC6280_ins_AE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7192,7 +7192,7 @@ static void HUC6280_ins_AE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -7216,19 +7216,19 @@ static void HUC6280_ins_AF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7238,11 +7238,11 @@ static void HUC6280_ins_AF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 2)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -7256,7 +7256,7 @@ static void HUC6280_ins_AF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7273,10 +7273,10 @@ static void HUC6280_ins_B0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.C;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -7290,7 +7290,7 @@ static void HUC6280_ins_B0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7306,10 +7306,10 @@ static void HUC6280_ins_B1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -7317,24 +7317,24 @@ static void HUC6280_ins_B1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -7356,37 +7356,37 @@ static void HUC6280_ins_B1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_B2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -7399,7 +7399,7 @@ static void HUC6280_ins_B2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7415,28 +7415,28 @@ static void HUC6280_ins_B3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yarp
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
@@ -7450,7 +7450,7 @@ static void HUC6280_ins_B3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// idle
             regs->TA = (regs->TA + regs->X ) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->TR[2] & regs->TR[0]) == 0;
             regs->P.V = (regs->TR[2] >> 6) & 1;
             regs->P.N = (regs->TR[2] >> 7) & 1;
@@ -7473,9 +7473,9 @@ static void HUC6280_ins_B4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -7484,11 +7484,11 @@ static void HUC6280_ins_B4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -7497,7 +7497,7 @@ static void HUC6280_ins_B4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7512,9 +7512,9 @@ static void HUC6280_ins_B5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -7523,11 +7523,11 @@ static void HUC6280_ins_B5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -7536,7 +7536,7 @@ static void HUC6280_ins_B5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7551,9 +7551,9 @@ static void HUC6280_ins_B6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -7562,11 +7562,11 @@ static void HUC6280_ins_B6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->Y)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -7575,7 +7575,7 @@ static void HUC6280_ins_B6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7591,10 +7591,10 @@ static void HUC6280_ins_B7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -7606,21 +7606,21 @@ static void HUC6280_ins_B7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 3;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7641,7 +7641,7 @@ static void HUC6280_ins_B8__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7657,19 +7657,19 @@ static void HUC6280_ins_B9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7679,7 +7679,7 @@ static void HUC6280_ins_B9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -7710,7 +7710,7 @@ static void HUC6280_ins_BA__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7730,7 +7730,7 @@ static void HUC6280_ins_BB__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7746,19 +7746,19 @@ static void HUC6280_ins_BC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7768,7 +7768,7 @@ static void HUC6280_ins_BC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -7792,19 +7792,19 @@ static void HUC6280_ins_BD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7814,7 +7814,7 @@ static void HUC6280_ins_BD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -7838,19 +7838,19 @@ static void HUC6280_ins_BE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7860,7 +7860,7 @@ static void HUC6280_ins_BE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -7884,19 +7884,19 @@ static void HUC6280_ins_BF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -7906,11 +7906,11 @@ static void HUC6280_ins_BF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 3)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -7924,7 +7924,7 @@ static void HUC6280_ins_BF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -7940,7 +7940,7 @@ static void HUC6280_ins_C0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             u32 o = regs->Y - (regs->TA);
             regs->P.C = ((o >> 8) & 1) ^ 1;
@@ -7964,39 +7964,39 @@ static void HUC6280_ins_C0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_C1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -8009,7 +8009,7 @@ static void HUC6280_ins_C1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8030,7 +8030,7 @@ static void HUC6280_ins_C2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8046,57 +8046,57 @@ static void HUC6280_ins_C3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -8128,19 +8128,19 @@ static void HUC6280_ins_C3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] - 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] - 1) & 0xFFFF;
             regs->TR[3] ^= 1;
@@ -8173,7 +8173,7 @@ static void HUC6280_ins_C3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8188,9 +8188,9 @@ static void HUC6280_ins_C4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -8198,11 +8198,11 @@ static void HUC6280_ins_C4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 o = regs->Y - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -8212,7 +8212,7 @@ static void HUC6280_ins_C4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8227,9 +8227,9 @@ static void HUC6280_ins_C5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -8237,11 +8237,11 @@ static void HUC6280_ins_C5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -8250,7 +8250,7 @@ static void HUC6280_ins_C5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8265,9 +8265,9 @@ static void HUC6280_ins_C6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -8277,23 +8277,23 @@ static void HUC6280_ins_C6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8309,10 +8309,10 @@ static void HUC6280_ins_C7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -8324,21 +8324,21 @@ static void HUC6280_ins_C7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 4;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8361,7 +8361,7 @@ static void HUC6280_ins_C8__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8377,7 +8377,7 @@ static void HUC6280_ins_C9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = (regs->A & (regs->TA)) == 0;
             regs->P.V = ((regs->TA) >> 6) & 1;
@@ -8409,7 +8409,7 @@ static void HUC6280_ins_CA__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8429,7 +8429,7 @@ static void HUC6280_ins_CB__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8445,19 +8445,19 @@ static void HUC6280_ins_CC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -8466,7 +8466,7 @@ static void HUC6280_ins_CC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u32 o = regs->Y - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -8491,19 +8491,19 @@ static void HUC6280_ins_CD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -8512,7 +8512,7 @@ static void HUC6280_ins_CD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -8536,19 +8536,19 @@ static void HUC6280_ins_CE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -8559,10 +8559,10 @@ static void HUC6280_ins_CE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -8571,13 +8571,13 @@ static void HUC6280_ins_CE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8593,19 +8593,19 @@ static void HUC6280_ins_CF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -8615,11 +8615,11 @@ static void HUC6280_ins_CF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 4)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -8633,7 +8633,7 @@ static void HUC6280_ins_CF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8650,10 +8650,10 @@ static void HUC6280_ins_D0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.Z;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -8667,7 +8667,7 @@ static void HUC6280_ins_D0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8683,10 +8683,10 @@ static void HUC6280_ins_D1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -8694,24 +8694,24 @@ static void HUC6280_ins_D1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -8733,37 +8733,37 @@ static void HUC6280_ins_D1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_D2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -8776,7 +8776,7 @@ static void HUC6280_ins_D2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8792,57 +8792,57 @@ static void HUC6280_ins_D3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -8874,19 +8874,19 @@ static void HUC6280_ins_D3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             break; }
@@ -8918,7 +8918,7 @@ static void HUC6280_ins_D3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8941,7 +8941,7 @@ static void HUC6280_ins_D4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8956,9 +8956,9 @@ static void HUC6280_ins_D5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -8967,11 +8967,11 @@ static void HUC6280_ins_D5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -8980,7 +8980,7 @@ static void HUC6280_ins_D5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -8995,9 +8995,9 @@ static void HUC6280_ins_D6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -9008,23 +9008,23 @@ static void HUC6280_ins_D6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9040,10 +9040,10 @@ static void HUC6280_ins_D7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -9055,21 +9055,21 @@ static void HUC6280_ins_D7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 5;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9090,7 +9090,7 @@ static void HUC6280_ins_D8__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9106,19 +9106,19 @@ static void HUC6280_ins_D9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -9128,7 +9128,7 @@ static void HUC6280_ins_D9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -9159,7 +9159,7 @@ static void HUC6280_ins_DA__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9179,7 +9179,7 @@ static void HUC6280_ins_DB__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9199,7 +9199,7 @@ static void HUC6280_ins_DC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9215,19 +9215,19 @@ static void HUC6280_ins_DD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -9237,7 +9237,7 @@ static void HUC6280_ins_DD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -9261,19 +9261,19 @@ static void HUC6280_ins_DE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -9285,10 +9285,10 @@ static void HUC6280_ins_DE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -9297,13 +9297,13 @@ static void HUC6280_ins_DE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9319,19 +9319,19 @@ static void HUC6280_ins_DF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -9341,11 +9341,11 @@ static void HUC6280_ins_DF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 5)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -9359,7 +9359,7 @@ static void HUC6280_ins_DF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9375,7 +9375,7 @@ static void HUC6280_ins_E0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             u32 o = regs->X - (regs->TA);
             regs->P.C = ((o >> 8) & 1) ^ 1;
@@ -9399,39 +9399,39 @@ static void HUC6280_ins_E0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_E1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -9459,7 +9459,7 @@ static void HUC6280_ins_E1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9479,7 +9479,7 @@ static void HUC6280_ins_E2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9495,57 +9495,57 @@ static void HUC6280_ins_E3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -9577,19 +9577,19 @@ static void HUC6280_ins_E3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] += regs->TR[3] ? -1 : 1;
             regs->TR[1] &= 0xFFFF;
@@ -9623,7 +9623,7 @@ static void HUC6280_ins_E3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9638,9 +9638,9 @@ static void HUC6280_ins_E4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -9648,11 +9648,11 @@ static void HUC6280_ins_E4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 o = regs->X - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -9662,7 +9662,7 @@ static void HUC6280_ins_E4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9677,9 +9677,9 @@ static void HUC6280_ins_E5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -9687,11 +9687,11 @@ static void HUC6280_ins_E5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -9715,7 +9715,7 @@ static void HUC6280_ins_E5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9730,9 +9730,9 @@ static void HUC6280_ins_E6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -9742,23 +9742,23 @@ static void HUC6280_ins_E6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9774,10 +9774,10 @@ static void HUC6280_ins_E7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -9789,21 +9789,21 @@ static void HUC6280_ins_E7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 6;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9826,7 +9826,7 @@ static void HUC6280_ins_E8__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9842,7 +9842,7 @@ static void HUC6280_ins_E9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             u8 r = regs->TA ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
@@ -9886,7 +9886,7 @@ static void HUC6280_ins_EA__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9906,7 +9906,7 @@ static void HUC6280_ins_EB__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -9922,19 +9922,19 @@ static void HUC6280_ins_EC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -9943,7 +9943,7 @@ static void HUC6280_ins_EC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u32 o = regs->X - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -9968,19 +9968,19 @@ static void HUC6280_ins_ED__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -9989,7 +9989,7 @@ static void HUC6280_ins_ED__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -10028,19 +10028,19 @@ static void HUC6280_ins_EE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -10051,10 +10051,10 @@ static void HUC6280_ins_EE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -10063,13 +10063,13 @@ static void HUC6280_ins_EE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10085,19 +10085,19 @@ static void HUC6280_ins_EF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -10107,11 +10107,11 @@ static void HUC6280_ins_EF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 6)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -10125,7 +10125,7 @@ static void HUC6280_ins_EF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10142,10 +10142,10 @@ static void HUC6280_ins_F0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.Z;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -10159,7 +10159,7 @@ static void HUC6280_ins_F0__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10175,10 +10175,10 @@ static void HUC6280_ins_F1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -10186,24 +10186,24 @@ static void HUC6280_ins_F1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -10240,37 +10240,37 @@ static void HUC6280_ins_F1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_F2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -10298,7 +10298,7 @@ static void HUC6280_ins_F2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10314,57 +10314,57 @@ static void HUC6280_ins_F3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -10396,19 +10396,19 @@ static void HUC6280_ins_F3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] += regs->TR[3] ? -1 : 1;
             regs->TR[0] &= 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
@@ -10442,7 +10442,7 @@ static void HUC6280_ins_F3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10463,7 +10463,7 @@ static void HUC6280_ins_F4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10478,9 +10478,9 @@ static void HUC6280_ins_F5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -10489,11 +10489,11 @@ static void HUC6280_ins_F5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -10517,7 +10517,7 @@ static void HUC6280_ins_F5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10532,9 +10532,9 @@ static void HUC6280_ins_F6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -10545,23 +10545,23 @@ static void HUC6280_ins_F6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10577,10 +10577,10 @@ static void HUC6280_ins_F7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -10592,21 +10592,21 @@ static void HUC6280_ins_F7__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10627,7 +10627,7 @@ static void HUC6280_ins_F8__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10643,19 +10643,19 @@ static void HUC6280_ins_F9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -10665,7 +10665,7 @@ static void HUC6280_ins_F9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -10717,7 +10717,7 @@ static void HUC6280_ins_FA__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10737,7 +10737,7 @@ static void HUC6280_ins_FB__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10757,7 +10757,7 @@ static void HUC6280_ins_FC__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10773,19 +10773,19 @@ static void HUC6280_ins_FD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -10795,7 +10795,7 @@ static void HUC6280_ins_FD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -10834,19 +10834,19 @@ static void HUC6280_ins_FE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -10858,10 +10858,10 @@ static void HUC6280_ins_FE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -10870,13 +10870,13 @@ static void HUC6280_ins_FE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10892,19 +10892,19 @@ static void HUC6280_ins_FF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -10914,11 +10914,11 @@ static void HUC6280_ins_FF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 7)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -10932,7 +10932,7 @@ static void HUC6280_ins_FF__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -10947,7 +10947,7 @@ static void HUC6280_ins_RESET_t0(struct HUC6280_regs *regs, struct HUC6280_pins 
 {
     switch(regs->TCU) {
         case 1: {// 3
-            
+            pins->WR = 0; 
             pins->Addr = regs->S | 0x100;
             regs->S = (regs->S - 1) & 0xFF;
             break; }
@@ -10969,6 +10969,7 @@ static void HUC6280_ins_RESET_t0(struct HUC6280_regs *regs, struct HUC6280_pins 
             regs->P.I = regs->P.B = 1;
             regs->P.D = regs->P.T = 0;
             regs->IRQD.u = 3; //IRQD is inverted
+            regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;
             break; }
@@ -10983,7 +10984,7 @@ static void HUC6280_ins_RESET_t0(struct HUC6280_regs *regs, struct HUC6280_pins 
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11024,16 +11025,16 @@ static void HUC6280_ins_IRQ2_t0(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->P.T = 0;
             regs->TA = 0xFFF6;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA++;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             break; }
@@ -11080,16 +11081,16 @@ static void HUC6280_ins_IRQ1_t0(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->P.T = 0;
             regs->TA = 0xFFF8;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA++;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             break; }
@@ -11136,16 +11137,16 @@ static void HUC6280_ins_TIQ_t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.T = 0;
             regs->TA = 0xFFFA;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA++;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             break; }
@@ -11166,9 +11167,9 @@ static void HUC6280_ins_00__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -11191,15 +11192,15 @@ static void HUC6280_ins_00__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// push
             regs->P.T = 0; regs->P.D = 0; regs->P.I = 1;
             pins->Addr = regs->MPR[(0xFFF6)>>13] | ((0xFFF6) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->PC = pins->D;
             pins->Addr = regs->MPR[(0xFFF7)>>13] | ((0xFFF7) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TA << 8;
             // Following is auto-generated code for instruction finish
             break; }
@@ -11222,16 +11223,16 @@ static void HUC6280_ins_01__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -11240,26 +11241,26 @@ static void HUC6280_ins_01__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -11268,14 +11269,14 @@ static void HUC6280_ins_01__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11300,7 +11301,7 @@ static void HUC6280_ins_02__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11316,10 +11317,10 @@ static void HUC6280_ins_03__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -11328,13 +11329,13 @@ static void HUC6280_ins_03__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = 0x1FE000;
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11349,9 +11350,9 @@ static void HUC6280_ins_04__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -11361,11 +11362,11 @@ static void HUC6280_ins_04__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 o = (regs->TR[0]) & regs->A;
             regs->P.Z = o == 0;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -11373,13 +11374,13 @@ static void HUC6280_ins_04__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]) | regs->A;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11396,16 +11397,16 @@ static void HUC6280_ins_05__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -11413,24 +11414,24 @@ static void HUC6280_ins_05__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11445,9 +11446,9 @@ static void HUC6280_ins_06__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -11457,11 +11458,11 @@ static void HUC6280_ins_06__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = (regs->TR[0] << 1) & 0xFF;
             regs->P.Z = (regs->TR[0]) == 0;
@@ -11469,13 +11470,13 @@ static void HUC6280_ins_06__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11491,10 +11492,10 @@ static void HUC6280_ins_07__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -11506,21 +11507,21 @@ static void HUC6280_ins_07__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 0);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11543,7 +11544,7 @@ static void HUC6280_ins_08__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11560,16 +11561,16 @@ static void HUC6280_ins_09__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -11579,14 +11580,14 @@ static void HUC6280_ins_09__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11611,7 +11612,7 @@ static void HUC6280_ins_0A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11631,7 +11632,7 @@ static void HUC6280_ins_0B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11647,19 +11648,19 @@ static void HUC6280_ins_0C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -11670,10 +11671,10 @@ static void HUC6280_ins_0C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -11684,13 +11685,13 @@ static void HUC6280_ins_0C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]) | regs->A;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11707,25 +11708,25 @@ static void HUC6280_ins_0D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -11734,10 +11735,10 @@ static void HUC6280_ins_0D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -11746,14 +11747,14 @@ static void HUC6280_ins_0D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11769,19 +11770,19 @@ static void HUC6280_ins_0E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -11792,10 +11793,10 @@ static void HUC6280_ins_0E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -11806,13 +11807,13 @@ static void HUC6280_ins_0E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11828,19 +11829,19 @@ static void HUC6280_ins_0F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -11850,11 +11851,11 @@ static void HUC6280_ins_0F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 0)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -11868,7 +11869,7 @@ static void HUC6280_ins_0F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11885,10 +11886,10 @@ static void HUC6280_ins_10__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.N;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -11902,7 +11903,7 @@ static void HUC6280_ins_10__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11919,16 +11920,16 @@ static void HUC6280_ins_11__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -11936,27 +11937,27 @@ static void HUC6280_ins_11__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -11965,14 +11966,14 @@ static void HUC6280_ins_11__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -11989,16 +11990,16 @@ static void HUC6280_ins_12__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -12006,26 +12007,26 @@ static void HUC6280_ins_12__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -12034,14 +12035,14 @@ static void HUC6280_ins_12__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12057,10 +12058,10 @@ static void HUC6280_ins_13__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -12069,13 +12070,13 @@ static void HUC6280_ins_13__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = 0x1FEE02;
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12090,9 +12091,9 @@ static void HUC6280_ins_14__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -12102,24 +12103,24 @@ static void HUC6280_ins_14__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->TR[1] = ~regs->A & (regs->TR[0]);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12136,16 +12137,16 @@ static void HUC6280_ins_15__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -12154,24 +12155,24 @@ static void HUC6280_ins_15__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X )) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12186,9 +12187,9 @@ static void HUC6280_ins_16__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -12199,11 +12200,11 @@ static void HUC6280_ins_16__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = (regs->TR[0] << 1) & 0xFF;
             regs->P.Z = (regs->TR[0]) == 0;
@@ -12211,13 +12212,13 @@ static void HUC6280_ins_16__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12233,10 +12234,10 @@ static void HUC6280_ins_17__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -12248,21 +12249,21 @@ static void HUC6280_ins_17__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 1);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12283,7 +12284,7 @@ static void HUC6280_ins_18__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12300,25 +12301,25 @@ static void HUC6280_ins_19__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -12328,10 +12329,10 @@ static void HUC6280_ins_19__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->Y)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -12340,14 +12341,14 @@ static void HUC6280_ins_19__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12370,7 +12371,7 @@ static void HUC6280_ins_1A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12390,7 +12391,7 @@ static void HUC6280_ins_1B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12406,19 +12407,19 @@ static void HUC6280_ins_1C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -12429,10 +12430,10 @@ static void HUC6280_ins_1C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -12442,13 +12443,13 @@ static void HUC6280_ins_1C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = ~regs->A & (regs->TR[0]);
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12465,25 +12466,25 @@ static void HUC6280_ins_1D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -12493,10 +12494,10 @@ static void HUC6280_ins_1D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -12505,14 +12506,14 @@ static void HUC6280_ins_1D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12528,19 +12529,19 @@ static void HUC6280_ins_1E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -12552,10 +12553,10 @@ static void HUC6280_ins_1E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -12566,13 +12567,13 @@ static void HUC6280_ins_1E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = regs->TR[0];
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12588,19 +12589,19 @@ static void HUC6280_ins_1F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -12610,11 +12611,11 @@ static void HUC6280_ins_1F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 1)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -12628,7 +12629,7 @@ static void HUC6280_ins_1F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12644,19 +12645,19 @@ static void HUC6280_ins_20__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// huh
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -12681,7 +12682,7 @@ static void HUC6280_ins_20__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 9: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12698,16 +12699,16 @@ static void HUC6280_ins_21__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -12716,26 +12717,26 @@ static void HUC6280_ins_21__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -12744,14 +12745,14 @@ static void HUC6280_ins_21__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12776,7 +12777,7 @@ static void HUC6280_ins_22__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12792,10 +12793,10 @@ static void HUC6280_ins_23__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -12804,13 +12805,13 @@ static void HUC6280_ins_23__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = 0x1FE004;
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12825,9 +12826,9 @@ static void HUC6280_ins_24__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -12835,11 +12836,11 @@ static void HUC6280_ins_24__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -12848,7 +12849,7 @@ static void HUC6280_ins_24__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12865,16 +12866,16 @@ static void HUC6280_ins_25__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -12882,24 +12883,24 @@ static void HUC6280_ins_25__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12914,9 +12915,9 @@ static void HUC6280_ins_26__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -12926,11 +12927,11 @@ static void HUC6280_ins_26__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = ((regs->TR[0] << 1) & 0xFF) | c;
@@ -12939,13 +12940,13 @@ static void HUC6280_ins_26__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -12961,10 +12962,10 @@ static void HUC6280_ins_27__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -12976,21 +12977,21 @@ static void HUC6280_ins_27__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 2);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13018,7 +13019,7 @@ static void HUC6280_ins_28__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13035,16 +13036,16 @@ static void HUC6280_ins_29__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -13054,14 +13055,14 @@ static void HUC6280_ins_29__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13087,7 +13088,7 @@ static void HUC6280_ins_2A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13107,7 +13108,7 @@ static void HUC6280_ins_2B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13123,19 +13124,19 @@ static void HUC6280_ins_2C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -13144,7 +13145,7 @@ static void HUC6280_ins_2C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -13169,25 +13170,25 @@ static void HUC6280_ins_2D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -13196,10 +13197,10 @@ static void HUC6280_ins_2D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -13208,14 +13209,14 @@ static void HUC6280_ins_2D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13231,19 +13232,19 @@ static void HUC6280_ins_2E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -13254,10 +13255,10 @@ static void HUC6280_ins_2E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -13269,13 +13270,13 @@ static void HUC6280_ins_2E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13291,19 +13292,19 @@ static void HUC6280_ins_2F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -13313,11 +13314,11 @@ static void HUC6280_ins_2F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 2)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -13331,7 +13332,7 @@ static void HUC6280_ins_2F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13348,10 +13349,10 @@ static void HUC6280_ins_30__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.N;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -13365,7 +13366,7 @@ static void HUC6280_ins_30__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13382,16 +13383,16 @@ static void HUC6280_ins_31__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -13399,27 +13400,27 @@ static void HUC6280_ins_31__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -13428,14 +13429,14 @@ static void HUC6280_ins_31__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13452,16 +13453,16 @@ static void HUC6280_ins_32__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -13469,26 +13470,26 @@ static void HUC6280_ins_32__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -13497,14 +13498,14 @@ static void HUC6280_ins_32__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13524,7 +13525,7 @@ static void HUC6280_ins_33__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13539,9 +13540,9 @@ static void HUC6280_ins_34__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -13550,11 +13551,11 @@ static void HUC6280_ins_34__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -13563,7 +13564,7 @@ static void HUC6280_ins_34__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13580,16 +13581,16 @@ static void HUC6280_ins_35__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -13598,24 +13599,24 @@ static void HUC6280_ins_35__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X )) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13630,9 +13631,9 @@ static void HUC6280_ins_36__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -13643,11 +13644,11 @@ static void HUC6280_ins_36__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             regs->TR[0] = ((regs->TR[0] << 1) & 0xFF) | c;
@@ -13656,13 +13657,13 @@ static void HUC6280_ins_36__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13678,10 +13679,10 @@ static void HUC6280_ins_37__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -13693,21 +13694,21 @@ static void HUC6280_ins_37__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 3);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13728,7 +13729,7 @@ static void HUC6280_ins_38__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13745,25 +13746,25 @@ static void HUC6280_ins_39__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -13773,10 +13774,10 @@ static void HUC6280_ins_39__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->Y)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -13785,14 +13786,14 @@ static void HUC6280_ins_39__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13815,7 +13816,7 @@ static void HUC6280_ins_3A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13835,7 +13836,7 @@ static void HUC6280_ins_3B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13851,19 +13852,19 @@ static void HUC6280_ins_3C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -13873,7 +13874,7 @@ static void HUC6280_ins_3C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->A = (regs->A & (regs->TR[0])) == 0;
@@ -13898,25 +13899,25 @@ static void HUC6280_ins_3D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -13926,10 +13927,10 @@ static void HUC6280_ins_3D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -13938,14 +13939,14 @@ static void HUC6280_ins_3D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -13961,19 +13962,19 @@ static void HUC6280_ins_3E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -13985,10 +13986,10 @@ static void HUC6280_ins_3E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -14000,13 +14001,13 @@ static void HUC6280_ins_3E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = (regs->TR[0]);
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14022,19 +14023,19 @@ static void HUC6280_ins_3F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -14044,11 +14045,11 @@ static void HUC6280_ins_3F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 3)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -14062,7 +14063,7 @@ static void HUC6280_ins_3F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14100,7 +14101,7 @@ static void HUC6280_ins_40__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14117,16 +14118,16 @@ static void HUC6280_ins_41__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -14135,26 +14136,26 @@ static void HUC6280_ins_41__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -14163,14 +14164,14 @@ static void HUC6280_ins_41__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14195,7 +14196,7 @@ static void HUC6280_ins_42__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14211,10 +14212,10 @@ static void HUC6280_ins_43__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
@@ -14234,7 +14235,7 @@ static void HUC6280_ins_43__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14250,10 +14251,10 @@ static void HUC6280_ins_44__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -14282,7 +14283,7 @@ static void HUC6280_ins_44__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 9: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14299,16 +14300,16 @@ static void HUC6280_ins_45__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -14316,24 +14317,24 @@ static void HUC6280_ins_45__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14348,9 +14349,9 @@ static void HUC6280_ins_46__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -14360,24 +14361,24 @@ static void HUC6280_ins_46__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = (regs->TR[0]) & 1;
             regs->TR[1] = (regs->TR[0]) >> 1;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14393,10 +14394,10 @@ static void HUC6280_ins_47__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -14408,21 +14409,21 @@ static void HUC6280_ins_47__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 4);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14445,7 +14446,7 @@ static void HUC6280_ins_48__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14462,16 +14463,16 @@ static void HUC6280_ins_49__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -14481,14 +14482,14 @@ static void HUC6280_ins_49__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14512,7 +14513,7 @@ static void HUC6280_ins_4A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14532,7 +14533,7 @@ static void HUC6280_ins_4B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14548,19 +14549,19 @@ static void HUC6280_ins_4C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -14574,7 +14575,7 @@ static void HUC6280_ins_4C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14591,25 +14592,25 @@ static void HUC6280_ins_4D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -14618,10 +14619,10 @@ static void HUC6280_ins_4D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -14630,14 +14631,14 @@ static void HUC6280_ins_4D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14653,19 +14654,19 @@ static void HUC6280_ins_4E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -14676,10 +14677,10 @@ static void HUC6280_ins_4E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -14689,13 +14690,13 @@ static void HUC6280_ins_4E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14711,19 +14712,19 @@ static void HUC6280_ins_4F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -14733,11 +14734,11 @@ static void HUC6280_ins_4F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 4)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -14751,7 +14752,7 @@ static void HUC6280_ins_4F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14768,10 +14769,10 @@ static void HUC6280_ins_50__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.V;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -14785,7 +14786,7 @@ static void HUC6280_ins_50__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14802,16 +14803,16 @@ static void HUC6280_ins_51__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -14819,27 +14820,27 @@ static void HUC6280_ins_51__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -14848,14 +14849,14 @@ static void HUC6280_ins_51__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14872,16 +14873,16 @@ static void HUC6280_ins_52__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -14889,26 +14890,26 @@ static void HUC6280_ins_52__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -14917,14 +14918,14 @@ static void HUC6280_ins_52__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14940,10 +14941,10 @@ static void HUC6280_ins_53__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -14966,7 +14967,7 @@ static void HUC6280_ins_53__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -14989,7 +14990,7 @@ static void HUC6280_ins_54__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15006,16 +15007,16 @@ static void HUC6280_ins_55__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -15024,24 +15025,24 @@ static void HUC6280_ins_55__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X )) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15056,9 +15057,9 @@ static void HUC6280_ins_56__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -15069,24 +15070,24 @@ static void HUC6280_ins_56__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.C = (regs->TR[0]) & 1;
             regs->TR[1] = (regs->TR[0]) >> 1;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15102,10 +15103,10 @@ static void HUC6280_ins_57__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -15117,21 +15118,21 @@ static void HUC6280_ins_57__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 5);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15152,7 +15153,7 @@ static void HUC6280_ins_58__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15169,25 +15170,25 @@ static void HUC6280_ins_59__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -15197,10 +15198,10 @@ static void HUC6280_ins_59__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->Y)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -15209,14 +15210,14 @@ static void HUC6280_ins_59__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15239,7 +15240,7 @@ static void HUC6280_ins_5A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15259,7 +15260,7 @@ static void HUC6280_ins_5B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15279,7 +15280,7 @@ static void HUC6280_ins_5C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15296,25 +15297,25 @@ static void HUC6280_ins_5D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -15324,10 +15325,10 @@ static void HUC6280_ins_5D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -15336,14 +15337,14 @@ static void HUC6280_ins_5D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->A) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15359,19 +15360,19 @@ static void HUC6280_ins_5E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -15383,10 +15384,10 @@ static void HUC6280_ins_5E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -15396,13 +15397,13 @@ static void HUC6280_ins_5E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15418,19 +15419,19 @@ static void HUC6280_ins_5F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -15440,11 +15441,11 @@ static void HUC6280_ins_5F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 5)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -15458,7 +15459,7 @@ static void HUC6280_ins_5F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15494,7 +15495,7 @@ static void HUC6280_ins_60__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15511,16 +15512,16 @@ static void HUC6280_ins_61__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -15529,26 +15530,26 @@ static void HUC6280_ins_61__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -15571,14 +15572,14 @@ static void HUC6280_ins_61__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 11: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 12: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15599,7 +15600,7 @@ static void HUC6280_ins_62__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15619,7 +15620,7 @@ static void HUC6280_ins_63__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15635,10 +15636,10 @@ static void HUC6280_ins_64__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -15647,13 +15648,13 @@ static void HUC6280_ins_64__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15670,16 +15671,16 @@ static void HUC6280_ins_65__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -15687,11 +15688,11 @@ static void HUC6280_ins_65__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -15711,14 +15712,14 @@ static void HUC6280_ins_65__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15733,9 +15734,9 @@ static void HUC6280_ins_66__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -15745,11 +15746,11 @@ static void HUC6280_ins_66__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C << 7;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             c = ((regs->TR[0]) << 7) | c;
@@ -15758,13 +15759,13 @@ static void HUC6280_ins_66__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15780,10 +15781,10 @@ static void HUC6280_ins_67__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -15795,21 +15796,21 @@ static void HUC6280_ins_67__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 6);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15838,7 +15839,7 @@ static void HUC6280_ins_68__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15855,16 +15856,16 @@ static void HUC6280_ins_69__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -15888,14 +15889,14 @@ static void HUC6280_ins_69__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15921,7 +15922,7 @@ static void HUC6280_ins_6A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15941,7 +15942,7 @@ static void HUC6280_ins_6B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -15957,19 +15958,19 @@ static void HUC6280_ins_6C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// grawf!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -15980,19 +15981,19 @@ static void HUC6280_ins_6C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// load16
             regs->TR[0] = pins->D;
@@ -16002,7 +16003,7 @@ static void HUC6280_ins_6C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 12: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16019,25 +16020,25 @@ static void HUC6280_ins_6D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -16046,10 +16047,10 @@ static void HUC6280_ins_6D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -16072,14 +16073,14 @@ static void HUC6280_ins_6D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16095,19 +16096,19 @@ static void HUC6280_ins_6E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -16118,10 +16119,10 @@ static void HUC6280_ins_6E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -16133,13 +16134,13 @@ static void HUC6280_ins_6E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16155,19 +16156,19 @@ static void HUC6280_ins_6F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -16177,11 +16178,11 @@ static void HUC6280_ins_6F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 6)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -16195,7 +16196,7 @@ static void HUC6280_ins_6F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16212,10 +16213,10 @@ static void HUC6280_ins_70__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.V;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -16229,7 +16230,7 @@ static void HUC6280_ins_70__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16246,16 +16247,16 @@ static void HUC6280_ins_71__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -16263,27 +16264,27 @@ static void HUC6280_ins_71__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -16306,14 +16307,14 @@ static void HUC6280_ins_71__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 11: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 12: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16330,16 +16331,16 @@ static void HUC6280_ins_72__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -16347,26 +16348,26 @@ static void HUC6280_ins_72__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 10: {// load16
             regs->TR[0] = pins->D;
@@ -16389,14 +16390,14 @@ static void HUC6280_ins_72__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 11: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 12: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16412,57 +16413,57 @@ static void HUC6280_ins_73__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -16494,19 +16495,19 @@ static void HUC6280_ins_73__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
@@ -16539,7 +16540,7 @@ static void HUC6280_ins_73__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16555,10 +16556,10 @@ static void HUC6280_ins_74__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -16568,13 +16569,13 @@ static void HUC6280_ins_74__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16591,16 +16592,16 @@ static void HUC6280_ins_75__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
@@ -16609,11 +16610,11 @@ static void HUC6280_ins_75__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// idle
             regs->TA = (regs->TA + (regs->X )) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
                 regs->P.C = (out >> 8) & 1;
@@ -16633,14 +16634,14 @@ static void HUC6280_ins_75__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16655,9 +16656,9 @@ static void HUC6280_ins_76__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -16668,11 +16669,11 @@ static void HUC6280_ins_76__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 c = regs->P.C << 7;
             regs->P.C = ((regs->TR[0]) >> 7) & 1;
             c = ((regs->TR[0]) << 7) | c;
@@ -16681,13 +16682,13 @@ static void HUC6280_ins_76__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16703,10 +16704,10 @@ static void HUC6280_ins_77__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yicky?
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -16718,21 +16719,21 @@ static void HUC6280_ins_77__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] &= ~(1 << 7);
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16753,7 +16754,7 @@ static void HUC6280_ins_78__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16770,25 +16771,25 @@ static void HUC6280_ins_79__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -16798,10 +16799,10 @@ static void HUC6280_ins_79__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->Y)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -16824,14 +16825,14 @@ static void HUC6280_ins_79__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16860,7 +16861,7 @@ static void HUC6280_ins_7A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16880,7 +16881,7 @@ static void HUC6280_ins_7B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16896,19 +16897,19 @@ static void HUC6280_ins_7C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// grawf!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -16920,19 +16921,19 @@ static void HUC6280_ins_7C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// load16
             regs->TR[0] = pins->D;
@@ -16942,7 +16943,7 @@ static void HUC6280_ins_7C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 12: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -16959,25 +16960,25 @@ static void HUC6280_ins_7D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// start!
             regs->TR[2] = regs->A;
             pins->Addr = regs->MPR[1] | (regs->X);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// load8
             regs->A = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 3: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 4: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// operand
             regs->TR[0] = pins->D;
@@ -16987,10 +16988,10 @@ static void HUC6280_ins_7D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -17013,14 +17014,14 @@ static void HUC6280_ins_7D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             regs->A = regs->TR[2];
             // Following is auto-generated code for instruction finish
             break; }
         case 11: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17036,19 +17037,19 @@ static void HUC6280_ins_7E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -17060,10 +17061,10 @@ static void HUC6280_ins_7E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -17075,13 +17076,13 @@ static void HUC6280_ins_7E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[1] = c;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17097,19 +17098,19 @@ static void HUC6280_ins_7F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -17119,11 +17120,11 @@ static void HUC6280_ins_7F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 7)) != 0;
             if (regs->TR[0]) regs->TCU += 2;
@@ -17137,7 +17138,7 @@ static void HUC6280_ins_7F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17154,10 +17155,10 @@ static void HUC6280_ins_80__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = 1;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17171,7 +17172,7 @@ static void HUC6280_ins_80__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17187,10 +17188,10 @@ static void HUC6280_ins_81__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17199,30 +17200,30 @@ static void HUC6280_ins_81__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X )) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             break; }
         case 7: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17243,7 +17244,7 @@ static void HUC6280_ins_82__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17259,19 +17260,19 @@ static void HUC6280_ins_83__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yick
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[1] = pins->D;
@@ -17283,11 +17284,11 @@ static void HUC6280_ins_83__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 8: {// idle
             pins->Addr = regs->MPR[1] | (regs->TR[1]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->TR[0] & regs->TA) == 0;
             regs->P.V = (regs->TA >> 6) & 1;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -17296,7 +17297,7 @@ static void HUC6280_ins_83__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17312,10 +17313,10 @@ static void HUC6280_ins_84__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17324,13 +17325,13 @@ static void HUC6280_ins_84__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->Y;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17346,10 +17347,10 @@ static void HUC6280_ins_85__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17358,13 +17359,13 @@ static void HUC6280_ins_85__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17380,10 +17381,10 @@ static void HUC6280_ins_86__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17392,13 +17393,13 @@ static void HUC6280_ins_86__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->X;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17414,10 +17415,10 @@ static void HUC6280_ins_87__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17429,21 +17430,21 @@ static void HUC6280_ins_87__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 0;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17466,7 +17467,7 @@ static void HUC6280_ins_88__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17482,7 +17483,7 @@ static void HUC6280_ins_89__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.V = ((regs->TA) >> 6) & 1;
             regs->P.N = ((regs->TA) >> 7) & 1;
@@ -17514,7 +17515,7 @@ static void HUC6280_ins_8A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17534,7 +17535,7 @@ static void HUC6280_ins_8B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17550,19 +17551,19 @@ static void HUC6280_ins_8C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -17572,13 +17573,13 @@ static void HUC6280_ins_8C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->Y;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17594,19 +17595,19 @@ static void HUC6280_ins_8D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -17616,13 +17617,13 @@ static void HUC6280_ins_8D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17638,19 +17639,19 @@ static void HUC6280_ins_8E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -17660,13 +17661,13 @@ static void HUC6280_ins_8E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->X;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17682,19 +17683,19 @@ static void HUC6280_ins_8F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -17704,11 +17705,11 @@ static void HUC6280_ins_8F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 0)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -17722,7 +17723,7 @@ static void HUC6280_ins_8F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17739,10 +17740,10 @@ static void HUC6280_ins_90__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.C;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17756,7 +17757,7 @@ static void HUC6280_ins_90__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17772,10 +17773,10 @@ static void HUC6280_ins_91__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// I AM ALIVE
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17783,31 +17784,31 @@ static void HUC6280_ins_91__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TR[0]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TR[1]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= regs->TR[1] << 8;
             break; }
         case 7: {// idle
             regs->TA = (regs->TR[0] + regs->Y) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17823,10 +17824,10 @@ static void HUC6280_ins_92__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17834,30 +17835,30 @@ static void HUC6280_ins_92__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             break; }
         case 7: {// idle
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17873,28 +17874,28 @@ static void HUC6280_ins_93__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yarp
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
@@ -17907,7 +17908,7 @@ static void HUC6280_ins_93__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 10: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->TR[2] & regs->TR[0]) == 0;
             regs->P.V = (regs->TR[2] >> 6) & 1;
             regs->P.N = (regs->TR[2] >> 7) & 1;
@@ -17931,10 +17932,10 @@ static void HUC6280_ins_94__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17944,13 +17945,13 @@ static void HUC6280_ins_94__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->Y;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -17966,10 +17967,10 @@ static void HUC6280_ins_95__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -17979,13 +17980,13 @@ static void HUC6280_ins_95__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18001,10 +18002,10 @@ static void HUC6280_ins_96__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -18014,13 +18015,13 @@ static void HUC6280_ins_96__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->X;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18036,10 +18037,10 @@ static void HUC6280_ins_97__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -18051,21 +18052,21 @@ static void HUC6280_ins_97__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 1;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18088,7 +18089,7 @@ static void HUC6280_ins_98__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18104,19 +18105,19 @@ static void HUC6280_ins_99__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18127,13 +18128,13 @@ static void HUC6280_ins_99__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TA = (regs->TA + regs->Y ) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18154,7 +18155,7 @@ static void HUC6280_ins_9A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18174,7 +18175,7 @@ static void HUC6280_ins_9B__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18190,19 +18191,19 @@ static void HUC6280_ins_9C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18212,13 +18213,13 @@ static void HUC6280_ins_9C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             pins->Addr = regs->TA;
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18234,19 +18235,19 @@ static void HUC6280_ins_9D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18257,13 +18258,13 @@ static void HUC6280_ins_9D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TA = (regs->TA + regs->X ) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = regs->A;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18279,19 +18280,19 @@ static void HUC6280_ins_9E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YAR!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18302,13 +18303,13 @@ static void HUC6280_ins_9E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TA = (regs->TA + regs->X ) & 0xFFFF;
             pins->Addr = regs->TA;
             pins->D = 0;
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18324,19 +18325,19 @@ static void HUC6280_ins_9F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18346,11 +18347,11 @@ static void HUC6280_ins_9F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 1)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -18364,7 +18365,7 @@ static void HUC6280_ins_9F__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18380,7 +18381,7 @@ static void HUC6280_ins_A0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = regs->TA == 0;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -18403,39 +18404,39 @@ static void HUC6280_ins_A0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_A1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -18448,7 +18449,7 @@ static void HUC6280_ins_A1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18464,7 +18465,7 @@ static void HUC6280_ins_A2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = regs->TA == 0;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -18489,19 +18490,19 @@ static void HUC6280_ins_A3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yick
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[1] = pins->D;
@@ -18514,11 +18515,11 @@ static void HUC6280_ins_A3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 8: {// idle
             regs->TR[1] = (regs->TR[1] + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TR[1]);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 9: {// load8
             regs->TA = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->TR[0] & regs->TA) == 0;
             regs->P.V = (regs->TA >> 6) & 1;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -18527,7 +18528,7 @@ static void HUC6280_ins_A3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18542,9 +18543,9 @@ static void HUC6280_ins_A4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -18552,11 +18553,11 @@ static void HUC6280_ins_A4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -18565,7 +18566,7 @@ static void HUC6280_ins_A4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18580,9 +18581,9 @@ static void HUC6280_ins_A5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -18590,11 +18591,11 @@ static void HUC6280_ins_A5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -18603,7 +18604,7 @@ static void HUC6280_ins_A5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18618,9 +18619,9 @@ static void HUC6280_ins_A6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -18628,11 +18629,11 @@ static void HUC6280_ins_A6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -18641,7 +18642,7 @@ static void HUC6280_ins_A6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18657,10 +18658,10 @@ static void HUC6280_ins_A7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -18672,21 +18673,21 @@ static void HUC6280_ins_A7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 2;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18709,7 +18710,7 @@ static void HUC6280_ins_A8__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18725,7 +18726,7 @@ static void HUC6280_ins_A9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = regs->TA == 0;
             regs->P.N = (regs->TA >> 7) & 1;
@@ -18757,7 +18758,7 @@ static void HUC6280_ins_AA__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18777,7 +18778,7 @@ static void HUC6280_ins_AB__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18793,19 +18794,19 @@ static void HUC6280_ins_AC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18814,7 +18815,7 @@ static void HUC6280_ins_AC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -18838,19 +18839,19 @@ static void HUC6280_ins_AD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18859,7 +18860,7 @@ static void HUC6280_ins_AD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -18883,19 +18884,19 @@ static void HUC6280_ins_AE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18904,7 +18905,7 @@ static void HUC6280_ins_AE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -18928,19 +18929,19 @@ static void HUC6280_ins_AF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -18950,11 +18951,11 @@ static void HUC6280_ins_AF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 2)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -18968,7 +18969,7 @@ static void HUC6280_ins_AF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -18985,10 +18986,10 @@ static void HUC6280_ins_B0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.C;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -19002,7 +19003,7 @@ static void HUC6280_ins_B0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19018,10 +19019,10 @@ static void HUC6280_ins_B1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -19029,24 +19030,24 @@ static void HUC6280_ins_B1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -19068,37 +19069,37 @@ static void HUC6280_ins_B1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_B2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -19111,7 +19112,7 @@ static void HUC6280_ins_B2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19127,28 +19128,28 @@ static void HUC6280_ins_B3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// yarp
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
@@ -19162,7 +19163,7 @@ static void HUC6280_ins_B3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 10: {// idle
             regs->TA = (regs->TA + regs->X ) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->TR[2] & regs->TR[0]) == 0;
             regs->P.V = (regs->TR[2] >> 6) & 1;
             regs->P.N = (regs->TR[2] >> 7) & 1;
@@ -19185,9 +19186,9 @@ static void HUC6280_ins_B4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -19196,11 +19197,11 @@ static void HUC6280_ins_B4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -19209,7 +19210,7 @@ static void HUC6280_ins_B4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19224,9 +19225,9 @@ static void HUC6280_ins_B5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -19235,11 +19236,11 @@ static void HUC6280_ins_B5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -19248,7 +19249,7 @@ static void HUC6280_ins_B5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19263,9 +19264,9 @@ static void HUC6280_ins_B6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -19274,11 +19275,11 @@ static void HUC6280_ins_B6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->Y)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -19287,7 +19288,7 @@ static void HUC6280_ins_B6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19303,10 +19304,10 @@ static void HUC6280_ins_B7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -19318,21 +19319,21 @@ static void HUC6280_ins_B7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 3;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19353,7 +19354,7 @@ static void HUC6280_ins_B8__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19369,19 +19370,19 @@ static void HUC6280_ins_B9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -19391,7 +19392,7 @@ static void HUC6280_ins_B9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -19422,7 +19423,7 @@ static void HUC6280_ins_BA__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19442,7 +19443,7 @@ static void HUC6280_ins_BB__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19458,19 +19459,19 @@ static void HUC6280_ins_BC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -19480,7 +19481,7 @@ static void HUC6280_ins_BC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->Y = regs->TR[0];
@@ -19504,19 +19505,19 @@ static void HUC6280_ins_BD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -19526,7 +19527,7 @@ static void HUC6280_ins_BD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->A = regs->TR[0];
@@ -19550,19 +19551,19 @@ static void HUC6280_ins_BE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -19572,7 +19573,7 @@ static void HUC6280_ins_BE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = regs->TR[0] == 0;
             regs->P.N = (regs->TR[0] >> 7) & 1;
             regs->X = regs->TR[0];
@@ -19596,19 +19597,19 @@ static void HUC6280_ins_BF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -19618,11 +19619,11 @@ static void HUC6280_ins_BF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 3)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -19636,7 +19637,7 @@ static void HUC6280_ins_BF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19652,7 +19653,7 @@ static void HUC6280_ins_C0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             u32 o = regs->Y - (regs->TA);
             regs->P.C = ((o >> 8) & 1) ^ 1;
@@ -19676,39 +19677,39 @@ static void HUC6280_ins_C0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_C1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -19721,7 +19722,7 @@ static void HUC6280_ins_C1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19742,7 +19743,7 @@ static void HUC6280_ins_C2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19758,57 +19759,57 @@ static void HUC6280_ins_C3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -19840,19 +19841,19 @@ static void HUC6280_ins_C3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] - 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] - 1) & 0xFFFF;
             regs->TR[3] ^= 1;
@@ -19885,7 +19886,7 @@ static void HUC6280_ins_C3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19900,9 +19901,9 @@ static void HUC6280_ins_C4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -19910,11 +19911,11 @@ static void HUC6280_ins_C4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 o = regs->Y - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -19924,7 +19925,7 @@ static void HUC6280_ins_C4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19939,9 +19940,9 @@ static void HUC6280_ins_C5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -19949,11 +19950,11 @@ static void HUC6280_ins_C5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -19962,7 +19963,7 @@ static void HUC6280_ins_C5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -19977,9 +19978,9 @@ static void HUC6280_ins_C6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -19989,23 +19990,23 @@ static void HUC6280_ins_C6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20021,10 +20022,10 @@ static void HUC6280_ins_C7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -20036,21 +20037,21 @@ static void HUC6280_ins_C7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 4;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20073,7 +20074,7 @@ static void HUC6280_ins_C8__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20089,7 +20090,7 @@ static void HUC6280_ins_C9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->P.Z = (regs->A & (regs->TA)) == 0;
             regs->P.V = ((regs->TA) >> 6) & 1;
@@ -20121,7 +20122,7 @@ static void HUC6280_ins_CA__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20141,7 +20142,7 @@ static void HUC6280_ins_CB__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20157,19 +20158,19 @@ static void HUC6280_ins_CC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -20178,7 +20179,7 @@ static void HUC6280_ins_CC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u32 o = regs->Y - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -20203,19 +20204,19 @@ static void HUC6280_ins_CD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -20224,7 +20225,7 @@ static void HUC6280_ins_CD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -20248,19 +20249,19 @@ static void HUC6280_ins_CE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -20271,10 +20272,10 @@ static void HUC6280_ins_CE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -20283,13 +20284,13 @@ static void HUC6280_ins_CE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20305,19 +20306,19 @@ static void HUC6280_ins_CF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -20327,11 +20328,11 @@ static void HUC6280_ins_CF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 4)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -20345,7 +20346,7 @@ static void HUC6280_ins_CF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20362,10 +20363,10 @@ static void HUC6280_ins_D0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = !regs->P.Z;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -20379,7 +20380,7 @@ static void HUC6280_ins_D0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20395,10 +20396,10 @@ static void HUC6280_ins_D1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -20406,24 +20407,24 @@ static void HUC6280_ins_D1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -20445,37 +20446,37 @@ static void HUC6280_ins_D1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_D2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -20488,7 +20489,7 @@ static void HUC6280_ins_D2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20504,57 +20505,57 @@ static void HUC6280_ins_D3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -20586,19 +20587,19 @@ static void HUC6280_ins_D3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             break; }
@@ -20630,7 +20631,7 @@ static void HUC6280_ins_D3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20653,7 +20654,7 @@ static void HUC6280_ins_D4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20668,9 +20669,9 @@ static void HUC6280_ins_D5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -20679,11 +20680,11 @@ static void HUC6280_ins_D5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -20692,7 +20693,7 @@ static void HUC6280_ins_D5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20707,9 +20708,9 @@ static void HUC6280_ins_D6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -20720,23 +20721,23 @@ static void HUC6280_ins_D6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20752,10 +20753,10 @@ static void HUC6280_ins_D7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -20767,21 +20768,21 @@ static void HUC6280_ins_D7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 5;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20802,7 +20803,7 @@ static void HUC6280_ins_D8__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20818,19 +20819,19 @@ static void HUC6280_ins_D9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -20840,7 +20841,7 @@ static void HUC6280_ins_D9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -20871,7 +20872,7 @@ static void HUC6280_ins_DA__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20891,7 +20892,7 @@ static void HUC6280_ins_DB__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20911,7 +20912,7 @@ static void HUC6280_ins_DC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -20927,19 +20928,19 @@ static void HUC6280_ins_DD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -20949,7 +20950,7 @@ static void HUC6280_ins_DD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.Z = (regs->A & (regs->TR[0])) == 0;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
@@ -20973,19 +20974,19 @@ static void HUC6280_ins_DE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -20997,10 +20998,10 @@ static void HUC6280_ins_DE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -21009,13 +21010,13 @@ static void HUC6280_ins_DE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21031,19 +21032,19 @@ static void HUC6280_ins_DF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -21053,11 +21054,11 @@ static void HUC6280_ins_DF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 5)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -21071,7 +21072,7 @@ static void HUC6280_ins_DF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21087,7 +21088,7 @@ static void HUC6280_ins_E0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             u32 o = regs->X - (regs->TA);
             regs->P.C = ((o >> 8) & 1) ^ 1;
@@ -21111,39 +21112,39 @@ static void HUC6280_ins_E0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_E1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             break; }
-        case 3: {// idle
-            break; }
         case 4: {// regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -21171,7 +21172,7 @@ static void HUC6280_ins_E1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21191,7 +21192,7 @@ static void HUC6280_ins_E2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21207,57 +21208,57 @@ static void HUC6280_ins_E3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -21289,19 +21290,19 @@ static void HUC6280_ins_E3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] += regs->TR[3] ? -1 : 1;
             regs->TR[1] &= 0xFFFF;
@@ -21335,7 +21336,7 @@ static void HUC6280_ins_E3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21350,9 +21351,9 @@ static void HUC6280_ins_E4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -21360,11 +21361,11 @@ static void HUC6280_ins_E4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u32 o = regs->X - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -21374,7 +21375,7 @@ static void HUC6280_ins_E4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21389,9 +21390,9 @@ static void HUC6280_ins_E5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -21399,11 +21400,11 @@ static void HUC6280_ins_E5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -21427,7 +21428,7 @@ static void HUC6280_ins_E5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21442,9 +21443,9 @@ static void HUC6280_ins_E6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -21454,23 +21455,23 @@ static void HUC6280_ins_E6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21486,10 +21487,10 @@ static void HUC6280_ins_E7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -21501,21 +21502,21 @@ static void HUC6280_ins_E7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 6;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21538,7 +21539,7 @@ static void HUC6280_ins_E8__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21554,7 +21555,7 @@ static void HUC6280_ins_E9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// PIRATES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC = (regs->PC + 1) & 0xFFFF;
             u8 r = regs->TA ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
@@ -21598,7 +21599,7 @@ static void HUC6280_ins_EA__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21618,7 +21619,7 @@ static void HUC6280_ins_EB__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21634,19 +21635,19 @@ static void HUC6280_ins_EC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -21655,7 +21656,7 @@ static void HUC6280_ins_EC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u32 o = regs->X - (regs->TR[0]);
             regs->P.C = ((o >> 8) & 1) ^ 1;
             regs->P.Z = (o & 0xFF) == 0;
@@ -21680,19 +21681,19 @@ static void HUC6280_ins_ED__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -21701,7 +21702,7 @@ static void HUC6280_ins_ED__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -21740,19 +21741,19 @@ static void HUC6280_ins_EE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -21763,10 +21764,10 @@ static void HUC6280_ins_EE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -21775,13 +21776,13 @@ static void HUC6280_ins_EE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21797,19 +21798,19 @@ static void HUC6280_ins_EF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -21819,11 +21820,11 @@ static void HUC6280_ins_EF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 6)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -21837,7 +21838,7 @@ static void HUC6280_ins_EF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21854,10 +21855,10 @@ static void HUC6280_ins_F0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 1: {// C1
             regs->TR[0] = regs->P.Z;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -21871,7 +21872,7 @@ static void HUC6280_ins_F0__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -21887,10 +21888,10 @@ static void HUC6280_ins_F1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// BOO
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -21898,24 +21899,24 @@ static void HUC6280_ins_F1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -21952,37 +21953,37 @@ static void HUC6280_ins_F1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 static void HUC6280_ins_F2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     switch(regs->TCU) {
+        case 1: {// idle
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
-        case 1: {// store8
-            pins->M = 0;
+            pins->WR = 1; 
             break; }
-        case 2: {// operand
+        case 2: {// store8
+            pins->WR = 0; 
+            break; }
+        case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            break; }
-        case 3: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->TA + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 6: {// idle
             regs->TA = regs->TR[0] | (regs->TR[1] << 8);
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 8: {// load16
             regs->TR[0] = pins->D;
@@ -22010,7 +22011,7 @@ static void HUC6280_ins_F2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22026,57 +22027,57 @@ static void HUC6280_ins_F3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[0] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 6: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 7: {// operand
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// operand
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 10: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 11: {// operand
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 12: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 13: {// operand
             regs->TR[5] = pins->D;
@@ -22108,19 +22109,19 @@ static void HUC6280_ins_F3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->BM = 1;
             regs->TR[3] = 0;
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 21: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 22: {// load16
             regs->TR[4] = pins->D;
             pins->Addr = regs->TR[1];
             pins->D = regs->TR[4];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 23: {// store16
-            pins->RW = 0; pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] += regs->TR[3] ? -1 : 1;
             regs->TR[0] &= 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
@@ -22154,7 +22155,7 @@ static void HUC6280_ins_F3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22175,7 +22176,7 @@ static void HUC6280_ins_F4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22190,9 +22191,9 @@ static void HUC6280_ins_F5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -22201,11 +22202,11 @@ static void HUC6280_ins_F5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 3: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -22229,7 +22230,7 @@ static void HUC6280_ins_F5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22244,9 +22245,9 @@ static void HUC6280_ins_F6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
         case 1: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 2: {// operand
             regs->TA = pins->D;
@@ -22257,23 +22258,23 @@ static void HUC6280_ins_F6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFF;
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 6: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22289,10 +22290,10 @@ static void HUC6280_ins_F7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// griggity
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
@@ -22304,21 +22305,21 @@ static void HUC6280_ins_F7__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 7: {// load8
             regs->TR[0] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TR[0] |= 1 << 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[0];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 8: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22339,7 +22340,7 @@ static void HUC6280_ins_F8__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22355,19 +22356,19 @@ static void HUC6280_ins_F9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -22377,7 +22378,7 @@ static void HUC6280_ins_F9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->Y) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -22429,7 +22430,7 @@ static void HUC6280_ins_FA__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22449,7 +22450,7 @@ static void HUC6280_ins_FB__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22469,7 +22470,7 @@ static void HUC6280_ins_FC__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22485,19 +22486,19 @@ static void HUC6280_ins_FD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YOULL NEVER FIND ME
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -22507,7 +22508,7 @@ static void HUC6280_ins_FD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 6: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             u8 r = regs->TR[0] ^ 0xFF;
             i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
             if (!regs->P.D) {
@@ -22546,19 +22547,19 @@ static void HUC6280_ins_FE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YES!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -22570,10 +22571,10 @@ static void HUC6280_ins_FE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// idle
             regs->TA = (regs->TA + (regs->X)) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->TR[0] = pins->D;
@@ -22582,13 +22583,13 @@ static void HUC6280_ins_FE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->TA;
             pins->D = regs->TR[1];
-            pins->RW = 1; pins->M = 1;
+            pins->WR = 1; 
             // Following is auto-generated code for instruction finish
             break; }
         case 10: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RW = 0; 
+            pins->RD = 0; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22604,19 +22605,19 @@ static void HUC6280_ins_FF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// YO!
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 2: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 3: {// operand
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 4: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 5: {// operand
             regs->TR[0] = pins->D;
@@ -22626,11 +22627,11 @@ static void HUC6280_ins_FF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             break; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->TA);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// load8
             regs->TR[1] = pins->D;
-            pins->M = 0;
+            pins->WR = 0; 
             regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);
             regs->TR[0] = (regs->TR[1] & (1 << 7)) != 0;
             if (!regs->TR[0]) regs->TCU += 2;
@@ -22644,7 +22645,7 @@ static void HUC6280_ins_FF__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22659,7 +22660,7 @@ static void HUC6280_ins_RESET_t1(struct HUC6280_regs *regs, struct HUC6280_pins 
 {
     switch(regs->TCU) {
         case 1: {// 3
-            
+            pins->WR = 0; 
             pins->Addr = regs->S | 0x100;
             regs->S = (regs->S - 1) & 0xFF;
             break; }
@@ -22681,6 +22682,7 @@ static void HUC6280_ins_RESET_t1(struct HUC6280_regs *regs, struct HUC6280_pins 
             regs->P.I = regs->P.B = 1;
             regs->P.D = regs->P.T = 0;
             regs->IRQD.u = 3; //IRQD is inverted
+            regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;
             break; }
@@ -22695,7 +22697,7 @@ static void HUC6280_ins_RESET_t1(struct HUC6280_regs *regs, struct HUC6280_pins 
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->M = 1;
+            pins->WR = 1; 
             regs->P.T = 0;
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
@@ -22736,16 +22738,16 @@ static void HUC6280_ins_IRQ2_t1(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->P.T = 0;
             regs->TA = 0xFFF6;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA++;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             break; }
@@ -22792,16 +22794,16 @@ static void HUC6280_ins_IRQ1_t1(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->P.T = 0;
             regs->TA = 0xFFF8;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA++;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             break; }
@@ -22848,16 +22850,16 @@ static void HUC6280_ins_TIQ_t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->P.T = 0;
             regs->TA = 0xFFFA;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             break; }
         case 8: {// store8
-            pins->M = 0;
+            pins->WR = 0; 
             break; }
         case 9: {// load16
             regs->PC = pins->D;
             regs->TA++;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            pins->M = 1;
+            pins->WR = 1; 
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             break; }
