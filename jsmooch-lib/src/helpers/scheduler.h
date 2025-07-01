@@ -54,6 +54,8 @@ struct scheduler_t {
     struct scheduled_bound_function run;
 
     u32 in_event;
+    i64 target_cycles_left, target_cycle;
+    u32 *next_block_size;
     i64 cycles_left_to_run;
     i64 loop_start_clock;
     u64 *clock, *waitstates;
@@ -85,6 +87,7 @@ u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_c
 
 void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany);
 void scheduler_run_til_tag(struct scheduler_t *this, u32 tag);
+void scheduler_run_til_tag_v2(struct scheduler_t *this, u32 tag);
 u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched);
 
 // Combine add with bind

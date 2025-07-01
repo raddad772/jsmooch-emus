@@ -24,8 +24,10 @@ class huc6280_switchgen:
         self.no_T_at_end = False
         self.override_IRQ = False
         self.outstr = ''
-        self.old_rd = 0
+        self.old_rd = 1
         self.old_wr = 0
+        self.new_rd = 0
+        self.new_wr = 0
         self.old_m = 0
         self.next_cyclewhat = None
         self.clear(indent)
@@ -34,23 +36,38 @@ class huc6280_switchgen:
         self.indent1 = indent
         self.indent2 = '    ' + self.indent1
         self.indent3 = '    ' + self.indent2
-        self.in_case = False
         self.last_case: str = '0'
         self.has_footer = False
         self.no_addr_at_end = False
         self.no_RW_at_end = False
         self.has_custom_end = False
         self.override_IRQ = False
-        self.old_rd = 0
+        self.old_rd = 1
         self.old_wr = 0
         self.no_T_at_end = False
         self.old_m = 0
+        self.in_case = False
+        self.addcycle('start cycle')
         self.indent4 = '    ' + self.indent3
+
+    def set_down_rw(self):
+        if self.new_rd != self.old_rd or self.new_wr != self.old_wr:
+            x = ''
+            if self.old_rd != self.new_rd:
+                x = 'pins->RD = ' + str(self.new_rd) + '; '# + '// RD:' + str(self.new_rd) + '  WR:' + str(self.new_wr) + '. oldRD:' + str(self.old_rd) + '  oldWR:' + str(self.old_wr)
+            if self.old_wr != self.new_wr:
+                x += 'pins->WR = ' + str(self.new_wr) + ';'# + '// RD:' + str(self.new_rd) + '  WR:' + str(self.new_wr) + '. oldRD:' + str(self.old_rd) + '  oldWR:' + str(self.old_wr)
+            self.addl(x)
+            self.old_rd = self.new_rd
+            self.old_wr = self.new_wr
 
     def addcycle(self, whatup: Optional[str]):
         if self.in_case:
+            self.set_down_rw()
             self.outstr += self.indent4 + 'break; }\n'
         what = str(int(self.last_case) + 1)
+        self.new_wr = 0
+        self.new_rd = 0
         self.last_case = what
         self.in_case = True
         if whatup is not None:
@@ -78,7 +95,8 @@ class huc6280_switchgen:
         if not self.no_addr_at_end:
             self.addr_to_PC_then_inc()
         if not self.no_RW_at_end:
-            self.RW(0, 1)
+            self.RW(1, 0)
+            self.set_down_rw()
         if not self.no_T_at_end:
             self.addl('regs->P.T = 0;')
         if not self.override_IRQ:
@@ -89,15 +107,8 @@ class huc6280_switchgen:
         self.addl('break;')
 
     def RW(self, rd: int, wr: int, force: bool = False):
-        if rd != self.old_rd or wr != self.old_wr or force:
-            x = ''
-            if self.old_rd != rd or force:
-                x = 'pins->RD = ' + str(rd) + '; '
-            if self.old_wr != wr or force:
-                x = 'pins->WR = ' + str(wr) + '; '
-            self.addl(x)
-            self.old_rd = rd
-            self.old_wr = wr
+        self.new_rd = rd
+        self.new_wr = wr
 
     def addr_to_PC(self):
         self.addl('pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);')
@@ -129,18 +140,12 @@ class huc6280_switchgen:
 
     def load16(self, dest, source, name=None, last=False):
         self.addl('pins->Addr = regs->MPR[(' + source + ')>>13] | ((' + source + ') & 0x1FFF);')
-        self.RW(0, 1)
+        self.RW(1, 0)
         if not last:
-            self.addcycle('store8')
+            self.addcycle('load16')
             self.RW(0, 0)
-
-            if name is None:
-                self.addcycle('load16')
-            else:
-                self.addcycle(name)
             if dest is not None:
                 self.addl(dest + ' = pins->D;')
-            self.RW(0, 0)
 
     def inc_PC(self):
         self.addl('regs->PC = (regs->PC + 1) & 0xFFFF;')
@@ -167,7 +172,7 @@ class huc6280_switchgen:
 
     def load8(self, dest, source):
         self.addl('pins->Addr = regs->MPR[1] | (' + source + ');')
-        self.RW(0, 1)
+        self.RW(1, 0)
         self.addcycle('load8')
         self.addl(dest + ' = pins->D;')
         self.RW(0, 0)
@@ -175,18 +180,16 @@ class huc6280_switchgen:
     def store8(self, addr, val, last=False):
         self.addl('pins->Addr = regs->MPR[1] | (' + addr + ');')
         self.addl('pins->D = ' + val + ';')
-        self.RW(1, 1)
+        self.RW(0, 1)
         if not last:
             self.addcycle('store8')
-            self.RW(0, 0)
 
     def store16(self, addr, val, last=False):
         self.addl('pins->Addr = ' + addr + ';')
         self.addl('pins->D = ' + val + ';')
-        self.RW(1, 1)
+        self.RW(0, 1)
         if not last:
             self.addcycle('store16')
-            self.RW(0, 0)
 
 
 def hex2(yo):
@@ -212,7 +215,6 @@ def C_func_sig(mo, tbit):
 
 
 def IndirectYReadMemory(ag: huc6280_switchgen, ins_func) -> str:
-    ag.addcycle('start!')
     ag.addl('regs->TR[2] = regs->A;')
     ag.load8('regs->A', 'regs->X')
 
@@ -246,7 +248,6 @@ def Break(ag: huc6280_switchgen):
 
 
 def StoreImplied(ag: huc6280_switchgen, data: str) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TR[0]')
     ag.addcycle('idle')
     ag.store16(addr=data, val='regs->TR[0]', last=True)
@@ -255,14 +256,12 @@ def StoreImplied(ag: huc6280_switchgen, data: str) -> str:
 
 
 def Clear(ag: huc6280_switchgen, dt):
-    ag.addcycle('yo')
     ag.addl(dt + ' = 0;')
 
     return ag.finished()
 
 
 def SetMemoryBit(ag: huc6280_switchgen, bitnum):
-    ag.addcycle('griggity')
     ag.operand('regs->TA')
     ag.addcycle('idle')
     ag.addcycle('idle')
@@ -275,7 +274,6 @@ def SetMemoryBit(ag: huc6280_switchgen, bitnum):
 
 
 def Transfer(ag: huc6280_switchgen, src, tgt) -> str:
-    ag.addcycle('idle!')
     ag.cleanup()
     ag.addl(tgt + ' = ' + src + ';')
     ag.addl('regs->P.Z = ' + tgt + ' == 0;')
@@ -285,7 +283,6 @@ def Transfer(ag: huc6280_switchgen, src, tgt) -> str:
 
 
 def TransferXS(ag: huc6280_switchgen) -> str:
-    ag.addcycle('idle!')
     ag.cleanup()
     ag.addl('regs->S = regs->X;')
 
@@ -293,7 +290,6 @@ def TransferXS(ag: huc6280_switchgen) -> str:
 
 
 def ResetMemoryBit(ag: huc6280_switchgen, bitnum):
-    ag.addcycle('yicky?')
     ag.operand('regs->TA')
     ag.addcycle('idle')
     ag.addcycle('idle')
@@ -305,7 +301,6 @@ def ResetMemoryBit(ag: huc6280_switchgen, bitnum):
 
 
 def JumpIndirect(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
-    ag.addcycle('grawf!')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addl('regs->TA |= regs->TR[0] << 8;')
@@ -337,14 +332,12 @@ def Push(ag: huc6280_switchgen, dt: str):
 
 
 def Immediate(ag: huc6280_switchgen, ins_func, dt):
-    ag.addcycle('PIRATES!')
     ag.operand("regs->TA", True)
     ins_func(ag, dt, 'regs->TA')
     return ag.finished()
 
 
 def AbsoluteWrite(ag: huc6280_switchgen, dt, inx: Optional[str] = None):
-    ag.addcycle('YAR!')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addl('regs->TA |= regs->TR[0] << 8;')
@@ -357,7 +350,6 @@ def AbsoluteWrite(ag: huc6280_switchgen, dt, inx: Optional[str] = None):
 
 
 def AbsoluteModify(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None):
-    ag.addcycle('YES!')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addl('regs->TA |= regs->TR[0] << 8;')
@@ -373,14 +365,12 @@ def AbsoluteModify(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None):
 
 
 def Implied(ag: huc6280_switchgen, ins_func, dt):
-    ag.addcycle('only!')
     ins_func(ag, dt, dt)
 
     return ag.finished()
 
 
 def CallAbsolute(ag: huc6280_switchgen):
-    ag.addcycle('huh')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addl('regs->TA |= regs->TR[0] << 8;')
@@ -432,7 +422,6 @@ def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
     ag.addcycle('idle')
     ag.addcycle('idle')
     ag.addcycle('idle')
-    ag.addcycle('yo')
     ag.push('regs->PC >> 8')
     ag.push('regs->PC & 0xFF')
     ag.push('regs->P.u & 0xEF')
@@ -449,7 +438,6 @@ def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
 
 
 def BranchIfBitSet(ag: huc6280_switchgen, bitnum: str) -> str:
-    ag.addcycle('YO!')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addcycle('idle')
@@ -466,7 +454,6 @@ def BranchIfBitSet(ag: huc6280_switchgen, bitnum: str) -> str:
 
 
 def BranchIfBitReset(ag: huc6280_switchgen, bitnum: str):
-    ag.addcycle('YO!')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addcycle('idle')
@@ -509,7 +496,6 @@ def al_TIN(ag: huc6280_switchgen) -> None:
 
 
 def BlockMove(ag: huc6280_switchgen, ifunc) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TR[0]')  # 0=source
     ag.operand('regs->TR[5]')
     ag.addl('regs->TR[0] |= regs->TR[5] << 8;')
@@ -549,7 +535,6 @@ def BlockMove(ag: huc6280_switchgen, ifunc) -> str:
 
 
 def IndirectYWrite(ag: huc6280_switchgen, dt: str) -> str:
-    ag.addcycle('I AM ALIVE')
     ag.operand('regs->TA')
     ag.addcycle('idle')
     ag.load8('regs->TA', 'regs->TR[0]')
@@ -564,7 +549,6 @@ def IndirectYWrite(ag: huc6280_switchgen, dt: str) -> str:
 
 
 def IndirectWrite(ag: huc6280_switchgen, dt: str, inx: Optional[str] = None) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TA')
     ag.addcycle('idle')
     if inx is not None:
@@ -579,7 +563,6 @@ def IndirectWrite(ag: huc6280_switchgen, dt: str, inx: Optional[str] = None) -> 
 
 
 def TestAbsolute(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
-    ag.addcycle('yarp')
     ag.operand('regs->TR[0]')
     ag.operand('regs->TA')
     ag.operand('regs->TR[1]')
@@ -598,7 +581,6 @@ def TestAbsolute(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
 
 
 def TestZeroPage(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
-    ag.addcycle('yick')
     ag.operand('regs->TR[0]')
     ag.operand('regs->TR[1]')
     ag.addcycle('idle')
@@ -615,7 +597,6 @@ def TestZeroPage(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
 
 
 def Branch(ag: huc6280_switchgen, expr) -> str:
-    ag.addcycle('C1')
     ag.addl('regs->TR[0] = ' + expr + ';')
     ag.operand('regs->TA')
     ag.addl("if (!regs->TR[0]) regs->TCU += 2;")
@@ -626,7 +607,6 @@ def Branch(ag: huc6280_switchgen, expr) -> str:
 
 
 def IndirectYRead(ag: huc6280_switchgen, ins_func, dt):
-    ag.addcycle('BOO')
     ag.operand('regs->TA')
     ag.addcycle('idle')
     ag.load8('regs->TR[0]', 'regs->TA')
@@ -641,7 +621,6 @@ def IndirectYRead(ag: huc6280_switchgen, ins_func, dt):
 
 
 def AbsoluteRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None):
-    ag.addcycle('YOULL NEVER FIND ME')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addl('regs->TA |= regs->TR[0] << 8;')
@@ -655,8 +634,6 @@ def AbsoluteRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None)
 
 
 def NOP(ag: huc6280_switchgen):
-    ag.addcycle('yo')
-
     return ag.finished()
 
 
@@ -702,37 +679,40 @@ def Swap(ag: huc6280_switchgen, data1, data2) -> str:
 
 
 def IndirectRead(ag: huc6280_switchgen, ins_func, dta: Optional[str] = None, inx: Optional[str] = None) -> str:
-    ag.addcycle('idle')
     ag.operand('regs->TA')
     if inx is not None:
-        ag.addcycle('regs->TA = (regs->TA + (' + inx + ')) & 0xFF;')
+        ag.addl('regs->TA = (regs->TA + (' + inx + ')) & 0xFF;')
+    ag.addcycle('idle')
     ag.load8('regs->TR[0]', 'regs->TA')
     ag.addl('regs->TA = (regs->TA + 1) & 0xFF;')
     ag.load8('regs->TR[1]', 'regs->TA')
     ag.addcycle('idle')
     ag.addl('regs->TA = regs->TR[0] | (regs->TR[1] << 8);')
-    ag.load16('regs->TR[0]', 'regs->TA')
-    ins_func(ag, dta, 'regs->TR[0]')
+    ag.load16('regs->TR[0]', 'regs->TA', last=True)
     ag.cleanup()
-    ag.addl(dta + " = regs->TR[0];")
+    ag.addl('regs->TR[0] = pins->D;')
+    ins_func(ag, dta, 'regs->TR[0]')
 
     return ag.finished()
 
 
 def IndirectReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None) -> str:
-    ag.addcycle('start!')
     ag.addl('regs->TR[2] = regs->A;')
-    ag.load8('regs->A', 'regs->X')
-
     ag.operand('regs->TA')
-    ag.addcycle('idle')
     if inx:
         ag.addl('regs->TA = (regs->TA + (' + inx + ')) & 0xFF;')
+
+    ag.addcycle('idle')
+
     ag.load8('regs->TR[0]', 'regs->TA')
     ag.addl('regs->TA = (regs->TA + 1) & 0xFF;')
     ag.load8('regs->TR[1]', 'regs->TA')
     ag.addcycle('idle')
+    ag.addcycle('idle')
+
     ag.addl('regs->TA = regs->TR[0] | (regs->TR[1] << 8);')
+
+    ag.load8('regs->A', 'regs->X')
     ag.load16('regs->TR[0]', 'regs->TA')
 
     ins_func(ag, 'regs->A', 'regs->TR[0]')
@@ -743,7 +723,6 @@ def IndirectReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
 
 
 def AbsoluteReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None) -> str:
-    ag.addcycle('start!')
     ag.addl('regs->TR[2] = regs->A;')
     ag.load8('regs->A', 'regs->X')
 
@@ -764,7 +743,6 @@ def AbsoluteReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
 
 
 def ImmediateMemory(ag: huc6280_switchgen, ins_func) -> str:
-    ag.addcycle('start!')
     ag.addl('regs->TR[2] = regs->A;')
     ag.load8('regs->A', 'regs->X')
     ag.operand('regs->TA')
@@ -777,14 +755,12 @@ def ImmediateMemory(ag: huc6280_switchgen, ins_func) -> str:
 
 
 def Set(ag: huc6280_switchgen, dt) -> str:
-    ag.addcycle('ha')
     ag.cleanup()
     ag.addl(dt + ' = 1;')
     return ag.finished()
 
 
 def BranchSubroutine(ag: huc6280_switchgen) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TA')
     ag.addl('regs->TA = (u32)(i8)regs->TA;')
     ag.addcycle('idle')
@@ -800,7 +776,6 @@ def BranchSubroutine(ag: huc6280_switchgen) -> str:
 
 
 def ChangeSpeedLow(ag: huc6280_switchgen) -> str:
-    ag.addcycle('start')
     ag.addl('regs->clock_div = 12;')
     ag.addcycle('idle')
 
@@ -808,7 +783,6 @@ def ChangeSpeedLow(ag: huc6280_switchgen) -> str:
 
 
 def ChangeSpeedHigh(ag: huc6280_switchgen) -> str:
-    ag.addcycle('start')
     ag.addl('regs->clock_div = 3;')
     ag.addcycle('idle')
 
@@ -828,7 +802,6 @@ def ReturnFromSubroutine(ag: huc6280_switchgen) -> str:
 
 
 def ZeroPageWrite(ag: huc6280_switchgen, dt: str, inx: Optional[str] = None) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TA')
     if inx is not None:
         ag.addl('regs->TA = (regs->TA + ' + inx + ') & 0xFF;')
@@ -839,7 +812,6 @@ def ZeroPageWrite(ag: huc6280_switchgen, dt: str, inx: Optional[str] = None) -> 
 
 
 def TransferAccumulatorToMPR(ag: huc6280_switchgen) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TA')
 
     ag.addcycle('idle')
@@ -857,7 +829,6 @@ def TransferAccumulatorToMPR(ag: huc6280_switchgen) -> str:
 
 
 def TransferMPRToAccumulator(ag: huc6280_switchgen) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TR[0]')
     ag.addcycle('idle')
     ag.addcycle('idle')
@@ -883,7 +854,6 @@ def ReturnFromInterrupt(ag: huc6280_switchgen) -> str:
 
 
 def JumpAbsolute(ag: huc6280_switchgen) -> str:
-    ag.addcycle('start')
     ag.operand('regs->TA')
     ag.operand('regs->TR[0]')
     ag.addl('regs->TA |= regs->TR[0] << 8;')
@@ -895,7 +865,6 @@ def JumpAbsolute(ag: huc6280_switchgen) -> str:
 
 
 def ZeroPageReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = None) -> str:
-    ag.addcycle('start!')
     ag.addl('regs->TR[2] = regs->A;')
     ag.load8('regs->A', 'regs->X')
     ag.operand('regs->TA')  # ZP = operand()
@@ -1677,6 +1646,7 @@ def main():
     if os.path.isfile(outinsfile):
         os.unlink(outinsfile)
     with open(outinsfile, 'w') as outfile:
+        outfile.write('#include <printf.h>\n')
         outfile.write('#include <assert.h>\n')
         outfile.write('#include "helpers/int.h"\n')
         outfile.write('#include "huc6280_opcodes.h"\n')

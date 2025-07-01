@@ -314,6 +314,77 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
     this->in_event = 0;
 }
 
+void scheduler_run_til_tag_known_block_size(struct scheduler_t *this, u32 tag)
+{
+    assert(this->first_event);
+    if (this->target_cycles_left < 1) {
+        this->target_cycle = current_time(this) + *this->next_block_size;
+        this->target_cycles_left = *this->next_block_size;
+    }
+
+
+    while(!dbg.do_break) {
+        // First, check if there's no events.
+        // Then, discharge any waiting events.
+        // Then, if we hace any, run some cycles.
+        struct scheduler_event *e = this->first_event;
+        //this->loop_start_clock = current_time(this);
+
+        this->in_event = 1;
+        while(this->target_cycle > e->timecode) {
+            //i64 jitter = this->loop_start_clock - e->timecode;
+            this->first_event = e->next;
+            //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld tag:%d", e->id, e->next ? e->next->id : 0, e->timecode, this->loop_start_clock, current_time(this), e->tag);
+            if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
+            e->next = NULL;
+            i64 add = e->timecode - current_time(this);
+            assert(add >= 0);
+            *this->clock += add;
+            e->bound_func.func(e->bound_func.ptr, e->key, e->timecode, 0);
+            u32 etag = e->tag;
+
+            // Add event to discard list
+            del_event(this, e);
+
+            //char ww[50];
+            //snprintf(ww, sizeof(ww), "after run %lld", idn);
+            //pprint_list(ww, this);
+            if (etag == tag) {
+                this->in_event = 0;
+                return;
+            }
+
+            e = this->first_event;
+
+            if (e == NULL) {
+                this->in_event = 0;
+                return;
+            }
+
+            //this->loop_start_clock = current_time(this);
+        }
+
+        if (dbg.do_break) {
+            this->cycles_left_to_run = 0;
+            break;
+        }
+
+        // Now...Run cycles!
+        u64 num_cycles_to_run = e->timecode - this->loop_start_clock;
+        if (num_cycles_to_run > this->max_block_size) num_cycles_to_run = this->max_block_size;
+        this->in_event = 0;
+        this->run.func(this->run.ptr, 0, *this->clock, 0);
+        i64 add = this->target_cycle - current_time(this);
+        assert(add>=0);
+        *this->clock += add;
+        this->target_cycle = current_time(this) + *this->next_block_size;
+    }
+    if (dbg.do_break) {
+        this->cycles_left_to_run = 0;
+    }
+    this->in_event = 0;
+}
+
 void scheduler_run_til_tag(struct scheduler_t *this, u32 tag)
 {
     assert(this->first_event);
