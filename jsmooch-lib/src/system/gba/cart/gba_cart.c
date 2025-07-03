@@ -50,8 +50,11 @@ static u32 prefetch_stop(struct GBA *this)
 }
 
 u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect, u32 ws) {
-    if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000))
-        return GBA_cart_read_eeprom(this, addr, sz, access, has_effect);
+    if ((this->cart.RAM.is_eeprom) && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
+        u32 v =  GBA_cart_read_eeprom(this, addr, sz, access, has_effect);
+        //printf("\nRead EEPROM addr:%08x  sz:%d  val:%02x", addr, sz, v);
+        return v;
+    }
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
 
@@ -207,8 +210,10 @@ void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
     if (this->cart.RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
         return write_RTC(this, addr, sz, access, val);
     }
-    if (this->cart.RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000))
+    if (this->cart.RAM.is_eeprom && (addr >= 0x0d000000) && (addr < 0x0e000000)) {
+        //printf("\nWrite EEPROM addr:%08x  sz:%d  val:%02x", addr, sz, val);
         return GBA_cart_write_eeprom(this, addr, sz, access, val);
+    }
     this->waitstates.current_transaction++;
     this->waitstates.current_transaction += prefetch_stop(this);
     this->cart.prefetch.cycles_banked = 0;
