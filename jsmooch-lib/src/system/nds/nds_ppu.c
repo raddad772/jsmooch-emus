@@ -415,6 +415,11 @@ static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
     }
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif
+
 static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
@@ -535,6 +540,10 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 
     } while(draw_x < 256);
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 static void affine_line_start(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg)
 {
@@ -1263,7 +1272,7 @@ void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hbla
         }
 
         if (this->dbg.events.view.vec) {
-            debugger_report_line(this->dbg.interface, this->clock.ppu.y);
+            debugger_report_line(this->dbg._interface, this->clock.ppu.y);
         }
 
         for (u32 ppun = 0; ppun < 2; ppun++) {

@@ -26,7 +26,7 @@ static void setup_console_view(struct PS1* this, struct debugger_interface *dbgr
 void PS1J_setup_debugger_interface(struct jsm_system *jsm, struct debugger_interface *dbgr)
 {
     JTHIS;
-    this->dbg.interface = dbgr;
+    this->dbg._interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 1;

@@ -90,7 +90,7 @@ static void remap(struct NES_bus *bus, u32 is_boot)
         NES_bus_map_CHR1K(bus, 0x1000, 0x17FF, &bus->CHR_ROM, this->regs.bank[0] & 0xFE, READONLY);
         NES_bus_map_CHR1K(bus, 0x1800, 0x1FFF, &bus->CHR_ROM, this->regs.bank[1] & 0xFE, READONLY);
     }
-    debugger_interface_dirty_mem(bus->nes->dbg.interface, NESMEM_CPUBUS, 0x8000, 0xFFFF);
+    debugger_interface_dirty_mem(bus->nes->dbg._interface, NESMEM_CPUBUS, 0x8000, 0xFFFF);
 }
 
 static void remap_PPU(struct NES_bus *bus)

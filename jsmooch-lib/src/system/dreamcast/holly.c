@@ -281,6 +281,11 @@ enum VolumeInstruction {
     VI_OutsideLastPolygon = 2,
 };
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4700) // warning C4700: uninitialized local variable 'cmd' used
+#endif
+
 void holly_TA_cmd(struct DC* this) {
 
     if (this->holly.ta.cmd_buffer_index % 8 != 0) return; // All commands are 8 or 16 bytes long
@@ -289,6 +294,10 @@ void holly_TA_cmd(struct DC* this) {
     //cmd.u = *(u32 *)(&this->holly.ta.cmd_buffer[0]);
     enum HOLLY_PCW_paratype ptype = cmd.para_type;
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 void holly_TA_FIFO_load(struct DC* this, u32 src_addr, u32 tx_len, void* src)
 {

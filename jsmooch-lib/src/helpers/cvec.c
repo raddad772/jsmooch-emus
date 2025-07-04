@@ -46,7 +46,7 @@ void cvec_delete(struct cvec* this)
 
 u32 cvec_index_of(struct cvec* this, void* ptr)
 {
-    u64 index = (u64)(ptr - this->data) / this->data_sz;
+    u64 index = (u64)((char *)ptr - (char *)this->data) / this->data_sz;
     assert(index <= 0xFFFFFFFF);
     return (u32)index;
 }
@@ -78,7 +78,7 @@ void *cvec_push_back(struct cvec* this)
     if (this->len >= this->len_allocated) {
         cvec_int_grow(this);
     }
-    void *ret = this->data + (this->len * this->data_sz);
+    void *ret = (char *)this->data + (this->len * this->data_sz);
     this->len++;
     return ret;
 }
@@ -101,7 +101,7 @@ void cvec_alloc_atleast(struct cvec* this, u64 howmuch)
 void *cvec_pop_back(struct cvec* this)
 {
     if (this->len == 0) return NULL;
-    return this->data + (this->len-- * this->data_sz);
+    return (char *)this->data + (this->len-- * this->data_sz);
 }
 
 void cvec_clear(struct cvec* this)
@@ -112,13 +112,13 @@ void cvec_clear(struct cvec* this)
 void *cvec_get(struct cvec* this, u32 index)
 {
     assert(index < this->len);
-    return this->data + (this->data_sz * index);
+    return (char *)this->data + (this->data_sz * index);
 }
 
 void *cvec_get_unsafe(struct cvec* this, u32 index)
 {
     assert(index < this->len_allocated);
-    return this->data + (this->data_sz * index);
+    return (char *)this->data + (this->data_sz * index);
 }
 
 void cvec_push_back_copy(struct cvec* this, void *src)

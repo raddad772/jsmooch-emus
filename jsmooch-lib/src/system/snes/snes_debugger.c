@@ -118,7 +118,7 @@ static void render_image_view_obj_tiles(struct debugger_interface *dbgr, struct 
                                         printf("\nUNSUPPORT COLORMODE %d", colormode);
                                         a = colormode;
                                     }}
-                                    __attribute__ ((fallthrough));
+                                    FALLTHROUGH;
                                 case 0: {// B&W
                                     float r = ((float)c / 15.0f) * 255.0f;
                                     c = (u32)r;
@@ -583,7 +583,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
     this->r5a22.cpu.dbg.events.IRQ = DBG_SNES_EVENT_IRQ;
     this->r5a22.cpu.dbg.events.NMI = DBG_SNES_EVENT_NMI;
 
-    debugger_report_frame(this->dbg.interface);
+    debugger_report_frame(this->dbg._interface);
 }
 
 
@@ -591,7 +591,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
 
 void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
-    this->dbg.interface = dbgr;
+    this->dbg._interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 4;

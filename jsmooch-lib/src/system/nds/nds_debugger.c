@@ -948,7 +948,7 @@ static void setup_image_view_re_output(struct NDS* this, struct debugger_interfa
 
 void NDSJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
-    this->dbg.interface = dbgr;
+    this->dbg._interface = dbgr;
 
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;

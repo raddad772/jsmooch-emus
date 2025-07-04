@@ -355,7 +355,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     struct genesis* this = (struct genesis*)ptr;
 
     this->clock.vdp.frame_start = cur;
-    debugger_report_frame(this->dbg.interface);
+    debugger_report_frame(this->dbg._interface);
     this->vdp.cur_output = ((u16 *)this->vdp.display->output[this->vdp.display->last_written ^ 1]);
     this->clock.master_frame++;
 
@@ -408,7 +408,7 @@ static void new_scanline(struct genesis* this, u64 cur_clock)
     this->vdp.line.sprite_patterns = 0;
     this->vdp.latch.h40 = this->vdp.io.h40;
     if (this->dbg.events.view.vec) {
-        debugger_report_line(this->dbg.interface, this->clock.vdp.vcount);
+        debugger_report_line(this->dbg._interface, this->clock.vdp.vcount);
     }
     this->vdp.sprite_collision = this->vdp.sprite_overflow = 0;
     this->clock.vdp.hcount = 0;

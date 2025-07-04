@@ -75,8 +75,13 @@ static void eeprom_write(struct NDS *this, u32 val)
 {
     this->cart.backup.data_out.b8[0] = 0xFF;
     switch(this->cart.backup.status.write_protect_mode) {
-        case 1: if (this->cart.backup.cmd_addr >= this->cart.backup.uq) return; __attribute__ ((fallthrough));
-        case 2: if (this->cart.backup.cmd_addr >= this->cart.backup.uh) return; __attribute__ ((fallthrough));
+        case 1: 
+            if (this->cart.backup.cmd_addr >= this->cart.backup.uq) 
+                return;
+            FALLTHROUGH;
+        case 2: if (this->cart.backup.cmd_addr >= this->cart.backup.uh) 
+            return; 
+            FALLTHROUGH;
         case 3: return;
     }
     flprintf(" %04x: %02x (en:%d)", this->cart.backup.cmd_addr, val & 0xFF, this->cart.backup.status.write_enable);

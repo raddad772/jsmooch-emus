@@ -526,6 +526,7 @@ static inline u32 shade_boundary_func(u32 kind, u32 incolor)
             return 0xFFFFFFFF;
     }
     NOGOHERE;
+    return 0;
 }
 
 static int fetch_order[4] = { 1, 0, 3, 2 };
@@ -1347,7 +1348,7 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
     SET_EVENT_VIEW(this->ym2612);
     SET_EVENT_VIEW(this->psg);
 
-    debugger_report_frame(this->dbg.interface);
+    debugger_report_frame(this->dbg._interface);
 }
 
 static void setup_image_view_ym_info(struct genesis *this, struct debugger_interface *dbgr)
@@ -1375,7 +1376,7 @@ static void setup_image_view_ym_info(struct genesis *this, struct debugger_inter
 void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
-    this->dbg.interface = dbgr;
+    this->dbg._interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 2;

@@ -3,6 +3,7 @@
 //
 
 #include <stdlib.h>
+#include <assert.h>
 #include "r3000_multiplier.h"
 
 void R3000_multiplier_set(struct R3000_multiplier *this, u32 hi, u32 lo, u32 op1, u32 op2, u32 op_kind, u32 cycles, u64 current_clock)
@@ -48,6 +49,11 @@ static inline void u32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
     }
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif
+
 static inline void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
 {
     i32 c = (i32)a;
@@ -72,6 +78,9 @@ static inline void i32_divide(u32 a, u32 b, u32 *hi, u32 *lo)
     }
 }
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 void R3000_multiplier_finish(struct R3000_multiplier *this)
 {

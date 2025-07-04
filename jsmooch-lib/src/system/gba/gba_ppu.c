@@ -1092,7 +1092,7 @@ static void hblank(void *ptr, u64 key, u64 clock, u32 jitter)
 
         this->clock.ppu.y++;
         if (this->dbg.events.view.vec) {
-            debugger_report_line(this->dbg.interface, this->clock.ppu.y);
+            debugger_report_line(this->dbg._interface, this->clock.ppu.y);
         }
 
         // ==160 check DMA at vblank
@@ -1161,7 +1161,7 @@ void GBA_PPU_schedule_frame(void *ptr, u64 key, u64 clock, u32 jitter)
     this->ppu.mosaic.obj.y_current = 0;
     memset(this->dbg_info.bg_scrolls, 0, sizeof(this->dbg_info.bg_scrolls));
 
-    debugger_report_frame(this->dbg.interface);
+    debugger_report_frame(this->dbg._interface);
     this->clock.ppu.y = 0;
     this->ppu.cur_output = ((u16 *)this->ppu.display->output[this->ppu.display->last_written ^ 1]);
     this->ppu.display->last_written ^= 1;

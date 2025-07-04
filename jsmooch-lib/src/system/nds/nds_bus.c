@@ -495,6 +495,11 @@ static void start_sqrt(struct NDS *this)
     this->io.div.busy_until = NDS_clock_current9(this) + 13;
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif
+
 static void div_calc(struct NDS *this)
 {
     this->io.div.needs_calc = 0;
@@ -555,6 +560,10 @@ static void div_calc(struct NDS *this)
 
     this->io.div.by_zero |= this->io.div.denom.u == 0;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 static void sqrt_calc(struct NDS *this)
 {

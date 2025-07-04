@@ -11,8 +11,7 @@ extern "C" {
 
 #include "helpers/cvec.h"
 
-
-#define DBG_START struct { struct debugger_interface *interface;
+#define DBG_START struct { struct debugger_interface *_interface;  // n.b. Unfortunately "interface" is a macro in the MSVC headers, so prefix with underscore.
 
 #define DBG_CPU_REG_START1 struct { struct cpu_reg_context
 #define DBG_CPU_REG_END1 ; } dasm;

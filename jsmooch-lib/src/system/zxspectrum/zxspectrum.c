@@ -44,7 +44,7 @@ void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
     switch(variant) {
         default:
             printf("\nUnknown ZXSpectrum, defaulting to 48k!");
-            __attribute__ ((fallthrough));
+            FALLTHROUGH;
         case ZXS_spectrum48:
             this->ROM_size = 16 * 1024;
             this->RAM_size = 48 * 1024;
@@ -207,7 +207,7 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
     u32 F = cpu->regs.AF_ & 0xFF;
     u32 actually_load = (F & 1) == 1; // 0 = VERIFY
     cpu->regs.H = 0;
-    cpu->regs.L = *(u8 *)&td->TAPE_binary.ptr[td->head_pos];
+    cpu->regs.L = ((u8 *)td->TAPE_binary.ptr)[td->head_pos];
     cpu->regs.H ^= cpu->regs.L;
     td->head_pos++;
     if (td->head_pos >= td->TAPE_binary.size) td->head_pos = 0;
@@ -217,7 +217,7 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
     u32 DE = (cpu->regs.D << 8) | cpu->regs.E;
     u32 IX = cpu->regs.IX;
     while(DE > 0) {
-        cpu->regs.L = *(u8*)&td->TAPE_binary.ptr[td->head_pos];
+        cpu->regs.L = ((u8*)td->TAPE_binary.ptr)[td->head_pos];
         td->head_pos++;
         if (td->head_pos >= td->TAPE_binary.size) td->head_pos = 0;
         cpu->regs.H ^= cpu->regs.L;
@@ -228,7 +228,7 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
         IX = (IX + 1) & 0xFFFF;
     }
     // Last byte is not loaded into RAM
-    cpu->regs.L = *(u8*)&td->TAPE_binary.ptr[td->head_pos];
+    cpu->regs.L = ((u8*)td->TAPE_binary.ptr)[td->head_pos];
     td->head_pos++;
     if (td->head_pos >= td->TAPE_binary.size) td->head_pos = 0;
     cpu->regs.H ^= cpu->regs.L;

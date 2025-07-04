@@ -1194,7 +1194,7 @@ static void setup_events_view(struct GBA* this, struct debugger_interface *dbgr)
     DEBUG_REGISTER_EVENT("Write VRAM", 0x0000FF, DBG_GBA_CATEGORY_PPU, DBG_GBA_EVENT_WRITE_VRAM);
 
     SET_EVENT_VIEW(this->cpu);
-    debugger_report_frame(this->dbg.interface);
+    debugger_report_frame(this->dbg._interface);
 }
 
 
@@ -1360,7 +1360,7 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct GBA *this) {
 void GBAJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
-    this->dbg.interface = dbgr;
+    this->dbg._interface = dbgr;
 
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;

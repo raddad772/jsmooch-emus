@@ -243,6 +243,7 @@ static u32 get_drive_reg(struct mac* this) {
             return v;
     }
     NOGOHERE;
+    return 0;
 }
 
 void mac_iwm_clock(struct mac* this)

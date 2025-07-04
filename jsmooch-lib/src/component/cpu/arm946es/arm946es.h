@@ -91,8 +91,10 @@ struct ARM946ES_regs {
 
     u32 EBR; // Exception Base Register, my own kinda abstraction
     union {
-        struct {
+#if !defined(_MSC_VER)
+        struct { // #TODO: Remove if not required
         };
+#endif
         u32 u;
     } SPSR;
 

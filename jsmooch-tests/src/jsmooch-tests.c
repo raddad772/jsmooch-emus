@@ -22,6 +22,7 @@
 #include "helpers/debug.h"
 #include "helpers/bitbuffer.h"
 
+#if 0 // Broken: bitbuf_read_bits is not implemented
 void test_bitbuf()
 {
     struct bitbuf bb;
@@ -83,6 +84,7 @@ void test_bitbuf()
     bitbuf_delete(&bb);
     bitbuf_delete(&out);
 }
+#endif
 
 int main()
 {
@@ -90,7 +92,7 @@ int main()
     dbg.trace_on = 0;
     //test_spc700();
     //test_wdc65816();
-    test_huc6280();
+    //test_huc6280();
     //z80_drag_race();
     //test_scheduler();
     //test_sm83();
@@ -98,7 +100,7 @@ int main()
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();
-    //test_m68000();
+    test_m68000();
     //test_bitbuf();
     //test_dasm_ranges();
     //test_nesm6502();

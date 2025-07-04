@@ -314,17 +314,17 @@ void NES_bus_a12_watch(struct NES *nes, u32 addr)
 
 void NES_bus_map_PRG32K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 15, is_readonly, bus->nes->dbg._interface, 0, bus->SRAM);
 }
 
 void NES_bus_map_PRG16K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 14, is_readonly, bus->nes->dbg._interface, 0, bus->SRAM);
 }
 
 void NES_bus_map_PRG8K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)
 {
-    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly, bus->nes->dbg.interface, 0, bus->SRAM);
+    NES_memmap_map(bus->CPU_map, 13, range_start, range_end, buf, bank << 13, is_readonly, bus->nes->dbg._interface, 0, bus->SRAM);
 }
 
 void NES_bus_map_CHR1K(struct NES_bus *bus, u32 range_start, u32 range_end, struct simplebuf8 *buf, u32 bank, u32 is_readonly)

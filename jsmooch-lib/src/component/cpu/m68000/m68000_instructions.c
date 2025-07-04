@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "helpers/intrinsics.h"
+
 #include "m68000.h"
 #include "m68000_instructions.h"
 #include "generated/generated_disasm.h"
@@ -304,6 +306,7 @@ static u32 condition(struct M68k* this, u32 condition) {
         default: assert(1==2);
     }
     NOGOHERE;
+    return 0;
 }
 
 #define HOLD_WORD_POSTINC             u32 hold = HOLD;\
@@ -1971,7 +1974,7 @@ export_M68KINS(MOVE)
                     if (!this->state.op[1].t2) {
                         this->state.op[1].addr = M68k_read_ea_addr(this, 1, ins->sz, NO_HOLD, this->state.op[1].ext_words);
                     }
-                    __attribute__ ((fallthrough));
+                    FALLTHROUGH;
                 case M68k_AM_imm16:
                 case M68k_AM_imm32:
                 case M68k_AM_immediate:

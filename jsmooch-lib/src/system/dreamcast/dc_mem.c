@@ -1,5 +1,7 @@
+#if defined (__clang__)
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "UnreachableCode"
+#endif
 //
 //
 // Created by Dave on 2/13/2024.
@@ -344,6 +346,11 @@ void DC_mem_init(struct DC* this)
         this->mem.rptr[i] = NULL;
     }
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4113) // warning C4113: 'u64 (__cdecl *)(void *,u32,u32,u32 *)' differs in parameter lists from 'u64 (__cdecl *)(void *,u32,DC_MEM_SIZE,u32 *)'
+#endif
+
 #define MAP(addr, rdfunc, wrfunc, obj) this->mem.read[(addr)>>2] = (rdfunc); this->mem.write[(addr)>>2] = (wrfunc); this->mem.rptr[(addr) >> 2] = ((void *)obj); this->mem.wptr[(addr) >> 2] = ((void *)obj)
     // All of P0. P1, P2, P3 should mirror the lower half of P0?
     u32 areas[5] = { 0x00, 0x60, 0x80, 0xA0, 0xC0 };
@@ -365,7 +372,9 @@ void DC_mem_init(struct DC* this)
 #undef MAP
 }
 
-
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 u64 VMASK[9] = {
         0,
@@ -634,4 +643,6 @@ the mmu isn't needed though
 
 
  */
+#if defined(__clang__)
 #pragma clang diagnostic pop
+#endif
