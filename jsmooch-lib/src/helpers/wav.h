@@ -7,8 +7,10 @@
 
 #include <stdio.h>
 #include "helpers/int.h"
+#include "helpers/pack.h"
 
-struct __attribute__((packed)) wav_header {
+PACK_BEGIN
+struct wav_header {
     // RIFF Header
     char riff_header[4]; // Contains "RIFF"
     i32 file_sz;
@@ -27,7 +29,7 @@ struct __attribute__((packed)) wav_header {
     // Data
     char data_header[4];
     i32 data_sz;
-};
+} PACK_END;
 
 struct wav_stream {
     char fpath[300];

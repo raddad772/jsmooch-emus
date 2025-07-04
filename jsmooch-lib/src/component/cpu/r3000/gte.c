@@ -4,7 +4,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#if defined(_MSC_VER)
+#include <stdio.h>
+#else
 #include <printf.h>
+#endif
+
+#include "helpers/intrinsics.h"
 
 #include "gte.h"
 
@@ -129,6 +136,11 @@ static inline i16 i32_to_i11_saturate(struct R3000_GTE *this, u8 flag, i32 val)
     return (i16)val;
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif
+
 static inline void check_mac_overflow(struct R3000_GTE *this, i64 val)
 {
     if (val < -0x80000000L) {
@@ -137,6 +149,10 @@ static inline void check_mac_overflow(struct R3000_GTE *this, i64 val)
         set_flag(this, 16);
     }
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 static u32 do_RTP(struct R3000_GTE *this, struct gte_cmd *config, u32 vector_index) {
     i32 z_shifted = 0;

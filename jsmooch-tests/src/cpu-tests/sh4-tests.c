@@ -4,17 +4,22 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
 #include <unistd.h>
 #include <pwd.h>
+#include <dirent.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 
 #include <sys/types.h>
-#include <dirent.h>
 
 #include "component/cpu/sh4/sh4_interpreter.h"
 #include "helpers/multisize_memaccess.c"
 #include "helpers/debug.h"
+#include "helpers/user.h"
 
 #define M8 1
 #define M16 2
@@ -101,18 +106,12 @@ struct sh4_test_overview {
 
 static char *construct_path(char* w, const char* who)
 {
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
+    const char *homeDir = get_user_dir();
     char *tp = w;
     tp += sprintf(tp, "%s/dev/%s", homeDir, who);
     return tp;
 }
+
 #define TB_NONE 0
 #define TB_INITIAL_STATE 1
 #define TB_FINAL_STATE 2
@@ -497,12 +496,32 @@ void test_sh4() {
     char PATH[500];
     construct_path(PATH,"sh4_json/");
 
-    DIR *dp;
-    struct dirent *ep;
-    dp = opendir (PATH);
     char mfp[500][500];
     char mfn[500][500];
     int num_files = 0;
+
+#if defined(_MSC_VER)
+    WIN32_FIND_DATAA findFileData;
+    HANDLE hFind;
+    char searchPath[600];
+    snprintf(searchPath, sizeof(searchPath), "%s\\*.json.bin", PATH);
+    hFind = FindFirstFileA(searchPath, &findFileData);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            snprintf(mfp[num_files], sizeof(mfp[num_files]), "%s\\%s", PATH, findFileData.cFileName);
+            snprintf(mfn[num_files], sizeof(mfn[num_files]), "%s", findFileData.cFileName);
+            num_files++;
+        } while (FindNextFileA(hFind, &findFileData) != 0);
+        FindClose(hFind);
+    }
+    else {
+        printf("\nCouldn't open the directory");
+        return;
+    }
+#else
+    DIR *dp;
+    struct dirent *ep;
+    dp = opendir (PATH);
 
     if (dp != NULL)
     {
@@ -521,6 +540,7 @@ void test_sh4() {
         printf("\nCouldn't open the directory");
         return;
     }
+#endif
     printf("\nFound %d tests!", num_files);
     u32 completed_tests = 0;
     for (u32 i = 0; i < num_files; i++) {

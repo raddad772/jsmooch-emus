@@ -3,7 +3,11 @@
 //
 #include <stdlib.h>
 #include <string.h>
+#if defined(_MSC_VER)
+#include <stdio.h>
+#else
 #include <printf.h>
+#endif
 
 #include "r3000_instructions.h"
 #include "r3000.h"
@@ -32,6 +36,7 @@ static struct R3000_pipeline_item *pipe_push(struct R3000_pipeline *this)
             return &this->item1;
         default:
             NOGOHERE;
+            return 0;
     }
 }
 
@@ -472,6 +477,11 @@ static void fetch_and_decode(struct R3000 *this)
     this->regs.PC += 4;
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4334) // warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+#endif
+
 static void R3000_print_context(struct R3000 *this, struct R3000ctxt *ct, struct jsm_string *out)
 {
     jsm_string_quickempty(out);
@@ -486,6 +496,10 @@ static void R3000_print_context(struct R3000 *this, struct R3000ctxt *ct, struct
         }
     }
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 static void lycoder_trace_format(struct R3000 *this, struct jsm_string *out)
 {

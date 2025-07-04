@@ -3,6 +3,10 @@
 //
 #include <string.h>
 #include <stdio.h>
+
+#ifdef _MSC_VER
+#define _USE_MATH_DEFINES // for M_PI
+#endif
 #include <math.h>
 
 #include "helpers/multisize_memaccess.c"
@@ -136,7 +140,7 @@ void *dc42_load_gcr(struct mac_floppy *mflpy, struct buf *b, u32 head_count, u32
 {
     u32 tracki, headi, sectori;
     u32 sector_count;
-    u8 *bptr = b->ptr + 84;
+    u8 *bptr = (char *)b->ptr + 84;
 
     printf("\nSECTOR FORMAT? %d", fmt);
     *check = 0;

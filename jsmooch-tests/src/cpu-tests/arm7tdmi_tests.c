@@ -1,15 +1,23 @@
 //
 // Created by . on 12/4/24.
 //
+
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
 #include <unistd.h>
 #include <pwd.h>
 #include <dirent.h>
+#endif
+
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "arm7tdmi_tests.h"
+#include "cpu-test-helpers.h"
+
 #include "helpers/multisize_memaccess.c"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm7tdmi/arm7tdmi_instructions.h"
@@ -18,21 +26,6 @@
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (b) : (a))
-
-static char *construct_path(char* w, const char* who)
-{
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
-    char *tp = w;
-    tp += sprintf(tp, "%s/dev/ARM7TDMI/v1/%s", homeDir, who);
-    return tp;
-}
 
 #define FILE_BUF_SIZE 25 * 1024 * 1024
 static char *filebuf = 0;
@@ -666,15 +659,34 @@ void test_arm7tdmi()
     dbg_disable_trace();
 
     char PATH[500];
-    construct_path(PATH, "");
+    construct_cpu_test_path(PATH, "ARM7TDMI", "");
 
-    DIR *dp;
-    struct dirent *ep;
-    dp = opendir(PATH);
     char mfp[500][500];
     char mfn[500][500];
     int num_files = 0;
 
+#if defined(_MSC_VER)
+    WIN32_FIND_DATAA findFileData;
+    HANDLE hFind;
+    char searchPath[600];
+    snprintf(searchPath, sizeof(searchPath), "%s\\*.json.bin", PATH);
+    hFind = FindFirstFileA(searchPath, &findFileData);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            snprintf(mfp[num_files], sizeof(mfp[num_files]), "%s\\%s", PATH, findFileData.cFileName);
+            snprintf(mfn[num_files], sizeof(mfn[num_files]), "%s", findFileData.cFileName);
+            num_files++;
+        } while (FindNextFileA(hFind, &findFileData) != 0);
+        FindClose(hFind);
+    }
+    else {
+        printf("\nCouldn't open the directory");
+        return;
+    }
+#else
+    DIR *dp;
+    struct dirent *ep;
+    dp = opendir(PATH);
     if (dp != NULL) {
         while ((ep = readdir (dp)) != NULL) {
             if (strstr(ep->d_name, ".json.bin") != NULL) {
@@ -689,6 +701,7 @@ void test_arm7tdmi()
         printf("\nCouldn't open the directory");
         return;
     }
+#endif
     printf("\nFound %d tests!", num_files);
 
     u32 completed_tests = 0;

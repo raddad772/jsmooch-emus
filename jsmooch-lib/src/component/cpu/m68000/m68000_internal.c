@@ -662,6 +662,7 @@ u32 M68k_AM_ext_words(enum M68k_address_modes am, u32 sz)
             assert(1==0);
     }
     NOGOHERE;
+    return 0;
 }
 
 static void eval_ea_wait(struct M68k* this, u32 num_ea, u32 opnum, u32 sz)

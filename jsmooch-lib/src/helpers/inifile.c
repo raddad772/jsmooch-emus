@@ -4,25 +4,20 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
+#ifndef _MSC_VER
 #include <unistd.h>
 #include <pwd.h>
+#endif
 #include <stdlib.h>
 
 #include "inifile.h"
+#include "user.h"
 
 char *construct_path_with_home(char *w, size_t w_sz, const char *who)
 {
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
+    const char *homeDir = get_user_dir();
     return w + snprintf(w, w_sz, "%s/%s", homeDir, who);
 }
-
 
 void inifile_init(struct inifile *this)
 {

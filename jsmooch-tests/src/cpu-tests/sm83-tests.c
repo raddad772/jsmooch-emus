@@ -2,8 +2,12 @@
 // Created by Dave on 1/25/2024.
 //
 
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
 #include <pwd.h>
 #include <unistd.h>
+#endif
 #include "sm83-tests.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -11,6 +15,7 @@
 #include "string.h"
 
 #include "helpers/int.h"
+#include "helpers/user.h"
 #include "rfb.h"
 #include "component/cpu/sm83/sm83.h"
 #include "../json.h"
@@ -173,14 +178,8 @@ static u32 testregs(struct SM83* cpu, struct test_state* final, u32 last_pc, u32
 static void construct_path(char *out, u32 iclass, u32 ins)
 {
     char test_path[500];
-    const char *homeDir = getenv("HOME");
 
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
+    const char *homeDir = get_user_dir();
     char *tp = out;
     tp += sprintf(tp, "%s", homeDir);
     tp += sprintf(tp, "/dev/jsmoo/misc/tests/GeneratedTests/sm83/v1");
@@ -239,7 +238,7 @@ static void parse_state(struct json_object_s *object, struct test_state *state)
         }
         if (strcmp(el->name->string, "ram") == 0) {
             struct json_array_s *arr1 = (struct json_array_s *)el->value->payload;
-            state->num_ram_entry = arr1->length;
+            state->num_ram_entry = (u32)arr1->length;
             struct json_array_element_s *arr_el = arr1->start;
             for (u32 arr1_i = 0; arr1_i < arr1->length; arr1_i++) {
                 assert(arr_el->value->type == json_type_array);
@@ -312,7 +311,7 @@ static void parse_and_fill_out(struct jsontest tests[1000], struct read_file_buf
             else if (strcmp(s->name->string, "cycles") == 0) {
                 assert(s->value->type == json_type_array);
                 struct json_array_s* arr1 = (struct json_array_s*)s->value->payload;
-                test->num_cycles = arr1->length;
+                test->num_cycles = (u32)arr1->length;
                 struct json_array_element_s* arr1_el = arr1->start;
                 for (u32 h = 0; h < arr1->length; h++) {
                     assert(arr1_el != NULL);

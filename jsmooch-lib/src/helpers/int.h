@@ -5,8 +5,15 @@
 extern "C" {
 #endif
 
+#define COMPILER_VC 1
 #define COMPILER_CLANG 3
+#if defined(__clang__)
 #define BUILD_COMPILER COMPILER_CLANG
+#elif defined(_MSC_VER)
+#define BUILD_COMPILER COMPILER_VC
+#else
+#error Unsupported compiler
+#endif
 #define CPU_ARM64 5
 #define HOST_CPU CPU_ARM64
 
@@ -76,6 +83,11 @@ typedef double f64;
 #define bswap_16(x) OSSwapInt16(x)
 #define bswap_32(x) OSSwapInt32(x)
 #define bswap_64(x) OSSwapInt64(x)
+#elif defined(_MSC_VER)
+#include <stdlib.h>
+#define bswap_16(x) _byteswap_ushort(x)
+#define bswap_32(x) _byteswap_ulong(x)
+#define bswap_64(x) _byteswap_uint64(x)
 #else
 #if HAVE_BYTESWAP_H
 #include <byteswap.h>
@@ -126,6 +138,17 @@ union UN16 {
 #ifdef DEBUG
 #define NOGOHERE assert(1==2)
 #else
+#if defined(_MSC_VER)
+#define NOGOHERE abort();
+#else
 #define NOGOHERE { abort(); __builtin_unreachable(); }
 #endif
 #endif
+
+#if defined(_MSC_VER)
+#define FALLTHROUGH // #TODO: Is there a way to do this in MSVC?
+#else
+#define FALLTHROUGH __attribute__((fallthrough))
+#endif
+
+#endif // _JSMOOCH_INT_H

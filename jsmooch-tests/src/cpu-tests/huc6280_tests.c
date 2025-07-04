@@ -5,15 +5,15 @@
 #include "huc6280_tests.h"
 
 #include <assert.h>
+
 #include <stdlib.h>
-#include <pwd.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 
 #define ISTART 0xC1
 
 #include "m6502_tests.h"
+#include "cpu-test-helpers.h"
 #include "helpers/int.h"
 #include "component/cpu/huc6280/huc6280.h"
 #include "component/cpu/huc6280/huc6280_misc.h"
@@ -94,21 +94,6 @@ struct huc6280_test_struct {
 static u32 do_test_read_trace(void *ptr, u32 addr)
 {
     return 0;
-}
-
-static char *construct_path(char* w, const char* who)
-{
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
-    char *tp = w;
-    tp += sprintf(tp, "%s/dev/huc6280/v1/%s", homeDir, who);
-    return tp;
 }
 
 static u32 decode_state(u8 *buf, struct huc6280_state *st)
@@ -330,7 +315,7 @@ static void pprint_cycles()
         if (i < ts.num_cycle) {
             struct cycle *mc = &ts.my_cycles[i];
             if (!mc->r && !mc->w)
-                printf(" |   ------  --    ");
+                printf(" |  ------  --    ");
             else
                 printf(" |  %c%06X %c%02X %c%c%c",
                        mc->Addr == tc->Addr ? ' ' : '*',
@@ -550,7 +535,7 @@ void test_huc6280()
         char PATH[500];
         char yo[50];
         snprintf(yo, sizeof(yo), "%02x.json.bin", i);
-        construct_path(PATH, yo);
+        construct_cpu_test_path(PATH, "huc6280", yo);
         do_test(PATH);
         if (ts.failed) break;
     }
