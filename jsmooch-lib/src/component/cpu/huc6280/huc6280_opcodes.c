@@ -3679,20 +3679,12 @@ static void HUC6280_ins_61__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[0] = pins->D;
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -3701,7 +3693,20 @@ static void HUC6280_ins_61__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 8: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -3805,20 +3810,12 @@ static void HUC6280_ins_65__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup_custom
             i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -3827,7 +3824,20 @@ static void HUC6280_ins_65__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 5: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -3862,10 +3872,10 @@ static void HUC6280_ins_66__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
@@ -3932,9 +3942,10 @@ static void HUC6280_ins_68__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            pins->RD = 0; 
             return; }
         case 3: {// idle
             regs->S = (regs->S + 1) & 0xFF;
@@ -3968,20 +3979,12 @@ static void HUC6280_ins_69__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// cleanup_custom
             i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -3990,7 +3993,20 @@ static void HUC6280_ins_69__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 3: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -4012,10 +4028,10 @@ static void HUC6280_ins_6A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 2: {// cleanup_custom
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->A) >> 7) & 1;
-            c = ((regs->A) << 7) | c;
+            regs->P.C = (regs->A) & 1;
+            c = (((regs->A) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->A = c;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
@@ -4068,23 +4084,21 @@ static void HUC6280_ins_6C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 4: {// idle
-            return; }
-        case 5: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             pins->RD = 1; 
             return; }
-        case 6: {// load16
+        case 5: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 6: {// load16
             regs->TR[0] = pins->D;
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             pins->RD = 0; 
             return; }
-        case 8: {// cleanup
+        case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
@@ -4122,20 +4136,12 @@ static void HUC6280_ins_6D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup_custom
             i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -4144,7 +4150,20 @@ static void HUC6280_ins_6D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 6: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -4185,10 +4204,10 @@ static void HUC6280_ins_6E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
             pins->D = regs->TR[1];
@@ -4337,20 +4356,12 @@ static void HUC6280_ins_71__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 7: {// cleanup_custom
             i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -4359,7 +4370,20 @@ static void HUC6280_ins_71__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 8: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -4406,20 +4430,12 @@ static void HUC6280_ins_72__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->TR[0] = pins->D;
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -4428,7 +4444,20 @@ static void HUC6280_ins_72__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 8: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -4446,90 +4475,94 @@ static void HUC6280_ins_73__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -4611,20 +4644,12 @@ static void HUC6280_ins_75__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// cleanup_custom
             i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -4633,7 +4658,20 @@ static void HUC6280_ins_75__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 5: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -4669,10 +4707,10 @@ static void HUC6280_ins_76__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
@@ -4781,20 +4819,12 @@ static void HUC6280_ins_79__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup_custom
             i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -4803,7 +4833,20 @@ static void HUC6280_ins_79__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 6: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -4821,9 +4864,10 @@ static void HUC6280_ins_7A__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            pins->RD = 0; 
             return; }
         case 3: {// idle
             regs->S = (regs->S + 1) & 0xFF;
@@ -4885,24 +4929,22 @@ static void HUC6280_ins_7C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 4: {// idle
-            return; }
-        case 5: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             pins->RD = 1; 
             return; }
-        case 6: {// load16
+        case 5: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 6: {// load16
             regs->TR[0] = pins->D;
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             pins->RD = 0; 
             return; }
-        case 8: {// cleanup
+        case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
@@ -4941,20 +4983,12 @@ static void HUC6280_ins_7D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 5: {// cleanup_custom
             i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                out &= 0xFF;
-            regs->P.Z = (out) == 0;
-            regs->P.N = ((out) & 0x80) >> 7;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
-                if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
                 regs->PC = (regs->PC + 1) & 0xFFFF;
                 pins->RD = 1;
@@ -4963,7 +4997,20 @@ static void HUC6280_ins_7D__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 regs->TCU = 0;
                 return;
             }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out > 0x9F) out += 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            return; }
+        case 6: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -5005,10 +5052,10 @@ static void HUC6280_ins_7E__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
             pins->D = regs->TR[1];
@@ -5093,20 +5140,10 @@ static void HUC6280_ins_80__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// load16
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            if (!1) {
-                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
-                regs->PC = (regs->PC + 1) & 0xFFFF;
-                pins->RD = 1;
-                regs->P.T = 0;
-                HUC6280_poll_IRQs(regs, pins);
-                regs->TCU = 0;
-                return;
-            }
             regs->TA = (regs->PC + (u32)(i8)pins->D) & 0xFFFF;
-            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->RD = 0; 
             return; }
         case 4: {// cleanup_custom
             regs->PC = regs->TA;
@@ -7428,90 +7465,94 @@ static void HUC6280_ins_C3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] - 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] - 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -8092,89 +8133,93 @@ static void HUC6280_ins_D3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -8724,91 +8769,95 @@ static void HUC6280_ins_E3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] += regs->TR[3] ? -1 : 1;
             regs->TR[1] &= 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -9471,91 +9520,95 @@ static void HUC6280_ins_F3__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] += regs->TR[3] ? -1 : 1;
             regs->TR[0] &= 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -9822,9 +9875,10 @@ static void HUC6280_ins_FA__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            pins->RD = 0; 
             return; }
         case 3: {// idle
             regs->S = (regs->S + 1) & 0xFF;
@@ -10497,12 +10551,12 @@ static void HUC6280_ins_05__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -10650,12 +10704,12 @@ static void HUC6280_ins_09__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 3: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 4: {// idle
             regs->A = regs->A | (regs->TA);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -10799,12 +10853,12 @@ static void HUC6280_ins_0D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -11007,12 +11061,12 @@ static void HUC6280_ins_11__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 8: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 9: {// idle
             regs->A = regs->A | (regs->TR[3]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 9: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -11192,12 +11246,12 @@ static void HUC6280_ins_15__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -11355,12 +11409,12 @@ static void HUC6280_ins_19__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -11502,12 +11556,12 @@ static void HUC6280_ins_1D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A | (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -11857,12 +11911,12 @@ static void HUC6280_ins_25__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -12014,12 +12068,12 @@ static void HUC6280_ins_29__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 3: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 4: {// idle
             regs->A = regs->A & (regs->TA);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -12152,12 +12206,12 @@ static void HUC6280_ins_2D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -12361,12 +12415,12 @@ static void HUC6280_ins_31__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 8: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 9: {// idle
             regs->A = regs->A & (regs->TR[3]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 9: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -12525,12 +12579,12 @@ static void HUC6280_ins_35__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -12689,12 +12743,12 @@ static void HUC6280_ins_39__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -12826,12 +12880,12 @@ static void HUC6280_ins_3D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A & (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -13200,12 +13254,12 @@ static void HUC6280_ins_45__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -13352,12 +13406,12 @@ static void HUC6280_ins_49__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 3: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 4: {// idle
             regs->A = regs->A ^ (regs->TA);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 4: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -13483,12 +13537,12 @@ static void HUC6280_ins_4D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -13690,12 +13744,12 @@ static void HUC6280_ins_51__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 8: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 9: {// idle
             regs->A = regs->A ^ (regs->TR[3]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 9: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -13864,12 +13918,12 @@ static void HUC6280_ins_55__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -14026,12 +14080,12 @@ static void HUC6280_ins_59__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -14148,12 +14202,12 @@ static void HUC6280_ins_5D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             regs->A = regs->A ^ (regs->TR[0]);
             regs->P.Z = (regs->A) == 0;
             regs->P.N = ((regs->A) & 0x80) >> 7;
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
             pins->D = regs->A;
             regs->A = regs->TR[2];
@@ -14360,23 +14414,25 @@ static void HUC6280_ins_61__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->A = pins->D;
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 9: {// idle
@@ -14496,28 +14552,30 @@ static void HUC6280_ins_65__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             return; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
@@ -14561,10 +14619,10 @@ static void HUC6280_ins_66__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
@@ -14631,9 +14689,10 @@ static void HUC6280_ins_68__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            pins->RD = 0; 
             return; }
         case 3: {// idle
             regs->S = (regs->S + 1) & 0xFF;
@@ -14671,28 +14730,30 @@ static void HUC6280_ins_69__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 3: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 4: {// idle
             i16 out = (i16)regs->A + (i16)(regs->TA) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TA)) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TA)) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TA) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TA) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TA) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
+            pins->RD = 0; 
+            return; }
+        case 4: {// idle
             return; }
         case 5: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
@@ -14723,10 +14784,10 @@ static void HUC6280_ins_6A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 2: {// cleanup_custom
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->A) >> 7) & 1;
-            c = ((regs->A) << 7) | c;
+            regs->P.C = (regs->A) & 1;
+            c = (((regs->A) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->A = c;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
@@ -14779,23 +14840,21 @@ static void HUC6280_ins_6C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 4: {// idle
-            return; }
-        case 5: {// idle
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             pins->RD = 1; 
             return; }
-        case 6: {// load16
+        case 5: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 6: {// load16
             regs->TR[0] = pins->D;
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             pins->RD = 0; 
             return; }
-        case 8: {// cleanup
+        case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
@@ -14837,28 +14896,30 @@ static void HUC6280_ins_6D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             return; }
         case 8: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
@@ -14908,10 +14969,10 @@ static void HUC6280_ins_6E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
             pins->D = regs->TR[1];
@@ -15064,28 +15125,30 @@ static void HUC6280_ins_71__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 8: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 9: {// idle
             i16 out = (i16)regs->A + (i16)(regs->TR[3]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[3])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[3])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[3]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[3]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[3]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
+            pins->RD = 0; 
+            return; }
+        case 9: {// idle
             return; }
         case 10: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
@@ -15146,23 +15209,25 @@ static void HUC6280_ins_72__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->A = pins->D;
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 9: {// idle
@@ -15192,90 +15257,94 @@ static void HUC6280_ins_73__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -15361,28 +15430,30 @@ static void HUC6280_ins_75__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// load8
             regs->TR[0] = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 6: {// idle
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
+            pins->RD = 0; 
+            return; }
+        case 6: {// idle
             return; }
         case 7: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
@@ -15427,10 +15498,10 @@ static void HUC6280_ins_76__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 5: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[1] | (regs->TA);
             pins->D = regs->TR[1];
@@ -15543,28 +15614,30 @@ static void HUC6280_ins_79__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             return; }
         case 8: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
@@ -15591,9 +15664,10 @@ static void HUC6280_ins_7A__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            pins->RD = 0; 
             return; }
         case 3: {// idle
             regs->S = (regs->S + 1) & 0xFF;
@@ -15655,24 +15729,22 @@ static void HUC6280_ins_7C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 4: {// idle
-            return; }
-        case 5: {// idle
             regs->TA = (regs->TA + regs->X) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             pins->RD = 1; 
             return; }
-        case 6: {// load16
+        case 5: {// load16
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 6: {// load16
             regs->TR[0] = pins->D;
             regs->PC |= regs->TR[0] << 8;
             // Following is auto-generated code for instruction finish
             pins->RD = 0; 
             return; }
-        case 8: {// cleanup
+        case 7: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
@@ -15715,28 +15787,30 @@ static void HUC6280_ins_7D__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// load8
             regs->A = pins->D;
-            pins->RD = 0; 
-            return; }
-        case 7: {// idle
             i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
+                regs->P.C = out > 0xFF;
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
                 regs->TCU++;
             }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
-                if (lo > 9) out += 6;
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out > 9) out += 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
                 if (out > 0x9F) out += 0x60;
                 regs->P.C = out > 0xFF;
                 out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
-            }
             regs->A = out;
+            }
+            pins->RD = 0; 
+            return; }
+        case 7: {// idle
             return; }
         case 8: {// idle
             pins->Addr = regs->MPR[1] | (regs->X);
@@ -15787,10 +15861,10 @@ static void HUC6280_ins_7E__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 6: {// idle
             u32 c = regs->P.C << 7;
-            regs->P.C = ((regs->TR[0]) >> 7) & 1;
-            c = ((regs->TR[0]) << 7) | c;
+            regs->P.C = (regs->TR[0]) & 1;
+            c = (((regs->TR[0]) >> 1) | c) & 0xFF;
             regs->P.Z = c == 0;
-            regs->P.Z = (c >> 7) & 1;
+            regs->P.N = (c >> 7) & 1;
             regs->TR[1] = c;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
             pins->D = regs->TR[1];
@@ -15875,20 +15949,10 @@ static void HUC6280_ins_80__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 2: {// load16
             regs->TA = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            if (!1) {
-                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
-                regs->PC = (regs->PC + 1) & 0xFFFF;
-                pins->RD = 1;
-                regs->P.T = 0;
-                HUC6280_poll_IRQs(regs, pins);
-                regs->TCU = 0;
-                return;
-            }
             regs->TA = (regs->PC + (u32)(i8)pins->D) & 0xFFFF;
-            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->RD = 0; 
             return; }
         case 4: {// cleanup_custom
             regs->PC = regs->TA;
@@ -18210,90 +18274,94 @@ static void HUC6280_ins_C3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] - 1) & 0xFFFF;
             regs->TR[1] = (regs->TR[1] - 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -18874,89 +18942,93 @@ static void HUC6280_ins_D3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -19506,91 +19578,95 @@ static void HUC6280_ins_E3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] = (regs->TR[0] + 1) & 0xFFFF;
             regs->TR[1] += regs->TR[3] ? -1 : 1;
             regs->TR[1] &= 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -20253,91 +20329,95 @@ static void HUC6280_ins_F3__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// load16
+        case 2: {// dummy read...
+            pins->RD = 0; 
+            return; }
+        case 3: {// idle
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->Y;
+            regs->S = (regs->S - 1) & 0xFF;
+            pins->WR = 1;
+            return; }
+        case 4: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->A;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 5: {// push
+            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
+            pins->D = regs->X;
+            regs->S = (regs->S - 1) & 0xFF;
+            return; }
+        case 6: {// push
+            pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
+            pins->RD = 1; pins->WR = 0;
+            return; }
+        case 7: {// load16
             regs->TR[0] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 3: {// load16
-            regs->TR[5] = pins->D;
+        case 8: {// load16
+            regs->TR[6] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            regs->TR[0] |= regs->TR[5] << 8;
+            regs->TR[0] |= regs->TR[6] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 4: {// load16
+        case 9: {// load16
             regs->TR[1] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 5: {// load16
+        case 10: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[1] |= regs->TR[5] << 8;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 6: {// load16
+        case 11: {// load16
             regs->TR[2] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
-        case 7: {// load16
+        case 12: {// load16
             regs->TR[5] = pins->D;
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TR[2] |= regs->TR[5] << 8;
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->Y;
-            regs->S = (regs->S - 1) & 0xFF;
-            pins->RD = 0; pins->WR = 1;
-            return; }
-        case 8: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->A;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 9: {// push
-            pins->Addr = regs->MPR[1] | 0x100 | regs->S;
-            pins->D = regs->X;
-            regs->S = (regs->S - 1) & 0xFF;
-            return; }
-        case 10: {// push
-            pins->WR = 0;
-            return; }
-        case 11: {// idle
-            return; }
-        case 12: {// idle
+            pins->RD = 0; 
             return; }
         case 13: {// idle
-            return; }
-        case 14: {// idle
             pins->BM = 1;
             regs->TR[3] = 0;
+            return; }
+        case 14: {// idle
             pins->Addr = regs->MPR[(regs->TR[0])>>13] | ((regs->TR[0]) & 0x1FFF);
             pins->RD = 1; 
             return; }
         case 15: {// load16
             regs->TR[4] = pins->D;
+            pins->RD = 0; 
+            return; }
+        case 16: {// idle
             pins->Addr = regs->MPR[(regs->TR[1]) >> 13] | ((regs->TR[1]) & 0x1FFF);
             pins->D = regs->TR[4];
-            pins->RD = 0; pins->WR = 1;
+            pins->WR = 1;
             return; }
-        case 16: {// store16
+        case 17: {// store16
             regs->TR[0] += regs->TR[3] ? -1 : 1;
             regs->TR[0] &= 0xFFFF;
             regs->TR[1] = (regs->TR[1] + 1) & 0xFFFF;
             regs->TR[3] ^= 1;
             pins->WR = 0;
             return; }
-        case 17: {// idle in loop
-            return; }
         case 18: {// idle in loop
             return; }
         case 19: {// idle in loop
-            return; }
-        case 20: {// idle in loop
             regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;
             if (regs->TR[2]) regs->TCU -= 6; // TESTME!
+            return; }
+        case 20: {// idle out loop
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->RD = 1; 
@@ -20604,9 +20684,10 @@ static void HUC6280_ins_FA__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            pins->RD = 0; 
             return; }
         case 3: {// idle
             regs->S = (regs->S + 1) & 0xFF;

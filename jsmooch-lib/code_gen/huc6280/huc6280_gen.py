@@ -249,8 +249,8 @@ def IndirectYReadMemory(ag: huc6280_switchgen, ins_func) -> str:
     ag.addl('regs->TA = (regs->TA + regs->Y) & 0xFFFF;')
     ag.load16('regs->TR[3]', 'regs->TA')
     ag.load8('regs->A', 'regs->X')
-    ag.addcycle('idle')
     ins_func(ag, 'regs->A', 'regs->TR[3]')
+    ag.addcycle('idle')
     ag.store8('regs->X', 'regs->A', True)
     ag.addl('regs->A = regs->TR[2];')
 
@@ -332,19 +332,19 @@ def JumpIndirect(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
     ag.operand('regs->TR[0]')
     ag.addl('regs->TA |= regs->TR[0] << 8;')
     ag.addcycle('idle')
-    ag.addcycle('idle')
     if inx is not None:
         ag.addl('regs->TA = (regs->TA + ' + inx + ') & 0xFFFF;')
     ag.load16('regs->PC', 'regs->TA')
     ag.addl('regs->TA = (regs->TA + 1) & 0xFFFF;')
     ag.load16('regs->TR[0]', 'regs->TA')
     ag.addl('regs->PC |= regs->TR[0] << 8;')
+    #ag.addcycle('idle')
 
     return ag.finished()
 
 
 def Pull(ag: huc6280_switchgen, dt: str):
-    ag.addcycle('idle')
+    ag.dummy_read()
     ag.addcycle('idle')
     ag.pull(dt, True)
     ag.setz(dt)
@@ -523,36 +523,36 @@ def al_TIN(ag: huc6280_switchgen) -> None:
 
 
 def BlockMove(ag: huc6280_switchgen, ifunc) -> str:
+    ag.dummy_read()
+    ag.addcycle('idle')
+    ag.push('regs->Y')
+    ag.push('regs->A')
+    ag.push('regs->X')
     ag.operand('regs->TR[0]')  # 0=source
-    ag.operand('regs->TR[5]')
-    ag.addl('regs->TR[0] |= regs->TR[5] << 8;')
+    ag.operand('regs->TR[6]')
+    ag.addl('regs->TR[0] |= regs->TR[6] << 8;')
     ag.operand('regs->TR[1]')  # 1=target
     ag.operand('regs->TR[5]')
     ag.addl('regs->TR[1] |= regs->TR[5] << 8;')
     ag.operand('regs->TR[2]')  # 2=length
     ag.operand('regs->TR[5]')
     ag.addl('regs->TR[2] |= regs->TR[5] << 8;')
-    ag.push('regs->Y')
-    ag.push('regs->A')
-    ag.push('regs->X')
-    ag.addcycle('idle')
-    ag.addcycle('idle')
-    ag.addcycle('idle')
     ag.addcycle('idle')
     ag.addl('pins->BM = 1;')
     ag.addl('regs->TR[3] = 0;')  # 3=alternate
+    ag.addcycle('idle')
 
     # Now we start the loop ...
     ag.load16('regs->TR[4]', 'regs->TR[0]')
+    ag.addcycle('idle')
     ag.store16('regs->TR[1]', 'regs->TR[4]')
     ifunc(ag)
     ag.addl('regs->TR[3] ^= 1;')
     ag.addcycle('idle in loop')
     ag.addcycle('idle in loop')
-    ag.addcycle('idle in loop')
-    ag.addcycle('idle in loop')
     ag.addl('regs->TR[2] = (regs->TR[2] - 1) & 0xFFFF;')
     ag.addl('if (regs->TR[2]) regs->TCU -= 6; // TESTME!')
+    ag.addcycle('idle out loop')
     ag.pull('regs->X')
     ag.addl('pins->BM = 0;')
     ag.pull('regs->A')
@@ -625,11 +625,13 @@ def TestZeroPage(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
 
 def Branch(ag: huc6280_switchgen, expr) -> str:
     ag.operand('regs->TA')
-    ag.addl('if (!' + expr + ') {')
-    ag.br_end('    ')
-    ag.addl('}')
+    if expr != '1':
+        ag.addl('if (!' + expr + ') {')
+        ag.br_end('    ')
+        ag.addl('}')
     ag.addl('regs->TA = (regs->PC + (u32)(i8)pins->D) & 0xFFFF;')
-    ag.dummy_read(last=True)
+    if expr != '1':
+        ag.dummy_read(last=True)
     ag.addcycle('idle')
     ag.cleanup()
     ag.addl('regs->PC = regs->TA;')
@@ -771,8 +773,8 @@ def AbsoluteReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
 
     ag.load16('regs->TR[0]', 'regs->TA')
     ag.load8('regs->A', 'regs->X')
-    ag.addcycle('idle')
     ins_func(ag, 'regs->A', 'regs->TR[0]')
+    ag.addcycle('idle')
 
     ag.store8('regs->X', 'regs->A', True)
     ag.addl('regs->A = regs->TR[2];')
@@ -785,8 +787,8 @@ def ImmediateMemory(ag: huc6280_switchgen, ins_func) -> str:
     ag.addl('regs->TR[2] = regs->A;')
     ag.operand('regs->TA')
     ag.load8('regs->A', 'regs->X')
-    ag.addcycle('idle')
     ins_func(ag, 'regs->A', 'regs->TA')
+    ag.addcycle('idle')
 
     ag.store8('regs->X', 'regs->A', True)
     ag.addl('regs->A = regs->TR[2];')
@@ -917,9 +919,9 @@ def ZeroPageReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
     ag.load8('regs->A', 'regs->TA')
     ag.load8('regs->TR[0]', 'regs->X')
 
-    ag.addcycle('idle')
 
     ins_func(ag, 'regs->A', 'regs->TR[0]')
+    ag.addcycle('idle')
 
     ag.store8('regs->X', 'regs->A', True)
     ag.addl('regs->A = regs->TR[2];')
@@ -1000,10 +1002,10 @@ def al_LD(ag: huc6280_switchgen, dest: Optional[str], source: str):
 
 def al_ROR(ag: huc6280_switchgen, dest: Optional[str], source: str):
     ag.addl('u32 c = regs->P.C << 7;')
-    ag.addl('regs->P.C = ((' + source + ') >> 7) & 1;')
-    ag.addl('c = ((' + source + ') << 7) | c;')
+    ag.addl('regs->P.C = (' + source + ') & 1;')
+    ag.addl('c = (((' + source + ') >> 1) | c) & 0xFF;')
     ag.addl('regs->P.Z = c == 0;')
-    ag.addl('regs->P.Z = (c >> 7) & 1;')
+    ag.addl('regs->P.N = (c >> 7) & 1;')
     if dest is not None:
         ag.addl(dest + ' = c;')
 
@@ -1072,30 +1074,36 @@ def al_SBC(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
 def al_ADC(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
     ag.addl('i16 out = (i16)regs->A + (i16)(' + source + ') + (i16)regs->P.C;')
     ag.addl('if (!regs->P.D) {')
-    ag.addl('    regs->P.C = (out >> 8) & 1;')
-    ag.addl('    regs->P.V = ((~(regs->A ^ (' + source + ')) & (regs->A & out)) >> 7) & 1;')
+    ag.addl('    regs->P.C = out > 0xFF;')
+    ag.addl('    regs->P.V = ((~(regs->A ^ (' + source + ')) & (regs->A ^ out)) >> 7) & 1;')
     ag.addl('    out &= 0xFF;')
     ag.setz('out')
     ag.setn('out')
+
+    if dest is not None:
+        ag.addl(dest + ' = out;')
     if ag.is_mem:
-        # else:
         ag.addl('    regs->TCU++;')
+    else:
+        ag.br_end('    ')
     ag.addl('}')
-    ag.addl('else {')
-    ag.addl('    u8 lo = (regs->A & 15) + ((' + source + ') & 15) + regs->P.C;')
-    ag.addl('    if (lo > 9) out += 6;')
+    ag.addl('else { // if decimal')
+    ag.addl('    out = (regs->A & 15) + ((' + source + ') & 15) + regs->P.C;')
+    ag.addl('    if (out > 9) out += 6;')
+    ag.addl('    out = ((' + source + ') & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);')
     ag.addl('    if (out > 0x9F) out += 0x60;')
     ag.addl('    regs->P.C = out > 0xFF;')
     ag.addl('    out &= 0xFF;')
     ag.setz('out')
     ag.setn('out')
-    if not ag.is_mem:
-        ag.br_end('    ')
-    ag.addl('}')
     if dest is not None:
         ag.addl(dest + ' = out;')
+    ag.addl('}')
+
     if ag.is_mem:
         ag.addcycle('idle')
+    else:
+        ag.dummy_read()
 
 
 def write_instruction_table(outfile):

@@ -127,6 +127,11 @@ void TG16_new(JSM, enum jsm_systems kind)
 
     TG16_clock_init(&this->clock);
     HUC6280_init(&this->cpu, &this->scheduler, this->clock.timing.second.cycles);
+    this->cpu.read_func = &TG16_huc_read_mem;
+    this->cpu.write_func = &TG16_huc_write_mem;
+    this->cpu.read_io_func = &TG16_huc_read_io;
+    this->cpu.write_io_func = &TG16_huc_write_io;
+    this->cpu.read_ptr = this->cpu.write_ptr = this->cpu.read_io_ptr = this->cpu.write_io_ptr = this;
     //TG16_cart_init(&this->cart);
     HUC6270_init(&this->vdc);
     HUC6260_init(&this->vce);

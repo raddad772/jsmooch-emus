@@ -95,6 +95,9 @@ void HUC6280_cycle(struct HUC6280 *this)
             }
         }
         this->current_instruction = HUC6280_decoded_opcodes[this->regs.P.T][this->regs.IR];
+#ifdef HUC6280_TESTING
+        this->ins_decodes++;
+#endif
     }
     this->current_instruction(&this->regs, &this->pins);
     this->trace.my_cycles++;

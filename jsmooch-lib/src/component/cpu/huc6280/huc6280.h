@@ -11,6 +11,8 @@
 
 #include "huc6280_opcodes.h"
 
+#define HUC6280_TESTING
+
 union HUC6280_P {
     struct {
         // N V T B D I Z C
@@ -76,6 +78,8 @@ struct HUC6280 {
     void (*write_func)(void *ptr, u32 addr, u32 val);
     void (*write_io_func)(void *ptr, u32 val);
 
+    u32 ins_decodes;
+
     struct {
         u8 counter, reload;
         u64 sch_id;
@@ -99,7 +103,6 @@ struct HUC6280 {
             u32 id;
 
             u32 id_read, id_write;
-
         } dbglog;
         u32 ok;
         u64 my_cycles;
