@@ -583,7 +583,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
     this->r5a22.cpu.dbg.events.IRQ = DBG_SNES_EVENT_IRQ;
     this->r5a22.cpu.dbg.events.NMI = DBG_SNES_EVENT_NMI;
 
-    debugger_report_frame(this->dbg._interface);
+    debugger_report_frame(this->dbg.interface);
 }
 
 
@@ -591,7 +591,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
 
 void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
-    this->dbg._interface = dbgr;
+    this->dbg.interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 4;

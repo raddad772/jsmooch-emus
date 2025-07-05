@@ -715,7 +715,7 @@ static void new_scanline(struct SNES* this, u64 cur_clock)
     this->clock.ppu.scanline_start = cur_clock;
     this->clock.ppu.y++;
     if (this->dbg.events.view.vec) {
-        debugger_report_line(this->dbg._interface, this->clock.ppu.y);
+        debugger_report_line(this->dbg.interface, this->clock.ppu.y);
     }
     this->r5a22.status.hirq_line = 0;
 }
@@ -1378,7 +1378,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
     struct SNES* snes = (struct SNES*)ptr;
 
     if (snes->dbg.events.view.vec) {
-        debugger_report_frame(snes->dbg._interface);
+        debugger_report_frame(snes->dbg.interface);
     }
     snes->ppu.cur_output = ((u16 *)snes->ppu.display->output[snes->ppu.display->last_written ^ 1]);
     snes->clock.master_frame++;
@@ -1388,7 +1388,7 @@ static void new_frame(void* ptr, u64 key, u64 cur_clock, u32 jitter)
 
     /*snes->clock.ppu.scanline_start = cur_clock;
     if (snes->dbg.events.view.vec) {
-        debugger_report_line(snes->dbg._interface, 0);
+        debugger_report_line(snes->dbg.interface, 0);
     }*/
 
     snes->clock.ppu.vblank_active = 0;

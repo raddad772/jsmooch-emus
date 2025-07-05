@@ -837,7 +837,7 @@ static void GB_PPU_eval_lyc(struct GB_PPU *this) {
 }
 
 static void GB_PPU_advance_frame(struct GB_PPU *this, u32 update_buffer) {
-    debugger_report_frame(this->bus->gb->dbg._interface);
+    debugger_report_frame(this->bus->gb->dbg.interface);
     this->clock->ly = 0;
     this->clock->wly = 0;
     this->display->scan_y = 0;

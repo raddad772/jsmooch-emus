@@ -425,7 +425,7 @@ void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm_systems 
 
 static void new_frame(struct SMSGG_VDP* this)
 {
-    debugger_report_frame(this->bus->dbg._interface);
+    debugger_report_frame(this->bus->dbg.interface);
     this->display->scan_x = this->display->scan_y = 0;
     this->bus->clock.frames_since_restart++;
     this->bus->clock.vpos = 0;
@@ -453,7 +453,7 @@ static void new_scanline(struct SMSGG_VDP* this)
         new_frame(this);
     }
 
-    debugger_report_line(this->bus->dbg._interface, (i32)this->bus->clock.vpos);
+    debugger_report_line(this->bus->dbg.interface, (i32)this->bus->clock.vpos);
     if (this->bus->clock.vpos <= this->bus->clock.timing.rendered_lines) {
         struct DBGSMSGGROW *rw = (&this->bus->dbg_data.rows[this->bus->clock.vpos]);
         rw->io.hscroll = this->latch.hscroll;

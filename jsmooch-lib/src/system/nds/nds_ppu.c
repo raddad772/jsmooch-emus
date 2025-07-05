@@ -1272,7 +1272,7 @@ void NDS_PPU_hblank(void *ptr, u64 key, u64 clock, u32 jitter) // Called at hbla
         }
 
         if (this->dbg.events.view.vec) {
-            debugger_report_line(this->dbg._interface, this->clock.ppu.y);
+            debugger_report_line(this->dbg.interface, this->clock.ppu.y);
         }
 
         for (u32 ppun = 0; ppun < 2; ppun++) {

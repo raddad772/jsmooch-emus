@@ -426,7 +426,7 @@ static void setup_events_view(struct SMSGG* this, struct debugger_interface *dbg
     SET_CPU_EVENT_ID(DBG_SMSGG_EVENT_IRQ, IRQ);
     SET_CPU_EVENT_ID(DBG_SMSGG_EVENT_NMI, NMI);
 
-    debugger_report_frame(this->dbg._interface);
+    debugger_report_frame(this->dbg.interface);
 }
 
 static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)
@@ -476,7 +476,7 @@ static void setup_waveforms(struct SMSGG* this, struct debugger_interface *dbgr)
 void SMSGGJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
-    this->dbg._interface = dbgr;
+    this->dbg.interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 1;

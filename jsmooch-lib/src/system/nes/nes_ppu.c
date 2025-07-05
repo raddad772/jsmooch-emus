@@ -622,7 +622,7 @@ void PPU_scanline_postrender(THIS) {
 
 void new_frame(THIS) {
     //this->nes->clock.lclock = this->nes->clock.cpu_master_clock;
-    debugger_report_frame(this->nes->dbg._interface);
+    debugger_report_frame(this->nes->dbg.interface);
 
     this->display->scan_y = 0;
     this->nes->clock.ppu_y = 0;
@@ -667,7 +667,7 @@ void new_scanline(THIS) {
         rw->io.x_scroll += ((this->io.t >> 10) & 1) * 256;
         rw->io.y_scroll += ((this->io.t >> 11) & 1) * 240;
     }
-    debugger_report_line(this->nes->dbg._interface, this->nes->clock.ppu_y);
+    debugger_report_line(this->nes->dbg.interface, this->nes->clock.ppu_y);
 
 
     /*if (this->nes->clock.ppu_y == this->nes->clock.timing.vblank_start) {

@@ -215,7 +215,7 @@ static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
     SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_IRQ_SERIAL, IRQ_serial);
     SET_CPU_CPU_EVENT_ID(DBG_GB_EVENT_HALT_END, HALT_end);
 
-    debugger_report_frame(this->dbg._interface);
+    debugger_report_frame(this->dbg.interface);
 }
 
 static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
@@ -354,7 +354,7 @@ static void setup_waveforms(struct GB* this, struct debugger_interface *dbgr)
 void GBJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
 {
     JTHIS;
-    this->dbg._interface = dbgr;
+    this->dbg.interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 1;
