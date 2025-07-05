@@ -21,7 +21,8 @@ void atari2600_cart_bus_cycle(struct atari2600_cart* this, u32 addr, u32 *data, 
 {
     addr &= this->addr_mask;
     if (rw == 0) {
-        *data = *(u8 *)&this->ROM.ptr[addr];
+        const u8 *rom_ptr = this->ROM.ptr;
+        *data = rom_ptr[addr];
     }
     else {
         printf("\nUNSUPPORTED WRITE TO CART %03x", addr);

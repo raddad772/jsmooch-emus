@@ -200,7 +200,7 @@ static void handle_cmd(struct NDS *this)
 
             dbgloglog(NDS_CAT_CART_READ_START, DBGLS_INFO, "Start read of %d words from cart:%06x", this->cart.cmd.sz_out, address);
 
-            memcpy(this->cart.cmd.data_out, this->cart.ROM.ptr+address, this->cart.cmd.sz_out * 4);
+            memcpy(this->cart.cmd.data_out, (char *)this->cart.ROM.ptr+address, this->cart.cmd.sz_out * 4);
             //pprint_mem(this->cart.cmd.data_out, 4, address);
             break;
         }

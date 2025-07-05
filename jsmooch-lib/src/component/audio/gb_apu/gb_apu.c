@@ -45,6 +45,7 @@ static inline u8 read_NRx1(struct GBSNDCHAN *chan)
             return chan->length_counter ^ 0xFF;
     }
     NOGOHERE;
+    return 0;
 }
 
 static inline u8 read_NRx2(struct GBSNDCHAN *chan)
@@ -67,6 +68,7 @@ static inline u8 read_NRx2(struct GBSNDCHAN *chan)
             return r;
     }
     NOGOHERE;
+    return 0;
 }
 
 static inline u8 read_NRx3(struct GBSNDCHAN* chan)
@@ -188,7 +190,7 @@ static inline void write_NRx1(struct GBSNDCHAN* chan, u8 val)
         case 0:
         case 1:
             chan->wave_duty = (val >> 6) & 3;
-            __attribute__ ((fallthrough));
+            FALLTHROUGH;
         case 2:
         case 3: {
             u32 reload_value = chan->number == 3 ? 256 : 64;
@@ -472,7 +474,7 @@ void GB_APU_cycle(struct GB_APU* this)
             case 6:
             case 2:
                 tick_sweep(this, 0);
-                __attribute__ ((fallthrough));
+                FALLTHROUGH;
             case 0:
             case 4:
                 tick_length_timer(this, 0);

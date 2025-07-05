@@ -14,10 +14,11 @@ struct HUC6270 {
         u16 BYR;
     } io;
 
+#ifndef _MSC_VER // error C2016: C requires that a struct or union have at least one member
     struct {
 
     } latch;
-
+#endif
     struct {
         u32 y;
 

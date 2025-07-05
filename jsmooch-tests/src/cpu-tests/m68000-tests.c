@@ -1,11 +1,17 @@
-#include <stdio.h>
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
 #include <unistd.h>
 #include <pwd.h>
-#include <stdlib.h>
 #include <dirent.h>
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
+#include "cpu-test-helpers.h"
 #include "m68000-tests.h"
 
 #include "helpers/debug.h"
@@ -34,21 +40,6 @@ static u32 m68k_dasm_read(void *obj, u32 addr, u32 UDS, u32 LDS)
     if (!UDS) val &= 0xFF;
     if (!LDS) val &= 0xFF00;
     return val;
-}
-
-static char *construct_path(char* w, const char* who)
-{
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
-    char *tp = w;
-    tp += sprintf(tp, "%s/dev/m68000_json/v1/%s", homeDir, who);
-    return tp;
 }
 
 #define FILE_BUF_SIZE 10 * 1024 * 1024
@@ -161,6 +152,7 @@ static u32 had_ea_with_predec(struct M68k* this)
                    this->ins->ea[1].kind == M68k_AM_address_register_indirect_with_predecrement;
         default:
             assert(1==0);
+			return 0;
     }
 }
 
@@ -1124,24 +1116,44 @@ void test_m68000()
     dbg_disable_trace();
     //dbg_enable_trace();
 
+    dbg.traces.m68000.instruction = 1;
+    dbg.traces.m68000.mem = 1;
+
     /*struct M68k_ins_t *ins = &M68k_decoded[0xd862];
     rt.read_trace_m68k = &m68k_dasm_read;
     M68k_disassemble(0, tmem[0], &rt, &yo);
     printf("\nReturned string: %s", yo.ptr);
     printf("\nYO! %04x", ins->opcode);*/
     char PATH[500];
-    construct_path(PATH,"");
+    construct_cpu_test_path(PATH, "m68000_json", "");
 
-    DIR *dp;
-    struct dirent *ep;
-    dp = opendir (PATH);
     char mfp[500][500];
     char mfn[500][500];
     int num_files = 0;
 
-    dbg.traces.m68000.instruction = 1;
-    dbg.traces.m68000.mem = 1;
-
+#if defined(_MSC_VER)
+    WIN32_FIND_DATAA findFileData;
+    HANDLE hFind;
+    char searchPath[600];
+    snprintf(searchPath, sizeof(searchPath), "%s\\*.json.bin", PATH);
+    hFind = FindFirstFileA(searchPath, &findFileData);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            snprintf(mfp[num_files], sizeof(mfp[num_files]), "%s\\%s", PATH, findFileData.cFileName);
+            snprintf(mfn[num_files], sizeof(mfn[num_files]), "%s", findFileData.cFileName);
+            num_files++;
+        } while (FindNextFileA(hFind, &findFileData) != 0);
+        FindClose(hFind);
+    }
+    else {
+        printf("\nCouldn't open the directory");
+        return;
+    }
+#else
+    DIR *dp;
+    struct dirent *ep;
+    dp = opendir (PATH);
+   
     if (dp != NULL)
     {
         while ((ep = readdir (dp)) != NULL) {
@@ -1159,6 +1171,8 @@ void test_m68000()
         printf("\nCouldn't open the directory");
         return;
     }
+#endif
+
     printf("\nFound %d tests!", num_files);
 
     tmem = malloc(0x1000000); // 24 MB RAM allocate

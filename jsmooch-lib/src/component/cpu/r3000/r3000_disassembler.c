@@ -8,6 +8,12 @@
 
 #include "r3000_disassembler.h"
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4334) // warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+#pragma warning(disable: 4293) // warning C4293: '<<': shift count negative or too big, undefined behavior
+#endif
+
 static void add_r_context(struct R3000ctxt *t, u32 rnum)
 {
     if (t) t->regs |= (1L << rnum);
@@ -27,6 +33,10 @@ static void add_cop_context(struct R3000ctxt *t, u32 rnum)
 {
     t->cop |= (1L << rnum);
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 static const char GTE_reg_alias_arr[65][12] = {
         "vxy0", "vz0", "vxy1", "vz1", "vxy2", "vz2", "rgbc", "otz",

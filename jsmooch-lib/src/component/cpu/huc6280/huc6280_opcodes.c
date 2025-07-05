@@ -1,4 +1,8 @@
+#if !defined(_MSC_VER)
 #include <printf.h>
+#else
+#include <stdio.h>
+#endif
 #include <assert.h>
 #include "helpers/int.h"
 #include "huc6280_opcodes.h"

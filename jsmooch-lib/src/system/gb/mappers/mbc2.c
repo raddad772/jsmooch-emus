@@ -89,10 +89,19 @@ void GBMBC2_reset(struct GB_mapper* parent)
     GBMBC2_update_banks(this);
 }
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4724) // warning C4724: potential mod by 0
+#endif
+
 static void GBMBC2_update_banks(struct GB_mapper_MBC2 *this)
 {
     this->ROM_bank_hi_offset = (this->regs.ROMB % this->num_ROM_banks) * 16384;
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 u32 GBMBC2_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect)
 {

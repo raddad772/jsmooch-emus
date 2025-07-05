@@ -3,14 +3,13 @@
 //
 
 #include <time.h>
-#include <pwd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include "z80_drag_race.h"
 
 #include "component/cpu/z80/z80.h"
 #include "helpers/buf.h"
+#include "helpers/user.h"
 
 const u8 cpm_print_routine[29] = {
     0xF5, // PUSH AF
@@ -53,13 +52,7 @@ void z80_drag_race()
     struct read_file_buf rfb;
     rfb_init(&rfb);
 
-    char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
+    const char *homeDir = get_user_dir();
     char path[500];
     snprintf(path, sizeof(path), "%s/dev/zexall.cim", homeDir);
     rfb_read(NULL, path, &rfb);

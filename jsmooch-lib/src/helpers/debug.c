@@ -1,15 +1,18 @@
 //
 // Created by Dave on 1/24/2024.
 //
+#if !defined(_MSC_VER)
 #include <unistd.h>
 #include <pwd.h>
-#include "stdio.h"
-#include "string.h"
-#include "stdlib.h"
-#include "assert.h"
-#include "stdarg.h"
+#endif
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <stdarg.h>
 
 #include "debug.h"
+#include "user.h"
 
 
 struct jsm_debug_struct dbg;
@@ -108,16 +111,13 @@ void dbg_seek_in_line(u32 pos)
 
 static void construct_path(char* w, size_t sz, const char* who)
 {
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
+    const char *homeDir = get_user_dir();
     char *tp = w;
+#if defined(_MSC_VER)
+    tp += sprintf(tp, "%s\\dev\\%s", homeDir, who);
+#else
     tp += snprintf(tp, sz, "%s/dev/%s", homeDir, who);
+#endif
 }
 
 void dbg_flush()

@@ -86,8 +86,10 @@ struct SNES {
         u64 cycles;
     } audio;
 
+#if !defined(_MSC_VER) // error C2016: C requires that a struct or union have at least one member
     struct {
     } opts;
+#endif
 
     struct {
         struct SNES_DBG_LINE {

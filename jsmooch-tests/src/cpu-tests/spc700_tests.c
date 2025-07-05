@@ -3,10 +3,13 @@
 //
 
 #include <stdio.h>
+#if defined(_MSC_VER)
+#else
 #include <unistd.h>
 #include <pwd.h>
-#include <stdlib.h>
 #include <dirent.h>
+#endif
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include "../json.h"
@@ -14,6 +17,8 @@
 #define MAX_RAM_ENTRIES 50
 
 #include "helpers/int.h"
+#include "helpers/user.h"
+#include "cpu-test-helpers.h"
 #include "spc700_tests.h"
 #include "component/cpu/spc700/spc700.h"
 
@@ -65,14 +70,7 @@ static void construct_path(char *out, u32 ins)
 {
     char test_path[500];
     memset(test_path, 0, sizeof(test_path));
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
-
+    const char* homeDir = get_user_dir();
     char *tp = out;
     tp += sprintf(tp, "%s", homeDir);
     tp += sprintf(tp, "/dev/spc700/v1");
@@ -123,7 +121,7 @@ static void parse_state(struct json_object_s *object, struct test_state *state)
         }
         if (strcmp(el->name->string, "ram") == 0) {
             struct json_array_s *arr1 = (struct json_array_s *)el->value->payload;
-            state->num_ram_entry = arr1->length;
+            state->num_ram_entry = (u32)arr1->length;
             struct json_array_element_s *arr_el = arr1->start;
             for (u32 arr1_i = 0; arr1_i < arr1->length; arr1_i++) {
                 assert(arr_el->value->type == json_type_array);
@@ -195,7 +193,7 @@ static void parse_and_fill_out(struct read_file_buf *infile)
             else if (strcmp(s->name->string, "cycles") == 0) {
                 assert(s->value->type == json_type_array);
                 struct json_array_s* arr1 = (struct json_array_s*)s->value->payload;
-                test->num_cycles = arr1->length;
+                test->num_cycles = (u32)arr1->length;
                 struct json_array_element_s* arr1_el = arr1->start;
                 for (u32 h = 0; h < arr1->length; h++) {
                     assert(arr1_el != NULL);
@@ -296,6 +294,11 @@ static void pprint_P(u32 r) {
     );
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4700) // warning C4700: uninitialized local variable 'last_pc' used
+#endif
+
 static int test_spc700_automated(struct spc700_test_result *out, struct SPC700 *cpu, u32 opc) {
     out->passed = 0;
     out->mycycles = 0;
@@ -331,7 +334,7 @@ static int test_spc700_automated(struct spc700_test_result *out, struct SPC700 *
             printf("\nCYCLE MISMATCH! ME:%lld  TEST:%d", cycle_ptr, test->num_cycles);
         }
 
-        passed &= testregs(cpu, final, last_pc);
+        passed &= testregs(cpu, final, last_pc); // warning C4700: uninitialized local variable 'last_pc' used
 
         for (u32 j = 0; j < final->num_ram_entry; j++) {
             u8 v = cpu->RAM[final->ram[j].addr & 0xFFFF];
@@ -358,6 +361,10 @@ static int test_spc700_automated(struct spc700_test_result *out, struct SPC700 *
     out->passed = 1;
     return 1;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 static u32 test_spc700_ins(struct SPC700 *cpu, u32 ins)
 {

@@ -88,8 +88,10 @@ struct ARM7TDMI_regs {
         u32 u;
     } CPSR;
     union {
-        struct {
+#if !defined(_MSC_VER)
+        struct { // #TODO: Remove if not required
         };
+#endif
         u32 u;
     } SPSR;
 

@@ -192,6 +192,7 @@ static int condition_passes(struct ARM7TDMI_regs *this, int which) {
         case ARM7CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
         default:
             NOGOHERE;
+            return 0;
     }
 #undef flag
 }

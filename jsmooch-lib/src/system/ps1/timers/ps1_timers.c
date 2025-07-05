@@ -140,6 +140,7 @@ static u64 get_clock_source(struct PS1 *this, u32 timer_num)
         default:
             NOGOHERE;
     }
+    return 0;
 }
 
 static u32 read_timer(struct PS1 *this, u32 timer_num) {
