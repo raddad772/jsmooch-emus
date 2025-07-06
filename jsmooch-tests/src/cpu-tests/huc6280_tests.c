@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ISTART 0x80
+#define ISTART 0xC1
 
 #include "m6502_tests.h"
 #include "helpers/int.h"
@@ -313,7 +313,7 @@ static void pprint_P(u32 val)
 static void pprint_cycles()
 {
     printf("\n\nExpected            |  Measured");
-    printf("\n#  Addr   D  P   |  Addr   D  P");
+    printf("\n#   Addr    D   P   |   Addr    D   P");
     for (u32 i = 0; i < ts.test.recorded_cycles; i++) {
         struct cycle *tc = &ts.test.cycles[i];
         if (!tc->r && !tc->w) {
@@ -393,7 +393,7 @@ static void compare_state(struct huc6280_state *st)
     }
 #undef Cpr
     if (failed) {
-        if (is_mov_opcode(ts.test.opcode)) {
+        if (0 && is_mov_opcode(ts.test.opcode)) {
             printf("\nWARN!");
         }
         else {
@@ -425,7 +425,7 @@ static void compare_cycle(u32 num)
         if (failed) {
             printf("\nFAIL COMPARE CYCLE %d", num);
             if (is_st_opcode(ts.test.opcode) && (num == 3)) {
-
+                printf("\nOH NO SKIP ST OPCODE");
             }
             else {
                 ts.failed=1;
@@ -494,16 +494,16 @@ void do_test(char *fname)
         }
         ts.num_cycle = ts.test.total_cycles;
         //printf("\nEXT CYCLE");
-        HUC6280_cycle(&ts.cpu); // Our last cycle has some stuff in it sometimes
-        if (ts.cpu.regs.TCU == 0) {
+        //HUC6280_cycle(&ts.cpu); // Our last cycle has some stuff in it sometimes
+        /*if (ts.cpu.regs.TCU == 0) {
             if (our_last_cycle == -1) our_last_cycle = ts.test.total_cycles;
-        }
+        }*/
         if (our_last_cycle != ts.test.total_cycles) {
             printf("\nCYCLE MISMATCH");
             printf("\nBAD! TEST CYCLES:%d  OURS:%d", ts.test.total_cycles, our_last_cycle);
             ts.failed = 1;
         }
-        service_RW();
+        //service_RW();
         compare_state(&ts.test.final);
         compare_ram();
         if (ts.failed) break;

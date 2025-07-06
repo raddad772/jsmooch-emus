@@ -74,6 +74,7 @@ static void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
 void HUC6280_cycle(struct HUC6280 *this)
 {
     this->regs.TCU++;
+    //printf("\nEXEC TCU %d PC %04x", this->regs.TCU, this->regs.PC);
     if (this->regs.TCU == 1) {
         this->PCO = this->pins.Addr;
         this->regs.IR = this->pins.D;

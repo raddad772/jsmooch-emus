@@ -291,9 +291,9 @@ def Clear(ag: huc6280_switchgen, dt):
 def SetMemoryBit(ag: huc6280_switchgen, bitnum):
     ag.operand('regs->TA')
     ag.addcycle('idle')
-    ag.addcycle('idle')
-    ag.addcycle('idle')
     ag.load8('regs->TR[0]', 'regs->TA')
+    ag.addcycle('idle')
+    ag.addcycle('idle')
     ag.addl('regs->TR[0] |= 1 << ' + bitnum + ';')
     ag.store8('regs->TA', 'regs->TR[0]', last=True)
 
@@ -301,6 +301,7 @@ def SetMemoryBit(ag: huc6280_switchgen, bitnum):
 
 
 def Transfer(ag: huc6280_switchgen, src, tgt) -> str:
+    ag.dummy_read(last=True)
     ag.cleanup()
     ag.addl(tgt + ' = ' + src + ';')
     ag.addl('regs->P.Z = ' + tgt + ' == 0;')
@@ -310,6 +311,7 @@ def Transfer(ag: huc6280_switchgen, src, tgt) -> str:
 
 
 def TransferXS(ag: huc6280_switchgen) -> str:
+    ag.dummy_read(last=True)
     ag.cleanup()
     ag.addl('regs->S = regs->X;')
 
@@ -467,17 +469,15 @@ def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
 
 def BranchIfBitSet(ag: huc6280_switchgen, bitnum: str) -> str:
     ag.operand('regs->TA')
-    ag.operand('regs->TR[0]')
     ag.addcycle('idle')
+    ag.operand('regs->TR[2]')
     ag.addcycle('idle')
-    ag.load8('regs->TR[1]', 'regs->TA')
-    ag.addl('regs->TA = (regs->PC + (u16)(i8)regs->TR[0]);')
-    ag.addl('regs->TR[0] = (regs->TR[1] & ' + str(1 << int(bitnum)) + ') != 0;')
-    ag.addl('if (!regs->TR[0]) regs->TCU += 2;')
+    ag.load8(None, 'regs->TA')
+    ag.addl('if ((pins->D & ' + str(1 << int(bitnum)) + ') == 0) {')
+    ag.br_end('    ')
+    ag.addl('}')
+    ag.addl('regs->PC = (regs->PC + (u32)(i8)regs->TR[2]) & 0xFFFF;')
     ag.addcycle('idle')
-    ag.addcycle('idle')
-    ag.cleanup()
-    ag.addl('if (regs->TR[0]) regs->PC = regs->TA;')
     return ag.finished()
 
 
@@ -487,7 +487,6 @@ def BranchIfBitReset(ag: huc6280_switchgen, bitnum: str):
     ag.operand('regs->TR[2]')
     ag.addcycle('idle')
     ag.load8(None, 'regs->TA')
-    ag.addl('regs->TR[0] = (pins->D & ' + str(1 << int(bitnum)) + ') == 0;')
     ag.addl('if ((pins->D & ' + str(1 << int(bitnum)) + ') != 0) {')
     ag.br_end('    ')
     ag.addl('}')
@@ -564,9 +563,9 @@ def BlockMove(ag: huc6280_switchgen, ifunc) -> str:
 def IndirectYWrite(ag: huc6280_switchgen, dt: str) -> str:
     ag.operand('regs->TA')
     ag.addcycle('idle')
-    ag.load8('regs->TA', 'regs->TR[0]')
+    ag.load8('regs->TR[0]', 'regs->TA')
     ag.addl('regs->TA = (regs->TA + 1) & 0xFF;')
-    ag.load8('regs->TA', 'regs->TR[1]')
+    ag.load8('regs->TR[1]', 'regs->TA')
     ag.addl('regs->TR[0] |= regs->TR[1] << 8;')
     ag.addcycle('idle')
     ag.addl('regs->TA = (regs->TR[0] + regs->Y) & 0xFFFF;')
@@ -596,10 +595,10 @@ def TestAbsolute(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
     ag.addl('regs->TA |= regs->TR[1] << 8;')
     ag.addcycle('idle')
     ag.addcycle('idle')
-    ag.addcycle('idle')
     if inx is not None:
         ag.addl('regs->TA = (regs->TA + ' + inx + ' ) & 0xFFFF;')
-    ag.load16('regs->TR[2]', 'regs->TA', last=True)
+    ag.load16('regs->TR[2]', 'regs->TA')
+    ag.cleanup()
     ag.addl('regs->P.Z = (regs->TR[2] & regs->TR[0]) == 0;')
     ag.addl('regs->P.V = (regs->TR[2] >> 6) & 1;')
     ag.addl('regs->P.N = (regs->TR[2] >> 7) & 1;')
@@ -612,9 +611,8 @@ def TestZeroPage(ag: huc6280_switchgen, inx: Optional[str] = None) -> str:
     ag.operand('regs->TR[1]')
     ag.addcycle('idle')
     ag.addcycle('idle')
-    ag.addcycle('idle')
     if inx is not None:
-        ag.addl('regs->TR[1] = (regs->TR[1] + 1) & 0xFF;')
+        ag.addl('regs->TR[1] = (regs->TR[1] + (' + inx + ')) & 0xFF;')
     ag.load8('regs->TA', 'regs->TR[1]')
     ag.addl('regs->P.Z = (regs->TR[0] & regs->TA) == 0;')
     ag.addl('regs->P.V = (regs->TA >> 6) & 1;')
@@ -930,9 +928,16 @@ def ZeroPageReadMemory(ag: huc6280_switchgen, ins_func, inx: Optional[str] = Non
 
 
 def al_CMP(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
-    ag.addl('regs->P.Z = (regs->A & (' + source + ')) == 0;')
-    ag.addl('regs->P.V = ((' + source + ') >> 6) & 1;')
-    ag.addl('regs->P.N = ((' + source + ') >> 7) & 1;')
+    '''
+  n9 o = A - i;
+  C = !o.bit(8);
+  Z = n8(o) == 0;
+  N = o.bit(7);
+    '''
+    ag.addl('u32 a = (regs->A - (' + source + ')) & 0x1FF;')
+    ag.addl('regs->P.C = ((a >> 8) & 1) ^ 1;')
+    ag.addl('regs->P.Z = (a & 0xFF) == 0;')
+    ag.addl('regs->P.N = (a >> 7) & 1;')
 
 
 def al_CPX(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
