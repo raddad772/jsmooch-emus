@@ -47,19 +47,16 @@ void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 }
 
 
-static void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter);
-
 static void timer_schedule(struct HUC6280 *this, u64 cur)
 {
-    if (this->timer.still_sch) {
+    /*if (this->timer.still_sch) {
         scheduler_delete_if_exist(this->scheduler, this->timer.sch_id);
     }
-    this->timer.sch_id = scheduler_only_add_abs(this->scheduler, cur + this->timer.sch_interval, 0, this, &timer_tick, &this->timer.still_sch);
+    this->timer.sch_id = scheduler_only_add_abs(this->scheduler, cur + this->timer.sch_interval, 0, this, &timer_tick, &this->timer.still_sch);*/
 }
 
-static void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
+void HUC6280_tick_timer(struct HUC6280 *this)
 {
-    struct HUC6280 *this = (struct HUC6280 *)ptr;
     if (!this->regs.timer_startstop) return;
     if (this->timer.counter == 0) {
         this->timer.counter = this->timer.reload;
@@ -67,8 +64,8 @@ static void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
     }
     else this->timer.counter = (this->timer.counter - 1) & 0x7F;
 
-    u64 cur = clock - jitter;
-    timer_schedule(this, cur);
+    //u64 cur = clock - jitter;
+    //timer_schedule(this, cur);
 }
 
 void HUC6280_cycle(struct HUC6280 *this)
@@ -165,12 +162,12 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
             else {
                 if (!this->regs.timer_startstop && (val & 1)) {
                     this->timer.counter = this->timer.reload;
-                    timer_schedule(this, *this->scheduler->clock);
+                    //timer_schedule(this, *this->scheduler->clock);
                 }
                 this->regs.timer_startstop = val & 1;
-                if (((val & 1) ^ 1) && this->timer.still_sch) {
-                    scheduler_delete_if_exist(this->scheduler, this->timer.still_sch);
-                }
+                /*if (((val & 1) ^ 1) && this->timer.still_sch) {
+                    //scheduler_delete_if_exist(this->scheduler, this->timer.still_sch);
+                }*/
             }
             return;
         case 0x1000: // IO
@@ -197,9 +194,9 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
     printf("\nUNHANDLED INTERNAL WRITE! %06x - %02x", addr, val);
 }
 
-void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
-    struct HUC6280* this = (struct HUC6280 *)ptr;
-    u64 cur = clock - jitter;
+void HUC6280_internal_cycle(struct HUC6280 *this) {
+    //struct HUC6280* this = (struct HUC6280 *)ptr;
+    //u64 cur = clock - jitter;
     if (this->pins.RD) {
         if (this->pins.Addr >= 0xFF0800)
             this->pins.D = internal_read(this, this->pins.Addr, 1);
@@ -216,12 +213,13 @@ void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
             this->write_func(this->write_ptr, this->pins.Addr, this->pins.D);
     }
 
-    scheduler_from_event_adjust_master_clock(this->scheduler, this->regs.clock_div);
-    scheduler_only_add_abs(this->scheduler, cur + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
+    //scheduler_from_event_adjust_master_clock(this->scheduler, this->regs.clock_div);
+    //scheduler_only_add_abs(this->scheduler, cur + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
 }
 
 
 void HUC6280_schedule_first(struct HUC6280 *this, u64 clock)
 {
-    scheduler_only_add_abs(this->scheduler, clock + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
+    //scheduler_only_add_abs(this->scheduler, clock + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
+    //timer_schedule(this, clock);
 }

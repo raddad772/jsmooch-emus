@@ -132,9 +132,10 @@ void TG16_new(JSM, enum jsm_systems kind)
     this->cpu.read_io_func = &TG16_huc_read_io;
     this->cpu.write_io_func = &TG16_huc_write_io;
     this->cpu.read_ptr = this->cpu.write_ptr = this->cpu.read_io_ptr = this->cpu.write_io_ptr = this;
-    //TG16_cart_init(&this->cart);
-    HUC6270_init(&this->vdc);
-    HUC6260_init(&this->vce);
+    TG16_cart_init(&this->cart);
+    HUC6270_init(&this->vdc0);
+    HUC6270_init(&this->vdc1);
+    HUC6260_init(&this->vce, &this->scheduler, &this->vdc0, NULL);
     //ym2612_init(&this->ym2612, OPN2V_ym2612, &this->clock.master_cycle_count, 32 * 7 * 6);
     //SN76489_init(&this->psg);
     snprintf(jsm->label, sizeof(jsm->label), "TurboGraFX-16");
@@ -170,7 +171,9 @@ void TG16_delete(JSM) {
     JTHIS;
 
     HUC6280_delete(&this->cpu);
-    HUC6270_delete(&this->vdc);
+    HUC6270_delete(&this->vdc0);
+    HUC6270_delete(&this->vdc1);
+    HUC6260_delete(&this->vce);
 
     while (cvec_len(this->jsm.IOs) > 0) {
         struct physical_io_device* pio = cvec_pop_back(this->jsm.IOs);
@@ -180,6 +183,7 @@ void TG16_delete(JSM) {
         physical_io_device_delete(pio);
     }
 
+    TG16_cart_delete(&this->cart);
     free(jsm->ptr);
     jsm->ptr = NULL;
 
@@ -268,34 +272,23 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 }
 
 
-static void schedule_first(struct TG16 *this)
-{
-    printf("\nDO SCHEDULE_FIRST");
-    HUC6280_schedule_first(&this->cpu, 0);
-    /*scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->clock.ym2612.clock_divisor, 0, this, &run_ym2612, NULL);
-    scheduler_only_add_abs(&this->scheduler, this->clock.psg.clock_divisor, 0, this, &run_psg, NULL);
-    TG16_VDP_schedule_first(this);*/
-}
-
 static void TG16IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
 {
     JTHIS;
 
     // 512kb usless header
     // check if bit 9 is set and discard first 512kb then
+    struct buf* b = &mfs->files[0].buf;
 
-   /*struct buf* b = &mfs->files[0].buf;
-
-    TG16_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, which_pio, &this->io.SRAM_enabled);
-    if ((this->cart.header.region_japan) && (!this->cart.header.region_usa)) {
-        this->opts.JP = 1;
+    void *ptr = b->ptr;
+    u64 sz = b->size;
+    if (sz & 512) {
+        ptr += 512;
+        sz -= 512;
     }
-    else
-        this->opts.JP = 0;*/
-    TG16J_reset(jsm);
+
+   TG16_cart_load_ROM_from_RAM(&this->cart, ptr, sz);
+   TG16J_reset(jsm);
 }
 
 static void TG16IO_unload_cart(JSM)
@@ -310,16 +303,16 @@ static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
     d->fps = 60; //this->PAL ? 50 : 60.0988;
     d->fps_override_hint = this->clock.timing.second.frames;
 
-    d->pixelometry.cols.left_hblank = 0; // 0
-    d->pixelometry.cols.visible = 1280;  // 320x224   *4
-    d->pixelometry.cols.max_visible = 1280;  // 320x224    *4
-    d->pixelometry.cols.right_hblank = 430; // 107.5, ick   *4
+    d->pixelometry.cols.left_hblank = 0;
+    d->pixelometry.cols.visible = 1024;
+    d->pixelometry.cols.max_visible = 1024;
+    d->pixelometry.cols.right_hblank = 344;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
     d->pixelometry.rows.visible = 240;
     d->pixelometry.rows.max_visible = 240;
-    d->pixelometry.rows.bottom_vblank = 76; // TODO: update these for PAL. they're currently not really used
+    d->pixelometry.rows.bottom_vblank = 76;
     d->pixelometry.offset.y = 0;
 
     /*if (this->PAL) {
@@ -388,16 +381,18 @@ void TG16J_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(1280 * 480 * 2);
-    d->display.output[1] = malloc(1280 * 480 * 2);
+    d->display.output[0] = malloc(1024 * 480 * 2);
+    d->display.output[1] = malloc(1024 * 480 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_crt(this, &d->display);
     this->vce.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
     d->display.last_written = 1;
     this->vce.cur_output = (u16 *)(d->display.output[0]);
+    this->vce.display = &((struct physical_io_device *)cpg(this->vce.display_ptr))->display;
 
     setup_audio(this, IOs);
+
 
     this->vce.display = &((struct physical_io_device *)cpg(this->vce.display_ptr))->display;
     //TG16_controllerport_connect(&this->io.controller_port1, TG16_controller_6button, &this->controller1);
@@ -421,7 +416,7 @@ void TG16J_get_framevars(JSM, struct framevars* out)
     JTHIS;
     out->master_frame = this->clock.master_frames;
     out->x = 0;
-    out->scanline = this->vdc.regs.y;
+    out->scanline = this->vdc0.regs.y;
     out->master_cycle = this->clock.master_cycles;
 }
 
@@ -430,8 +425,10 @@ void TG16J_reset(JSM)
     JTHIS;
     TG16_clock_reset(&this->clock);
     HUC6280_reset(&this->cpu);
-    HUC6270_reset(&this->vdc);
+    HUC6270_reset(&this->vdc0);
+    HUC6270_reset(&this->vdc1);
     HUC6260_reset(&this->vce);
+    TG16_cart_reset(&this->cart);
 
     /*this->io.z80.reset_line = 1;
     this->io.z80.reset_line_count = 500;
@@ -441,7 +438,7 @@ void TG16J_reset(JSM)
     this->scheduler_index = 0;*/
 
     scheduler_clear(&this->scheduler);
-    schedule_first(this);
+    //schedule_first(this);
     printf("\nTG16 reset!");
 }
 
@@ -451,7 +448,7 @@ u32 TG16J_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
-
+    u32 current_frame = this->vce.master_frame;
 #ifdef DO_STATS
     u64 ym_start = this->timing.ym2612_cycles;
     u64 z80_start = this->timing.z80_cycles;
@@ -498,10 +495,35 @@ u32 TG16J_finish_frame(JSM)
     return this->vce.display->last_written;
 }
 
+static void cycle_cpu(struct TG16 *this)
+{
+
+}
+
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
 u32 TG16J_finish_scanline(JSM)
 {
     JTHIS;
-    scheduler_run_til_tag(&this->scheduler, TAG_SCANLINE);
+    u32 start_y = this->vce.regs.y;
+    while (this->vce.regs.y == start_y) {
+        i64 min_step = MIN(this->clock.next.cpu, this->clock.next.vce);
+        min_step = MIN(min_step, this->clock.next.timer);
+        this->clock.master_cycles += min_step;
+
+        if (this->clock.master_cycles >= this->clock.next.cpu) {
+            HUC6280_internal_cycle(&this->cpu);
+            this->clock.next.cpu += this->cpu.regs.clock_div;
+        }
+        if (this->clock.master_cycles >= this->clock.next.timer) {
+            HUC6280_tick_timer(&this->cpu);
+            this->clock.next.timer += 3072;
+        }
+        if (this->clock.master_cycles >= this->clock.next.vce) {
+            HUC6260_cycle(&this->vce);
+            this->clock.next.vce += this->vce.regs.clock_div;
+        }
+    }
+    //scheduler_run_til_tag(&this->scheduler, TAG_SCANLINE);
 
     return this->vce.display->last_written;
 }
@@ -509,7 +531,7 @@ u32 TG16J_finish_scanline(JSM)
 u32 TG16J_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    scheduler_run_for_cycles(&this->scheduler, howmany);
+    //scheduler_run_for_cycles(&this->scheduler, howmany);
     return 0;
 }
 

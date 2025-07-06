@@ -109,6 +109,16 @@ typedef double f64;
 
 #endif
 
+union UN16 {
+    struct {
+        u8 lo;
+        u8 hi;
+    };
+    u16 u;
+    i16 i;
+};
+
+
 #ifdef __cplusplus
 }
 #endif

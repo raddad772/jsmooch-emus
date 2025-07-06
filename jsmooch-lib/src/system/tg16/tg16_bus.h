@@ -11,11 +11,15 @@
 #include "component/gpu/huc6270/huc6270.h"
 #include "component/gpu/huc6260/huc6260.h"
 #include "tg16_clock.h"
+#include "tg16_cart.h"
 
 struct TG16 {
     struct HUC6280 cpu;
-    struct HUC6270 vdc;
-    struct HUC6260 vce;
+    struct HUC6270 vdc0, vdc1; // Video Display Controller
+    struct HUC6260 vce; // Video Color Encoder
+    struct TG16_cart cart;
+
+    u8 RAM[8192];
 
     struct TG16_clock clock;
 

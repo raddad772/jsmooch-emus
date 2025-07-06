@@ -341,7 +341,7 @@ u32 NESJ_finish_frame(JSM)
     JTHIS;
     if (this->bus.fake_PRG_RAM.ptr == NULL)
         this->bus.fake_PRG_RAM.ptr = this->bus.SRAM->data;
-    u32 current_frame = this->clock.master_frame;
+    u64 current_frame = this->clock.master_frame;
     while (this->clock.master_frame == current_frame) {
         NESJ_finish_scanline(jsm);
         if (dbg.do_break) break;

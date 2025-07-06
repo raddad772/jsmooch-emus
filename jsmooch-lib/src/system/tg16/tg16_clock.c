@@ -38,7 +38,8 @@ void TG16_clock_reset(struct TG16_clock *this)
     this->timing.frame.cycles = per_frame;
     this->timing.second.cycles = master_freq;
 
-    this->dividers.cpu = 3;
     this->dividers.timer = 3072;
-    this->dividers.vdc = 4;
+    this->next.cpu = 3;
+    this->next.vce = 4;
+    this->next.timer = 3072;
 }

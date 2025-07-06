@@ -8,14 +8,46 @@
 
 u32 TG16_bus_read(struct TG16 *this, u32 addr, u32 old, u32 has_effect)
 {
+    if (addr >= 0xFFE000) {
+        if (addr < 0xFFE400) {
+            return HUC6270_read(&this->vdc, addr, old);
+        }
+        else if (addr < 0xFFE800) {
+            return HUC6260_read(&this->vce, addr, old);
+        }
+        assert(1==2);
+        printf("\nWHAT23");
+        return 0;
+    }
+    if (addr < 0x800000) return TG16_cart_read(&this->cart, addr, old);
+    else if ((addr >= 0xF80000) && (addr <= 0xFC0000)) {
+        return this->RAM[addr & 0x1FFF];
+    }
+
     printf("\nUnservied bus read addr:%06x", addr);
     return 0;
 }
 
-u32 TG16_bus_write(struct TG16 *this, u32 addr, u32 val)
+void TG16_bus_write(struct TG16 *this, u32 addr, u32 val)
 {
+    if (addr >= 0xFFE000) {
+        if (addr < 0xFFE400) {
+            return HUC6270_write(&this->vdc, addr, val);
+        }
+        else if (addr < 0xFFE800) {
+            return HUC6260_write(&this->vce, addr, val);
+        }
+        assert(1==2);
+        printf("\nWHAT22");
+        return;
+    }
+    if (addr < 0x800000) return TG16_cart_write(&this->cart, addr, val);
+    else if ((addr >= 0xF80000) && (addr <= 0xFC0000)) {
+        this->RAM[addr & 0x1FFF] = val;
+        return;
+    }
+
     printf("\nUnserviced bus write addr%06x val:%02x", addr, val);
-    return val;
 }
 
 

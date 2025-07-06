@@ -115,13 +115,13 @@ void HUC6280_delete(struct HUC6280 *);
 void HUC6280_reset(struct HUC6280 *);
 void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct);
 void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins);
-
+void HUC6280_tick_timer(struct HUC6280 *);
 
 void HUC6280_schedule_first(struct HUC6280 *, u64 clock);
 
 void HUC6280_cycle(struct HUC6280 *); // Only really affects "CPU-ish" stuff
 
 // Internal cycle, handles catching IO or scheduling
-void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
+void HUC6280_internal_cycle(struct HUC6280 *);
 
 #endif //JSMOOCH_EMUS_HUC6280_H

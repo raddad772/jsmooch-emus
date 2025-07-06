@@ -17,8 +17,12 @@ struct TG16_clock {
     } vdc;
 
     struct {
-        u64 cpu, vdc, vce, timer;
+        u64 timer;
     } dividers;
+
+    struct {
+        u64 cpu, vce, timer;
+    } next;
 
     struct {
         struct {
