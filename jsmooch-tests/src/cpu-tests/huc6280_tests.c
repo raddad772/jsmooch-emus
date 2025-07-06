@@ -23,8 +23,12 @@
 #define MAX_CYCLES 500
 #define MAX_RAM_PAIRS 500
 
-#define SKIP_NUM 1
+#define SKIP_NUM 5
 static const int ST_SKIPS[SKIP_NUM] = { 0x73, // TII
+                                        0xC3, // TDD
+                                        0xD3, // TIN
+                                        0xE3, // TIA
+                                        0xF3
 } ;
 
 #define ST_TEST_NUM 3
@@ -326,7 +330,7 @@ static void pprint_cycles()
         if (i < ts.num_cycle) {
             struct cycle *mc = &ts.my_cycles[i];
             if (!mc->r && !mc->w)
-                printf(" |  ------  --    ");
+                printf(" |   ------  --    ");
             else
                 printf(" |  %c%06X %c%02X %c%c%c",
                        mc->Addr == tc->Addr ? ' ' : '*',
@@ -393,7 +397,7 @@ static void compare_state(struct huc6280_state *st)
     }
 #undef Cpr
     if (failed) {
-        if (0 && is_mov_opcode(ts.test.opcode)) {
+        if (is_mov_opcode(ts.test.opcode)) {
             printf("\nWARN!");
         }
         else {

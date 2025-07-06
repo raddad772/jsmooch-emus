@@ -7682,7 +7682,7 @@ static void HUC6280_ins_C6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -7941,7 +7941,7 @@ static void HUC6280_ins_CE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
@@ -8278,11 +8278,12 @@ static void HUC6280_ins_D4__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            regs->clock_div = 3;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            regs->clock_div = 3;
             // Following is auto-generated code for instruction finish
+            pins->RD = 0; 
             return; }
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
@@ -8353,7 +8354,7 @@ static void HUC6280_ins_D6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -8612,7 +8613,7 @@ static void HUC6280_ins_DE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
@@ -8745,29 +8746,40 @@ static void HUC6280_ins_E1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 7: {// cleanup_custom
             regs->TR[0] = pins->D;
-            u8 r = regs->TR[0] ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            regs->TR[0] ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 8: {// idle
+        case 8: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -8970,29 +8982,40 @@ static void HUC6280_ins_E5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 4: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 5: {// idle
+        case 5: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -9023,7 +9046,7 @@ static void HUC6280_ins_E6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -9118,29 +9141,40 @@ static void HUC6280_ins_E9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->PC = (regs->PC + 1) & 0xFFFF;
             return; }
         case 2: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 3: {// idle
+        case 3: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -9252,29 +9286,40 @@ static void HUC6280_ins_ED__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 5: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 6: {// idle
+        case 6: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -9311,7 +9356,7 @@ static void HUC6280_ins_EE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
@@ -9458,29 +9503,40 @@ static void HUC6280_ins_F1__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 7: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 8: {// idle
+        case 8: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -9522,29 +9578,40 @@ static void HUC6280_ins_F2__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 7: {// cleanup_custom
             regs->TR[0] = pins->D;
-            u8 r = regs->TR[0] ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            regs->TR[0] ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 8: {// idle
+        case 8: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -9716,29 +9783,40 @@ static void HUC6280_ins_F5__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 4: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 5: {// idle
+        case 5: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -9770,7 +9848,7 @@ static void HUC6280_ins_F6__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -9878,29 +9956,40 @@ static void HUC6280_ins_F9__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 5: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 6: {// idle
+        case 6: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -10005,29 +10094,40 @@ static void HUC6280_ins_FD__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 5: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
-            pins->RD = 0; 
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 6: {// idle
+        case 6: {// dummy read...
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            pins->RD = 1; 
             HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
@@ -10065,7 +10165,7 @@ static void HUC6280_ins_FE__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
@@ -18536,7 +18636,7 @@ static void HUC6280_ins_C6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -18795,7 +18895,7 @@ static void HUC6280_ins_CE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
@@ -19132,11 +19232,12 @@ static void HUC6280_ins_D4__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             regs->P.T = 0;
-            regs->clock_div = 3;
-            pins->RD = 0; 
+            pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
-        case 2: {// idle
+        case 2: {// dummy read...
+            regs->clock_div = 3;
             // Following is auto-generated code for instruction finish
+            pins->RD = 0; 
             return; }
         case 3: {// cleanup
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
@@ -19207,7 +19308,7 @@ static void HUC6280_ins_D6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -19466,7 +19567,7 @@ static void HUC6280_ins_DE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) - 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) - 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
@@ -19599,22 +19700,34 @@ static void HUC6280_ins_E1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 7: {// cleanup_custom
             regs->TR[0] = pins->D;
-            u8 r = regs->TR[0] ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            regs->TR[0] ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 8: {// idle
@@ -19824,22 +19937,34 @@ static void HUC6280_ins_E5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 4: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 5: {// idle
@@ -19877,7 +20002,7 @@ static void HUC6280_ins_E6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -19972,22 +20097,34 @@ static void HUC6280_ins_E9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->PC = (regs->PC + 1) & 0xFFFF;
             return; }
         case 2: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 3: {// idle
@@ -20106,22 +20243,34 @@ static void HUC6280_ins_ED__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 5: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 6: {// idle
@@ -20165,7 +20314,7 @@ static void HUC6280_ins_EE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);
@@ -20312,22 +20461,34 @@ static void HUC6280_ins_F1__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 7: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 8: {// idle
@@ -20376,22 +20537,34 @@ static void HUC6280_ins_F2__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             return; }
         case 7: {// cleanup_custom
             regs->TR[0] = pins->D;
-            u8 r = regs->TR[0] ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            regs->TR[0] ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(regs->TR[0]) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (regs->TR[0])) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((regs->TR[0]) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((regs->TR[0]) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 8: {// idle
@@ -20570,22 +20743,34 @@ static void HUC6280_ins_F5__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 4: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 5: {// idle
@@ -20624,7 +20809,7 @@ static void HUC6280_ins_F6__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[1] | (regs->TA);
@@ -20732,22 +20917,34 @@ static void HUC6280_ins_F9__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 5: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 6: {// idle
@@ -20859,22 +21056,34 @@ static void HUC6280_ins_FD__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 1; 
             return; }
         case 5: {// cleanup_custom
-            u8 r = pins->D ^ 0xFF;
-            i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;
+            pins->D ^= 0xFF;
+            i16 out = (i16)regs->A + (i16)(pins->D) + (i16)regs->P.C;
             if (!regs->P.D) {
-                regs->P.C = (out >> 8) & 1;
-                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A & out)) >> 7) & 1;
-                regs->TCU++;
-            }
-            else {
-                u8 lo = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
                 regs->P.C = out > 0xFF;
-                if (out <= 0xFF) out -= 0x60;
-                if (lo <= 0x0F) out -= 6;
-            }
+                regs->P.V = ((~(regs->A ^ (pins->D)) & (regs->A ^ out)) >> 7) & 1;
+                out &= 0xFF;
             regs->P.Z = (out) == 0;
             regs->P.N = ((out) & 0x80) >> 7;
             regs->A = out;
+                pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+                regs->PC = (regs->PC + 1) & 0xFFFF;
+                pins->RD = 1;
+                regs->P.T = 0;
+                HUC6280_poll_IRQs(regs, pins);
+                regs->TCU = 0;
+                return;
+            }
+            else { // if decimal
+                out = (regs->A & 15) + ((pins->D) & 15) + regs->P.C;
+                if (out <= 15) out -= 6;
+                out = ((pins->D) & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);
+                if (out <= 0xFF) out -= 0x60;
+                regs->P.C = out > 0xFF;
+                out &= 0xFF;
+            regs->P.Z = (out) == 0;
+            regs->P.N = ((out) & 0x80) >> 7;
+            regs->A = out;
+            }
             pins->RD = 0; 
             return; }
         case 6: {// idle
@@ -20919,7 +21128,7 @@ static void HUC6280_ins_FE__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            regs->TR[1] = ((regs->TR[1]) + 1) & 0xFF;
+            regs->TR[1] = ((regs->TR[0]) + 1) & 0xFF;
             regs->P.Z = (regs->TR[1]) == 0;
             regs->P.N = ((regs->TR[1]) & 0x80) >> 7;
             pins->Addr = regs->MPR[(regs->TA) >> 13] | ((regs->TA) & 0x1FFF);

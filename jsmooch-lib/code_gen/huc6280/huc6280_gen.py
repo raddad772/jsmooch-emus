@@ -823,8 +823,8 @@ def ChangeSpeedLow(ag: huc6280_switchgen) -> str:
 
 
 def ChangeSpeedHigh(ag: huc6280_switchgen) -> str:
+    ag.dummy_read()
     ag.addl('regs->clock_div = 3;')
-    ag.addcycle('idle')
 
     return ag.finished()
 
@@ -963,13 +963,13 @@ def al_TRB(ag: huc6280_switchgen, dest: Optional[str], source: str):
 
 
 def al_DEC(ag: huc6280_switchgen, dest: str, source: str):
-    ag.addl(dest + ' = ((' + dest + ') - 1) & 0xFF;')
+    ag.addl(dest + ' = ((' + source + ') - 1) & 0xFF;')
     ag.setz(dest)
     ag.setn(dest)
 
 
 def al_INC(ag: huc6280_switchgen, dest: str, source: str):
-    ag.addl(dest + ' = ((' + dest + ') + 1) & 0xFF;')
+    ag.addl(dest + ' = ((' + source + ') + 1) & 0xFF;')
     ag.setz(dest)
     ag.setn(dest)
 
@@ -1056,6 +1056,37 @@ def al_ASL(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
 
 
 def al_SBC(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
+    ag.addl(source + ' ^= 0xFF;')
+    ag.addl('i16 out = (i16)regs->A + (i16)(' + source + ') + (i16)regs->P.C;')
+    ag.addl('if (!regs->P.D) {')
+    ag.addl('    regs->P.C = out > 0xFF;')
+    ag.addl('    regs->P.V = ((~(regs->A ^ (' + source + ')) & (regs->A ^ out)) >> 7) & 1;')
+    ag.addl('    out &= 0xFF;')
+    ag.setz('out')
+    ag.setn('out')
+    if dest is not None:
+        ag.addl(dest + ' = out;')
+    ag.br_end('    ')
+    ag.addl('}')
+    ag.addl('else { // if decimal')
+    ag.addl('    out = (regs->A & 15) + ((' + source + ') & 15) + regs->P.C;')
+    ag.addl('    if (out <= 15) out -= 6;')
+    ag.addl('    out = ((' + source + ') & 0xF0) + (regs->A & 0xF0) + (out > 15 ? 0x10 : 0) + (out & 15);')
+    ag.addl('    if (out <= 0xFF) out -= 0x60;')
+    ag.addl('    regs->P.C = out > 0xFF;')
+    ag.addl('    out &= 0xFF;')
+    ag.setz('out')
+    ag.setn('out')
+    if dest is not None:
+        ag.addl(dest + ' = out;')
+    ag.addl('}')
+
+    if ag.is_mem:
+        ag.addcycle('idle')
+    else:
+        ag.dummy_read()
+    return
+
     ag.addl('u8 r = ' + source + ' ^ 0xFF;')
     ag.addl('i16 out = (i16)regs->A + (i16)r + (i16)regs->P.C;')
     ag.addl('if (!regs->P.D) {')
@@ -1154,6 +1185,8 @@ def write_instruction(outfile, opcode, tbit):
         elif opcode < 0x80:
             al = al_ADC
             mn = 'ADC'
+        elif opcode > 0xE0:
+            ag.is_mem = True
         if al is not None:
             myopc = opcode & 0x1F
             if myopc == 0x01:
@@ -1183,6 +1216,7 @@ def write_instruction(outfile, opcode, tbit):
             elif myopc == 0x1D:
                 r = AbsoluteReadMemory(ag, al, 'regs->X')
                 am = 'absolute_read_memory'
+
 
     if len(r) < 1:
         if opcode == 0x00:
