@@ -82,17 +82,17 @@ void scheduler_clear(struct scheduler_t*);
 
 u64 scheduler_only_add_abs(struct scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
 struct scheduler_event *scheduler_add_abs(struct scheduler_t*, i64 timecode, u64 key, u32 do_instant);
-void scheduler_delete_if_exist(struct scheduler_t *this, u64 id);
-u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
+void scheduler_delete_if_exist(struct scheduler_t *, u64 id);
+u64 scheduler_add_next(struct scheduler_t *, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
 
-void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany);
-void scheduler_run_til_tag(struct scheduler_t *this, u32 tag);
-void scheduler_run_til_tag_v2(struct scheduler_t *this, u32 tag);
+void scheduler_run_for_cycles(struct scheduler_t *, u64 howmany);
+void scheduler_run_til_tag(struct scheduler_t *, u32 tag);
+void scheduler_run_til_tag_tg16(struct scheduler_t *, u32 tag);
 u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callback func, i64 timecode, u64 key, u32 *still_sched);
 
 // Combine add with bind
-u64 scheduler_add_or_run_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
-u64 scheduler_only_add_abs_w_tag(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag);
+u64 scheduler_add_or_run_abs(struct scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched);
+u64 scheduler_only_add_abs_w_tag(struct scheduler_t *, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched, u32 tag);
 
 struct scheduled_bound_function* scheduler_bind_function(scheduler_callback func, void *ptr);
 

@@ -194,9 +194,9 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
     printf("\nUNHANDLED INTERNAL WRITE! %06x - %02x", addr, val);
 }
 
-void HUC6280_internal_cycle(struct HUC6280 *this) {
-    //struct HUC6280* this = (struct HUC6280 *)ptr;
-    //u64 cur = clock - jitter;
+void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
+    struct HUC6280* this = (struct HUC6280 *)ptr;
+    u64 cur = clock - jitter;
     if (this->pins.RD) {
         if (this->pins.Addr >= 0xFF0800)
             this->pins.D = internal_read(this, this->pins.Addr, 1);
@@ -214,12 +214,12 @@ void HUC6280_internal_cycle(struct HUC6280 *this) {
     }
 
     //scheduler_from_event_adjust_master_clock(this->scheduler, this->regs.clock_div);
-    //scheduler_only_add_abs(this->scheduler, cur + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
+    scheduler_only_add_abs(this->scheduler, cur + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
 }
 
 
 void HUC6280_schedule_first(struct HUC6280 *this, u64 clock)
 {
-    //scheduler_only_add_abs(this->scheduler, clock + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
-    //timer_schedule(this, clock);
+    scheduler_only_add_abs(this->scheduler, clock + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
+    timer_schedule(this, clock);
 }

@@ -31,7 +31,8 @@ struct HUC6260 {
         u32 y;
 
         u64 line_start;
-        u32 hblank, vblank;
+        u32 hsync, vsync;
+        u32 frame_height;
     } regs;
 
     struct {
@@ -40,12 +41,22 @@ struct HUC6260 {
     } io;
 };
 
+#define HUC6260_CYCLE_PER_LINE 1364
+#define HUC6260_DRAW_CYCLES 1128
+#define HUC6260_DRAW_START 200
+#define HUC6260_HSYNC_END 100
+#define HUC6260_DRAW_END 1328
+#define HUC6260_DRAW_LINES 242
+#define HUC6260_LINE_VSYNC_START 246
+#define HUC6260_LINE_VSYNC_END 248 // line to term on, so 246 and 248 = 2 lines
 
-void HUC6260_init(struct HUC6260 *, u64 *master_clock, struct HUC6270 *vdc0, struct HUC6270 *vdc1);
+
+
+void HUC6260_init(struct HUC6260 *, struct scheduler_t *scheduler, struct HUC6270 *vdc0, struct HUC6270 *vdc1);
 void HUC6260_delete(struct HUC6260 *);
 void HUC6260_reset(struct HUC6260 *);
 void HUC6260_write(struct HUC6260 *, u32 addr, u32 val);
 u32 HUC6260_read(struct HUC6260 *, u32 addr, u32 old);
-void HUC6260_cycle(struct HUC6260 *, u64 clock);
+void HUC6260_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 void HUC6260_schedule_first(struct HUC6260 *);
 #endif //JSMOOCH_EMUS_HUC6260_H

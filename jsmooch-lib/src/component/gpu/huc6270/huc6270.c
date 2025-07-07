@@ -26,6 +26,78 @@
  * VCE gives these at fixed times, so...yeah.
  */
 
+
+static void new_display_line(struct HUC6270 *this, enum HUC6270_states st);
+
+static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
+{
+    this->timing.h.state = st;
+    switch(st) {
+        case H6S_sync_window:
+            this->timing.h.counter = (this->io.HSW+1) << 3;
+            break;
+        case H6S_wait_for_display:
+            this->timing.h.counter = (this->io.HDS+1) << 3;
+            break;
+        case H6S_display:
+            this->timing.h.counter = (this->io.HDW+1) << 3;
+            break;
+        case H6S_wait_for_sync_window:
+            this->timing.h.counter = (this->io.HDE+1) << 3;
+            break;
+    }
+}
+
+static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
+{
+    this->timing.v.state = st;
+    switch(st) {
+        case H6S_sync_window:
+            vblank(this, 0);
+            this->timing.v.counter = this->io.VSW + 1;
+            break;
+        case H6S_wait_for_display:
+            vblank(this, 0);
+            setup_new_frame(this);
+            this->timing.v.counter = this->io.VDS + 2;
+            break;
+        case H6S_display:
+            this->timing.v.counter = this->io.VDW.u + 1;
+            this->sprites.y_compare = 64;
+            this->regs.blank_line = 1;
+            break;
+        case H6S_wait_for_sync_window:
+            vblank(this, 1)
+            this->timing.v.counter = this->io.VCR;
+            break;
+    }
+}
+
+void HUC6270_hsync(struct HUC6270 *this, u32 val)
+{
+    if (val) { // 0->1 means it's time for HSW to end and/or new line starting at wait for display
+        if (this->timing.h.state != H6S_sync_window) {
+            force_new_line(this);
+        }
+        new_h_state(this, H6S_wait_for_display);
+    }
+}
+
+void HUC6270_vsync(struct HUC6270 *this, u32 val)
+{
+
+}
+
+void HU6270_cycle(struct HUC6270 *this)
+{
+
+
+    this->timing.h.counter--;
+    if (this->timing.h.counter < 1) {
+        new_h_state(this, (this->timing.h.state + 1) & 3);
+    }
+}
+
 void HUC6270_init(struct HUC6270 *this)
 {
     memset(this, 0, sizeof(*this));
@@ -50,20 +122,6 @@ static void update_RCR(struct HUC6270 *this)
     update_irqs(this);
 }
 
-static void new_line(struct HUC6270 *this)
-{
-    this->regs.yscroll = this->regs.next_yscroll;
-    this->regs.next_yscroll = this->regs.yscroll + 1;
-    this->latch.sprites_on = this->io.CR.SB;
-    this->latch.bg_on = this->io.CR.BB;
-    this->regs.y++;
-
-    update_RCR(this);
-
-    // calculate line timing stuff
-    
-}
-
 static void vblank(struct HUC6270 *this, u32 val)
 {
     if (val) {
@@ -82,8 +140,9 @@ static void vblank(struct HUC6270 *this, u32 val)
 
 static void new_frame(struct HUC6270 *this)
 {
-    this->regs.y = -1; // return this +64
+    this->regs.y_counter = 63; // return this +64
     this->regs.next_yscroll = this->io.BYR.u;
+    this->
     // // on write BYR, set next_scroll also
 }
 
@@ -332,4 +391,21 @@ u32 HUC6270_read(struct HUC6270 *this, u32 addr, u32 old)
     }
     printf("\nUnserviced HUC6270 (VDC) read: %06x", addr);
     return old;
+}
+
+static void new_display_line(struct HUC6270 *this, enum HUC6270_states st) {
+    this->regs.yscroll = this->regs.next_yscroll;
+    this->regs.next_yscroll = this->regs.yscroll + 1;
+    this->latch.sprites_on = this->io.CR.SB;
+    this->latch.bg_on = this->io.CR.BB;
+    this->bg.y_compare++;
+    this->sprites.y_compare++;
+    this->regs.y_counter++;
+
+    this->timing.v.counter--;
+    if (this->timing.v.counter < 1) {
+        new_v_state(this, (this->timing.v.state + 1) & 3);
+    }
+
+    update_RCR(this);
 }

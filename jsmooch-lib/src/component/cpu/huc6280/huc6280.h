@@ -122,6 +122,6 @@ void HUC6280_schedule_first(struct HUC6280 *, u64 clock);
 void HUC6280_cycle(struct HUC6280 *); // Only really affects "CPU-ish" stuff
 
 // Internal cycle, handles catching IO or scheduling
-void HUC6280_internal_cycle(struct HUC6280 *);
+void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 
 #endif //JSMOOCH_EMUS_HUC6280_H

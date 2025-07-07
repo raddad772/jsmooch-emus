@@ -8,9 +8,27 @@
 #include "helpers/scheduler.h"
 #include "helpers/int.h"
 
+enum HUC6270_states {
+    H6S_sync_window,
+    H6S_wait_for_display,
+    H6S_display,
+    H6S_wait_for_sync_window
+};
+
 
 struct HUC6270 {
     u16 VRAM[0x8000];
+
+    struct {
+        u32 vblank_in_y, vblank_out_y;
+        u32 px_width, px_height;
+
+        struct {
+            enum HUC6270_states state;
+            i32 counter;
+        } h, v;
+    } timing;
+
 
     struct {
         union UN16 RXR, BXR, BYR;
@@ -56,6 +74,7 @@ struct HUC6270 {
         struct {
             u32 x_tiles, y_tiles;
             u32 x_tiles_mask, y_tiles_mask;
+            u32 y_compare;
         } bg;
     } io;
 
@@ -73,21 +92,21 @@ struct HUC6270 {
     struct {
         u32 x_tiles, y_tiles;
         u32 x_tiles_mask, y_tiles_mask;
+        u32 y_compare;
     } bg;
 
     struct {
-        u32 vblank_in_y, vblank_out_y;
-        u32 px_width, px_height;
+        u32 y_compare;
+    } sprites;
 
-    } screen;
 
     struct {
-        u32 y;
-
         i32 yscroll, next_yscroll;
         u16 vram_inc;
 
         u32 px_out;
+        u32 y_counter;
+        u32 blank_line;
     } regs;
 };
 
@@ -97,7 +116,7 @@ void HUC6270_delete(struct HUC6270 *);
 void HUC6270_reset(struct HUC6270 *);
 void HUC6270_write(struct HUC6270 *, u32 addr, u32 val);
 u32 HUC6270_read(struct HUC6270 *, u32 addr, u32 old);
-void HU6270_cycle(struct HUC6270 *);
+void HUC6270_cycle(struct HUC6270 *);
 void HUC6270_hsync(struct HUC6270 *, u32 val);
 void HUC6270_vsync(struct HUC6270 *, u32 val);
 

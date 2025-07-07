@@ -19,6 +19,7 @@
 
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
+#define DRAW_CYCLES 1108
 
 #define JTHIS struct TG16* this = (struct TG16*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -121,7 +122,7 @@ void TG16_new(JSM, enum jsm_systems kind)
     //populate_opts(jsm);
     /*create_scheduling_lookup_table(this);*/
     scheduler_init(&this->scheduler, &this->clock.master_cycles, &this->clock.unused);
-    this->scheduler.max_block_size = 10;
+    this->scheduler.max_block_size = 2;
     this->scheduler.run.func = &block_step;
     this->scheduler.run.ptr = this;
 
@@ -303,26 +304,20 @@ static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
     d->fps = 60; //this->PAL ? 50 : 60.0988;
     d->fps_override_hint = this->clock.timing.second.frames;
 
-    d->pixelometry.cols.left_hblank = 0;
-    d->pixelometry.cols.visible = 1024;
-    d->pixelometry.cols.max_visible = 1024;
-    d->pixelometry.cols.right_hblank = 344;
+    d->pixelometry.cols.left_hblank = HUC6260_DRAW_START;
+    d->pixelometry.cols.visible = HUC6260_DRAW_CYCLES;
+    d->pixelometry.cols.max_visible = HUC6260_DRAW_CYCLES;
+    d->pixelometry.cols.right_hblank = HUC6260_CYCLE_PER_LINE - (HUC6260_DRAW_START+HUC6260_DRAW_CYCLES);
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
-    d->pixelometry.rows.visible = 240;
-    d->pixelometry.rows.max_visible = 240;
-    d->pixelometry.rows.bottom_vblank = 76;
+    d->pixelometry.rows.visible = 242;
+    d->pixelometry.rows.max_visible = 242;
+    d->pixelometry.rows.bottom_vblank = 20;
     d->pixelometry.offset.y = 0;
 
-    /*if (this->PAL) {
-        d->geometry.physical_aspect_ratio.width = 5;
-        d->geometry.physical_aspect_ratio.height = 4;
-    }
-    else {*/
-        d->geometry.physical_aspect_ratio.width = 4;
-        d->geometry.physical_aspect_ratio.height = 3;
-    //}
+    d->geometry.physical_aspect_ratio.width = 4;
+    d->geometry.physical_aspect_ratio.height = 3;
 
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
@@ -381,8 +376,8 @@ void TG16J_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(1024 * 480 * 2);
-    d->display.output[1] = malloc(1024 * 480 * 2);
+    d->display.output[0] = malloc(HUC6260_DRAW_CYCLES * 480 * 2);
+    d->display.output[1] = malloc(HUC6260_DRAW_CYCLES * 480 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_crt(this, &d->display);
@@ -392,7 +387,6 @@ void TG16J_describe_io(JSM, struct cvec *IOs)
     this->vce.display = &((struct physical_io_device *)cpg(this->vce.display_ptr))->display;
 
     setup_audio(this, IOs);
-
 
     this->vce.display = &((struct physical_io_device *)cpg(this->vce.display_ptr))->display;
     //TG16_controllerport_connect(&this->io.controller_port1, TG16_controller_6button, &this->controller1);
@@ -409,6 +403,12 @@ void TG16J_pause(JSM)
 
 void TG16J_stop(JSM)
 {
+}
+
+static void schedule_first(struct TG16 *this)
+{
+    HUC6280_schedule_first(&this->cpu, 0);
+    HUC6260_schedule_first(&this->vce);
 }
 
 void TG16J_get_framevars(JSM, struct framevars* out)
@@ -438,7 +438,7 @@ void TG16J_reset(JSM)
     this->scheduler_index = 0;*/
 
     scheduler_clear(&this->scheduler);
-    //schedule_first(this);
+    schedule_first(this);
     printf("\nTG16 reset!");
 }
 
@@ -448,7 +448,7 @@ u32 TG16J_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
-    u32 current_frame = this->vce.master_frame;
+    //u32 current_frame = this->vce.master_frame;
 #ifdef DO_STATS
     u64 ym_start = this->timing.ym2612_cycles;
     u64 z80_start = this->timing.z80_cycles;
@@ -458,7 +458,7 @@ u32 TG16J_finish_frame(JSM)
     u64 psg_start = this->timing.psg_cycles;
     u64 audio_start = this->audio.cycles;
 #endif
-    scheduler_run_til_tag(&this->scheduler, TAG_FRAME);
+    scheduler_run_til_tag_tg16(&this->scheduler, TAG_FRAME);
 
 #ifdef DO_STATS
     u64 ym_num_cycles = (this->timing.ym2612_cycles - ym_start) * 60;
@@ -504,7 +504,7 @@ static void cycle_cpu(struct TG16 *this)
 u32 TG16J_finish_scanline(JSM)
 {
     JTHIS;
-    u32 start_y = this->vce.regs.y;
+    /*u32 start_y = this->vce.regs.y;
     while (this->vce.regs.y == start_y) {
         i64 min_step = MIN(this->clock.next.cpu, this->clock.next.vce);
         min_step = MIN(min_step, this->clock.next.timer);
@@ -522,8 +522,8 @@ u32 TG16J_finish_scanline(JSM)
             HUC6260_cycle(&this->vce);
             this->clock.next.vce += this->vce.regs.clock_div;
         }
-    }
-    //scheduler_run_til_tag(&this->scheduler, TAG_SCANLINE);
+    }*/
+    scheduler_run_til_tag_tg16(&this->scheduler, TAG_SCANLINE);
 
     return this->vce.display->last_written;
 }
