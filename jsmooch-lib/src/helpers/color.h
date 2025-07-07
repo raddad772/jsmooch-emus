@@ -31,6 +31,20 @@ static inline u32 nds_to_screen(u32 color)
     return 0xFF000000 | (b << 16) | (g << 8) | r;
 }
 
+static inline u32 tg16_to_screen(u32 color)
+{
+    u32 g = (color >> 6) & 7;
+    u32 r = (color >> 3) & 7;
+    u32 b = color & 7;
+    r = r ? r + 1 : 0;
+    g = g ? g + 1 : 0;
+    b = b ? b + 1 : 0;
+    r = (r << 5) - 1;
+    g = (g << 5) - 1;
+    b = (b << 5) - 1;
+    return 0xFF000000 | r | (g << 8) | (b << 16);
+}
+
 
 static inline u32 gba_to_screen(u32 color)
 {

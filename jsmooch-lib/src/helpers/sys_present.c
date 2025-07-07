@@ -7,6 +7,7 @@
 
 #include "sys_present.h"
 #include "helpers/color.h"
+#include "component/gpu/huc6260/huc6260.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)
 {
@@ -381,17 +382,16 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
     u32 *img32 = (u32 *) out_buf;
     if (is_event_view_present) memset(out_buf, 0, out_width*out_height*4);
     // TODO: update this for variable screen sizes
-    for (u32 ry = 0; ry < 224; ry++) {
+    for (u32 ry = 0; ry < 242; ry++) {
         u32 y = ry;
         u32 outyw = y * w;
-        for (u32 rx = 0; rx < 256; rx++) {
+        for (u32 rx = 0; rx < HUC6260_DRAW_CYCLES; rx++) {
             u32 x = rx;
-            u32 di = ((y * 256) + x);
-            u32 b_out;
-            if (is_event_view_present) b_out = outyw + (x >> 1);
-            else b_out = outyw + x;
+            u32 di = ((y * HUC6260_DRAW_CYCLES) + x);
+            u32 b_out = outyw + x;
             u32 color = tg16o[di];
-            img32[b_out] = gba_to_screen(color);
+            // GRB
+            img32[b_out] = tg16_to_screen(color);
         }
     }
 }
@@ -419,7 +419,6 @@ void snes_present(struct physical_io_device *device, void *out_buf, u32 out_widt
         }
     }
 }
-
 
 void genesis_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
 {
