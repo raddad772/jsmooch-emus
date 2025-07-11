@@ -50,7 +50,7 @@ u32 is_skip(u32 opc) {
     return 0;
 }
 u32 is_mov_opcode(u32 opc) {
-    for (u32 i = 0; i < ST_MOVS; i++)
+    for (u32 i = 0; i < MOV_TEST_NUM; i++)
         if (opc == ST_MOVS[i]) return 1;
     return 0;
 }

@@ -463,7 +463,7 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
             }
             if (addr_found == -1) {
                 passed = 0;
-                printf("\nRAMADDR FAIL! TEST:%06x", final->ram[x].addr, test->ram[x].addr);
+                printf("\nRAMADDR FAIL! TEST:%06x", final->ram[x].addr);
 
                 printf("\ntest               me               initial");
                 for (u32 j = 0; j < final->num_ram_entry; j++) {
