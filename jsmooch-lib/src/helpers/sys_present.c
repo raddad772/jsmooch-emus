@@ -97,7 +97,7 @@ void apple2_present(struct physical_io_device *device, void *out_buf, u32 x_offs
     u32 stride = calc_stride(out_width, 280);
     for (u32 y = 0; y < 192; y++) {
         for (u32 x = 0; x < 280; x++) {
-            u8* iptr = (char *)ibuf + ((y * 280) + x);
+            u8* iptr = (u8 *)ibuf + ((y * 280) + x);
             u32 c = 0;
             if (*iptr) c = 0xFFFFFF;
             *img32 = 0xFF000000 | c;
@@ -158,7 +158,7 @@ void atari2600_present(struct physical_io_device *device, void *out_buf, u32 out
 {
     u8* ibuf = (u8 *)device->display.output[device->display.last_written];
     for (u32 y = 0; y < 192; y++) {
-        u8* iptr = (char *)ibuf + ((y * 160));
+        u8* iptr = (u8 *)ibuf + ((y * 160));
         for (u32 x = 0; x < 160; x++) {
             u32* optr = (u32 *)((u8 *)out_buf + (((y * out_width) + x) * 4));
 
@@ -189,10 +189,10 @@ void DMG_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
     u32 stride = calc_stride(out_width, 160);
 
     for (u32 y = 0; y < 144; y++) {
-        u8* out_pos_line = ((char *)out_buf + (y * out_width * 4));
+        u8* out_pos_line = ((u8 *)out_buf + (y * out_width * 4));
         for (u32 x = 0; x < 160; x++) {
-            u16* iptr = (u16 *)((char *)ibuf + (((y * 160) + x) * 2));
-            u16* mptr = (u16 *)((char *)mdbuf + (((y * 160) + x) * 2));
+            u16* iptr = (u16 *)((u8 *)ibuf + (((y * 160) + x) * 2));
+            u16* mptr = (u16 *)((u8 *)mdbuf + (((y * 160) + x) * 2));
             u8* optr = (u8 *)img32;
             img32++;
 
@@ -226,10 +226,10 @@ void GBC_present(struct physical_io_device *device, void *out_buf, u32 x_offset,
     u32 stride = calc_stride(out_width, 160);
 
     for (u32 y = 0; y < 144; y++) {
-        u8* out_pos_line = (char* )out_buf + (y * out_width * 4);
+        u8* out_pos_line = (u8 *)out_buf + (y * out_width * 4);
         for (u32 x = 0; x < 160; x++) {
             u16* iptr = ((u16 *)ibuf) + (((y * 160) + x));
-            u16* mptr = (u16 *)((char *)mdbuf + (((y * 160) + x) * 2));
+            u16* mptr = (u16 *)((u8 *)mdbuf + (((y * 160) + x) * 2));
             u8* optr = (u8 *)img32;
             img32++;
 

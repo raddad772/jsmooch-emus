@@ -25,7 +25,7 @@ inline uint32_t __builtin_clz(uint32_t value)
 
 #include <stdbool.h>
 
-inline bool sadd_overflow(int a, int b, int *res)
+static inline bool sadd_overflow(int a, int b, int *res)
 {
 #if defined(__GNUC__) || defined(__clang__)
     return __builtin_sadd_overflow(a, b, res);
@@ -36,7 +36,7 @@ inline bool sadd_overflow(int a, int b, int *res)
 #endif
 }
 
-inline bool ssub_overflow(int a, int b, int *res)
+static inline bool ssub_overflow(int a, int b, int *res)
 {
 #if defined(__GNUC__) || defined(__clang__)
     return __builtin_ssub_overflow(a, b, res);

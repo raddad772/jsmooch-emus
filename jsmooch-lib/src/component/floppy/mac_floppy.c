@@ -140,7 +140,7 @@ void *dc42_load_gcr(struct mac_floppy *mflpy, struct buf *b, u32 head_count, u32
 {
     u32 tracki, headi, sectori;
     u32 sector_count;
-    u8 *bptr = (char *)b->ptr + 84;
+    u8 *bptr = (u8 *)b->ptr + 84;
 
     printf("\nSECTOR FORMAT? %d", fmt);
     *check = 0;

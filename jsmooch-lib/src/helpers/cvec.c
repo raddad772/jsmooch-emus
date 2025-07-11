@@ -46,7 +46,7 @@ void cvec_delete(struct cvec* this)
 
 u32 cvec_index_of(struct cvec* this, void* ptr)
 {
-    u64 index = (u64)((char *)ptr - (char *)this->data) / this->data_sz;
+    u64 index = (u64)((u8 *)ptr - (u8 *)this->data) / this->data_sz;
     assert(index <= 0xFFFFFFFF);
     return (u32)index;
 }
