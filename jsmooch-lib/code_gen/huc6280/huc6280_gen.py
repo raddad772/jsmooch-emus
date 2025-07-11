@@ -50,7 +50,6 @@ class huc6280_switchgen:
         self.old_m = 0
         self.in_case = False
         self.addcycle('start cycle')
-        self.addl('regs->P.T = 0;')
         self.indent4 = '    ' + self.indent3
         self.is_mem = False
 
@@ -121,6 +120,8 @@ class huc6280_switchgen:
             self.poll_IRQs()
         else:
             self.override_IRQ_do()
+        if not self.no_T_at_end:
+            self.addl('regs->P.T = 0;')
         self.addl('regs->TCU = 0;')
         self.addl('return;')
 
@@ -261,8 +262,9 @@ def Break(ag: huc6280_switchgen):
     ag.operand()
     ag.push('regs->PC >> 8')
     ag.push('regs->PC & 0xFF')
+    ag.addl('regs->P.T = 0;')
     ag.push('regs->P.u | 0x10')
-    ag.addl('regs->P.T = 0; regs->P.D = 0; regs->P.I = 1;')
+    ag.addl('regs->P.D = 0; regs->P.I = 1;')
     ag.load16('regs->PC', '0xFFF6')
     ag.load16('regs->TA', '0xFFF7')
     ag.addl('regs->PC |= regs->TA << 8;')
@@ -449,9 +451,8 @@ def S_RESET(ag: huc6280_switchgen) -> str:
 
 
 def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
-    ag.addcycle('idle')
-    ag.addcycle('idle')
-    ag.addcycle('idle')
+    ag.dummy_read()
+    ag.dummy_read()
     ag.push('regs->PC >> 8')
     ag.push('regs->PC & 0xFF')
     ag.push('regs->P.u & 0xEF')
@@ -460,7 +461,7 @@ def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
     ag.addl('regs->P.T = 0;')
     ag.addl('regs->TA = ' + vector + ';')
     ag.load16('regs->PC', 'regs->TA')
-    ag.addl('regs->TA++;')
+    ag.addl('regs->TA = (regs->TA + 1) & 0xFFFF;')
     ag.load16('regs->TR[0]', 'regs->TA', last=True)
     ag.addl('regs->PC |= regs->TR[0] << 8;')
 
@@ -686,6 +687,7 @@ def PullP(ag: huc6280_switchgen) -> str:
     ag.addcycle('idle')
     ag.pull('regs->P.u', last=True)
     ag.addl('regs->P.u &= 0xEF;')
+    ag.no_T_at_end = True
 
     return ag.finished()
 
@@ -798,6 +800,8 @@ def Set(ag: huc6280_switchgen, dt) -> str:
     ag.dummy_read(last=True)
     ag.cleanup()
     ag.addl(dt + ' = 1;')
+    if dt == 'regs->P.T':
+        ag.no_T_at_end = True
     return ag.finished()
 
 
@@ -892,6 +896,7 @@ def ReturnFromInterrupt(ag: huc6280_switchgen) -> str:
     ag.pull('regs->TA', last=True)
     ag.addl('regs->PC |= regs->TA << 8;')
     ag.addcycle('idle')
+    ag.no_T_at_end = True
     return ag.finished()
 
 
