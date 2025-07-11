@@ -11,6 +11,9 @@
 
 #include "huc6280.h"
 
+static void timer_schedule(struct HUC6280 *this, u64 cur);
+
+
 void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clocks_per_second)
 {
     memset(this, 0, sizeof(*this));
@@ -49,25 +52,26 @@ void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 }
 
 
-static void timer_schedule(struct HUC6280 *this, u64 cur)
-{
-    /*if (this->timer.still_sch) {
-        scheduler_delete_if_exist(this->scheduler, this->timer.sch_id);
-    }
-    this->timer.sch_id = scheduler_only_add_abs(this->scheduler, cur + this->timer.sch_interval, 0, this, &timer_tick, &this->timer.still_sch);*/
-}
 
-void HUC6280_tick_timer(struct HUC6280 *this)
+void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
 {
+    struct HUC6280 *this = (struct HUC6280 *)ptr;
+    u64 cur = clock - jitter;
+    timer_schedule(this, cur);
     if (!this->regs.timer_startstop) return;
     if (this->timer.counter == 0) {
         this->timer.counter = this->timer.reload;
         this->regs.IRQR.TIQ = this->regs.timer_startstop;
     }
     else this->timer.counter = (this->timer.counter - 1) & 0x7F;
+}
 
-    //u64 cur = clock - jitter;
-    //timer_schedule(this, cur);
+static void timer_schedule(struct HUC6280 *this, u64 cur)
+{
+    if (this->timer.still_sch) {
+        scheduler_delete_if_exist(this->scheduler, this->timer.sch_id);
+    }
+    this->timer.sch_id = scheduler_only_add_abs(this->scheduler, cur + this->timer.sch_interval, 0, this, &timer_tick, &this->timer.still_sch);
 }
 
 void HUC6280_cycle(struct HUC6280 *this)

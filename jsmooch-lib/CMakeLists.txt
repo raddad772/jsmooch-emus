@@ -490,6 +490,7 @@ set(SOURCE_LIST
         "src/system/zxspectrum/ula.c"
         "src/system/zxspectrum/ula.h"
         ".editorconfig"
+        src/component/cpu/huc6280/huc6280_disassembler.c
 )
 
 # TODO: Fix elf-parser repo for windows
