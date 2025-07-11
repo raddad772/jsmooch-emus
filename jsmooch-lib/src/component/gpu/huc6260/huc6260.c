@@ -51,6 +51,7 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void new_frame(struct HUC6260 *this)
 {
+    printf("\nNEW FRAME!");
     this->regs.y = 0;
     this->master_frame++;
     this->cur_output = this->display->output[this->display->last_written];
@@ -67,6 +68,7 @@ static void frame_end(void *ptr, u64 key, u64 clock, u32 jitter)
 static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
 {
     struct HUC6260 *this = (struct HUC6260 *)ptr;
+    printf("\nNEW LINE %lld", key);
     this->regs.y = key;
     u64 clock = cclock - jitter;
 

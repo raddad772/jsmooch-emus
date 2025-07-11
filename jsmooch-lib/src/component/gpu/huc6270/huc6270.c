@@ -13,6 +13,8 @@
 #define IRQ_OVER 2
 #define IRQ_SCANLINE 4
 #define IRQ_VBLANK 8
+#define IRQ_VRAM_SATB 16
+#define IRQ_VRAM_VRAM 32
 
 /*
  * OK SO
@@ -27,7 +29,42 @@
  */
 
 
-static void new_display_line(struct HUC6270 *this, enum HUC6270_states st);
+static void new_v_state(struct HUC6270 *this, enum HUC6270_states st);
+static void update_RCR(struct HUC6270 *this);
+static void vblank(struct HUC6270 *this, u32 val);
+static void hblank(struct HUC6270 *this, u32 val);
+
+static void setup_new_frame(struct HUC6270 *this)
+{
+    this->regs.y_counter = 63; // return this +64
+    this->regs.yscroll = this->io.BYR.u;
+    this->regs.next_yscroll = this->regs.yscroll + 1;
+
+    // // on write BYR, set next_scroll also
+}
+
+static void setup_new_line(struct HUC6270 *this) {
+    if (this->timing.v.state == H6S_display) {
+        this->regs.yscroll = this->regs.next_yscroll;
+        this->regs.next_yscroll = this->regs.yscroll + 1;
+        this->latch.sprites_on = this->io.CR.SB;
+        this->latch.bg_on = this->io.CR.BB;
+        this->bg.y_compare++;
+        this->sprites.y_compare++;
+        this->regs.y_counter++;
+        this->regs.first_render = 1;
+        this->regs.draw_clock = 0;
+    }
+
+    // TODO: this stuff
+    this->timing.v.counter--;
+    if (this->timing.v.counter < 1) {
+        new_v_state(this, (this->timing.v.state + 1) & 3);
+    }
+
+    update_RCR(this);
+}
+
 
 static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
 {
@@ -38,11 +75,14 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
             break;
         case H6S_wait_for_display:
             this->timing.h.counter = (this->io.HDS+1) << 3;
+            setup_new_line(this);
             break;
         case H6S_display:
+            hblank(this, 0);
             this->timing.h.counter = (this->io.HDW+1) << 3;
             break;
         case H6S_wait_for_sync_window:
+            hblank(this, 1);
             this->timing.h.counter = (this->io.HDE+1) << 3;
             break;
     }
@@ -67,14 +107,26 @@ static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
             this->regs.blank_line = 1;
             break;
         case H6S_wait_for_sync_window:
-            vblank(this, 1)
+            vblank(this, 1);
             this->timing.v.counter = this->io.VCR;
             break;
     }
 }
 
+static void force_new_frame(struct HUC6270 *this)
+{
+    printf("\nbadly timed vsync!!!");
+}
+
+static void force_new_line(struct HUC6270 *this)
+{
+    printf("\nbadly timed hsync!?");
+
+}
+
 void HUC6270_hsync(struct HUC6270 *this, u32 val)
 {
+    if (this->regs.ignore_hsync) return;
     if (val) { // 0->1 means it's time for HSW to end and/or new line starting at wait for display
         if (this->timing.h.state != H6S_sync_window) {
             force_new_line(this);
@@ -85,22 +137,32 @@ void HUC6270_hsync(struct HUC6270 *this, u32 val)
 
 void HUC6270_vsync(struct HUC6270 *this, u32 val)
 {
+    if (this->regs.ignore_vsync) return;
 
+    if (val == 1) { // OK, reset our frame-ish!
+        if (this->timing.h.state != H6S_sync_window) {
+            force_new_frame(this);
+        }
+        new_v_state(this, H6S_wait_for_display);
+    }
 }
 
-void HU6270_cycle(struct HUC6270 *this)
+void HUC6270_cycle(struct HUC6270 *this)
 {
-
-
     this->timing.h.counter--;
     if (this->timing.h.counter < 1) {
         new_h_state(this, (this->timing.h.state + 1) & 3);
     }
+    if ((this->timing.v.state == H6S_display) && (this->timing.h.state == H6S_display)) {
+        // clock a pixel, yo!
+        //if (this->regs.first_render)
+    }
 }
 
-void HUC6270_init(struct HUC6270 *this)
+void HUC6270_init(struct HUC6270 *this, struct scheduler_t *scheduler)
 {
     memset(this, 0, sizeof(*this));
+    this->scheduler = scheduler;
 }
 
 
@@ -118,19 +180,86 @@ static void update_irqs(struct HUC6270 *this);
 static void update_RCR(struct HUC6270 *this)
 {
     this->irq.IR &= ~IRQ_SCANLINE;
-    if (this->regs.y == this->io.RCR.u) this->irq.IR |= IRQ_SCANLINE;
+    if (this->regs.y_counter == this->io.RCR.u) this->irq.IR |= IRQ_SCANLINE;
     update_irqs(this);
+}
+
+static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct HUC6270 *this = (struct HUC6270 *)ptr;
+    this->io.STATUS.DS = 1;
+    this->irq.IR |= IRQ_VRAM_SATB;
+    if (!this->io.DCR.DSR)
+        this->regs.vram_satb_pending = 0;
+
+}
+
+static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct HUC6270 *this = (struct HUC6270 *)ptr;
+    this->io.STATUS.DV = 1;
+    this->irq.IR |= IRQ_VRAM_VRAM;
+}
+
+static void vram_satb(struct HUC6270 *this)
+{
+    // TODO: make not instant
+    scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_satb_end, NULL);
+    for (u32 i = 0; i < 0x100; i++) {
+        u32 addr = (this->io.DVSSR.u + i) & 0x7FFF;
+        this->SAT[i] = this->VRAM[addr];
+    }
+}
+
+static void trigger_vram_satb(struct HUC6270 *this)
+{
+    this->regs.vram_satb_pending = 1;
+}
+
+static void trigger_vram_vram(struct HUC6270 *this)
+{
+    // TODO: make not instant
+    if (!this->regs.in_vblank) {
+        printf("\nWarn attempt to VRAM-VRAM DMA outside vblank!");
+        return;
+    }
+    scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_vram_end, NULL);
+    while(true) {
+        u16 val = this->VRAM[this->io.SOUR.u & 0x7FFF];
+        this->VRAM[this->io.DESR.u & 0x7FFF] = val;
+        this->io.SOUR.u += this->io.DCR.SI_D ? -1 : 1;
+        this->io.DESR.u += this->io.DCR.DI_D ? -1 : 1;
+
+        this->io.LENR.u--;
+        if (this->io.LENR.u == 0) break;
+    }
+}
+
+static void hblank(struct HUC6270 *this, u32 val)
+{
+    if (val) {
+        this->regs.px_out = 0x100;
+    }
+    else {
+
+    }
 }
 
 static void vblank(struct HUC6270 *this, u32 val)
 {
+    this->regs.in_vblank = val;
     if (val) {
+        this->regs.px_out = 0x100;
         this->irq.IR |= IRQ_VBLANK;
+        this->io.STATUS.VD = 1;
         update_irqs(this);
         this->bg.x_tiles = this->io.bg.x_tiles;
         this->bg.y_tiles = this->io.bg.y_tiles;
         this->bg.x_tiles_mask = this->bg.x_tiles - 1;
         this->bg.y_tiles_mask = this->bg.y_tiles - 1;
+
+        if (this->regs.vram_satb_pending)
+            vram_satb(this);
     }
     else {
         this->irq.IR &= ~IRQ_VBLANK;
@@ -138,13 +267,6 @@ static void vblank(struct HUC6270 *this, u32 val)
     }
 }
 
-static void new_frame(struct HUC6270 *this)
-{
-    this->regs.y_counter = 63; // return this +64
-    this->regs.next_yscroll = this->io.BYR.u;
-    this->
-    // // on write BYR, set next_scroll also
-}
 
 static void run_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 
@@ -158,7 +280,7 @@ static void write_addr(struct HUC6270 *this, u32 val)
 
 static void update_irqs(struct HUC6270 *this)
 {
-    u32 cie = this->io.CR.IE;
+    u32 cie = this->io.CR.IE | (this->io.DCR.DSC << 4) | (this->io.DCR.DVC << 5);
     u32 old_line = this->irq.line;
     this->irq.line = (cie & this->irq.IR) != 0;
     if (old_line != this->irq.line)
@@ -187,6 +309,24 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             this->io.CR.lo = val;
             // TODO: do more stuff with this
             update_irqs(this);
+            switch((val >> 4) & 3) {
+                case 0:
+                    this->regs.ignore_hsync = 0;
+                    this->regs.ignore_vsync = 0;
+                    break;
+                case 1:
+                    this->regs.ignore_hsync = 1;
+                    this->regs.ignore_vsync = 0;
+
+                    break;
+                case 2:
+                    printf("\nWARNING INVALID HSYNC/VSYNC COMBO");
+                    break;
+                case 3:
+                    this->regs.ignore_hsync = 1;
+                    this->regs.ignore_vsync = 1;
+                    break;
+            }
             return;
         case 0x06:
             this->io.RCR.lo = val;
@@ -225,7 +365,8 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             this->io.VCR = val;
             return;
         case 0x0F:
-            // TODO: this!
+            this->io.DCR.u = val & 0x1F;
+            update_irqs(this);
             return;
         case 0x10:
             this->io.SOUR.lo = val;
@@ -253,6 +394,7 @@ static void write_vram(struct HUC6270 *this)
 {
     this->VRAM[this->io.MAWR.u & 0x7FFF] = this->io.VWR.u;
     this->io.MAWR.u += this->regs.vram_inc;
+    // TODO: timing
 }
 
 static void write_msb(struct HUC6270 *this, u32 val)
@@ -329,9 +471,13 @@ static void write_msb(struct HUC6270 *this, u32 val)
             return;
         case 0x12:
             this->io.LENR.hi = val;
+            // Trigger VRAM-VRAM transfer
+            trigger_vram_vram(this);
             return;
         case 0x13:
             this->io.DVSSR.hi = val;
+            // Trigger VRAM-SATB Transfer
+            trigger_vram_satb(this);
             return;
     }
     printf("\nWRITE MSB NOT IMPL: %02x", this->io.ADDR);
@@ -358,13 +504,24 @@ void HUC6270_write(struct HUC6270 *this, u32 addr, u32 val)
 
 static u32 read_lsb(struct HUC6270 *this)
 {
-    printf("\nREAD LSB NOT IMPL!");
+    switch(this->io.ADDR) {
+        case 0x02: // VRAM data read
+            return this->io.VRR.lo;
+    }
+    printf("\nWANR UNSERVICED HUC6270 LSB READ %02x!", this->io.ADDR);
+    // IRQ clears on reads, onyl apply to bottom 4 bit
     return 0;
 }
 
 static u32 read_msb(struct HUC6270 *this)
 {
-    printf("\nREAD MSB NOT IMPL!");
+    switch(this->io.ADDR) {
+        case 0x02: {// VRAM data read
+            u32 v = this->io.VRR.hi;
+            read_vram(this);
+            return v; }
+    }
+    printf("\nWANR UNSERVICED HUC6270 MSB READ %02x!", this->io.ADDR);
     return 0;
 }
 
@@ -393,19 +550,3 @@ u32 HUC6270_read(struct HUC6270 *this, u32 addr, u32 old)
     return old;
 }
 
-static void new_display_line(struct HUC6270 *this, enum HUC6270_states st) {
-    this->regs.yscroll = this->regs.next_yscroll;
-    this->regs.next_yscroll = this->regs.yscroll + 1;
-    this->latch.sprites_on = this->io.CR.SB;
-    this->latch.bg_on = this->io.CR.BB;
-    this->bg.y_compare++;
-    this->sprites.y_compare++;
-    this->regs.y_counter++;
-
-    this->timing.v.counter--;
-    if (this->timing.v.counter < 1) {
-        new_v_state(this, (this->timing.v.state + 1) & 3);
-    }
-
-    update_RCR(this);
-}

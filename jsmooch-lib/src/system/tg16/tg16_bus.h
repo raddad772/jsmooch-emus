@@ -6,6 +6,8 @@
 #define JSMOOCH_EMUS_TG16_BUS_H
 
 #include "helpers/scheduler.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #include "component/cpu/huc6280/huc6280.h"
 #include "component/gpu/huc6270/huc6270.h"
@@ -29,7 +31,16 @@ struct TG16 {
         struct cvec* IOs;
         u32 described_inputs;
     } jsm;
+    DBG_START
+        DBG_EVENT_VIEW
+        DBG_CPU_REG_START1
+            *A, *X, *Y, *PC, *S, *P, *MPR[8]
+        DBG_CPU_REG_END1
 
+        DBG_IMAGE_VIEWS_START
+            MDBG_IMAGE_VIEW(palettes)
+        DBG_IMAGE_VIEWS_END
+    DBG_END
 };
 
 u32 TG16_bus_read(struct TG16 *, u32 addr, u32 old, u32 has_effect);

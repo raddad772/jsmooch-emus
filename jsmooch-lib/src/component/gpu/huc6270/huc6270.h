@@ -17,7 +17,9 @@ enum HUC6270_states {
 
 
 struct HUC6270 {
+    struct scheduler_t *scheduler;
     u16 VRAM[0x8000];
+    u16 SAT[0x100];
 
     struct {
         u32 vblank_in_y, vblank_out_y;
@@ -76,6 +78,18 @@ struct HUC6270 {
             u32 x_tiles_mask, y_tiles_mask;
             u32 y_compare;
         } bg;
+
+        union {
+            struct {
+                u8 DSC : 1; // vram-satb interrupt enable
+                u8 DVC : 1; // vram-vram interrupt enable
+                u8 SI_D : 1; // Source addr inc/dec 0=inc
+                u8 DI_D : 1; // Dest addr inc/dec 0=inc
+                u8 DSR : 1; // VRAM-SATB auto-repeat
+            };
+            u8 u;
+
+        } DCR;
     } io;
 
     struct {
@@ -107,11 +121,17 @@ struct HUC6270 {
         u32 px_out;
         u32 y_counter;
         u32 blank_line;
+        u32 ignore_hsync, ignore_vsync;
+        u32 first_render;
+        u32 draw_clock;
+
+        u32 vram_satb_pending;
+        u32 in_vblank;
     } regs;
 };
 
 
-void HUC6270_init(struct HUC6270 *);
+void HUC6270_init(struct HUC6270 *, struct scheduler_t *scheduler);
 void HUC6270_delete(struct HUC6270 *);
 void HUC6270_reset(struct HUC6270 *);
 void HUC6270_write(struct HUC6270 *, u32 addr, u32 val);

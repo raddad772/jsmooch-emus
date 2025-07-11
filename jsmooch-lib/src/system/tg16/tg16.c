@@ -134,8 +134,8 @@ void TG16_new(JSM, enum jsm_systems kind)
     this->cpu.write_io_func = &TG16_huc_write_io;
     this->cpu.read_ptr = this->cpu.write_ptr = this->cpu.read_io_ptr = this->cpu.write_io_ptr = this;
     TG16_cart_init(&this->cart);
-    HUC6270_init(&this->vdc0);
-    HUC6270_init(&this->vdc1);
+    HUC6270_init(&this->vdc0, &this->scheduler);
+    HUC6270_init(&this->vdc1, &this->scheduler);
     HUC6260_init(&this->vce, &this->scheduler, &this->vdc0, NULL);
     //ym2612_init(&this->ym2612, OPN2V_ym2612, &this->clock.master_cycle_count, 32 * 7 * 6);
     //SN76489_init(&this->psg);
@@ -416,7 +416,7 @@ void TG16J_get_framevars(JSM, struct framevars* out)
     JTHIS;
     out->master_frame = this->clock.master_frames;
     out->x = 0;
-    out->scanline = this->vdc0.regs.y;
+    out->scanline = this->vce.regs.y - 64;
     out->master_cycle = this->clock.master_cycles;
 }
 

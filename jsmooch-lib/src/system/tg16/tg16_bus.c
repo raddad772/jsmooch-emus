@@ -10,7 +10,7 @@ u32 TG16_bus_read(struct TG16 *this, u32 addr, u32 old, u32 has_effect)
 {
     if (addr >= 0xFFE000) {
         if (addr < 0xFFE400) {
-            return HUC6270_read(&this->vdc, addr, old);
+            return HUC6270_read(&this->vdc0, addr, old);
         }
         else if (addr < 0xFFE800) {
             return HUC6260_read(&this->vce, addr, old);
@@ -32,7 +32,7 @@ void TG16_bus_write(struct TG16 *this, u32 addr, u32 val)
 {
     if (addr >= 0xFFE000) {
         if (addr < 0xFFE400) {
-            return HUC6270_write(&this->vdc, addr, val);
+            return HUC6270_write(&this->vdc0, addr, val);
         }
         else if (addr < 0xFFE800) {
             return HUC6260_write(&this->vce, addr, val);
