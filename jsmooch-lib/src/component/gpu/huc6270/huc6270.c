@@ -191,7 +191,7 @@ static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
     this->irq.IR |= IRQ_VRAM_SATB;
     if (!this->io.DCR.DSR)
         this->regs.vram_satb_pending = 0;
-
+    update_irqs(this);
 }
 
 static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -199,6 +199,7 @@ static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
     struct HUC6270 *this = (struct HUC6270 *)ptr;
     this->io.STATUS.DV = 1;
     this->irq.IR |= IRQ_VRAM_VRAM;
+    update_irqs(this);
 }
 
 static void vram_satb(struct HUC6270 *this)
