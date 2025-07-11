@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ISTART 0xC1
+#define ISTART 0
 
 #include "m6502_tests.h"
 #include "cpu-test-helpers.h"
