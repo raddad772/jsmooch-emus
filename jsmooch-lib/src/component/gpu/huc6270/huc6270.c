@@ -534,6 +534,8 @@ static u32 read_status(struct HUC6270 *this)
 {
     u32 v = this->io.STATUS.u;
     this->io.STATUS.u &= 0b1000000;
+    this->irq.IR &= ~IRQ_VRAM_SATB;
+    this->irq.IR &= ~IRQ_VRAM_VRAM;
     return v;
 }
 
