@@ -54,6 +54,8 @@ static u32 maple_port_in(struct DC* this, u32 port, u32* more)
         case MAPLE_CONTROLLER:
             return p->read_device(p->device_ptr, more);
     }
+    NOGOHERE;
+    return 0;
 }
 
 static void maple_port_out(struct DC* this, u32 port, u32 data)
@@ -66,6 +68,7 @@ static void maple_port_out(struct DC* this, u32 port, u32 data)
             p->write_device(p->device_ptr, data);
             return;
     }
+    NOGOHERE;
 }
 
 union MAPLE_CMD {

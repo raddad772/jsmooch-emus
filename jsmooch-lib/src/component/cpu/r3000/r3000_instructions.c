@@ -3,8 +3,15 @@
 //
 
 #include <assert.h>
+
+#if !defined(_MSC_VER)
 #include <printf.h>
+#else
+#include <stdio.h>
+#endif
+
 #include <stdlib.h>
+#include "helpers/intrinsics.h"
 #include "r3000.h"
 #include "r3000_instructions.h"
 #include "gte.h"
@@ -314,7 +321,7 @@ void R3000_fADD(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
-    if (__builtin_sadd_overflow (core->regs.R[rs], core->regs.R[rt], &r)) {
+    if (sadd_overflow(core->regs.R[rs], core->regs.R[rt], &r)) {
         R3000_exception(core, 0xC, 0, 0);
         return;
     }
@@ -339,7 +346,7 @@ void R3000_fSUB(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 rt = (opcode >> 16) & 0x1F;
     u32 rd = (opcode >> 11) & 0x1F;
     int r;
-    if (__builtin_ssub_overflow (core->regs.R[rs], core->regs.R[rt], &r)) {
+    if (ssub_overflow(core->regs.R[rs], core->regs.R[rt], &r)) {
         R3000_exception(core, 0xC, 0, 0);
         return;
     }
@@ -493,7 +500,7 @@ void R3000_fADDI(u32 opcode, struct R3000_opcode *op, struct R3000 *core)
     u32 imm = opcode & 0xFFFF;
     imm = SIGNe16to32(imm);
     int r;
-    if (__builtin_sadd_overflow(core->regs.R[rs], imm, &r)) {
+    if (sadd_overflow(core->regs.R[rs], imm, &r)) {
         R3000_exception(core, 0xC, 0, 0);
         return;
     }

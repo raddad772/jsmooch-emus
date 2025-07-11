@@ -3,7 +3,11 @@
 //
 
 #include <fenv.h>
+#ifdef _MSC_VER
+#pragma fenv_access (on)
+#else
 #pragma STDC FENV_ACCESS ON
+#endif
 
 #include "assert.h"
 #include "stdio.h"
@@ -74,12 +78,12 @@ void SH4_regs_FPSCR_update(struct SH4_regs_FPSCR* this, u32 old_RM, u32 old_DN)
 
         //Correct rounding is required by some games (SOTB, etc)
 #if BUILD_COMPILER == COMPILER_VC
-        if (fpscr.RM == 1)  //if round to 0 , set the flag
+        if (this->RM == 1)  //if round to 0 , set the flag
             _controlfp(_RC_CHOP, _MCW_RC);
         else
             _controlfp(_RC_NEAR, _MCW_RC);
 
-        if (fpscr.DN)     //denormals are considered 0
+        if (this->DN)     //denormals are considered 0
             _controlfp(_DN_FLUSH, _MCW_DN);
         else
             _controlfp(_DN_SAVE, _MCW_DN);

@@ -5,9 +5,11 @@
 #include <string.h>
 #include <stdio.h>
 #include "helpers/physical_io.h"
+#include "helpers/pack.h"
 #include "controller.h"
 #include "dreamcast.h"
 
+PACK_BEGIN
 struct controller_info {
     u32 func;
     u32 sub_func[3];
@@ -17,7 +19,7 @@ struct controller_info {
     char license[60];
     u16 standby_power;
     u16 max_power;
-} __attribute__((packed));
+} PACK_END;
 
 
 static u32 reply5[28] = {

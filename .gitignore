@@ -30,6 +30,7 @@ cmake-build-release/*
 cmake-build-debug
 cmake-build-release
 /cmake-build-release
+build
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

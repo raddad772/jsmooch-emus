@@ -243,5 +243,5 @@ void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* 
     assert(sz % 16384 == 0);
 
     simplebuf8_allocate(&this->ROM, sz);
-    memcpy(this->ROM.ptr, inbuf->ptr+offset, sz);
+    memcpy(this->ROM.ptr, (char *)inbuf->ptr+offset, sz);
 }

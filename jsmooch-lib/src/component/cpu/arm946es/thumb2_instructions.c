@@ -87,6 +87,7 @@ static int condition_passes(struct ARM946ES_regs *this, int which) {
         case ARM9CC_LE:    return (flag(Z) == 1) || (flag(N) != flag(V));
         default:
             NOGOHERE;
+            return 0;
     }
 #undef flag
 }

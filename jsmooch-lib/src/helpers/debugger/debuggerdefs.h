@@ -11,6 +11,9 @@ extern "C" {
 
 #include "helpers/cvec.h"
 
+#ifdef interface
+#undef interface
+#endif
 
 #define DBG_START struct { struct debugger_interface *interface;
 

@@ -281,7 +281,7 @@ static void TG16IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io
     // check if bit 9 is set and discard first 512kb then
     struct buf* b = &mfs->files[0].buf;
 
-    void *ptr = b->ptr;
+    uint8_t *ptr = (uint8_t *)b->ptr;
     u64 sz = b->size;
     if (sz & 512) {
         ptr += 512;

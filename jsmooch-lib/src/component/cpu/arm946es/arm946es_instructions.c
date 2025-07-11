@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "helpers/intrinsics.h"
+
 #include "arm946es.h"
 #include "arm946es_instructions.h"
 #include "nds_cp15.h"

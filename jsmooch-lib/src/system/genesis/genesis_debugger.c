@@ -526,6 +526,7 @@ static inline u32 shade_boundary_func(u32 kind, u32 incolor)
             return 0xFFFFFFFF;
     }
     NOGOHERE;
+    return 0;
 }
 
 static int fetch_order[4] = { 1, 0, 3, 2 };

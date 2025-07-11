@@ -30,12 +30,21 @@ extern "C" {
 
 //#define DO_LAST_TRACES   // keeps last X traces, slows down emulation
 //#define DUMP_LAST_TRACES_ON_BREAK
+
+#if !defined (_MSC_VER) // not supported on Windows
 #define TRACE_COLORS
+#endif
+
 //#define SH4_TRACE_INS_FETCH
 //#define TEST_SH4   // this one disables certain TMU functionality due to it causing invonvenient issues with sh4 json tests
 //#define SH4_IRQ_DBG
 
+#if !defined DC_SUPPORT_ELF
+#if !defined (_MSC_VER) // #TODO: Fix for MSVC
 #define DC_SUPPORT_ELF
+#endif
+#endif
+
 //#define DC_ELF_PRINT_FUNCS
 #define DC_ELF_NO_LOOP_SYMBOLS
 
@@ -243,8 +252,10 @@ void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, struct jsm_debug_read
 
 #define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
 
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wswitch"
+#endif
 
 #ifdef __cplusplus
 }
