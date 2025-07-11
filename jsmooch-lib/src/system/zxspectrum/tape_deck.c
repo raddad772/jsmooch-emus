@@ -260,7 +260,7 @@ void ZXSpectrum_tape_deck_load(struct ZXSpectrum* bus, struct multi_file_set* mf
     u32 tpos = 0;
     for (u32 i = 0; i < blocks_len; i++) {
         for (u32 j = 0; j < blocks[i].size; j++) {
-            *(u8 *)&this->TAPE_binary.ptr[tpos] = *((u8*)blocks[i].ptr + j);
+            ((u8 *)this->TAPE_binary.ptr)[tpos] = *((u8*)blocks[i].ptr + j);
             tpos++;
         }
         buf_delete(&blocks[i]);

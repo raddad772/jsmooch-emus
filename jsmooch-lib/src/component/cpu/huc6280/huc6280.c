@@ -3,11 +3,13 @@
 //
 #include <assert.h>
 #include <string.h>
+#if !defined(_MSC_VER)
 #include <printf.h>
-
+#else
+#include <stdio.h>
+#endif
 
 #include "huc6280.h"
-
 
 void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clocks_per_second)
 {

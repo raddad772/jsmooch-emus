@@ -3,10 +3,14 @@
 //
 
 #include <stdio.h>
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
 #include <unistd.h>
 #include <pwd.h>
-#include <stdlib.h>
 #include <dirent.h>
+#endif
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include "../json.h"
@@ -14,6 +18,7 @@
 #define MAX_RAM_ENTRIES 50
 
 #include "helpers/int.h"
+#include "helpers/user.h"
 #include "wdc65816_tests.h"
 
 #include "component/cpu/wdc65816/wdc65816.h"
@@ -65,13 +70,7 @@ static void construct_path(char *out, u32 iclass, u32 ins)
 {
     char test_path[500];
     memset(test_path, 0, sizeof(test_path));
-    const char *homeDir = getenv("HOME");
-
-    if (!homeDir) {
-        struct passwd* pwd = getpwuid(getuid());
-        if (pwd)
-            homeDir = pwd->pw_dir;
-    }
+    const char *homeDir = get_user_dir();
 
     char *tp = out;
     tp += sprintf(tp, "%s", homeDir);
@@ -122,7 +121,7 @@ static void parse_state(struct json_object_s *object, struct test_state *state)
         }
         if (strcmp(el->name->string, "ram") == 0) {
             struct json_array_s *arr1 = (struct json_array_s *)el->value->payload;
-            state->num_ram_entry = arr1->length;
+            state->num_ram_entry = (u32)arr1->length;
             struct json_array_element_s *arr_el = arr1->start;
             for (u32 arr1_i = 0; arr1_i < arr1->length; arr1_i++) {
                 assert(arr_el->value->type == json_type_array);
@@ -193,7 +192,7 @@ static void parse_and_fill_out(struct read_file_buf *infile)
             else if (strcmp(s->name->string, "cycles") == 0) {
                 assert(s->value->type == json_type_array);
                 struct json_array_s* arr1 = (struct json_array_s*)s->value->payload;
-                test->num_cycles = arr1->length;
+                test->num_cycles = (u32)arr1->length;
                 struct json_array_element_s* arr1_el = arr1->start;
                 for (u32 h = 0; h < arr1->length; h++) {
                     assert(arr1_el != NULL);
@@ -463,7 +462,7 @@ static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC6
             }
             if (addr_found == -1) {
                 passed = 0;
-                printf("\nRAMADDR FAIL! TEST:%06x", final->ram[x].addr);
+                printf("\nRAMADDR FAIL! FINAL:%06x TEST:%06x", final->ram[x].addr, test->ram[x].addr);
 
                 printf("\ntest               me               initial");
                 for (u32 j = 0; j < final->num_ram_entry; j++) {

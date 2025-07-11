@@ -88,8 +88,10 @@ struct ARM7TDMI_regs {
         u32 u;
     } CPSR;
     union {
+#if !defined(_MSC_VER) // error C2016: C requires that a struct or union have at least one member
         struct {
         };
+#endif
         u32 u;
     } SPSR;
 

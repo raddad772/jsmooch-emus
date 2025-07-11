@@ -7,17 +7,19 @@
 
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
+#include "helpers/pack.h"
 
 enum td_states {
     td_stopped = 0,
     td_playing = 1
 };
 
+PACK_BEGIN
 struct zxs_pulse {
     u64 start;
     u32 duration;
     u32 level;
-} __attribute__((packed));
+} PACK_END;
 
 enum td_kinds {
     tdk_none = 0,

@@ -3,7 +3,13 @@
 //
 
 #include <string.h>
+
+#if !defined(_MSC_VER)
 #include <printf.h>
+#else
+#include <stdio.h>
+#endif
+
 #include "component/gpu/huc6270/huc6270.h"
 #include "huc6260.h"
 #include "helpers/physical_io.h"

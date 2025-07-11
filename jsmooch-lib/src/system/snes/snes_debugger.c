@@ -118,7 +118,7 @@ static void render_image_view_obj_tiles(struct debugger_interface *dbgr, struct 
                                         printf("\nUNSUPPORT COLORMODE %d", colormode);
                                         a = colormode;
                                     }}
-                                    __attribute__ ((fallthrough));
+                                    FALLTHROUGH;
                                 case 0: {// B&W
                                     float r = ((float)c / 15.0f) * 255.0f;
                                     c = (u32)r;

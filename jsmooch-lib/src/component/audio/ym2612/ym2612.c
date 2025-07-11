@@ -5,7 +5,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _MSC_VER
+#define _USE_MATH_DEFINES // for M_PI
+#endif
 #include <math.h>
+
 #include <assert.h>
 
 #include "helpers/debug.h"
@@ -212,6 +217,7 @@ u16 lfo_am(u8 lfo_counter, u8 ams)
         case 3: return ama;
     }
     NOGOHERE;
+    return 0;
 }
 
 static void mix_sample(struct ym2612*this)
