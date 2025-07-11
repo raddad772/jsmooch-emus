@@ -414,7 +414,7 @@ static void schedule_first(struct TG16 *this)
 void TG16J_get_framevars(JSM, struct framevars* out)
 {
     JTHIS;
-    out->master_frame = this->clock.master_frames;
+    out->master_frame = this->vce.master_frame;
     out->x = 0;
     out->scanline = this->vce.regs.y - 64;
     out->master_cycle = this->clock.master_cycles;
