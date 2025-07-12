@@ -54,11 +54,17 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct TG16 *this)
     snprintf(dv->name, sizeof(dv->name), "Trace");
     dv->has_extra = 1;
 
+    u32 cpu_color = 0x8080FF;
     struct dbglog_category_node *root = dbglog_category_get_root(dv);
     struct dbglog_category_node *cpu = dbglog_category_add_node(dv, root, "CPU (HuC6280)", NULL, 0, 0);
-    dbglog_category_add_node(dv, cpu, "Instruction Trace", "CPU", TG16_CAT_CPU_INSTRUCTION, 0x80FF80);
+    dbglog_category_add_node(dv, cpu, "Instruction Trace", "CPU", TG16_CAT_CPU_INSTRUCTION, cpu_color);
     this->cpu.dbg.dvptr = dv;
     this->cpu.dbg.dv_id = TG16_CAT_CPU_INSTRUCTION;
+    dbglog_category_add_node(dv, cpu, "Reads", "cpu_read", TG16_CAT_CPU_READ, cpu_color);
+    dbglog_category_add_node(dv, cpu, "Writes", "cpu_write", TG16_CAT_CPU_WRITE, cpu_color);
+    this->cpu.trace.dbglog.id_read = TG16_CAT_CPU_READ;
+    this->cpu.trace.dbglog.id_write = TG16_CAT_CPU_WRITE;
+
     dbglog_category_add_node(dv, cpu, "IRQs", "CPU", TG16_CAT_CPU_IRQS, 0xA0AF80);
 }
 

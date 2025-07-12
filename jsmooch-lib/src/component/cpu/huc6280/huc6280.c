@@ -106,9 +106,9 @@ static void trace_format(struct HUC6280 *this, u32 opcode)
         jsm_string_quickempty(&this->trace.str);
         jsm_string_quickempty(&this->trace.str2);
         if (this->regs.IR < 0x100) {
-            u32 mpc = this->regs.PC;
+            u32 mpc = this->pins.Addr;
 
-            HUC6280_disassemble(&mpc, &this->trace.strct, &this->trace.str);
+            HUC6280_disassemble(this, &mpc, &this->trace.strct, &this->trace.str);
 
             // Now add context...
             jsm_string_sprintf(&this->trace.str2, "A:%02x  X:%02x  Y:%02x  S:%02x  P:%c%c%c%c%c%c%c%c  PC:%04x",
@@ -279,20 +279,55 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
     printf("\nUNHANDLED INTERNAL WRITE! %06x - %02x", addr, val);
 }
 
+static void trace_write(struct HUC6280 *this) {
+    u32 do_dbglog = 0;
+    if (this->dbg.dvptr) {
+        do_dbglog = this->dbg.dvptr->ids_enabled[this->trace.dbglog.id_write];
+    }
+    if (do_dbglog) {
+        jsm_string_quickempty(&this->trace.str);
+        jsm_string_quickempty(&this->trace.str2);
+        struct dbglog_view *dv = this->dbg.dvptr;
+        u64 tc;
+        if (!this->trace.cycles) tc = 0;
+        else tc = *this->trace.cycles;
+        dbglog_view_add_printf(dv, this->trace.dbglog.id_write, tc, DBGLS_TRACE, "%06x    (write) %02x", this->pins.Addr, this->pins.D);
+    }
+}
+
+static void trace_read(struct HUC6280 *this)
+{
+    u32 do_dbglog = 0;
+    if (this->dbg.dvptr) {
+        do_dbglog = this->dbg.dvptr->ids_enabled[this->trace.dbglog.id_read];
+    }
+    if (do_dbglog) {
+        jsm_string_quickempty(&this->trace.str);
+        jsm_string_quickempty(&this->trace.str2);
+        struct dbglog_view *dv = this->dbg.dvptr;
+        u64 tc;
+        if (!this->trace.cycles) tc = 0;
+        else tc = *this->trace.cycles;
+        dbglog_view_add_printf(dv, this->trace.dbglog.id_read, tc, DBGLS_TRACE, "%06x    (read) %02x", this->pins.Addr, this->pins.D);
+    }
+}
+
 void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
     struct HUC6280* this = (struct HUC6280 *)ptr;
     u64 cur = clock - jitter;
     if (this->pins.RD) {
-        if (this->pins.Addr >= 0xFF0800)
+        if (this->pins.Addr >= 0x1FE800)
             this->pins.D = internal_read(this, this->pins.Addr, 1);
         else
             this->pins.D = this->read_func(this->read_ptr, this->pins.Addr, this->pins.D, 1);
+        trace_read(this);
     }
 
     HUC6280_cycle(this);
 
     if (this->pins.WR) {
-        if (this->pins.Addr >= 0xFF0800)
+        trace_write(this);
+        if (this->pins.Addr >= 0x1FE800)
             internal_write(this, this->pins.Addr, this->pins.D);
         else
             this->write_func(this->write_ptr, this->pins.Addr, this->pins.D);

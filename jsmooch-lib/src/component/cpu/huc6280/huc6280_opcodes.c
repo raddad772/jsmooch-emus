@@ -1244,7 +1244,6 @@ static void HUC6280_ins_20__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
         case 1: {// start cycle
-            printf("\nEXEC JSR 1");
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
         case 2: {// load16
@@ -1272,7 +1271,6 @@ static void HUC6280_ins_20__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TA |= regs->TR[0] << 8;
             regs->PC = regs->TA;
-            printf("\nNEW ADDR %04x", regs->PC);
             // Following is auto-generated code for instruction finish
             pins->RD = 0; 
             return; }
@@ -10265,18 +10263,20 @@ static void HUC6280_ins_RESET_t0(struct HUC6280_regs *regs, struct HUC6280_pins 
         case 6: {// 7
             regs->MPR[7] = 0;
             regs->MPL = 0;
-            regs->P.I = regs->P.B = 1;
+            regs->P.I = 1;
             regs->P.D = regs->P.T = 0;
-            regs->IRQD.u = 3; //IRQD is inverted
+            regs->IRQD.u = 0;
             regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;
+            pins->RD = 1; 
             return; }
         case 7: {// 8
             regs->PC = pins->D;
             pins->Addr++;
             return; }
         case 8: {// 9
+            pins->RD = 0; 
             return; }
         case 9: {// cleanup_custom
             regs->PC |= pins->D << 8;
@@ -21223,18 +21223,20 @@ static void HUC6280_ins_RESET_t1(struct HUC6280_regs *regs, struct HUC6280_pins 
         case 6: {// 7
             regs->MPR[7] = 0;
             regs->MPL = 0;
-            regs->P.I = regs->P.B = 1;
+            regs->P.I = 1;
             regs->P.D = regs->P.T = 0;
-            regs->IRQD.u = 3; //IRQD is inverted
+            regs->IRQD.u = 0;
             regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;
+            pins->RD = 1; 
             return; }
         case 7: {// 8
             regs->PC = pins->D;
             pins->Addr++;
             return; }
         case 8: {// 9
+            pins->RD = 0; 
             return; }
         case 9: {// cleanup_custom
             regs->PC |= pins->D << 8;
