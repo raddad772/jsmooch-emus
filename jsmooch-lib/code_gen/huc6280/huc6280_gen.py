@@ -1233,7 +1233,7 @@ def write_instruction(outfile, opcode, tbit):
         elif opcode == 0x02:
             r = Swap(ag, 'regs->X', 'regs->Y')
         elif opcode == 0x03:
-            r = StoreImplied(ag, '0xFF0000')
+            r = StoreImplied(ag, '0x1FE000')
         elif opcode == 0x04:
             r = ZeroPageModify(ag, al_TSB)
         elif opcode == 0x05:
@@ -1265,7 +1265,7 @@ def write_instruction(outfile, opcode, tbit):
         elif opcode == 0x12:
             r = IndirectRead(ag, al_ORA, 'regs->A')
         elif opcode == 0x13:
-            r = StoreImplied(ag, '0xFF0002')
+            r = StoreImplied(ag, '0x1FE002')
         elif opcode == 0x14:
             r = ZeroPageModify(ag, al_TRB)
         elif opcode == 0x15:
@@ -1297,7 +1297,7 @@ def write_instruction(outfile, opcode, tbit):
         elif opcode == 0x22:
             r = Swap(ag, 'regs->A', 'regs->X')
         elif opcode == 0x23:
-            r = StoreImplied(ag, '0xFF0003')
+            r = StoreImplied(ag, '0x1FE003')
         elif opcode == 0x24:
             r = ZeroPageRead(ag, al_BIT, 'regs->A')
         elif opcode == 0x25:

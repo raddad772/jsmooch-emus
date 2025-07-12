@@ -49,7 +49,7 @@ struct HUC6270 {
                 u16 DR : 1;
                 u16 IW : 2;
             };
-            union {
+            struct {
                 u8 lo;
                 u8 hi;
             };

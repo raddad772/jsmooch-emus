@@ -147,7 +147,7 @@ static void HUC6280_ins_03__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->Addr = 0xFF0000;
+            pins->Addr = 0x1FE000;
             pins->D = regs->TR[0];
             // Following is auto-generated code for instruction finish
             pins->WR = 1;
@@ -762,7 +762,7 @@ static void HUC6280_ins_13__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->Addr = 0xFF0002;
+            pins->Addr = 0x1FE002;
             pins->D = regs->TR[0];
             // Following is auto-generated code for instruction finish
             pins->WR = 1;
@@ -1375,7 +1375,7 @@ static void HUC6280_ins_23__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->Addr = 0xFF0003;
+            pins->Addr = 0x1FE003;
             pins->D = regs->TR[0];
             // Following is auto-generated code for instruction finish
             pins->WR = 1;
@@ -10608,7 +10608,7 @@ static void HUC6280_ins_03__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->Addr = 0xFF0000;
+            pins->Addr = 0x1FE000;
             pins->D = regs->TR[0];
             // Following is auto-generated code for instruction finish
             pins->WR = 1;
@@ -11302,7 +11302,7 @@ static void HUC6280_ins_13__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->Addr = 0xFF0002;
+            pins->Addr = 0x1FE002;
             pins->D = regs->TR[0];
             // Following is auto-generated code for instruction finish
             pins->WR = 1;
@@ -11978,7 +11978,7 @@ static void HUC6280_ins_23__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 3: {// idle
-            pins->Addr = 0xFF0003;
+            pins->Addr = 0x1FE003;
             pins->D = regs->TR[0];
             // Following is auto-generated code for instruction finish
             pins->WR = 1;

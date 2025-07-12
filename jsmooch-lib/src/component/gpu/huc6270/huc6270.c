@@ -119,7 +119,7 @@ static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
 
 static void force_new_frame(struct HUC6270 *this)
 {
-    printf("\nbadly timed vsync!!!");
+    printf("\nbadly timed vsync!!! %d", this->timing.v.state);
 }
 
 static void force_new_line(struct HUC6270 *this)
@@ -144,9 +144,10 @@ void HUC6270_vsync(struct HUC6270 *this, u32 val)
     if (this->regs.ignore_vsync) return;
 
     if (val == 1) { // OK, reset our frame-ish!
-        if (this->timing.h.state != H6S_sync_window) {
+        if (this->timing.v.state != H6S_sync_window) {
             force_new_frame(this);
         }
+        printf("\nVSYNC!");
         new_v_state(this, H6S_wait_for_display);
     }
 }
@@ -257,6 +258,7 @@ static void vblank(struct HUC6270 *this, u32 val)
         this->regs.px_out = 0x100;
         this->irq.IR |= IRQ_VBLANK;
         this->io.STATUS.VD = 1;
+        printf("\nSET VBLANK. IR:%x IE:%x", this->irq.IR, this->io.CR.IE);
         update_irqs(this);
         this->bg.x_tiles = this->io.bg.x_tiles;
         this->bg.y_tiles = this->io.bg.y_tiles;
@@ -267,6 +269,7 @@ static void vblank(struct HUC6270 *this, u32 val)
             vram_satb(this);
     }
     else {
+        printf("\nCLEAR VBLANK");
         this->irq.IR &= ~IRQ_VBLANK;
         update_irqs(this);
     }
@@ -279,7 +282,6 @@ static void run_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 
 static void write_addr(struct HUC6270 *this, u32 val)
 {
-    printf("\nWRITE ADDR NOT IMPL!");
     this->io.ADDR = val & 0x1F;
 }
 
@@ -288,12 +290,14 @@ static void update_irqs(struct HUC6270 *this)
     u32 cie = this->io.CR.IE | (this->io.DCR.DSC << 4) | (this->io.DCR.DVC << 5);
     u32 old_line = this->irq.line;
     this->irq.line = (cie & this->irq.IR) != 0;
-    if (old_line != this->irq.line)
+    if (old_line != this->irq.line) {
         this->irq.update_func(this->irq.update_func_ptr, this->irq.line);
+    }
 }
 
 static void write_lsb(struct HUC6270 *this, u32 val)
 {
+    //printf("\nWRITE LSB %x: %02x", this->io.ADDR, val);
     switch(this->io.ADDR) {
         case 0x00: // MAWR
             this->io.MAWR.lo = val;
@@ -312,6 +316,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x05: // CR
             this->io.CR.lo = val;
+            printf("\nSET IE: %x IR:%x", this->io.CR.IE, this->irq.IR);
             // TODO: do more stuff with this
             update_irqs(this);
             switch((val >> 4) & 3) {
@@ -335,6 +340,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x06:
             this->io.RCR.lo = val;
+            printf("\nRCR SET %04x", this->io.RCR.u);
             update_RCR(this);
             return;
         case 0x07: // BGX
@@ -404,6 +410,7 @@ static void write_vram(struct HUC6270 *this)
 
 static void write_msb(struct HUC6270 *this, u32 val)
 {
+    //printf("\nWRITE MSB %x: %02x", this->io.ADDR, val);
     switch(this->io.ADDR) {
         case 0x00: // MAWR
             this->io.MAWR.hi = val;
@@ -424,6 +431,7 @@ static void write_msb(struct HUC6270 *this, u32 val)
             return;
         case 0x05:
             this->io.CR.hi = val;
+            printf("\nSET IE?: %x IR:%x", this->io.CR.IE, this->irq.IR);
             switch(this->io.CR.IW) {
                 case 0:
                     this->regs.vram_inc = 1;
@@ -441,6 +449,7 @@ static void write_msb(struct HUC6270 *this, u32 val)
             return;
         case 0x06:
             this->io.RCR.hi = val & 3;
+            printf("\nRCR SET %04x", this->io.RCR.u);
             update_RCR(this);
             return;
         case 0x07: // BGX
@@ -491,6 +500,7 @@ static void write_msb(struct HUC6270 *this, u32 val)
 void HUC6270_write(struct HUC6270 *this, u32 addr, u32 val)
 {
     addr &= 3;
+    //printf("\nHUC6270 WRITE %06x %02x", addr, val);
     switch(addr) {
         case 0:
             write_addr(this, val);

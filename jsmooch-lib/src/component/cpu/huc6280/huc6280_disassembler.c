@@ -25,7 +25,7 @@ static u16 dbg_read16(struct jsm_debug_read_trace *trace, u32 *PC)
 
 static u32 longaddr(struct HUC6280 *cpu, u32 addr)
 {
-    return cpu->regs.MPR[addr >> 13] | (addr & 0x1FFF);
+    return cpu->regs.MPR[(addr & 0xE000) >> 13] | (addr & 0x1FFF);
 }
 
 #define zpa(x) longaddr(cpu, x | 0x2000)

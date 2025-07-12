@@ -91,7 +91,8 @@ static void timer_schedule(struct HUC6280 *this, u64 cur)
 
 static u32 longpc(struct HUC6280 *this)
 {
-    return this->regs.MPR[this->regs.PC >> 13] | (this->regs.PC & 0x1FFF);
+    u32 mpc = (this->regs.PC - 1) & 0xFFFF;
+    return this->regs.MPR[mpc >> 13] | (mpc & 0x1FFF);
 }
 
 static void trace_format(struct HUC6280 *this, u32 opcode)
@@ -160,6 +161,7 @@ void HUC6280_cycle(struct HUC6280 *this)
         this->PCO = this->pins.Addr;
         this->regs.IR = this->pins.D;
         if (this->regs.do_IRQ) {
+            printf("\nDO IRQ!");
             this->regs.do_IRQ = 0;
             // timer > IRQ1 > IRQ2
             if (this->regs.IRQD.TIQ & this->regs.IRQR.TIQ) { // TIQ is 103
@@ -324,6 +326,7 @@ void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
     }
 
     HUC6280_cycle(this);
+    assert(this->pins.Addr < 0x200000);
 
     if (this->pins.WR) {
         trace_write(this);

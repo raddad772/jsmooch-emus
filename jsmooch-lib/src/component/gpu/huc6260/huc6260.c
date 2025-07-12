@@ -53,6 +53,7 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
     struct HUC6260 *this = (struct HUC6260 *)ptr;
     this->regs.vsync = key;
     HUC6270_vsync(this->vdc0, key);
+    if (key) printf("\nVSYNC ON ON LINE %d", this->regs.y);
 }
 
 static void new_frame(struct HUC6260 *this)
@@ -63,7 +64,7 @@ static void new_frame(struct HUC6260 *this)
     this->cur_output = this->display->output[this->display->last_written];
     memset(this->cur_output, 0, 1024*240*2);
     this->display->last_written ^= 1;
-    vsync(this, 1, 0, 0);
+    //vsync(this, 1, 0, 0);
 }
 
 static void frame_end(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -74,7 +75,7 @@ static void frame_end(void *ptr, u64 key, u64 clock, u32 jitter)
 static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
 {
     struct HUC6260 *this = (struct HUC6260 *)ptr;
-    printf("\nNEW LINE %lld", key);
+    //printf("\nNEW LINE %lld", key);
     this->regs.y = key;
     u64 clock = cclock - jitter;
 
@@ -89,9 +90,9 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
         scheduler_only_add_abs_w_tag(this->scheduler, clock + (HUC6260_CYCLE_PER_LINE * 262), 0, this, &frame_end, NULL, 2);
     }
     else if (this->regs.y == HUC6260_LINE_VSYNC_START)
-        vsync(this, 1, 0, 0);
-    else if (this->regs.y == HUC6260_LINE_VSYNC_END)
         vsync(this, 0, 0, 0);
+    else if (this->regs.y == HUC6260_LINE_VSYNC_END)
+        vsync(this, 1, 0, 0);
 
     this->regs.line_start = clock;
     this->cur_line = this->cur_output + (this->regs.y * HUC6260_DRAW_CYCLES);
@@ -113,6 +114,7 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
 {
     u32 addr = (maddr >> 1) & 3;
     u32 lo = (maddr & 1) ^ 1;
+    printf("\nVCE write %d: %02x", addr, val);
     switch(addr) {
         case 0: //CR
             if (lo) {
@@ -136,6 +138,7 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
             else {
                 this->io.CTW.hi = val & 1;
                 this->CRAM[this->io.CTA.u] = this->io.CTW.u;
+                if (this->io.CTW.u != 0) printf("\nCGRAM WRITE %03x: %04x", this->io.CTA.u, this->io.CTW.u);
                 this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
             }
             return;
