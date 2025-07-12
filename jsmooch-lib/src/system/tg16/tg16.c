@@ -539,7 +539,7 @@ u32 TG16J_finish_scanline(JSM)
 u32 TG16J_step_master(JSM, u32 howmany)
 {
     JTHIS;
-    //scheduler_run_for_cycles(&this->scheduler, howmany);
+    scheduler_run_for_cycles_tg16(&this->scheduler, howmany);
     return 0;
 }
 

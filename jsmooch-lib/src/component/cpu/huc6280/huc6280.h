@@ -12,7 +12,7 @@
 
 #include "huc6280_opcodes.h"
 
-#define HUC6280_TESTING
+//#define HUC6280_TESTING
 
 union HUC6280_P {
     struct {

@@ -40,6 +40,7 @@ struct TG16 {
         DBG_IMAGE_VIEWS_START
             MDBG_IMAGE_VIEW(palettes)
         DBG_IMAGE_VIEWS_END
+        DBG_LOG_VIEW
     DBG_END
 };
 

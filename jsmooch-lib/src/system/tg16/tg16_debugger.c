@@ -45,6 +45,23 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
     }
 }
 
+static void setup_dbglog(struct debugger_interface *dbgr, struct TG16 *this)
+{
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
+    struct debugger_view *dview = cpg(p);
+    struct dbglog_view *dv = &dview->dbglog;
+    this->dbg.dvptr = dv;
+    snprintf(dv->name, sizeof(dv->name), "Trace");
+    dv->has_extra = 1;
+
+    struct dbglog_category_node *root = dbglog_category_get_root(dv);
+    struct dbglog_category_node *cpu = dbglog_category_add_node(dv, root, "CPU (HuC6280)", NULL, 0, 0);
+    dbglog_category_add_node(dv, cpu, "Instruction Trace", "CPU", TG16_CAT_CPU_INSTRUCTION, 0x80FF80);
+    this->cpu.dbg.dvptr = dv;
+    this->cpu.dbg.dv_id = TG16_CAT_CPU_INSTRUCTION;
+    dbglog_category_add_node(dv, cpu, "IRQs", "CPU", TG16_CAT_CPU_IRQS, 0xA0AF80);
+}
+
 
 static void setup_image_view_palettes(struct TG16* this, struct debugger_interface *dbgr) {
     struct debugger_view *dview;
@@ -72,6 +89,8 @@ void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
 
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
+
+    setup_dbglog(dbgr, this);
     setup_image_view_palettes(this, dbgr);
 
 }

@@ -13,6 +13,7 @@
 #include "helpers/debug.h"
 #include "helpers/debugger/debugger.h"
 #include "huc6280.h"
+#include "huc6280_disassembler.h"
 
 static void timer_schedule(struct HUC6280 *this, u64 cur);
 
@@ -23,6 +24,10 @@ void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clock
     this->scheduler = scheduler;
     this->timer.sch_interval = clocks_per_second / 6992;
 
+
+    jsm_string_init(&this->trace.str, 100);
+    jsm_string_init(&this->trace.str2, 100);
+
     DBG_EVENT_VIEW_INIT;
     DBG_TRACE_VIEW_INIT;
 }
@@ -30,6 +35,8 @@ void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clock
 void HUC6280_delete(struct HUC6280 *this)
 {
 
+    jsm_string_delete(&this->trace.str);
+    jsm_string_delete(&this->trace.str2);
 }
 
 // IRQD IS INVERTED!
@@ -82,6 +89,69 @@ static void timer_schedule(struct HUC6280 *this, u64 cur)
     this->timer.sch_id = scheduler_only_add_abs(this->scheduler, cur + this->timer.sch_interval, 0, this, &timer_tick, &this->timer.still_sch);
 }
 
+static u32 longpc(struct HUC6280 *this)
+{
+    return this->regs.MPR[this->regs.PC >> 13] | (this->regs.PC & 0x1FFF);
+}
+
+static void trace_format(struct HUC6280 *this, u32 opcode)
+{
+    u32 do_dbglog = 0;
+
+    if (this->dbg.dvptr) {
+        do_dbglog = this->dbg.dvptr->ids_enabled[this->dbg.dv_id];
+    }
+    //u32 do_tracething = (this->dbg.tvptr && dbg.trace_on && dbg.traces.huc6280.instruction);
+    if (do_dbglog) { //}) || do_tracething) {
+        jsm_string_quickempty(&this->trace.str);
+        jsm_string_quickempty(&this->trace.str2);
+        if (this->regs.IR < 0x100) {
+            u32 mpc = this->regs.PC;
+
+            HUC6280_disassemble(&mpc, &this->trace.strct, &this->trace.str);
+
+            // Now add context...
+            jsm_string_sprintf(&this->trace.str2, "A:%02x  X:%02x  Y:%02x  S:%02x  P:%c%c%c%c%c%c%c%c  PC:%04x",
+                               this->regs.A, this->regs.X, this->regs.Y, this->regs.S,
+                               this->regs.P.N ? 'N' : 'n',
+                               this->regs.P.V ? 'V' : 'v',
+                               this->regs.P.T ? 'T' : 't',
+                               this->regs.P.B ? 'B' : 'b',
+                               this->regs.P.D ? 'D' : 'd',
+                               this->regs.P.I ? 'I' : 'i',
+                               this->regs.P.Z ? 'Z' : 'z',
+                               this->regs.P.C ? 'C' : 'c',
+                               this->regs.PC
+            );
+        }
+        else {
+            switch(opcode) {
+                case 0x100: // RESET
+                    jsm_string_sprintf(&this->trace.str, "RESET");
+                    break;
+                case 0x101: // IRQ2
+                    jsm_string_sprintf(&this->trace.str, "IRQ2");
+                    break;
+                case 0x102: // IRQ1
+                    jsm_string_sprintf(&this->trace.str, "IRQ1");
+                    break;
+                case 0x103: // TIQ
+                    jsm_string_sprintf(&this->trace.str, "TIQ");
+                    break;
+            }
+        }
+        u64 tc;
+        if (!this->trace.cycles) tc = 0;
+        else tc = *this->trace.cycles;
+
+        if (do_dbglog) {
+            struct dbglog_view *dv = this->dbg.dvptr;
+            dbglog_view_add_printf(dv, this->dbg.dv_id, tc, DBGLS_TRACE, "%06x  %s", longpc(this), this->trace.str.ptr);
+            dbglog_view_extra_printf(dv, "%s", this->trace.str2.ptr);
+        }
+    }
+}
+
 void HUC6280_cycle(struct HUC6280 *this)
 {
     this->regs.TCU++;
@@ -106,6 +176,7 @@ void HUC6280_cycle(struct HUC6280 *this)
                 assert(1==2);
             }
         }
+        trace_format(this, this->regs.IR);
         this->current_instruction = HUC6280_decoded_opcodes[this->regs.P.T][this->regs.IR];
 #ifdef HUC6280_TESTING
         this->ins_decodes++;

@@ -1244,6 +1244,7 @@ static void HUC6280_ins_20__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
 {
     switch(regs->TCU) {
         case 1: {// start cycle
+            printf("\nEXEC JSR 1");
             pins->Addr = regs->MPR[(regs->PC)>>13] | ((regs->PC) & 0x1FFF);
             return; }
         case 2: {// load16
@@ -1271,6 +1272,7 @@ static void HUC6280_ins_20__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->PC = (regs->PC + 1) & 0xFFFF;
             regs->TA |= regs->TR[0] << 8;
             regs->PC = regs->TA;
+            printf("\nNEW ADDR %04x", regs->PC);
             // Following is auto-generated code for instruction finish
             pins->RD = 0; 
             return; }

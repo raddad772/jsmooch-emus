@@ -314,6 +314,42 @@ void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)
     this->in_event = 0;
 }
 
+
+void scheduler_run_for_cycles_tg16(struct scheduler_t *this, u64 howmany)
+{
+    //printf("\nRun %lld. Cycles left to run: %lld", howmany, this->cycles_left_to_run);
+    assert(this->first_event);
+    u64 exit_at = current_time(this) + howmany;
+    this->in_event = 1;
+
+    while(!dbg.do_break && *this->clock < exit_at) {
+        // First, check if there's no events.
+        // Then, discharge any waiting events.
+        // Then, if we hace any, run some cycles.
+        struct scheduler_event *e = this->first_event;
+
+        this->first_event = e->next;
+        //printf("\nRun event id:%lld next:%lld event timecode:%lld our timecode:%lld %lld", e->id, e->next ? e->next->id : 0, e->timecode, this->loop_start_clock, current_time(this));
+        if (e->still_sched) *e->still_sched = 0; // Set it now, so it can be reset if needed during function execution
+        e->next = NULL;
+        *this->clock = e->timecode;
+        e->bound_func.func(e->bound_func.ptr, e->key, current_time(this), 0);
+
+        // Add event to discard list
+        del_event(this, e);
+
+        e = this->first_event;
+        if (e == NULL) {
+            this->in_event = 0;
+            return;
+        }
+    }
+    if (dbg.do_break) {
+        this->cycles_left_to_run = 0;
+    }
+    this->in_event = 0;
+}
+
 void scheduler_run_til_tag_tg16(struct scheduler_t *this, u32 tag)
 {
     assert(this->first_event);
