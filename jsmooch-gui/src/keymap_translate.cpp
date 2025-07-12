@@ -2,6 +2,7 @@
 // Created by . on 8/4/24.
 //
 #include <stdio.h>
+#include <stdlib.h> // abort()
 
 #include "keymap_translate.h"
 
@@ -39,8 +40,9 @@ enum ImGuiKey jk_to_imgui_gp(enum JKEYS key_id) {
             return ImGuiKey_GamepadR2;
         case DBCID_co_shoulder_left2:
             return ImGuiKey_GamepadL2;
+        default:
+            NOGOHERE;
     }
-    NOGOHERE;
 }
 
 enum ImGuiKey jk_to_imgui(enum JKEYS key_id) {

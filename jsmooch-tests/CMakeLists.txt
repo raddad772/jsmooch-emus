@@ -46,7 +46,15 @@ set_property(TARGET jsmooch-tests PROPERTY COMPILE_WARNING_AS_ERROR ON)
 include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src ${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)
 
 # Compiler-specific options
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Linux Clang
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wno-format")
+    target_link_libraries(jsmooch-tests PRIVATE m) # link against maths library (-lm) for sh4_interpreter_opcodes.c sqrt/sqrtf
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # GCC
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wno-format -Wno-unused-result")
+    target_link_libraries(jsmooch-tests PRIVATE m) # link against maths library (-lm) for sh4_interpreter_opcodes.c sqrt/sqrtf
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(
         jsmooch-tests
         PRIVATE
@@ -60,12 +68,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Allow use of portable fopen (fopen_s is Windows only)
 	target_compile_definitions(jsmooch-tests PUBLIC _CRT_SECURE_NO_WARNINGS)
 else()
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+	message(FATAL_ERROR, "Unknown compiler")
 endif()
 
 link_directories(${CMAKE_SOURCE_DIR}/jsmooch-tests/lib)
 
-target_link_libraries(jsmooch-tests jsmooch-lib)# jansson)
+target_link_libraries(jsmooch-tests PRIVATE jsmooch-lib)# jansson)
 
 install(TARGETS jsmooch-tests RUNTIME DESTINATION bin)
 

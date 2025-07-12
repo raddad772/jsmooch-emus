@@ -65,3 +65,10 @@ Not ported from JSMoo yet. But, there, only ran a few games. Mostly a proof of c
 Mostly plays games fine, but not thoroughly tested
 
 More detailed info on each to come!
+
+## Build status
+
+[![Build Linux](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-linux.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-linux.yml)
+[![Build Windows](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-windows.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-windows.yml)
+[![Build macOS](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-macos.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-macos.yml)
+

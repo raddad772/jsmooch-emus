@@ -9,8 +9,8 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
 
 add_subdirectory(jsmooch-lib)
 
-# TODO: Fix jsmooch-gui for Windows
-if(NOT WIN32)
+# TODO: Fix jsmooch-gui for Windows and Linux
+if(APPLE)
     add_subdirectory(jsmooch-gui)
 endif()
 
