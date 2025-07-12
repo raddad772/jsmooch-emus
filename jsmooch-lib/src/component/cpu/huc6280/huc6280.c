@@ -184,6 +184,8 @@ void HUC6280_cycle(struct HUC6280 *this)
         this->ins_decodes++;
 #endif
     }
+    // NEXT: check HUC6270 IRQ vs. normal
+    // NEXT: check HUC6270 timing
     this->current_instruction(&this->regs, &this->pins);
     this->trace.my_cycles++;
 }
