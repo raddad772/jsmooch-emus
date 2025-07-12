@@ -172,6 +172,7 @@ static void update_irqs(struct HUC6270 *this);
 static void update_RCR(struct HUC6270 *this)
 {
     this->io.STATUS.RR |= this->regs.y_counter == this->io.RCR.u;
+    if (this->regs.y_counter == this->io.RCR.u) printf("\nRR HIT!");
 }
 
 static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)

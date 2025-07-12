@@ -163,6 +163,7 @@ void HUC6280_cycle(struct HUC6280 *this)
             if (this->regs.IRQD.TIQ & this->regs.IRQR_polled.TIQ) { // TIQ is 103
                 printf("\nTIQ");
                 this->regs.IR = 0x103;
+                this->regs.IRQR.TIQ = 0;
             }
             else if (this->regs.IRQD.IRQ1 & this->regs.IRQR_polled.IRQ1) { // IRQ1 is 102
                 printf("\nIRQ1");

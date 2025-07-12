@@ -67,7 +67,7 @@ static void block_move(SARG)
     u32 source = dbg_read16(trace, PC);
     u32 target = dbg_read16(trace, PC);
     u32 length = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%ss:$%06x, t:$%06x, l:$%06x", ins, la(source), la(target), la(length));
+    jsm_string_sprintf(outstr, "%ss:$%06x, t:$%06x, l:$%4x", ins, la(source), la(target), length);
 
 }
 

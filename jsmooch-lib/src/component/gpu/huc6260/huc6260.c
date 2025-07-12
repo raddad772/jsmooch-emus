@@ -8,6 +8,7 @@
 #include "component/gpu/huc6270/huc6270.h"
 #include "huc6260.h"
 #include "helpers/physical_io.h"
+#include "helpers/debug.h"
 
 
 /* HUC6260 creates an NTSC-ish frame.
@@ -132,7 +133,10 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
             else {
                 this->io.CTW.hi = val & 1;
                 this->CRAM[this->io.CTA.u] = this->io.CTW.u;
-                if (this->io.CTW.u != 0) printf("\nCGRAM WRITE %03x: %04x", this->io.CTA.u, this->io.CTW.u);
+                if (this->io.CTW.u != 0) {
+                    printf("\nCGRAM WRITE %03x: %04x", this->io.CTA.u, this->io.CTW.u);
+                    //dbg_break("YOHA", 0);
+                }
                 this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
             }
             return;
@@ -150,13 +154,13 @@ u32 HUC6260_read(struct HUC6260 *this, u32 maddr, u32 old)
     switch(addr) {
         case 2: {// CDR
             u32 la = this->io.CTA.u;
-            this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
             if (lo) return this->CRAM[la] & 0xFF;
-            else return 0xFE | ((this->CRAM[la] >> 8) & 1);
+            this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
+            return 0xFE | ((this->CRAM[la] >> 8) & 1);
         }
     }
 
-    printf("\nUnserviced HUC6260 (VCE) read: %06x", maddr);
+    //printf("\nUnserviced HUC6260 (VCE) read: %06x", maddr);
     return 0xFF;
 }
 
