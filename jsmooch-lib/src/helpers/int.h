@@ -5,17 +5,36 @@
 extern "C" {
 #endif
 
-#define COMPILER_VC 1
+#define CPU_X86   2
+#define CPU_X64   3
+#define CPU_ARM   4
+#define CPU_ARM64 5
+
+#if defined(__arm__) // 32bit arm, and 32bit arm only.
+#define HOST_CPU CPU_ARM
+#elif defined(__aarch64__) // 64bit arm, and 64bit arm only.
+#define HOST_CPU CPU_ARM64
+#elif defined(__x86_64__) || defined(_M_X64)
+#define HOST_CPU CPU_X64
+#elif defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86)
+#define HOST_CPU CPU_X86
+#else
+#error Unsupported CPU architecture
+#endif
+
+#define COMPILER_VC    1
+#define COMPILER_GCC   2
 #define COMPILER_CLANG 3
+
 #if defined(__clang__)
 #define BUILD_COMPILER COMPILER_CLANG
+#elif defined(__GNUC__)
+#define BUILD_COMPILER COMPILER_GCC
 #elif defined(_MSC_VER)
 #define BUILD_COMPILER COMPILER_VC
 #else
 #error Unsupported compiler
 #endif
-#define CPU_ARM64 5
-#define HOST_CPU CPU_ARM64
 
 /* If you are somehow on a big-endian platform, you must change this */
 #define ENDIAN_LITTLE

@@ -271,7 +271,7 @@ static void new_scanline(struct ZXSpectrum* bus)
             this->scanline_func = &scanline_vblank;
             break;
         case 16: // lines 8-63 are upper border. 8-62 on 128k
-            switch(this->variant)
+            //switch(this->variant) // Assume this was a typo!
             this->scanline_func = &scanline_border_top;
             break;
         case 63:

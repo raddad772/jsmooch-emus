@@ -1,7 +1,7 @@
 //
 // Created by Dave on 2/4/2024.
 //
-#include <printf.h>
+#include <stdio.h>
 #include "huc6280.h"
 #include "huc6280_disassembler.h"
 

@@ -93,19 +93,19 @@ void SH4_regs_FPSCR_update(struct SH4_regs_FPSCR* this, u32 old_RM, u32 old_DN)
 
             u32 temp=0x1f80;	//no flush to zero && round to nearest
 
-			if (fpscr.RM==1)  //if round to 0 , set the flag
+			if (this->RM==1)  //if round to 0 , set the flag
 				temp|=(3<<13);
 
-			if (fpscr.DN)     //denormals are considered 0
+			if (this->DN)     //denormals are considered 0
 				temp|=(1<<15);
 			asm("ldmxcsr %0" : : "m"(temp));
     #elif HOST_CPU==CPU_ARM
 		static const unsigned int x = 0x04086060;
 		unsigned int y = 0x02000000;
-		if (fpscr.RM==1)  //if round to 0 , set the flag
+		if (this->RM==1)  //if round to 0 , set the flag
 			y|=3<<22;
 
-		if (fpscr.DN)
+		if (this->DN)
 			y|=1<<24;
 
 

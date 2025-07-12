@@ -3,12 +3,7 @@
 //
 #include <assert.h>
 #include <string.h>
-
-#if !defined(_MSC_VER)
-#include <printf.h>
-#else
 #include <stdio.h>
-#endif
 
 #include "helpers/debug.h"
 #include "helpers/debugger/debugger.h"

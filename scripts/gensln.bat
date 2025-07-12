@@ -18,8 +18,10 @@ if %VisualStudioVersion% == 15.0 (
 
 REM Set the current directory to the location of the batch script, using the %0 parameter
 REM This allows the script to be called from anywhere
-cd "%~dp0"
+pushd "%~dp0"
 
-cmake -B build -S . -G %CMAKE_GENERATOR% -A x64 || EXIT /B 1
+cmake -B ..\build -S .. -G %CMAKE_GENERATOR% -A x64 || EXIT /B 1
+
+popd
 
 EXIT /B

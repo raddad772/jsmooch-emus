@@ -5,11 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#if defined(_MSC_VER)
 #include <stdio.h>
-#else
-#include <printf.h>
-#endif
 
 #include "helpers/intrinsics.h"
 

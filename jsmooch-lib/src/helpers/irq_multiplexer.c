@@ -2,10 +2,6 @@
 // Created by . on 2/15/25.
 //
 
-#if !defined(_MSC_VER)
-#include <printf.h>
-#endif
-
 #include "irq_multiplexer.h"
 
 void IRQ_multiplexer_init(struct IRQ_multiplexer *this)
