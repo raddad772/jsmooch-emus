@@ -93,7 +93,6 @@ struct HUC6270 {
     } io;
 
     struct {
-        u32 IR;
         u32 line;
         void (*update_func)(void *, u32);
         void *update_func_ptr;
@@ -127,6 +126,8 @@ struct HUC6270 {
 
         u32 vram_satb_pending;
         u32 in_vblank;
+
+        u32 IE;
     } regs;
 };
 

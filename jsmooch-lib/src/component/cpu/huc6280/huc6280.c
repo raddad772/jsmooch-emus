@@ -156,7 +156,7 @@ void HUC6280_cycle(struct HUC6280 *this)
         this->PCO = this->pins.Addr;
         this->regs.IR = this->pins.D;
         if (this->regs.do_IRQ) {
-            printf("\nDO IRQ!");
+            printf("\nDO IRQ! %lld", *this->trace.cycles);
             this->regs.do_IRQ = 0;
             // timer > IRQ1 > IRQ2
             if (this->regs.IRQD.TIQ & this->regs.IRQR.TIQ) { // TIQ is 103

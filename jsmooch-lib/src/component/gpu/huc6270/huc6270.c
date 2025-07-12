@@ -8,14 +8,6 @@
 #include "huc6270.h"
 #include "component/gpu/huc6260/huc6260.h"
 
-// collision, over, scanline, vertical blank
-#define IRQ_COLLISION 1
-#define IRQ_OVER 2
-#define IRQ_SCANLINE 4
-#define IRQ_VBLANK 8
-#define IRQ_VRAM_SATB 16
-#define IRQ_VRAM_VRAM 32
-
 /*
  * OK SO
  * this is "driven" by the VCE.
@@ -143,7 +135,6 @@ void HUC6270_vsync(struct HUC6270 *this, u32 val)
         if (this->timing.v.state != H6S_sync_window) {
             force_new_frame(this);
         }
-        printf("\nVSYNC!");
         new_v_state(this, H6S_wait_for_display);
     }
 }
@@ -180,16 +171,13 @@ static void update_irqs(struct HUC6270 *this);
 
 static void update_RCR(struct HUC6270 *this)
 {
-    this->irq.IR &= ~IRQ_SCANLINE;
-    if (this->regs.y_counter == this->io.RCR.u) this->irq.IR |= IRQ_SCANLINE;
-    update_irqs(this);
+    this->io.STATUS.RR |= this->regs.y_counter == this->io.RCR.u;
 }
 
 static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6270 *this = (struct HUC6270 *)ptr;
     this->io.STATUS.DS = 1;
-    this->irq.IR |= IRQ_VRAM_SATB;
     if (!this->io.DCR.DSR)
         this->regs.vram_satb_pending = 0;
     update_irqs(this);
@@ -199,7 +187,6 @@ static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6270 *this = (struct HUC6270 *)ptr;
     this->io.STATUS.DV = 1;
-    this->irq.IR |= IRQ_VRAM_VRAM;
     update_irqs(this);
 }
 
@@ -252,9 +239,7 @@ static void vblank(struct HUC6270 *this, u32 val)
     this->regs.in_vblank = val;
     if (val) {
         this->regs.px_out = 0x100;
-        this->irq.IR |= IRQ_VBLANK;
         this->io.STATUS.VD = 1;
-        printf("\nSET VBLANK. IR:%x IE:%x", this->irq.IR, this->io.CR.IE);
         update_irqs(this);
         this->bg.x_tiles = this->io.bg.x_tiles;
         this->bg.y_tiles = this->io.bg.y_tiles;
@@ -265,8 +250,6 @@ static void vblank(struct HUC6270 *this, u32 val)
             vram_satb(this);
     }
     else {
-        printf("\nCLEAR VBLANK");
-        this->irq.IR &= ~IRQ_VBLANK;
         update_irqs(this);
     }
 }
@@ -275,17 +258,23 @@ static void vblank(struct HUC6270 *this, u32 val)
 static void run_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
 
 
-
 static void write_addr(struct HUC6270 *this, u32 val)
 {
     this->io.ADDR = val & 0x1F;
 }
 
+static void update_ie(struct HUC6270 *this)
+{
+    u32 ie = (this->io.CR.IE & 7) | ((this->io.CR.IE & 8) << 2);
+    ie |= this->io.DCR.DSC << 3; // 0001 to 1000
+    ie |= this->io.DCR.DSC << 4; // 0001 to 10000
+    this->regs.IE = ie;
+}
+
 static void update_irqs(struct HUC6270 *this)
 {
-    u32 cie = this->io.CR.IE | (this->io.DCR.DSC << 4) | (this->io.DCR.DVC << 5);
     u32 old_line = this->irq.line;
-    this->irq.line = (cie & this->irq.IR) != 0;
+    this->irq.line = !!(this->regs.IE & this->io.STATUS.u);
     if (old_line != this->irq.line) {
         this->irq.update_func(this->irq.update_func_ptr, this->irq.line);
     }
@@ -312,8 +301,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x05: // CR
             this->io.CR.lo = val;
-            printf("\nSET IE: %x IR:%x VAL:%d", this->io.CR.IE, this->irq.IR, val);
-            // TODO: do more stuff with this
+            update_ie(this);
             update_irqs(this);
             switch((val >> 4) & 3) {
                 case 0:
@@ -373,6 +361,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x0F:
             this->io.DCR.u = val & 0x1F;
+            update_ie(this);
             update_irqs(this);
             return;
         case 0x10:
@@ -427,7 +416,6 @@ static void write_msb(struct HUC6270 *this, u32 val)
             return;
         case 0x05:
             this->io.CR.hi = val;
-            printf("\nSET IE?: %x IR:%x", this->io.CR.IE, this->irq.IR);
             switch(this->io.CR.IW) {
                 case 0:
                     this->regs.vram_inc = 1;
@@ -517,8 +505,7 @@ static u32 read_status(struct HUC6270 *this)
 {
     u32 v = this->io.STATUS.u;
     this->io.STATUS.u &= 0b1000000;
-    this->irq.IR &= ~IRQ_VRAM_SATB;
-    this->irq.IR &= ~IRQ_VRAM_VRAM;
+    update_irqs(this);
     return v;
 }
 
