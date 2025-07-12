@@ -3,12 +3,15 @@
 //
 #include <assert.h>
 #include <string.h>
+
 #if !defined(_MSC_VER)
 #include <printf.h>
 #else
 #include <stdio.h>
 #endif
 
+#include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 #include "huc6280.h"
 
 static void timer_schedule(struct HUC6280 *this, u64 cur);
@@ -19,6 +22,9 @@ void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clock
     memset(this, 0, sizeof(*this));
     this->scheduler = scheduler;
     this->timer.sch_interval = clocks_per_second / 6992;
+
+    DBG_EVENT_VIEW_INIT;
+    DBG_TRACE_VIEW_INIT;
 }
 
 void HUC6280_delete(struct HUC6280 *this)
@@ -38,11 +44,13 @@ void HUC6280_reset(struct HUC6280 *this)
     this->pins.D = 0x100;
 }
 
-void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct)
+void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
 {
     this->trace.strct.ptr = this;
     this->trace.strct.read_trace = strct->read_trace;
     this->trace.ok = 1;
+    this->trace.cycles = trace_cycle_ptr;
+    this->trace.source_id = source_id;
 }
 // Poll during second-to-last cycle
 
@@ -133,7 +141,7 @@ static u32 internal_read(struct HUC6280 *this, u32 addr, u32 has_effect)
                 case 1:
                     return this->io.buffer;
                 case 2:
-                    return this->regs.IRQD.u | (this->io.buffer & 0b11111000);
+                    return (this->regs.IRQD.u ^ 7) | (this->io.buffer & 0b11111000);
                 case 3:
                     return this->regs.IRQR.u | (this->io.buffer & 0b11111000);
             }
@@ -183,7 +191,7 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
         case 0x1400: // IRQ stuff
             this->io.buffer = val;
             if ((addr & 3) == 2) {
-                this->regs.IRQD.u = val & 7;
+                this->regs.IRQD.u = (val & 7) ^ 7;
             }
             return;
         case 0x1800: {// CD IO

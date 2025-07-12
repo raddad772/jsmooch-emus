@@ -115,6 +115,12 @@ static void block_step(void *ptr, u64 key, u64 clock, u32 jitter)
     printf("\nDO BLOCK STEP");
 }
 
+static void vdc0_update_irqs(void *ptr, u32 val)
+{
+    struct TG16 *this = (struct TG16 *)ptr;
+    this->cpu.regs.IRQR.IRQ1 = val;
+}
+
 void TG16_new(JSM, enum jsm_systems kind)
 {
     struct TG16* this = (struct TG16*)malloc(sizeof(struct TG16));
@@ -137,6 +143,8 @@ void TG16_new(JSM, enum jsm_systems kind)
     HUC6270_init(&this->vdc0, &this->scheduler);
     HUC6270_init(&this->vdc1, &this->scheduler);
     HUC6260_init(&this->vce, &this->scheduler, &this->vdc0, NULL);
+    this->vdc0.irq.update_func_ptr = this;
+    this->vdc0.irq.update_func = &vdc0_update_irqs;
     //ym2612_init(&this->ym2612, OPN2V_ym2612, &this->clock.master_cycle_count, 32 * 7 * 6);
     //SN76489_init(&this->psg);
     snprintf(jsm->label, sizeof(jsm->label), "TurboGraFX-16");
@@ -144,7 +152,7 @@ void TG16_new(JSM, enum jsm_systems kind)
     struct jsm_debug_read_trace dt;
     dt.read_trace = &read_trace_huc6280;
     dt.ptr = (void*)this;
-    HUC6280_setup_tracing(&this->cpu, &dt);
+    HUC6280_setup_tracing(&this->cpu, &dt, &this->clock.master_cycles, 1);
 
     this->jsm.described_inputs = 0;
     this->jsm.IOs = NULL;
