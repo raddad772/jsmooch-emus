@@ -525,7 +525,8 @@ void test_huc6280()
     u64 waitstates;
     scheduler_init(&fakescheduler, &clock, &waitstates);
     HUC6280_init(&ts.cpu, &fakescheduler, 10000);
-    HUC6280_setup_tracing(&ts.cpu, &rt);
+    struct jsm_debug_read_trace t;
+    HUC6280_setup_tracing(&ts.cpu, &rt, &clock, 1);
 
     for (u32 i = ISTART; i < 0x100; i++) {
         if (is_skip(i)) {
