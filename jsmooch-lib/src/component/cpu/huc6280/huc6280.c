@@ -59,6 +59,7 @@ void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *st
 void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
 {
     regs->do_IRQ = (regs->IRQD.u & regs->IRQR.u) && !regs->P.I;
+    regs->IRQR_polled.u = regs->IRQR.u;
 }
 
 
@@ -159,16 +160,16 @@ void HUC6280_cycle(struct HUC6280 *this)
             printf("\nDO IRQ! %lld", *this->trace.cycles);
             this->regs.do_IRQ = 0;
             // timer > IRQ1 > IRQ2
-            if (this->regs.IRQD.TIQ & this->regs.IRQR.TIQ) { // TIQ is 103
+            if (this->regs.IRQD.TIQ & this->regs.IRQR_polled.TIQ) { // TIQ is 103
                 printf("\nTIQ");
                 this->regs.IR = 0x103;
             }
-            else if (this->regs.IRQD.IRQ1 & this->regs.IRQR.IRQ1) { // IRQ1 is 102
+            else if (this->regs.IRQD.IRQ1 & this->regs.IRQR_polled.IRQ1) { // IRQ1 is 102
                 printf("\nIRQ1");
                 this->regs.IR = 0x102;
                 //dbg_break("HAHAHA", 0);
             }
-            else if (this->regs.IRQD.IRQ2 & this->regs.IRQR.IRQ2) { // IRQ2 is 101
+            else if (this->regs.IRQD.IRQ2 & this->regs.IRQR_polled.IRQ2) { // IRQ2 is 101
                 printf("\nIRQ2");
                 this->regs.IR = 0x101;
             }

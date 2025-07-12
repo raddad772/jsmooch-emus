@@ -107,12 +107,12 @@ static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
 
 static void force_new_frame(struct HUC6270 *this)
 {
-    printf("\nbadly timed vsync!!! %d", this->timing.v.state);
+    //printf("\nbadly timed vsync!!! %d", this->timing.v.state);
 }
 
 static void force_new_line(struct HUC6270 *this)
 {
-    printf("\nbadly timed hsync!?");
+    //printf("\nbadly timed hsync!?");
 
 }
 

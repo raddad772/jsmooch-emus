@@ -56,7 +56,7 @@ struct HUC6280_regs {
 
     u32 timer_startstop;
 
-    union HUC6280_IRQ_reg IRQR, IRQD;
+    union HUC6280_IRQ_reg IRQR, IRQD, IRQR_polled;
 
 
     u32 clock_div;

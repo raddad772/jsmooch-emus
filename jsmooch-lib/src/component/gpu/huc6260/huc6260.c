@@ -48,12 +48,12 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
     struct HUC6260 *this = (struct HUC6260 *)ptr;
     this->regs.vsync = key;
     HUC6270_vsync(this->vdc0, key);
-    if (key) printf("\nVSYNC ON ON LINE %d", this->regs.y);
+    //if (key) printf("\nVSYNC ON ON LINE %d", this->regs.y);
 }
 
 static void new_frame(struct HUC6260 *this)
 {
-    printf("\nNEW FRAME!");
+    //printf("\nNEW FRAME!");
     this->regs.y = 0;
     this->master_frame++;
     this->cur_output = this->display->output[this->display->last_written];
