@@ -10331,10 +10331,10 @@ static void HUC6280_ins_IRQ2_t0(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            regs->PC |= regs->TR[0] << 8;
-            // Following is auto-generated code for instruction finish
             return; }
-        case 8: {// cleanup
+        case 8: {// cleanup_custom
+            regs->PC |= pins->D << 8;
+            // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             HUC6280_poll_IRQs(regs, pins);
@@ -10384,10 +10384,10 @@ static void HUC6280_ins_IRQ1_t0(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            regs->PC |= regs->TR[0] << 8;
-            // Following is auto-generated code for instruction finish
             return; }
-        case 8: {// cleanup
+        case 8: {// cleanup_custom
+            regs->PC |= pins->D << 8;
+            // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             HUC6280_poll_IRQs(regs, pins);
@@ -10437,10 +10437,10 @@ static void HUC6280_ins_TIQ_t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            regs->PC |= regs->TR[0] << 8;
-            // Following is auto-generated code for instruction finish
             return; }
-        case 8: {// cleanup
+        case 8: {// cleanup_custom
+            regs->PC |= pins->D << 8;
+            // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             HUC6280_poll_IRQs(regs, pins);
@@ -21291,10 +21291,10 @@ static void HUC6280_ins_IRQ2_t1(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            regs->PC |= regs->TR[0] << 8;
-            // Following is auto-generated code for instruction finish
             return; }
-        case 8: {// cleanup
+        case 8: {// cleanup_custom
+            regs->PC |= pins->D << 8;
+            // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             HUC6280_poll_IRQs(regs, pins);
@@ -21344,10 +21344,10 @@ static void HUC6280_ins_IRQ1_t1(struct HUC6280_regs *regs, struct HUC6280_pins *
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            regs->PC |= regs->TR[0] << 8;
-            // Following is auto-generated code for instruction finish
             return; }
-        case 8: {// cleanup
+        case 8: {// cleanup_custom
+            regs->PC |= pins->D << 8;
+            // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             HUC6280_poll_IRQs(regs, pins);
@@ -21397,10 +21397,10 @@ static void HUC6280_ins_TIQ_t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             regs->PC = pins->D;
             regs->TA = (regs->TA + 1) & 0xFFFF;
             pins->Addr = regs->MPR[(regs->TA)>>13] | ((regs->TA) & 0x1FFF);
-            regs->PC |= regs->TR[0] << 8;
-            // Following is auto-generated code for instruction finish
             return; }
-        case 8: {// cleanup
+        case 8: {// cleanup_custom
+            regs->PC |= pins->D << 8;
+            // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             HUC6280_poll_IRQs(regs, pins);

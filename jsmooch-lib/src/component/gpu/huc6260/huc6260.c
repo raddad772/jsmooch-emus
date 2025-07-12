@@ -109,7 +109,6 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
 {
     u32 addr = (maddr >> 1) & 3;
     u32 lo = (maddr & 1) ^ 1;
-    printf("\nVCE write %d: %02x", addr, val);
     switch(addr) {
         case 0: //CR
             if (lo) {

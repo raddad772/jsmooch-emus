@@ -160,13 +160,16 @@ void HUC6280_cycle(struct HUC6280 *this)
             this->regs.do_IRQ = 0;
             // timer > IRQ1 > IRQ2
             if (this->regs.IRQD.TIQ & this->regs.IRQR.TIQ) { // TIQ is 103
+                printf("\nTIQ");
                 this->regs.IR = 0x103;
             }
             else if (this->regs.IRQD.IRQ1 & this->regs.IRQR.IRQ1) { // IRQ1 is 102
+                printf("\nIRQ1");
                 this->regs.IR = 0x102;
-
+                //dbg_break("HAHAHA", 0);
             }
             else if (this->regs.IRQD.IRQ2 & this->regs.IRQR.IRQ2) { // IRQ2 is 101
+                printf("\nIRQ2");
                 this->regs.IR = 0x101;
             }
             else {
@@ -308,6 +311,7 @@ static void trace_read(struct HUC6280 *this)
         if (!this->trace.cycles) tc = 0;
         else tc = *this->trace.cycles;
         dbglog_view_add_printf(dv, this->trace.dbglog.id_read, tc, DBGLS_TRACE, "%06x    (read) %02x", this->pins.Addr, this->pins.D);
+        dbglog_view_extra_printf(dv, "");
     }
 }
 

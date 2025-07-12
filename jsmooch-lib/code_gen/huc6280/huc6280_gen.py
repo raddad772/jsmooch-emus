@@ -465,7 +465,8 @@ def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
     ag.load16('regs->PC', 'regs->TA')
     ag.addl('regs->TA = (regs->TA + 1) & 0xFFFF;')
     ag.load16('regs->TR[0]', 'regs->TA', last=True)
-    ag.addl('regs->PC |= regs->TR[0] << 8;')
+    ag.cleanup()
+    ag.addl('regs->PC |= pins->D << 8;')
 
     return ag.finished()
 

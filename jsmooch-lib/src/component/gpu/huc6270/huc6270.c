@@ -312,7 +312,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x05: // CR
             this->io.CR.lo = val;
-            printf("\nSET IE: %x IR:%x", this->io.CR.IE, this->irq.IR);
+            printf("\nSET IE: %x IR:%x VAL:%d", this->io.CR.IE, this->irq.IR, val);
             // TODO: do more stuff with this
             update_irqs(this);
             switch((val >> 4) & 3) {
@@ -513,29 +513,6 @@ void HUC6270_write(struct HUC6270 *this, u32 addr, u32 val)
     }
 }
 
-static u32 read_lsb(struct HUC6270 *this)
-{
-    switch(this->io.ADDR) {
-        case 0x02: // VRAM data read
-            return this->io.VRR.lo;
-    }
-    printf("\nWANR UNSERVICED HUC6270 LSB READ %02x!", this->io.ADDR);
-    // IRQ clears on reads, onyl apply to bottom 4 bit
-    return 0;
-}
-
-static u32 read_msb(struct HUC6270 *this)
-{
-    switch(this->io.ADDR) {
-        case 0x02: {// VRAM data read
-            u32 v = this->io.VRR.hi;
-            read_vram(this);
-            return v; }
-    }
-    printf("\nWANR UNSERVICED HUC6270 MSB READ %02x!", this->io.ADDR);
-    return 0;
-}
-
 static u32 read_status(struct HUC6270 *this)
 {
     u32 v = this->io.STATUS.u;
@@ -552,12 +529,14 @@ u32 HUC6270_read(struct HUC6270 *this, u32 addr, u32 old)
         case 0:
             return read_status(this);
         case 1:
-            printf("\nUnserviced HUC6270 (VDC) read %d", addr);
-            return old;
+            return 0;
         case 2:
-            return read_lsb(this);
-        case 3:
-            return read_msb(this);
+            return this->io.VRR.lo;
+        case 3: {
+            u32 v = this->io.VRR.hi;
+            if (this->io.ADDR == 2) read_vram(this);
+            return v;
+        }
     }
     printf("\nUnserviced HUC6270 (VDC) read: %06x", addr);
     return old;

@@ -15,8 +15,10 @@ u32 TG16_bus_read(struct TG16 *this, u32 addr, u32 old, u32 has_effect)
         else if (addr < 0x1FE800) {
             return HUC6260_read(&this->vce, addr, old);
         }
-        assert(1==2);
-        printf("\nWHAT23");
+        if (has_effect) {
+            assert(1 == 2);
+            printf("\nWHAT23");
+        }
         return 0;
     }
     if (addr < 0x100000) return TG16_cart_read(&this->cart, addr, old);
@@ -69,5 +71,5 @@ u32 TG16_huc_read_io(void *ptr)
 
 void TG16_huc_write_io(void *ptr, u32 val)
 {
-    printf("\nTG16 write IO not impl.");
+    printf("\nTG16 write IO not impl. %02x", val);
 }
