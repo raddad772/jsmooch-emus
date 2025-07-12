@@ -1,6 +1,8 @@
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+
 add_definitions(-DJSM_WEBGPU)
 add_definitions(-DIMGUI_IMPL_WEBGPU_BACKEND_DAWN)
 include_directories(~/dev/libs/include)
@@ -11,7 +13,12 @@ link_directories(~/dev/libs/bin)
 #option(TINT_BUILD_DOCS "Build documentation" OFF)
 #option(TINT_BUILD_TESTS "Build tests" OFF)
 
-add_executable(jsmooch-gui
+add_executable(jsmooch-gui)
+
+# Add application src
+target_sources(
+        jsmooch-gui 
+        PRIVATE 
         src/full_sys.cpp
         src/full_sys.h
         src/application.h
@@ -29,23 +36,54 @@ add_executable(jsmooch-gui
         src/my_texture_ogl3.cpp
         src/my_texture_wgpu.cpp
 )
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+
+# Add a subset of ImGui source files directly to the executable to fit our use case
+target_sources(
+        jsmooch-gui
+        PRIVATE
+
+        # Among the different backends available, we are interested in connecting
+        # the GUI to GLFW andWebGPU:
+        vendor/myimgui/backends/imgui_impl_wgpu.h
+        vendor/myimgui/backends/imgui_impl_wgpu.cpp
+        vendor/myimgui/backends/imgui_impl_glfw.h
+        vendor/myimgui/backends/imgui_impl_glfw.cpp
+
+        # Bonus to add some C++ specific features (the core ImGUi is a C library)
+        vendor/myimgui/misc/cpp/imgui_stdlib.h
+        vendor/myimgui/misc/cpp/imgui_stdlib.cpp
+
+        # The core ImGui files
+        vendor/myimgui/imconfig.h
+        vendor/myimgui/imgui.h
+        vendor/myimgui/imgui.cpp
+        vendor/myimgui/imgui_draw.cpp
+        vendor/myimgui/imgui_internal.h
+        vendor/myimgui/imgui_tables.cpp
+        vendor/myimgui/imgui_widgets.cpp
+        vendor/myimgui/imstb_rectpack.h
+        vendor/myimgui/imstb_textedit.h
+        vendor/myimgui/imstb_truetype.h
+)
 
 #FIND_PACKAGE(SDL2 REQUIRED)
-
 #include_directories( ${SDL2_INCLUDE_DIR} )
-include_directories(${CMAKE_SOURCE_DIR}/jsmooch-lib/src)
 
-add_subdirectory(vendor/myimgui)
+target_include_directories(
+    jsmooch-gui
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/jsmooch-lib/src
+    vendor/myimgui
+)
+
 #add_subdirectory(vendor/WebGPU-distribution)
 #add_subdirectory(vendor/glfw3webgpu)
 #find_package(Dawn)
 
 # [...]
 
-
-#target_link_libraries(jsmooch-gui jsmooch-lib imgui SDL3 "-framework OpenGL")
-target_link_libraries(jsmooch-gui jsmooch-lib imgui glfw3 imgui webgpu_dawn dawn_glfw "-framework CoreFoundation" "-framework AppKit" "-framework Cocoa" "-framework IOKit" "-framework OpenGL" "-framework Quartz")
+#target_link_libraries(jsmooch-gui jsmooch-lib SDL3 "-framework OpenGL")
+target_link_libraries(jsmooch-gui jsmooch-lib glfw3 webgpu_dawn dawn_glfw "-framework CoreFoundation" "-framework AppKit" "-framework Cocoa" "-framework IOKit" "-framework OpenGL" "-framework Quartz")
 #webgpu glfw3webgpu webgpu_cpp  webgpu_glfw
 #target_link_libraries(jsmooch-gui PRIVATE )
 

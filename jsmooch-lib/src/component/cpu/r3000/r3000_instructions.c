@@ -3,13 +3,7 @@
 //
 
 #include <assert.h>
-
-#if !defined(_MSC_VER)
-#include <printf.h>
-#else
 #include <stdio.h>
-#endif
-
 #include <stdlib.h>
 #include "helpers/intrinsics.h"
 #include "r3000.h"

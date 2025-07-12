@@ -1,4 +1,4 @@
-#include <printf.h>
+#include <stdio.h>
 #include <assert.h>
 #include "helpers/int.h"
 #include "huc6280_opcodes.h"

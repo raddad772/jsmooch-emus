@@ -4,9 +4,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#if !defined(_MSC_VER)
-#include <printf.h>
-#endif
 
 #include "audiobuf.h"
 

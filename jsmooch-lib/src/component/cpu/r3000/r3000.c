@@ -3,11 +3,7 @@
 //
 #include <stdlib.h>
 #include <string.h>
-#if defined(_MSC_VER)
-#include <stdio.h>
-#else
-#include <printf.h>
-#endif
+#include <stdio.h> // printf
 
 #include "r3000_instructions.h"
 #include "r3000.h"

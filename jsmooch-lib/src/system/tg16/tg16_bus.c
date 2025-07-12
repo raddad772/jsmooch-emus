@@ -2,11 +2,7 @@
 // Created by . on 6/18/25.
 //
 
-#if defined(_MSC_VER)
 #include <stdio.h>
-#else
-#include <printf.h>
-#endif
 
 #include "tg16_bus.h"
 

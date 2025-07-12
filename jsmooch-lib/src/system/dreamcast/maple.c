@@ -4,6 +4,7 @@
 
 #include "assert.h"
 #include "stdio.h"
+#include "stdlib.h" // abort()
 #include "dreamcast.h"
 #include "holly.h"
 #include "maple.h"
