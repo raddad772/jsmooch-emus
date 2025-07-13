@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "helpers/color.h"
+
 #include "huc6270.h"
 #include "component/gpu/huc6260/huc6260.h"
 
@@ -46,6 +48,10 @@ static void setup_new_line(struct HUC6270 *this) {
         this->regs.y_counter++;
         this->regs.first_render = 1;
         this->regs.draw_clock = 0;
+
+        this->bg.x_tile = (this->io.BXR.u >> 3) & this->bg.x_tiles_mask;
+
+        this->bg.y_tile = (this->regs.yscroll >> 3) & this->bg.y_tiles_mask;
     }
 
     // TODO: this stuff
@@ -147,7 +153,28 @@ void HUC6270_cycle(struct HUC6270 *this)
     }
     if ((this->timing.v.state == H6S_display) && (this->timing.h.state == H6S_display)) {
         // clock a pixel, yo!
-        //if (this->regs.first_render)
+        // grab the current 8 pixels
+        if (this->pixel_shifter.num == 0) {
+            u32 addr = (this->bg.y_tile * this->bg.x_tiles) + this->bg.x_tile;
+            u32 entry = this->VRAM[addr & 0x7FFF];
+            addr = ((entry & 0xFFF) << 4) + (this->regs.yscroll & 7);
+            this->pixel_shifter.palette = (entry >> 12) & 15;
+            u32 plane12 = this->VRAM[addr & 0x7FFF];
+            u32 plane34 = this->VRAM[(addr + 8) & 0x7FFF];
+            this->pixel_shifter.pattern_shifter = tg16_decode_line(plane12, plane34);
+            this->pixel_shifter.num = 8;
+            this->bg.x_tile = (this->bg.x_tile + 1) & this->bg.x_tiles_mask;
+        }
+        if (this->regs.first_render) {
+            u32 scroll_discard = this->io.BXR.u & 7;
+            if (scroll_discard) {
+                this->pixel_shifter.pattern_shifter >>= 4 * scroll_discard;
+                this->pixel_shifter.num -= scroll_discard;
+            }
+        }
+        this->pixel_shifter.num--;
+        this->regs.px_out = (this->pixel_shifter.pattern_shifter & 15) | (this->pixel_shifter.palette << 4);
+        this->pixel_shifter.pattern_shifter >>= 4;
     }
 }
 

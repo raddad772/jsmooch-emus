@@ -106,11 +106,19 @@ struct HUC6270 {
         u32 x_tiles, y_tiles;
         u32 x_tiles_mask, y_tiles_mask;
         u32 y_compare;
+
+        u32 x_tile, y_tile;
     } bg;
 
     struct {
         u32 y_compare;
     } sprites;
+
+    struct {
+        u32 num;
+        u32 pattern_shifter;
+        u32 palette;
+    } pixel_shifter;
 
 
     struct {

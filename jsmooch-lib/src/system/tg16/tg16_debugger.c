@@ -43,18 +43,12 @@ static void render_image_view_tiles(struct debugger_interface *dbgr, struct debu
                 // lower byte is 1,3
                 // higher byte is 2,4
                 // lowest bit is leftmost pixel?
+                u32 px = tg16_decode_line(plane12, plane34);
                 for  (u32 inner_x = 0; inner_x < 8; inner_x++) {
-                    u32 data = plane12 & 1;
-                    data |= (plane12 >> 7) & 2;
-                    data |= (plane34 << 2) & 4;
-                    data |= (plane34 >> 5) & 8;
-                    plane12 >>= 1;
-                    plane34 >>= 1;
-                    u32 v = 17 * data;
+                    u32 v = 17 * (px & 15);
+                    px >>= 4;
                     screen_y_ptr[screen_x] = v | (v << 8) | (v << 16) | 0xFF000000;
-                    //if (screen_x == 20) screen_y_ptr[screen_x] = 0xFF0000FF;
                     screen_x++;
-                    // 00000000 00000000
                 }
             }
         }
