@@ -491,6 +491,8 @@ set(SOURCE_LIST
         "src/system/zxspectrum/ula.h"
         ".editorconfig"
         src/component/cpu/huc6280/huc6280_disassembler.c
+        src/component/controller/tg16b2/tg16b2.c
+        src/component/controller/tg16b2/tg16b2.h
 )
 
 # TODO: Fix elf-parser repo for windows
