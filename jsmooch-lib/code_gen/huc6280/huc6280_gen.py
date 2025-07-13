@@ -455,6 +455,7 @@ def S_RESET(ag: huc6280_switchgen) -> str:
 def S_IRQ(ag: huc6280_switchgen, vector: str) -> str:
     ag.dummy_read()
     ag.dummy_read()
+    ag.addl('regs->PC = (regs->PC - 1) & 0xFFFF;')
     ag.push('regs->PC >> 8')
     ag.push('regs->PC & 0xFF')
     ag.push('regs->P.u & 0xEF')

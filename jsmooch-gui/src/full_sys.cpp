@@ -878,7 +878,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "srr.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "astro_boy.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "minish_cap.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "goodbye_galaxy.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "minish_cap.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "motoracer.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "gang-ldmstm.gba", nullptr);
@@ -915,7 +916,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tmnt4.sfc", nullptr); // cant even load ROM?
             break;
         case SYS_TURBOGRAFX16:
-            worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
+            worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

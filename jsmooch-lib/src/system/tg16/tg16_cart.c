@@ -26,6 +26,7 @@ void TG16_cart_reset(struct TG16_cart *this)
 void TG16_cart_write(struct TG16_cart *this, u32 addr, u32 val)
 {
     printf("\nWARN cart write %06x %02x", addr, val);
+    //dbg_break("WHATHO", 0);
 }
 
 u32 TG16_cart_read(struct TG16_cart *this, u32 addr, u32 old)

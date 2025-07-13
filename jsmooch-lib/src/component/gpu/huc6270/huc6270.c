@@ -344,6 +344,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             u32 sr = (val >> 4) & 7;
             this->io.bg.x_tiles = screen_sizes[sr][0];
             this->io.bg.y_tiles = screen_sizes[sr][1];
+            this->regs.BAT_size = this->io.bg.x_tiles * this->io.bg.y_tiles;
             return; }
         case 0x0A:
             this->io.HSW = val & 0x1F;
@@ -491,7 +492,6 @@ void HUC6270_write(struct HUC6270 *this, u32 addr, u32 val)
             write_addr(this, val);
             return;
         case 1:
-            printf("\nUnserviced HUC6270 (VDC) write %d: %02x", addr, val);
             return;
         case 2:
             write_lsb(this, val);

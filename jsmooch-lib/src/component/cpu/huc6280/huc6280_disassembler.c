@@ -89,7 +89,7 @@ static void immediate_zero_page(SARG)
 static void indirect_long_x(SARG)
 {
     u32 addr = la(dbg_read16(trace, PC));
-    jsm_string_sprintf(outstr, "%s($%06x,x)", addr);
+    jsm_string_sprintf(outstr, "%s($%06x,x)", ins, addr);
 }
 
 static void indirect_long(SARG)

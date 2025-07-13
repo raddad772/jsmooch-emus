@@ -131,6 +131,7 @@ static void trace_format(struct HUC6280 *this, u32 opcode)
                     break;
                 case 0x102: // IRQ1
                     jsm_string_sprintf(&this->trace.str, "IRQ1");
+                    printf("\nIRQ1 @ %lld", *this->trace.cycles);
                     break;
                 case 0x103: // TIQ
                     jsm_string_sprintf(&this->trace.str, "TIQ");
@@ -177,6 +178,9 @@ void HUC6280_cycle(struct HUC6280 *this)
             else {
                 assert(1==2);
             }
+        }
+        if ((this->regs.MPR[this->regs.PC >> 13]) >= 0x1FE000) {
+            dbg_break("PHNO", 0);
         }
         trace_format(this, this->regs.IR);
         this->current_instruction = HUC6280_decoded_opcodes[this->regs.P.T][this->regs.IR];

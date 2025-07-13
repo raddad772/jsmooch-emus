@@ -117,6 +117,8 @@ struct HUC6270 {
         i32 yscroll, next_yscroll;
         u16 vram_inc;
 
+        u32 BAT_size;
+
         u32 px_out;
         u32 y_counter;
         u32 blank_line;

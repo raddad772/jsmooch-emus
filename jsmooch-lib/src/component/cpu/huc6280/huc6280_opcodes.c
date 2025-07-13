@@ -10304,6 +10304,7 @@ static void HUC6280_ins_IRQ2_t0(struct HUC6280_regs *regs, struct HUC6280_pins *
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
         case 3: {// dummy read...
+            regs->PC = (regs->PC - 1) & 0xFFFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->D = regs->PC >> 8;
             regs->S = (regs->S - 1) & 0xFF;
@@ -10357,6 +10358,7 @@ static void HUC6280_ins_IRQ1_t0(struct HUC6280_regs *regs, struct HUC6280_pins *
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
         case 3: {// dummy read...
+            regs->PC = (regs->PC - 1) & 0xFFFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->D = regs->PC >> 8;
             regs->S = (regs->S - 1) & 0xFF;
@@ -10410,6 +10412,7 @@ static void HUC6280_ins_TIQ_t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
         case 3: {// dummy read...
+            regs->PC = (regs->PC - 1) & 0xFFFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->D = regs->PC >> 8;
             regs->S = (regs->S - 1) & 0xFF;
@@ -21264,6 +21267,7 @@ static void HUC6280_ins_IRQ2_t1(struct HUC6280_regs *regs, struct HUC6280_pins *
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
         case 3: {// dummy read...
+            regs->PC = (regs->PC - 1) & 0xFFFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->D = regs->PC >> 8;
             regs->S = (regs->S - 1) & 0xFF;
@@ -21317,6 +21321,7 @@ static void HUC6280_ins_IRQ1_t1(struct HUC6280_regs *regs, struct HUC6280_pins *
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
         case 3: {// dummy read...
+            regs->PC = (regs->PC - 1) & 0xFFFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->D = regs->PC >> 8;
             regs->S = (regs->S - 1) & 0xFF;
@@ -21370,6 +21375,7 @@ static void HUC6280_ins_TIQ_t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             return; }
         case 3: {// dummy read...
+            regs->PC = (regs->PC - 1) & 0xFFFF;
             pins->Addr = regs->MPR[1] | 0x100 | regs->S;
             pins->D = regs->PC >> 8;
             regs->S = (regs->S - 1) & 0xFF;
