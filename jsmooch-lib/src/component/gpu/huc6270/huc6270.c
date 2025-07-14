@@ -61,7 +61,7 @@ static void eval_sprites(struct HUC6270 *this) {
         u32 height = sprite_heights_px[cgy];
 
         u32 sprite_line = this->sprites.y_compare - sy;
-        if (sprite_line > height) continue;
+        if (sprite_line >= height) continue;
         u32 cgx = (spr[3] >> 8) & 1;
         u32 width = sprite_widths_px[cgx];
         i32 sx = (i32)(spr[1] & 0x3FF) - 32;
@@ -70,6 +70,7 @@ static void eval_sprites(struct HUC6270 *this) {
         u32 spbg = (spr[3] >> 7) & 1;
         u32 xflip = (spr[3] >> 11) & 1;
         u32 yflip = (spr[3] >> 15) & 1;
+        //xflip = yflip = 0;
 
         if(width == 32)
             tile_index &= ~0x01;
@@ -84,11 +85,12 @@ static void eval_sprites(struct HUC6270 *this) {
 
         u32 vertical_sprite_num = sprite_line >> 4;
         // 64 words per sprite
-        u32 words_per_line = sprite_widths_sprs[cgx] * 64;
-        u32 addr = pat_addr + (words_per_line * vertical_sprite_num) + (sprite_line & 15);
-
-
-
+        u32 words_per_line = 128;
+        u32 line_in_sprite = sprite_line & 15;
+        u32 addr = pat_addr + (words_per_line * vertical_sprite_num) + line_in_sprite;
+        if (xflip) {
+            addr += 64 * (sprite_widths_sprs[cgx] - 1);
+        }
 
         for (i32 x = 0; x < width; x += 16) {
             if (this->sprites.num_tiles_on_line == 16) {
@@ -124,6 +126,9 @@ static void eval_sprites(struct HUC6270 *this) {
                 if (xflip) data <<= 60;
                 tile->pattern_shifter |= data;
             }
+
+            if (xflip) addr -= 64;
+            else addr += 64;
 
             if (tile->x < 0) {
                 i32 num_to_left = 0 - tile->x;
