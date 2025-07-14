@@ -22,6 +22,9 @@ u32 TG16_bus_read(struct TG16 *this, u32 addr, u32 old, u32 has_effect)
         return 0;
     }
     if (addr < 0x100000) return TG16_cart_read(&this->cart, addr, old);
+    else if ((addr >= 0x1EE000) && (addr < 0x1F0000)) {
+        return TG16_cart_read_SRAM(&this->cart, addr);
+    }
     else if ((addr >= 0x1F0000) && (addr <= 0x1F8000)) {
         return this->RAM[addr & 0x1FFF];
     }
@@ -44,6 +47,10 @@ void TG16_bus_write(struct TG16 *this, u32 addr, u32 val)
         return;
     }
     if (addr < 0x100000) return TG16_cart_write(&this->cart, addr, val);
+    else if ((addr >= 0x1EE000) && (addr < 0x1F0000)) {
+        TG16_cart_write_SRAM(&this->cart, addr, val);
+        return;
+    }
     else if ((addr >= 0x1F0000) && (addr <= 0x1F8000)) {
         this->RAM[addr & 0x1FFF] = val;
         return;

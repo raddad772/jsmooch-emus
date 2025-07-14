@@ -294,7 +294,7 @@ static void TG16IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io
         sz -= 512;
     }
 
-   TG16_cart_load_ROM_from_RAM(&this->cart, ptr, sz);
+   TG16_cart_load_ROM_from_RAM(&this->cart, ptr, sz, which_pio);
    TG16J_reset(jsm);
 }
 
