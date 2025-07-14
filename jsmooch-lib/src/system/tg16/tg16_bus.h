@@ -14,12 +14,16 @@
 #include "component/gpu/huc6260/huc6260.h"
 #include "tg16_clock.h"
 #include "tg16_cart.h"
+#include "tg16_controllerport.h"
+#include "component/controller/tg16b2/tg16b2.h"
 
 struct TG16 {
     struct HUC6280 cpu;
     struct HUC6270 vdc0, vdc1; // Video Display Controller
     struct HUC6260 vce; // Video Color Encoder
     struct TG16_cart cart;
+    struct TG16_controllerport controller_port;
+    struct TG16_2button controller;
 
     u8 RAM[8192];
 

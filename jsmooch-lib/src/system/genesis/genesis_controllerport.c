@@ -13,7 +13,7 @@ void genesis_controllerport_connect(struct genesis_controller_port *this, enum g
     this->controller_ptr = ptr;
     this->data_lines = 0x7f;
     this->control = 0;
-    this->data_latch = 0x7f;
+    //this->data_latch = 0x7f;
 }
 
 void genesis_controllerport_delete(struct genesis_controller_port *this)

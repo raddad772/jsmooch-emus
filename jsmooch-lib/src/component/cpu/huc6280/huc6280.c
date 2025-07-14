@@ -131,7 +131,7 @@ static void trace_format(struct HUC6280 *this, u32 opcode)
                     break;
                 case 0x102: // IRQ1
                     jsm_string_sprintf(&this->trace.str, "IRQ1");
-                    printf("\nIRQ1 @ %lld", *this->trace.cycles);
+                    //printf("\nIRQ1 @ %lld", *this->trace.cycles);
                     break;
                 case 0x103: // TIQ
                     jsm_string_sprintf(&this->trace.str, "TIQ");
@@ -158,7 +158,7 @@ void HUC6280_cycle(struct HUC6280 *this)
         this->PCO = this->pins.Addr;
         this->regs.IR = this->pins.D;
         if (this->regs.do_IRQ) {
-            printf("\nDO IRQ! %lld", *this->trace.cycles);
+            //printf("\nDO IRQ! %lld", *this->trace.cycles);
             this->regs.do_IRQ = 0;
             // timer > IRQ1 > IRQ2
             if (this->regs.IRQD.TIQ & this->regs.IRQR_polled.TIQ) { // TIQ is 103
@@ -167,7 +167,7 @@ void HUC6280_cycle(struct HUC6280 *this)
                 this->regs.IRQR.TIQ = 0;
             }
             else if (this->regs.IRQD.IRQ1 & this->regs.IRQR_polled.IRQ1) { // IRQ1 is 102
-                printf("\nIRQ1");
+                //printf("\nIRQ1");
                 this->regs.IR = 0x102;
                 //dbg_break("HAHAHA", 0);
             }

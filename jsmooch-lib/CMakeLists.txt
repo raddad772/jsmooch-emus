@@ -493,6 +493,8 @@ set(SOURCE_LIST
         src/component/cpu/huc6280/huc6280_disassembler.c
         src/component/controller/tg16b2/tg16b2.c
         src/component/controller/tg16b2/tg16b2.h
+        src/system/tg16/tg16_controllerport.c
+        src/system/tg16/tg16_controllerport.h
 )
 
 # TODO: Fix elf-parser repo for windows

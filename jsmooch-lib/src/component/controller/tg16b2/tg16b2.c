@@ -34,7 +34,7 @@ void TG16_2button_setup_pio(struct physical_io_device *d, u32 num, const char*na
     pio_new_button(cnt, "left", DBCID_co_left);
     pio_new_button(cnt, "i", DBCID_co_fire1);
     pio_new_button(cnt, "ii", DBCID_co_fire2);
-    pio_new_button(cnt, "select", DBCID_co_fire3);
+    pio_new_button(cnt, "select", DBCID_co_select);
     pio_new_button(cnt, "run", DBCID_co_start);
 }
 

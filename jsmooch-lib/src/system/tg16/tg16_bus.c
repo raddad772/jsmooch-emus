@@ -65,11 +65,12 @@ void TG16_huc_write_mem(void *ptr, u32 addr, u32 val)
 
 u32 TG16_huc_read_io(void *ptr)
 {
-    printf("\nTG16 read IO not impl.");
-    return 0;
+    struct TG16 *this = (struct TG16 *)ptr;
+    return TG16_controllerport_read_data(&this->controller_port) & 0x0F;
 }
 
 void TG16_huc_write_io(void *ptr, u32 val)
 {
-    printf("\nTG16 write IO not impl. %02x", val);
+    struct TG16 *this = (struct TG16 *)ptr;
+    TG16_controllerport_write_data(&this->controller_port, val & 3);
 }

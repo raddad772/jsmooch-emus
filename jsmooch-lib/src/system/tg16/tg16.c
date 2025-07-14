@@ -13,9 +13,7 @@
 #include "tg16.h"
 #include "tg16_debugger.h"
 #include "tg16_bus.h"
-//#include "tg16_cart.h"
-//#include "tg16_vdp.h"
-//#include "tg16_serialize.h"
+#include "tg16_controllerport.h"
 
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
@@ -353,12 +351,9 @@ void TG16J_describe_io(JSM, struct cvec *IOs)
 
     // controllers
     struct physical_io_device *c1 = cvec_push_back(this->jsm.IOs);
-    struct physical_io_device *c2 = cvec_push_back(this->jsm.IOs);
-    /*TG16_controller_6button_init(&this->controller1, &this->clock.master_cycle_count);
-    TG166_setup_pio(c1, 0, "Player 1", 1);
-    TG163_setup_pio(c2, 1, "Player 2", 0);
-    this->controller1.pio = c1;
-    this->controller2.pio = c2;*/
+    TG16_2button_init(&this->controller);
+    TG16_2button_setup_pio(c1, 0, "Player 1", 1);
+    this->controller.pio = c1;
 
     // power and reset buttons
     struct physical_io_device* chassis = cvec_push_back(IOs);
@@ -397,8 +392,7 @@ void TG16J_describe_io(JSM, struct cvec *IOs)
     setup_audio(this, IOs);
 
     this->vce.display = &((struct physical_io_device *)cpg(this->vce.display_ptr))->display;
-    //TG16_controllerport_connect(&this->io.controller_port1, TG16_controller_6button, &this->controller1);
-    //TG16_controllerport_connect(&this->io.controller_port2, TG16_controller_3button, &this->controller2);
+    TG16_controllerport_connect(&this->controller_port, TG16CK_2button, &this->controller);
 }
 
 void TG16J_play(JSM)

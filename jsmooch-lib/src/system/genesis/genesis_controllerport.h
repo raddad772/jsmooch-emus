@@ -12,7 +12,6 @@ struct genesis_controller_port {
     enum genesis_controller_kinds controller_kind;
     u16 data_lines;
     u8 control;
-    u8 data_latch;
 };
 
 
