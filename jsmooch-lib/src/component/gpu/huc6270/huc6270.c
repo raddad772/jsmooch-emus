@@ -8,7 +8,6 @@
 #include "helpers/color.h"
 
 #include "huc6270.h"
-#include "component/gpu/huc6260/huc6260.h"
 
 /*
  * OK SO
@@ -48,10 +47,9 @@ static void setup_new_line(struct HUC6270 *this) {
         this->regs.y_counter++;
         this->regs.first_render = 1;
         this->regs.draw_clock = 0;
-
         this->bg.x_tile = (this->io.BXR.u >> 3) & this->bg.x_tiles_mask;
-
         this->bg.y_tile = (this->regs.yscroll >> 3) & this->bg.y_tiles_mask;
+        this->pixel_shifter.num = 0;
     }
 
     // TODO: this stuff
@@ -59,8 +57,6 @@ static void setup_new_line(struct HUC6270 *this) {
     if (this->timing.v.counter < 1) {
         new_v_state(this, (this->timing.v.state + 1) & 3);
     }
-
-    update_RCR(this);
 }
 
 
@@ -102,10 +98,12 @@ static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
         case H6S_display:
             this->timing.v.counter = this->io.VDW.u + 1;
             this->sprites.y_compare = 64;
+            this->bg.y_compare = 0;
             this->regs.blank_line = 1;
             break;
         case H6S_wait_for_sync_window:
             vblank(this, 1);
+            this->regs.px_out = 0x100;
             this->timing.v.counter = this->io.VCR;
             break;
     }
@@ -171,6 +169,7 @@ void HUC6270_cycle(struct HUC6270 *this)
                 this->pixel_shifter.pattern_shifter >>= 4 * scroll_discard;
                 this->pixel_shifter.num -= scroll_discard;
             }
+            this->regs.first_render = 0;
         }
         this->pixel_shifter.num--;
         this->regs.px_out = (this->pixel_shifter.pattern_shifter & 15) | (this->pixel_shifter.palette << 4);
@@ -182,6 +181,9 @@ void HUC6270_init(struct HUC6270 *this, struct scheduler_t *scheduler)
 {
     memset(this, 0, sizeof(*this));
     this->scheduler = scheduler;
+    this->io.bg.x_tiles = 32;
+    this->io.bg.y_tiles = 32;
+    this->regs.BAT_size = this->io.bg.x_tiles * this->io.bg.y_tiles;
 }
 
 
@@ -199,7 +201,8 @@ static void update_irqs(struct HUC6270 *this);
 static void update_RCR(struct HUC6270 *this)
 {
     this->io.STATUS.RR |= this->regs.y_counter == this->io.RCR.u;
-    if (this->regs.y_counter == this->io.RCR.u) printf("\nRR HIT!");
+    //if (this->regs.y_counter == this->io.RCR.u) printf("\nRR HIT! %d", this->bg.y_compare);
+    update_irqs(this);
 }
 
 static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -256,6 +259,7 @@ static void hblank(struct HUC6270 *this, u32 val)
 {
     if (val) {
         this->regs.px_out = 0x100;
+        update_RCR(this);
     }
     else {
 
@@ -352,7 +356,6 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x06:
             this->io.RCR.lo = val;
-            printf("\nRCR SET %04x", this->io.RCR.u);
             update_RCR(this);
             return;
         case 0x07: // BGX
@@ -462,14 +465,14 @@ static void write_msb(struct HUC6270 *this, u32 val)
             return;
         case 0x06:
             this->io.RCR.hi = val & 3;
-            printf("\nRCR SET %04x", this->io.RCR.u);
             update_RCR(this);
             return;
-        case 0x07: // BGX
+        case 0x07: // BGX scroll BXR
             this->io.BXR.hi = val & 3;
             return;
         case 0x08: // BGY
             this->io.BYR.hi = val & 1;
+            //printf("\nBYR H: %d", this->io.BYR.hi);
             this->regs.next_yscroll = this->io.BYR.u;
             return;
         case 0x09:

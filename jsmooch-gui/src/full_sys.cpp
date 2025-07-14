@@ -916,9 +916,10 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tmnt4.sfc", nullptr); // cant even load ROM?
             break;
         case SYS_TURBOGRAFX16:
-            worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr);
+            worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
