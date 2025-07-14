@@ -134,14 +134,12 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
                 this->io.CTW.hi = val & 1;
                 this->CRAM[this->io.CTA.u] = this->io.CTW.u;
                 if (this->io.CTW.u != 0) {
-                    printf("\nCGRAM WRITE %03x: %04x", this->io.CTA.u, this->io.CTW.u);
                     //dbg_break("YOHA", 0);
                 }
                 this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
             }
             return;
         case 3:
-            printf("\nUnserviced HUC6260 write: %06x %02x", maddr, val);
             return;
     }
 }
