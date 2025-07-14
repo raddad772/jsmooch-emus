@@ -280,7 +280,7 @@ void HUC6270_cycle(struct HUC6270 *this)
             this->regs.first_render = 0;
         }
         this->pixel_shifter.num--;
-        u32 bg_color = (this->pixel_shifter.pattern_shifter & 15) | (this->pixel_shifter.palette << 4);
+        u32 bg_color = (this->pixel_shifter.pattern_shifter & 15);
         this->pixel_shifter.pattern_shifter >>= 4;
 
         u32 sp_color = 0;
@@ -310,12 +310,11 @@ void HUC6270_cycle(struct HUC6270 *this)
         }
 
         // BGS OFF FOR DEBUG
-        bg_color = 0;
 
         if (!this->io.CR.BB) bg_color = 0;
-        //if (!this->io.CR.SB) sp_color = 0;
+        if (!this->io.CR.SB) sp_color = 0;
         if (bg_color && sp_color) { // Discriminate!
-            if (sp_prio) // Sprite on top!
+            if (!sp_prio) // Sprite on top!
                 sp_color = 0;
             else
                 bg_color = 0;
