@@ -918,8 +918,9 @@ void full_system::load_default_ROM()
         case SYS_TURBOGRAFX16:
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr);
-            worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
+            worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr);
+            worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

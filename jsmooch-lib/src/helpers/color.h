@@ -164,7 +164,7 @@ static inline u32 gba_darken(u32 color, i32 co)
     return (b << 10) | ((g & 0x3E) << 4) | r | ((g & 1) << 15);
 }
 
-static inline u32 tg16_decode_line(u32 chr01, u32 chr23)
+static inline u64 tg16_decode_line(u32 chr01, u32 chr23)
 {
     u32 out = 0;
     for (u32 i = 0; i < 8; i++) {

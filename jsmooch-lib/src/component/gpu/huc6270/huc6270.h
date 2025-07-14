@@ -60,7 +60,7 @@ struct HUC6270 {
         union {
             struct {
                 u8 CR : 1; // Collision detect sprite #0 collide with 1-63
-                u8 OR : 1; // >17 sprite/line, not enough time for sprites, CGX error
+                u8 OR : 1; // >16 sprite/line, not enough time for sprites, CGX error
                 u8 RR : 1; // scanning line detect
                 u8 DS : 1; // VRAM->SATB complete
                 u8 DV : 1; // VRAM->VRAM complete
@@ -112,11 +112,20 @@ struct HUC6270 {
 
     struct {
         u32 y_compare;
+        u32 num_tiles_on_line;
+        struct HUC6270_sprite {
+            u64 pattern_shifter;
+            u64 num_left;
+            u32 triggered;
+            u32 original_num;
+            i32 x;
+            u32 palette, priority;
+        } tiles[16];
     } sprites;
 
     struct {
         u32 num;
-        u32 pattern_shifter;
+        u64 pattern_shifter;
         u32 palette;
     } pixel_shifter;
 
@@ -138,6 +147,7 @@ struct HUC6270 {
         u32 in_vblank;
 
         u32 IE;
+        u32 x_counter;
     } regs;
 };
 

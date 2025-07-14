@@ -22,18 +22,118 @@
  */
 
 
+static void update_irqs(struct HUC6270 *this);
 static void new_v_state(struct HUC6270 *this, enum HUC6270_states st);
 static void update_RCR(struct HUC6270 *this);
 static void vblank(struct HUC6270 *this, u32 val);
 static void hblank(struct HUC6270 *this, u32 val);
+
+static inline u16 read_VRAM(struct HUC6270 *this, u32 addr)
+{
+    return (addr & 0x8000) ? 0 : this->VRAM[addr];
+}
+
+static inline void write_VRAM(struct HUC6270 *this, u32 addr, u16 val)
+{
+    if (addr < 0x8000)
+        this->VRAM[addr] = val;
+}
+
 
 static void setup_new_frame(struct HUC6270 *this)
 {
     this->regs.y_counter = 63; // return this +64
     this->regs.yscroll = this->io.BYR.u;
     this->regs.next_yscroll = this->regs.yscroll + 1;
+}
 
-    // // on write BYR, set next_scroll also
+static void eval_sprites(struct HUC6270 *this) {
+    static const u32 sprite_widths_sprs[2] = {1, 2};
+    static const u32 sprite_height_sprs[4] = {1, 2, 2, 4};
+    static const u32 sprite_widths_px[2] = {16, 32};
+    static const u32 sprite_heights_px[4] = {16, 32, 64, 64};
+    this->sprites.num_tiles_on_line = 0;
+    for (u32 sn = 0; sn < 64; sn++) {
+        u16 *spr = this->SAT + (sn << 2);
+        i32 sy = (i32)(spr[0] & 0x3FF);
+        if (sy > this->sprites.y_compare) continue;
+        u32 cgy = (spr[3] >> 12) & 3;
+        u32 height = sprite_heights_px[cgy];
+
+        u32 sprite_line = this->sprites.y_compare - sy;
+        if (sprite_line > height) continue;
+        u32 cgx = (spr[3] >> 8) & 1;
+        u32 width = sprite_widths_px[cgx];
+        i32 sx = (i32)(spr[1] & 0x3FF) - 32;
+        u32 tile_index = (spr[2] & 0x7FE) >> 1;
+        u32 palette = spr[3] & 15;
+        u32 spbg = (spr[3] >> 7) & 1;
+        u32 xflip = (spr[3] >> 11) & 1;
+        u32 yflip = (spr[3] >> 15) & 1;
+
+        if(width == 32)
+            tile_index &= ~0x01;
+
+        if(height == 32)
+            tile_index &= ~0x02;
+        else if(height == 64)
+            tile_index &= ~0x06;
+        u32 pat_addr = tile_index << 6;
+
+        if (yflip) sprite_line = (height - 1) - sprite_line;
+
+        u32 vertical_sprite_num = sprite_line >> 4;
+        // 64 words per sprite
+        u32 words_per_line = sprite_widths_sprs[cgx] * 64;
+        u32 addr = pat_addr + (words_per_line * vertical_sprite_num) + (sprite_line & 15);
+
+
+
+
+        for (i32 x = 0; x < width; x += 16) {
+            if (this->sprites.num_tiles_on_line == 16) {
+                this->io.STATUS.OR = 1;
+                update_irqs(this);
+                break;
+            }
+            struct HUC6270_sprite *tile = &this->sprites.tiles[this->sprites.num_tiles_on_line++];
+            tile->num_left = 16;
+            tile->x = sx + x;
+            tile->original_num = sn;
+            tile->triggered = 0;
+            tile->priority = spbg; // TODO: verify this isn't !spbg?
+            tile->palette = palette;
+
+            // Fetch from +0, +16, +32, +48
+            u32 plane0 = read_VRAM(this, addr);
+            u32 plane1 = read_VRAM(this, (addr+16) & 0xFFFF);
+            u32 plane2 = read_VRAM(this, (addr+32) & 0xFFFF);
+            u32 plane3 = read_VRAM(this, (addr+48) & 0xFFFF);
+
+            for (u32 i = 0; i < 16; i++) {
+                if (xflip) tile->pattern_shifter >>= 4;
+                else tile->pattern_shifter <<= 4;
+                u64 data = (plane0 & 1) << 0;
+                data |= (plane1 & 1) << 1;
+                data |= (plane2 & 1) << 2;
+                data |= (plane3 & 1) << 3;
+                plane0 >>= 1;
+                plane1 >>= 1;
+                plane2 >>= 1;
+                plane3 >>= 1;
+                if (xflip) data <<= 60;
+                tile->pattern_shifter |= data;
+            }
+
+            if (tile->x < 0) {
+                i32 num_to_left = 0 - tile->x;
+                tile->pattern_shifter >>= 4 * num_to_left;
+                tile->num_left -= num_to_left;
+                tile->x = 0;
+            }
+        }
+        if (this->sprites.num_tiles_on_line >= 16) break;
+    }
 }
 
 static void setup_new_line(struct HUC6270 *this) {
@@ -50,6 +150,9 @@ static void setup_new_line(struct HUC6270 *this) {
         this->bg.x_tile = (this->io.BXR.u >> 3) & this->bg.x_tiles_mask;
         this->bg.y_tile = (this->regs.yscroll >> 3) & this->bg.y_tiles_mask;
         this->pixel_shifter.num = 0;
+        this->regs.x_counter = 0;
+
+        eval_sprites(this);
     }
 
     // TODO: this stuff
@@ -154,11 +257,11 @@ void HUC6270_cycle(struct HUC6270 *this)
         // grab the current 8 pixels
         if (this->pixel_shifter.num == 0) {
             u32 addr = (this->bg.y_tile * this->bg.x_tiles) + this->bg.x_tile;
-            u32 entry = this->VRAM[addr & 0x7FFF];
+            u32 entry = read_VRAM(this, addr);
             addr = ((entry & 0xFFF) << 4) + (this->regs.yscroll & 7);
             this->pixel_shifter.palette = (entry >> 12) & 15;
-            u32 plane12 = this->VRAM[addr & 0x7FFF];
-            u32 plane34 = this->VRAM[(addr + 8) & 0x7FFF];
+            u32 plane12 = read_VRAM(this, addr);
+            u32 plane34 = read_VRAM(this, addr+8);
             this->pixel_shifter.pattern_shifter = tg16_decode_line(plane12, plane34);
             this->pixel_shifter.num = 8;
             this->bg.x_tile = (this->bg.x_tile + 1) & this->bg.x_tiles_mask;
@@ -172,8 +275,58 @@ void HUC6270_cycle(struct HUC6270 *this)
             this->regs.first_render = 0;
         }
         this->pixel_shifter.num--;
-        this->regs.px_out = (this->pixel_shifter.pattern_shifter & 15) | (this->pixel_shifter.palette << 4);
+        u32 bg_color = (this->pixel_shifter.pattern_shifter & 15) | (this->pixel_shifter.palette << 4);
         this->pixel_shifter.pattern_shifter >>= 4;
+
+        u32 sp_color = 0;
+        u32 sp_pal, sp_prio;
+        for (i32 spnum = this->sprites.num_tiles_on_line-1; spnum >= 0; spnum--) {
+            struct HUC6270_sprite *sp = &this->sprites.tiles[spnum];
+            // If not triggered, check if triggered!
+            if (!sp->triggered) {
+                sp->triggered |= sp->x == this->regs.x_counter;
+            }
+            // If triggered, clock a pixel!
+            if (sp->triggered && sp->num_left) {
+                sp->num_left--;
+                u64 col = sp->pattern_shifter & 15;
+                sp->pattern_shifter >>= 4;
+                if (col) {
+                    // Sprite #0 hit
+                    if ((sp->original_num == 0) && (sp_color != 0) && !this->io.STATUS.CR) {
+                        this->io.STATUS.CR = 1;
+                        update_irqs(this);
+                    }
+                    sp_color = col;
+                    sp_pal = sp->palette;
+                    sp_prio = sp->priority;
+                }
+            }
+        }
+
+        // BGS OFF FOR DEBUG
+        bg_color = 0;
+
+        if (!this->io.CR.BB) bg_color = 0;
+        //if (!this->io.CR.SB) sp_color = 0;
+        if (bg_color && sp_color) { // Discriminate!
+            if (sp_prio) // Sprite on top!
+                sp_color = 0;
+            else
+                bg_color = 0;
+        }
+
+
+        if (sp_color) { // Sprite color!
+            this->regs.px_out = 0x100 | (sp_pal << 4) | sp_color;
+        }
+        else if (bg_color) { // Background color!
+            this->regs.px_out = (this->pixel_shifter.palette << 4) | bg_color;
+        }
+        else { // Backdrop color!
+            this->regs.px_out = 0;
+        }
+        this->regs.x_counter++;
     }
 }
 
@@ -195,8 +348,6 @@ void HUC6270_reset(struct HUC6270 *this)
 {
 
 }
-
-static void update_irqs(struct HUC6270 *this);
 
 static void update_RCR(struct HUC6270 *this)
 {
@@ -226,8 +377,8 @@ static void vram_satb(struct HUC6270 *this)
     // TODO: make not instant
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_satb_end, NULL);
     for (u32 i = 0; i < 0x100; i++) {
-        u32 addr = (this->io.DVSSR.u + i) & 0x7FFF;
-        this->SAT[i] = this->VRAM[addr];
+        u32 addr = (this->io.DVSSR.u + i) & 0xFFFF;
+        this->SAT[i] = read_VRAM(this, addr);
     }
 }
 
@@ -245,8 +396,8 @@ static void trigger_vram_vram(struct HUC6270 *this)
     }
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_vram_end, NULL);
     while(true) {
-        u16 val = this->VRAM[this->io.SOUR.u & 0x7FFF];
-        this->VRAM[this->io.DESR.u & 0x7FFF] = val;
+        u16 val = read_VRAM(this, this->io.SOUR.u);
+        write_VRAM(this, this->io.DESR.u, val);
         this->io.SOUR.u += this->io.DCR.SI_D ? -1 : 1;
         this->io.DESR.u += this->io.DCR.DI_D ? -1 : 1;
 
@@ -411,20 +562,6 @@ static void write_lsb(struct HUC6270 *this, u32 val)
     printf("\nWRITE LSB NOT IMPL: %02x", this->io.ADDR);
 }
 
-static void read_vram(struct HUC6270 *this)
-{
-    this->io.VRR.u = this->VRAM[this->io.MARR.u & 0x7FFF];
-    this->io.MARR.u += this->regs.vram_inc;
-    // TODO: timing
-}
-
-static void write_vram(struct HUC6270 *this)
-{
-    this->VRAM[this->io.MAWR.u & 0x7FFF] = this->io.VWR.u;
-    this->io.MAWR.u += this->regs.vram_inc;
-    // TODO: timing
-}
-
 static void write_msb(struct HUC6270 *this, u32 val)
 {
     //printf("\nWRITE MSB %x: %02x", this->io.ADDR, val);
@@ -434,11 +571,13 @@ static void write_msb(struct HUC6270 *this, u32 val)
             return;
         case 0x01: // MARR
             this->io.MARR.hi = val;
-            read_vram(this); // Read data into VRAM data transfer reg
+            this->io.VRR.u = read_VRAM(this, this->io.MARR.u);
+            this->io.MARR.u += this->regs.vram_inc;
             return;
         case 0x02: // VWR
             this->io.VWR.hi = val;
-            write_vram(this);
+            write_VRAM(this, this->io.MAWR.u, this->io.VWR.u);
+            this->io.MAWR.u += this->regs.vram_inc;
             return;
         case 0x03:
             //this->io.VRR.hi = val;
@@ -552,7 +691,11 @@ u32 HUC6270_read(struct HUC6270 *this, u32 addr, u32 old)
             return this->io.VRR.lo;
         case 3: {
             u32 v = this->io.VRR.hi;
-            if (this->io.ADDR == 2) read_vram(this);
+
+            if (this->io.ADDR == 2) {
+                this->io.VRR.u = read_VRAM(this, this->io.MARR.u);
+                this->io.MARR.u += this->regs.vram_inc;
+            }
             return v;
         }
     }
