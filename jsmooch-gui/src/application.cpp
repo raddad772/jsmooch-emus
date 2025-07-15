@@ -316,7 +316,7 @@ void imgui_jsmooch_app::render_event_view()
     struct managed_window *mw = register_managed_window(100, mwk_debug_events, "Event Viewer", EVENT_VIEWER_DEFAULT_ENABLE);
     if (mw->enabled && fsys.events.view && fsys.has_played_once) {
         if (ImGui::Begin("Event Viewer")) {
-            static bool ozoom = true;
+            static bool ozoom = false;
             ImGui::Checkbox("2x Zoom", &ozoom);
             //fsys.pre_events_view_present();
             fsys.events_view_present();

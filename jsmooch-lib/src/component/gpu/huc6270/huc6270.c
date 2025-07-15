@@ -183,7 +183,7 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
         case H6S_display:
             hblank(this, 0);
             this->timing.h.counter = (this->io.HDW+1) << 3;
-            events_view_report_draw_start(cpg(this->dbg.events.view));
+            events_view_report_draw_start(this->dbg.evptr);
             break;
         case H6S_wait_for_sync_window:
             hblank(this, 1);
@@ -226,8 +226,7 @@ static void force_new_frame(struct HUC6270 *this)
 
 static void force_new_line(struct HUC6270 *this)
 {
-    //printf("\nbadly timed hsync!?");
-
+    printf("\nbadly timed hsync!?");
 }
 
 void HUC6270_hsync(struct HUC6270 *this, u32 val)

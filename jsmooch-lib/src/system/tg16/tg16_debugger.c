@@ -92,7 +92,7 @@ static void setup_events_view(struct TG16* this, struct debugger_interface *dbgr
     struct events_view *ev = &dview->events;
 
     ev->timing = ev_timing_master_clock;
-    ev->master_clocks.per_line = 3420;
+    ev->master_clocks.per_line = HUC6260_CYCLE_PER_LINE;
     ev->master_clocks.height = 262;
     ev->master_clocks.ptr = &this->clock.master_cycles;
 
@@ -145,9 +145,10 @@ static void setup_events_view(struct TG16* this, struct debugger_interface *dbgr
     SET_EVENT_ID(this->vdc0, WRITE_YSCROLL);
 #undef SET_EVENT_ID
 
-    debugger_report_frame(this->dbg.interface);
-    this->vce.dbg.interface = this->dbg.interface;
-    this->vdc0.dbg.interface = this->dbg.interface;
+    debugger_report_frame(dbgr);
+    this->vce.dbg.interface = dbgr;
+    this->vdc0.dbg.interface = dbgr;
+    this->vdc0.dbg.evptr = ev;
 }
 
 

@@ -76,12 +76,19 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     this->regs.y = key;
     u64 clock = cclock - jitter;
 
+    // Hsync start
     hsync(this, 0, 0, 0);
+
+    // Schedule hsync end
     scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_END, 1, this, &hsync, NULL);
+
+    // Schedule next line
     u32 next_line = key + 1;
     if (next_line == 262) next_line = 0;
     scheduler_only_add_abs_w_tag(this->scheduler, clock + HUC6260_CYCLE_PER_LINE, next_line, this, &schedule_scanline, NULL, 1);
     this->regs.line_start = clock;
+
+    // New frame or vsync begin or end scheduling
     if (this->regs.y == 0) { // new frame stuff
         new_frame(this);
         scheduler_only_add_abs_w_tag(this->scheduler, clock + (HUC6260_CYCLE_PER_LINE * 262), 0, this, &frame_end, NULL, 2);
@@ -91,22 +98,17 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     else if (this->regs.y == HUC6260_LINE_VSYNC_END)
         vsync(this, 1, 0, 0);
 
+    // Report this line to debugger interface
     debugger_report_line(this->dbg.interface, key);
-    this->regs.line_start = clock;
+
     this->cur_line = this->cur_output + (this->regs.y * HUC6260_DRAW_CYCLES);
 }
 
 void HUC6260_schedule_first(struct HUC6260 *this)
 {
     schedule_scanline(this, 0, 0, 0);
-    scheduler_only_add_abs(this->scheduler, this->regs.clock_div, 0, this, &HUC6260_cycle, NULL);
+    scheduler_only_add_abs(this->scheduler, this->regs.clock_div, 0, this, &HUC6260_pixel_clock, NULL);
 }
-
-
-/*static void schedule_self(struct HUC6260 *this, u64 clock)
-{
-    scheduler_add_or_run_abs(this->scheduler, clock + this->regs.clock_div, 0, this, &run_cycle, NULL);
-}*/
 
 void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
 {
@@ -164,7 +166,22 @@ u32 HUC6260_read(struct HUC6260 *this, u32 maddr, u32 old)
     return 0xFF;
 }
 
-void HUC6260_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
+static void schedule_next_pixel_clock(struct HUC6260 *this, u64 cur)
+{
+    // If /4 or /2 and we are at start of line inside hsync,
+    // And we are on an uneven cycle,
+    // We lengthen from 4-5 or 2-3 in order to sync pixel clock up.
+    // Otherwise it would drift out of phase 1/4 or 1/2 each line
+    u32 sdiv = this->regs.clock_div;
+    static const int stretch_cycle = 3;
+    u32 line_pos = cur - this->regs.line_start;
+
+    if (line_pos == stretch_cycle)
+        sdiv++;
+    scheduler_only_add_abs(this->scheduler, cur + sdiv, 0, this, &HUC6260_pixel_clock, NULL);
+}
+
+void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6260 *this = (struct HUC6260 *)ptr;
     HUC6270_cycle(this->vdc0);
@@ -182,5 +199,6 @@ void HUC6260_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
             this->cur_line[dp+i] = c;
         }
     }
-    scheduler_only_add_abs(this->scheduler, cur + this->regs.clock_div, 0, this, &HUC6260_cycle, NULL);
+
+    schedule_next_pixel_clock(this, cur);
 }
