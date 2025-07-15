@@ -335,6 +335,12 @@ void imgui_jsmooch_app::render_event_view()
                             color_edits[idx][0] = (float) (event->color & 0xFF) / 255.0;
                             color_edits[idx][1] = (float) ((event->color >> 8) & 0xFF) / 255.0;
                             color_edits[idx][2] = (float) ((event->color >> 16) & 0xFF) / 255.0;
+                            bool mval = event->display_enabled;
+                            ImGui::PushID(evi);
+                            ImGui::Checkbox("", &mval);
+                            event->display_enabled = mval;
+                            ImGui::PopID();
+                            ImGui::SameLine();
                             ImGui::ColorEdit3(event->name, color_edits[idx], ImGuiColorEditFlags_NoInputs);
                             idx++;
                         }

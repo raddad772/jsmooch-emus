@@ -61,6 +61,7 @@ void events_view_add_event(struct debugger_interface *dbgr, struct events_view *
     event->category = make_cvec_ptr(&ev->categories, category_id);
     event->color = color;
     event->category_id = category_id;
+    event->display_enabled = default_enable;
 }
 
 void events_view_report_frame(struct events_view *this)
@@ -190,6 +191,7 @@ void events_view_render(struct debugger_interface *dbgr, struct events_view *thi
     u32 frame_to_use = this->current_frame - 1;
     for (u32 i = 0; i < cvec_len(&this->events); i++) {
         struct debugger_event *ev = cvec_get(&this->events, i);
+        if (!ev->display_enabled) continue;
         for (u32 j = 0; j < cvec_len(&ev->updates[ev->updates_index ^ 1]); j++) {
             struct debugger_event_update *upd = cvec_get(&ev->updates[ev->updates_index ^ 1], j);
             //assert(upd->scan_y < this->display[0].height);

@@ -186,6 +186,7 @@ struct debugger_event {
     u32 updates_index;
     u32 color;
     u32 category_id;
+    u32 display_enabled;
 
     struct {
         char context[50];
@@ -527,7 +528,7 @@ void debugger_widgets_colorkey_add_item(struct debugger_widget_colorkey *, const
 
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
-#define DEBUG_REGISTER_EVENT(name, color, category, id) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, 1, 0, NULL, id)
+#define DEBUG_REGISTER_EVENT(name, color, category, id, default_enable) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, default_enable, 0, NULL, id)
 #define SET_EVENT_VIEW(x) x .dbg.events.view = this->dbg.events.view
 #define SET_CPU_CPU_EVENT_ID(id, k) this->cpu.cpu.dbg.events. k = id
 #define SET_CPU_EVENT_ID(id, k) this->cpu.dbg.events. k = id

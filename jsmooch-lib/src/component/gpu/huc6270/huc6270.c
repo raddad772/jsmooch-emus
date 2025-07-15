@@ -36,6 +36,7 @@ static inline u16 read_VRAM(struct HUC6270 *this, u32 addr)
 
 static inline void write_VRAM(struct HUC6270 *this, u32 addr, u16 val)
 {
+    DBG_EVENT(this->dbg.events.WRITE_VRAM);
     if (addr < 0x8000)
         this->VRAM[addr] = val;
 }
@@ -365,7 +366,12 @@ void HUC6270_reset(struct HUC6270 *this)
 
 static void update_RCR(struct HUC6270 *this)
 {
-    this->io.STATUS.RR |= this->regs.y_counter == this->io.RCR.u;
+    u32 signal = this->regs.y_counter == this->io.RCR.u;
+    if (!this->io.STATUS.RR && signal) {
+        DBG_EVENT(this->dbg.events.HIT_RCR);
+        this->io.STATUS.RR = 1;
+    }
+
     //if (this->regs.y_counter == this->io.RCR.u) printf("\nRR HIT! %d", this->bg.y_compare);
     update_irqs(this);
 }
@@ -521,13 +527,16 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x06:
             this->io.RCR.lo = val;
+            DBG_EVENT(this->dbg.events.WRITE_RCR);
             update_RCR(this);
             return;
         case 0x07: // BGX
             this->io.BXR.lo = val;
+            DBG_EVENT(this->dbg.events.WRITE_XSCROLL);
             return;
         case 0x08: // BGY
             this->io.BYR.lo = val;
+            DBG_EVENT(this->dbg.events.WRITE_YSCROLL);
             this->regs.next_yscroll = this->io.BYR.u;
             return;
         case 0x09: {
@@ -618,13 +627,16 @@ static void write_msb(struct HUC6270 *this, u32 val)
             return;
         case 0x06:
             this->io.RCR.hi = val & 3;
+            DBG_EVENT(this->dbg.events.WRITE_RCR);
             update_RCR(this);
             return;
         case 0x07: // BGX scroll BXR
+            DBG_EVENT(this->dbg.events.WRITE_XSCROLL);
             this->io.BXR.hi = val & 3;
             return;
         case 0x08: // BGY
             this->io.BYR.hi = val & 1;
+            DBG_EVENT(this->dbg.events.WRITE_YSCROLL);
             //printf("\nBYR H: %d", this->io.BYR.hi);
             this->regs.next_yscroll = this->io.BYR.u;
             return;

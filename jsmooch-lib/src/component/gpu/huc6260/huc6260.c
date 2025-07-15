@@ -40,6 +40,9 @@ void HUC6260_reset(struct HUC6260 *this)
 static void hsync(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6260 *this = (struct HUC6260 *)ptr;
+    if (key) {
+        DBG_EVENT(this->dbg.events.HSYNC_UP);
+    }
     this->regs.hsync = key;
     HUC6270_hsync(this->vdc0, key);
 }
@@ -47,6 +50,9 @@ static void hsync(void *ptr, u64 key, u64 clock, u32 jitter)
 static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6260 *this = (struct HUC6260 *)ptr;
+    if (key) {
+        DBG_EVENT(this->dbg.events.VSYNC_UP);
+    }
     this->regs.vsync = key;
     HUC6270_vsync(this->vdc0, key);
     //if (key) printf("\nVSYNC ON ON LINE %d", this->regs.y);
@@ -133,6 +139,7 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
                 this->io.CTW.lo = val;
             else {
                 this->io.CTW.hi = val & 1;
+                DBG_EVENT(this->dbg.events.WRITE_CRAM);
                 this->CRAM[this->io.CTA.u] = this->io.CTW.u;
                 if (this->io.CTW.u != 0) {
                     //dbg_break("YOHA", 0);
