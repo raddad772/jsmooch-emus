@@ -329,11 +329,15 @@ static void trace_read(struct HUC6280 *this)
 void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
     struct HUC6280* this = (struct HUC6280 *)ptr;
     u64 cur = clock - jitter;
+    this->extra_cycles = 0;
     if (this->pins.RD) {
         if (this->pins.Addr >= 0x1FE800)
             this->pins.D = internal_read(this, this->pins.Addr, 1);
-        else
+        else {
+            if (this->pins.Addr >= 0x1FE000)
+                this->extra_cycles = 1;
             this->pins.D = this->read_func(this->read_ptr, this->pins.Addr, this->pins.D, 1);
+        }
         trace_read(this);
     }
 
@@ -344,12 +348,15 @@ void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
         trace_write(this);
         if (this->pins.Addr >= 0x1FE800)
             internal_write(this, this->pins.Addr, this->pins.D);
-        else
+        else {
+            if (this->pins.Addr >= 0x1FE000)
+                this->extra_cycles = 1;
             this->write_func(this->write_ptr, this->pins.Addr, this->pins.D);
+        }
     }
-
+    u32 sch_for = this->regs.clock_div * (this->extra_cycles + 1);
     //scheduler_from_event_adjust_master_clock(this->scheduler, this->regs.clock_div);
-    scheduler_only_add_abs(this->scheduler, cur + this->regs.clock_div, 0, this, &HUC6280_internal_cycle, NULL);
+    scheduler_only_add_abs(this->scheduler, cur + sch_for, 0, this, &HUC6280_internal_cycle, NULL);
 }
 
 

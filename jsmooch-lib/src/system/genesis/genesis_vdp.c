@@ -300,7 +300,9 @@ void genesis_VDP_delete(struct genesis *this)
 
 void set_clock_divisor(struct genesis* this)
 {
-    this->clock.vdp.clock_divisor = this->vdp.latch.h40 && (this->vdp.sc_slot < 199) ? 16 : 20;
+    // first 200 SC slots in H40 are /4
+    // the rest are /5
+    this->clock.vdp.clock_divisor = this->vdp.latch.h40 && (this->vdp.sc_slot <= 199) ? 16 : 20;
 }
 
 static inline void latch_hcounter(struct genesis* this)

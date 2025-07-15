@@ -105,7 +105,7 @@ class huc6280_switchgen:
         self.addl('HUC6280_poll_IRQs(regs, pins);')
 
     def override_IRQ_do(self):
-        self.addl('HUC6280_poll_NMI_only(regs, pins);')
+        pass
 
     def regular_end(self):
         self.addl('// Following is auto-generated code for instruction finish')
@@ -284,6 +284,8 @@ def StoreImplied(ag: huc6280_switchgen, addr: str) -> str:
 
 def Clear(ag: huc6280_switchgen, dt):
     ag.dummy_read(last=True)
+    if dt == 'regs->P.I':
+        ag.override_IRQ = True
     ag.cleanup()
     ag.addl(dt + ' = 0;')
 
@@ -688,6 +690,7 @@ def ZeroPageRead(ag: huc6280_switchgen, ins_func, dt, inx: Optional[str] = None)
 
 def PullP(ag: huc6280_switchgen) -> str:
     ag.dummy_read()
+    ag.override_IRQ = True
     ag.addcycle('idle')
     ag.pull('regs->P.u', last=True)
     ag.addl('regs->P.u &= 0xEF;')
@@ -802,6 +805,9 @@ def ImmediateMemory(ag: huc6280_switchgen, ins_func) -> str:
 
 def Set(ag: huc6280_switchgen, dt) -> str:
     ag.dummy_read(last=True)
+    if dt == 'regs->P.I':
+        ag.addl('HUC6280_poll_IRQs(regs, pins);')
+        ag.override_IRQ = True
     ag.cleanup()
     ag.addl(dt + ' = 1;')
     if dt == 'regs->P.T':

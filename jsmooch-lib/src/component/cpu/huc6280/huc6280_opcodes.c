@@ -2455,7 +2455,6 @@ static void HUC6280_ins_40__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
-            HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
         }
@@ -13188,7 +13187,6 @@ static void HUC6280_ins_40__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
-            HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
         }

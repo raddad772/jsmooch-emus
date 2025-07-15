@@ -111,6 +111,8 @@ struct HUC6280 {
 
     } trace;
 
+    u32 extra_cycles;
+
     DBG_START
         DBG_EVENT_VIEW_START
         IRQ1, IRQ2, TIQ
