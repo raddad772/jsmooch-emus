@@ -157,6 +157,7 @@ static void setup_new_line(struct HUC6270 *this) {
         this->bg.y_tile = (this->regs.yscroll >> 3) & this->bg.y_tiles_mask;
         this->pixel_shifter.num = 0;
         this->regs.x_counter = 0;
+        this->regs.draw_delay = 16;
 
         eval_sprites(this);
     }
@@ -175,19 +176,22 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
     switch(st) {
         case H6S_sync_window:
             this->timing.h.counter = (this->io.HSW+1) << 3;
+            //printf("\nSYNC WINDOW %d", this->timing.h.counter);
             break;
         case H6S_wait_for_display:
             this->timing.h.counter = (this->io.HDS+1) << 3;
+            //printf("\nWAIT_DISPLAY %d", this->timing.h.counter);
             setup_new_line(this);
             break;
         case H6S_display:
             hblank(this, 0);
             this->timing.h.counter = (this->io.HDW+1) << 3;
-            events_view_report_draw_start(this->dbg.evptr);
+            //printf("\nDISPLAY %d", this->timing.h.counter);
             break;
         case H6S_wait_for_sync_window:
             hblank(this, 1);
             this->timing.h.counter = (this->io.HDE+1) << 3;
+            //printf("\nWAIT SYNC WINDOW %d", this->timing.h.counter);
             break;
     }
 }
@@ -259,6 +263,10 @@ void HUC6270_cycle(struct HUC6270 *this)
         new_h_state(this, (this->timing.h.state + 1) & 3);
     }
     if ((this->timing.v.state == H6S_display) && (this->timing.h.state == H6S_display)) {
+        if (this->regs.draw_delay) {
+            this->regs.draw_delay--;
+            return;
+        }
         // clock a pixel, yo!
         // grab the current 8 pixels
         if (this->pixel_shifter.num == 0) {
@@ -273,6 +281,7 @@ void HUC6270_cycle(struct HUC6270 *this)
             this->bg.x_tile = (this->bg.x_tile + 1) & this->bg.x_tiles_mask;
         }
         if (this->regs.first_render) {
+            events_view_report_draw_start(this->dbg.evptr);
             u32 scroll_discard = this->io.BXR.u & 7;
             if (scroll_discard) {
                 this->pixel_shifter.pattern_shifter >>= 4 * scroll_discard;

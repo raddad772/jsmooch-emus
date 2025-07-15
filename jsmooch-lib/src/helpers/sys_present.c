@@ -387,8 +387,16 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
     for (u32 ry = 0; ry < 242; ry++) {
         if (is_event_view_present) {
             x_start = evp->master_clocks.draw_starts[evp->master_clocks.front_buffer][ry] - evp->master_clocks.lines[evp->master_clocks.front_buffer][ry];
+            // Now, account for draw offset in buffer
+            // OFFSET 180
+            // XSTART 192
+            x_start += HUC6260_DRAW_OFFSET;
             assert(x_start >= 0);
             assert(x_start < 1365);
+            u32 *filler = img32 + (ry * HUC6260_DRAW_CYCLES);
+            for (u32 i = 0; i < x_start; i++) {
+                *(filler++) = 0xFF000000;
+            }
         }
         u32 y = ry;
         u32 outyw = y * w;

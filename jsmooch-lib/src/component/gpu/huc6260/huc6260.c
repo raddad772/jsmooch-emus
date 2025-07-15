@@ -76,10 +76,6 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     this->regs.y = key;
     u64 clock = cclock - jitter;
 
-    // Hsync end
-
-    // Schedule hsync start
-
     // Schedule next line
     u32 next_line = key + 1;
     if (next_line == 262) next_line = 0;
@@ -194,7 +190,7 @@ void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
         u16 c = this->CRAM[pc];
         // GRB hi-lo, 9-bit
         // so blue is low 3 bits
-        u32 dp = line_pos - HUC6260_DRAW_START;
+        u32 dp = line_pos - HUC6260_DRAW_OFFSET;
         for (u32 i = 0; i < this->regs.clock_div; i++) {
             if ((dp+i) >= HUC6260_DRAW_END) break;
             this->cur_line[dp+i] = c;

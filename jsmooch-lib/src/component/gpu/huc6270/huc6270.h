@@ -149,6 +149,7 @@ struct HUC6270 {
 
         u32 IE;
         u32 x_counter;
+        u32 draw_delay;
     } regs;
 
     DBG_START
