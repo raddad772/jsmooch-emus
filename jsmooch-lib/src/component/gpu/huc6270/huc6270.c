@@ -293,6 +293,8 @@ void HUC6270_cycle(struct HUC6270 *this)
             }
             this->regs.first_render = 0;
         }
+    }
+    if (this->pixel_shifter.num > 0) {
         this->pixel_shifter.num--;
         u32 bg_color = (this->pixel_shifter.pattern_shifter & 15);
         this->pixel_shifter.pattern_shifter >>= 4;

@@ -380,7 +380,7 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
 {
     u16 *tg16o = (u16 *)device->display.output[device->display.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
-    u32 xsize = HUC6260_DRAW_CYCLES;
+    u32 xsize = HUC6260_CYCLE_PER_LINE;
     u32 *img32 = (u32 *) out_buf;
     i32 x_start = 0;
     if (is_event_view_present) {
@@ -396,7 +396,7 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
     // TODO: update this for variable screen sizes
     for (u32 ry = 0; ry < 242; ry++) {
         if (is_event_view_present) {
-            x_start = evp->master_clocks.draw_starts[evp->master_clocks.front_buffer][ry] - evp->master_clocks.lines[evp->master_clocks.front_buffer][ry];
+            //x_start = evp->master_clocks.draw_starts[evp->master_clocks.front_buffer][ry] - evp->master_clocks.lines[evp->master_clocks.front_buffer][ry];
             // Now, account for draw offset in buffer
             // OFFSET 180
             // XSTART 192
@@ -410,14 +410,16 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
         }
         u32 y = ry;
         u32 outyw = y * w;
-        for (u32 rx = 0; rx < HUC6260_DRAW_CYCLES; rx++) {
+        for (u32 rx = 0; rx < HUC6260_CYCLE_PER_LINE; rx++) {
             u32 outx = rx + x_start;
             if (outx >= xsize) break;
-            u32 di = ((y * HUC6260_DRAW_CYCLES) + rx);
+            u32 di = ((y * HUC6260_CYCLE_PER_LINE) + rx);
             u32 b_out = outyw + outx;
             u32 color = tg16o[di];
             // GRB
-            if (outx == 1024) img32[b_out] = 0xFFFFFFFF;
+            if (outx == 192) img32[b_out] = 0xFFFFFFFF;
+            else if (outx == 192+1000) img32[b_out] = 0xFFFFFFFF;
+
             else img32[b_out] = tg16_to_screen(color);
         }
     }

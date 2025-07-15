@@ -316,10 +316,10 @@ static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
     d->fps = 60; //this->PAL ? 50 : 60.0988;
     d->fps_override_hint = this->clock.timing.second.frames;
 
-    d->pixelometry.cols.left_hblank = HUC6260_DRAW_START;
+    d->pixelometry.cols.left_hblank = 16;
     d->pixelometry.cols.visible = HUC6260_DRAW_CYCLES;
     d->pixelometry.cols.max_visible = HUC6260_DRAW_CYCLES;
-    d->pixelometry.cols.right_hblank = HUC6260_CYCLE_PER_LINE - (HUC6260_DRAW_START+HUC6260_DRAW_CYCLES);
+    d->pixelometry.cols.right_hblank = 221;
     d->pixelometry.offset.x = 0;
 
     d->pixelometry.rows.top_vblank = 0;
@@ -331,7 +331,8 @@ static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
     d->geometry.physical_aspect_ratio.width = 4;
     d->geometry.physical_aspect_ratio.height = 3;
 
-    d->pixelometry.overscan.left = d->pixelometry.overscan.right = 0;
+    d->pixelometry.overscan.left = 180;
+    d->pixelometry.overscan.right = 57;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
@@ -385,8 +386,8 @@ void TG16J_describe_io(JSM, struct cvec *IOs)
     // screen
     d = cvec_push_back(IOs);
     physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1);
-    d->display.output[0] = malloc(HUC6260_DRAW_CYCLES * 480 * 2);
-    d->display.output[1] = malloc(HUC6260_DRAW_CYCLES * 480 * 2);
+    d->display.output[0] = malloc(HUC6260_CYCLE_PER_LINE * 480 * 2);
+    d->display.output[1] = malloc(HUC6260_CYCLE_PER_LINE * 480 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
     setup_crt(this, &d->display);

@@ -88,6 +88,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_DOWN, 0, this, &hsync, NULL);
     scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_UP, 1, this, &hsync, NULL);
 
+    printf("\nNEW LINE @%lld", clock);
     scheduler_only_add_abs_w_tag(this->scheduler, clock + HUC6260_CYCLE_PER_LINE, next_line, this, &schedule_scanline, NULL, 1);
     this->regs.line_start = clock;
 
@@ -104,7 +105,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     // Report this line to debugger interface
     debugger_report_line(this->dbg.interface, key);
 
-    this->cur_line = this->cur_output + (this->regs.y * HUC6260_DRAW_CYCLES);
+    this->cur_line = this->cur_output + (this->regs.y * HUC6260_CYCLE_PER_LINE);
 }
 
 void HUC6260_schedule_first(struct HUC6260 *this)
@@ -192,16 +193,13 @@ void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
 
     u64 cur = clock - jitter;
     u64 line_pos = cur - this->regs.line_start;
-    if (line_pos < HUC6260_DRAW_END) {
-        u32 pc = this->vdc0->regs.px_out;
-        u16 c = this->CRAM[pc];
-        // GRB hi-lo, 9-bit
-        // so blue is low 3 bits
-        u32 dp = line_pos - HUC6260_DRAW_OFFSET;
-        for (u32 i = 0; i < this->regs.clock_div; i++) {
-            if ((dp+i) >= HUC6260_DRAW_END) break;
-            this->cur_line[dp+i] = c;
-        }
+    u32 pc = this->vdc0->regs.px_out;
+    u16 c = this->CRAM[pc];
+    // GRB hi-lo, 9-bit
+    // so blue is low 3 bits
+    for (i32 i = 0; i < this->regs.clock_div; i++) {
+        if ((line_pos+i) >= HUC6260_CYCLE_PER_LINE) break;
+        this->cur_line[line_pos+i] = c;
     }
 
     schedule_next_pixel_clock(this, cur);

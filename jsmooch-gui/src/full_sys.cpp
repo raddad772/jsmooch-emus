@@ -1330,6 +1330,8 @@ void full_system::setup_display()
     float total_u = output.with_overscan.uv1.x;
     float total_v = output.with_overscan.uv1.y;
 
+    printf("\nX0:%f  X1:%f", output.with_overscan.uv0.x, output.with_overscan.uv1.x);
+
     float start_u = (float)overscan_x_offset / (float)visible_width;
     float start_v = (float)overscan_y_offset / (float)visible_height;
     output.without_overscan.uv0 = ImVec2(start_u * total_u, start_v * total_v);
