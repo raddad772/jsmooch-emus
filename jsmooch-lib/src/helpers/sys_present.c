@@ -385,7 +385,13 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
     i32 x_start = 0;
     if (is_event_view_present) {
         xsize = HUC6260_CYCLE_PER_LINE;
-        memset(out_buf, 0, out_width*out_height*4);
+        u32 *o = out_buf;
+        u32 max = out_width * out_height;
+        for (u32 i = 0; i < max; i++) {
+            *o = 0xFF000000;
+            o++;
+        }
+        //memset(out_buf, 0, out_width*out_height*4);
     }
     // TODO: update this for variable screen sizes
     for (u32 ry = 0; ry < 242; ry++) {
@@ -394,7 +400,7 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
             // Now, account for draw offset in buffer
             // OFFSET 180
             // XSTART 192
-            x_start += HUC6260_DRAW_OFFSET;
+            //x_start += HUC6260_DRAW_OFFSET;
             assert(x_start >= 0);
             assert(x_start < HUC6260_CYCLE_PER_LINE);
             /*u32 *filler = img32 + (ry * xsize);
@@ -411,7 +417,7 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
             u32 b_out = outyw + outx;
             u32 color = tg16o[di];
             // GRB
-            if (outx == 192) img32[b_out] = 0xFFFFFFFF;
+            if (outx == 1024) img32[b_out] = 0xFFFFFFFF;
             else img32[b_out] = tg16_to_screen(color);
         }
     }
