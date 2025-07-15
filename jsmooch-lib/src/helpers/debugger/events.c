@@ -154,7 +154,7 @@ void events_view_report_draw_start(struct events_view *this)
     switch(this->timing) {
         case ev_timing_master_clock:
             this->master_clocks.draw_starts[this->master_clocks.back_buffer][this->master_clocks.cur_line] = *this->master_clocks.ptr;
-            //printf("\nLine %d Draw start %lld", this->master_clocks.cur_line, this->master_clocks.draw_starts[this->master_clocks.back_buffer][this->master_clocks.cur_line] - this->master_clocks.lines[this->master_clocks.back_buffer][this->master_clocks.cur_line]);
+            printf("\nLine %d Draw start %lld", this->master_clocks.cur_line, this->master_clocks.draw_starts[this->master_clocks.back_buffer][this->master_clocks.cur_line] - this->master_clocks.lines[this->master_clocks.back_buffer][this->master_clocks.cur_line]);
             break;
         case ev_timing_scanxy:
             printf("OHNO");
