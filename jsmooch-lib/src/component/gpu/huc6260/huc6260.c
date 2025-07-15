@@ -88,7 +88,6 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_DOWN, 0, this, &hsync, NULL);
     scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_UP, 1, this, &hsync, NULL);
 
-    printf("\nNEW LINE @%lld", clock);
     scheduler_only_add_abs_w_tag(this->scheduler, clock + HUC6260_CYCLE_PER_LINE, next_line, this, &schedule_scanline, NULL, 1);
     this->regs.line_start = clock;
 

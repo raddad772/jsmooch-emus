@@ -317,8 +317,8 @@ static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
     d->fps_override_hint = this->clock.timing.second.frames;
 
     d->pixelometry.cols.left_hblank = 16;
-    d->pixelometry.cols.visible = HUC6260_DRAW_CYCLES;
-    d->pixelometry.cols.max_visible = HUC6260_DRAW_CYCLES;
+    d->pixelometry.cols.visible = HUC6260_CYCLE_PER_LINE;
+    d->pixelometry.cols.max_visible = HUC6260_CYCLE_PER_LINE;
     d->pixelometry.cols.right_hblank = 221;
     d->pixelometry.offset.x = 0;
 

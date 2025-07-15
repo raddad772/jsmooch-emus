@@ -1312,9 +1312,9 @@ void full_system::setup_display()
         printf("\nNo stretch that way...");
         output.x_scale_mult = (visible_how / real_how);
         output.y_scale_mult = 1;
-        output.with_overscan.x_size = (float)(visible_width * output.x_scale_mult);
+        output.with_overscan.x_size = (float)visible_width * output.x_scale_mult;
         output.with_overscan.y_size = (float)p->rows.visible;
-        output.without_overscan.x_size = (float)(overscan_width * output.x_scale_mult);
+        output.without_overscan.x_size = (float)overscan_width * output.x_scale_mult;
         output.without_overscan.y_size = (float)overscan_height;
     }
     printf("\nOutput with overscan size: %dx%d", (int)output.with_overscan.x_size, (int)output.with_overscan.y_size);
@@ -1330,8 +1330,7 @@ void full_system::setup_display()
     float total_u = output.with_overscan.uv1.x;
     float total_v = output.with_overscan.uv1.y;
 
-    printf("\nX0:%f  X1:%f", output.with_overscan.uv0.x, output.with_overscan.uv1.x);
-
+    u32 total_cols = p->cols.visible + p->overscan.left + p->overscan.right;
     float start_u = (float)overscan_x_offset / (float)visible_width;
     float start_v = (float)overscan_y_offset / (float)visible_height;
     output.without_overscan.uv0 = ImVec2(start_u * total_u, start_v * total_v);
@@ -1343,6 +1342,7 @@ void full_system::setup_display()
     if (output.backbuffer_backer) free(output.backbuffer_backer);
     output.backbuffer_backer = malloc(output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
     memset(output.backbuffer_backer, 0, output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
+    printf("\nX0:%f  X1:%f", output.without_overscan.uv0.x, output.without_overscan.uv1.x);
 }
 
 void full_system::present()
