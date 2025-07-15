@@ -380,9 +380,13 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
 {
     u16 *tg16o = (u16 *)device->display.output[device->display.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
+    u32 xsize = HUC6260_DRAW_CYCLES;
     u32 *img32 = (u32 *) out_buf;
     i32 x_start = 0;
-    if (is_event_view_present) memset(out_buf, 0, out_width*out_height*4);
+    if (is_event_view_present) {
+        xsize = HUC6260_CYCLE_PER_LINE;
+        memset(out_buf, 0, out_width*out_height*4);
+    }
     // TODO: update this for variable screen sizes
     for (u32 ry = 0; ry < 242; ry++) {
         if (is_event_view_present) {
@@ -392,22 +396,23 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
             // XSTART 192
             x_start += HUC6260_DRAW_OFFSET;
             assert(x_start >= 0);
-            assert(x_start < 1365);
-            u32 *filler = img32 + (ry * HUC6260_DRAW_CYCLES);
+            assert(x_start < HUC6260_CYCLE_PER_LINE);
+            /*u32 *filler = img32 + (ry * xsize);
             for (u32 i = 0; i < x_start; i++) {
                 *(filler++) = 0xFF000000;
-            }
+            }*/
         }
         u32 y = ry;
         u32 outyw = y * w;
         for (u32 rx = 0; rx < HUC6260_DRAW_CYCLES; rx++) {
-            u32 x = rx + x_start;
-            if (x >= HUC6260_DRAW_CYCLES) break;
-            u32 di = ((y * HUC6260_DRAW_CYCLES) + x);
-            u32 b_out = outyw + x;
+            u32 outx = rx + x_start;
+            if (outx >= xsize) break;
+            u32 di = ((y * HUC6260_DRAW_CYCLES) + rx);
+            u32 b_out = outyw + outx;
             u32 color = tg16o[di];
             // GRB
-            img32[b_out] = tg16_to_screen(color);
+            if (outx == 192) img32[b_out] = 0xFFFFFFFF;
+            else img32[b_out] = tg16_to_screen(color);
         }
     }
 }

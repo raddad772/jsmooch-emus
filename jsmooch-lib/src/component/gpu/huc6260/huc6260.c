@@ -97,9 +97,9 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
         scheduler_only_add_abs_w_tag(this->scheduler, clock + (HUC6260_CYCLE_PER_LINE * 262), 0, this, &frame_end, NULL, 2);
     }
     else if (this->regs.y == HUC6260_LINE_VSYNC_START)
-        scheduler_only_add_abs(this->scheduler, clock + 30, 0, this, &vsync, NULL);
+        scheduler_only_add_abs(this->scheduler, clock + HUC6260_LINE_VSYNC_POS, 0, this, &vsync, NULL);
     else if (this->regs.y == HUC6260_LINE_VSYNC_END)
-        scheduler_only_add_abs(this->scheduler, clock + 30, 1, this, &vsync, NULL);
+        scheduler_only_add_abs(this->scheduler, clock + HUC6260_LINE_VSYNC_POS, 1, this, &vsync, NULL);
 
     // Report this line to debugger interface
     debugger_report_line(this->dbg.interface, key);

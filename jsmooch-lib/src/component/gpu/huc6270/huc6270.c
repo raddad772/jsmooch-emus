@@ -243,6 +243,9 @@ void HUC6270_hsync(struct HUC6270 *this, u32 val)
         }
         new_h_state(this, H6S_wait_for_display);
     }
+    else {
+        update_RCR(this);
+    }
 }
 
 void HUC6270_vsync(struct HUC6270 *this, u32 val)
@@ -430,7 +433,6 @@ static void hblank(struct HUC6270 *this, u32 val)
 {
     if (val) {
         this->regs.px_out = 0x100;
-        update_RCR(this);
     }
     else {
 
@@ -528,7 +530,6 @@ static void write_lsb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.lo = val;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
-            update_RCR(this);
             return;
         case 0x07: // BGX
             this->io.BXR.lo = val;
@@ -628,7 +629,6 @@ static void write_msb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.hi = val & 3;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
-            update_RCR(this);
             return;
         case 0x07: // BGX scroll BXR
             DBG_EVENT(this->dbg.events.WRITE_XSCROLL);
