@@ -7,6 +7,7 @@
 
 #include "helpers/scheduler.h"
 #include "helpers/int.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 enum HUC6270_states {
     H6S_sync_window,
@@ -149,6 +150,12 @@ struct HUC6270 {
         u32 IE;
         u32 x_counter;
     } regs;
+
+    DBG_START
+        DBG_EVENT_VIEW_START
+        WRITE_VRAM, WRITE_RCR, HIT_RCR, WRITE_XSCROLL, WRITE_YSCROLL
+        DBG_EVENT_VIEW_END
+    DBG_END
 };
 
 

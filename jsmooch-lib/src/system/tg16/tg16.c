@@ -119,6 +119,12 @@ static void vdc0_update_irqs(void *ptr, u32 val)
     this->cpu.regs.IRQR.IRQ1 = val;
 }
 
+static struct events_view *TG16J_get_events_view(JSM)
+{
+    JTHIS;
+    return cpg(this->dbg.events.view);
+}
+
 void TG16_new(JSM, enum jsm_systems kind)
 {
     struct TG16* this = (struct TG16*)malloc(sizeof(struct TG16));

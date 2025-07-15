@@ -43,6 +43,7 @@ void debugger_report_frame(struct debugger_interface *dbgr)
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num)
 {
     assert(line_num>=0);
+    if (!dbgr) return;
     for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
         struct debugger_view *dview = cvec_get(&dbgr->views, i);
         if (dview->kind == dview_events) {

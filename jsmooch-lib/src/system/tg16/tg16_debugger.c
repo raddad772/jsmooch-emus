@@ -8,6 +8,7 @@
 
 #include "tg16_debugger.h"
 #include "tg16_bus.h"
+#include "component/gpu/huc6260/huc6260.h"
 
 #define JTHIS struct TG16* this = (struct TG16*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -84,6 +85,72 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
     }
 }
 
+static void setup_events_view(struct TG16* this, struct debugger_interface *dbgr, struct jsm_system *jsm)
+{
+    this->dbg.events.view = debugger_view_new(dbgr, dview_events);
+    struct debugger_view *dview = cpg(this->dbg.events.view);
+    struct events_view *ev = &dview->events;
+
+    ev->timing = ev_timing_master_clock;
+    ev->master_clocks.per_line = 3420;
+    ev->master_clocks.height = 262;
+    ev->master_clocks.ptr = &this->clock.master_cycles;
+
+    for (u32 i = 0; i < 2; i++) {
+        ev->display[i].width = HUC6260_CYCLE_PER_LINE; // 320 pixels + 104 hblank
+        ev->display[i].height = 262; // 262 pixels high
+
+        ev->display[i].buf = NULL;
+        ev->display[i].frame_num = 0;
+    }
+
+    ev->associated_display = this->vce.display_ptr;
+
+    DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_TG16_CATEGORY_CPU);
+    DEBUG_REGISTER_EVENT_CATEGORY("VCE events", DBG_TG16_CATEGORY_VCE);
+    DEBUG_REGISTER_EVENT_CATEGORY("VDC0 events", DBG_TG16_CATEGORY_VDC0);
+
+    cvec_grow_by(&ev->events, DBG_TG16_EVENT_MAX);
+    cvec_lock_reallocs(&ev->events);
+    DEBUG_REGISTER_EVENT("IRQ1", 0xFF4090, DBG_TG16_CATEGORY_CPU, DBG_TG16_EVENT_IRQ1);
+    DEBUG_REGISTER_EVENT("IRQ2", 0xFF4090, DBG_TG16_CATEGORY_CPU, DBG_TG16_EVENT_IRQ2);
+    DEBUG_REGISTER_EVENT("TIQ", 0xFF4090, DBG_TG16_CATEGORY_CPU, DBG_TG16_EVENT_TIQ);
+    DEBUG_REGISTER_EVENT("HSync Up", 0xFF0000, DBG_TG16_CATEGORY_VCE, DBG_TG16_EVENT_HSYNC_UP);
+    DEBUG_REGISTER_EVENT("VSync Up", 0x00FFFF, DBG_TG16_CATEGORY_VCE, DBG_TG16_EVENT_VSYNC_UP);
+    DEBUG_REGISTER_EVENT("CRAM write", 0x00FF00, DBG_TG16_CATEGORY_VCE, DBG_TG16_EVENT_WRITE_CRAM);
+    DEBUG_REGISTER_EVENT("VRAM write", 0x0000FF, DBG_TG16_CATEGORY_VDC0, DBG_TG16_EVENT_WRITE_VRAM);
+    DEBUG_REGISTER_EVENT("RCR write", 0x802060, DBG_TG16_CATEGORY_VDC0, DBG_TG16_EVENT_WRITE_RCR);
+    DEBUG_REGISTER_EVENT("RCR hit", 0x802060, DBG_TG16_CATEGORY_VDC0, DBG_TG16_EVENT_HIT_RCR);
+    DEBUG_REGISTER_EVENT("XScroll write", 0xFF00FF, DBG_TG16_CATEGORY_VDC0, DBG_TG16_EVENT_WRITE_XSCROLL);
+    DEBUG_REGISTER_EVENT("YScroll write", 0x004090, DBG_TG16_CATEGORY_VDC0, DBG_TG16_EVENT_WRITE_YSCROLL);
+
+    SET_EVENT_VIEW(this->cpu);
+    SET_EVENT_VIEW(this->vce);
+    SET_EVENT_VIEW(this->vdc0);
+
+
+#define SET_EVENT_ID(x, y) x .dbg.events. y = DBG_TG16_EVENT_ ## y
+    SET_EVENT_ID(this->cpu, IRQ1);
+    SET_EVENT_ID(this->cpu, IRQ2);
+    SET_EVENT_ID(this->cpu, TIQ);
+
+    SET_EVENT_ID(this->vce, HSYNC_UP);
+    SET_EVENT_ID(this->vce, VSYNC_UP);
+    SET_EVENT_ID(this->vce, WRITE_CRAM);
+
+    SET_EVENT_ID(this->vdc0, WRITE_VRAM);
+    SET_EVENT_ID(this->vdc0, WRITE_RCR);
+    SET_EVENT_ID(this->vdc0, HIT_RCR);
+    SET_EVENT_ID(this->vdc0, WRITE_XSCROLL);
+    SET_EVENT_ID(this->vdc0, WRITE_YSCROLL);
+#undef SET_EVENT_ID
+
+    debugger_report_frame(this->dbg.interface);
+    this->vce.dbg.interface = this->dbg.interface;
+    this->vdc0.dbg.interface = this->dbg.interface;
+}
+
+
 static void setup_dbglog(struct debugger_interface *dbgr, struct TG16 *this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
@@ -159,4 +226,5 @@ void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     setup_dbglog(dbgr, this);
     setup_image_view_palettes(this, dbgr);
     setup_image_view_tiles(this, dbgr);
+    setup_events_view(this, dbgr, jsm);
 }

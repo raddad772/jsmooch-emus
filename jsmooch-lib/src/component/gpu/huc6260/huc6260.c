@@ -9,7 +9,7 @@
 #include "huc6260.h"
 #include "helpers/physical_io.h"
 #include "helpers/debug.h"
-
+#include "helpers/debugger/debugger.h"
 
 /* HUC6260 creates an NTSC-ish frame.
  * It drives VDC to get pixel info
@@ -55,6 +55,7 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
 static void new_frame(struct HUC6260 *this)
 {
     //printf("\nNEW FRAME!");
+    debugger_report_frame(this->dbg.interface);
     this->regs.y = 0;
     this->master_frame++;
     this->cur_output = this->display->output[this->display->last_written];
@@ -90,6 +91,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     else if (this->regs.y == HUC6260_LINE_VSYNC_END)
         vsync(this, 1, 0, 0);
 
+    debugger_report_line(this->dbg.interface, key);
     this->regs.line_start = clock;
     this->cur_line = this->cur_output + (this->regs.y * HUC6260_DRAW_CYCLES);
 }

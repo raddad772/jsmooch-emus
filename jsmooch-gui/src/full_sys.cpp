@@ -919,7 +919,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
             worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr);
-            worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
             break;
         case SYS_GENESIS_USA:
@@ -1346,7 +1347,7 @@ void full_system::present()
 {
     struct framevars fv = {};
     sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, 0);
+    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, NULL);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
 
@@ -1382,7 +1383,7 @@ void full_system::events_view_present()
         sys->get_framevars(sys, &fv);
         struct JSM_DISPLAY *d = &((struct physical_io_device *) cpg(io.display))->display;
         memset(evd->buf, 0, events.texture.width*events.texture.height*4);
-        jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, 1);
+        jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
         events_view_render(&dbgr, events.view, evd->buf, events.texture.width, events.texture.height);
 
         events.texture.upload_data(evd->buf, events.texture.width*events.texture.height*4, events.texture.width, events.texture.height);

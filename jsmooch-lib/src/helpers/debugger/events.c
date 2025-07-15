@@ -149,12 +149,22 @@ static void draw_box_3x3(u32 *buf, u32 x_center, u32 y_center, u32 out_width, u3
     }
 }
 
-
+void events_view_report_draw_start(struct events_view *this)
+{
+    switch(this->timing) {
+        case ev_timing_master_clock:
+            this->master_clocks.draw_starts[this->master_clocks.back_buffer][this->master_clocks.cur_line] = *this->master_clocks.ptr;
+            break;
+        case ev_timing_scanxy:
+            break;
+    }
+}
 void events_view_report_line(struct events_view *this, i32 line_num)
 {
     switch(this->timing) {
         case ev_timing_master_clock:
             this->master_clocks.lines[this->master_clocks.back_buffer][line_num] = *this->master_clocks.ptr;
+            this->master_clocks.draw_starts[this->master_clocks.back_buffer][line_num] = *this->master_clocks.ptr;
             this->master_clocks.cur_line = line_num;
             break;
         case ev_timing_scanxy:

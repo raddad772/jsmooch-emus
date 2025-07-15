@@ -7,6 +7,7 @@
 
 #include "sys_present.h"
 #include "helpers/color.h"
+#include "helpers/debugger/debugger.h"
 #include "component/gpu/huc6260/huc6260.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)
@@ -375,18 +376,25 @@ static u32 genesis_color_lookup[4][8] =  {
         {0,0,0,0,0,0,0,0}
 };
 
-void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present)
+void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present, struct events_view *evp)
 {
     u16 *tg16o = (u16 *)device->display.output[device->display.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
     u32 *img32 = (u32 *) out_buf;
+    i32 x_start = 0;
     if (is_event_view_present) memset(out_buf, 0, out_width*out_height*4);
     // TODO: update this for variable screen sizes
     for (u32 ry = 0; ry < 242; ry++) {
+        if (is_event_view_present) {
+            x_start = evp->master_clocks.draw_starts[evp->master_clocks.front_buffer][ry] - evp->master_clocks.lines[evp->master_clocks.front_buffer][ry];
+            assert(x_start >= 0);
+            assert(x_start < 1365);
+        }
         u32 y = ry;
         u32 outyw = y * w;
         for (u32 rx = 0; rx < HUC6260_DRAW_CYCLES; rx++) {
-            u32 x = rx;
+            u32 x = rx + x_start;
+            if (x >= HUC6260_DRAW_CYCLES) break;
             u32 di = ((y * HUC6260_DRAW_CYCLES) + x);
             u32 b_out = outyw + x;
             u32 color = tg16o[di];
@@ -532,8 +540,9 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
     }
 }
 
-void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, u32 is_event_view_present)
+void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, struct events_view *ev)
 {
+    u32 is_event_view_present = ev != NULL;
     switch(which) {
         case SYS_PS1:
             PS1_present(display, out_buf, out_width, out_height, is_event_view_present);
@@ -548,7 +557,7 @@ void jsm_present(enum jsm_systems which, struct physical_io_device *display, voi
             snes_present(display, out_buf, out_width, out_height, is_event_view_present);
             break;
         case SYS_TURBOGRAFX16:
-            tg16_present(display, out_buf, out_width, out_height, is_event_view_present);
+            tg16_present(display, out_buf, out_width, out_height, is_event_view_present, ev);
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:

@@ -8,6 +8,7 @@
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "helpers/scheduler.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 struct HUC6270;
 
@@ -39,9 +40,16 @@ struct HUC6260 {
         u32 DCC;
         union UN16 CTA, CTW;
     } io;
+
+    DBG_START
+        DBG_EVENT_VIEW_START
+        HSYNC_UP, VSYNC_UP, WRITE_CRAM
+        DBG_EVENT_VIEW_END
+
+    DBG_END
 };
 
-#define HUC6260_CYCLE_PER_LINE 1364
+#define HUC6260_CYCLE_PER_LINE 1365
 #define HUC6260_DRAW_CYCLES 1128
 #define HUC6260_DRAW_START 200
 #define HUC6260_HSYNC_END 100

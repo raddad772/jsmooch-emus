@@ -162,7 +162,12 @@ void HUC6280_cycle(struct HUC6280 *this)
             this->regs.do_IRQ = 0;
             // timer > IRQ1 > IRQ2
             if (this->regs.IRQD.TIQ & this->regs.IRQR_polled.TIQ) { // TIQ is 103
-                printf("\nTIQ");
+                static int a = 0;
+                if (!a) {
+                    a = 20000;
+                    printf("\nWARN: TIQ CALLED");
+                }
+                else a--;
                 this->regs.IR = 0x103;
                 this->regs.IRQR.TIQ = 0;
             }

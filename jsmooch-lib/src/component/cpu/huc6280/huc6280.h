@@ -113,7 +113,7 @@ struct HUC6280 {
 
     DBG_START
         DBG_EVENT_VIEW_START
-        IRQ
+        IRQ1, IRQ2, TIQ
         DBG_EVENT_VIEW_END
 
         DBG_TRACE_VIEW

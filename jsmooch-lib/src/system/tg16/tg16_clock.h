@@ -17,10 +17,6 @@ struct TG16_clock {
     } vdc;
 
     struct {
-        u64 timer;
-    } dividers;
-
-    struct {
         u64 cpu, vce, timer;
     } next;
 

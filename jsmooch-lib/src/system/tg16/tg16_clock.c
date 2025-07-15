@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include "tg16_clock.h"
+#include "component/gpu/huc6260/huc6260.h"
 
 /*
 The (NTSC) PC Engine is clocked with a master clock equal to six times the NTSC color burst (315/88 MHz), or approximately 21.47727 MHz.
@@ -29,7 +30,7 @@ void TG16_clock_reset(struct TG16_clock *this)
     this->timing.frame.lines = 262;
 
     //u64 per_frame = master_freq / this->timing.second.frames;
-    u64 per_line = 1364; // = 1364
+    u64 per_line = HUC6260_CYCLE_PER_LINE; // = 1364
 
     u64 per_frame = per_line * this->timing.second.frames;
     u64 master_freq = per_frame * this->timing.second.frames;
@@ -38,7 +39,6 @@ void TG16_clock_reset(struct TG16_clock *this)
     this->timing.frame.cycles = per_frame;
     this->timing.second.cycles = master_freq;
 
-    this->dividers.timer = 3072;
     this->next.cpu = 3;
     this->next.vce = 4;
     this->next.timer = 3072;

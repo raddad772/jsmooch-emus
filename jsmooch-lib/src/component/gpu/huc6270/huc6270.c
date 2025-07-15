@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "helpers/color.h"
+#include "helpers/debugger/debugger.h"
 
 #include "huc6270.h"
 
@@ -182,6 +183,7 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
         case H6S_display:
             hblank(this, 0);
             this->timing.h.counter = (this->io.HDW+1) << 3;
+            events_view_report_draw_start(cpg(this->dbg.events.view));
             break;
         case H6S_wait_for_sync_window:
             hblank(this, 1);
