@@ -918,10 +918,16 @@ void full_system::load_default_ROM()
         case SYS_TURBOGRAFX16:
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
-            worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr);
+            worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr);
+
             break;
         case SYS_GENESIS_USA:
         case SYS_GENESIS_JAP:
@@ -1330,7 +1336,6 @@ void full_system::setup_display()
     float total_u = output.with_overscan.uv1.x;
     float total_v = output.with_overscan.uv1.y;
 
-    u32 total_cols = p->cols.visible + p->overscan.left + p->overscan.right;
     float start_u = (float)overscan_x_offset / (float)visible_width;
     float start_v = (float)overscan_y_offset / (float)visible_height;
     output.without_overscan.uv0 = ImVec2(start_u * total_u, start_v * total_v);

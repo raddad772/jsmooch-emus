@@ -13,7 +13,7 @@
 
 #include "imgui_internal.h"
 #include <SDL3/SDL.h>
-#define FRAME_MULTI 10
+#define FRAME_MULTI 20
 
 #ifdef JSM_OPENGL
 #if defined(IMGUI_IMPL_OPENGL_ES2)

@@ -40,7 +40,9 @@ void HUC6260_reset(struct HUC6260 *this)
 static void hsync(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6260 *this = (struct HUC6260 *)ptr;
+
     if (key) {
+        u64 line_pos = *this->scheduler->clock - this->regs.line_start;
         DBG_EVENT(this->dbg.events.HSYNC_UP);
     }
     this->regs.hsync = key;

@@ -158,7 +158,6 @@ static void setup_new_line(struct HUC6270 *this) {
         this->bg.y_tile = (this->regs.yscroll >> 3) & this->bg.y_tiles_mask;
         this->pixel_shifter.num = 0;
         this->regs.x_counter = 0;
-        this->regs.draw_delay = 16;
 
         eval_sprites(this);
     }
@@ -182,16 +181,17 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
         case H6S_wait_for_display:
             this->timing.h.counter = (this->io.HDS+1) << 3;
             //printf("\nWAIT_DISPLAY %d", this->timing.h.counter);
-            setup_new_line(this);
             break;
         case H6S_display:
             hblank(this, 0);
             this->timing.h.counter = (this->io.HDW+1) << 3;
             //printf("\nDISPLAY %d", this->timing.h.counter);
+            setup_new_line(this);
             break;
         case H6S_wait_for_sync_window:
             hblank(this, 1);
             this->timing.h.counter = (this->io.HDE+1) << 3;
+            update_RCR(this);
             //printf("\nWAIT SYNC WINDOW %d", this->timing.h.counter);
             break;
     }
@@ -231,7 +231,7 @@ static void force_new_frame(struct HUC6270 *this)
 
 static void force_new_line(struct HUC6270 *this)
 {
-    printf("\nbadly timed hsync!?");
+    //printf("\nbadly timed hsync!? state:%d  left:%d", this->timing.h.state, this->timing.h.counter);
 }
 
 void HUC6270_hsync(struct HUC6270 *this, u32 val)
@@ -242,9 +242,9 @@ void HUC6270_hsync(struct HUC6270 *this, u32 val)
             force_new_line(this);
         }
         new_h_state(this, H6S_wait_for_display);
+        //this->pixel_shifter.num = 0;
     }
     else {
-        update_RCR(this);
     }
 }
 
@@ -267,10 +267,6 @@ void HUC6270_cycle(struct HUC6270 *this)
         new_h_state(this, (this->timing.h.state + 1) & 3);
     }
     if ((this->timing.v.state == H6S_display) && (this->timing.h.state == H6S_display)) {
-        if (this->regs.draw_delay) {
-            this->regs.draw_delay--;
-            return;
-        }
         // clock a pixel, yo!
         // grab the current 8 pixels
         if (this->pixel_shifter.num == 0) {
@@ -285,6 +281,12 @@ void HUC6270_cycle(struct HUC6270 *this)
             this->bg.x_tile = (this->bg.x_tile + 1) & this->bg.x_tiles_mask;
         }
         if (this->regs.first_render) {
+            this->regs.px_out_fifo.num = 16; // delay 16 pixels...
+            this->regs.px_out_fifo.head = 0;
+            this->regs.px_out_fifo.tail = 16;
+            for (u32 i = 0; i < 16; i++) {
+                this->regs.px_out_fifo.vals[i] = this->regs.px_out;
+            }
             events_view_report_draw_start(this->dbg.evptr);
             u32 scroll_discard = this->io.BXR.u & 7;
             if (scroll_discard) {
@@ -293,60 +295,74 @@ void HUC6270_cycle(struct HUC6270 *this)
             }
             this->regs.first_render = 0;
         }
-    }
-    if (this->pixel_shifter.num > 0) {
-        this->pixel_shifter.num--;
-        u32 bg_color = (this->pixel_shifter.pattern_shifter & 15);
-        this->pixel_shifter.pattern_shifter >>= 4;
+        if (this->pixel_shifter.num > 0) {
+            this->pixel_shifter.num--;
+            u32 bg_color = (this->pixel_shifter.pattern_shifter & 15);
+            this->pixel_shifter.pattern_shifter >>= 4;
 
-        u32 sp_color = 0;
-        u32 sp_pal, sp_prio;
-        for (i32 spnum = this->sprites.num_tiles_on_line-1; spnum >= 0; spnum--) {
-            struct HUC6270_sprite *sp = &this->sprites.tiles[spnum];
-            // If not triggered, check if triggered!
-            if (!sp->triggered) {
-                sp->triggered |= sp->x == this->regs.x_counter;
-            }
-            // If triggered, clock a pixel!
-            if (sp->triggered && sp->num_left) {
-                sp->num_left--;
-                u64 col = sp->pattern_shifter & 15;
-                sp->pattern_shifter >>= 4;
-                if (col) {
-                    // Sprite #0 hit
-                    if ((sp->original_num == 0) && (sp_color != 0) && !this->io.STATUS.CR) {
-                        this->io.STATUS.CR = 1;
-                        update_irqs(this);
+            u32 sp_color = 0;
+            u32 sp_pal, sp_prio;
+            for (i32 spnum = this->sprites.num_tiles_on_line - 1; spnum >= 0; spnum--) {
+                struct HUC6270_sprite *sp = &this->sprites.tiles[spnum];
+                // If not triggered, check if triggered!
+                if (!sp->triggered) {
+                    sp->triggered |= sp->x == this->regs.x_counter;
+                }
+                // If triggered, clock a pixel!
+                if (sp->triggered && sp->num_left) {
+                    sp->num_left--;
+                    u64 col = sp->pattern_shifter & 15;
+                    sp->pattern_shifter >>= 4;
+                    if (col) {
+                        // Sprite #0 hit
+                        if ((sp->original_num == 0) && (sp_color != 0) && !this->io.STATUS.CR) {
+                            this->io.STATUS.CR = 1;
+                            update_irqs(this);
+                        }
+                        sp_color = col;
+                        sp_pal = sp->palette;
+                        sp_prio = sp->priority;
                     }
-                    sp_color = col;
-                    sp_pal = sp->palette;
-                    sp_prio = sp->priority;
                 }
             }
+
+            // BGS OFF FOR DEBUG
+
+            if (!this->io.CR.BB) bg_color = 0;
+            if (!this->io.CR.SB) sp_color = 0;
+            if (bg_color && sp_color) { // Discriminate!
+                if (!sp_prio) // Sprite on top!
+                    sp_color = 0;
+                else
+                    bg_color = 0;
+            }
+
+            u32 px;
+            if (sp_color) { // Sprite color!
+                px = 0x100 | (sp_pal << 4) | sp_color;
+            } else if (bg_color) { // Background color!
+                px = (this->pixel_shifter.palette << 4) | bg_color;
+            } else { // Backdrop color!
+                px = 0;
+            }
+
+            // Append px to fifo
+            u32 n = this->regs.px_out_fifo.tail;
+            this->regs.px_out_fifo.tail = (this->regs.px_out_fifo.tail + 1) & 31;
+            this->regs.px_out_fifo.vals[n] = px;
+            this->regs.px_out_fifo.num++;
+
+            this->regs.x_counter++;
         }
 
-        // BGS OFF FOR DEBUG
-
-        if (!this->io.CR.BB) bg_color = 0;
-        if (!this->io.CR.SB) sp_color = 0;
-        if (bg_color && sp_color) { // Discriminate!
-            if (!sp_prio) // Sprite on top!
-                sp_color = 0;
-            else
-                bg_color = 0;
-        }
-
-
-        if (sp_color) { // Sprite color!
-            this->regs.px_out = 0x100 | (sp_pal << 4) | sp_color;
-        }
-        else if (bg_color) { // Background color!
-            this->regs.px_out = (this->pixel_shifter.palette << 4) | bg_color;
-        }
-        else { // Backdrop color!
-            this->regs.px_out = 0;
-        }
-        this->regs.x_counter++;
+    }
+    if (this->regs.px_out_fifo.num) {
+        this->regs.px_out = this->regs.px_out_fifo.vals[this->regs.px_out_fifo.head];
+        this->regs.px_out_fifo.head = (this->regs.px_out_fifo.head + 1) & 31;
+        this->regs.px_out_fifo.num--;
+    }
+    else {
+        this->regs.px_out = 0x100;
     }
 }
 
@@ -540,7 +556,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
         case 0x08: // BGY
             this->io.BYR.lo = val;
             DBG_EVENT(this->dbg.events.WRITE_YSCROLL);
-            this->regs.next_yscroll = this->io.BYR.u;
+            this->regs.next_yscroll = this->io.BYR.u+1;
             return;
         case 0x09: {
             static const u32 screen_sizes[8][2] = { {32, 32}, {64, 32},
@@ -640,7 +656,7 @@ static void write_msb(struct HUC6270 *this, u32 val)
             this->io.BYR.hi = val & 1;
             DBG_EVENT(this->dbg.events.WRITE_YSCROLL);
             //printf("\nBYR H: %d", this->io.BYR.hi);
-            this->regs.next_yscroll = this->io.BYR.u;
+            this->regs.next_yscroll = this->io.BYR.u+1;
             return;
         case 0x09:
             return;

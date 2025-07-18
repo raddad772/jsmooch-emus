@@ -331,8 +331,8 @@ static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
     d->geometry.physical_aspect_ratio.width = 4;
     d->geometry.physical_aspect_ratio.height = 3;
 
-    d->pixelometry.overscan.left = 180;
-    d->pixelometry.overscan.right = 57;
+    d->pixelometry.overscan.left = 192;
+    d->pixelometry.overscan.right = 45;
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
