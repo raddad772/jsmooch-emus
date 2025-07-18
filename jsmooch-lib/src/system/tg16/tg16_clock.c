@@ -2,6 +2,7 @@
 // Created by . on 6/18/25.
 //
 
+#include <printf.h>
 #include <string.h>
 #include "tg16_clock.h"
 #include "component/gpu/huc6260/huc6260.h"
@@ -32,12 +33,13 @@ void TG16_clock_reset(struct TG16_clock *this)
     //u64 per_frame = master_freq / this->timing.second.frames;
     u64 per_line = HUC6260_CYCLE_PER_LINE; // = 1364
 
-    u64 per_frame = per_line * this->timing.second.frames;
+    u64 per_frame = per_line * this->timing.frame.lines;
     u64 master_freq = per_frame * this->timing.second.frames;
 
     this->timing.scanline.cycles = per_line;
     this->timing.frame.cycles = per_frame;
     this->timing.second.cycles = master_freq;
+    printf("\nMASTER FREQ %lld", master_freq);
 
     this->next.cpu = 3;
     this->next.vce = 4;

@@ -281,12 +281,12 @@ void HUC6270_cycle(struct HUC6270 *this)
             this->bg.x_tile = (this->bg.x_tile + 1) & this->bg.x_tiles_mask;
         }
         if (this->regs.first_render) {
-            this->regs.px_out_fifo.num = 16; // delay 16 pixels...
+            /*this->regs.px_out_fifo.num = 16; // delay 16 pixels...
             this->regs.px_out_fifo.head = 0;
             this->regs.px_out_fifo.tail = 16;
             for (u32 i = 0; i < 16; i++) {
                 this->regs.px_out_fifo.vals[i] = this->regs.px_out;
-            }
+            }*/
             events_view_report_draw_start(this->dbg.evptr);
             u32 scroll_discard = this->io.BXR.u & 7;
             if (scroll_discard) {
@@ -346,24 +346,28 @@ void HUC6270_cycle(struct HUC6270 *this)
                 px = 0;
             }
 
+            this->regs.px_out = px;
+            this->regs.x_counter++;
             // Append px to fifo
-            u32 n = this->regs.px_out_fifo.tail;
+            /*u32 n = this->regs.px_out_fifo.tail;
             this->regs.px_out_fifo.tail = (this->regs.px_out_fifo.tail + 1) & 31;
             this->regs.px_out_fifo.vals[n] = px;
             this->regs.px_out_fifo.num++;
 
-            this->regs.x_counter++;
+            */
         }
-
     }
-    if (this->regs.px_out_fifo.num) {
+    else {
+        this->regs.px_out = 0x100;
+    }
+    /*if (this->regs.px_out_fifo.num) {
         this->regs.px_out = this->regs.px_out_fifo.vals[this->regs.px_out_fifo.head];
         this->regs.px_out_fifo.head = (this->regs.px_out_fifo.head + 1) & 31;
         this->regs.px_out_fifo.num--;
     }
     else {
         this->regs.px_out = 0x100;
-    }
+    }*/
 }
 
 void HUC6270_init(struct HUC6270 *this, struct scheduler_t *scheduler)

@@ -137,11 +137,11 @@ struct HUC6270 {
 
         u32 BAT_size;
 
-        struct {
+        /*struct {
             u32 vals[32]; // max 32 long!
             u32 num;
             u32 head, tail;
-        } px_out_fifo;
+        } px_out_fifo;*/
 
         u32 px_out;
         u32 y_counter;
