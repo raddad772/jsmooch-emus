@@ -52,6 +52,9 @@ void TG16_bus_write(struct TG16 *this, u32 addr, u32 val)
         return;
     }
     else if ((addr >= 0x1F0000) && (addr <= 0x1F8000)) {
+        /*if (((addr & 0x1FFF) == 0xF) && (val == 0x12)) {
+            dbg_break("\nF to 12", 0);
+        }*/
         this->RAM[addr & 0x1FFF] = val;
         return;
     }

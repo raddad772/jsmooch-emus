@@ -414,10 +414,21 @@ void TG16J_stop(JSM)
 {
 }
 
+#define PSG_CYCLES 6
+static void psg_go(void *ptr, u64 key, u64 clock, u32 jitter)
+{
+    struct TG16 *this = (struct TG16 *)ptr;
+    u64 cur = clock - jitter;
+    HUC6280_PSG_cycle(&this->cpu.psg);
+
+    scheduler_only_add_abs(&this->scheduler, cur + PSG_CYCLES, 0, this, &psg_go, NULL);
+}
+
 static void schedule_first(struct TG16 *this)
 {
     HUC6280_schedule_first(&this->cpu, 0);
     HUC6260_schedule_first(&this->vce);
+    scheduler_only_add_abs(&this->scheduler, PSG_CYCLES, 0, this, &psg_go, NULL);
 }
 
 void TG16J_get_framevars(JSM, struct framevars* out)

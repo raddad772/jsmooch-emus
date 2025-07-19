@@ -38,9 +38,9 @@ static inline u16 read_VRAM(struct HUC6270 *this, u32 addr)
 static inline void write_VRAM(struct HUC6270 *this, u32 addr, u16 val)
 {
     DBG_EVENT(this->dbg.events.WRITE_VRAM);
-    if (addr == 0x1012) {
+    /*if (addr == 0x1012) {
         dbg_break("VRAM WRITE 1012", 0);
-    }
+    }*/
     if (addr < 0x8000)
         this->VRAM[addr] = val;
 }

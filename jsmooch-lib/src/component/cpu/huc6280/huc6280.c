@@ -23,6 +23,8 @@ void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clock
     jsm_string_init(&this->trace.str, 100);
     jsm_string_init(&this->trace.str2, 100);
 
+    HUC6280_PSG_init(&this->psg);
+
     DBG_EVENT_VIEW_INIT;
     DBG_TRACE_VIEW_INIT;
 }
@@ -32,6 +34,7 @@ void HUC6280_delete(struct HUC6280 *this)
 
     jsm_string_delete(&this->trace.str);
     jsm_string_delete(&this->trace.str2);
+    HUC6280_PSG_delete(&this->psg);
 }
 
 // IRQD IS INVERTED!
@@ -43,7 +46,8 @@ void HUC6280_reset(struct HUC6280 *this)
     this->current_instruction = HUC6280_decoded_opcodes[0][0x100];
     this->regs.TCU = 0;
     this->regs.P.T = 0;
-    this->pins.D = 0x100;
+    this->pins.D = 0x100; // special RESET code
+    HUC6280_PSG_reset(&this->psg);
 }
 
 void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
@@ -61,7 +65,6 @@ void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
     regs->do_IRQ = (regs->IRQD.u & regs->IRQR.u) && !regs->P.I;
     regs->IRQR_polled.u = regs->IRQR.u;
 }
-
 
 
 void timer_tick(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -215,7 +218,7 @@ static u32 internal_read(struct HUC6280 *this, u32 addr, u32 has_effect)
     u32 k = addr & 0x1C00;
     u32 val;
     switch(k) {
-        case 0x0800: // PSG. TODO: this
+        case 0x0800: // PSG.
             if (this->pins.BM) return 0;
             return this->io.buffer;
         case 0x0C00: // 1FEC00 to 1FEFFF is timer
@@ -261,7 +264,8 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
     u32 k = addr & 0x1C00;
 
     switch(k) {
-        case 0x0800: // PSG. TODO: this
+        case 0x0800:
+            HUC6280_PSG_write(&this->psg, addr, val);
             return;
         case 0x0C00: // 1FEC00 to 1FEFFF is timer
             this->io.buffer = val;

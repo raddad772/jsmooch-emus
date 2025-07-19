@@ -9,12 +9,14 @@
 #include "helpers/debug.h"
 #include "helpers/debugger/debuggerdefs.h"
 #include "helpers/scheduler.h"
+#include "component/audio/huc6280_psg/huc6280_psg.h"
 
 #include "huc6280_opcodes.h"
 
 //#define HUC6280_TESTING
 
 union HUC6280_P {
+
     struct {
         // N V T B D I Z C
         u8 C : 1;
@@ -69,6 +71,7 @@ struct HUC6280_pins {
 struct HUC6280 {
     struct HUC6280_regs regs;
     struct HUC6280_pins pins;
+    struct HUC6280_PSG psg;
     struct scheduler_t *scheduler;
     HUC6280_ins_func current_instruction;
     u32 PCO;

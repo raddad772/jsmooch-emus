@@ -495,6 +495,8 @@ set(SOURCE_LIST
         src/component/controller/tg16b2/tg16b2.h
         src/system/tg16/tg16_controllerport.c
         src/system/tg16/tg16_controllerport.h
+        src/component/audio/huc6280_psg/huc6280_psg.c
+        src/component/audio/huc6280_psg/huc6280_psg.h
 )
 
 # TODO: Fix elf-parser repo for windows
