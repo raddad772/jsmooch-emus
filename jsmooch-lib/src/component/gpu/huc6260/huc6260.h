@@ -34,13 +34,13 @@ struct HUC6260 {
         u64 line_start;
         u32 hsync, vsync;
         u32 frame_height;
-        u32 cycles_per_line;
+        u32 cycles_per_frame;
     } regs;
 
     struct {
         u32 DCC;
         union UN16 CTA, CTW;
-    } io;
+    } io;x
 
     DBG_START
         DBG_EVENT_VIEW_START

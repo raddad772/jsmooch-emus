@@ -24,6 +24,7 @@ void HUC6260_init(struct HUC6260 *this, struct scheduler_t *scheduler, struct HU
     this->vdc0 = vdc0;
     this->vdc1 = vdc1;
     this->regs.frame_height = 262;
+    this->regs.cycles_per_frame = HUC6260_CYCLE_PER_LINE * this->regs.frame_height;
 }
 
 void HUC6260_delete(struct HUC6260 *this)
@@ -42,7 +43,6 @@ static void hsync(void *ptr, u64 key, u64 clock, u32 jitter)
     struct HUC6260 *this = (struct HUC6260 *)ptr;
 
     if (key) {
-        u64 line_pos = *this->scheduler->clock - this->regs.line_start;
         DBG_EVENT(this->dbg.events.HSYNC_UP);
     }
     this->regs.hsync = key;
@@ -57,7 +57,6 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
     }
     this->regs.vsync = key;
     HUC6270_vsync(this->vdc0, key);
-    //if (key) printf("\nVSYNC ON ON LINE %d", this->regs.y);
 }
 
 static void new_frame(struct HUC6260 *this)
@@ -86,7 +85,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
 
     // Schedule next line
     u32 next_line = key + 1;
-    if (next_line == 262) next_line = 0;
+    if (next_line == this->regs.frame_height) next_line = 0;
     scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_DOWN, 0, this, &hsync, NULL);
     scheduler_only_add_abs(this->scheduler, clock + HUC6260_HSYNC_UP, 1, this, &hsync, NULL);
 
@@ -96,7 +95,7 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
     // New frame or vsync begin or end scheduling
     if (this->regs.y == 0) { // new frame stuff
         new_frame(this);
-        scheduler_only_add_abs_w_tag(this->scheduler, clock + (HUC6260_CYCLE_PER_LINE * 262), 0, this, &frame_end, NULL, 2);
+        scheduler_only_add_abs_w_tag(this->scheduler, clock + (HUC6260_CYCLE_PER_LINE * this->regs.frame_height), 0, this, &frame_end, NULL, 2);
     }
     else if (this->regs.y == HUC6260_LINE_VSYNC_START)
         scheduler_only_add_abs(this->scheduler, clock + HUC6260_LINE_VSYNC_POS, 0, this, &vsync, NULL);
