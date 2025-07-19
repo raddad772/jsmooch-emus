@@ -44,7 +44,7 @@ static inline void write_VRAM(struct HUC6270 *this, u32 addr, u16 val)
 
 static void setup_new_frame(struct HUC6270 *this)
 {
-    this->regs.y_counter = 63; // return this +64
+    printf("\n\nNEW FRAME line:%d line compare: %d", this->regs.y_counter -64, this->regs.y_counter);
     this->regs.yscroll = this->io.BYR.u;
     this->regs.next_yscroll = this->regs.yscroll + 1;
 }
@@ -151,7 +151,6 @@ static void setup_new_line(struct HUC6270 *this) {
         this->latch.bg_on = this->io.CR.BB;
         this->bg.y_compare++;
         this->sprites.y_compare++;
-        this->regs.y_counter++;
         this->regs.first_render = 1;
         this->regs.draw_clock = 0;
         this->bg.x_tile = (this->io.BXR.u >> 3) & this->bg.x_tiles_mask;
@@ -162,6 +161,7 @@ static void setup_new_line(struct HUC6270 *this) {
         eval_sprites(this);
     }
 
+    this->regs.y_counter++;
     // TODO: this stuff
     this->timing.v.counter--;
     if (this->timing.v.counter < 1) {
@@ -212,6 +212,7 @@ static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
             break;
         case H6S_display:
             this->timing.v.counter = this->io.VDW.u + 1;
+            this->regs.y_counter = 64; // return this +64
             this->sprites.y_compare = 64;
             this->bg.y_compare = 0;
             this->regs.blank_line = 1;
@@ -347,6 +348,7 @@ void HUC6270_cycle(struct HUC6270 *this)
             }
 
             this->regs.px_out = px;
+            if (this->regs.y_counter == 64) this->regs.px_out = 7;
             this->regs.x_counter++;
             // Append px to fifo
             /*u32 n = this->regs.px_out_fifo.tail;
@@ -395,6 +397,7 @@ static void update_RCR(struct HUC6270 *this)
     if (!this->io.STATUS.RR && signal) {
         DBG_EVENT(this->dbg.events.HIT_RCR);
         this->io.STATUS.RR = 1;
+        printf("\nRCR HIT LINE %d", this->regs.y_counter);
     }
 
     //if (this->regs.y_counter == this->io.RCR.u) printf("\nRR HIT! %d", this->bg.y_compare);
@@ -552,6 +555,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.lo = val;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
+            //printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->io.CR.IE);
             return;
         case 0x07: // BGX
             this->io.BXR.lo = val;
@@ -562,12 +566,12 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             DBG_EVENT(this->dbg.events.WRITE_YSCROLL);
             this->regs.next_yscroll = this->io.BYR.u+1;
             return;
-        case 0x09: {
             static const u32 screen_sizes[8][2] = { {32, 32}, {64, 32},
                                                     {128, 32}, {128, 32},
                                                     {32, 64}, {64, 64},
                                                     {128, 64}, {128,64}
-                                                    };
+            };
+        case 0x09: {
             u32 sr = (val >> 4) & 7;
             this->io.bg.x_tiles = screen_sizes[sr][0];
             this->io.bg.y_tiles = screen_sizes[sr][1];
@@ -651,6 +655,7 @@ static void write_msb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.hi = val & 3;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
+            //printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->io.CR.IE);
             return;
         case 0x07: // BGX scroll BXR
             DBG_EVENT(this->dbg.events.WRITE_XSCROLL);

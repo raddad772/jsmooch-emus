@@ -17,6 +17,62 @@
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
+static inline u16 read_VRAM(struct HUC6270 *this, u32 addr)
+{
+    return (addr & 0x8000) ? 0 : this->VRAM[addr];
+}
+
+
+static void render_image_view_bg(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+    struct TG16 *this = (struct TG16 *) ptr;
+    if (this->vce.master_frame == 0) return;
+
+    struct image_view *iv = &dview->image;
+    iv->draw_which_buf ^= 1;
+    u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
+    memset(outbuf, 0, out_width * 4 * 512);
+    static const u32 screen_sizes[8][2] = { {32, 32}, {64, 32},
+                                            {128, 32}, {128, 32},
+                                            {32, 64}, {64, 64},
+                                            {128, 64}, {128,64}
+    };
+
+    u32 xtsize = this->vdc0.bg.x_tiles;
+    u32 ytsize = this->vdc0.bg.y_tiles;
+
+    for (u32 ty = 0; ty < ytsize; ty++) {
+        for (u32 tx = 0; tx < xtsize; tx++) {
+            for (u32 in_tile_y = 0; in_tile_y < 8; in_tile_y++) {
+                u32 screen_y = (ty << 3) + in_tile_y;
+                u32 *screen_y_ptr = outbuf + (screen_y * out_width);
+                u32 addr = (ty * xtsize) + tx;
+                u32 entry = read_VRAM(&this->vdc0, addr);
+                addr = ((entry & 0xFFF) << 4) + in_tile_y;
+                u32 palette = (((entry >> 12) & 15) << 4);
+                u32 plane12 = read_VRAM(&this->vdc0, addr);
+                u32 plane34 = read_VRAM(&this->vdc0, addr+8);
+                u32 pixel_shifter = tg16_decode_line(plane12, plane34);
+
+                for (u32 in_tile_x = 0; in_tile_x < 8; in_tile_x++) {
+                    u32 screen_x = (tx << 3) + in_tile_x;
+                    u32 c = pixel_shifter & 15;
+                    //if (c != 0) {
+                        pixel_shifter >>= 4;
+                        c |= palette;
+                        c = this->vce.CRAM[c];
+                        c = tg16_to_screen(c);
+                    //}
+                    //else {
+                        //c = 0xFF000000;
+                    //}
+                    screen_y_ptr[screen_x] = c;
+                }
+            }
+
+        }
+    }
+}
+
 static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
     struct TG16 *this = (struct TG16 *) ptr;
     if (this->vce.master_frame == 0) return;
@@ -175,6 +231,27 @@ static void setup_dbglog(struct debugger_interface *dbgr, struct TG16 *this)
     dbglog_category_add_node(dv, cpu, "IRQs", "CPU", TG16_CAT_CPU_IRQS, 0xA0AF80);
 }
 
+static void setup_image_view_bg(struct TG16* this, struct debugger_interface *dbgr)
+{
+    // 1024x512 max size!
+    struct debugger_view *dview;
+    this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.tiles);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 1024;
+    iv->height = 512;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 1024, 512 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_bg;
+    snprintf(iv->label, sizeof(iv->label), "Tilemap Viewer");
+}
+
+
 static void setup_image_view_tiles(struct TG16* this, struct debugger_interface *dbgr)
 {
     struct debugger_view *dview;
@@ -227,5 +304,6 @@ void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     setup_dbglog(dbgr, this);
     setup_image_view_palettes(this, dbgr);
     setup_image_view_tiles(this, dbgr);
+    setup_image_view_bg(this, dbgr);
     setup_events_view(this, dbgr, jsm);
 }
