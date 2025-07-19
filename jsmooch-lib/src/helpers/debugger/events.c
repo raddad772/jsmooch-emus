@@ -105,6 +105,35 @@ void events_view_delete(struct events_view *this)
     DTOR_child(associated_display, cvec_ptr);
 }
 
+u64 events_view_get_current_line(struct cvec_ptr viewptr)
+{
+    if (viewptr.vec == NULL) {
+        return 0;
+    }
+    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
+    return this->master_clocks.cur_line;
+}
+
+u64 events_view_get_current_line_start(struct cvec_ptr viewptr)
+{
+    if (viewptr.vec == NULL) {
+        return 0;
+    }
+    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
+    u32 line_num = this->master_clocks.cur_line;
+    return this->master_clocks.lines[this->master_clocks.back_buffer][line_num];
+}
+
+u64 events_view_get_current_line_pos(struct cvec_ptr viewptr)
+{
+    if (viewptr.vec == NULL) {
+        return 0;
+    }
+    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
+    u32 line_num = this->master_clocks.cur_line;
+    return (*this->master_clocks.ptr) - this->master_clocks.lines[this->master_clocks.back_buffer][line_num];
+}
+
 void debugger_report_event(struct cvec_ptr viewptr, i32 event_id)
 {
     if (viewptr.vec == NULL) {

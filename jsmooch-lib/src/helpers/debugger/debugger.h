@@ -490,11 +490,15 @@ void events_view_report_draw_start(struct events_view *);
 
 void debugger_report_frame(struct debugger_interface *dbgr);
 void debugger_report_event(struct cvec_ptr viewptr, i32 event_id);
+u64 events_view_get_current_line_pos(struct cvec_ptr viewptr);
+u64 events_view_get_current_line_start(struct cvec_ptr viewptr);
+u64 events_view_get_current_line(struct cvec_ptr viewptr);
 
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
 void debugger_report_line_mclks(struct cvec_ptr event_view, u64 mclks, u32 line_num);
 
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
+
 void debug_waveform_init(struct debug_waveform *);
 
 void waveform_view_init(struct waveform_view *);

@@ -25,7 +25,7 @@
 
 static void update_irqs(struct HUC6270 *this);
 static void new_v_state(struct HUC6270 *this, enum HUC6270_states st);
-static void update_RCR(struct HUC6270 *this);
+static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter);
 static void vblank(struct HUC6270 *this, u32 val);
 static void hblank(struct HUC6270 *this, u32 val);
 
@@ -44,9 +44,9 @@ static inline void write_VRAM(struct HUC6270 *this, u32 addr, u16 val)
 
 static void setup_new_frame(struct HUC6270 *this)
 {
-    printf("\n\nNEW FRAME line:%d line compare: %d", this->regs.y_counter -64, this->regs.y_counter);
+    //printf("\n\n6270 NEW FRAME line:%d line compare: %d", this->regs.y_counter -64, this->regs.y_counter);
     this->regs.yscroll = this->io.BYR.u;
-    this->regs.next_yscroll = this->regs.yscroll + 1;
+    this->regs.next_yscroll = this->regs.yscroll;
 }
 
 static void eval_sprites(struct HUC6270 *this) {
@@ -144,19 +144,19 @@ static void eval_sprites(struct HUC6270 *this) {
 }
 
 static void setup_new_line(struct HUC6270 *this) {
+    this->regs.x_counter = 0;
     if (this->timing.v.state == H6S_display) {
+        //printf("\nLINE %lld Y SCROLL:%d", events_view_get_current_line(this->dbg.events.view), this->regs.next_yscroll);
         this->regs.yscroll = this->regs.next_yscroll;
         this->regs.next_yscroll = this->regs.yscroll + 1;
         this->latch.sprites_on = this->io.CR.SB;
         this->latch.bg_on = this->io.CR.BB;
-        this->bg.y_compare++;
         this->sprites.y_compare++;
         this->regs.first_render = 1;
         this->regs.draw_clock = 0;
         this->bg.x_tile = (this->io.BXR.u >> 3) & this->bg.x_tiles_mask;
         this->bg.y_tile = (this->regs.yscroll >> 3) & this->bg.y_tiles_mask;
         this->pixel_shifter.num = 0;
-        this->regs.x_counter = 0;
 
         eval_sprites(this);
     }
@@ -164,6 +164,9 @@ static void setup_new_line(struct HUC6270 *this) {
     this->regs.y_counter++;
     // TODO: this stuff
     this->timing.v.counter--;
+    if ((this->timing.v.state == H6S_wait_for_display) && (this->timing.v.counter == 1)) {
+        this->regs.y_counter = 64;
+    }
     if (this->timing.v.counter < 1) {
         new_v_state(this, (this->timing.v.state + 1) & 3);
     }
@@ -183,6 +186,7 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
             //printf("\nWAIT_DISPLAY %d", this->timing.h.counter);
             break;
         case H6S_display:
+            //printf("\nH.H6S_DISPLAY START LINE:%lld CYCLE:%lld", events_view_get_current_line(this->dbg.events.view), events_view_get_current_line_pos(this->dbg.events.view));
             hblank(this, 0);
             this->timing.h.counter = (this->io.HDW+1) << 3;
             //printf("\nDISPLAY %d", this->timing.h.counter);
@@ -191,7 +195,7 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
         case H6S_wait_for_sync_window:
             hblank(this, 1);
             this->timing.h.counter = (this->io.HDE+1) << 3;
-            update_RCR(this);
+            update_RCR(this, 0, 0, 0);
             //printf("\nWAIT SYNC WINDOW %d", this->timing.h.counter);
             break;
     }
@@ -211,11 +215,11 @@ static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
             this->timing.v.counter = this->io.VDS + 2;
             break;
         case H6S_display:
-            this->timing.v.counter = this->io.VDW.u + 1;
-            this->regs.y_counter = 64; // return this +64
-            this->sprites.y_compare = 64;
-            this->bg.y_compare = 0;
+            //printf("\nV.H6S DISPLAY START LINE %lld CYCLE:%lld", events_view_get_current_line(this->dbg.events.view), events_view_get_current_line_pos(this->dbg.events.view));
+            this->timing.v.counter = this->io.VDW.u + 2; // It will get decremented by setup_new_line()
+            this->sprites.y_compare = 63;
             this->regs.blank_line = 1;
+            setup_new_line(this);
             break;
         case H6S_wait_for_sync_window:
             vblank(this, 1);
@@ -243,7 +247,6 @@ void HUC6270_hsync(struct HUC6270 *this, u32 val)
             force_new_line(this);
         }
         new_h_state(this, H6S_wait_for_display);
-        //this->pixel_shifter.num = 0;
     }
     else {
     }
@@ -348,8 +351,8 @@ void HUC6270_cycle(struct HUC6270 *this)
             }
 
             this->regs.px_out = px;
-            if (this->regs.y_counter == 64) this->regs.px_out = 7;
-            this->regs.x_counter++;
+            //if (this->regs.y_counter == 64) this->regs.px_out = 0xFFFF;
+            //if (events_view_get_current_line(this->dbg.events.view) == 1) this->regs.px_out = 0xFFFF;
             // Append px to fifo
             /*u32 n = this->regs.px_out_fifo.tail;
             this->regs.px_out_fifo.tail = (this->regs.px_out_fifo.tail + 1) & 31;
@@ -362,6 +365,8 @@ void HUC6270_cycle(struct HUC6270 *this)
     else {
         this->regs.px_out = 0x100;
     }
+    if (this->regs.x_counter == ((this->regs.HDW - 1) * 8 + 2)) update_RCR(this, 0, 0, 0);
+    this->regs.x_counter++;
     /*if (this->regs.px_out_fifo.num) {
         this->regs.px_out = this->regs.px_out_fifo.vals[this->regs.px_out_fifo.head];
         this->regs.px_out_fifo.head = (this->regs.px_out_fifo.head + 1) & 31;
@@ -391,16 +396,16 @@ void HUC6270_reset(struct HUC6270 *this)
 
 }
 
-static void update_RCR(struct HUC6270 *this)
+static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
 {
+    struct HUC6270 *this = (struct HUC6270 *)ptr;
     u32 signal = this->regs.y_counter == this->io.RCR.u;
-    if (!this->io.STATUS.RR && signal) {
+    if (signal && (signal != this->io.STATUS.RR)) {
         DBG_EVENT(this->dbg.events.HIT_RCR);
         this->io.STATUS.RR = 1;
-        printf("\nRCR HIT LINE %d", this->regs.y_counter);
+        //printf("\nRCR HIT LINE %d  X %lld", this->regs.y_counter, events_view_get_current_line_pos(this->dbg.events.view));
     }
 
-    //if (this->regs.y_counter == this->io.RCR.u) printf("\nRR HIT! %d", this->bg.y_compare);
     update_irqs(this);
 }
 
@@ -485,9 +490,6 @@ static void vblank(struct HUC6270 *this, u32 val)
 }
 
 
-static void run_cycle(void *ptr, u64 key, u64 clock, u32 jitter);
-
-
 static void write_addr(struct HUC6270 *this, u32 val)
 {
     this->io.ADDR = val & 0x1F;
@@ -565,13 +567,14 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             this->io.BYR.lo = val;
             DBG_EVENT(this->dbg.events.WRITE_YSCROLL);
             this->regs.next_yscroll = this->io.BYR.u+1;
+            //printf("\nYSCROLL write line %lld: %d", events_view_get_current_line(this->dbg.events.view), this->regs.next_yscroll);
             return;
+        case 0x09: {
             static const u32 screen_sizes[8][2] = { {32, 32}, {64, 32},
                                                     {128, 32}, {128, 32},
                                                     {32, 64}, {64, 64},
                                                     {128, 64}, {128,64}
             };
-        case 0x09: {
             u32 sr = (val >> 4) & 7;
             this->io.bg.x_tiles = screen_sizes[sr][0];
             this->io.bg.y_tiles = screen_sizes[sr][1];
@@ -582,6 +585,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x0B:
             this->io.HDW = val & 0x7F;
+            this->regs.HDW = (this->io.HDW + 1) << 3;
             return;
         case 0x0C:
             this->io.VSW = val & 0x1F;

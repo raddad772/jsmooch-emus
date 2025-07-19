@@ -77,7 +77,6 @@ struct HUC6270 {
         struct {
             u32 x_tiles, y_tiles;
             u32 x_tiles_mask, y_tiles_mask;
-            u32 y_compare;
         } bg;
 
         union {
@@ -155,6 +154,7 @@ struct HUC6270 {
 
         u32 IE;
         u32 x_counter;
+        u32 HDW;
     } regs;
 
     DBG_START

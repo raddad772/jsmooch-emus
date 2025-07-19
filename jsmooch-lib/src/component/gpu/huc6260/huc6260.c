@@ -62,7 +62,7 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void new_frame(struct HUC6260 *this)
 {
-    //printf("\nNEW FRAME!");
+    //printf("\n6260 NEW FRAME!");
     debugger_report_frame(this->dbg.interface);
     this->regs.y = 0;
     this->master_frame++;
@@ -198,6 +198,10 @@ void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
     u16 c = this->CRAM[pc];
     // GRB hi-lo, 9-bit
     // so blue is low 3 bits
+    if (pc == 0xFFFF) c = 0x1FF;
+    /*if (this->regs.y == 4) {
+        c = 0x1FF;
+    }*/
     for (i32 i = 0; i < this->regs.clock_div; i++) {
         if ((line_pos+i) >= HUC6260_CYCLE_PER_LINE) break;
         this->cur_line[line_pos+i] = c;
