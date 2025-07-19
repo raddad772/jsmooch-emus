@@ -33,7 +33,7 @@ struct HUC6260 {
 
         u64 line_start;
         u32 hsync, vsync;
-        u32 frame_height;
+        u32 frame_height, next_frame_height, bw;
         u32 cycles_per_frame;
     } regs;
 

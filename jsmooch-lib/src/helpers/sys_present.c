@@ -416,11 +416,17 @@ void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_widt
             u32 di = ((y * HUC6260_CYCLE_PER_LINE) + rx);
             u32 b_out = outyw + outx;
             u32 color = tg16o[di];
+            if (color & 0x8000) {
+                img32[b_out] = tg16_to_screen_mono(color);
+            }
+            else {
+                img32[b_out] = tg16_to_screen(color);
+            }
             // GRB
             /*if (outx == 192) img32[b_out] = 0xFFFFFFFF;
             else if (outx == 192+1000) img32[b_out] = 0xFFFFFFFF;*/
 
-            img32[b_out] = tg16_to_screen(color);
+
         }
     }
 }

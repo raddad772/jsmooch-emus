@@ -44,6 +44,16 @@ static inline u32 tg16_to_screen(u32 color)
     return 0xFF000000 | r | (g << 8) | (b << 16);
 }
 
+static inline u32 tg16_to_screen_mono(u32 color)
+{
+    u32 g = tg16_lvl[(color >> 6) & 7];
+    u32 r = tg16_lvl[(color >> 3) & 7];
+    u32 b = tg16_lvl[color & 7];
+    u32 v = (((g+r+b) << 4) / 3) >> 4;
+    return 0xFF000000 | v | (v << 8) | (v << 16);
+}
+
+
 
 static inline u32 gba_to_screen(u32 color)
 {

@@ -24,6 +24,7 @@ void HUC6260_init(struct HUC6260 *this, struct scheduler_t *scheduler, struct HU
     this->vdc0 = vdc0;
     this->vdc1 = vdc1;
     this->regs.frame_height = 262;
+    this->regs.next_frame_height = 262;
     this->regs.cycles_per_frame = HUC6260_CYCLE_PER_LINE * this->regs.frame_height;
 }
 
@@ -54,6 +55,9 @@ static void vsync(void *ptr, u64 key, u64 clock, u32 jitter)
     struct HUC6260 *this = (struct HUC6260 *)ptr;
     if (key) {
         DBG_EVENT(this->dbg.events.VSYNC_UP);
+    }
+    else {
+
     }
     this->regs.vsync = key;
     HUC6270_vsync(this->vdc0, key);
@@ -97,8 +101,11 @@ static void schedule_scanline(void *ptr, u64 key, u64 cclock, u32 jitter)
         new_frame(this);
         scheduler_only_add_abs_w_tag(this->scheduler, clock + (HUC6260_CYCLE_PER_LINE * this->regs.frame_height), 0, this, &frame_end, NULL, 2);
     }
-    else if (this->regs.y == HUC6260_LINE_VSYNC_START)
+    else if (this->regs.y == HUC6260_LINE_VSYNC_START) {
         scheduler_only_add_abs(this->scheduler, clock + HUC6260_LINE_VSYNC_POS, 0, this, &vsync, NULL);
+        this->regs.frame_height = this->regs.next_frame_height;
+        this->regs.cycles_per_frame = HUC6260_CYCLE_PER_LINE * this->regs.frame_height;
+    }
     else if (this->regs.y == HUC6260_LINE_VSYNC_END)
         scheduler_only_add_abs(this->scheduler, clock + HUC6260_LINE_VSYNC_POS, 1, this, &vsync, NULL);
 
@@ -127,6 +134,11 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
                     printf("\nWARN ILLEGAL DIVISOR");
                     this->regs.clock_div = 2;
                 }
+                // Bit 2 = Frame height (0= 262, 1= 263 scanlines)
+                this->regs.next_frame_height = ((val >> 2) & 1) ? 263 : 262;
+
+                //Bit 7 = Color subcarrier enable (0= enabled, 1= disabled (B&W video))
+                this->regs.bw = ((val >> 7) & 1) << 15;
             }
             return;
         case 1: //CTA
@@ -167,7 +179,6 @@ u32 HUC6260_read(struct HUC6260 *this, u32 maddr, u32 old)
         }
     }
 
-    //printf("\nUnserviced HUC6260 (VCE) read: %06x", maddr);
     return 0xFF;
 }
 
@@ -203,7 +214,7 @@ void HUC6260_pixel_clock(void *ptr, u64 key, u64 clock, u32 jitter)
     }*/
     for (i32 i = 0; i < this->regs.clock_div; i++) {
         if ((line_pos+i) >= HUC6260_CYCLE_PER_LINE) break;
-        this->cur_line[line_pos+i] = c;
+        this->cur_line[line_pos+i] = c | this->regs.bw;
     }
 
     schedule_next_pixel_clock(this, cur);
