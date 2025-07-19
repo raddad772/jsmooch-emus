@@ -32,8 +32,6 @@ struct HUC6280_PSG {
             u32 state;
             i32 output;
         } NOISE;
-        u32 NE, NOISE_FREQ; // noise enable/frequency
-        i32 NOIS_COUNTER;
         i32 counter;
     } ch[6];
 
@@ -42,8 +40,10 @@ struct HUC6280_PSG {
 void HUC6280_PSG_init(struct HUC6280_PSG *);
 void HUC6280_PSG_delete(struct HUC6280_PSG *);
 void HUC6280_PSG_reset(struct HUC6280_PSG *);
-1
+
 void HUC6280_PSG_write(struct HUC6280_PSG *, u32 addr, u8 val);
 void HUC6280_PSG_cycle(struct HUC6280_PSG *);
+void HUC6280_PSG_mix_sample(struct HUC6280_PSG *, u16 *l, u16 *r);
+u16 HUC6280_PSG_debug_ch_sample(struct HUC6280_PSG *, u32 num);
 
 #endif //JSMOOCH_EMUS_HUC6280_PSG_H

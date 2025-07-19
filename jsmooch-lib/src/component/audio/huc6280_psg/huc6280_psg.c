@@ -74,8 +74,9 @@ void HUC6280_PSG_write(struct HUC6280_PSG *this, u32 addr, u8 val)
             return;
         case 7: //
             if (this->SEL < 5) return;
-            ch->NE = (val >> 7) & 1;
-            ch->NOISE_FREQ = val & 0x1F;
+            ch->NOISE.E = (val >> 7) & 1;
+            u32 a = val & 0x1F;
+            ch->NOISE.FREQ = a == 0x1F ? 32 : (a ^ 0x1F) * 64;
             return;
         case 8:
             this->LFO.FREQ = val;
@@ -111,7 +112,7 @@ static void clock_noise(struct HUC6280_PSG_ch *ch)
 {
     ch->NOISE.COUNTER--;
     if (ch->NOISE.COUNTER < 0) {
-        ch->NOISE.COUNTER = ch->NOISE_FREQ == 0x1F ? 32 : (ch->NOISE_FREQ ^ 0x1F) * 64;
+        ch->NOISE.COUNTER = ch->NOISE.FREQ;
         u32 v = ch->NOISE.state;
         u32 bit = ((v >> 0) ^ (v >> 1) ^ (v >> 11) ^ (v >> 12) ^ (v >> 17)) & 1;
         ch->NOISE.output = (ch->NOISE.state & 1) ? 0x1F : 0;
@@ -132,7 +133,7 @@ static void tick_ch(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
             ch->counter = (ch->counter + a) & 0xFFF;
         }
         if (ch->ON) {
-            if (ch->NE) { // NOISE!
+            if (ch->NOISE.E) { // NOISE!
                 ch->output = ch->NOISE.output;
             }
             else {
@@ -155,4 +156,25 @@ void HUC6280_PSG_cycle(struct HUC6280_PSG *this)
         struct HUC6280_PSG_ch *ch = &this->ch[i];
         tick_ch(this, ch);
     }
+}
+
+u16 HUC6280_PSG_debug_ch_sample(struct HUC6280_PSG *this, u32 num)
+{
+    struct HUC6280_PSG_ch *ch = &this->ch[num];
+    u16 r = (ch->output_l + ch->output_r) + 0x100;
+    if (r == 0x100) r = 0;
+    return r;
+}
+
+void HUC6280_PSG_mix_sample(struct HUC6280_PSG *this, u16 *l, u16 *r)
+{
+    *l = 0;
+    *r = 0;
+    for (u32 i = 0; i < 6; i++) {
+        struct HUC6280_PSG_ch *ch = &this->ch[i];
+        *l += ch->output_l;
+        *r += ch->output_r;
+    }
+    *l >>= 3;
+    *r >>= 3;
 }
