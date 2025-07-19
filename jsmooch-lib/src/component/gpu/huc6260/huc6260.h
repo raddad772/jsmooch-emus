@@ -40,7 +40,7 @@ struct HUC6260 {
     struct {
         u32 DCC;
         union UN16 CTA, CTW;
-    } io;x
+    } io;
 
     DBG_START
         DBG_EVENT_VIEW_START
