@@ -511,7 +511,7 @@ static void setup_waveforms(struct SNES* this, struct debugger_interface *dbgr)
 
 }
 
-void readcpumem(void *ptr, u32 addr, void *dest)
+static void readcpumem(void *ptr, u32 addr, void *dest)
 {
     // Read 16 bytes from addr into dest
     u8 *out = dest;
@@ -521,7 +521,7 @@ void readcpumem(void *ptr, u32 addr, void *dest)
     }
 }
 
-void readvram(void *ptr, u32 addr, void *dest)
+static void readvram(void *ptr, u32 addr, void *dest)
 {
     u8 *vramptr = ptr;
     addr &= 0xFFFF;

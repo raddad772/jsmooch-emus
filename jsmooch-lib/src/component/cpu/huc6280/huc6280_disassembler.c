@@ -138,7 +138,10 @@ static void indirect_x(SARG)
 }
 
 static void indirect_y(SARG) {
-    jsm_string_sprintf(outstr, "%s($%06x),y", ins, la(dbg_read16(trace, PC)));
+    u32 zpa = dbg_read(trace, PC);
+    u32 zer = zpa;
+    u32 a = dbg_read16(trace, &zer);
+    jsm_string_sprintf(outstr, "%s($%02x),y   [$%06x ($%04x)]", ins, zpa, a, la(a));
 }
 
 static void zero_page_bit(SARGBIT)

@@ -293,6 +293,43 @@ static void setup_image_view_palettes(struct TG16* this, struct debugger_interfa
 
 // 64x64 tiles
 // aka 512x512px
+static void readcpumem(void *ptr, u32 addr, void *dest)
+{
+    // Read 16 bytes from addr into dest
+    u8 *out = dest;
+    for (u32 i = 0; i < 16; i++) {
+        *out = TG16_bus_read(ptr, (addr + i) & 0x1FFFFF, 0, 0);
+        out++;
+    }
+}
+
+static void readvram(void *ptr, u32 addr, void *dest)
+{
+    u8 *vramptr = ptr;
+    addr &= 0xFFFF;
+    if (addr <= 0xFFF0) {
+        memcpy(dest, vramptr+addr, 16);
+    }
+    else {
+        u8 *out = dest;
+        for (u32 i = 0; i < 16; i++) {
+            *out = vramptr[(addr + i) & 0xFFFF];
+            out++;
+        }
+    }
+}
+
+
+
+static void setup_memory_view(struct TG16* this, struct debugger_interface *dbgr) {
+    this->dbg.memory = debugger_view_new(dbgr, dview_memory);
+    struct debugger_view *dview = cpg(this->dbg.memory);
+    struct memory_view *mv = &dview->memory;
+    memory_view_add_module(dbgr, mv, "CPU Memory", 0, 6, 0, 0x1FFFFF, this, &readcpumem);
+    memory_view_add_module(dbgr, mv, "VDC0 VRAM", 1, 4, 0, 0xFFFF, &this->vdc0.VRAM, &readvram);
+
+}
+
 
 void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
@@ -302,8 +339,10 @@ void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     dbgr->smallest_step = 1;
 
     setup_dbglog(dbgr, this);
+    setup_events_view(this, dbgr, jsm);
+    setup_memory_view(this, dbgr);
     setup_image_view_palettes(this, dbgr);
     setup_image_view_tiles(this, dbgr);
     setup_image_view_bg(this, dbgr);
-    setup_events_view(this, dbgr, jsm);
 }
+

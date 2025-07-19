@@ -108,7 +108,7 @@ static void trace_format(struct HUC6280 *this, u32 opcode)
             HUC6280_disassemble(this, &mpc, &this->trace.strct, &this->trace.str);
 
             // Now add context...
-            jsm_string_sprintf(&this->trace.str2, "A:%02x  X:%02x  Y:%02x  S:%02x  P:%c%c%c%c%c%c%c%c  PC:%04x",
+            jsm_string_sprintf(&this->trace.str2, "A:%02x  X:%02x  Y:%02x  S:%02x  P:%c%c%c%c%c%c%c%c  PC:%04x M_0:%02x 1:%02x 2:%02x 3:%02x 4:%02x 5:%02x 6:%02x 7:%02x",
                                this->regs.A, this->regs.X, this->regs.Y, this->regs.S,
                                this->regs.P.N ? 'N' : 'n',
                                this->regs.P.V ? 'V' : 'v',
@@ -118,7 +118,15 @@ static void trace_format(struct HUC6280 *this, u32 opcode)
                                this->regs.P.I ? 'I' : 'i',
                                this->regs.P.Z ? 'Z' : 'z',
                                this->regs.P.C ? 'C' : 'c',
-                               this->regs.PC
+                               this->regs.PC,
+                               this->regs.MPR[0] >> 13,
+                               this->regs.MPR[1] >> 13,
+                               this->regs.MPR[2] >> 13,
+                               this->regs.MPR[3] >> 13,
+                               this->regs.MPR[4] >> 13,
+                               this->regs.MPR[5] >> 13,
+                               this->regs.MPR[6] >> 13,
+                               this->regs.MPR[7] >> 13
             );
         }
         else {

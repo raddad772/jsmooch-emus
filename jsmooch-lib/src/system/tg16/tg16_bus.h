@@ -46,6 +46,7 @@ struct TG16 {
             MDBG_IMAGE_VIEW(tiles)
         DBG_IMAGE_VIEWS_END
         DBG_LOG_VIEW
+        DBG_MEMORY_VIEW
     DBG_END
 };
 
