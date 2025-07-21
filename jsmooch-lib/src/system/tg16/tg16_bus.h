@@ -35,6 +35,16 @@ struct TG16 {
         struct cvec* IOs;
         u32 described_inputs;
     } jsm;
+
+    struct {
+        double master_cycles_per_audio_sample, master_cycles_per_min_sample, master_cycles_per_max_sample;
+        double next_sample_cycle_max, next_sample_cycle_min, next_sample_cycle;
+        double next_debug_cycle;
+        struct audiobuf *buf;
+        u64 cycles;
+    } audio;
+
+
     DBG_START
         DBG_EVENT_VIEW
         DBG_CPU_REG_START1
@@ -47,6 +57,12 @@ struct TG16 {
         DBG_IMAGE_VIEWS_END
         DBG_LOG_VIEW
         DBG_MEMORY_VIEW
+
+        DBG_WAVEFORM_START(psg)
+            DBG_WAVEFORM_MAIN
+            DBG_WAVEFORM_CHANS(6)
+        DBG_WAVEFORM_END(psg)
+
     DBG_END
 };
 

@@ -10,7 +10,9 @@ void HUC6280_PSG_init(struct HUC6280_PSG *this)
     for (u32 i = 0; i < 6; i++) {
         this->ch[i].num = 0;
         if (i > 4) this->ch[i].NOISE.state = 1;
+        this->ch[i].ext_enable = 1;
     }
+    this->ext_enable = 1;
 }
 
 void HUC6280_PSG_delete(struct HUC6280_PSG *this)
@@ -156,6 +158,7 @@ void HUC6280_PSG_cycle(struct HUC6280_PSG *this)
         struct HUC6280_PSG_ch *ch = &this->ch[i];
         tick_ch(this, ch);
     }
+    // TODO: LFO
 }
 
 u16 HUC6280_PSG_debug_ch_sample(struct HUC6280_PSG *this, u32 num)
@@ -170,10 +173,13 @@ void HUC6280_PSG_mix_sample(struct HUC6280_PSG *this, u16 *l, u16 *r)
 {
     *l = 0;
     *r = 0;
+    if (!this->ext_enable) return;
     for (u32 i = 0; i < 6; i++) {
         struct HUC6280_PSG_ch *ch = &this->ch[i];
-        *l += ch->output_l;
-        *r += ch->output_r;
+        if (ch->ext_enable) {
+            *l += ch->output_l;
+            *r += ch->output_r;
+        }
     }
     *l >>= 3;
     *r >>= 3;

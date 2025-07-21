@@ -937,7 +937,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "laxe2.pce", nullptr); // crash/hang after "press run"
             //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // gfx/palette issues
             //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // seems good
-            worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
+            //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
 
             break;
         case SYS_GENESIS_USA:

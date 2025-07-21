@@ -12,6 +12,7 @@
 struct HUC6280_PSG {
     u8 LMAL, RMAL; // left/right main amplitude
     u8 SEL;
+    u32 ext_enable;
 
     struct {
         u8 FREQ, TRG, CTL;
@@ -33,6 +34,7 @@ struct HUC6280_PSG {
             i32 output;
         } NOISE;
         i32 counter;
+        u32 ext_enable;
     } ch[6];
 
 };

@@ -40,48 +40,38 @@ u32 read_trace_huc6280(void *ptr, u32 addr) {
     return TG16_bus_read(this, addr, this->cpu.pins.D, 0);
 }
 
+static void setup_debug_waveform(struct TG16 *this, struct debug_waveform *dw)
+{
+    if (dw->samples_requested == 0) return;
+    dw->samples_rendered = dw->samples_requested;
+    dw->user.cycle_stride = ((float)this->vce.regs.cycles_per_frame / (float)dw->samples_requested);
+    dw->user.buf_pos = 0;
+}
+
+
 void TG16J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
-    /*this->audio.buf = ab;
-    if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)this->clock.timing.frame.cycles_per / (float)ab->samples_len);
-        this->audio.next_sample_cycle_max = 0;
-        struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
-        this->audio.master_cycles_per_max_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
+    this->audio.buf = ab;
+    // # of cycles per frame can change per-frame
+    this->audio.master_cycles_per_audio_sample = ((float)this->vce.regs.cycles_per_frame / (float)ab->samples_len);
+    this->audio.next_sample_cycle_max = 0;
+    struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
+    this->audio.master_cycles_per_max_sample = (float)this->vce.regs.cycles_per_frame / (float)wf->samples_requested;
 
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
-        this->audio.master_cycles_per_min_sample = (float)this->clock.timing.frame.cycles_per / (float)wf->samples_requested;
-    }
+    wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
+    this->audio.master_cycles_per_min_sample = (float)this->vce.regs.cycles_per_frame / (float)wf->samples_requested;
 
     // PSG
-    struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
+    wf = cpg(this->dbg.waveforms_psg.main);
     setup_debug_waveform(this, wf);
-    this->psg.ext_enable = wf->ch_output_enabled;
-    if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
-    this->clock.psg.clock_divisor = wf->clock_divider;
-    for (u32 i = 0; i < 4; i++) {
+    this->cpu.psg.ext_enable = wf->ch_output_enabled;
+    for (u32 i = 0; i < 6; i++) {
         wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[i]);
         setup_debug_waveform(this, wf);
-        if (i < 3) {
-            this->psg.sw[i].ext_enable = wf->ch_output_enabled;
-        }
-        else
-            this->psg.noise.ext_enable = wf->ch_output_enabled;
+        this->cpu.psg.ch[i].ext_enable = wf->ch_output_enabled;
     }
 
-    // ym2612
-    wf = cpg(this->dbg.waveforms_ym2612.main);
-    this->ym2612.ext_enable = wf->ch_output_enabled;
-    setup_debug_waveform(this, wf);
-    if (wf->clock_divider == 0) wf->clock_divider = wf->default_clock_divider;
-    this->clock.ym2612.clock_divisor = wf->clock_divider;
-    for (u32 i = 0; i < 6; i++) {
-        wf = (struct debug_waveform *)cpg(this->dbg.waveforms_ym2612.chan[i]);
-        setup_debug_waveform(this, wf);
-        this->ym2612.channel[i].ext_enable = wf->ch_output_enabled;
-    }
-    */
 }
 
 static void populate_opts(struct jsm_system *jsm)
@@ -203,6 +193,11 @@ void TG16_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
+static inline float u16_to_float(i16 val)
+{
+    return (float)val / 65535.0f;
+}
+
 static inline float i16_to_float(i16 val)
 {
     return ((((float)(((i32)val) + 32768)) / 65535.0f) * 2.0f) - 1.0f;
@@ -210,78 +205,55 @@ static inline float i16_to_float(i16 val)
 
 static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    /*struct TG16* this = (struct TG16 *)ptr;
+    struct TG16* this = (struct TG16 *)ptr;
     if (this->audio.buf) {
         this->audio.cycles++;
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
         if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
-            i32 l = 0, r = 0;
-            if (this->psg.ext_enable) {
-                l = r = (i32)SN76489_mix_sample(&this->psg, 0) >> 5;
-            }
-            if (this->ym2612.ext_enable) {
-                l += (i32)this->ym2612.mix.left_output;
-                r += (i32)this->ym2612.mix.right_output;
-            }
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = i16_to_float((i16)l);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = i16_to_float((i16)r);
+            u16 ls, rs;
+            HUC6280_PSG_mix_sample(&this->cpu.psg, &ls, &rs);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = u16_to_float((i16)ls);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = u16_to_float((i16)rs);
         }
         this->audio.buf->upos+=2;
-    }*/
+    }
 }
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    /*struct TG16 *this = (struct TG16 *)ptr;
+    struct TG16 *this = (struct TG16 *)ptr;
 
     // PSG
     struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
     if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(SN76489_mix_sample(&this->psg, 1));
-        dw->user.buf_pos++;
-    }
-
-    // YM2612
-    dw = cpg(this->dbg.waveforms_ym2612.main);
-    if (dw->user.buf_pos < dw->samples_requested) {
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(this->ym2612.mix.mono_output);
+        u16 l, r;
+        HUC6280_PSG_mix_sample(&this->cpu.psg, &l, &r);
+        u32 a = (l + r) >> 1;
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = u16_to_float(a);
         dw->user.buf_pos++;
     }
     this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
-     */
 }
 
 static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    /*
     struct TG16 *this = (struct TG16 *)ptr;
 
     // PSG
     struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.chan[0]);
-    for (int j = 0; j < 4; j++) {
+    for (int j = 0; j < 6; j++) {
         dw = cpg(this->dbg.waveforms_psg.chan[j]);
         if (dw->user.buf_pos < dw->samples_requested) {
-            i16 sv = SN76489_sample_channel(&this->psg, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv * 4);
+            u16 sv = HUC6280_PSG_debug_ch_sample(&this->cpu.psg, j);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = u16_to_float(sv);
             dw->user.buf_pos++;
         }
     }
 
-    // YM2612
-    for (int j = 0; j < 6; j++) {
-        dw = cpg(this->dbg.waveforms_ym2612.chan[j]);
-        if (dw->user.buf_pos < dw->samples_requested) {
-            dw->user.next_sample_cycle += dw->user.cycle_stride;
-            i16 sv = ym2612_sample_channel(&this->ym2612, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = i16_to_float(sv << 2);
-            dw->user.buf_pos++;
-        }
-    }
     this->audio.next_sample_cycle_min += this->audio.master_cycles_per_min_sample;
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
-     */
 }
 
 
@@ -341,7 +313,7 @@ static void setup_audio(struct TG16 *this, struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 44100;
+    chan->sample_rate = 48000;
     chan->left = chan->right = 1;
     chan->num = 2;
     chan->low_pass_filter = 24000;
@@ -429,6 +401,9 @@ static void schedule_first(struct TG16 *this)
     HUC6280_schedule_first(&this->cpu, 0);
     HUC6260_schedule_first(&this->vce);
     scheduler_only_add_abs(&this->scheduler, PSG_CYCLES, 0, this, &psg_go, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
 }
 
 void TG16J_get_framevars(JSM, struct framevars* out)
@@ -468,6 +443,7 @@ u32 TG16J_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
+
     //u32 current_frame = this->vce.master_frame;
 #ifdef DO_STATS
     u64 ym_start = this->timing.ym2612_cycles;
