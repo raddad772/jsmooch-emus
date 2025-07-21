@@ -324,9 +324,9 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     this->dbg.waveforms_psg.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms_psg.view);
     struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
-    snprintf(wv->name, sizeof(wv->name), "Huc6280 PSG9");
+    snprintf(wv->name, sizeof(wv->name), "Huc6280 PSG");
 
-    cvec_alloc_atleast(&wv->waveforms, 6);
+    cvec_alloc_atleast(&wv->waveforms, 8);
     cvec_lock_reallocs(&wv->waveforms);
 
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
@@ -335,7 +335,6 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
-    dw->default_clock_divider = 240;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -367,17 +366,18 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_psg.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    this->dbg.waveforms_psg.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Ch 5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms_psg.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    this->dbg.waveforms_psg.chan[5] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Ch 6");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    printf("\nWAVEFORMS INIT'D");
 }
 
 

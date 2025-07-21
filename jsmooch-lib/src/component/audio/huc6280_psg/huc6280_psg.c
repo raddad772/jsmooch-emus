@@ -8,7 +8,7 @@
 void HUC6280_PSG_init(struct HUC6280_PSG *this)
 {
     for (u32 i = 0; i < 6; i++) {
-        this->ch[i].num = 0;
+        this->ch[i].num = i;
         if (i > 4) this->ch[i].NOISE.state = 1;
         this->ch[i].ext_enable = 1;
     }
@@ -68,11 +68,9 @@ void HUC6280_PSG_write(struct HUC6280_PSG *this, u32 addr, u8 val)
             ch->RAL = val & 15;
             return;
         case 6:
-            if (ch->DDA) {
-                ch->WAVEDATA[ch->wavectr] = val & 0x1F;
-                update_DDA(this, ch);
-                if (!ch->ON) ch->wavectr = (ch->wavectr + 1) & 0x1F;
-            }
+            ch->WAVEDATA[ch->wavectr] = val & 0x1F;
+            update_DDA(this, ch);
+            if (!ch->ON) ch->wavectr = (ch->wavectr + 1) & 0x1F;
             return;
         case 7: //
             if (this->SEL < 5) return;
@@ -173,7 +171,6 @@ void HUC6280_PSG_mix_sample(struct HUC6280_PSG *this, u16 *l, u16 *r)
 {
     *l = 0;
     *r = 0;
-    if (!this->ext_enable) return;
     for (u32 i = 0; i < 6; i++) {
         struct HUC6280_PSG_ch *ch = &this->ch[i];
         if (ch->ext_enable) {
@@ -181,6 +178,6 @@ void HUC6280_PSG_mix_sample(struct HUC6280_PSG *this, u16 *l, u16 *r)
             *r += ch->output_r;
         }
     }
-    *l >>= 3;
-    *r >>= 3;
+    //*l >>= 3;
+    //*r >>= 3;
 }

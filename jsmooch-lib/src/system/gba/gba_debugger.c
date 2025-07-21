@@ -1269,7 +1269,6 @@ static void setup_waveforms_view(struct GBA* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
-    dw->default_clock_divider = 240;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);

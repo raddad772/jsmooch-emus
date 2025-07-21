@@ -193,6 +193,11 @@ void TG16_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
+static inline float u16_to_float2(i16 val)
+{
+    return (float)val / 512.0f;
+}
+
 static inline float u16_to_float(i16 val)
 {
     return (float)val / 65535.0f;
@@ -213,8 +218,9 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
         if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
             u16 ls, rs;
             HUC6280_PSG_mix_sample(&this->cpu.psg, &ls, &rs);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = u16_to_float((i16)ls);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = u16_to_float((i16)rs);
+            //if (ls != 0) printf("\nLS: %d", ls);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = u16_to_float2(ls);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = u16_to_float2(rs);
         }
         this->audio.buf->upos+=2;
     }

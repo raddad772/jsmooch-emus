@@ -855,7 +855,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "hm_fomt.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
-            //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
+            worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
             //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
@@ -878,7 +878,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "fzero_gp_legends.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "srr.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "astro_boy.gba", nullptr);
-            worked = grab_ROM(&ROMs, which, "goodbye_galaxy.gba", nullptr);
+            //worked = grab_ROM(&ROMs, which, "goodbye_galaxy.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "minish_cap.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "motoracer.gba", nullptr);
 
@@ -928,7 +928,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // crashes? after mehu
             //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // slightly unstable scroll
             //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
-            // worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
+            //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
             //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // garbled text and maps
             //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // seems to work fine
@@ -936,7 +936,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "laxe.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "laxe2.pce", nullptr); // crash/hang after "press run"
             //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // gfx/palette issues
-            //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // seems good
+            worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // seems good
             //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
 
             break;
