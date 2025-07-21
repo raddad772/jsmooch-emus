@@ -178,6 +178,6 @@ void HUC6280_PSG_mix_sample(struct HUC6280_PSG *this, u16 *l, u16 *r)
             *r += ch->output_r;
         }
     }
-    //*l >>= 3;
-    //*r >>= 3;
+    //*l >>= 4;
+    //*r >>= 4;
 }

@@ -18,6 +18,7 @@
 #define TAG_SCANLINE 1
 #define TAG_FRAME 2
 #define DRAW_CYCLES 1108
+#define TG16_SAMPLE 48000
 
 #define JTHIS struct TG16* this = (struct TG16*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -53,10 +54,11 @@ void TG16J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
-    // # of cycles per frame can change per-frame
+    struct debug_waveform *wf;
+        // # of cycles per frame can change per-frame
     this->audio.master_cycles_per_audio_sample = ((float)this->vce.regs.cycles_per_frame / (float)ab->samples_len);
     this->audio.next_sample_cycle_max = 0;
-    struct debug_waveform *wf = cpg(this->dbg.waveforms_psg.main);
+    wf = cpg(this->dbg.waveforms_psg.main);
     this->audio.master_cycles_per_max_sample = (float)this->vce.regs.cycles_per_frame / (float)wf->samples_requested;
 
     wf = (struct debug_waveform *)cpg(this->dbg.waveforms_psg.chan[0]);
@@ -195,12 +197,12 @@ void TG16_delete(JSM) {
 
 static inline float u16_to_float2(i16 val)
 {
-    return (float)val / 512.0f;
+    return (float)val / 47500.0f;
 }
 
 static inline float u16_to_float(i16 val)
 {
-    return (float)val / 65535.0f;
+    return ((float)val) / 20000.0f;
 }
 
 static inline float i16_to_float(i16 val)
@@ -319,7 +321,7 @@ static void setup_audio(struct TG16 *this, struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 48000;
+    chan->sample_rate = 3576000;
     chan->left = chan->right = 1;
     chan->num = 2;
     chan->low_pass_filter = 24000;
