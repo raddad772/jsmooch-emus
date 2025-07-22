@@ -10,6 +10,10 @@ jsmooch-gui is the front-end GUI app.
 jsmooch-lib is the C11 library of emulators, agnostic to front-end.
 jsmooch-tests are some tests for jsmooch-lib
 
+[![Build macOS](https://github.com/raddad772/jsmooch-emus/actions/workflows/build-macos.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus/actions/workflows/build-macos.yml)
+[![Build Linux](https://github.com/raddad772/jsmooch-emus/actions/workflows/build-linux.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus/actions/workflows/build-linux.yml)
+[![Build Windows](https://github.com/raddad772/jsmooch-emus/actions/workflows/build-windows.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus/actions/workflows/build-windows.yml)
+
 ## jsmooch-gui progress
 jsmooch-gui is very barebrones. It doesn't contain many QoL features I'd probably enjoy like a great debugger or even the ability to choose the ROM at run-time.
 
@@ -65,10 +69,3 @@ Not ported from JSMoo yet. But, there, only ran a few games. Mostly a proof of c
 Mostly plays games fine, but not thoroughly tested
 
 More detailed info on each to come!
-
-## Build status
-
-[![Build Linux](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-linux.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-linux.yml)
-[![Build Windows](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-windows.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-windows.yml)
-[![Build macOS](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-macos.yml/badge.svg)](https://github.com/raddad772/jsmooch-emus-win/actions/workflows/build-macos.yml)
-
