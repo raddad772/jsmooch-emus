@@ -12,11 +12,16 @@
 struct HUC6280_PSG {
     u8 LMAL, RMAL; // left/right main amplitude
     u8 SEL;
+    u8 updates;
     u32 ext_enable;
 
     struct {
         u8 FREQ, TRG, CTL;
     } LFO;
+
+    struct {
+        u16 l, r;
+    } out;
 
     struct HUC6280_PSG_ch {
         union UN16 FREQ;
@@ -45,7 +50,6 @@ void HUC6280_PSG_reset(struct HUC6280_PSG *);
 
 void HUC6280_PSG_write(struct HUC6280_PSG *, u32 addr, u8 val);
 void HUC6280_PSG_cycle(struct HUC6280_PSG *);
-void HUC6280_PSG_mix_sample(struct HUC6280_PSG *, u16 *l, u16 *r);
 u16 HUC6280_PSG_debug_ch_sample(struct HUC6280_PSG *, u32 num);
 
 #endif //JSMOOCH_EMUS_HUC6280_PSG_H

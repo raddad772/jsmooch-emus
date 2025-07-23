@@ -27,9 +27,30 @@ void HUC6280_PSG_reset(struct HUC6280_PSG *this)
     }
 }
 
+static void update_ch_output(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
+{
+    const u8 volume_reduce[30] = { 255,214,180,151,127,107,90,76,64,53,45,38,32,27,22,19,16,13,11,9,8,6,5,4,4,3,2,2,2,1 };
+    uint8_t reduction_l = (0xF - this->LMAL) * 2 + (0x1F - ch->AL) + (0xF - ch->LAL) * 2;
+    uint8_t reduction_r = (0xF - this->RMAL) * 2 + (0x1F - ch->AL) + (0xF - ch->RAL) * 2;
+    if(reduction_l > 29) {
+        ch->output_l = 0;
+    }
+    else {
+        ch->output_l = ch->output * volume_reduce[reduction_l];
+    }
+    if (reduction_r > 29) {
+        ch->output_r = 0;
+    }
+    else {
+        ch->output_r = ch->output * volume_reduce[reduction_r];
+    }
+}
+
 static void update_DDA(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
 {
+    this->updates = 1;
     ch->output = ch->WAVEDATA[ch->wavectr];
+    update_ch_output(this, ch);
 }
 
 void HUC6280_PSG_write(struct HUC6280_PSG *this, u32 addr, u8 val)
@@ -88,25 +109,6 @@ void HUC6280_PSG_write(struct HUC6280_PSG *this, u32 addr, u8 val)
     }
 }
 
-static void update_ch_output(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
-{
-    const u8 volume_reduce[30] = { 255,214,180,151,127,107,90,76,64,53,45,38,32,27,22,19,16,13,11,9,8,6,5,4,4,3,2,2,2,1 };
-    uint8_t reduction_l = (0xF - this->LMAL) * 2 + (0x1F - ch->AL) + (0xF - ch->LAL) * 2;
-    uint8_t reduction_r = (0xF - this->RMAL) * 2 + (0x1F - ch->AL) + (0xF - ch->RAL) * 2;
-    if(reduction_l > 29) {
-        ch->output_l = 0;
-    }
-    else {
-        ch->output_l = ch->output * volume_reduce[reduction_l];
-    }
-    if (reduction_r > 29) {
-        ch->output_r = 0;
-    }
-    else {
-        ch->output_r = ch->output * volume_reduce[reduction_r];
-    }
-}
-
 
 static void clock_noise(struct HUC6280_PSG_ch *ch)
 {
@@ -126,6 +128,7 @@ static void tick_ch(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
     if (ch->num > 4) clock_noise(ch);
     ch->counter--;
     if (ch->counter < 0) {
+        this->updates = 1;
         ch->counter = ch->FREQ.u;
         if (ch->num == 0) {
             int shift = ((this->LFO.CTL & 0x03) - 1) * 2;
@@ -150,12 +153,27 @@ static void tick_ch(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
     }
 }
 
+static void mix_sample(struct HUC6280_PSG *this)
+{
+    this->out.l = 0;
+    this->out.r = 0;
+    for (u32 i = 0; i < 6; i++) {
+        struct HUC6280_PSG_ch *ch = &this->ch[i];
+        if (ch->ext_enable) {
+            this->out.l += ch->output_l;
+            this->out.r += ch->output_r;
+        }
+    }
+    this->updates = 0;
+}
+
 void HUC6280_PSG_cycle(struct HUC6280_PSG *this)
 {
     for (u32 i = 0; i < 6; i++) {
         struct HUC6280_PSG_ch *ch = &this->ch[i];
         tick_ch(this, ch);
     }
+    if (this->updates) mix_sample(this);
     // TODO: LFO
 }
 
@@ -167,17 +185,3 @@ u16 HUC6280_PSG_debug_ch_sample(struct HUC6280_PSG *this, u32 num)
     return r;
 }
 
-void HUC6280_PSG_mix_sample(struct HUC6280_PSG *this, u16 *l, u16 *r)
-{
-    *l = 0;
-    *r = 0;
-    for (u32 i = 0; i < 6; i++) {
-        struct HUC6280_PSG_ch *ch = &this->ch[i];
-        if (ch->ext_enable) {
-            *l += ch->output_l;
-            *r += ch->output_r;
-        }
-    }
-    //*l >>= 4;
-    //*r >>= 4;
-}

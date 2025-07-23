@@ -200,6 +200,12 @@ static inline float u16_to_float2(i16 val)
     return (float)val / 47500.0f;
 }
 
+static inline float ch_to_float(i16 val)
+{
+    return (float)val / 7906.0f;
+}
+
+
 static inline float u16_to_float(i16 val)
 {
     return ((float)val) / 20000.0f;
@@ -218,11 +224,9 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
         this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
         scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
         if (this->audio.buf->upos < (this->audio.buf->samples_len << 1)) {
-            u16 ls, rs;
-            HUC6280_PSG_mix_sample(&this->cpu.psg, &ls, &rs);
             //if (ls != 0) printf("\nLS: %d", ls);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = u16_to_float2(ls);
-            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = u16_to_float2(rs);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos] = u16_to_float2(this->cpu.psg.out.l);
+            ((float *)this->audio.buf->ptr)[this->audio.buf->upos+1] = u16_to_float2(this->cpu.psg.out.r);
         }
         this->audio.buf->upos+=2;
     }
@@ -237,10 +241,8 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     //dw = cpg(this->dbg.waveforms_psg.main);
     dw = this->dbg.waveforms_psg.main_cache;
     if (dw->user.buf_pos < dw->samples_requested) {
-        u16 l, r;
-        HUC6280_PSG_mix_sample(&this->cpu.psg, &l, &r);
-        u32 a = (l + r) >> 1;
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = u16_to_float(a);
+        u32 a = (this->cpu.psg.out.l + this->cpu.psg.out.l) >> 1;
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = ch_to_float(a);
         dw->user.buf_pos++;
     }
     this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;
