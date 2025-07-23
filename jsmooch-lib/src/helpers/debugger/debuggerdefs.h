@@ -26,8 +26,8 @@ extern "C" {
 #define DBG_WAVEFORM_START1 struct { struct cvec_ptr view;
 #define DBG_WAVEFORM_END1 } waveforms;
 #define DBG_WAVEFORM_START(x) struct { struct cvec_ptr view;
-#define DBG_WAVEFORM_MAIN struct cvec_ptr main;
-#define DBG_WAVEFORM_CHANS(x) struct cvec_ptr chan[x];
+#define DBG_WAVEFORM_MAIN struct cvec_ptr main; struct debug_waveform *main_cache;
+#define DBG_WAVEFORM_CHANS(x) struct cvec_ptr chan[x]; struct debug_waveform *chan_cache[x];
 #define DBG_WAVEFORM_END(x) } waveforms_##x;
 
 #define DBG_MEMORY_VIEW struct cvec_ptr memory;

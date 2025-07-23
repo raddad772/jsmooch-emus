@@ -233,7 +233,9 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     struct TG16 *this = (struct TG16 *)ptr;
 
     // PSG
-    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.main);
+    struct debug_waveform *dw;
+    //dw = cpg(this->dbg.waveforms_psg.main);
+    dw = this->dbg.waveforms_psg.main_cache;
     if (dw->user.buf_pos < dw->samples_requested) {
         u16 l, r;
         HUC6280_PSG_mix_sample(&this->cpu.psg, &l, &r);
@@ -250,9 +252,11 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
     struct TG16 *this = (struct TG16 *)ptr;
 
     // PSG
-    struct debug_waveform *dw = cpg(this->dbg.waveforms_psg.chan[0]);
+    struct debug_waveform *dw;
+    //dw = cpg(this->dbg.waveforms_psg.chan[0]);
     for (int j = 0; j < 6; j++) {
-        dw = cpg(this->dbg.waveforms_psg.chan[j]);
+        //dw = cpg(this->dbg.waveforms_psg.chan[j]);
+        dw = this->dbg.waveforms_psg.chan_cache[j];
         if (dw->user.buf_pos < dw->samples_requested) {
             u16 sv = HUC6280_PSG_debug_ch_sample(&this->cpu.psg, j);
             ((float *) dw->buf.ptr)[dw->user.buf_pos] = u16_to_float(sv);
@@ -448,55 +452,24 @@ void TG16J_reset(JSM)
 
 //#define DO_STATS
 
+static void fixup_audio(struct TG16 *this)
+{
+    if (!this->dbg.waveforms_psg.main_cache) {
+        this->dbg.waveforms_psg.main_cache = cpg(this->dbg.waveforms_psg.main);
+        for (u32 i = 0; i < 6; i++) {
+            this->dbg.waveforms_psg.chan_cache[i] = cpg(this->dbg.waveforms_psg.chan[i]);
+        }
+    }
+}
+
 u32 TG16J_finish_frame(JSM)
 {
     JTHIS;
     read_opts(jsm, this);
+    fixup_audio(this);
 
-    //u32 current_frame = this->vce.master_frame;
-#ifdef DO_STATS
-    u64 ym_start = this->timing.ym2612_cycles;
-    u64 z80_start = this->timing.z80_cycles;
-    u64 m68k_start = this->timing.m68k_cycles;
-    u64 vdp_start = this->timing.vdp_cycles;
-    u64 clock_start = this->clock.master_cycle_count;
-    u64 psg_start = this->timing.psg_cycles;
-    u64 audio_start = this->audio.cycles;
-#endif
     scheduler_run_til_tag_tg16(&this->scheduler, TAG_FRAME);
 
-#ifdef DO_STATS
-    u64 ym_num_cycles = (this->timing.ym2612_cycles - ym_start) * 60;
-    u64 psg_num_cycles = (this->timing.psg_cycles - psg_start) * 60;
-    u64 z80_num_cycles = (this->timing.z80_cycles - z80_start) * 60;
-    u64 m68k_num_cycles = (this->timing.m68k_cycles - m68k_start) * 60;
-    u64 vdp_num_cycles = (this->timing.vdp_cycles - vdp_start) * 60;
-    u64 clock_num_cycles = (this->clock.master_cycle_count - clock_start) * 60;
-    u64 per_frame = this->clock.master_cycle_count - clock_start;
-    u64 per_scanline = per_frame / 262;
-    u64 audio_num_cycles = (this->audio.cycles - audio_start) * 60;
-    double ym_div = (double)MASTER_CYCLES_PER_SECOND / (double)ym_num_cycles;
-    double z80_div = (double)MASTER_CYCLES_PER_SECOND / (double)z80_num_cycles;
-    double m68k_div = (double)MASTER_CYCLES_PER_SECOND / (double)m68k_num_cycles;
-    double vdp_div = (double)MASTER_CYCLES_PER_SECOND / (double)vdp_num_cycles;
-    double psg_div = (double)MASTER_CYCLES_PER_SECOND / (double)psg_num_cycles;
-
-    double ym_spd = (1008.0 / ym_div) * 100.0;
-    double psg_spd = (240.0 / psg_div) * 100.0;
-    double m68k_spd = (7.0 / m68k_div) * 100.0;
-    double z80_spd = (15.0 / z80_div) * 100.0;
-    double vdp_spd = (16.0 / vdp_div) * 100.0;
-    double audio_spd = ((double)audio_num_cycles / ((MASTER_CYCLES_PER_FRAME * 60) / (7 * 144))) * 100.0;
-
-    printf("\nSCANLINE:%d FRAME:%lld", this->clock.vdp.vcount, this->clock.master_frame);
-    printf("\n\nEFFECTIVE AUDIO FREQ IS %lld. RUNNING AT %f SPEED", audio_num_cycles, audio_spd);
-    printf("\nEFFECTIVE YM FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", ym_num_cycles, ym_div, ym_spd);
-    printf("\nEFFECTIVE PSG FREQ IS %lld. DIVISOR %f, RUNNING AT %f SPEED", psg_num_cycles, psg_div, psg_spd);
-    printf("\nEFFECTIVE Z80 SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", z80_num_cycles, z80_div, z80_spd);
-    printf("\nEFFECTIVE M68K SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", m68k_num_cycles, m68k_div, m68k_spd);
-    printf("\nEFFECTIVE VDP SPEED IS %lld. DIVISOR %f, RUNNING AT %f SPEED", vdp_num_cycles, vdp_div, vdp_spd);
-    printf("\nEFFECTIVE MASTER CLOCK IS %lld. PER FRAME:%lld PER SCANLINE:%lld", clock_num_cycles, per_frame, per_scanline);
-#endif
     return this->vce.display->last_written;
 }
 
@@ -509,25 +482,7 @@ static void cycle_cpu(struct TG16 *this)
 u32 TG16J_finish_scanline(JSM)
 {
     JTHIS;
-    /*u32 start_y = this->vce.regs.y;
-    while (this->vce.regs.y == start_y) {
-        i64 min_step = MIN(this->clock.next.cpu, this->clock.next.vce);
-        min_step = MIN(min_step, this->clock.next.timer);
-        this->clock.master_cycles += min_step;
-
-        if (this->clock.master_cycles >= this->clock.next.cpu) {
-            HUC6280_internal_cycle(&this->cpu);
-            this->clock.next.cpu += this->cpu.regs.clock_div;
-        }
-        if (this->clock.master_cycles >= this->clock.next.timer) {
-            HUC6280_tick_timer(&this->cpu);
-            this->clock.next.timer += 3072;
-        }
-        if (this->clock.master_cycles >= this->clock.next.vce) {
-            HUC6260_cycle(&this->vce);
-            this->clock.next.vce += this->vce.regs.clock_div;
-        }
-    }*/
+    fixup_audio(this);
     scheduler_run_til_tag_tg16(&this->scheduler, TAG_SCANLINE);
 
     return this->vce.display->last_written;
@@ -536,6 +491,7 @@ u32 TG16J_finish_scanline(JSM)
 u32 TG16J_step_master(JSM, u32 howmany)
 {
     JTHIS;
+    fixup_audio(this);
     scheduler_run_for_cycles_tg16(&this->scheduler, howmany);
     return 0;
 }
