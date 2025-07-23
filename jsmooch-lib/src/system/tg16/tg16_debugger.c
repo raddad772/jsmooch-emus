@@ -437,7 +437,6 @@ static int render_mpr(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_s
             u32 lowaddr = ctx->int32_data << 13;
             return snprintf(outbuf, outbuf_sz, "%02X (ROM $%06X-$%06X)", ctx->int32_data, lowaddr, lowaddr + 0xFFF); }
     }
-
 }
 
 static void fill_disassembly_view(void *tg16ptr, struct debugger_interface *dbgr, struct disassembly_view *dview)
@@ -579,6 +578,27 @@ static void get_dissasembly(void *tg16ptr, struct debugger_interface *dbgr, stru
     HUC6280_disassemble_entry(&this->cpu, entry);
 }
 
+static int print_disassembly_addr(void *ptr, u32 addr, char *out, size_t sz_out)
+{
+    struct TG16 *this = (struct TG16 *)ptr;
+    addr &= 0xFFFF;
+    u32 mprnum = addr >> 13;
+    u32 bank = this->cpu.regs.MPR[mprnum] >> 13;
+    switch (bank) {
+        case 0xF7: // SRAM
+            return snprintf(out, sz_out, "F7:%04X (SRAM)", addr);
+        case 0xF8: // RAM
+        case 0xF9: // RAM
+        case 0xFA: // RAM
+        case 0xFB: // RAM
+            return snprintf(out, sz_out, "%02X:%04X (RAM)", bank, addr);
+        case 0xFF: // CPUIO
+            return snprintf(out, sz_out, "FF:%04X (IO)", addr);
+        default: {// ROM/empty
+            u32 lowaddr = bank << 13;
+            return snprintf(out, sz_out, "%02X:%04X (ROM $%06X)", bank, addr, lowaddr + (addr & 0xFFF)); }
+    }
+}
 
 static void setup_disassembly_view(struct TG16* this, struct debugger_interface *dbgr)
 {
@@ -592,6 +612,10 @@ static void setup_disassembly_view(struct TG16* this, struct debugger_interface 
     create_and_bind_registers(this, dv);
     dv->mem_start = 0;
     dv->mem_end = 0xFFFF;
+
+    dv->print_addr.ptr = (void *)this;
+    dv->print_addr.func = &print_disassembly_addr;
+
     dv->fill_view.ptr = (void *)this;
     dv->fill_view.func = &fill_disassembly_view;
 

@@ -67,7 +67,7 @@ static void block_move(SARG)
     u32 source = dbg_read16(trace, PC);
     u32 target = dbg_read16(trace, PC);
     u32 length = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%ss:$%02x:%04x, t:$%02x:%04x, l:$%4x", ins, mpr(source), source, mpr(target), target, length);
+    jsm_string_sprintf(outstr, "%ss:$%02x:%04x, t:$%02x:%04x, l:$%x", ins, mpr(source), source, mpr(target), target, length);
 
 }
 
@@ -103,7 +103,7 @@ static void zero_page_bit_relative(SARGBIT)
     u32 zp = dbg_read(trace, PC);
     u16 v = (u16)(i8)dbg_read(trace, PC);
     u16 pc = v + (*PC);
-    jsm_string_sprintf(outstr, "%s$%02x:%c, $%02x:%02x", ins, zp, bitnum + 0x30, mpr(pc), pc);
+    jsm_string_sprintf(outstr, "%s$%02x:%02x:%c, $%02x:%02x", ins, mpr(zp), zp, bitnum + 0x30, mpr(pc), pc);
 }
 
 static void branch(SARG) {
@@ -155,7 +155,7 @@ static void zero_page_bit(SARGBIT)
 static void zero_page(SARG)
 {
     u32 addr = dbg_read(trace, PC);
-    jsm_string_sprintf(outstr, "%s$%06x", ins, mpr(addr), addr);
+    jsm_string_sprintf(outstr, "%s$%02x:%02x", ins, mpr(addr), addr);
 }
 
 static void zero_page_x(SARG)

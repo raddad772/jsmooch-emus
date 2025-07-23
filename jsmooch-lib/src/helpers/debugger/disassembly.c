@@ -330,7 +330,13 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
             if (e->addr < cur_search_addr) continue; // Skip if we're in the block before current address
 
             struct disassembly_entry_strings *es = cvec_push_back(out_lines);
-            snprintf(es->addr, sizeof(es->addr), "%04x", e->addr);
+
+            if (dview->print_addr.func) {
+                dview->print_addr.func(dview->print_addr.ptr, e->addr, es->addr, sizeof(es->addr));
+            }
+            else {
+                snprintf(es->addr, sizeof(es->addr), "%04x", e->addr);
+            }
             snprintf(es->dasm, sizeof(es->dasm), "%s", e->dasm.ptr);
             snprintf(es->context, sizeof(es->context), "%s", e->context.ptr);
 

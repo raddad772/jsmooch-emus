@@ -191,14 +191,6 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
     //assert(timecode<50000);
     u64 id = this->id_counter++;
     //printf("\nAdd item timecode:%lld id:%lld", timecode, id);
-    if (timecode == -2) {
-        assert(1==2);
-        // Insert at first
-        //printf("\nInsert at first!");
-        this->first_event = alloc_event(this, timecode, key, this->first_event, id);
-        return this->first_event;
-    }
-
     i64 curtime = current_time(this);
     if ((timecode <= curtime) || (timecode == 0)) {
         if (do_instant) {

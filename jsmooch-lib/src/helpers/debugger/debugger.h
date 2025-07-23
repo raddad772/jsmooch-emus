@@ -157,6 +157,11 @@ struct disassembly_view {
         void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview);
     } fill_view;
 
+    struct {
+        void *ptr;
+        int (*func)(void *, u32 addr, char *out, size_t out_sz);
+    } print_addr;
+
     struct { // get_disaassembly gets disasssembly
         void *ptr;
         void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry);

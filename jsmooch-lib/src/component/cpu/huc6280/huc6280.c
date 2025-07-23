@@ -166,7 +166,7 @@ void HUC6280_cycle(struct HUC6280 *this)
     this->regs.TCU++;
     //printf("\nEXEC TCU %d PC %04x", this->regs.TCU, this->regs.PC);
     if (this->regs.TCU == 1) {
-        this->PCO = this->pins.Addr;
+        this->PCO = (this->regs.PC - 1) & 0xFFFF;
         this->regs.IR = this->pins.D;
         if (this->regs.do_IRQ) {
             //printf("\nDO IRQ! %lld", *this->trace.cycles);
