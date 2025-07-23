@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "helpers/int.h"
+#include "helpers/debugger/debugger.h"
 #include "huc6280_opcodes.h"
 #include "huc6280.h"
 
@@ -1565,7 +1566,6 @@ static void HUC6280_ins_28__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
         }
@@ -2455,6 +2455,7 @@ static void HUC6280_ins_40__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
+            HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
         }
@@ -3158,10 +3159,13 @@ static void HUC6280_ins_53__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             if (regs->TA) {
                 regs->MPL = regs->A;
+                u32 mpl = regs->MPL << 13;
                 for (u32 i = 0; i < 8; i++) {
                     u32 shifted = 1 << i;
-                    if (regs->TA & shifted)
-                        regs->MPR[i] = regs->MPL << 13;
+                    if ((regs->TA & shifted) && (regs->MPR[i] != mpl)) {
+                        debugger_interface_dirty_mem(pins->debugger_interface, pins->debugger_mem_bus, mpl, ((i + 1) << 13) - 1);
+                        regs->MPR[i] = mpl;
+                    }
                 }
             }
             // Following is auto-generated code for instruction finish
@@ -3335,7 +3339,6 @@ static void HUC6280_ins_58__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            HUC6280_poll_IRQs(regs, pins);
             regs->P.T = 0;
             regs->TCU = 0;
             return;
@@ -4768,13 +4771,13 @@ static void HUC6280_ins_78__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            HUC6280_poll_IRQs(regs, pins);
             return; }
         case 2: {// cleanup_custom
             regs->P.I = 1;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            HUC6280_poll_IRQs(regs, pins);
             regs->P.T = 0;
             regs->TCU = 0;
             return;
@@ -12186,7 +12189,6 @@ static void HUC6280_ins_28__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
         }
@@ -13187,6 +13189,7 @@ static void HUC6280_ins_40__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
             pins->RD = 1; 
+            HUC6280_poll_IRQs(regs, pins);
             regs->TCU = 0;
             return;
         }
@@ -13984,10 +13987,13 @@ static void HUC6280_ins_53__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
         case 4: {// idle
             if (regs->TA) {
                 regs->MPL = regs->A;
+                u32 mpl = regs->MPL << 13;
                 for (u32 i = 0; i < 8; i++) {
                     u32 shifted = 1 << i;
-                    if (regs->TA & shifted)
-                        regs->MPR[i] = regs->MPL << 13;
+                    if ((regs->TA & shifted) && (regs->MPR[i] != mpl)) {
+                        debugger_interface_dirty_mem(pins->debugger_interface, pins->debugger_mem_bus, mpl, ((i + 1) << 13) - 1);
+                        regs->MPR[i] = mpl;
+                    }
                 }
             }
             // Following is auto-generated code for instruction finish
@@ -14177,7 +14183,6 @@ static void HUC6280_ins_58__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            HUC6280_poll_IRQs(regs, pins);
             regs->P.T = 0;
             regs->TCU = 0;
             return;
@@ -15703,13 +15708,13 @@ static void HUC6280_ins_78__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
     switch(regs->TCU) {
         case 1: {// start cycle
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
+            HUC6280_poll_IRQs(regs, pins);
             return; }
         case 2: {// cleanup_custom
             regs->P.I = 1;
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->MPR[regs->PC >> 13] | (regs->PC & 0x1FFF);
             regs->PC = (regs->PC + 1) & 0xFFFF;
-            HUC6280_poll_IRQs(regs, pins);
             regs->P.T = 0;
             regs->TCU = 0;
             return;

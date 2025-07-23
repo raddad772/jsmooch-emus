@@ -135,6 +135,7 @@ struct memory_view {
 };
 
 struct disassembly_view {
+    u32 mem_start;
     u32 mem_end;
     struct cvec ranges; // disassembly_range
     struct cvec dirty_range_indices; // indices of dirty ranges we can re-use

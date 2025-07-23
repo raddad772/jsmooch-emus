@@ -9,6 +9,7 @@
 #include "tg16_debugger.h"
 #include "tg16_bus.h"
 #include "component/gpu/huc6260/huc6260.h"
+#include "component/cpu/huc6280/huc6280_disassembler.h"
 
 #define JTHIS struct TG16* this = (struct TG16*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -293,7 +294,7 @@ static void setup_image_view_palettes(struct TG16* this, struct debugger_interfa
 
 // 64x64 tiles
 // aka 512x512px
-static void readcpumem(void *ptr, u32 addr, void *dest)
+static void readcpumembus(void *ptr, u32 addr, void *dest)
 {
     // Read 16 bytes from addr into dest
     u8 *out = dest;
@@ -302,6 +303,21 @@ static void readcpumem(void *ptr, u32 addr, void *dest)
         out++;
     }
 }
+
+static void readcpumemnative(void *ptr, u32 addr, void *dest)
+{
+    struct TG16 *this = (struct TG16*) ptr;
+    // Read 16 bytes from addr into dest
+    u8 *out = dest;
+    for (u32 i = 0; i < 16; i++) {
+
+        u32 raddr = (addr+i) & 0xFFFF;
+        raddr = this->cpu.regs.MPR[raddr >> 13] | (raddr & 0x1FFF);
+        *out = TG16_bus_read(ptr, raddr & 0x1FFFFF, 0, 0);
+        out++;
+    }
+}
+
 
 static void readvram(void *ptr, u32 addr, void *dest)
 {
@@ -385,11 +401,206 @@ static void setup_memory_view(struct TG16* this, struct debugger_interface *dbgr
     this->dbg.memory = debugger_view_new(dbgr, dview_memory);
     struct debugger_view *dview = cpg(this->dbg.memory);
     struct memory_view *mv = &dview->memory;
-    memory_view_add_module(dbgr, mv, "CPU Memory", 0, 6, 0, 0x1FFFFF, this, &readcpumem);
+    memory_view_add_module(dbgr, mv, "CPU Bus (21bit)", 0, 6, 0, 0x1FFFFF, this, &readcpumembus);
+    memory_view_add_module(dbgr, mv, "CPU View (16bit)", 0, 6, 0, 0xFFFF, this, &readcpumemnative);
     memory_view_add_module(dbgr, mv, "VDC0 VRAM", 1, 4, 0, 0xFFFF, &this->vdc0.VRAM, &readvram);
 
 }
 
+static int render_p(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
+{
+    u32 val = ctx->int32_data;
+    return snprintf(outbuf, outbuf_sz, "%c%c%c%c%c%c%c%c",
+                    val & 0x80 ? 'N' : 'n',
+                    val & 0x40 ? 'V' : 'v',
+                    val & 0x20 ? 'T' : 't',
+                    val & 0x10 ? 'B' : 'b',
+                    val & 8 ? 'D' : 'd',
+                    val & 4 ? 'I' : 'i',
+                    val & 2 ? 'Z' : 'z',
+                    val & 1 ? 'C' : 'c');
+}
+
+static int render_mpr(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
+{
+    switch (ctx->int32_data) {
+        case 0xF7: // SRAM
+            return snprintf(outbuf, outbuf_sz, "F7 (SRAM)");
+        case 0xF8: // RAM
+        case 0xF9: // RAM
+        case 0xFA: // RAM
+        case 0xFB: // RAM
+            return snprintf(outbuf, outbuf_sz, "%02X (RAM)", ctx->int32_data);
+        case 0xFF: // CPUIO
+            return snprintf(outbuf, outbuf_sz, "FF (IO)");
+        default: {// ROM/empty
+            u32 lowaddr = ctx->int32_data << 13;
+            return snprintf(outbuf, outbuf_sz, "%02X (ROM $%06X-$%06X)", ctx->int32_data, lowaddr, lowaddr + 0xFFF); }
+    }
+
+}
+
+static void fill_disassembly_view(void *tg16ptr, struct debugger_interface *dbgr, struct disassembly_view *dview)
+{
+    struct TG16* this = (struct TG16*)tg16ptr;
+
+    this->dbg.dasm.A->int8_data = this->cpu.regs.A;
+    this->dbg.dasm.X->int8_data = this->cpu.regs.X;
+    this->dbg.dasm.Y->int8_data = this->cpu.regs.Y;
+    this->dbg.dasm.PC->int16_data = this->cpu.regs.PC;
+    this->dbg.dasm.S->int8_data = this->cpu.regs.S;
+    this->dbg.dasm.P->int8_data = this->cpu.regs.P.u;
+    for (u32 i = 0; i < 8; i++) {
+        this->dbg.dasm.MPR[i]->int32_data = this->cpu.regs.MPR[i] >> 13;
+    }
+
+}
+
+
+static void create_and_bind_registers(struct TG16* this, struct disassembly_view *dv)
+{
+    u32 tkindex = 0;
+    cvec_alloc_atleast(&dv->cpu.regs, 16);
+    struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "A");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = NULL;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "X");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = NULL;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "Y");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = NULL;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "PC");
+    rg->kind = RK_int16;
+    rg->index = tkindex++;
+    rg->custom_render = NULL;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "S");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = NULL;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "P");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_p;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR0");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR1");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR2");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR3");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR4");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR5");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR6");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+    rg = cvec_push_back(&dv->cpu.regs);
+    snprintf(rg->name, sizeof(rg->name), "MPR7");
+    rg->kind = RK_int8;
+    rg->index = tkindex++;
+    rg->custom_render = &render_mpr;
+
+
+#define BIND(dn, index) this->dbg.dasm. dn = cvec_get(&dv->cpu.regs, index)
+    BIND(A, 0);
+    BIND(X, 1);
+    BIND(Y, 2);
+    BIND(PC, 3);
+    BIND(S, 4);
+    BIND(P, 5);
+    BIND(MPR[0], 6);
+    BIND(MPR[1], 7);
+    BIND(MPR[2], 8);
+    BIND(MPR[3], 9);
+    BIND(MPR[4], 10);
+    BIND(MPR[5], 11);
+    BIND(MPR[6], 12);
+    BIND(MPR[7], 13);
+#undef BIND
+}
+
+static struct disassembly_vars get_disassembly_vars(void *tg16ptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
+{
+    struct TG16* this = (struct TG16*)tg16ptr;
+    struct disassembly_vars dvar;
+    dvar.address_of_executing_instruction = this->cpu.PCO;
+    dvar.current_clock_cycle = this->clock.master_cycles;
+    return dvar;
+}
+
+static void get_dissasembly(void *tg16ptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
+{
+    struct TG16* this = (struct TG16*)tg16ptr;
+    HUC6280_disassemble_entry(&this->cpu, entry);
+}
+
+
+static void setup_disassembly_view(struct TG16* this, struct debugger_interface *dbgr)
+{
+    struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
+    struct debugger_view *dview = cpg(p);
+    struct disassembly_view *dv = &dview->disassembly;
+    dv->addr_column_size = 4;
+    dv->has_context = 0;
+    jsm_string_sprintf(&dv->processor_name, "HuC6280");
+
+    create_and_bind_registers(this, dv);
+    dv->mem_start = 0;
+    dv->mem_end = 0xFFFF;
+    dv->fill_view.ptr = (void *)this;
+    dv->fill_view.func = &fill_disassembly_view;
+
+    dv->get_disassembly.ptr = (void *)this;
+    dv->get_disassembly.func = &get_dissasembly;
+
+    dv->get_disassembly_vars.ptr = (void *)this;
+    dv->get_disassembly_vars.func = &get_disassembly_vars;
+}
 
 void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
@@ -398,6 +609,7 @@ void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     dbgr->supported_by_core = 0;
     dbgr->smallest_step = 1;
 
+    setup_disassembly_view(this, dbgr);
     setup_dbglog(dbgr, this);
     setup_events_view(this, dbgr, jsm);
     setup_memory_view(this, dbgr);

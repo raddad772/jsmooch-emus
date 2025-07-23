@@ -164,6 +164,7 @@ u64 scheduler_only_add_abs_w_tag(struct scheduler_t *this, i64 timecode, u64 key
     //printf("\n%lld %lld", id, key);
     return id;
 }
+
 u64 scheduler_only_add_abs(struct scheduler_t *this, i64 timecode, u64 key, void *ptr, scheduler_callback callback, u32 *still_sched)
 {
     struct scheduler_event *e = scheduler_add_abs(this, timecode, key, 0);
@@ -186,7 +187,7 @@ u64 scheduler_add_next(struct scheduler_t *this, u64 key, void *ptr, scheduler_c
 
 struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode, u64 key, u32 do_instant) {
     u32 instant = 0;
-    assert(timecode>=-2);
+    //assert(timecode>=-2);
     //assert(timecode<50000);
     u64 id = this->id_counter++;
     //printf("\nAdd item timecode:%lld id:%lld", timecode, id);
@@ -250,7 +251,6 @@ struct scheduler_event *scheduler_add_abs(struct scheduler_t* this, i64 timecode
     //printf("\nInserted later after %lld", insert_after->id);
     return re;
 }
-
 
 
 void scheduler_run_for_cycles(struct scheduler_t *this, u64 howmany)

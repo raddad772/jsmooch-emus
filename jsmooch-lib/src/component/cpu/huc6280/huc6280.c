@@ -198,7 +198,7 @@ void HUC6280_cycle(struct HUC6280 *this)
                 assert(1==2);
             }
         }
-        if ((this->regs.MPR[this->regs.PC >> 13]) >= 0x1FE000) {
+        if ((this->regs.MPR[this->regs.PC >> 13]) > 0x1FE000) {
             dbg_break("PHNO", 0);
         }
         trace_format(this, this->regs.IR);

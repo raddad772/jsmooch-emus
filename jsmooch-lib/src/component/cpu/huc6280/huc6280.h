@@ -66,6 +66,9 @@ struct HUC6280_regs {
 
 struct HUC6280_pins {
     u32 D, Addr, RD, WR, BM, IRQ1, IRQ2, TIQ; // M is MRQ. BM is BlockMove.
+
+    void *debugger_interface;
+    u32 debugger_mem_bus;
 };
 
 struct HUC6280 {

@@ -321,7 +321,8 @@ static void setup_audio(struct TG16 *this, struct cvec* IOs)
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
     struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
-    chan->sample_rate = 3576000;
+    //chan->sample_rate = 3576000;
+    chan->sample_rate = 52000;
     chan->left = chan->right = 1;
     chan->num = 2;
     chan->low_pass_filter = 24000;
