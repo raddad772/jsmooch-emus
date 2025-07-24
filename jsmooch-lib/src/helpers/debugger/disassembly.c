@@ -240,6 +240,7 @@ static struct disassembly_range *create_diassembly_block(struct debugger_interfa
             disassembly_entry_init(entry); // Init it!
         }
         entry->addr = cur_addr;
+        //printf("\nDISASSEMBLE %04x", entry->addr);
         dview->get_disassembly.func(dview->get_disassembly.ptr, di, dview, entry);
         cur_addr += entry->ins_size_bytes;
         assert(cur_addr>range_start);

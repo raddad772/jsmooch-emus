@@ -449,6 +449,7 @@ void HUC6280_disassemble_entry(struct HUC6280 *this, struct disassembly_entry* e
     jsm_string_quickempty(&entry->dasm);
     jsm_string_quickempty(&entry->context);
     u32 PC = entry->addr;
+    //printf("\nDISASSEMBLE ENTRY AT %04x", PC);
     HUC6280_disassemble(this, &PC, &this->trace.strct, &entry->dasm);
     entry->ins_size_bytes = PC - entry->addr;
 }

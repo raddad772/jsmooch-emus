@@ -918,8 +918,8 @@ void full_system::load_default_ROM()
         case SYS_TURBOGRAFX16:
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
-            worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // no work
+            worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
+            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // no work
             //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // no work
             //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // bad VRAM writes
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
