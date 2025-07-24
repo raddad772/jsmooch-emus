@@ -60,41 +60,54 @@ void HUC6280_PSG_write(struct HUC6280_PSG *this, u32 addr, u8 val)
     switch(addr) {
         case 0: // channel select
             this->SEL = val & 7;
-            if (this->SEL > 5) printf("\nWARN CH SEL %d", this->SEL);
+            if (this->SEL > 5) {
+                printf("\nWARN CH SEL %d", this->SEL);
+            }
             return;
         case 1: // master vol left/right
-            this->LMAL = (val >> 4) & 15;
-            this->RMAL = val & 15;
+            if (this->SEL < 6) {
+                this->LMAL = (val >> 4) & 15;
+                this->RMAL = val & 15;
+            }
             return;
         // per-channel stuff
         case 2: //
-            ch->FREQ.lo = val;
+            if (this->SEL < 6)
+                ch->FREQ.lo = val;
             return;
         case 3:
-            ch->FREQ.hi = val & 15;
+            if (this->SEL < 6)
+                ch->FREQ.hi = val & 15;
             return;
         case 4:
-            ch->ON = (val >> 7) & 1;
-            ch->DDA = (val >> 6) & 1;
-            ch->AL = val & 0x1F;
-            if (!ch->ON && !ch->DDA) {
-                ch->wavectr = 0;
-            }
-            if (ch->ON && ch->DDA) {
-                update_DDA(this, ch);
+            if (this->SEL < 6) {
+                ch->ON = (val >> 7) & 1;
+                ch->DDA = (val >> 6) & 1;
+                ch->AL = val & 0x1F;
+                if (!ch->ON && !ch->DDA) {
+                    ch->wavectr = 0;
+                }
+                if (ch->ON && ch->DDA) {
+                    update_DDA(this, ch);
+                }
             }
             return;
         case 5:
-            ch->LAL = (val >> 4) & 15;
-            ch->RAL = val & 15;
+            if (this->SEL < 6) {
+                ch->LAL = (val >> 4) & 15;
+                ch->RAL = val & 15;
+            }
             return;
         case 6:
-            ch->WAVEDATA[ch->wavectr] = val & 0x1F;
-            update_DDA(this, ch);
-            if (!ch->ON) ch->wavectr = (ch->wavectr + 1) & 0x1F;
+            if (this->SEL < 6) {
+                ch->WAVEDATA[ch->wavectr] = val & 0x1F;
+                update_DDA(this, ch);
+                if (!ch->ON) ch->wavectr = (ch->wavectr + 1) & 0x1F;
+            }
             return;
         case 7: //
-            if (this->SEL < 5) return;
+            if (this->SEL < 4) return;
+            if (this->SEL > 5) return;
             ch->NOISE.E = (val >> 7) & 1;
             u32 a = val & 0x1F;
             ch->NOISE.FREQ = a == 0x1F ? 32 : (a ^ 0x1F) * 64;

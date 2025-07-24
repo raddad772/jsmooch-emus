@@ -13,7 +13,7 @@
 
 #include "imgui_internal.h"
 #include <SDL3/SDL.h>
-#define FRAME_MULTI 20
+#define FRAME_MULTI 5
 
 #ifdef JSM_OPENGL
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -155,7 +155,7 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io, u32 frame_m
 
 #define MEMORY_VIEW_DEFAULT_ENABLE 0
 #define EVENT_VIEWER_DEFAULT_ENABLE 0
-#define DISASM_VIEW_DEFAULT_ENABLE 1
+#define DISASM_VIEW_DEFAULT_ENABLE 0
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
 #define DBGLOG_VIEW_DEFAULT_ENABLE 0
 #define SOUND_VIEW_DEFAULT_ENABLE 0

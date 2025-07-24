@@ -151,7 +151,7 @@ static void setup_new_line(struct HUC6270 *this) {
     if ((this->timing.v.state == H6S_wait_for_display) && (this->timing.v.counter == 1)) {
         this->regs.y_counter = 63;
     }
-    if (this->timing.v.state == H6S_display) {
+    if (this->timing.v.state == H6S_display || ((this->timing.v.state == H6S_wait_for_display) && (this->timing.v.counter == 1))) {
         //printf("\nLINE %lld Y SCROLL:%d", events_view_get_current_line(this->dbg.events.view), this->regs.next_yscroll);
         this->regs.yscroll = this->regs.next_yscroll;
         this->regs.next_yscroll = this->regs.yscroll + 1;
@@ -169,9 +169,6 @@ static void setup_new_line(struct HUC6270 *this) {
     this->regs.y_counter++;
     // TODO: this stuff
     this->timing.v.counter--;
-    if (this->timing.v.counter < 1) {
-        new_v_state(this, (this->timing.v.state + 1) & 3);
-    }
 }
 
 
@@ -182,6 +179,9 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
         case H6S_sync_window:
             this->timing.h.counter = (this->io.HSW+1) << 3;
             //printf("\nSYNC WINDOW %d", this->timing.h.counter);
+            if (this->timing.v.counter < 1) {
+                new_v_state(this, (this->timing.v.state + 1) & 3);
+            }
             break;
         case H6S_wait_for_display:
             this->timing.h.counter = (this->io.HDS+1) << 3;
@@ -447,7 +447,7 @@ static void trigger_vram_vram(struct HUC6270 *this)
     // TODO: make not instant
     if (!this->regs.in_vblank) {
         printf("\nWarn attempt to VRAM-VRAM DMA outside vblank!");
-        return;
+        //return;
     }
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_vram_end, NULL);
     while(true) {
@@ -568,7 +568,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.lo = val;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
-            printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->regs.IE);
+            //printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->regs.IE);
             return;
         case 0x07: // BGX
             this->io.BXR.lo = val;
@@ -670,7 +670,7 @@ static void write_msb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.hi = val & 3;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
-            printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->regs.IE);
+            //printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->regs.IE);
             return;
         case 0x07: // BGX scroll BXR
             DBG_EVENT(this->dbg.events.WRITE_XSCROLL);
