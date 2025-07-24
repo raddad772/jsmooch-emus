@@ -148,7 +148,9 @@ static void eval_sprites(struct HUC6270 *this) {
 }
 
 static void setup_new_line(struct HUC6270 *this) {
-    this->regs.x_counter = 0;
+    if ((this->timing.v.state == H6S_wait_for_display) && (this->timing.v.counter == 1)) {
+        this->regs.y_counter = 63;
+    }
     if (this->timing.v.state == H6S_display) {
         //printf("\nLINE %lld Y SCROLL:%d", events_view_get_current_line(this->dbg.events.view), this->regs.next_yscroll);
         this->regs.yscroll = this->regs.next_yscroll;
@@ -164,13 +166,9 @@ static void setup_new_line(struct HUC6270 *this) {
 
         eval_sprites(this);
     }
-
     this->regs.y_counter++;
     // TODO: this stuff
     this->timing.v.counter--;
-    if ((this->timing.v.state == H6S_wait_for_display) && (this->timing.v.counter == 1)) {
-        this->regs.y_counter = 64;
-    }
     if (this->timing.v.counter < 1) {
         new_v_state(this, (this->timing.v.state + 1) & 3);
     }
@@ -192,11 +190,11 @@ static void new_h_state(struct HUC6270 *this, enum HUC6270_states st)
         case H6S_display:
             //printf("\nH.H6S_DISPLAY START LINE:%lld CYCLE:%lld", events_view_get_current_line(this->dbg.events.view), events_view_get_current_line_pos(this->dbg.events.view));
             hblank(this, 0);
+            this->regs.x_counter = 0;
             this->timing.h.counter = (this->io.HDW+1) << 3;
-            //printf("\nDISPLAY %d", this->timing.h.counter);
-            setup_new_line(this);
             break;
         case H6S_wait_for_sync_window:
+            setup_new_line(this);
             hblank(this, 1);
             this->timing.h.counter = (this->io.HDE+1) << 3;
             update_RCR(this, 0, 0, 0);
@@ -223,7 +221,6 @@ static void new_v_state(struct HUC6270 *this, enum HUC6270_states st)
             this->timing.v.counter = this->io.VDW.u + 2; // It will get decremented by setup_new_line()
             this->sprites.y_compare = 63;
             this->regs.blank_line = 1;
-            setup_new_line(this);
             break;
         case H6S_wait_for_sync_window:
             vblank(this, 1);
@@ -404,10 +401,11 @@ static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6270 *this = (struct HUC6270 *)ptr;
     u32 signal = this->regs.y_counter == this->io.RCR.u;
+    //printf("\nTEST LINE %d against %d @%lld", this->regs.y_counter, this->io.RCR.u, *this->scheduler->clock);
     if (signal && (signal != this->io.STATUS.RR)) {
         DBG_EVENT(this->dbg.events.HIT_RCR);
         this->io.STATUS.RR = 1;
-        printf("\nRCR HIT LINE %d  X %lld", this->regs.y_counter, events_view_get_current_line_pos(this->dbg.events.view));
+        //printf("\nRCR HIT LINE %d  X %lld", this->regs.y_counter, events_view_get_current_line_pos(this->dbg.events.view));
     }
 
     update_irqs(this);
@@ -420,7 +418,6 @@ static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
     if (!this->io.DCR.DSR)
         this->regs.vram_satb_pending = 0;
     update_irqs(this);
-    printf("\nVRAM SATB END!");
 }
 
 static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -434,7 +431,6 @@ static void vram_satb(struct HUC6270 *this)
 {
     // TODO: make not instant
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_satb_end, NULL);
-    printf("\nVRAM SATB GO!");
     for (u32 i = 0; i < 0x100; i++) {
         u32 addr = (this->io.DVSSR.u + i) & 0xFFFF;
         this->SAT[i] = read_VRAM(this, addr);
@@ -443,7 +439,6 @@ static void vram_satb(struct HUC6270 *this)
 
 static void trigger_vram_satb(struct HUC6270 *this)
 {
-    printf("\nVRAM SATB TRIGGER!");
     this->regs.vram_satb_pending = 1;
 }
 

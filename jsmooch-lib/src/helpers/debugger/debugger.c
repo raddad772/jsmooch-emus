@@ -63,7 +63,6 @@ struct cvec_ptr debugger_view_new(struct debugger_interface *this, enum debugger
 
 void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end)
 {
-    printf("\nDBGR INTERFACE DIRTY MEM %04x to %04x", addr_start, addr_end);
     if (dbgr == NULL) return;
     for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
         struct debugger_view *dv = cvec_get(&dbgr->views, i);
