@@ -407,7 +407,7 @@ static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
     if (signal && (signal != this->io.STATUS.RR)) {
         DBG_EVENT(this->dbg.events.HIT_RCR);
         this->io.STATUS.RR = 1;
-        //printf("\nRCR HIT LINE %d  X %lld", this->regs.y_counter, events_view_get_current_line_pos(this->dbg.events.view));
+        printf("\nRCR HIT LINE %d  X %lld", this->regs.y_counter, events_view_get_current_line_pos(this->dbg.events.view));
     }
 
     update_irqs(this);
@@ -420,6 +420,7 @@ static void vram_satb_end(void *ptr, u64 key, u64 clock, u32 jitter)
     if (!this->io.DCR.DSR)
         this->regs.vram_satb_pending = 0;
     update_irqs(this);
+    printf("\nVRAM SATB END!");
 }
 
 static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -433,6 +434,7 @@ static void vram_satb(struct HUC6270 *this)
 {
     // TODO: make not instant
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_satb_end, NULL);
+    printf("\nVRAM SATB GO!");
     for (u32 i = 0; i < 0x100; i++) {
         u32 addr = (this->io.DVSSR.u + i) & 0xFFFF;
         this->SAT[i] = read_VRAM(this, addr);
@@ -441,6 +443,7 @@ static void vram_satb(struct HUC6270 *this)
 
 static void trigger_vram_satb(struct HUC6270 *this)
 {
+    printf("\nVRAM SATB TRIGGER!");
     this->regs.vram_satb_pending = 1;
 }
 
@@ -503,8 +506,17 @@ static void update_ie(struct HUC6270 *this)
 {
     u32 ie = (this->io.CR.IE & 7) | ((this->io.CR.IE & 8) << 2);
     ie |= this->io.DCR.DSC << 3; // 0001 to 1000
-    ie |= this->io.DCR.DSC << 4; // 0001 to 10000
+    ie |= this->io.DCR.DVC << 4; // 0001 to 10000
     this->regs.IE = ie;
+    /*
+     * Bits are...
+    0  Collision detect sprite #0 collide with 1-63
+    1  >16 sprite/line, not enough time for sprites, CGX error
+    2  scanning line detect
+    3  VRAM->SATB complete
+    4  VRAM->VRAM complete
+    5  vblank started
+     */
 }
 
 static void update_irqs(struct HUC6270 *this)
@@ -561,7 +573,7 @@ static void write_lsb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.lo = val;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
-            //printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->io.CR.IE);
+            printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->regs.IE);
             return;
         case 0x07: // BGX
             this->io.BXR.lo = val;
@@ -663,7 +675,7 @@ static void write_msb(struct HUC6270 *this, u32 val)
         case 0x06:
             this->io.RCR.hi = val & 3;
             DBG_EVENT(this->dbg.events.WRITE_RCR);
-            //printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->io.CR.IE);
+            printf("\nRCR WRITE %d/%x. CUR LINE:%d   RR:%d   IE:%x", this->io.RCR.u, this->io.RCR.u, this->regs.y_counter, this->io.STATUS.RR, this->regs.IE);
             return;
         case 0x07: // BGX scroll BXR
             DBG_EVENT(this->dbg.events.WRITE_XSCROLL);

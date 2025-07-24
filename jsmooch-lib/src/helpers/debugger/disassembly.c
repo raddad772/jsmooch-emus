@@ -226,7 +226,7 @@ static struct disassembly_range *get_range(struct disassembly_view *dview)
 
 static struct disassembly_range *create_diassembly_block(struct debugger_interface *di, struct disassembly_view *dview, u32 range_start, u32 range_end)
 {
-    assert(range_start<dview->mem_end);
+    assert(range_start<(dview->mem_end+1));
     u32 cur_addr = range_start;
     struct disassembly_range *r = get_range(dview);
     r->addr_range_start = range_start;

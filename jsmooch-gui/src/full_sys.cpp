@@ -919,7 +919,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
-            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // no work
+            worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // no work
             //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // no work
             //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // bad VRAM writes
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
@@ -937,7 +937,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "laxe2.pce", nullptr); // crash/hang after "press run"
             //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // gfx/palette issues
             //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // seems good
-            worked = grab_ROM(&ROMs, which, "afterburner2.pce", nullptr); // seems good
+            //worked = grab_ROM(&ROMs, which, "afterburner2.pce", nullptr); // seems good
             //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
 
             break;

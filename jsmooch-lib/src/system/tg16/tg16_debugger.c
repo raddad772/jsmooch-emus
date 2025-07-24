@@ -402,8 +402,8 @@ static void setup_memory_view(struct TG16* this, struct debugger_interface *dbgr
     struct debugger_view *dview = cpg(this->dbg.memory);
     struct memory_view *mv = &dview->memory;
     memory_view_add_module(dbgr, mv, "CPU Bus (21bit)", 0, 6, 0, 0x1FFFFF, this, &readcpumembus);
-    memory_view_add_module(dbgr, mv, "CPU View (16bit)", 0, 6, 0, 0xFFFF, this, &readcpumemnative);
-    memory_view_add_module(dbgr, mv, "VDC0 VRAM", 1, 4, 0, 0xFFFF, &this->vdc0.VRAM, &readvram);
+    memory_view_add_module(dbgr, mv, "CPU View (16bit)", 1, 6, 0, 0xFFFF, this, &readcpumemnative);
+    memory_view_add_module(dbgr, mv, "VDC0 VRAM", 2, 4, 0, 0xFFFF, &this->vdc0.VRAM, &readvram);
 
 }
 

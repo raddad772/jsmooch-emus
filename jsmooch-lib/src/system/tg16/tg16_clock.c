@@ -35,6 +35,7 @@ void TG16_clock_reset(struct TG16_clock *this)
 
     u64 per_frame = per_line * this->timing.frame.lines;
     u64 master_freq = per_frame * this->timing.second.frames;
+    printf("\nMASTER FREQ %lld", master_freq);
 
     this->timing.scanline.cycles = per_line;
     this->timing.frame.cycles = per_frame;

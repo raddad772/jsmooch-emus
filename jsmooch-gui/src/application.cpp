@@ -155,12 +155,12 @@ static void render_emu_window(struct full_system &fsys, ImGuiIO& io, u32 frame_m
 
 #define MEMORY_VIEW_DEFAULT_ENABLE 0
 #define EVENT_VIEWER_DEFAULT_ENABLE 0
-#define DISASM_VIEW_DEFAULT_ENABLE 0
+#define DISASM_VIEW_DEFAULT_ENABLE 1
 #define IMAGE_VIEW_DEFAULT_ENABLE 0
 #define DBGLOG_VIEW_DEFAULT_ENABLE 0
 #define SOUND_VIEW_DEFAULT_ENABLE 0
 #define TRACE_VIEW_DEFAULT_ENABLE 0
-#define CONSOLE_VIEW_DEFAULT_ENABLE 1
+#define CONSOLE_VIEW_DEFAULT_ENABLE 0
 
 int hexfilter(ImGuiInputTextCallbackData *data)
 {
@@ -522,6 +522,7 @@ void imgui_jsmooch_app::render_disassembly_view(struct DVIEW &dview, bool update
                     for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                         ImGui::TableNextRow();
                         auto *strs = (struct disassembly_entry_strings *) cvec_get(dasm_rows, row);
+                        if (!strs) continue;
 
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Selectable(strs->addr, row == cur_line_num,

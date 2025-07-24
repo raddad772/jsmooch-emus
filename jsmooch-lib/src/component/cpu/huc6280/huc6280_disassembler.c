@@ -130,7 +130,7 @@ static void str2x(SARG2x)
 static void indirect(SARG)
 {
     u32 addr = dbg_read16(trace, PC);
-    jsm_string_sprintf(outstr, "%s($%02x:%024x)", ins, mpr(addr), addr);
+    jsm_string_sprintf(outstr, "%s($%02x:%02x)", ins, mpr(addr), addr);
 }
 
 static void indirect_x(SARG)

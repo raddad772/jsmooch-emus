@@ -18,6 +18,7 @@ void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clock
     memset(this, 0, sizeof(*this));
     this->scheduler = scheduler;
     this->timer.sch_interval = clocks_per_second / 6992;
+    printf("\nTIMER INTERVAL: %lld", this->timer.sch_interval);
 
 
     jsm_string_init(&this->trace.str, 100);

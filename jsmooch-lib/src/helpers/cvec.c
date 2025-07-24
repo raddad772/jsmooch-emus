@@ -111,7 +111,8 @@ void cvec_clear(struct cvec* this)
 
 void *cvec_get(struct cvec* this, u32 index)
 {
-    assert(index < this->len);
+    if (index >= this->len) return NULL;
+    //assert(index < this->len);
     return (char *)this->data + (this->data_sz * index);
 }
 
