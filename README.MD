@@ -26,7 +26,7 @@ The emulators are not the fastest. The emphasis has been on making them "fast en
 Won't boot. Just basic keyboard, ram, bus, etc. support. Needs work to boot.
 
 ### Atari 2600
-Needs a lot of work, can't really play games. Mostly needs work on the TIA, can't find a good source
+Needs a lot of work, can't really play games. Mostly needs work on the TIA. Can kinda display a few like Frogger
 
 ### Dreamcast
 Loads and plays homebrew, boots BIOS to the point of 3d commands. I never actually implemented the 3d commands, though.
@@ -35,13 +35,25 @@ Loads and plays homebrew, boots BIOS to the point of 3d commands. I never actual
 The Yugoslavian microcomputer from the 80's! Boots and displays properly. Not really tested beyond that, lacks tape support too.
 
 ### GameBoy/Color
-Works, with sound, pretty well. A few glitches here and there still, and a few incompatible GBC games, but mostly a competent core.
+Works, with sound, pretty well. A few incompatible GBC games, and a few with glitches but working, but mostly a competent core.
+
+#### Known issues
+-Wario Land 3 - corrupt tiles
 
 ### GameBoy Advance
 Works, with sound, pretty well. A fairly competent core with decent accuracy.
 
+#### Known Issues
+- No RTC, sun sensor, etc. yet
+- Timing is good but not perfect, as is shown in GBA timing tests. Haven't gotten the prefetcher cycle penalty correct.
+
 ### Genesis/MegaDrive
-Works, with partial sound, pretty well. I've tried over 70 games and gotten about 97% compatability (about 93% with no glitches whatsoever).
+Works, with decent sound, pretty well. I've tried over 70 games and gotten about 97% compatability (about 93% with no glitches whatsoever).
+
+#### Known issues
+- Recent performance pass caused a small accuracy regression, this shouldn't be too hard to fix. Most games are unaffected, just a few demos.
+- Devil's Crush shows some garbage tiles here and there in cutscenes
+- The YM2612 emulation is...decent. It's not perfect. Most things sound good or great. Still trying to track down the cause
 
 ### Mac Classic
 Boots to sad Mac. Needs work on floppies.
@@ -49,17 +61,46 @@ Boots to sad Mac. Needs work on floppies.
 ### NES
 Pretty good compatability, with sound. Needs a little more work on sound to get it perfect (mostly Mario jump issues), and also MMC5 isn't great. Other than that games play nearly perfectly.
 
+#### Known issues
+- MMC5 support is incomplete/bad
+- Sound sweep could be better, mostly doesn't affect most games
+
 ### Nintendo DS
-As of this point, it boots and runs Pokemon Mystery Dungeon Blue, but not perfectly. newer 2D features for NDS are a WIP, 3D is a WIP, sound is a WIP
+Plays roughly 80%? of the library fine? There's tons of accuracy issues with it, but I'm fairly happy with how it is now.
+
+#### Known issues
+- Rendering inaccuracies. Games still look good! Wireframe polys unsupported, anti-aliasing unsupported, fog table?
+- Big Mutha Truckers issues
+- The Recruit issues
+- Sound sometimes seems a little...uneven?
+- Some games sometimes seem to dislike the Flash save implementation
 
 ### Master System/Game Gear
 Pretty good compatability, with sound.
 
 ### PlayStation 1
-Decent GPU, GTE and CPU pass all tests. Runs homebrew fine. No CDROM core yet, no audio.
+GPU, CPU pass all tests. Runs homebrew fine. No CDROM core yet, no audio.
+
+#### Known Issues
+- No CDROM
+- GTE fails some obscure corner case for one instruction
 
 ### Super NES
-Not ported from JSMoo yet. But, there, only ran a few games. Mostly a proof of concept, I'd probably start over from scratch if I did SNES in C.
+Runs a few games. In a weird spot. Has sound core that works well.
+
+#### Known Issues
+- HDMA is messed up. This is the main problem it's currently facing.
+- PPU windows not implemented
+- PPU mosaic not implemented
+
+### TurboGraFX-16
+Currently very WIP core. Has lowest-level timing of any emulator I've seen the source to. A decent portion of games work and sound mostly? works.
+
+### Known Issues
+- Detana Twinbee, Gradius, Alien Crush do not work
+- Bonk's Adventure and Dungeon Explorer garbled tiles
+- Legendary Axe 2 crashes after menu
+- Neutopia has serious issues
 
 ### ZX Spectrum
 Mostly plays games fine, but not thoroughly tested

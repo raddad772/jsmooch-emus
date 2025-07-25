@@ -855,7 +855,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "hm_fomt.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
-            worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // locks up with flash commands before battle
+            // worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
@@ -867,7 +867,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "drill_dozer.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "rhythm_tengoku.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "driv3r.gba", nullptr); // works great
-            //worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
+            worked = grab_ROM(&ROMs, which, "crazy_taxi.gba", nullptr); // plays fine, gfx issues in menus
             //worked = grab_ROM(&ROMs, which, "lunar_legend.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "tony_hawk_downhill.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "car_battler_joe.gba", nullptr);
@@ -918,17 +918,17 @@ void full_system::load_default_ROM()
         case SYS_TURBOGRAFX16:
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
-            worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
+            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
             //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // no work
             //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // no work
             //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // bad VRAM writes
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works but needs better timing
+            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
             //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // seems perfect
             //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
-            //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
+            worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
             //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // garbled text and maps
             //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // seems to work fine
