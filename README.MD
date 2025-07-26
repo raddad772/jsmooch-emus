@@ -94,6 +94,8 @@ Runs a few games. In a weird spot. Has sound core that works well.
 - PPU mosaic not implemented
 
 ### TurboGraFX-16
+![Bonk 3](images/tg16_bonk3.png "Bonk 3")
+
 Currently very WIP core. Has lowest-level timing of any emulator I've seen the source to. A decent portion of games work and sound mostly? works.
 
 #### Known Issues

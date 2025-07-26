@@ -928,8 +928,8 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
             //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // seems perfect
             //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
-            worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
-            //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
+            //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
+            worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // garbled text and maps
             //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "keith_courage.pce", nullptr); // seems to work fine
