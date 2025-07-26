@@ -96,7 +96,7 @@ Runs a few games. In a weird spot. Has sound core that works well.
 ### TurboGraFX-16
 Currently very WIP core. Has lowest-level timing of any emulator I've seen the source to. A decent portion of games work and sound mostly? works.
 
-### Known Issues
+#### Known Issues
 - Detana Twinbee, Gradius, Alien Crush do not work
 - Bonk's Adventure and Dungeon Explorer garbled tiles
 - Legendary Axe 2 crashes after menu
