@@ -20,7 +20,7 @@ The emulator cores, on the other hand, could be used by anybody! They all share 
 
 The emulators are not the fastest. The emphasis has been on making them "fast enough for me" while also being very accurate and easy to understand.
 
-"Fast enough" comes into focus for the NDS, which, for now, runs >80FPS on my MacBook Air M2. There are plenty of opportunities to optimize older cores like GBA.
+"Fast enough" comes into focus for the NDS, which, for now, runs >150FPS on my MacBook Air M2. There are plenty of opportunities to optimize older cores like GBA.
 
 ## Apple IIe
 Won't boot. Just basic keyboard, ram, bus, etc. support. Needs work to boot.
@@ -46,6 +46,7 @@ Works, with sound, pretty well. A few incompatible GBC games, and a few with gli
 
 ## GameBoy Advance
 ![GBA game](images/gba1.png "GBA game")![GBA game](images/gba2.png "GBA game")![GBA game](images/gba3.png "GBA game")![GBA game](images/gba4.png "GBA game")
+
 Works, with sound, pretty well. A fairl y competent core with decent accuracy.
 
 ### Known Issues
@@ -67,6 +68,8 @@ Works, with decent sound, pretty well. I've tried over 70 games and gotten about
 Boots to sad Mac. Needs work on floppies.
 
 ## NES
+![NES game](images/nes1.png "NES game")![NES game](images/nes2.png "NES game")![NES game](images/nes3.png "NES game")
+
 Pretty good compatability, with sound. Needs a little more work on sound to get it perfect (mostly Mario jump issues), and also MMC5 isn't great. Other than that games play nearly perfectly.
 
 ### Known issues
@@ -74,7 +77,9 @@ Pretty good compatability, with sound. Needs a little more work on sound to get 
 - Sound sweep could be better, mostly doesn't affect most games
 
 ## Nintendo DS
-Plays roughly 80%? of the library fine? There's tons of accuracy issues with it, but I'm fairly happy with how it is now.
+![NDS game](images/nds1.png "NDS game")![NDS game](images/nds2.png "NDS game")![NDS game](images/nds3.png "NDS game")
+
+Plays roughly 40-60%? of the library fine? There's tons of accuracy issues with it, but I'm fairly happy with how it is now.
 
 ### Known issues
 - Rendering inaccuracies. Games still look good! Wireframe polys unsupported, anti-aliasing unsupported, fog table?

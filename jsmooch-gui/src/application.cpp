@@ -1015,7 +1015,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     which = SYS_DREAMCAST;
 #else
     //which = SYS_ATARI2600;
-    which = SYS_GBC;
+    //which = SYS_GBC;
     //which = SYS_APPLEIIe;
     //which = SYS_DMG;
     //which = SYS_PS1;
@@ -1029,7 +1029,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_SNES;
     //which = SYS_GENESIS_USA;
     //which = SYS_MEGADRIVE_PAL;
-    //which = SYS_NDS;
+    which = SYS_NDS;
     //which = SYS_TURBOGRAFX16;
     //which = SYS_NES;
     //which = SYS_GALAKSIJA;
