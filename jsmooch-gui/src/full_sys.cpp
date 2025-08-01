@@ -673,22 +673,27 @@ void full_system::load_default_ROM()
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mm3.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "toystory.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "dmg-acid2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "prehistorik.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "marioland2.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "tennis.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "link.gb", nullptr);
-            worked = grab_ROM(&ROMs, which, "drmario.gb", nullptr);
+            //worked = grab_ROM(&ROMs, which, "drmario.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "mbc1_8mb.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "demo_in_pocket.gb", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
         case SYS_GBC:
-            worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "linkdx.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "badapple.gbc", nullptr);
             // worked = grab_ROM(&ROMs, which, "densha.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "cutedemo.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "aitd.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mgs.gbc", nullptr);
+            //worked = grab_ROM(&ROMs, which, "rayman.gbc", nullptr);
+            worked = grab_ROM(&ROMs, which, "tokitori.gbc", nullptr);
             //worked = grab_ROM(&ROMs, which, "m3_bgp_change_sprites.gb", nullptr);
             break;
         case SYS_ATARI2600:
@@ -957,7 +962,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "sonick3.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "ecco2.md", nullptr); // cant detect console properly
-            worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
+            //worked = grab_ROM(&ROMs, which, "gunstar_heroes.md", nullptr); // works fine!
             //worked = grab_ROM(&ROMs, which, "overdrive.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "overdrive2.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "dynamite_headdy.bin", nullptr); // works!
@@ -975,7 +980,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "crusader_centy.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "xmen2.md", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "roadrash2.bin", nullptr); // works fine
-            //worked = grab_ROM(&ROMs, which, "roadrash.md", nullptr); // works
+            worked = grab_ROM(&ROMs, which, "roadrash.md", nullptr); // works
 
             //worked = grab_ROM(&ROMs, which, "240p.bin", nullptr);
             //worked = grab_ROM(&ROMs, which, "240p_emu.bin", nullptr);

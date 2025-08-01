@@ -35,6 +35,8 @@ Loads and plays homebrew, boots BIOS to the point of 3d commands. I never actual
 The Yugoslavian microcomputer from the 80's! Boots and displays properly. Not really tested beyond that, lacks tape support too.
 
 ### GameBoy/Color
+![DMG game](images/dmg1.png "DMG game")![DMG game](images/dmg2.png "DMG game")![DMG game](images/dmg3.png "DMG game")
+![GBC game](images/gbc1.png "GBC game")![GBC game](images/gbc2.png "GBC game")![GBC game](images/gbc3.png "GBC game")
 Works, with sound, pretty well. A few incompatible GBC games, and a few with glitches but working, but mostly a competent core.
 
 #### Known issues
@@ -42,7 +44,7 @@ Works, with sound, pretty well. A few incompatible GBC games, and a few with gli
 
 ### GameBoy Advance
 Works, with sound, pretty well. A fairl y competent core with decent accuracy.
-![GBA game](images/gba_gs.png "GBA game")![GBA game](images/gba_gunstar.png "GBA game")![GBA game](images/gba_dozer.png "GBA game")![GBA game](images/gba_mracer.png "GBA game")
+![GBA game](images/gba1.png "GBA game")![GBA game](images/gba2.png "GBA game")![GBA game](images/gba3.png "GBA game")![GBA game](images/gba4.png "GBA game")
 
 #### Known Issues
 - No RTC, sun sensor, etc. yet
@@ -50,6 +52,7 @@ Works, with sound, pretty well. A fairl y competent core with decent accuracy.
 - MegaMan Zero 3 has some scroll issues
 
 ### Genesis/MegaDrive
+![Genesis game](images/gen1.png "Genesis game")![Genesis game](images/gen2.png "Genesis game")![Genesis game](images/gen3.png "Genesis game")
 Works, with decent sound, pretty well. I've tried over 70 games and gotten about 97% compatability (about 93% with no glitches whatsoever).
 
 #### Known issues
@@ -77,7 +80,7 @@ Plays roughly 80%? of the library fine? There's tons of accuracy issues with it,
 - Sound sometimes seems a little...uneven?
 - Some games sometimes seem to dislike the Flash save implementation
 
-### Master System/Game Gear
+### Master System/Game Gear/SG1000
 Pretty good compatability, with sound.
 
 ### PlayStation 1

@@ -44,7 +44,7 @@ static inline u8 read_NRx1(struct GBSNDCHAN *chan)
         case 2:
             return chan->length_counter ^ 0xFF;
     }
-    NOGOHERE;
+    //NOGOHERE;
     return 0;
 }
 
