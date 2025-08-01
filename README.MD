@@ -41,8 +41,8 @@ Works, with sound, pretty well. A few incompatible GBC games, and a few with gli
 -Wario Land 3 - corrupt tiles
 
 ### GameBoy Advance
-Works, with sound, pretty well. A fairl y competent core with decent accuracy.
 ![GBA game](images/gba_gs.png "GBA game")![GBA game](images/gba_gunstar.png "GBA game")![GBA game](images/gba_dozer.png "GBA game")![GBA game](images/gba_mracer.png "GBA game")
+Works, with sound, pretty well. A fairl y competent core with decent accuracy.
 
 #### Known Issues
 - No RTC, sun sensor, etc. yet
