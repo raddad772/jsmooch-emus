@@ -1,0 +1,1022 @@
+.aica, mem=area0
+0x00702C00: ARMRST
+u32
+access_32, rw
+
+.io, mem=area0
+0x005F6910: SB_IML2NRM
+u32
+access_32, rw
+on_write=holly_recalc_interrupts(this); /*printf("\nSB_IML2NRM wrote: %08llu cyc: %llx", val, this->sh4.trace_cycles)*/
+
+0x005F6920: SB_IML4NRM
+u32
+access_32, rw
+on_write=holly_recalc_interrupts(this); /*printf("\nSB_IML4NRM wrote: %08llx cyc: %llu", val, this->sh4.trace_cycles)*/
+
+0x005F6930: SB_IML6NRM
+u32
+access_32, rw
+on_write=holly_recalc_interrupts(this); /*printf("\nSB_IML6NRM wrote: %08llx cyc: %llu", val, this->sh4.trace_cycles)*/
+
+0x005F6940: SB_PDTNRM
+u32
+access_32, rw
+
+0x005F6944: SB_PDTEXT
+u32
+access_32, rw
+
+0x005F6950: SB_G2DTNRM
+u32
+access_32, rw
+
+0x005F6954: SB_GD2TEXT
+u32
+access_32, rw
+
+0x005F6800: SB_C2DSTAT
+u32
+access_32, rw
+write_mask=bits 5-25
+on_write=/*printf("\nSB-C2DSTAT WRITE %08llx cyc:%llu", val, this->sh4.trace_cycles)*/(void)0
+
+0x005F6804: SB_C2DLEN
+u32
+access_32, rw
+write_mask=bits5-23
+
+0x005F6808: SB_C2DST
+u32
+access_32, rw
+on_write= DC_write_C2DST(this, val)
+write_mask=1
+
+0x005F6810: SB_SDSTAW
+u32
+access_32, rw
+write_mask=bits 5-26
+
+0x005F6814: SB_SDBAAW
+u32
+access_32, rw
+write_mask=bits 5-26
+
+0x005F6818: SB_SDWLT
+u32
+access_32, rw
+write_mask=1
+
+0x005F681C: SB_SDLAS
+u32
+access_32, rw
+write_mask=1
+
+0x005F6820: SB_SDST
+u32
+access_32, rw
+on_write=DC_write_SDST(this, val)
+write_mask=1
+
+0x005F6840: SB_DBREQM
+u32
+access_32, rw
+write_mask=1
+
+0x005F6844: SB_BAVLWC
+u32
+access_32, rw
+
+0x005F6848: SB_C2DPRYC
+u32
+access_32, rw
+
+0x005F684C: SB_C2DMAXL
+u32
+access_32, rw
+
+0x005F6884: SB_LMMODE0
+u32
+access_32, rw
+write_mask=1
+
+0x005F6888: SB_LMMODE1
+u32
+access_32, rw
+write_mask=1
+
+0x005F68A0: SB_RBSPLT
+u32
+access_32, rw
+
+0x005F68A4: SB_UKN5F68A4
+u32
+access_32, rw
+
+0x005F68AC: SB_UKN5F68AC
+u32
+access_32, rw
+
+0x005F6914: SB_IML2EXT
+u32, flags
+access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML2EXT write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
+gdrom: 0
+aica: 1
+modem: 2
+ext_device: 3
+
+0x005F6918: SB_IML2ERR
+u32, flags
+access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML2ERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
+render_isp_out_of_cache: 0
+render_hazard_processing_strip_buffer: 1
+ta_isp_parameter_overflow: 2
+ta_object_list_pointer_overflow: 3
+ta_illegal_parameter: 4
+ta_fifo_overflow: 5
+pvrif_illegal_addr: 6
+pvrif_dma_overrun: 7
+maple_illegal_addr: 8
+maple_dma_overrun: 9
+maple_write_fifo_overflow: 10
+maple_illegal_cmd: 11
+g1_illegal_addr: 12
+g1_gdma_overrun: 13
+g1_romflash_access_at_gdma: 14
+g2_aica_dma_illegal_addr_set: 15
+g2_ext_dma1_illegal_addr_set: 16
+g2_ext_dma2_illegal_addr_set: 17
+g2_dev_dma_illegal_addr_set: 18
+g2_aica_dma_overrun: 19
+g2_ext_dma1_overrun: 20
+g2_ext_dma2_overrun: 21
+g2_dev_dma_overrun: 22
+g2_aica_dma_timeout: 23
+g2_ext_dma1_timeout: 24
+g2_ext_dma2_timeout: 25
+g2_dev_dma_timeout: 26
+cpu_acess_timeout: 27
+sort_dma_cmd_error: 28
+sh4_if: 31
+
+0x005F6924: SB_IML4EXT
+u32, flags
+access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML4EXT write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
+gdrom: 0
+aica: 1
+modem: 2
+ext_device: 3
+
+0x005F6900: SB_ISTNRM
+u32, flags
+access_32, rw
+w_override=this->io.SB_ISTNRM.u &= ~val; holly_recalc_interrupts(this)/*; printf("\nSB_ISTNRM wrote: %08llx cyc:%llu", val, this->sh4.trace_cycles);*/
+r_override=return (this->io.SB_ISTNRM.u) | ((this->io.SB_ISTERR.u > 0) << 30) | ((this->io.SB_ISTEXT.u > 0) << 31)
+render_end_video: 0
+render_end_isp: 1
+render_end_tsp: 2
+vblank_in: 3
+vblank_out: 4
+hblank_in: 5
+end_of_tx_yuv: 6
+end_of_tx_opaque_list: 7
+end_of_tx_opaque_modifier_list: 8
+end_of_tx_translucent_list: 9
+end_of_tx_translucent_modifier_list: 10
+end_of_dma_pvr: 11
+end_of_dma_maple: 12
+vblank_over_maple: 13
+end_of_gdrom_dma: 14
+end_of_aica_dma: 15
+end_of_e1_dma: 16
+end_of_e2_dma: 17
+end_of_dev_dma: 18
+end_of_ch2_dma: 19
+end_of_sort_dma: 20
+end_of_tx_ptl: 21
+
+0x005F6904: SB_ISTEXT
+u32, flags
+access_32, r, warn_write
+gdrom: 0
+aica: 1
+modem: 2
+ext_device: 3
+
+0x005F6908: SB_ISTERR
+u32, flags
+access_32, rw
+w_override=this->io.SB_ISTERR.u &= ~val; holly_recalc_interrupts(this)/*; printf("\nSB_ISTERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
+render_isp_out_of_cache: 0
+render_hazard_processing_strip_buffer: 1
+ta_isp_tsp_parameter_overflow: 2
+ta_object_list_pointer_overflow: 3
+ta_illegal_parameter: 4
+ta_fifo_overflow: 5
+pvrif_illegal_addr: 6
+pvrif_dma_overrun: 7
+maple_illegal_addr: 8
+maple_dma_overrun: 9
+maple_write_fifo_overflow: 10
+maple_illegal_command: 11
+g1_illegal_addr: 12
+g1_gddma_overrun: 13
+g1_romflash_access_at_gdma: 14
+g2_aica_dma_illegal_addr: 15
+g2_e1_dma_illegal_addr: 16
+g2_e2_dma_illegal_addr: 17
+g2_dev_dma_illegal_adr: 18
+g2_aica_dma_overrun: 19
+g2_e1_dma_overrun: 20
+g2_e2_dma_overrun: 21
+g2_dev_dma_overrun: 22
+g2_aica_dma_timeout: 23
+g2_e1_dma_timeout: 24
+g2_e2_dma_timeout: 25
+g2_dev_dma_timeout: 26
+g2_cpu_timeout: 27
+ddt_if: 28
+sh4_if: 31
+
+0x005F6928: SB_IML4ERR
+u32, flags
+access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML4ERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
+render_isp_out_of_cache: 0
+render_hazard_processing_strip_buffer: 1
+ta_isp_parameter_overflow: 2
+ta_object_list_pointer_overflow: 3
+ta_illegal_parameter: 4
+ta_fifo_overflow: 5
+pvrif_illegal_addr: 6
+pvrif_dma_overrun: 7
+maple_illegal_addr: 8
+maple_dma_overrun: 9
+maple_write_fifo_overflow: 10
+maple_illegal_cmd: 11
+g1_illegal_addr: 12
+g1_gdma_overrun: 13
+g1_romflash_access_at_gdma: 14
+g2_aica_dma_illegal_addr_set: 15
+g2_ext_dma1_illegal_addr_set: 16
+g2_ext_dma2_illegal_addr_set: 17
+g2_dev_dma_illegal_addr_set: 18
+g2_aica_dma_overrun: 19
+g2_ext_dma1_overrun: 20
+g2_ext_dma2_overrun: 21
+g2_dev_dma_overrun: 22
+g2_aica_dma_timeout: 23
+g2_ext_dma1_timeout: 24
+g2_ext_dma2_timeout: 25
+g2_dev_dma_timeout: 26
+cpu_acess_timeout: 27
+sort_dma_cmd_error: 28
+sh4_if: 31
+
+0x005F6934: SB_IML6EXT
+u32, flags
+access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML6EXT write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
+gdrom: 0
+aica: 1
+modem: 2
+ext_device: 3
+
+0x005F6938: SB_IML6ERR
+u32, flags
+access_32, rw
+on_write=holly_recalc_interrupts(this)/*; printf("\nSB_IML6ERR write: %08llx cyc:%llu", val, this->sh4.trace_cycles)*/
+render_isp_out_of_cache: 0
+render_hazard_processing_strip_buffer: 1
+ta_isp_parameter_overflow: 2
+ta_object_list_pointer_overflow: 3
+ta_illegal_parameter: 4
+ta_fifo_overflow: 5
+pvrif_illegal_addr: 6
+pvrif_dma_overrun: 7
+maple_illegal_addr: 8
+maple_dma_overrun: 9
+maple_write_fifo_overflow: 10
+maple_illegal_cmd: 11
+g1_illegal_addr: 12
+g1_gdma_overrun: 13
+g1_romflash_access_at_gdma: 14
+g2_aica_dma_illegal_addr_set: 15
+g2_ext_dma1_illegal_addr_set: 16
+g2_ext_dma2_illegal_addr_set: 17
+g2_dev_dma_illegal_addr_set: 18
+g2_aica_dma_overrun: 19
+g2_ext_dma1_overrun: 20
+g2_ext_dma2_overrun: 21
+g2_dev_dma_overrun: 22
+g2_aica_dma_timeout: 23
+g2_ext_dma1_timeout: 24
+g2_ext_dma2_timeout: 25
+g2_dev_dma_timeout: 26
+cpu_acess_timeout: 27
+sort_dma_cmd_error: 28
+sh4_if: 31
+
+.g2, mem=g2
+0x005F7800: SB_ADSTAG
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7804: SB_ADSTAR
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7808: SB_ADLEN
+u32, flags
+access_32, rw
+transfer_len: 5-24
+end_restart: 31
+
+0x005F780C: SB_ADDIR
+u32
+access_32, rw
+write_mask=1
+
+0x005F7810: SB_ADTSEL
+u32, flags
+access_32, rw
+on_write=update_dma_triggers(this, addr, val)
+tsel0: 0
+tsel1: 1
+tsel2: 2
+
+0x005F7814: SB_ADEN
+u32
+access_32, rw
+write_mask=1
+on_write=update_dma_triggers(this, addr, val);
+
+0x005F7818: SB_ADST
+u32
+access_32, rw
+write_mask=1
+on_write=G2_write_ADST(this, val)
+
+0x005F781C: SB_ADSUSP
+u32, flags
+access_32, rw
+req_suspend: 0
+
+0x005F7820: SB_E1STAG
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7824: SB_E1STAR
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7828: SB_E1LEN
+u32, flags
+access_32, rw
+transfer_len: 5-24
+end_restart: 31
+
+0x005F782C: SB_E1DIR
+u32
+access_32, rw
+write_mask=1
+
+0x005F7830: SB_E1TSEL
+u32
+access_32, rw
+write_mask=7
+on_write=update_dma_triggers(this, addr, val)
+
+0x005F7834: SB_E1EN
+u32
+access_32, rw
+write_mask=1
+on_write=update_dma_triggers(this, addr, val);
+
+0x005F7838: SB_E1ST
+u32
+access_32, rw
+write_mask=1
+on_write=G2_write_E1ST(this, val)
+
+0x005F783C: SB_E1SUSP
+u32, flags
+access_32, rw
+req_suspend: 0
+
+0x005F7840: SB_E2STAG
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7844: SB_E2STAR
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7848: SB_E2LEN
+u32, flags
+access_32, rw
+transfer_len: 5-24
+end_restart: 31
+
+0x005F784C: SB_E2DIR
+u32
+access_32, rw
+write_mask=1
+
+0x005F7850: SB_E2TSEL
+u32
+access_32, rw
+write_mask=7
+on_write=update_dma_triggers(this, addr, val)
+
+0x005F7854: SB_E2EN
+u32
+access_32, rw
+write_mask=1
+on_write=update_dma_triggers(this, addr, val);
+
+0x005F7858: SB_E2ST
+u32
+access_32, rw
+write_mask=1
+on_write=G2_write_E2ST(this, val)
+
+0x005F785C: SB_E2SUSP
+u32, flags
+access_32, rw
+req_suspend: 0
+
+0x005F7860: SB_DDSTAG
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7864: SB_DDSTAR
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7868: SB_DDLEN
+u32, flags
+access_32, rw
+transfer_len: 5-24
+end_restart: 31
+
+0x005F786C: SB_DDDIR
+u32
+access_32, rw
+write_mask=1
+
+0x005F7870: SB_DDTSEL
+u32
+access_32, rw
+write_mask=7
+on_write=update_dma_triggers(this, addr, val)
+
+0x005F7874: SB_DDEN
+u32
+access_32, rw
+write_mask=1
+on_write=update_dma_triggers(this, addr, val);
+
+0x005F7878: SB_DDST
+u32
+access_32, rw
+write_mask=1
+on_write=G2_write_DDST(this, val)
+
+0x005F787C: SB_DDSUSP
+u32, flags
+access_32, rw
+req_suspend: 0
+
+0x005F7890: SB_G2DSTO
+u32
+access_32, rw
+write_mask=bits 0-11
+
+0x005F7894: SB_G2TRTO
+u32
+access_32, rw
+write_mask=bits 0-11
+
+0x005F7898: SB_G2MDMTO
+u32
+access_32, rw
+write_mask=bits 0-7
+
+0x005F789C: SB_G2MDMW
+u32
+access_32, rw
+write_mask=bits 0-7
+
+0x005F78A0: UKN005F78A0
+u32
+access_32, rw
+
+0x005F78A4: UKN005F78A4
+u32
+access_32, rw
+
+0x005F78A8: UKN005F78A8
+u32
+access_32, rw
+
+0x005F78AC: UKN005F78AC
+u32
+access_32, rw
+
+0x005F78B0: UKN005F78B0
+u32
+access_32, rw
+
+0x005F78B4: UKN005F78B4
+u32
+access_32, rw
+
+0x005F78B8: UKN005F78B8
+u32
+access_32, rw
+
+0x005F78BC: SB_G2APRO
+u32, flags
+access_32, rw
+w_cond=(val >> 16) == 0x4659
+bottom_address: 0-6
+top_address: 8-14
+
+0x005F7C00: SB_PDSTAP
+u32
+access_32, rw
+write_mask=bits 5-27
+
+0x005F7C04: SB_PDSTAR
+u32
+access_32, rw
+write_mask=bits 5-27
+
+0x005F7C08: SB_PDSLEN
+u32
+access_32, rw
+write_mask=bits 5-23
+
+0x005F7C0C: SB_PDDIR
+u32
+access_32, rw
+write_mask=1
+
+0x005F7C10: SB_PDTSEL
+u32
+access_32, rw
+write_mask=1
+on_write=update_dma_triggers(this, addr, val)
+
+0x005F7C14: SB_PDEN
+u32
+access_32, rw
+write_mask=1
+
+0x005F7C18: SB_PDST
+u32
+access_32, rw
+write_mask=1
+on_write=pvr_dma_init(this, addr, val)
+
+0x005F7C80: SB_PDAPRO
+u32, flags
+access_32, rw
+w_cond=(val >> 16) == 0x6702
+bottom_address: 0-6
+top_address: 8-14
+
+.g1, mem=g1
+0x005F7480: SB_G1RRC
+u32
+access_32, w
+
+0x005F7484: SB_G1RWC
+u32
+access_32, w
+
+0x005F7488: SB_G1FRC
+u32
+access_32, w
+
+0x005F748C: SB_G1FWC
+u32
+access_32, w
+
+0x005F7490: SB_G1CRC
+u32
+access_32, w
+
+0x005F7494: SB_G1CWC
+u32
+access_32, w
+
+0x005F74A0: SB_G1GDRC
+u32
+access_32, w
+
+0x005F74A4: SB_G1GDWC
+u32
+access_32, w
+
+0x005F74B4: SB_G1CRDYC
+u32
+access_32, w
+
+0x005F74B8: SB_GDAPRO
+u32, flags
+access_32, w
+w_cond=(val >> 16) == 0x8843
+bottom_address: 0-7
+top_address: 8-14
+
+0x005F7404: SB_GDSTAR
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F7408: SB_GDLEN
+u32
+access_32, rw
+write_mask=bits 0-24
+
+0x005F740C: SB_GDDIR
+u32
+access_32, rw
+write_mask=1
+
+0x005F7414: SB_GDEN
+u32
+access_32, rw
+write_mask=1
+
+0x005F7418: SB_GDST
+u32
+access_32, rw
+on_write=gdrom_dma_start(this)
+write_mask=1
+
+.holly, mem=holly
+0x005F8098: ISP_FEED_CFG
+u32, flags
+access_32, rw
+pre_sort_mode: 0
+_res : 1-2
+discard_mode: 3
+punch_through_chunk_size: 4-13
+cache_size_for_translucency: 14-23
+
+0x005F8160: TA_LIST_CONT
+u32
+access_32, rw
+write_mask=0x80000000
+
+0x005F8138: TA_ITP_CURRENT
+u32
+access_32, r
+
+0x005F8044: FB_R_CTRL
+u32, flags
+access_32, rw
+fb_enable: 0
+fb_line_double: 1
+fb_depth: 2-3
+fb_concat: 4-6
+fb_chroma_threshold: 8-15
+fb_stripsize: 16-21
+fb_strip_buf_en: 22
+vclk_div: 23
+
+0x005F8048: FB_W_CTRL
+u32, flags
+access_32, rw
+fb_packmode: 0-2
+fb_dither: 3
+fb_kval: 8-15
+fb_alpha_threshold: 16-23
+
+0x005F805C: FB_R_SIZE
+u32, flags
+access_32, rw
+fb_x_size: 0-9
+fb_y_size: 10-19
+fb_modulus: 20-29
+
+0x005F8060: FB_W_SOF1
+u32, flags
+access_32, rw
+field1_ptr: 2-24
+
+0x005F8064: FB_W_SOF2
+u32, flags
+access_32, rw
+field2_ptr: 2-24
+
+0x005F804C: FB_W_LINESTRIDE
+u32, flags
+access_32, rw
+line_stride: 0-8
+
+0x005F8050: FB_R_SOF1
+u32, flags
+access_32, rw
+field: 2-23
+
+0x005F8054: FB_R_SOF2
+u32, flags
+access_32, rw
+field: 2-23
+
+0x005F8068: FB_X_CLIP
+u32, flags
+access_32, rw
+fb_x_clipping_min: 0-10
+fb_x_clipping_max: 16-26
+
+0x005F806C: FB_Y_CLIP
+u32, flags
+access_32, rw
+fb_y_clipping_min: 0-9
+fb_y_clipping_max: 16-25
+
+0x005F80A0: SDRAM_REFRESH
+u32
+access_32, rw
+write_mask=bits 0-7
+
+0x005F80A8: SDRAM_CFG
+u32
+access_32, rw
+
+0x005F8110: FB_BURSTCTRL
+u32, flags
+access_32, rw
+vid_burst: 0-5
+vid_lat: 8-14
+wr_burst: 15-18
+
+0x005F80D8: SPG_LOAD
+u32, flags
+access_32, rw
+on_write=DC_recalc_frame_timing(this)
+hcount: 0-9
+vcount: 16-25
+
+0x005F8030: SPAN_SORT_CFG
+u32
+access_32, rw
+
+0x005F80B0: FOG_COL_RAM
+u32
+access_32, rw
+
+0x005F80B4: FOG_COL_VERT
+u32, flags
+access_32, rw
+blue: 0-7
+green: 8-15
+red: 16-23
+
+0x005F80B8: FOG_DENSITY
+u32, flags
+access_32, rw
+exponent: 0-7
+mantissa: 8-15
+
+0x005F80BC: FOG_CLAMP_MAX
+u32
+access_32, rw
+
+0x005F80C0: FOG_CLAMP_MIN
+u32
+access_32, rw
+
+0x005F80E4: TEXT_CONTROL
+u32, flags
+access_32, rw
+stride: 0-4
+bank_bit: 8-12
+index_endian_reg: 16
+cb_endian_reg: 17
+
+0x005F80F4: SCALER_CTL
+u32, flags
+access_32, rw
+vertical_scale_factor: 0-15
+horizontal_scroll_enable: 16
+interlace: 17
+field_select: 18
+
+0x005F80E8: VO_CONTROL
+u32, flags
+access_32, rw
+hsync_pol: 0
+vsync_pol: 1
+blank_pol: 2
+blank_video: 3
+field_mode: 4-7
+pixel_double: 8
+pclk_delay: 16-21
+
+0x005F80EC: VO_STARTX
+u32
+access_32, rw
+write_mask=bits 0-9
+
+0x005F80F0: VO_STARTY
+u32, flags
+access_32, rw
+vertical_start_on_field1: 0-9
+vertical_start_on_field2: 16-25
+
+0x005F8040: VO_BORDER_COL
+u32, flags
+access_32, rw
+default=0
+blue: 0-7
+green: 8-15
+red: 16-23
+chroma: 24
+
+0x005F8124: TA_OL_BASE
+u32, flags
+access_32, rw
+base_addr: 5-23
+
+0x005F812C: TA_OL_LIMIT
+u32, flags
+access_32, rw
+limit_addr: 5-23
+
+0x005F8128: TA_ISP_BASE
+u32
+access_32, rw
+write_mask=bits 2-23
+
+0x005F8130: TA_ISP_LIMIT
+u32, flags
+access_32, rw
+limit_addr: 2-23
+
+0x005F813C: TA_GLOB_TILE_CLIP
+u32, flags
+access_32, rw
+tile_x_num: 0-5
+tile_y_num: 16-19
+
+0x005F8140: TA_ALLOC_CTRL
+u32,flags
+access_32, rw
+O_OPB: 0-1
+OM_OPB: 4-5
+T_OPB: 8-9
+PT_OPB: 16-17
+OPB_MODE: 20
+
+0x005F8134: TA_NEXT_OPB
+u32, flags
+access_32, r
+
+0x005F8164: TA_NEXT_OPB_INIT
+u32
+access_32, rw
+write_mask=bits 5-23
+
+0x005F80CC: SPG_VBLANK_INT
+u32, flags
+access_32, rw
+on_write=DC_recalc_frame_timing(this)/*; printf("\nSPG_VBLANK_INT wrote: %08llx", val)*/
+vblank_in_line: 0-9
+vblank_out_line: 16-25
+
+0x005F80D4: SPG_HBLANK
+u32, flags
+access_32, rw
+hbstart: 0-9
+hbend: 16-25
+
+0x005F80DC: SPG_VBLANK
+u32, flags
+access_32, rw
+vbstart: 0-9
+vbend: 16-25
+
+0x005F80D0: SPG_CONTROL
+u32, flags
+access_32, rw
+mhsync_pol: 0
+mvsync_pol: 1
+mcsync_pol: 2
+spg_lock: 3
+interlace: 4
+force_field2: 5
+NTSC: 6
+PAL: 7
+sync_direction: 8
+csync_on_h: 9
+
+0x005F80E0: SPG_WIDTH
+u32, flags
+access_32, rw
+hswidth: 0-6
+vswidth: 8-11
+bpwidth: 12-21
+eqwidth: 22-31
+
+0x005F80C8: SPG_HBLANK_INT
+u32, flags
+access_32, rw
+line_comp_val: 0-9
+hblank_int_mode: 12-13
+hblank_in_interrupt: 16-25
+
+0x005F8074: FPU_SHAD_SCALE
+u32, flags
+access_32, rw
+shadow_scale_factor: 0-7
+intensity_shadow_enable: 8
+
+0x005F807C: FPU_PARAM_CFG
+u32, flags
+access_32, rw
+ptr_first_burst_size: 0-3
+ptr_burst_size: 4-7
+isp_parameter_burst_trigger_threshold: 8-13
+tsp_parameter_burst_trigger_threshold: 14-19
+region_header_type: 21
+
+0x005F8080: HALF_OFFSET
+u32, flags
+access_32, rw
+fpu_pixel_sampling_position: 0
+tsp_pixel_sampling_position: 1
+tsp_texel_sampling_position: 2
+
+0x005F8118: Y_COEFF
+u32, flags
+access_32, rw
+coeff_0_2: 0-7
+coeff_1: 8-15
+
+0x005F808C: ISP_BACKGND_T
+u32, flags
+access_32, rw
+tag_offset: 0-2
+tag_address: 3-23
+skip: 24-26
+shadow: 27
+cache_bypass: 28
+
+.maple, mem=maple
+0x005F6C04: SB_MDSTAR
+u32
+access_32, rw
+write_mask=bits 5-28
+
+0x005F6C10: SB_MDTSEL
+u32
+access_32, rw
+write_mask=1
+
+0x005F6C14: SB_MDEN
+u32
+access_32, rw
+write_mask=1
+
+0x005F6C18: SB_MDST
+u32
+access_32, rw
+on_write=if (val & 1) { maple_dma_init(this); }
+write_mask=1
+
+0x005F6C80: SB_MSYS
+u32, flags
+access_32, rw
+delay_time: 0-3
+sending_rate: 8-9
+single_hard_trigger: 12
+time_out_counter: 16-31
+
+0x005F6C8C: SB_MDAPRO
+u32, flags
+access_32, rw
+w_cond=(val >> 16) == 0x6155
+bottom_addr: 0-6
+top_addr: 8-14
+
+0x005F6CE8: SB_MMSEL
+u32
+access_32, rw
+write_mask=1

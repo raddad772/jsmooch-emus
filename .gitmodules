@@ -1,0 +1,18 @@
+[submodule "jsmooch-lib/src/vendor/elf-parser"]
+	path = jsmooch-lib/src/vendor/elf-parser
+	url = https://github.com/raddad772/elf-parser.git
+[submodule "jsmooch-gui/vendor/myimgui"]
+	path = jsmooch-gui/vendor/myimgui
+	url = https://github.com/raddad772/imgui.git
+[submodule "jsmooch-gui/vendor/glfw3webgpu"]
+	path = jsmooch-gui/vendor/glfw3webgpu
+	url = https://github.com/eliemichel/glfw3webgpu.git
+[submodule "jsmooch-gui/vendor/miniaudio"]
+	path = jsmooch-gui/vendor/miniaudio
+	url = https://github.com/raddad772/miniaudio.git
+[submodule "jsmooch-gui/vendor/WebGPU-distribution"]
+	path = jsmooch-gui/vendor/WebGPU-distribution
+	url = https://github.com/eliemichel/WebGPU-distribution.git
+[submodule "jsmooch-gui/vendor/clownresampler"]
+	path = jsmooch-gui/vendor/clownresampler
+	url = https://github.com/Clownacy/clownresampler.git

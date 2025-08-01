@@ -1,0 +1,43 @@
+#ifndef _JSMOOCH_ENUMS_H
+#define _JSMOOCH_ENUMS_H
+
+enum jsm_systems {
+	SYS_DMG,
+	SYS_GBC,
+	SYS_NES,
+	SYS_SNES,
+    SYS_SG1000,
+	SYS_SMS1,
+    SYS_SMS2,
+	SYS_GG,
+    SYS_DREAMCAST,
+	SYS_ZX_SPECTRUM_48K,
+    SYS_ZX_SPECTRUM_128K,
+	SYS_BBC_MICRO,
+	SYS_GENESIS_USA,
+    SYS_MEGADRIVE_PAL,
+    SYS_GENESIS_JAP,
+	SYS_PS1,
+    SYS_ATARI2600,
+    SYS_MAC128K,
+    SYS_MAC512K,
+    SYS_MACPLUS_1MB,
+    SYS_APPLEIIe,
+    SYS_GBA,
+    SYS_NDS,
+    SYS_GALAKSIJA,
+    SYS_TURBOGRAFX16
+};
+
+enum jsm_regions {
+    REGION_USA,
+    REGION_JAPAN,
+    REGION_EUROPE
+};
+
+enum jsm_display_standards {
+    NTSC,
+    PAL,
+    NSTCJ
+};
+#endif

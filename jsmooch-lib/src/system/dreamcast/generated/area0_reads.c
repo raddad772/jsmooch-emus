@@ -1,0 +1,35 @@
+
+        case 0x00702C00:  { return this->aica.ARMRST; }
+        case 0x005F6800:  { return this->io.SB_C2DSTAT; }
+        case 0x005F6804:  { return this->io.SB_C2DLEN; }
+        case 0x005F6808:  { return this->io.SB_C2DST; }
+        case 0x005F6810:  { return this->io.SB_SDSTAW; }
+        case 0x005F6814:  { return this->io.SB_SDBAAW; }
+        case 0x005F6818:  { return this->io.SB_SDWLT; }
+        case 0x005F681C:  { return this->io.SB_SDLAS; }
+        case 0x005F6820:  { return this->io.SB_SDST; }
+        case 0x005F6840:  { return this->io.SB_DBREQM; }
+        case 0x005F6844:  { return this->io.SB_BAVLWC; }
+        case 0x005F6848:  { return this->io.SB_C2DPRYC; }
+        case 0x005F684C:  { return this->io.SB_C2DMAXL; }
+        case 0x005F6884:  { return this->io.SB_LMMODE0; }
+        case 0x005F6888:  { return this->io.SB_LMMODE1; }
+        case 0x005F68A0:  { return this->io.SB_RBSPLT; }
+        case 0x005F68A4:  { return this->io.SB_UKN5F68A4; }
+        case 0x005F68AC:  { return this->io.SB_UKN5F68AC; }
+        case 0x005F6900: { return (this->io.SB_ISTNRM.u) | ((this->io.SB_ISTERR.u > 0) << 30) | ((this->io.SB_ISTEXT.u > 0) << 31); }
+        case 0x005F6904:  { return this->io.SB_ISTEXT.u; }
+        case 0x005F6908:  { return this->io.SB_ISTERR.u; }
+        case 0x005F6910:  { return this->io.SB_IML2NRM; }
+        case 0x005F6914:  { return this->io.SB_IML2EXT.u; }
+        case 0x005F6918:  { return this->io.SB_IML2ERR.u; }
+        case 0x005F6920:  { return this->io.SB_IML4NRM; }
+        case 0x005F6924:  { return this->io.SB_IML4EXT.u; }
+        case 0x005F6928:  { return this->io.SB_IML4ERR.u; }
+        case 0x005F6930:  { return this->io.SB_IML6NRM; }
+        case 0x005F6934:  { return this->io.SB_IML6EXT.u; }
+        case 0x005F6938:  { return this->io.SB_IML6ERR.u; }
+        case 0x005F6940:  { return this->io.SB_PDTNRM; }
+        case 0x005F6944:  { return this->io.SB_PDTEXT; }
+        case 0x005F6950:  { return this->io.SB_G2DTNRM; }
+        case 0x005F6954:  { return this->io.SB_GD2TEXT; }

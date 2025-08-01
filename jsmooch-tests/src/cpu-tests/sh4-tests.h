@@ -1,0 +1,6 @@
+#ifndef JSMOOCH_EMUS_SH4_TESTS_H
+#define JSMOOCH_EMUS_SH4_TESTS_H
+
+void test_sh4();
+
+#endif //JSMOOCH_EMUS_SH4_TESTS_H
