@@ -248,8 +248,8 @@ void ZXSpectrum_tape_deck_load(struct ZXSpectrum* bus, struct multi_file_set* mf
         total_size += block_size;
         buf_init(&blocks[blocks_len]);
         buf_allocate(&blocks[blocks_len], block_size);
-        blocks_len++;
         memcpy(blocks[blocks_len].ptr, ubi+pos, block_size);
+        blocks_len++;
         pos += block_size;
 
         assert(blocks_len < 512);

@@ -717,6 +717,8 @@ void full_system::load_default_ROM()
             break;
         case SYS_ZX_SPECTRUM_48K:
         case SYS_ZX_SPECTRUM_128K:
+            //worked = grab_ROM(&ROMs, which, "manic.tap", nullptr);
+            worked = grab_ROM(&ROMs, which, "jetset.tap", nullptr);
             worked = 1;
             break;
         case SYS_APPLEIIe:

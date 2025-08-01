@@ -88,7 +88,9 @@ Plays roughly 40-60%? of the library fine? There's tons of accuracy issues with 
 
 ## Master System/Game Gear/SG1000
 ![SMS game](images/sms1.png "SMS game")![SMS game](images/sms2.png "SMS game")![SMS game](images/sms3.png "SMS game")
+
 ![GG game](images/gg1.png "GG game")![GG game](images/gg2.png "GG game")![GG game](images/gg3.png "GG game")
+
 Pretty good compatability, with sound.
 
 ## PlayStation 1
@@ -118,7 +120,9 @@ Currently very WIP core. Has lowest-level timing of any emulator I've seen the s
 - Neutopia has serious issues
 
 ## ZX Spectrum
-Mostly plays games fine, but not thoroughly tested
+![ZX Spectrum game](images/zx1.png "ZX Spectrum Game")
+
+Plays most? games fine, but not thoroughly tested
 
 More detailed info on each to come!
 
