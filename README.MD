@@ -47,7 +47,7 @@ Works, with sound, pretty well. A few incompatible GBC games, and a few with gli
 ## GameBoy Advance
 ![GBA game](images/gba1.png "GBA game")![GBA game](images/gba2.png "GBA game")![GBA game](images/gba3.png "GBA game")![GBA game](images/gba4.png "GBA game")
 
-Works, with sound, pretty well. A fairl y competent core with decent accuracy.
+Works, with sound, pretty well. A fairly competent core with decent accuracy.
 
 ### Known Issues
 - No RTC, sun sensor, etc. yet
