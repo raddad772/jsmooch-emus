@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <cmath>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "build.h"
 #include "my_texture.h"
 #include "application.h"
@@ -18,6 +21,7 @@
 #include "system/dreamcast/gdi.h"
 #include "helpers/physical_io.h"
 #include "helpers/debugger/debugger.h"
+#include "helpers/user.h"
 //#include "system/gb/gb_enums.h"
 
 // mac overlay - 14742566
@@ -822,7 +826,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "bios.gba", nullptr);
 
 
-            worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
+            //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
@@ -855,7 +859,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "hm_fomt.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "metroid_zero.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "dual_blades.gba", nullptr); // works great!
-            // worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // works great
+            //worked = grab_ROM(&ROMs, which, "sonic_battle.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "gunstar.gba", nullptr); // works great
             //worked = grab_ROM(&ROMs, which, "rave_master.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "ecks_sever2.gba", nullptr);
@@ -880,7 +884,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "astro_boy.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goodbye_galaxy.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "minish_cap.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "motoracer.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "motoracer.gba", nullptr);
 
             //worked = grab_ROM(&ROMs, which, "gang-ldmstm.gba", nullptr);
 
@@ -1362,9 +1366,22 @@ void full_system::setup_display()
     printf("\nX0:%f  X1:%f", output.without_overscan.uv0.x, output.without_overscan.uv1.x);
 }
 
+static void construct_ss_path(char *out)
+{
+    char test_path[500];
+
+    //const char *homeDir = get_user_dir();
+    char *tp = out;
+    //tp += sprintf(tp, "%s", homeDir);
+    //tp += sprintf(tp, "/dev/jsmooch-emus/ss.png");
+
+    //sprintf(out, "%s", test_path);
+}
+
+
 void full_system::take_screenshot(void *where, u32 buf_width, u32 buf_height)
 {
-    u32 x_blends = 0;
+    u32 x_blends = 1;
     u32 left_skip = 0, right_skip = 0;
     switch(sys->kind) {
         case SYS_GENESIS_USA:
@@ -1378,7 +1395,21 @@ void full_system::take_screenshot(void *where, u32 buf_width, u32 buf_height)
     }
 
     // Get filename
+    char mpath[500];
+    construct_ss_path(mpath);
+
+    // Get screen output
+    struct physical_io_device *pio = (struct physical_io_device *)cpg(io.display);
+
+    // Create intermediate buffer
+
+
+    // Create intermediate2 buffer
+    //pio->
+
     // Create and fill intermediate buffer
+    //float xpixels = sys->IOs.
+
     // Use STB to save file
 
 }

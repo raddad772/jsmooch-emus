@@ -41,11 +41,13 @@ Works, with sound, pretty well. A few incompatible GBC games, and a few with gli
 -Wario Land 3 - corrupt tiles
 
 ### GameBoy Advance
-Works, with sound, pretty well. A fairly competent core with decent accuracy.
+Works, with sound, pretty well. A fairl y competent core with decent accuracy.
+![GBA game](images/gba_gs.png "GBA game")![GBA game](images/gba_gunstar.png "GBA game")![GBA game](images/gba_dozer.png "GBA game")![GBA game](images/gba_mracer.png "GBA game")
 
 #### Known Issues
 - No RTC, sun sensor, etc. yet
 - Timing is good but not perfect, as is shown in GBA timing tests. Haven't gotten the prefetcher cycle penalty correct.
+- MegaMan Zero 3 has some scroll issues
 
 ### Genesis/MegaDrive
 Works, with decent sound, pretty well. I've tried over 70 games and gotten about 97% compatability (about 93% with no glitches whatsoever).
