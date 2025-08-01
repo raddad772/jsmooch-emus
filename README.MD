@@ -36,7 +36,9 @@ The Yugoslavian microcomputer from the 80's! Boots and displays properly. Not re
 
 ### GameBoy/Color
 ![DMG game](images/dmg1.png "DMG game")![DMG game](images/dmg2.png "DMG game")![DMG game](images/dmg3.png "DMG game")
+
 ![GBC game](images/gbc1.png "GBC game")![GBC game](images/gbc2.png "GBC game")![GBC game](images/gbc3.png "GBC game")
+
 Works, with sound, pretty well. A few incompatible GBC games, and a few with glitches but working, but mostly a competent core.
 
 #### Known issues
