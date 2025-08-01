@@ -659,17 +659,20 @@ void full_system::load_default_ROM()
             break;
         case SYS_SMS1:
         case SYS_SMS2:
-            worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sinister.sms", nullptr);
+            //worked = grab_ROM(&ROMs, which, "outrun.sms", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sonic.sms", nullptr);
             worked = grab_ROM(&ROMs, which, "space_harrier.sms", nullptr);
             break;
         case SYS_GG:
-            //worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
+            worked = grab_ROM(&ROMs, which, "megaman.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonic_triple.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "buttontest.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "gunstar.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sonic_chaos.gg", nullptr);
             //worked = grab_ROM(&ROMs, which, "tails.gg", nullptr);
-            worked = grab_ROM(&ROMs, which, "sonicblast.gg", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sonicblast.gg", nullptr);
             break;
         case SYS_DMG:
             //worked = grab_ROM(&ROMs, which, "pokemonred.gb", nullptr);

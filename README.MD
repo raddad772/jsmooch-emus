@@ -79,16 +79,16 @@ Pretty good compatability, with sound. Needs a little more work on sound to get 
 ## Nintendo DS
 ![NDS game](images/nds1.png "NDS game")![NDS game](images/nds2.png "NDS game")![NDS game](images/nds3.png "NDS game")
 
-Plays roughly 40-60%? of the library fine? There's tons of accuracy issues with it, but I'm fairly happy with how it is now.
+Plays roughly 40-60%? of the library fine? There's tons of accuracy issues with it, but I'm fairly happy with it for now.
 
 ### Known issues
-- Rendering inaccuracies. Games still look good! Wireframe polys unsupported, anti-aliasing unsupported, fog table?
-- Big Mutha Truckers issues
-- The Recruit issues
+- Rendering inaccuracies. Games still look good! Wireframe polys unsupported, anti-aliasing unsupported, fog table...
+- Various game issues
 - Sound sometimes seems a little...uneven?
-- Some games sometimes seem to dislike the Flash save implementation
 
 ## Master System/Game Gear/SG1000
+![SMS game](images/sms1.png "SMS game")![SMS game](images/sms2.png "SMS game")![SMS game](images/sms3.png "SMS game")
+![GG game](images/gg1.png "GG game")![GG game](images/gg2.png "GG game")![GG game](images/gg3.png "GG game")
 Pretty good compatability, with sound.
 
 ## PlayStation 1
@@ -107,7 +107,7 @@ Runs a few games. In a weird spot. Has sound core that works well.
 - PPU mosaic not implemented
 
 ## TurboGraFX-16
-![Bonk 3](images/tg16_bonk3.png "Bonk 3")
+![TG16 game](images/tg1.png "TG16 game")![TG16 game](images/tg2.png "TG16 game")![TG16 game](images/tg3.png "TG16 game")
 
 Currently very WIP core. Has lowest-level timing of any emulator I've seen the source to. A decent portion of games work and sound mostly? works.
 
