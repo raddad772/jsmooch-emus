@@ -111,7 +111,7 @@ Runs a few games. In a weird spot. Has sound core that works well.
 ## TurboGraFX-16
 ![TG16 game](images/tg1.png "TG16 game")![TG16 game](images/tg2.png "TG16 game")![TG16 game](images/tg3.png "TG16 game")
 
-Currently very WIP core. Has lowest-level timing of any emulator I've seen the source to. A decent portion of games work and sound mostly? works.
+Currently very WIP core. Has lowest-level timing of any TG16 emulator I've seen the source to. A decent portion of games work and sound mostly? works.
 
 ### Known Issues
 - Detana Twinbee, Gradius, Alien Crush do not work
