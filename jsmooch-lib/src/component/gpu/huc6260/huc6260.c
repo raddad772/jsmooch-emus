@@ -35,6 +35,7 @@ void HUC6260_delete(struct HUC6260 *this)
 
 void HUC6260_reset(struct HUC6260 *this)
 {
+    this->vdc0->regs.divisor = this->regs.clock_div;
 
 }
 
@@ -134,6 +135,7 @@ void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
                     printf("\nWARN ILLEGAL DIVISOR");
                     this->regs.clock_div = 2;
                 }
+                this->vdc0->regs.divisor = this->regs.clock_div;
                 // Bit 2 = Frame height (0= 262, 1= 263 scanlines)
                 this->regs.next_frame_height = ((val >> 2) & 1) ? 263 : 262;
 

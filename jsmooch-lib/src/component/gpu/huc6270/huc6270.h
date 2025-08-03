@@ -155,6 +155,7 @@ struct HUC6270 {
         u32 IE;
         u32 x_counter;
         u32 HDW;
+        u32 divisor;
     } regs;
 
     DBG_START

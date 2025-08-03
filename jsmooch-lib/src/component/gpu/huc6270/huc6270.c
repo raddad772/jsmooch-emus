@@ -430,7 +430,7 @@ static void vram_vram_end(void *ptr, u64 key, u64 clock, u32 jitter)
 static void vram_satb(struct HUC6270 *this)
 {
     // TODO: make not instant
-    scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_satb_end, NULL);
+    scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + (1024 * this->regs.divisor), 0, this, &vram_satb_end, NULL);
     for (u32 i = 0; i < 0x100; i++) {
         u32 addr = (this->io.DVSSR.u + i) & 0xFFFF;
         this->SAT[i] = read_VRAM(this, addr);
