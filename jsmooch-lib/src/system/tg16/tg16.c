@@ -470,7 +470,13 @@ u32 TG16J_finish_frame(JSM)
     read_opts(jsm, this);
     fixup_audio(this);
 
+#ifdef TG16_LYCODER2
+    dbg.trace_on = 1;
+#endif
     scheduler_run_til_tag_tg16(&this->scheduler, TAG_FRAME);
+#ifdef TG16_LYCODER2
+    dbg_flush();
+#endif
 
     return this->vce.display->last_written;
 }

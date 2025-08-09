@@ -124,58 +124,60 @@ void HUC6260_schedule_first(struct HUC6260 *this)
 
 void HUC6260_write(struct HUC6260 *this, u32 maddr, u32 val)
 {
-    u32 addr = (maddr >> 1) & 3;
-    u32 lo = (maddr & 1) ^ 1;
+    u32 addr = maddr & 7;
+#ifdef TG16_LYCODER2
+    dbg_printf("VCE WRITE %04X: %02X\n", maddr & 0x1FFF, val);
+#endif
     switch(addr) {
         case 0: //CR
-            if (lo) {
-                this->io.DCC = val;
-                this->regs.clock_div = 4 - (val & 3);
-                if ((val & 3) == 3) {
-                    printf("\nWARN ILLEGAL DIVISOR");
-                    this->regs.clock_div = 2;
-                }
-                this->vdc0->regs.divisor = this->regs.clock_div;
-                // Bit 2 = Frame height (0= 262, 1= 263 scanlines)
-                this->regs.next_frame_height = ((val >> 2) & 1) ? 263 : 262;
-
-                //Bit 7 = Color subcarrier enable (0= enabled, 1= disabled (B&W video))
-                this->regs.bw = ((val >> 7) & 1) << 15;
+            this->io.DCC = val;
+            this->regs.clock_div = 4 - (val & 3);
+            if ((val & 3) == 3) {
+                printf("\nWARN ILLEGAL DIVISOR");
+                this->regs.clock_div = 2;
             }
+            this->vdc0->regs.divisor = this->regs.clock_div;
+            // Bit 2 = Frame height (0= 262, 1= 263 scanlines)
+            this->regs.next_frame_height = ((val >> 2) & 1) ? 263 : 262;
+
+            //Bit 7 = Color subcarrier enable (0= enabled, 1= disabled (B&W video))
+            this->regs.bw = ((val >> 7) & 1) << 15;
             return;
         case 1: //CTA
-            if (lo)
-                this->io.CTA.lo = val;
-            else
-                this->io.CTA.hi = val & 1;
             return;
-        case 2: //CDW
-            if (lo)
-                this->io.CTW.lo = val;
-            else {
-                this->io.CTW.hi = val & 1;
-                DBG_EVENT(this->dbg.events.WRITE_CRAM);
-                this->CRAM[this->io.CTA.u] = this->io.CTW.u;
-                if (this->io.CTW.u != 0) {
-                    //dbg_break("YOHA", 0);
-                }
-                this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
-            }
+        case 2:
+            this->io.CTA.lo = val;
             return;
         case 3:
+            this->io.CTA.hi = val & 1;
             return;
+        case 4: //CDW
+            DBG_EVENT(this->dbg.events.WRITE_CRAM);
+            this->CRAM[this->io.CTA.u] = (val & 0xFF) | (this->CRAM[this->io.CTA.u] & 0x100);
+            return;
+        case 5:
+            this->io.CTW.hi = val & 1;
+            DBG_EVENT(this->dbg.events.WRITE_CRAM);
+            this->CRAM[this->io.CTA.u] = ((val & 1) << 8) | (this->CRAM[this->io.CTA.u] & 0xFF);
+            this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
+            return;
+        case 6:
+        case 7:
+            return;
+
     }
 }
 
 u32 HUC6260_read(struct HUC6260 *this, u32 maddr, u32 old)
 {
-    u32 addr = (maddr >> 1) & 3;
-    u32 lo = (maddr & 1) ^ 1;
+    u32 addr = maddr & 7;u32 lo = (maddr & 1) ^ 1;
 
     switch(addr) {
-        case 2: {// CDR
+        case 4: {// CDR
+            return this->CRAM[this->io.CTA.u] & 0xFF;
+        }
+        case 5: {
             u32 la = this->io.CTA.u;
-            if (lo) return this->CRAM[la] & 0xFF;
             this->io.CTA.u = (this->io.CTA.u + 1) & 0x1FF;
             return 0xFE | ((this->CRAM[la] >> 8) & 1);
         }

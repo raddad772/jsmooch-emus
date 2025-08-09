@@ -48,6 +48,7 @@ void HUC6280_reset(struct HUC6280 *this)
     this->regs.TCU = 0;
     this->regs.P.T = 0;
     this->pins.D = 0x100; // special RESET code
+    this->regs.S = 0;
     HUC6280_PSG_reset(&this->psg);
 }
 
@@ -174,12 +175,6 @@ void HUC6280_cycle(struct HUC6280 *this)
             this->regs.do_IRQ = 0;
             // timer > IRQ1 > IRQ2
             if (this->regs.IRQD.TIQ & this->regs.IRQR_polled.TIQ) { // TIQ is 103
-                static int a = 0;
-                if (!a) {
-                    a = 20000;
-                    printf("\nWARN: TIQ CALLED");
-                }
-                else a--;
                 this->regs.IR = 0x103;
                 this->regs.IRQR.TIQ = 0;
                 DBG_EVENT(this->dbg.events.TIQ);
@@ -204,6 +199,16 @@ void HUC6280_cycle(struct HUC6280 *this)
         }
         trace_format(this, this->regs.IR);
         this->current_instruction = HUC6280_decoded_opcodes[this->regs.P.T][this->regs.IR];
+#ifdef TG16_LYCODER2
+        dbg_printf("PC:%04X I:%02X A:%02X X:%02X Y:%02X P:%02X S:%02X MPR0-7:%02X %02X %02X %02X %02X %02X %02X %02x\n",
+            this->PCO, this->regs.IR, this->regs.A, this->regs.X, this->regs.Y, this->regs.P.u, this->regs.S,
+            this->regs.MPR[0] >> 13, this->regs.MPR[1] >> 13, this->regs.MPR[2] >> 13,
+            this->regs.MPR[3] >> 13, this->regs.MPR[4] >> 13, this->regs.MPR[5] >> 13,
+            this->regs.MPR[6] >> 13, this->regs.MPR[7] >> 13);
+        if (this->PCO == 0xE247) {
+            dbg_break("WOOHOO", 0);
+        }
+#endif
 #ifdef HUC6280_TESTING
         this->ins_decodes++;
 #endif
@@ -217,51 +222,61 @@ void HUC6280_cycle(struct HUC6280 *this)
 static u32 internal_read(struct HUC6280 *this, u32 addr, u32 has_effect)
 {
     u32 k = addr & 0x1C00;
-    u32 val;
+    u32 val = 0xFF;
     switch(k) {
         case 0x0800: // PSG.
             if (this->pins.BM) return 0;
-            return this->io.buffer;
+            val = this->io.buffer;
+            break;
         case 0x0C00: // 1FEC00 to 1FEFFF is timer
             if (this->pins.BM) return 0;
             val = this->timer.counter;
             val |= this->io.buffer & 0x80;
-            return val;
+            break;
         case 0x1000: // IO
             if (this->pins.BM) return 0;
             val = this->read_io_func(this->read_io_ptr) & 15;
             val |= 0b00110000; // TurboGrafx-16
             // TODO: cdrom addon would set upper bit
-            return val;
+            break;
         case 0x1400: // IRQ
             if (this->pins.BM) return 0;
             switch(addr & 3) {
                 case 0:
                 case 1:
-                    return this->io.buffer;
+                    val = this->io.buffer;
+                    break;
                 case 2:
-                    return (this->regs.IRQD.u ^ 7) | (this->io.buffer & 0b11111000);
+                    val = (this->regs.IRQD.u ^ 7) | (this->io.buffer & 0b11111000);
+                    break;
                 case 3:
-                    return this->regs.IRQR.u | (this->io.buffer & 0b11111000);
+                    val = this->regs.IRQR.u | (this->io.buffer & 0b11111000);
+                    break;
             }
+            break;
         case 0x1800: {// CD IO
             static int a = 0;
             if (!a) {
                 printf("\nWARNING READ FROM TURBOCD!!!");
                 a = 1;
             }
-            return 0xFF; }
+            val = 0xFF;
+            break;}
         case 0x1C00: // unmapped
-            return 0xFF;
-
+            val = 0xFF;
+            break;
     }
-
-    printf("\nUNHANDLED INTERNAL READ %06x", addr);
-    return 0xFF;
+#ifdef TG16_LYCODER2
+    dbg_printf("CPU read %06X: %02X\n", addr, val);
+#endif
+    return val;
 }
 
 static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
 {
+#ifdef TG16_LYCODER2
+    dbg_printf("CPU write %06X: %02X\n", addr, val);
+#endif
     u32 k = addr & 0x1C00;
 
     switch(k) {
@@ -292,6 +307,9 @@ static void internal_write(struct HUC6280 *this, u32 addr, u32 val)
             this->io.buffer = val;
             if ((addr & 3) == 2) {
                 this->regs.IRQD.u = (val & 7) ^ 7;
+            }
+            else if ((addr & 3) == 3) {
+                this->regs.IRQR.TIQ = 0;
             }
             return;
         case 0x1800: {// CD IO
@@ -353,6 +371,9 @@ void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
             if (this->pins.Addr >= 0x1FE000)
                 this->extra_cycles = 1;
             this->pins.D = this->read_func(this->read_ptr, this->pins.Addr, this->pins.D, 1);
+#ifdef TG16_LYCODER2
+            dbg_printf("CPU read %06X: %02X\n", this->pins.Addr, this->pins.D);
+#endif
         }
         trace_read(this);
     }
@@ -367,6 +388,10 @@ void HUC6280_internal_cycle(void *ptr, u64 key, u64 clock, u32 jitter) {
         else {
             if (this->pins.Addr >= 0x1FE000)
                 this->extra_cycles = 1;
+#ifdef TG16_LYCODER2
+            if ((this->regs.IR != 0x03) && (this->regs.IR != 0x13) && (this->regs.IR != 0x23))
+                dbg_printf("CPU write %06X: %02X\n", this->pins.Addr, this->pins.D);
+#endif
             this->write_func(this->write_ptr, this->pins.Addr, this->pins.D);
         }
     }

@@ -187,7 +187,7 @@ static void HUC6280_ins_04__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            u32 o = (regs->TR[0]) & regs->A;
+            u32 o = (regs->TR[0]) | regs->A;
             regs->P.Z = o == 0;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
@@ -451,7 +451,7 @@ static void HUC6280_ins_0C__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            u32 o = (regs->TR[0]) & regs->A;
+            u32 o = (regs->TR[0]) | regs->A;
             regs->P.Z = o == 0;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
@@ -3163,16 +3163,7 @@ static void HUC6280_ins_53__t0(struct HUC6280_regs *regs, struct HUC6280_pins *p
                 for (u32 i = 0; i < 8; i++) {
                     u32 shifted = 1 << i;
                     if ((regs->TA & shifted) && (regs->MPR[i] != mpl)) {
-                        // so for MPL0, we want 0000-1FFF
-                        // 1, 2000-3FFF
-                        // 2, 4000-5FFF
-                        // 2 << 13 to (3 << 13) - 1
-                        // 3, 6000-7FFF
-                        // 4, 8000-9FFF
-                        // 5, A000-
-
-
-                        debugger_interface_dirty_mem(pins->debugger_interface, pins->debugger_mem_bus, i << 13, ((i + 1) << 13) - 1);
+                        debugger_interface_dirty_mem(pins->debugger_interface, pins->debugger_mem_bus, mpl, ((i + 1) << 13) - 1);
                         regs->MPR[i] = mpl;
                     }
                 }
@@ -10280,6 +10271,7 @@ static void HUC6280_ins_RESET_t0(struct HUC6280_regs *regs, struct HUC6280_pins 
             regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;
+            regs->S = 0;
             pins->RD = 1; 
             return; }
         case 7: {// 8
@@ -10661,7 +10653,7 @@ static void HUC6280_ins_04__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 5: {// idle
-            u32 o = (regs->TR[0]) & regs->A;
+            u32 o = (regs->TR[0]) | regs->A;
             regs->P.Z = o == 0;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
@@ -10957,7 +10949,7 @@ static void HUC6280_ins_0C__t1(struct HUC6280_regs *regs, struct HUC6280_pins *p
             pins->RD = 0; 
             return; }
         case 6: {// idle
-            u32 o = (regs->TR[0]) & regs->A;
+            u32 o = (regs->TR[0]) | regs->A;
             regs->P.Z = o == 0;
             regs->P.N = ((regs->TR[0]) >> 7) & 1;
             regs->P.V = ((regs->TR[0]) >> 6) & 1;
@@ -21244,6 +21236,7 @@ static void HUC6280_ins_RESET_t1(struct HUC6280_regs *regs, struct HUC6280_pins 
             regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;
+            regs->S = 0;
             pins->RD = 1; 
             return; }
         case 7: {// 8

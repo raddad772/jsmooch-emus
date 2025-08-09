@@ -440,6 +440,7 @@ def S_RESET(ag: huc6280_switchgen) -> str:
     ag.addl('regs->timer_startstop = 0;')
     ag.addl('regs->clock_div = 12;')
     ag.addl('pins->Addr = 0x1FFE;')
+    ag.addl('regs->S = 0;')
     ag.RW(1, 0)
 
     ag.addcycle('8')
@@ -1056,7 +1057,7 @@ def al_EOR(ag: huc6280_switchgen, dest: str, source: str) -> None:
 
 
 def al_TSB(ag: huc6280_switchgen, dest: Optional[str], source: str) -> None:
-    ag.addl('u32 o = (' + source + ') & regs->A;')
+    ag.addl('u32 o = (' + source + ') | regs->A;')
     ag.addl('regs->P.Z = o == 0;')
     ag.addl('regs->P.N = ((' + source + ') >> 7) & 1;')
     ag.addl('regs->P.V = ((' + source + ') >> 6) & 1;')

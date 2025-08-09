@@ -449,6 +449,10 @@ static void trigger_vram_vram(struct HUC6270 *this)
         printf("\nWarn attempt to VRAM-VRAM DMA outside vblank!");
         //return;
     }
+#ifdef TG16_LYCODER
+    dbg_printf("\nVRAM-VRAM src:%04x dst:%04x len:%d", this->io.SOUR.u, this->io.DESR.u, this->io.LENR.u);
+#endif
+
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + 256, 0, this, &vram_vram_end, NULL);
     while(true) {
         u16 val = read_VRAM(this, this->io.SOUR.u);
@@ -723,6 +727,9 @@ static void write_msb(struct HUC6270 *this, u32 val)
 void HUC6270_write(struct HUC6270 *this, u32 addr, u32 val)
 {
     addr &= 3;
+#ifdef TG16_LYCODER2
+    dbg_printf("VDC WRITE %04X: %02x\n", addr & 0x1FFF, val);
+#endif
     //printf("\nHUC6270 WRITE %06x %02x", addr, val);
     switch(addr) {
         case 0:

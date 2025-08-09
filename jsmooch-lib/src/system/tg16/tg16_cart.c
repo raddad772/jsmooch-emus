@@ -25,7 +25,11 @@ void TG16_cart_reset(struct TG16_cart *this)
 
 void TG16_cart_write(struct TG16_cart *this, u32 addr, u32 val)
 {
+    // NEUTOPIA!!!
     printf("\nWARN cart write %06x %02x", addr, val);
+    /*if (addr == 0x02b802) {
+        dbg_break("CARTWRITE", 0);
+    }*/
     //dbg_break("WHATHO", 0);
 }
 

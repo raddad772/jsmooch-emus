@@ -19,7 +19,9 @@ extern "C" {
 //#define DC_MEM_W_BRK 0x8cf70ff4
 
 //#define SNES_LYCODER
-//#define LYCODER        // lycoder-format traces for easy winmerge
+//#define TG16_LYCODER
+#define TG16_LYCODER2
+#define LYCODER        // lycoder-format traces for easy winmerge
 //#define REICAST_DIFF
 
 #define TRACE_ON_BRK     // Enable tracing on break
