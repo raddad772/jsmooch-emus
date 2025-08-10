@@ -29,12 +29,16 @@ u32 TG16_bus_read(struct TG16 *this, u32 addr, u32 old, u32 has_effect)
         return this->RAM[addr & 0x1FFF];
     }
 
-    printf("\nUnservied bus read addr:%06x", addr);
+    printf("\nUnserviced bus read addr:%06x", addr);
     return 0;
 }
 
 void TG16_bus_write(struct TG16 *this, u32 addr, u32 val)
 {
+    if (this->clock.master_cycles > 172000) {
+        int a =4;
+        a++;
+    }
     if (addr >= 0x1FE000) {
         if (addr < 0x1FE400) {
             return HUC6270_write(&this->vdc0, addr, val);

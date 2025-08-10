@@ -394,7 +394,13 @@ void HUC6270_delete(struct HUC6270 *this)
 
 void HUC6270_reset(struct HUC6270 *this)
 {
-
+    this->io.HSW = 2;
+    this->io.HDS = 2;
+    this->io.HDW = 31;
+    this->io.HDE = 4;
+    this->io.VSW = 2;
+    this->io.VDW.u = 239;
+    this->io.VCR = 4;
 }
 
 static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
@@ -523,6 +529,7 @@ static void update_irqs(struct HUC6270 *this)
     u32 old_line = this->irq.line;
     this->irq.line = !!(this->regs.IE & this->io.STATUS.u);
     if (old_line != this->irq.line) {
+        printf("\nIE: %02x STATUS:%02x", this->regs.IE, this->io.STATUS.u);
         this->irq.update_func(this->irq.update_func_ptr, this->irq.line);
     }
 }

@@ -10,6 +10,8 @@ def get_myline(my_file, skip_lines):
         while len(m) < 2:
             if m is None:
                 return None
+            if len(m) < 1:
+                return None
             m = my_file.readline()
         return m
 
@@ -39,7 +41,7 @@ def compare_files(good_file, my_file):
         myl = get_myline(my_file, skip_my_lines)
         skip_my_lines = 0
         if myl is None:
-            print('OH NO ITS NONE')
+            print('OH NO ITS NONE AFTER ' + str(num_lines) + 'lines!')
             return
         myl = myl.strip()
         if len(my_lines) > NUML:

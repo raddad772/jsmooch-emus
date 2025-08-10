@@ -183,6 +183,11 @@ void HUC6280_cycle(struct HUC6280 *this)
                 //printf("\nIRQ1");
                 this->regs.IR = 0x102;
                 DBG_EVENT(this->dbg.events.IRQ1);
+                static int a = 0;
+                if (!a) {
+                    a++;
+                    //dbg_break("WOOHOO", 0);
+                }
                 //dbg_break("HAHAHA", 0);
             }
             else if (this->regs.IRQD.IRQ2 & this->regs.IRQR_polled.IRQ2) { // IRQ2 is 101
@@ -205,9 +210,8 @@ void HUC6280_cycle(struct HUC6280 *this)
             this->regs.MPR[0] >> 13, this->regs.MPR[1] >> 13, this->regs.MPR[2] >> 13,
             this->regs.MPR[3] >> 13, this->regs.MPR[4] >> 13, this->regs.MPR[5] >> 13,
             this->regs.MPR[6] >> 13, this->regs.MPR[7] >> 13);
-        if (this->PCO == 0xE247) {
-            dbg_break("WOOHOO", 0);
-        }
+        //if (this->PCO == 0xE247) {
+        //}
 #endif
 #ifdef HUC6280_TESTING
         this->ins_decodes++;
