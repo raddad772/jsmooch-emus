@@ -12,6 +12,7 @@
 struct TG16_cart {
     struct buf ROM;
     struct persistent_store *SRAM;
+    u8 *cart_ptrs[8];
 };
 
 void TG16_cart_init(struct TG16_cart *);
