@@ -147,7 +147,7 @@ static void render_image_view_tiles(struct debugger_interface *dbgr, struct debu
 }
 
 static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
-    struct TG16 *this = (struct TG16 *) ptr;
+    const struct TG16 *this = ptr;
     if (this->vce.master_frame == 0) return;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;

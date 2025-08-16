@@ -234,12 +234,10 @@ static void sample_audio(void *ptr, u64 key, u64 clock, u32 jitter)
 
 static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
 {
-    struct TG16 *this = (struct TG16 *)ptr;
+    struct TG16 *this = ptr;
 
     // PSG
-    struct debug_waveform *dw;
-    //dw = cpg(this->dbg.waveforms_psg.main);
-    dw = this->dbg.waveforms_psg.main_cache;
+    struct debug_waveform *dw = this->dbg.waveforms_psg.main_cache;
     if (dw->user.buf_pos < dw->samples_requested) {
         u32 a = (this->cpu.psg.out.l + this->cpu.psg.out.l) >> 1;
         ((float *) dw->buf.ptr)[dw->user.buf_pos] = ch_to_float(a);
@@ -261,7 +259,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
         dw = this->dbg.waveforms_psg.chan_cache[j];
         if (dw->user.buf_pos < dw->samples_requested) {
             u16 sv = HUC6280_PSG_debug_ch_sample(&this->cpu.psg, j);
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = u16_to_float(sv);
+            ((float *) dw->buf.ptr)[dw->user.buf_pos] = ch_to_float(sv);
             dw->user.buf_pos++;
         }
     }
@@ -416,7 +414,7 @@ static void schedule_first(struct TG16 *this)
     HUC6280_schedule_first(&this->cpu, 0);
     HUC6260_schedule_first(&this->vce);
     scheduler_only_add_abs(&this->scheduler, PSG_CYCLES, 0, this, &psg_go, NULL);
-    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    //scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
 }
