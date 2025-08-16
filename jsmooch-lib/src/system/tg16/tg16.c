@@ -57,7 +57,6 @@ void TG16J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
     struct debug_waveform *wf;
         // # of cycles per frame can change per-frame
     this->audio.master_cycles_per_audio_sample = ((float)this->vce.regs.cycles_per_frame / (float)ab->samples_len);
-    this->audio.next_sample_cycle_max = 0;
     wf = cpg(this->dbg.waveforms_psg.main);
     this->audio.master_cycles_per_max_sample = (float)this->vce.regs.cycles_per_frame / (float)wf->samples_requested;
 
@@ -414,7 +413,7 @@ static void schedule_first(struct TG16 *this)
     HUC6280_schedule_first(&this->cpu, 0);
     HUC6260_schedule_first(&this->vce);
     scheduler_only_add_abs(&this->scheduler, PSG_CYCLES, 0, this, &psg_go, NULL);
-    //scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
+    scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_max, 0, this, &sample_audio_debug_max, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle_min, 0, this, &sample_audio_debug_min, NULL);
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
 }
