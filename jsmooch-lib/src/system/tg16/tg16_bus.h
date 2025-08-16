@@ -54,6 +54,7 @@ struct TG16 {
         DBG_IMAGE_VIEWS_START
             MDBG_IMAGE_VIEW(palettes)
             MDBG_IMAGE_VIEW(tiles)
+            MDBG_IMAGE_VIEW(sys_info)
         DBG_IMAGE_VIEWS_END
         DBG_LOG_VIEW
         DBG_MEMORY_VIEW

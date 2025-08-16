@@ -24,7 +24,40 @@ static inline u16 read_VRAM(struct HUC6270 *this, u32 addr)
 }
 
 
-static void render_image_view_bg(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_sys_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
+    struct TG16 *this = (struct TG16 *)ptr;
+    struct debugger_widget_textbox *tb = &((struct debugger_widget *) cvec_get(&dview->options, 0))->textbox;
+    debugger_widgets_textbox_clear(tb);
+#define tbp(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
+#define YN(x) (x) ? "yes" : "no"
+    tbp("VDP\n~~~~~~~\n");
+    tbp("H: SyncWindow:%d(%02X)  WaitDisplay:%d(%02X)  Display:%d(%02X)  WaitSync:%d(%02X)\n",
+        (this->vdc0.io.HSW+1)<<3, this->vdc0.io.HSW,
+        (this->vdc0.io.HDS+1)<<3, this->vdc0.io.HDS,
+        (this->vdc0.io.HDW+1)<<3, this->vdc0.io.HDW,
+        (this->vdc0.io.HDE+1)<<3, this->vdc0.io.HDE
+        );
+    tbp("V: SyncWindow:%d(%02X)  WaitDisplay:%d(%02X)  Display:%d(%02X)  WaitSync:%d(%02X)\n",
+        this->vdc0.io.VSW+1, this->vdc0.io.VSW,
+        this->vdc0.io.VDS+2, this->vdc0.io.VDS,
+        this->vdc0.io.VDW.u+2, this->vdc0.io.VDW.u,
+        this->vdc0.io.VCR, this->vdc0.io.VCR
+    );
+
+    tbp("Enabled IRQs:  CollisionDetect:%c  SpriteOverflow:%c  ScanlineCount:%c  VRAM->SATB:%c  VRAM->VRAM:%c  vblank:%c\n",
+        this->vdc0.regs.IE & 1 ? 'Y' : 'N',
+        this->vdc0.regs.IE & 2 ? 'Y' : 'N',
+        this->vdc0.regs.IE & 4 ? 'Y' : 'N',
+        this->vdc0.regs.IE & 8 ? 'Y' : 'N',
+        this->vdc0.regs.IE & 0x10 ? 'Y' : 'N',
+        this->vdc0.regs.IE & 0x20 ? 'Y' : 'N'
+        );
+}
+
+
+static void render_image_view_bg(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+{
     struct TG16 *this = (struct TG16 *) ptr;
     if (this->vce.master_frame == 0) return;
 
@@ -85,8 +118,8 @@ static void render_image_view_tiles(struct debugger_interface *dbgr, struct debu
     memset(outbuf, 0, out_width * 4 * 512);
     for (u32 ty = 0; ty < 64; ty++) {
         u32 tile_screen_y = ty * 8;
-        for (u32 tx = 0; tx < 64; tx++) {
-            tn = (ty * 64) + tx;
+        for (u32 tx = 0; tx < 32; tx++) {
+            tn = (ty * 32) + tx;
             u32 tile_screen_x = tx * 8;
             u32 addr = tn << 4;
             for (u32 inner_y = 0; inner_y < 8; inner_y++) {
@@ -102,7 +135,7 @@ static void render_image_view_tiles(struct debugger_interface *dbgr, struct debu
                 // higher byte is 2,4
                 // lowest bit is leftmost pixel?
                 u32 px = tg16_decode_line(plane12, plane34);
-                for  (u32 inner_x = 0; inner_x < 8; inner_x++) {
+                for (u32 inner_x = 0; inner_x < 8; inner_x++) {
                     u32 v = 17 * (px & 15);
                     px >>= 4;
                     screen_y_ptr[screen_x] = v | (v << 8) | (v << 16) | 0xFF000000;
@@ -626,6 +659,29 @@ static void setup_disassembly_view(struct TG16* this, struct debugger_interface 
     dv->get_disassembly_vars.func = &get_disassembly_vars;
 }
 
+static void setup_image_view_sys_info(struct TG16 *this, struct debugger_interface *dbgr)
+{
+    struct debugger_view *dview;
+    this->dbg.image_views.sys_info = debugger_view_new(dbgr, dview_image);
+    dview = cpg(this->dbg.image_views.sys_info);
+    struct image_view *iv = &dview->image;
+
+    iv->width = 10;
+    iv->height = 10;
+    iv->viewport.exists = 1;
+    iv->viewport.enabled = 1;
+    iv->viewport.p[0] = (struct ivec2){ 0, 0 };
+    iv->viewport.p[1] = (struct ivec2){ 10, 10 };
+
+    iv->update_func.ptr = this;
+    iv->update_func.func = &render_image_view_sys_info;
+
+    snprintf(iv->label, sizeof(iv->label), "Sys Info");
+
+    debugger_widgets_add_textbox(&dview->options, "blah!", 1);
+
+}
+
 void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
@@ -641,5 +697,6 @@ void TG16J_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
     setup_image_view_palettes(this, dbgr);
     setup_image_view_tiles(this, dbgr);
     setup_image_view_bg(this, dbgr);
+    setup_image_view_sys_info(this, dbgr);
 }
 

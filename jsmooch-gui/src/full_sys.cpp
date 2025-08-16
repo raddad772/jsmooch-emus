@@ -936,7 +936,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
             //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // no work
             //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // no work
-            //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // bad VRAM writes
+            worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // seems work good
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
@@ -944,14 +944,15 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // seems perfect
             //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
             //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
+            //worked = grab_ROM(&ROMs, which, "takeda_shingen.pce", nullptr); // bad vram
             //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // garbled text and maps
             //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "keith_courage.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "laxe.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "laxe2.pce", nullptr); // crash/hang after "press run"
-            //worked = grab_ROM(&ROMs, which, "p47.pce", nullptr);
-            worked = grab_ROM(&ROMs, which, "finalsoldier.pce", nullptr);
+            //worked = grab_ROM(&ROMs, which, "p47.pce", nullptr); // seems work good
+            //worked = grab_ROM(&ROMs, which, "finalsoldier.pce", nullptr); // slight scroll instability
             //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // gfx/palette issues
             //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // seems good
             //worked = grab_ROM(&ROMs, which, "afterburner2.pce", nullptr); // seems good
@@ -1376,7 +1377,7 @@ void full_system::setup_display()
     if (output.backbuffer_backer) free(output.backbuffer_backer);
     output.backbuffer_backer = malloc(output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
     memset(output.backbuffer_backer, 0, output.backbuffer_texture.width*output.backbuffer_texture.height * 4);
-    printf("\nX0:%f  X1:%f", output.without_overscan.uv0.x, output.without_overscan.uv1.x);
+    //printf("\nX0:%f  X1:%f", output.without_overscan.uv0.x, output.without_overscan.uv1.x);
 }
 
 static void construct_ss_path(char *out)

@@ -62,8 +62,8 @@ struct HUC6260 {
 #define HUC6260_HSYNC_UP 96
 #define HUC6260_DRAW_END 1128
 #define HUC6260_LINE_VSYNC_POS ((HUC6260_HSYNC_DOWN + 30) % HUC6260_CYCLE_PER_LINE)
-#define HUC6260_LINE_VSYNC_START 245
-#define HUC6260_LINE_VSYNC_END 248 // line to term on, so 246 and 249 = 3 lines
+#define HUC6260_LINE_VSYNC_START 248 // 245/8
+#define HUC6260_LINE_VSYNC_END 251 // line to term on, so 246 and 249 = 3 lines
 
 
 void HUC6260_init(struct HUC6260 *, struct scheduler_t *scheduler, struct HUC6270 *vdc0, struct HUC6270 *vdc1);

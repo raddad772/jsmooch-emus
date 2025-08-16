@@ -61,7 +61,7 @@ void HUC6280_PSG_write(struct HUC6280_PSG *this, u32 addr, u8 val)
         case 0: // channel select
             this->SEL = val & 7;
             if (this->SEL > 5) {
-                printf("\nWARN CH SEL %d", this->SEL);
+                //printf("\nWARN CH SEL %d", this->SEL);
             }
             return;
         case 1: // master vol left/right
