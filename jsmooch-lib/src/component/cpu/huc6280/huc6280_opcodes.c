@@ -10267,7 +10267,7 @@ static void HUC6280_ins_RESET_t0(struct HUC6280_regs *regs, struct HUC6280_pins 
             regs->MPL = 0;
             regs->P.I = 1;
             regs->P.D = regs->P.T = 0;
-            regs->IRQD.u = 0;
+            regs->IRQD.u = 7;
             regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;
@@ -21232,7 +21232,7 @@ static void HUC6280_ins_RESET_t1(struct HUC6280_regs *regs, struct HUC6280_pins 
             regs->MPL = 0;
             regs->P.I = 1;
             regs->P.D = regs->P.T = 0;
-            regs->IRQD.u = 0;
+            regs->IRQD.u = 7;
             regs->timer_startstop = 0;
             regs->clock_div = 12;
             pins->Addr = 0x1FFE;

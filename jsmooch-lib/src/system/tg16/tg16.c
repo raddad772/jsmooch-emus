@@ -108,6 +108,7 @@ static void vdc0_update_irqs(void *ptr, u32 val)
 {
     struct TG16 *this = (struct TG16 *)ptr;
     this->cpu.regs.IRQR.IRQ1 = val;
+    //printf("\nIRQ1 set to %d", this->cpu.regs.IRQR.IRQ1);
 }
 
 static struct events_view *TG16J_get_events_view(JSM)

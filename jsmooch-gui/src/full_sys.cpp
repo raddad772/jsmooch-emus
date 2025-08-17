@@ -959,9 +959,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
             //worked = grab_ROM(&ROMs, which, "splatterhouse.pce", nullptr); // BAD!
             //worked = grab_ROM(&ROMs, which, "blazing_lazers.pce", nullptr); // seems good
-            worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // seems work good
+            //worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // seems work good
             //worked = grab_ROM(&ROMs, which, "neutopia2.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // does nothing
+            worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // WORKS GOOD
 
             break;
         case SYS_GENESIS_USA:

@@ -529,7 +529,7 @@ static void update_irqs(struct HUC6270 *this)
     u32 old_line = this->irq.line;
     this->irq.line = !!(this->regs.IE & this->io.STATUS.u);
     if (old_line != this->irq.line) {
-        //printf("\nIE:%02x STATUS:%02x  DISPLAY LINE:%lld", this->regs.IE, this->io.STATUS.u, events_view_get_current_line(this->dbg.events.view));
+        //printf("\nIE:%02x STATUS:%02x IRQL:%d  DISPLAY LINE:%lld", this->regs.IE, this->io.STATUS.u, this->irq.line, events_view_get_current_line(this->dbg.events.view));
         this->irq.update_func(this->irq.update_func_ptr, this->irq.line);
     }
 }

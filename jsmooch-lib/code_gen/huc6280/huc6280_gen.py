@@ -436,7 +436,7 @@ def S_RESET(ag: huc6280_switchgen) -> str:
     ag.addl('regs->MPL = 0;')
     ag.addl('regs->P.I = 1;')
     ag.addl('regs->P.D = regs->P.T = 0;')
-    ag.addl('regs->IRQD.u = 0;')
+    ag.addl('regs->IRQD.u = 7;')
     ag.addl('regs->timer_startstop = 0;')
     ag.addl('regs->clock_div = 12;')
     ag.addl('pins->Addr = 0x1FFE;')

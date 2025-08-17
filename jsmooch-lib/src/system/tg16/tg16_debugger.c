@@ -31,6 +31,7 @@ static void render_image_view_sys_info(struct debugger_interface *dbgr, struct d
     debugger_widgets_textbox_clear(tb);
 #define tbp(...) debugger_widgets_textbox_sprintf(tb, __VA_ARGS__)
 #define YN(x) (x) ? "yes" : "no"
+    tbp("CPU\n~~~~~\n");
     tbp("VDP\n~~~~~~~\n");
     tbp("H: SyncWindow:%d(%02X)  WaitDisplay:%d(%02X)  Display:%d(%02X)  WaitSync:%d(%02X)\n",
         (this->vdc0.io.HSW+1)<<3, this->vdc0.io.HSW,
@@ -53,6 +54,7 @@ static void render_image_view_sys_info(struct debugger_interface *dbgr, struct d
         this->vdc0.regs.IE & 0x10 ? 'Y' : 'N',
         this->vdc0.regs.IE & 0x20 ? 'Y' : 'N'
         );
+    tbp("RCR:%02x/%d(%d)", this->vdc0.io.RCR.u, this->vdc0.io.RCR.u, this->vdc0.io.RCR.u-64);
 }
 
 
