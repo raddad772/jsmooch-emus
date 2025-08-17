@@ -934,9 +934,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
-            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // no work
-            //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // no work
-            worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // seems work good
+            worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // work good
+            //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // work good
+            //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // seems work good
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);

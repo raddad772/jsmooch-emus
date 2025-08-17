@@ -178,20 +178,23 @@ void HUC6280_cycle(struct HUC6280 *this)
                 this->regs.IR = 0x103;
                 this->regs.IRQR.TIQ = 0;
                 DBG_EVENT(this->dbg.events.TIQ);
+                //printf("\nTIQ!");
             }
             else if (this->regs.IRQD.IRQ1 & this->regs.IRQR_polled.IRQ1) { // IRQ1 is 102
                 //printf("\nIRQ1");
                 this->regs.IR = 0x102;
                 DBG_EVENT(this->dbg.events.IRQ1);
-                static int a = 0;
-                if (!a) {
-                    a++;
-                    //dbg_break("WOOHOO", 0);
+                if (dbg.trace_on) {
+                    static int a = 0;
+                    if (!a) {
+                        a++;
+                        dbg_break("WOOHOO", 0);
+                    }
                 }
                 //dbg_break("HAHAHA", 0);
             }
             else if (this->regs.IRQD.IRQ2 & this->regs.IRQR_polled.IRQ2) { // IRQ2 is 101
-                printf("\nIRQ2");
+                //printf("\nIRQ2");
                 this->regs.IR = 0x101;
                 DBG_EVENT(this->dbg.events.IRQ2);
             }

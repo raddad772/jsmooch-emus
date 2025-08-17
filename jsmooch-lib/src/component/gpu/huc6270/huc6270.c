@@ -406,12 +406,12 @@ void HUC6270_reset(struct HUC6270 *this)
 static void update_RCR(void *ptr, u64 key, u64 clock, u32 jitter)
 {
     struct HUC6270 *this = (struct HUC6270 *)ptr;
-    u32 signal = this->regs.y_counter == this->io.RCR.u;
+    u32 signal = (this->regs.y_counter == this->io.RCR.u);
     //printf("\nTEST LINE %d against %d @%lld", this->regs.y_counter, this->io.RCR.u, *this->scheduler->clock);
-    if (signal && (signal != this->io.STATUS.RR)) {
+    if (signal && (signal != this->io.STATUS.RR) && (this->io.CR.IE & 4)) {
         DBG_EVENT(this->dbg.events.HIT_RCR);
         this->io.STATUS.RR = 1;
-        //printf("\nRCR HIT LINE %d  X %lld", this->regs.y_counter, events_view_get_current_line_pos(this->dbg.events.view));
+        //printf("\nRCR HIT LINE %d  DL:%lld  X %lld", this->regs.y_counter, events_view_get_current_line(this->dbg.events.view), events_view_get_current_line_pos(this->dbg.events.view));
     }
 
     update_irqs(this);
@@ -529,7 +529,7 @@ static void update_irqs(struct HUC6270 *this)
     u32 old_line = this->irq.line;
     this->irq.line = !!(this->regs.IE & this->io.STATUS.u);
     if (old_line != this->irq.line) {
-        //printf("\nIE: %02x STATUS:%02x", this->regs.IE, this->io.STATUS.u);
+        //printf("\nIE:%02x STATUS:%02x  DISPLAY LINE:%lld", this->regs.IE, this->io.STATUS.u, events_view_get_current_line(this->dbg.events.view));
         this->irq.update_func(this->irq.update_func_ptr, this->irq.line);
     }
 }
@@ -555,8 +555,10 @@ static void write_lsb(struct HUC6270 *this, u32 val)
             return;
         case 0x05: // CR
             this->io.CR.lo = val;
+            //printf("\nWRITE CTRL:%02x", val);
             update_ie(this);
             update_irqs(this);
+            //printf("\nRCR Hit ENABLE: %d", this->regs.IE & 4);
             switch((val >> 4) & 3) {
                 case 0:
                     this->regs.ignore_hsync = 0;
