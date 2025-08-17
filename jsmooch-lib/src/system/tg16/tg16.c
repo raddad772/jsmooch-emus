@@ -239,7 +239,7 @@ static void sample_audio_debug_max(void *ptr, u64 key, u64 clock, u32 jitter)
     struct debug_waveform *dw = this->dbg.waveforms_psg.main_cache;
     if (dw->user.buf_pos < dw->samples_requested) {
         u32 a = (this->cpu.psg.out.l + this->cpu.psg.out.l) >> 1;
-        ((float *) dw->buf.ptr)[dw->user.buf_pos] = ch_to_float(a);
+        ((float *) dw->buf.ptr)[dw->user.buf_pos] = u16_to_float(a);
         dw->user.buf_pos++;
     }
     this->audio.next_sample_cycle_max += this->audio.master_cycles_per_max_sample;

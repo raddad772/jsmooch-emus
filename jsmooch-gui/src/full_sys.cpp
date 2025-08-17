@@ -959,9 +959,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
             //worked = grab_ROM(&ROMs, which, "splatterhouse.pce", nullptr); // BAD!
             //worked = grab_ROM(&ROMs, which, "blazing_lazers.pce", nullptr); // seems good
-            //worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // seems work good
+            worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // seems work good
             //worked = grab_ROM(&ROMs, which, "neutopia2.pce", nullptr); // good
-            worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // does nothing
+            //worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // does nothing
 
             break;
         case SYS_GENESIS_USA:
@@ -1526,6 +1526,8 @@ void full_system::waveform_view_present(struct WVIEW &wv)
             float *b = (float *)wf.wf->buf.ptr;
             for (u32 x = 0; x < wf.wf->samples_rendered; x++) {
                 float smp = *b;
+                if (smp < -1.0f) smp = -1.0f;
+                if (smp > 1.0f) smp = 1.0f;
                 float fy = (hrange * smp) * -1.0f;
                 i32 iy = ((i32)floor(fy)) + (i32)hrange;
                 if (x != 0) {
