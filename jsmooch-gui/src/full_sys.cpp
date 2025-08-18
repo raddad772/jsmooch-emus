@@ -933,35 +933,35 @@ void full_system::load_default_ROM()
         case SYS_TURBOGRAFX16:
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
-            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // work good
-            //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // work good
-            //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // seems work good
+            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
-            //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // seems perfect
-            //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
-            //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
-            //worked = grab_ROM(&ROMs, which, "takeda_shingen.pce", nullptr); // bad vram
+            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "takeda_shingen.pce", nullptr); // bad vram stripes
             //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
-            //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // has issues
-            //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // seems to work fine
-            //worked = grab_ROM(&ROMs, which, "keith_courage.pce", nullptr); // seems to work fine
-            //worked = grab_ROM(&ROMs, which, "laxe.pce", nullptr); // seems to work fine
+            //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // has issues with gfx
+            //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "keith_courage.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "laxe.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "laxe2.pce", nullptr); // crash/hang after "press run"
-            //worked = grab_ROM(&ROMs, which, "p47.pce", nullptr); // seems work good
-            //worked = grab_ROM(&ROMs, which, "finalsoldier.pce", nullptr); // slight scroll instability
-            //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // seems good
-            //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // seems good
-            //worked = grab_ROM(&ROMs, which, "afterburner2.pce", nullptr); // seems good
-            //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
+            //worked = grab_ROM(&ROMs, which, "p47.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "finalsoldier.pce", nullptr); // good/slight scroll instability
+            //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "afterburner2.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "splatterhouse.pce", nullptr); // BAD!
-            //worked = grab_ROM(&ROMs, which, "blazing_lazers.pce", nullptr); // seems good
-            //worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // seems work good
+            //worked = grab_ROM(&ROMs, which, "blazing_lazers.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "neutopia2.pce", nullptr); // good
-            worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // WORKS GOOD
+            //worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // good
 
             break;
         case SYS_GENESIS_USA:

@@ -460,6 +460,7 @@ static void trigger_vram_vram(struct HUC6270 *this)
 #endif
 
     scheduler_only_add_abs(this->scheduler, (*this->scheduler->clock) + (4 * this->io.LENR.u), 0, this, &vram_vram_end, NULL);
+    this->io.LENR.u++;
     while(true) {
         u16 val = read_VRAM(this, this->io.SOUR.u);
         write_VRAM(this, this->io.DESR.u, val);
