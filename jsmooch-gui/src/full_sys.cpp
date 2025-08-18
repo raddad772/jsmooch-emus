@@ -944,9 +944,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "takeda_shingen.pce", nullptr); // bad vram stripes
-            //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
-            //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // has issues with gfx
+            //worked = grab_ROM(&ROMs, which, "takeda_shingen.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // not sure if it's bad or not!?
             //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "keith_courage.pce", nullptr); // good
             //worked = grab_ROM(&ROMs, which, "laxe.pce", nullptr); // good
