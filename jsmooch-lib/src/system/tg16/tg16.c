@@ -195,8 +195,9 @@ void TG16_delete(JSM) {
     jsm_clearfuncs(jsm);
 }
 
-static inline float u16_to_float2(i16 val)
+static inline float u16_to_float2(u16 val)
 {
+    assert(val < 47431); // (1F * FF) * 6
     return (float)val / 47500.0f;
 }
 
