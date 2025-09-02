@@ -322,6 +322,7 @@ struct debug_waveform {
     u32 clock_divider;
     u32 samples_requested;
     u32 samples_rendered;
+    u32 is_unsigned;
     struct buf buf; // height*width. value -1...1
     enum debug_waveform_kinds kind;
 

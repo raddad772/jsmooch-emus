@@ -331,7 +331,7 @@ void GBAJ_reset(JSM)
     }
     this->io.SIO.send = 0xFFFF;
 
-    skip_BIOS(this);
+    //skip_BIOS(this);
 
     scheduler_clear(&this->scheduler);
     schedule_first(this);

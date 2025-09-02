@@ -92,11 +92,11 @@ int main()
     dbg.trace_on = 0;
     //test_spc700();
     //test_wdc65816();
-    test_huc6280();
+    //test_huc6280();
     //z80_drag_race();
     //test_scheduler();
     //test_sm83();
-    //test_z80();
+    test_z80();
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();

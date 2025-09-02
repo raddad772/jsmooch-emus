@@ -386,6 +386,7 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
+    dw->is_unsigned = 1;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -393,6 +394,7 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Ch 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = 1;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -400,6 +402,7 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Ch 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = 1;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -407,6 +410,7 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Ch 3");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = 1;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -414,6 +418,7 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Ch 4");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = 1;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -421,6 +426,7 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Ch 5");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = 1;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
@@ -428,6 +434,7 @@ static void setup_waveforms_psg(struct TG16* this, struct debugger_interface *db
     snprintf(dw->name, sizeof(dw->name), "Ch 6");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
+    dw->is_unsigned = 1;
     printf("\nWAVEFORMS INIT'D");
 }
 

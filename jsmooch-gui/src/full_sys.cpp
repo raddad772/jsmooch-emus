@@ -756,7 +756,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
@@ -768,7 +768,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "kirbycc.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "mp_hunters_rev1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "okami_den.nds", nullptr); // try again after sprites
-            worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "poke_black_2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "infinite_space.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nsmb.nds", nullptr);
@@ -1506,6 +1506,40 @@ static void draw_box(u32 *ptr, u32 x0, u32 y0, u32 x1, u32 y1, u32 out_width, u3
     }
 }
 
+static i32 plot_sample_signed(u32 *ptr, u32 x, float smp, i32 last_y, float hrange) {
+    if (smp < -1.0f) smp = -1.0f;
+    if (smp > 1.0f) smp = 1.0f;
+    float fy = (hrange * smp) * -1.0f;
+    i32 iy = ((i32)floor(fy)) + (i32)hrange;
+    if (x != 0) {
+        u32 starty = iy < last_y ? iy : last_y;
+        u32 endy = iy > last_y ? iy : last_y;
+        for (u32 sy = starty; sy <= endy; sy++) {
+            ptr[(sy * 1024) + x] = 0xFFFFFFFF;
+        }
+    }
+    ptr[(iy * 1024) + x] = 0xFFFFFFFF;
+    return iy;
+}
+
+static i32 plot_sample_unsigned(u32 *ptr, u32 x, float smp, i32 last_y, float hrange) {
+    if (smp < 0.0f) smp = 0.0f;
+    if (smp > 1.0f) smp = 1.0f;
+    printf("\nSMP: %f    HRANGE:%f", hrange, smp);
+    float fy = (hrange * smp) * -2.0f;
+    i32 iy = ((i32)floor(fy)) + (i32)hrange;
+    if (x != 0) {
+        u32 starty = iy < last_y ? iy : last_y;
+        u32 endy = iy > last_y ? iy : last_y;
+        for (u32 sy = starty; sy <= endy; sy++) {
+            ptr[(sy * 1024) + x] = 0xFFFFFFFF;
+        }
+    }
+    ptr[(iy * 1024) + x] = 0xFFFFFFFF;
+    return iy;
+}
+
+
 void full_system::waveform_view_present(struct WVIEW &wv)
 {
     for (auto& wf : wv.waveforms) {
@@ -1527,20 +1561,8 @@ void full_system::waveform_view_present(struct WVIEW &wv)
         if (wf.wf->samples_rendered > 0) {
             float *b = (float *)wf.wf->buf.ptr;
             for (u32 x = 0; x < wf.wf->samples_rendered; x++) {
-                float smp = *b;
-                if (smp < -1.0f) smp = -1.0f;
-                if (smp > 1.0f) smp = 1.0f;
-                float fy = (hrange * smp) * -1.0f;
-                i32 iy = ((i32)floor(fy)) + (i32)hrange;
-                if (x != 0) {
-                    u32 starty = iy < last_y ? iy : last_y;
-                    u32 endy = iy > last_y ? iy : last_y;
-                    for (u32 sy = starty; sy <= endy; sy++) {
-                        ptr[(sy * 1024) + x] = 0xFFFFFFFF;
-                    }
-                }
-                ptr[(iy * 1024) + x] = 0xFFFFFFFF;
-                last_y = iy;
+                if (wf.wf->is_unsigned) last_y = plot_sample_unsigned(ptr, x, *b, last_y, hrange);
+                else last_y = plot_sample_signed(ptr, x, *b, last_y, hrange);
                 b++;
             }
         }

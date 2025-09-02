@@ -7263,20 +7263,20 @@ void Z80_ins_00_E3_EX_irr_rr(struct Z80_regs* regs, struct Z80_pins* pins)
         case 7: { // wait
             break; }
         case 8: { // write begin
-            pins->Addr = (regs->SP);
+            pins->Addr = (regs->TA);
             break; }
         case 9: {
-            pins->D = (regs->L);
+            pins->D = (regs->H);
             pins->WR = 1; pins->MRQ = 1;
             break; }
         case 10: { // write end
             pins->WR = 0; pins->MRQ = 0;
             break; }
         case 11: { // write begin
-            pins->Addr = (regs->TA);
+            pins->Addr = (regs->SP);
             break; }
         case 12: {
-            pins->D = (regs->H);
+            pins->D = (regs->L);
             pins->WR = 1; pins->MRQ = 1;
             break; }
         case 13: { // write end
@@ -23288,20 +23288,20 @@ void Z80_ins_DD_E3_EX_irr_rr(struct Z80_regs* regs, struct Z80_pins* pins)
         case 7: { // wait
             break; }
         case 8: { // write begin
-            pins->Addr = (regs->SP);
+            pins->Addr = (regs->TA);
             break; }
         case 9: {
-            pins->D = ((regs->IX & 0xFF));
+            pins->D = (((regs->IX & 0xFF00) >> 8));
             pins->WR = 1; pins->MRQ = 1;
             break; }
         case 10: { // write end
             pins->WR = 0; pins->MRQ = 0;
             break; }
         case 11: { // write begin
-            pins->Addr = (regs->TA);
+            pins->Addr = (regs->SP);
             break; }
         case 12: {
-            pins->D = (((regs->IX & 0xFF00) >> 8));
+            pins->D = ((regs->IX & 0xFF));
             pins->WR = 1; pins->MRQ = 1;
             break; }
         case 13: { // write end
@@ -36120,20 +36120,20 @@ void Z80_ins_FD_E3_EX_irr_rr(struct Z80_regs* regs, struct Z80_pins* pins)
         case 7: { // wait
             break; }
         case 8: { // write begin
-            pins->Addr = (regs->SP);
+            pins->Addr = (regs->TA);
             break; }
         case 9: {
-            pins->D = ((regs->IY & 0xFF));
+            pins->D = (((regs->IY & 0xFF00) >> 8));
             pins->WR = 1; pins->MRQ = 1;
             break; }
         case 10: { // write end
             pins->WR = 0; pins->MRQ = 0;
             break; }
         case 11: { // write begin
-            pins->Addr = (regs->TA);
+            pins->Addr = (regs->SP);
             break; }
         case 12: {
-            pins->D = (((regs->IY & 0xFF00) >> 8));
+            pins->D = ((regs->IY & 0xFF));
             pins->WR = 1; pins->MRQ = 1;
             break; }
         case 13: { // write end

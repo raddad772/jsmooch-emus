@@ -149,7 +149,7 @@ static void construct_path(char *out, u32 iclass, u32 ins)
 
     char *tp = out;
     tp += sprintf(tp, "%s", homeDir);
-    tp += sprintf(tp, "/dev/z80_json/v1");
+    tp += sprintf(tp, "/dev/z80/v1");
 
     tp += sprintf(tp, "%s/", test_path);
     if (iclass != 0)
@@ -779,7 +779,7 @@ u32 test_z80_ins(struct Z80* cpu, u32 iclass, u32 ins, u32 is_call)
     struct read_file_buf infile;
     rfb_init(&infile);
     struct jsontest tests[1000];
-    if (!rfb_read(path, NULL, &infile)) {
+    if (!rfb_read(NULL, path, &infile)) {
         printf("\n\nCouldn't open file! %s", path);
         return 0;
     }
