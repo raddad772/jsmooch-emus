@@ -9,6 +9,8 @@
 #include "gba_dma.h"
 #include "helpers/multisize_memaccess.c"
 
+static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
+
 static u32 busrd_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
     printf("\nREAD UNKNOWN ADDR:%08x sz:%d", addr, sz);
     this->waitstates.current_transaction++;
@@ -39,6 +41,7 @@ static void buswr_invalid(struct GBA *this, u32 addr, u32 sz, u32 access, u32 va
 #define WAITCNT 0x04000204
 
 static u32 busrd_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if (addr < 0x4000) {
         if (this->cpu.regs.R[15] < 0x4000) {
@@ -61,6 +64,7 @@ static void buswr_bios(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) 
 
 
 static u32 busrd_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction += 3;
     if (sz == 4) {
         addr &= ~3;
@@ -71,6 +75,7 @@ static u32 busrd_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 h
 }
 
 static u32 busrd_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
@@ -78,6 +83,7 @@ static u32 busrd_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 h
 }
 
 static void buswr_WRAM_slow(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction += 3;
     if (sz == 4) {
         addr &= ~3;
@@ -146,6 +152,7 @@ static void set_waitstates(struct GBA *this) {
 
 
 static void buswr_WRAM_fast(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if (sz == 4) addr &= ~3;
     if (sz == 2) addr &= ~1;
@@ -313,6 +320,7 @@ static u32 busrd_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_eff
 }
 
 static u32 busrd_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     u32 r = busrd_IO8(this, addr, 1, access, has_effect) << 0;
     if (sz >= 2) {
@@ -692,6 +700,7 @@ static void buswr_IO8(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
 }
 
 static void buswr_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction++;
     if ((addr >= 0x04000060) && (addr < 0x040000B0)) return GBA_APU_write_IO(this, addr, sz, access, val);
 

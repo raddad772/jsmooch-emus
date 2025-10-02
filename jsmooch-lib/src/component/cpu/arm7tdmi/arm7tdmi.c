@@ -385,7 +385,7 @@ void ARM7TDMI_flush_pipeline(struct ARM7TDMI *this)
 
 u32 ARM7TDMI_fetch_ins(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access)
 {
-    addr &= maskalign[sz];
+    //addr &= maskalign[sz];
     u32 v = this->fetch_ins(this->fetch_ptr, addr, sz, access);
     return v;
 }
@@ -394,13 +394,13 @@ static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF };
 
 u32 ARM7TDMI_read(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    addr &= maskalign[sz];
+    //addr &= maskalign[sz];
     u32 v = this->read(this->read_ptr, addr, sz, access, has_effect) & masksz[sz];
     return v;
 }
 
 void ARM7TDMI_write(struct ARM7TDMI *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    addr &= maskalign[sz];
+    //addr &= maskalign[sz];
     this->write(this->write_ptr, addr, sz, access, val);
 }

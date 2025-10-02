@@ -16,6 +16,8 @@
 #include "flash.h"
 #include "eeprom.h"
 
+static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
+
 void GBA_cart_init(struct GBA_cart* this)
 {
     *this = (struct GBA_cart) {}; // Set all fields to 0
@@ -165,16 +167,19 @@ u32 GBA_cart_read(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect
 
 u32 GBA_cart_read_wait0(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    addr &= maskalign[sz];
     return GBA_cart_read(this, addr, sz, access, has_effect, 0);
 }
 
 u32 GBA_cart_read_wait1(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    addr &= maskalign[sz];
     return GBA_cart_read(this, addr, sz, access, has_effect, 1);
 }
 
 u32 GBA_cart_read_wait2(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    addr &= maskalign[sz];
     return GBA_cart_read(this, addr, sz, access, has_effect, 2);
 }
 
@@ -207,6 +212,7 @@ static void write_RTC(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 
 void GBA_cart_write(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
+    addr &= maskalign[sz];
     if (this->cart.RTC.present && (addr >= 0x080000C4) && (addr < 0x080000CA)) {
         return write_RTC(this, addr, sz, access, val);
     }

@@ -16,6 +16,7 @@
 #include "helpers/multisize_memaccess.c"
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
+static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 
 static u32 timer_reload_ticks(u32 reload)
 {
@@ -1937,6 +1938,7 @@ static void trace_write(struct NDS *this, u32 addr, u32 sz, u32 val)
 
 u32 NDS_mainbus_read7(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    addr &= maskalign[sz];
     struct NDS *this = (struct NDS *)ptr;
     if (has_effect) this->waitstates.current_transaction++;
     u32 v;
@@ -2004,6 +2006,7 @@ u32 NDS_mainbus_fetchins7(void *ptr, u32 addr, u32 sz, u32 access)
 
 void NDS_mainbus_write7(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
+    addr &= maskalign[sz];
     struct NDS *this = (struct NDS *)ptr;
     this->waitstates.current_transaction++;
 #ifdef TRACE

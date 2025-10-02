@@ -21,6 +21,8 @@
 #define MASTER_CYCLES_PER_FRAME (228 * MASTER_CYCLES_PER_SCANLINE)
 #define SCANLINE_HBLANK 1006
 
+static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
+
 void GBA_PPU_init(struct GBA *this)
 {
     memset(&this->ppu, 0, sizeof(this->ppu));
@@ -1185,11 +1187,12 @@ static void GBA_PPU_write_invalid(struct GBA *this, u32 addr, u32 sz, u32 access
 
 u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    addr &= maskalign[sz];
+
     this->waitstates.current_transaction++;
     if (sz == 4) {
         this->waitstates.current_transaction++;
-        addr &= ~3;
-    }    if (sz == 2) addr &= ~1;
+    }
     //if (addr < 0x05000400)
     return cR[sz](this->ppu.palette_RAM, addr & 0x3FF);
 
@@ -1198,12 +1201,8 @@ u32 GBA_PPU_mainbus_read_palette(struct GBA *this, u32 addr, u32 sz, u32 access,
 
 u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
-    this->waitstates.current_transaction++;
-    if (sz == 4) {
-        this->waitstates.current_transaction++;
-        addr &= ~3;
-    }
-    if (sz == 2) addr &= ~1;
+    addr &= maskalign[sz];
+    this->waitstates.current_transaction += (sz == 4) ? 2 : 1;
     addr &= 0x1FFFF;
     if (addr < 0x18000)
         return cR[sz](this->ppu.VRAM, addr);
@@ -1212,9 +1211,8 @@ u32 GBA_PPU_mainbus_read_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u3
 }
 
 u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
+    addr &= maskalign[sz];
     this->waitstates.current_transaction++;
-    if (sz == 4) addr &= ~3;
-    if (sz == 2) addr &= ~1;
     //if (addr < 0x07000400)
         return cR[sz](this->ppu.OAM, addr & 0x3FF);
 
@@ -1223,12 +1221,9 @@ u32 GBA_PPU_mainbus_read_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32
 
 void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    this->waitstates.current_transaction++;
-    if (sz == 4) {
-        this->waitstates.current_transaction++;
-        addr &= ~3;
-    }
-    if (sz == 2) addr &= ~1;
+    this->waitstates.current_transaction += (sz == 4) ? 2 : 1;
+    addr &= maskalign[sz];
+
     if (sz == 1) { sz = 2; val = (val & 0xFF) | ((val << 8) & 0xFF00); }
 
     return cW[sz](this->ppu.palette_RAM, addr & 0x3FF, val);
@@ -1237,12 +1232,8 @@ void GBA_PPU_mainbus_write_palette(struct GBA *this, u32 addr, u32 sz, u32 acces
 void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     DBG_EVENT(DBG_GBA_EVENT_WRITE_VRAM);
-    this->waitstates.current_transaction++;
-    if (sz == 4) {
-        this->waitstates.current_transaction++;
-        addr &= ~3;
-    }
-    if (sz == 2) addr &= ~1;
+    addr &= maskalign[sz];
+    this->waitstates.current_transaction += (sz == 4) ? 2 : 1;
 
     u32 vram_boundary = this->ppu.io.bg_mode >= 3 ? 0x14000 : 0x10000;
     u32 mask = sz == 4 ? 0xFFFFFFFF : (sz == 2 ? 0xFFFF : 0xFF);
@@ -1276,8 +1267,7 @@ void GBA_PPU_mainbus_write_VRAM(struct GBA *this, u32 addr, u32 sz, u32 access, 
 void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val)
 {
     this->waitstates.current_transaction++;
-    if (sz == 4) addr &= ~3;
-    if (sz == 2) addr &= ~1;
+    addr &= maskalign[sz];
     if (sz == 1) return;
     //if (addr < 0x07000400)
     return cW[sz](this->ppu.OAM, addr & 0x3FF, val);
@@ -1306,6 +1296,7 @@ void GBA_PPU_mainbus_write_OAM(struct GBA *this, u32 addr, u32 sz, u32 access, u
 u32 GBA_PPU_mainbus_read_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
     u32 v = 0;
+    addr &= maskalign[sz];
     switch(addr) {
         case 0x04000000: // DISPCTRL lo DISPCNT
             v = this->ppu.io.bg_mode;
@@ -1558,6 +1549,7 @@ static void update_bg_y(struct GBA *this, u32 bgnum, u32 which, u32 val)
 }
 
 void GBA_PPU_mainbus_write_IO(struct GBA *this, u32 addr, u32 sz, u32 access, u32 val) {
+    addr &= maskalign[sz];
     struct GBA_PPU *ppu = &this->ppu;
     if ((addr >= 0x04000020) && (addr < 0x04000040)) {
         DBG_EVENT(DBG_GBA_EVENT_WRITE_AFFINE_REGS);
