@@ -47,6 +47,8 @@ static char test_skips[TEST_SKIPS_NUM][100] = {
         "arm_cdp.json.bin",
 };
 
+static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
+
 #define C_SKIPS_NUM 2
 static char c_skips[C_SKIPS_NUM][100] = {
         "arm_mul_mla.json.bin",
@@ -212,6 +214,7 @@ static u8* decode_test(struct arm7_test *test, u8 *ptr)
 
 static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
 {
+    addr &= maskalign[sz];
     struct arm7_test_struct *ts = (struct arm7_test_struct *)ptr;
     u32 v = 0;
     u32 mask = 0;
@@ -252,6 +255,7 @@ static u32 fetchins_test_cpu(void *ptr, u32 addr, u32 sz, u32 access)
 
 static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect)
 {
+    //addr &= maskalign[sz];
     struct transaction *theirt = NULL;
 
     if (has_effect) {
@@ -291,6 +295,7 @@ static u32 read_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 has_effect
 
 static void write_test_cpu(void *ptr, u32 addr, u32 sz, u32 access, u32 val)
 {
+    //printf("\nWRITE %08x", addr);
     struct arm7_test_struct *ts = (struct arm7_test_struct *)ptr;
     struct transaction *myt = &ts->my_transactions.items[ts->my_transactions.num++];
     //printf("\nWRITE ADDR:%08x VAL:%08x", addr, val);

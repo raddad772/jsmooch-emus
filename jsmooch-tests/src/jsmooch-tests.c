@@ -96,7 +96,7 @@ int main()
     //z80_drag_race();
     //test_scheduler();
     //test_sm83();
-    test_z80();
+    //test_z80();
     //generate_sh4();
     //generate_sh4_tests(); // NOTE: reicast tests superceded these
     //test_sh4();
@@ -104,5 +104,5 @@ int main()
     //test_bitbuf();
     //test_dasm_ranges();
     //test_nesm6502();
-    //test_arm7tdmi();
+    test_arm7tdmi();
 }
