@@ -27,11 +27,8 @@
 // mac overlay - 14742566
 // i get to    - 88219648
 
-//#define NEWSYS
-#define NEWSYS_STEP2
-//#define DO_DREAMCAST
-//#define SIDELOAD
-//#define STOPAFTERAWHILE
+#define DO_DREAMCAST
+#define SIDELOAD
 
 
 #ifdef JSM_SDLR3
@@ -838,7 +835,7 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
-            worked = grab_ROM(&ROMs, which, "pokemon_emerald.gba", nullptr); // needs work! RTC, flash
+            //worked = grab_ROM(&ROMs, which, "pokemon_emerald.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
@@ -860,7 +857,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);
@@ -1205,7 +1202,7 @@ void full_system::setup_system(enum jsm_systems which)
     mfs_init(&sideload_image);
     grab_ROM(&sideload_image, which, "gl_matrix.elf", "kos");
     mfs_add_IP_BIN(&sideload_image);
-    fsys.sys->sideload(sys, &sideload_image);
+    sys->sideload(sys, &sideload_image);
     mfs_delete(&sideload_image);
 #endif
 
