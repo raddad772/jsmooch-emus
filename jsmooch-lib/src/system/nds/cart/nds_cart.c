@@ -231,8 +231,8 @@ static void handle_cmd(struct NDS *this)
 static void after_read(struct NDS *this)
 {
     this->cart.io.romctrl.data_ready = 1;
-    NDS_trigger_dma7_if(this, 2);
-    NDS_trigger_dma9_if(this, NDS_DMA_DS_CART_SLOT);
+    if (this->io.rights.nds_slot_is7) NDS_trigger_dma7_if(this, 2);
+    else NDS_trigger_dma9_if(this, NDS_DMA_DS_CART_SLOT);
 }
 
 void NDS_cart_check_transfer(void *ptr, u64 key, u64 clock, u32 jitter)
