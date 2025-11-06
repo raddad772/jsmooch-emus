@@ -78,6 +78,13 @@ void NDS_update_IF9(struct NDS *this, u32 bitnum)
     NDS_eval_irqs_9(this);
 }
 
+void NDS_update_IFs_card(struct NDS *this, u32 bitnum)
+{
+    if (this->io.rights.nds_slot_is7) NDS_update_IF7(this, bitnum);
+    else NDS_update_IF9(this, bitnum);
+}
+
+
 void NDS_update_IFs(struct NDS *this, u32 bitnum)
 {
     NDS_update_IF7(this, bitnum);

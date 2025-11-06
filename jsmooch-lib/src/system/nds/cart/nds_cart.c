@@ -81,7 +81,7 @@ u32 NDS_cart_read_romctrl(struct NDS *this)
 }
 
 static void raise_transfer_irq(struct NDS *this) {
-    NDS_update_IFs(this, NDS_IRQ_CART_DATA_READY);
+    NDS_update_IFs_card(this, NDS_IRQ_CART_DATA_READY);
     printf("\nRAISE TRANSFER IRQ...");
 }
 
@@ -134,7 +134,7 @@ u32 NDS_cart_read_rom(struct NDS *this, u32 addr, u32 sz)
         this->cart.cmd.sz_out = 0;
 
         if (this->cart.io.transfer_ready_irq) {
-            NDS_update_IFs(this, NDS_IRQ_CART_DATA_READY);
+            NDS_update_IFs_card(this, NDS_IRQ_CART_DATA_READY);
         }
     } else {
         this->cart.rom_busy_until = NDS_clock_current7(this) + rom_transfer_time(this, this->cart.io.romctrl.transfer_clk_rate, 4);
@@ -224,7 +224,7 @@ static void handle_cmd(struct NDS *this)
         scheduler_add_or_run_abs(&this->scheduler, this->cart.rom_busy_until, NDANB_after_read, this, &NDS_cart_check_transfer, &this->cart.sch_sch);
     }
     else if(this->cart.io.transfer_ready_irq) {
-        NDS_update_IFs(this, NDS_IRQ_CART_DATA_READY);
+        NDS_update_IFs_card(this, NDS_IRQ_CART_DATA_READY);
     }
 }
 

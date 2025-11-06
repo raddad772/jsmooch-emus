@@ -8,6 +8,7 @@
 #include "helpers/int.h"
 struct NDS;
 void NDS_update_IFs(struct NDS*, u32 bitnum);
+void NDS_update_IFs_card(struct NDS*, u32 bitnum);
 void NDS_update_IF9(struct NDS*, u32 bitnum);
 void NDS_update_IF7(struct NDS*, u32 bitnum);
 void NDS_eval_irqs(struct NDS*);
