@@ -30,7 +30,7 @@ struct SH4_mtx {
 };
 
 struct SH4_regs_SR {
-    u32 MD; // bit 30. 1 = privileged modeRB, BL, FD, M, Q, IMASK, S, T;
+    u32 MD; // bit 30. 1 = privileged mode
     u32 RB; //     29. register bank select (privileged only)
     u32 BL; //     28. Exception/interrupt bit
     u32 FD; //     15. FPU disable

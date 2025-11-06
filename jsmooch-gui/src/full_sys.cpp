@@ -27,11 +27,8 @@
 // mac overlay - 14742566
 // i get to    - 88219648
 
-//#define NEWSYS
-#define NEWSYS_STEP2
 //#define DO_DREAMCAST
 //#define SIDELOAD
-//#define STOPAFTERAWHILE
 
 
 #ifdef JSM_SDLR3
@@ -754,9 +751,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);
@@ -769,7 +766,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "mp_hunters_rev1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "okami_den.nds", nullptr); // try again after sprites
             //worked = grab_ROM(&ROMs, which, "tony_hawk.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "poke_black_2.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "poke_black_1.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "infinite_space.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nsmb.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "examples/graphics_2d/sprites_ext_palette.nds", nullptr);
@@ -838,7 +835,7 @@ void full_system::load_default_ROM()
 
             //worked = grab_ROM(&ROMs, which, "kirby.gba", nullptr); // works!
             //worked = grab_ROM(&ROMs, which, "pokemon_ruby.gba", nullptr); // needs work! RTC, flash
-            worked = grab_ROM(&ROMs, which, "pokemon_emerald.gba", nullptr); // needs work! RTC, flash
+            //worked = grab_ROM(&ROMs, which, "pokemon_emerald.gba", nullptr); // needs work! RTC, flash
             //worked = grab_ROM(&ROMs, which, "sonic_advance.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "sma2.gba", nullptr); // works great!
             //worked = grab_ROM(&ROMs, which, "advance_wars.gba", nullptr); // works!
@@ -860,7 +857,7 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "goldensun.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "goldensun2.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "wario4.gba", nullptr);
-            //worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
+            worked = grab_ROM(&ROMs, which, "suite.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "suite_built.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "oh my gah.gba", nullptr);
             //worked = grab_ROM(&ROMs, which, "aging_cart.gba", nullptr);
@@ -931,39 +928,37 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "tmnt4.sfc", nullptr); // cant even load ROM?
             break;
         case SYS_TURBOGRAFX16:
-
-            worked = grab_ROM(&ROMs, which, "ABMoFJ_2k25.hes", nullptr);
             //worked = grab_ROM(&ROMs, which, "test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "padtest2.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "bomberman.pce", nullptr); // work good
+            //worked = grab_ROM(&ROMs, which, "detana_twinbee.pce", nullptr); // work good
+            //worked = grab_ROM(&ROMs, which, "gradius_jp.pce", nullptr); // work good
+            //worked = grab_ROM(&ROMs, which, "bonks_adventure.pce", nullptr); // seems work good
             //worked = grab_ROM(&ROMs, which, "screen_dim.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "cpu_test.pce", nullptr);
             //worked = grab_ROM(&ROMs, which, "wavy_sky.pce", nullptr);
-            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "takeda_shingen.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // not sure if it's bad or not!?
-            //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "keith_courage.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "laxe.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "magical_chase.pce", nullptr); // works
+            //worked = grab_ROM(&ROMs, which, "rtype.pce", nullptr); // seems perfect
+            //worked = grab_ROM(&ROMs, which, "airzonk.pce", nullptr); // seems to work
+            //worked = grab_ROM(&ROMs, which, "alien_crush.pce", nullptr); // does nothing
+            //worked = grab_ROM(&ROMs, which, "takeda_shingen.pce", nullptr); // bad vram
+            //worked = grab_ROM(&ROMs, which, "bonk3.pce", nullptr); // seems to work fine
+            //worked = grab_ROM(&ROMs, which, "dungeon_explorer.pce", nullptr); // has issues
+            //worked = grab_ROM(&ROMs, which, "fantasy_zone.pce", nullptr); // seems to work fine
+            //worked = grab_ROM(&ROMs, which, "keith_courage.pce", nullptr); // seems to work fine
+            //worked = grab_ROM(&ROMs, which, "laxe.pce", nullptr); // seems to work fine
             //worked = grab_ROM(&ROMs, which, "laxe2.pce", nullptr); // crash/hang after "press run"
-            //worked = grab_ROM(&ROMs, which, "p47.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "finalsoldier.pce", nullptr); // good/slight scroll instability
-            //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "afterburner2.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "p47.pce", nullptr); // seems work good
+            //worked = grab_ROM(&ROMs, which, "finalsoldier.pce", nullptr); // slight scroll instability
+            //worked = grab_ROM(&ROMs, which, "neutopia.pce", nullptr); // seems good
+            //worked = grab_ROM(&ROMs, which, "space_harrier.pce", nullptr); // seems good
+            //worked = grab_ROM(&ROMs, which, "afterburner2.pce", nullptr); // seems good
+            //worked = grab_ROM(&ROMs, which, "outrun.pce", nullptr); // seems good
             //worked = grab_ROM(&ROMs, which, "splatterhouse.pce", nullptr); // BAD!
-            //worked = grab_ROM(&ROMs, which, "blazing_lazers.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // good
+            //worked = grab_ROM(&ROMs, which, "blazing_lazers.pce", nullptr); // seems good
+            //worked = grab_ROM(&ROMs, which, "silent_debuggers.pce", nullptr); // seems work good
             //worked = grab_ROM(&ROMs, which, "neutopia2.pce", nullptr); // good
-            //worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // good
+            worked = grab_ROM(&ROMs, which, "devils_crush.pce", nullptr); // WORKS GOOD
 
             break;
         case SYS_GENESIS_USA:
@@ -1207,7 +1202,7 @@ void full_system::setup_system(enum jsm_systems which)
     mfs_init(&sideload_image);
     grab_ROM(&sideload_image, which, "gl_matrix.elf", "kos");
     mfs_add_IP_BIN(&sideload_image);
-    fsys.sys->sideload(sys, &sideload_image);
+    sys->sideload(sys, &sideload_image);
     mfs_delete(&sideload_image);
 #endif
 
@@ -1506,40 +1501,6 @@ static void draw_box(u32 *ptr, u32 x0, u32 y0, u32 x1, u32 y1, u32 out_width, u3
     }
 }
 
-static i32 plot_sample_signed(u32 *ptr, u32 x, float smp, i32 last_y, float hrange) {
-    if (smp < -1.0f) smp = -1.0f;
-    if (smp > 1.0f) smp = 1.0f;
-    float fy = (hrange * smp) * -1.0f;
-    i32 iy = ((i32)floor(fy)) + (i32)hrange;
-    if (x != 0) {
-        u32 starty = iy < last_y ? iy : last_y;
-        u32 endy = iy > last_y ? iy : last_y;
-        for (u32 sy = starty; sy <= endy; sy++) {
-            ptr[(sy * 1024) + x] = 0xFFFFFFFF;
-        }
-    }
-    ptr[(iy * 1024) + x] = 0xFFFFFFFF;
-    return iy;
-}
-
-static i32 plot_sample_unsigned(u32 *ptr, u32 x, float smp, i32 last_y, float hrange) {
-    if (smp < 0.0f) smp = 0.0f;
-    if (smp > 1.0f) smp = 1.0f;
-    printf("\nSMP: %f    HRANGE:%f", hrange, smp);
-    float fy = (hrange * smp) * -2.0f;
-    i32 iy = ((i32)floor(fy)) + (i32)hrange;
-    if (x != 0) {
-        u32 starty = iy < last_y ? iy : last_y;
-        u32 endy = iy > last_y ? iy : last_y;
-        for (u32 sy = starty; sy <= endy; sy++) {
-            ptr[(sy * 1024) + x] = 0xFFFFFFFF;
-        }
-    }
-    ptr[(iy * 1024) + x] = 0xFFFFFFFF;
-    return iy;
-}
-
-
 void full_system::waveform_view_present(struct WVIEW &wv)
 {
     for (auto& wf : wv.waveforms) {
@@ -1561,8 +1522,20 @@ void full_system::waveform_view_present(struct WVIEW &wv)
         if (wf.wf->samples_rendered > 0) {
             float *b = (float *)wf.wf->buf.ptr;
             for (u32 x = 0; x < wf.wf->samples_rendered; x++) {
-                if (wf.wf->is_unsigned) last_y = plot_sample_unsigned(ptr, x, *b, last_y, hrange);
-                else last_y = plot_sample_signed(ptr, x, *b, last_y, hrange);
+                float smp = *b;
+                if (smp < -1.0f) smp = -1.0f;
+                if (smp > 1.0f) smp = 1.0f;
+                float fy = (hrange * smp) * -1.0f;
+                i32 iy = ((i32)floor(fy)) + (i32)hrange;
+                if (x != 0) {
+                    u32 starty = iy < last_y ? iy : last_y;
+                    u32 endy = iy > last_y ? iy : last_y;
+                    for (u32 sy = starty; sy <= endy; sy++) {
+                        ptr[(sy * 1024) + x] = 0xFFFFFFFF;
+                    }
+                }
+                ptr[(iy * 1024) + x] = 0xFFFFFFFF;
+                last_y = iy;
                 b++;
             }
         }

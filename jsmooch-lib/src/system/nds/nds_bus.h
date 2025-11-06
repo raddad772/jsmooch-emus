@@ -137,8 +137,8 @@ struct NDS {
         } arm9;
 
         struct {
-            u32 gba_slot;
-            u32 nds_slot;
+            u32 gba_slot; // 0=ARM9, 1=ARM7
+            u32 nds_slot_is7; // 0=ARM9, 1=ARM7
             u32 main_memory;
         } rights;
 

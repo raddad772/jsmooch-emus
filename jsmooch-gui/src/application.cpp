@@ -65,8 +65,6 @@ static void CreateSwapChain(int width, int height);
 #include "helpers/inifile.h"
 #include "helpers/serialize/serialize.h"
 
-//#define STOPAFTERAWHILE
-
 
 #ifdef __EMSCRIPTEN__
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
@@ -1025,6 +1023,7 @@ int imgui_jsmooch_app::do_setup_before_mainloop()
     //which = SYS_ZX_SPECTRUM_128K;
     //which = SYS_SG1000;
     //which = SYS_MAC512K;
+    //which = SYS_DREAMCAST;
     //which = SYS_GBA;
     //which = SYS_SNES;
     //which = SYS_GENESIS_USA;
