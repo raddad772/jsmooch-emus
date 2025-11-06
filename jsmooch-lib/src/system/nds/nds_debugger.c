@@ -546,6 +546,18 @@ static void render_image_view_sys_info(struct debugger_interface *dbgr, struct d
                 break;
         }
         debugger_widgets_textbox_sprintf(tb, "\nVRAM %c  MST:%d  OFS:%d  mapping:%s  start:%x  end:%x", 'A' + bnum, mst, ofs, mapstr, mapaddr_start, mapaddr_end);
+
+    }
+    debugger_widgets_textbox_sprintf(tb, "\n\nTimers ARM9:");
+    for (u32 i = 0; i < 4; i++) {
+        float period_f = ((float)this->timer9[i].reload_ticks / 33000000.0f);
+        debugger_widgets_textbox_sprintf(tb,  "\n%d: %f", i, period_f);
+    }
+
+    debugger_widgets_textbox_sprintf(tb, "\n\nTimers ARM7:");
+    for (u32 i = 0; i < 4; i++) {
+        float period_f = ((float)this->timer7[i].reload_ticks / 33000000.0f);
+        debugger_widgets_textbox_sprintf(tb,  "\n%d: %f", i, period_f);
     }
 
 }

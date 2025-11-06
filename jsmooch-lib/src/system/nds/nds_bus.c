@@ -277,8 +277,10 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     u32 v;
     switch(addr) {
         case R_AUXSPICNT:
+            if (!this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_spicnt(this) & 0xFF;
         case R_AUXSPICNT+1:
+            if (!this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_spicnt(this) >> 8;
 
         case R_RCNT+0: return this->io.sio_data & 0xFF;
@@ -621,6 +623,7 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R_ROMCMD+5:
         case R_ROMCMD+6:
         case R_ROMCMD+7:
+            if (!this->io.rights.nds_slot_is7) return;
             NDS_cart_write_cmd(this, addr - R_ROMCMD, val);
             return;
 
@@ -879,8 +882,10 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
     u32 v;
     switch(addr) {
         case R_AUXSPICNT:
+            if (this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_spicnt(this) & 0xFF;
         case R_AUXSPICNT+1:
+            if (this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_spicnt(this) >> 8;
         case R9_POWCNT1+0:
             v = this->io.powcnt.lcd_enable;
@@ -1181,6 +1186,7 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R_ROMCMD+5:
         case R_ROMCMD+6:
         case R_ROMCMD+7:
+            if (this->io.rights.nds_slot_is7) return;
             NDS_cart_write_cmd(this, addr - R_ROMCMD, val);
             return;
 
@@ -1531,8 +1537,8 @@ static void buswr9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
         case R9_EXMEMCNT+1:
             this->io.arm9.EXMEM = (this->io.arm9.EXMEM & 0xFF) | (val << 8);
-            this->io.rights.nds_slot = ((val >> 3) & 1) ^ 1;
-            this->io.rights.main_memory = ((val >> 7) & 1) ^ 1;
+            this->io.rights.nds_slot_is7 = ((val >> 3) & 1);
+            this->io.rights.main_memory = ((val >> 7) & 1);
             return;
 
     }
@@ -1562,6 +1568,7 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     if ((addr >= 0x04000400) && (addr < 0x04000520)) return busrd9_apu(this, addr, sz, access, has_effect);
     switch(addr) {
         case R_ROMCTRL:
+            if (this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_romctrl(this);
 
         case R_ROMDATA+0: // 4100010
@@ -1569,6 +1576,7 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
         case R_ROMDATA+2: // 4100010
         case R_ROMDATA+3: // 4100010
             assert(sz==4);
+            if (this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_rom(this, addr, sz);
 
         case R_POSTFLG:
@@ -1632,6 +1640,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
     if ((addr >= 0x04000400) && (addr < 0x04000520)) return buswr9_apu(this, addr, sz, access, val);
     switch(addr) {
         case R_AUXSPICNT: {
+            if (this->io.rights.nds_slot_is7) return;
             NDS_cart_spi_write_spicnt(this, val & 0xFF, 0);
             if (sz >= 2)
                 NDS_cart_spi_write_spicnt(this, (val >> 8) & 0xFF, 1);
@@ -1640,10 +1649,12 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             return; }
         case R_AUXSPICNT+1:
+            if (this->io.rights.nds_slot_is7) return;
             NDS_cart_spi_write_spicnt(this, val & 0xFF, 1);
             return;
 
         case R_AUXSPIDATA:
+            if (this->io.rights.nds_slot_is7) return;
             assert(sz!=1);
             NDS_cart_spi_transaction(this, val & 0xFFFF);
             if (sz == 4) {
@@ -1651,6 +1662,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             return;
         case R_ROMCTRL:
+            if (this->io.rights.nds_slot_is7) return;
             NDS_cart_write_romctrl(this, val);
             return;
 
@@ -1724,6 +1736,7 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
     u32 v;
     switch(addr) {
         case R_ROMCTRL:
+            if (!this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_romctrl(this);
 
         case R_ROMDATA+0:
@@ -1731,11 +1744,14 @@ static u32 busrd7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
         case R_ROMDATA+2:
         case R_ROMDATA+3:
             assert(sz==4);
+            if (!this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_rom(this, addr, sz);
 
         case R_AUXSPIDATA:
+            if (!this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_spi(this, 0);
         case R_AUXSPIDATA+1:
+            if (!this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_spi(this, 1);
 
         case R7_SPIDATA:
@@ -1790,6 +1806,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             return;
 
         case R_AUXSPICNT: {
+            if (!this->io.rights.nds_slot_is7) return;
             NDS_cart_spi_write_spicnt(this, val & 0xFF, 0);
             if (sz >= 2) {
                 NDS_cart_spi_write_spicnt(this, (val >> 8) & 0xFF, 1);
@@ -1799,16 +1816,19 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             }
             return; }
         case R_AUXSPICNT+1:
+            if (!this->io.rights.nds_slot_is7) return;
             NDS_cart_spi_write_spicnt(this, val & 0xFF, 1);
             return;
 
         case R_AUXSPIDATA:
+            if (!this->io.rights.nds_slot_is7) return;
             NDS_cart_spi_transaction(this, val & 0xFFFF);
             if (sz == 4) {
                 buswr7_io(this, R_ROMCTRL, 2, access, val >> 16);
             }
             return;
         case R_ROMCTRL:
+            if (!this->io.rights.nds_slot_is7) return;
             NDS_cart_write_romctrl(this, val);
             return;
 
