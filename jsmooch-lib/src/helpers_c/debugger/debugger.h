@@ -11,10 +11,10 @@ extern "C" {
 
 #include <stddef.h>
 
-#include "helpers/int.h"
-#include "helpers/cvec.h"
-#include "helpers/buf.h"
-#include "helpers/jsm_string.h"
+#include "helpers_c/int.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/buf.h"
+#include "helpers_c/jsm_string.h"
 
 #define MAX_DBGLOG_IDS 200
 #define MAX_DBGLOG_LINES 100000

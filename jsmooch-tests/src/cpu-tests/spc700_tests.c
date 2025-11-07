@@ -16,8 +16,8 @@
 
 #define MAX_RAM_ENTRIES 50
 
-#include "helpers/int.h"
-#include "helpers/user.h"
+#include "helpers_c/int.h"
+#include "helpers_c/user.h"
 #include "cpu-test-helpers.h"
 #include "spc700_tests.h"
 #include "component/cpu/spc700/spc700.h"

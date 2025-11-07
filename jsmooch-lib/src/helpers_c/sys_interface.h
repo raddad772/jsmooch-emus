@@ -10,7 +10,7 @@ extern "C" {
 #include "buf.h"
 #include "cvec.h"
 #include "serialize/serialize.h"
-#include "helpers/audiobuf.h"
+#include "helpers_c/audiobuf.h"
 
 enum JSM_filekind {
     ROM,

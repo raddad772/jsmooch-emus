@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_SNES_JOYPAD_H
 #define JSMOOCH_EMUS_SNES_JOYPAD_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 
 struct SNES_joypad_inputs {

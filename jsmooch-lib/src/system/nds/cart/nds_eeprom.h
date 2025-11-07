@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_EEPROM_H
 #define JSMOOCH_EMUS_NDS_EEPROM_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct NDS;
 void NDS_eeprom_spi_transaction(struct NDS *this, u32 val);

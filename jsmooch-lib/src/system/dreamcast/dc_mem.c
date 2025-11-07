@@ -15,9 +15,9 @@
 #include "gdrom.h"
 #include "maple.h"
 #include "g2.h"
-#include "helpers/elf_helpers.h"
+#include "helpers_c/elf_helpers.h"
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 //#define func_printf(...) printf(__VA_ARGS__)
 #define func_printf(...) (void)0

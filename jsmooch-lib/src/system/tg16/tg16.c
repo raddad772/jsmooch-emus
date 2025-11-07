@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers/debugger/debugger.h"
-#include "helpers/physical_io.h"
+#include "helpers_c/debugger/debugger.h"
+#include "helpers_c/physical_io.h"
 
 #include "tg16.h"
 #include "tg16_debugger.h"

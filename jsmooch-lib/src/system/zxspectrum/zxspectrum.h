@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_ZXSPECTRUM_H
 #define JSMOOCH_EMUS_ZXSPECTRUM_H
 
-#include "helpers/int.h"
-#include "helpers/sys_interface.h"
+#include "helpers_c/int.h"
+#include "helpers_c/sys_interface.h"
 
 #include "component/cpu/z80/z80.h"
 #include "ula.h"

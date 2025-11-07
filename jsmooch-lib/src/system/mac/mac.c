@@ -12,10 +12,10 @@
 #include "mac_display.h"
 #include "mac_debugger.h"
 
-#include "helpers/int.h"
-#include "helpers/physical_io.h"
-#include "helpers/sys_interface.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/int.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/sys_interface.h"
+#include "helpers_c/debugger/debugger.h"
 
 #include "component/cpu/m68000/m68000.h"
 

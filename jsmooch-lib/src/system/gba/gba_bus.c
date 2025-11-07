@@ -7,7 +7,7 @@
 #include "gba_bus.h"
 #include "gba_timers.h"
 #include "gba_dma.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
 

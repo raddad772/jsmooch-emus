@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "helpers/user.h"
+#include "helpers_c/user.h"
 
 char *construct_cpu_test_path(char* w, const char* cpu_test_folder, const char* who)
 {

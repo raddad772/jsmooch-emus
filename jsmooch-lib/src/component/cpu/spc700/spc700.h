@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_SPC700_H
 #define JSMOOCH_EMUS_SPC700_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
-#include "helpers/debugger/debuggerdefs.h"
-#include "helpers/debugger/debugger.h"
-#include "helpers/debug.h"
+#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers_c/debugger/debugger.h"
+#include "helpers_c/debug.h"
 
 
 union SPC700_regs_P {

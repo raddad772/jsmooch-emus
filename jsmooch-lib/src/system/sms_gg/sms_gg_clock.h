@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_SMS_GG_CLOCK_H
 #define JSMOOCH_EMUS_SMS_GG_CLOCK_H
 
-#include "helpers/int.h"
-#include "helpers/sys_interface.h"
+#include "helpers_c/int.h"
+#include "helpers_c/sys_interface.h"
 
 struct SMSGG_clock {
     enum jsm_systems variant;

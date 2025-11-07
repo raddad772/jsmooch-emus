@@ -1,8 +1,8 @@
 #pragma once
 
 #include "full_sys.h"
-#include "helpers/int.h"
-#include "helpers/inifile.h"
+#include "helpers_c/int.h"
+#include "helpers_c/inifile.h"
 
 enum managed_window_kind {
     mwk_main,

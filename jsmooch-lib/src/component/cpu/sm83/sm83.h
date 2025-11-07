@@ -1,10 +1,10 @@
 #ifndef _SM83_H
 #define _SM83_H
 
-#include "helpers/int.h"
-#include "helpers/debug.h"
-#include "helpers/cvec.h"
-#include "helpers/debugger/debuggerdefs.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/debugger/debuggerdefs.h"
 
 #include "sm83_misc.h"
 

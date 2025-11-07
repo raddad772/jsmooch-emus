@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_OOC_H
 #define JSMOOCH_EMUS_OOC_H
 
-#include "helpers/cvec.h"
+#include "helpers_c/cvec.h"
 
 // Stack of destructors to call
 

@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_SNES_PPU_H
 #define JSMOOCH_EMUS_SNES_PPU_H
 
-#include <helpers/int.h>
-#include "helpers/cvec.h"
+#include <helpers_c/int.h>
+#include "helpers_c/cvec.h"
 
 union SNES_PPU_px {
     struct {

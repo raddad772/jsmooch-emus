@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "nds_eeprom.h"
 #include "../nds_bus.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 //#define flprintf(...) printf(__VA_ARGS__)
 #define flprintf(...) (void)0

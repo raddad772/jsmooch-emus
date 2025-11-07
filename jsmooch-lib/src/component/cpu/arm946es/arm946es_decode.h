@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_ARM946ES_DECODE_H
 #define JSMOOCH_EMUS_ARM946ES_DECODE_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct ARM946ES;
 struct thumb2_instruction;

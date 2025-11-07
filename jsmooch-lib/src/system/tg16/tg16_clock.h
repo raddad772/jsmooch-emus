@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_TG16_CLOCK_H
 #define JSMOOCH_EMUS_TG16_CLOCK_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct TG16_clock {
     u64 master_cycles;

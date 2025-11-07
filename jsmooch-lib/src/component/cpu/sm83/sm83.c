@@ -2,9 +2,9 @@
 #include "sm83.h"
 #include "sm83_opcodes.h"
 #include "stdio.h"
-#include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
-#include "helpers/serialize/serialize.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debugger.h"
+#include "helpers_c/serialize/serialize.h"
 
 u32 SM83_regs_F_getbyte(struct SM83_regs_F* this) {
 	return (this->C << 4) | (this->H << 5) | (this->N << 6) | (this->Z << 7);

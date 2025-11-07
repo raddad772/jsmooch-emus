@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_TG16_CART_H
 #define JSMOOCH_EMUS_TG16_CART_H
 
-#include "helpers/int.h"
-#include "helpers/buf.h"
-#include "helpers/physical_io.h"
+#include "helpers_c/int.h"
+#include "helpers_c/buf.h"
+#include "helpers_c/physical_io.h"
 
 struct TG16_cart {
     struct buf ROM;

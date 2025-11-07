@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "helpers/color.h"
+#include "helpers_c/color.h"
 #include "nds.h"
 #include "nds_bus.h"
 #include "nds_debugger.h"

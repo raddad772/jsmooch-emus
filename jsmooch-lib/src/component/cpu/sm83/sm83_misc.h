@@ -2,7 +2,7 @@
 #define _SM83_MISC_H
 
 // Not even going to ask VS why this is necessary rn
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 enum SM83_MN {
     sNONE = 0,

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_TMU_H
 #define JSMOOCH_EMUS_TMU_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 // TMUs count down at 1/4 speed from the CPU
 

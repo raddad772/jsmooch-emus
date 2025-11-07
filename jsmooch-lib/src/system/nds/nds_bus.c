@@ -13,7 +13,7 @@
 #include "nds_spi.h"
 #include "nds_timers.h"
 #include "nds_debugger.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
@@ -473,7 +473,7 @@ static u32 busrd7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
         case 0x04004701:
             return 0;
     }
-    printf("\nUnhandled BUSRD7IO8 addr:%08x", addr);
+    //printf("\nUnhandled BUSRD7IO8 addr:%08x", addr);
     return 0;
 }
 
@@ -723,6 +723,8 @@ static void buswr7_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
             this->io.ipc.arm9sync.dinput = this->io.ipc.arm7sync.doutput = val & 15;
 
             u32 send_irq = (val >> 5) & 1;
+            if (send_irq) printf("\nIPC IRQ REQUEST!");
+
             if (send_irq && this->io.ipc.arm9sync.enable_irq_from_remote) {
                 NDS_update_IF9(this, NDS_IRQ_IPC_SYNC);
             }
@@ -912,11 +914,13 @@ static u32 busrd9_io8(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_ef
             // send fifo from 9 is to_7
             v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm7);
             v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm7) << 1;
+            printf("\nFIFO7 EMPTY:%d FULL:%d?", v & 1, (v >> 1));
             v |= this->io.ipc.arm9.irq_on_send_fifo_empty << 2;
             return v;
         case R_IPCFIFOCNT+1:
             v = NDS_IPC_fifo_is_empty(&this->io.ipc.to_arm9);
             v |= NDS_IPC_fifo_is_full(&this->io.ipc.to_arm9) << 1;
+            printf("\nFIFO9 EMPTY:%d FULL:%d", v & 1, (v >> 1));
             v |= this->io.ipc.arm9.irq_on_recv_fifo_not_empty << 2;
             v |= this->io.ipc.arm9.error << 6;
             v |= this->io.ipc.arm9.fifo_enable << 7;
@@ -1672,6 +1676,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
         case R_IPCFIFOSEND+2:
         case R_IPCFIFOSEND+3:
             // All writes are only 32 bits here
+            printf("\nIPCIFOSEND!");
             if (this->io.ipc.arm9.fifo_enable) {
                 if (sz == 2) {
                     val &= 0xFFFF;
@@ -1685,7 +1690,7 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
                 if (this->io.ipc.arm9.fifo_enable) {
                     this->io.ipc.arm9.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm7, val);
-                    if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 9, val);
+                    NDS_cart_detect_kind(this, 9, val);
                 }
 
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm7) & this->io.ipc.arm7.irq_on_recv_fifo_not_empty;
@@ -1705,7 +1710,8 @@ static void buswr9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 }
 
 static u32 busrd7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_effect) {
-    if (addr < 0x04808000) return cR[sz](this->mem.wifi, addr & 0x1FFF);
+    // 0x04804000 and 0x480C000 are the two 8KB RAM sections, oops!
+    if (addr < 0x04810000) return cR[sz](this->mem.wifi, addr & 0x1FFF);
     static int a = 1;
     if (a) {
         a = 0;
@@ -1716,7 +1722,7 @@ static u32 busrd7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_e
 
 static void buswr7_wifi(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
 {
-    if (addr < 0x04808000) return cW[sz](this->mem.wifi, addr & 0x1FFF, val);
+    if (addr < 0x04810000) return cW[sz](this->mem.wifi, addr & 0x1FFF, val);
 
     static int a = 1;
     if (a) {
@@ -1854,7 +1860,7 @@ static void buswr7_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 val)
                 u32 old_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (this->io.ipc.arm7.fifo_enable) {
                     this->io.ipc.arm7.error |= NDS_IPC_fifo_push(&this->io.ipc.to_arm9, val);
-                    if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 7, val);
+                    //if (!this->cart.backup.detect.done) NDS_cart_detect_kind(this, 7, val);
                 }
                 u32 new_bits = NDS_IPC_fifo_is_not_empty(&this->io.ipc.to_arm9) & this->io.ipc.arm9.irq_on_recv_fifo_not_empty;
                 if (!old_bits && new_bits) {

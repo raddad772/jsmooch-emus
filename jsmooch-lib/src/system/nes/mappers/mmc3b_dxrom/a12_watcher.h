@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_A12_WATCHER_H
 #define JSMOOCH_EMUS_A12_WATCHER_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 enum a12_r {
     A12_NOTHING,

@@ -8,7 +8,7 @@
 #define MAX_TRI 50
 #define MAX_TRI_LIST 10
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct point {
     float x, y, z, u, v;

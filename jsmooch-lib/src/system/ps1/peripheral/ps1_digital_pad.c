@@ -5,7 +5,7 @@
 #include <string.h>
 #include "ps1_digital_pad.h"
 #include "../ps1_bus.h"
-#include "helpers/debug.h"
+#include "helpers_c/debug.h"
 
 enum cmd_kinds {
     PCMD_read,

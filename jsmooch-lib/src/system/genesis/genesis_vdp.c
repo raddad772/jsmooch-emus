@@ -14,8 +14,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debugger.h"
 #include "genesis_bus.h"
 #include "genesis_vdp.h"
 #include "genesis_debugger.h"

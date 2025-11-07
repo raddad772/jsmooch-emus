@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_ARM946ES_INSTRUCTIONS_H
 #define JSMOOCH_EMUS_ARM946ES_INSTRUCTIONS_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct ARM946ES;
 void ARM946ES_ins_MUL_MLA(struct ARM946ES *, u32 opcode);

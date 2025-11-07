@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "helpers/intrinsics.h"
+#include "helpers_c/intrinsics.h"
 
 #include "m68000.h"
 #include "m68000_instructions.h"

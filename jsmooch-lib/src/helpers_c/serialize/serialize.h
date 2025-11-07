@@ -11,11 +11,11 @@ extern "C" {
 
 #include <stdio.h>
 
-#include "helpers/int.h"
-#include "helpers/enums.h"
-#include "helpers/cvec.h"
-#include "helpers/img.h"
-#include "helpers/jsm_string.h"
+#include "helpers_c/int.h"
+#include "helpers_c/enums.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/img.h"
+#include "helpers_c/jsm_string.h"
 
 struct serialized_opt_data {
     char buf[512];

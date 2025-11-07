@@ -6,8 +6,8 @@
 #define JSMOOCH_EMUS_WAV_H
 
 #include <stdio.h>
-#include "helpers/int.h"
-#include "helpers/pack.h"
+#include "helpers_c/int.h"
+#include "helpers_c/pack.h"
 
 PACK_BEGIN
 struct wav_header {

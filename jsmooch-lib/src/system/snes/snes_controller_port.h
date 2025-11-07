@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_SNES_CONTROLLER_PORT_H
 #define JSMOOCH_EMUS_SNES_CONTROLLER_PORT_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 enum SNES_controller_kinds {
     SNES_CK_none,

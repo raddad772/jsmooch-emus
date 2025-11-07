@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_R3000_MULTIPLIER_H
 #define JSMOOCH_EMUS_R3000_MULTIPLIER_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 /*
 export class R3000_multiplier_t {

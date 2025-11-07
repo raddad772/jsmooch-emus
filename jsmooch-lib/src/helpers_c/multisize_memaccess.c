@@ -2,7 +2,7 @@
 // Created by RadDad772 on 3/10/24.
 //
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 static u64 cR8(void *ptr, u32 addr) {
     return ((u8 *)ptr)[addr];

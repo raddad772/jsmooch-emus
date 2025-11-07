@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_M6502_H
 #define JSMOOCH_EMUS_M6502_H
 
-#include "helpers/int.h"
-#include "helpers/debug.h"
-#include "helpers/debugger/debuggerdefs.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debuggerdefs.h"
 
 #include "m6502_misc.h"
 

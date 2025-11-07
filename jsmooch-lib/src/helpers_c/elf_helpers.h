@@ -2,8 +2,8 @@
 #ifndef JSMOOCH_EMUS_ELF_HELPERS_H
 #define JSMOOCH_EMUS_ELF_HELPERS_H
 
-#include "helpers/int.h"
-#include "helpers/cvec.h"
+#include "helpers_c/int.h"
+#include "helpers_c/cvec.h"
 
 enum elf_symbol32_kind {
     esk_unknown,

@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_HUC6270_H
 #define JSMOOCH_EMUS_HUC6270_H
 
-#include "helpers/scheduler.h"
-#include "helpers/int.h"
-#include "helpers/debugger/debuggerdefs.h"
+#include "helpers_c/scheduler.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debugger/debuggerdefs.h"
 
 enum HUC6270_states {
     H6S_sync_window,

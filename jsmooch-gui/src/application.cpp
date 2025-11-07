@@ -58,12 +58,12 @@ static void CreateSwapChain(int width, int height);
 #endif
 
 
-#include "helpers/debug.h"
+#include "helpers_c/debug.h"
 #include "keymap_translate.h"
 #include "my_texture.h"
 #include "full_sys.h"
-#include "helpers/inifile.h"
-#include "helpers/serialize/serialize.h"
+#include "helpers_c/inifile.h"
+#include "helpers_c/serialize/serialize.h"
 
 
 #ifdef __EMSCRIPTEN__

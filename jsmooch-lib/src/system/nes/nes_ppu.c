@@ -4,7 +4,7 @@
 
 #include "stdio.h"
 
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 
 #include "nes_debugger.h"
 #include "nes.h"

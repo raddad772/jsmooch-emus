@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_BETTER_IRQ_MULTIPLEXER_H
 #define JSMOOCH_EMUS_BETTER_IRQ_MULTIPLEXER_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 #define MAX_IRQS_MULTIPLEXED 32
 

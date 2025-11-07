@@ -6,7 +6,7 @@
 
 #include "ps1_bus.h"
 #include "ps1_dma.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 #define deKSEG(addr) ((addr) & 0x1FFFFFFF)
 #define DEFAULT_WAITSTATES 1

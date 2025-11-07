@@ -10,7 +10,7 @@
 #include "a12_watcher.h"
 #include "mmc3b_dxrom.h"
 
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 
 #define THISM struct MMC3b *this = (struct MMC3b *)bus->ptr
 

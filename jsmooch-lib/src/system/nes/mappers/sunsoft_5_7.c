@@ -7,7 +7,7 @@
 #include <assert.h>
 
 // TODO: verify all mappers dirty memory appropriately
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 #include "../nes.h"
 
 #include "mapper.h"

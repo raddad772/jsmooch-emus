@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_GDROM_REPLY_H
 #define JSMOOCH_EMUS_GDROM_REPLY_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 u16 reply_11[] =
 {

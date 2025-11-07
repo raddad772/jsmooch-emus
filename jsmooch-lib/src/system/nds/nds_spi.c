@@ -5,7 +5,7 @@
 #include "nds_spi.h"
 #include "nds_bus.h"
 #include "nds_irq.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 #define SPI this->spi
 #define PWM this->spi.pwm

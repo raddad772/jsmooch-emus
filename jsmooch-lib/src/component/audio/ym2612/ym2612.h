@@ -9,8 +9,8 @@
  * New version is straight Ares port to learn from
  */
 
-#include "helpers/debugger/debuggerdefs.h"
-#include "helpers/int.h"
+#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers_c/int.h"
 
 enum OPN2_variant {
     OPN2V_ym2612,

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_GTE_H
 #define JSMOOCH_EMUS_GTE_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 enum gteMatrix {
     GTE_Rotation = 0,

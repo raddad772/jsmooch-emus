@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_R3000_INSTRUCTIONS_H
 #define JSMOOCH_EMUS_R3000_INSTRUCTIONS_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct R3000;
 struct R3000_opcode;

@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_MAPPER_H
 #define JSMOOCH_EMUS_MAPPER_H
 
-#include "helpers/int.h"
-#include "helpers/sys_interface.h"
-#include "helpers/simplebuf.h"
+#include "helpers_c/int.h"
+#include "helpers_c/sys_interface.h"
+#include "helpers_c/simplebuf.h"
 #include "../nes_cart.h"
-#include "helpers/sram.h"
+#include "helpers_c/sram.h"
 #include "nes_memmap.h"
 
 // NES_bus takes care of mappers!

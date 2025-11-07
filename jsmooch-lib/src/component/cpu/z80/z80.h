@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_Z80_H
 #define JSMOOCH_EMUS_Z80_H
 
-#include "helpers/cvec.h"
-#include "helpers/int.h"
-#include "helpers/debug.h"
-#include "helpers/debugger/debuggerdefs.h"
-#include "helpers/serialize/serialize.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers_c/serialize/serialize.h"
 
 #define Z80_S_IRQ 0x100
 #define Z80_S_RESET 0x101

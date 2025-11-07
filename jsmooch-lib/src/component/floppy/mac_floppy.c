@@ -9,8 +9,8 @@
 #endif
 #include <math.h>
 
-#include "helpers/multisize_memaccess.c"
-#include "helpers/jsm_string.h"
+#include "helpers_c/multisize_memaccess.c"
+#include "helpers_c/jsm_string.h"
 
 #include "mac_floppy.h"
 

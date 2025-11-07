@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "helpers/cvec.h"
+#include "helpers_c/cvec.h"
 #include "m68000.h"
 #include "m68000_instructions.h"
 #include "m68000_internal.h"

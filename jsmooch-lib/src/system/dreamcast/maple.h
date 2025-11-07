@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_MAPLE_H
 #define JSMOOCH_EMUS_MAPLE_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 enum MAPLE_devices {
     MAPLE_NONE,

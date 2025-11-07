@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_CLOCK_H
 #define JSMOOCH_EMUS_NDS_CLOCK_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct NDS_clock {
     u64 frame_start_cycle;

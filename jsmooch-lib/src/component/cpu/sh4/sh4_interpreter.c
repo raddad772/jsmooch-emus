@@ -461,7 +461,7 @@ PC = H'A0000000;*
 }
 
 // NOLINTNEXTLINE(bugprone-suspicious-include)
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 u64 SH4_ma_read(void *ptr, u32 addr, u32 sz, u32* success)
 {

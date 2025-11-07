@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_SPI_H
 #define JSMOOCH_EMUS_SPI_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct SPI_packet_cmd
 {

@@ -8,9 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers/cvec.h"
-#include "helpers/ooc.h"
-#include "helpers/physical_io.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/ooc.h"
+#include "helpers_c/physical_io.h"
 #include "events.h"
 
 void memory_view_init(struct memory_view *mv)

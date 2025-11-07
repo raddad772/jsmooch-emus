@@ -12,7 +12,7 @@
 #include <assert.h>
 
 #include "system/nes/nes.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 
 #include "mapper.h"
 #include "axrom.h"

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_SPI_H
 #define JSMOOCH_EMUS_NDS_SPI_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 struct NDS;
 
 

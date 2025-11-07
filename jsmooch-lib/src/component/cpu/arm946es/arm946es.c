@@ -11,7 +11,7 @@
 #include "arm946es_instructions.h"
 #include "thumb2_disassembler.h"
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 #define PC R[15]
 
 //#define TRACE
@@ -157,6 +157,10 @@ static int condition_passes(struct ARM946ES_regs *this, int which) {
 
 void ARM946ES_reload_pipeline(struct ARM946ES* this)
 {
+    if (this->regs.PC == 0xFFFF07CE) {
+        printf("\nYO!");
+        dbg_break("arm9 ffff07ce", 0);
+    }
     this->pipeline.flushed = 0;
     if (this->regs.CPSR.T) {
         this->pipeline.access = ARM9P_code | ARM9P_nonsequential;

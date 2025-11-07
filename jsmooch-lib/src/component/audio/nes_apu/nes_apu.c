@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "nes_apu.h"
-#include "helpers/serialize/serialize.h"
+#include "helpers_c/serialize/serialize.h"
 
 #define PULSE0 0
 #define PULSE1 1

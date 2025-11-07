@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 #include <assert.h>
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct cvec {
     void *data;

@@ -5,10 +5,10 @@
 #ifndef JSMOOCH_EMUS_HUC6280_H
 #define JSMOOCH_EMUS_HUC6280_H
 
-#include "helpers/int.h"
-#include "helpers/debug.h"
-#include "helpers/debugger/debuggerdefs.h"
-#include "helpers/scheduler.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers_c/scheduler.h"
 #include "component/audio/huc6280_psg/huc6280_psg.h"
 
 #include "huc6280_opcodes.h"

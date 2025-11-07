@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers/debug.h"
-#include "helpers/physical_io.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/debug.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/multisize_memaccess.c"
 
 #include "../gba_bus.h"
 #include "gba_cart.h"

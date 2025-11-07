@@ -14,11 +14,11 @@
 
 #include "m6502_tests.h"
 #include "cpu-test-helpers.h"
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "component/cpu/huc6280/huc6280.h"
 #include "component/cpu/huc6280/huc6280_misc.h"
 #include "component/cpu/huc6280/huc6280_opcodes.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 #define MAX_CYCLES 500
 #define MAX_RAM_PAIRS 500

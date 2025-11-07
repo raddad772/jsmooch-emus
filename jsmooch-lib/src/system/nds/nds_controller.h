@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_NDS_CONTROLLER_H
 #define JSMOOCH_EMUS_NDS_CONTROLLER_H
 
-#include "helpers/int.h"
-#include "helpers/physical_io.h"
+#include "helpers_c/int.h"
+#include "helpers_c/physical_io.h"
 
 struct NDS_controller_inputs {
     u32 a, b, l, r, start, select, up, down, left, right;

@@ -7,7 +7,7 @@
 #include "nds_rtc.h"
 #include "nds_bus.h"
 #include "nds_irq.h"
-#include "helpers/scheduler.h"
+#include "helpers_c/scheduler.h"
 
 /*
  * this code pretty closely follows MelonDS.

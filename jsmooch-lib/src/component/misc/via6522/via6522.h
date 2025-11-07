@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_VIA6522_H
 #define JSMOOCH_EMUS_VIA6522_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct via6522_line_write {
     void *ptr;

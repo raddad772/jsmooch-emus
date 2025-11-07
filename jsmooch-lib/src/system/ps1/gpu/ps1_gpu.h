@@ -5,10 +5,10 @@
 #ifndef JSMOOCH_EMUS_PS1_GPU_H
 #define JSMOOCH_EMUS_PS1_GPU_H
 
-#include "helpers/cvec.h"
-#include "helpers/int.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/int.h"
 #include "rasterize_tri.h"
-#include "helpers/scheduler.h"
+#include "helpers_c/scheduler.h"
 
 struct PS1_GPU;
 struct PS1_GPU_TEXTURE_SAMPLER;

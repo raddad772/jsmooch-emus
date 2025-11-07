@@ -4,7 +4,7 @@
 
 #include "pixel_helpers.h"
 #include "ps1_gpu.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 void setpix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask)
 {

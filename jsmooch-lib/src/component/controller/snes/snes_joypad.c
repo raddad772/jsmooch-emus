@@ -4,7 +4,7 @@
 
 #include <string.h>
 #include "snes_joypad.h"
-#include "helpers/physical_io.h"
+#include "helpers_c/physical_io.h"
 
 
 void SNES_joypad_latch(struct SNES_joypad *this, u32 val)

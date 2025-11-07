@@ -17,9 +17,9 @@
 #include <sys/types.h>
 
 #include "component/cpu/sh4/sh4_interpreter.h"
-#include "helpers/multisize_memaccess.c"
-#include "helpers/debug.h"
-#include "helpers/user.h"
+#include "helpers_c/multisize_memaccess.c"
+#include "helpers_c/debug.h"
+#include "helpers_c/user.h"
 
 #define M8 1
 #define M16 2

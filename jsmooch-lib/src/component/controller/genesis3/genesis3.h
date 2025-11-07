@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_GENESIS3_H
 #define JSMOOCH_EMUS_GENESIS3_H
 
-#include "helpers/int.h"
-#include "helpers/physical_io.h"
+#include "helpers_c/int.h"
+#include "helpers_c/physical_io.h"
 
 struct genesis_controller_3button_inputs {
     u32 a, b, c, start, up, down, left, right;

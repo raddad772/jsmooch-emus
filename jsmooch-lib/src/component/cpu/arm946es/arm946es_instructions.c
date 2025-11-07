@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers/intrinsics.h"
+#include "helpers_c/intrinsics.h"
 
 #include "arm946es.h"
 #include "arm946es_instructions.h"

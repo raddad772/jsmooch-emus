@@ -5,7 +5,7 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 
 #include "sms_gg_vdp.h"
 #include "sms_gg.h"

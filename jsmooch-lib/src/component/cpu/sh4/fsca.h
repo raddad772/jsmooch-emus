@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_FSCA_H
 #define JSMOOCH_EMUS_FSCA_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 void generate_fsca_table();
 

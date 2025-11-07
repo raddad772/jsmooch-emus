@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "helpers/debugger/waveform.h"
+#include "helpers_c/debugger/waveform.h"
 
 #include "component/cpu/z80/z80.h"
 #include "component/cpu/z80/z80_disassembler.h"

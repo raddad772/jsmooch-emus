@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 #include "../nes.h"
 
 #include "mapper.h"

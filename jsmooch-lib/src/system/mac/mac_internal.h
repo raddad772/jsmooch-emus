@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_MAC_INTERNAL_H
 #define JSMOOCH_EMUS_MAC_INTERNAL_H
 
-#include "helpers/int.h"
-#include "helpers/sys_interface.h"
-#include "helpers/debug.h"
-#include "helpers/physical_io.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/int.h"
+#include "helpers_c/sys_interface.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/debugger/debugger.h"
 
 #include "component/misc/via6522/via6522.h"
 #include "component/cpu/m68000/m68000.h"

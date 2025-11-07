@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_GDROM_H
 #define JSMOOCH_EMUS_GDROM_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "dreamcast.h"
 #include "dc_mem.h"
 

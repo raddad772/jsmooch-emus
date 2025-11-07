@@ -6,8 +6,8 @@
 
 #include "m6502.h"
 #include "m6502_disassembler.h"
-#include "helpers/debug.h"
-#include "helpers/serialize/serialize.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/serialize/serialize.h"
 
 #define M6502_OP_RESET 0x100
 #define M6502_OP_NMI 0x101

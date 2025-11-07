@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_ARM7TDMI_INSTRUCTIONS_H
 #define JSMOOCH_EMUS_ARM7TDMI_INSTRUCTIONS_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct ARM7TDMI;
 void ARM7TDMI_ins_MUL_MLA(struct ARM7TDMI *, u32 opcode);

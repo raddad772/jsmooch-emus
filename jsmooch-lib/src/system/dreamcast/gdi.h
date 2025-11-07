@@ -9,8 +9,8 @@
 extern "C" {
 #endif
 
-#include "helpers/buf.h"
-#include "helpers/int.h"
+#include "helpers_c/buf.h"
+#include "helpers_c/int.h"
 
 enum GDI_track_types {
     GDI_audio = 0,

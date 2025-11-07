@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_SH4_INTERRUPTS_H
 #define JSMOOCH_EMUS_SH4_INTERRUPTS_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "sh4_interpreter.h"
 
 void SH4_interrupt_IRL(struct SH4*, u32 level);

@@ -1,9 +1,9 @@
 #ifndef JSMOOCH_EMUS_M68k_DISASM_FUNCS_H
 #define JSMOOCH_EMUS_M68k_DISASM_FUNCS_H
 
-#include "helpers/int.h"
-#include "helpers/debug.h"
-#include "helpers/jsm_string.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/jsm_string.h"
 #include "component/cpu/m68000/m68000.h"
 
 void M68k_disasm_BADINS(struct M68k_ins_t *ins, u32 *PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);

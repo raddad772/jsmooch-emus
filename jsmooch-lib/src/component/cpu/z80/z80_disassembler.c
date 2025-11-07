@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "helpers/debug.h"
+#include "helpers_c/debug.h"
 #include "z80_disassembler.h"
 #include "z80.h"
 

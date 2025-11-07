@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NES_APU_H
 #define JSMOOCH_EMUS_NES_APU_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct NES_APU {
     u32 ext_enable;

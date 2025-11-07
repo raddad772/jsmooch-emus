@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_NES_MEMMAP_H
 #define JSMOOCH_EMUS_NES_MEMMAP_H
 
-#include "helpers/int.h"
-#include "helpers/sram.h"
+#include "helpers_c/int.h"
+#include "helpers_c/sram.h"
 
 struct NES_memmap {
     u32 addr;                       // Addr at which this chunk starts

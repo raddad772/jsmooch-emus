@@ -18,7 +18,7 @@
 #include "arm7tdmi_tests.h"
 #include "cpu-test-helpers.h"
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 #include "component/cpu/arm7tdmi/arm7tdmi_instructions.h"
 #include "component/cpu/arm7tdmi/armv4_disassembler.h"

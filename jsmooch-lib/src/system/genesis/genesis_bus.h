@@ -7,15 +7,15 @@
 
 //#define TRACE_SONIC1
 
-#include "helpers/int.h"
-#include "helpers/debug.h"
-#include "helpers/physical_io.h"
-#include "helpers/cvec.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/cvec.h"
 #include "component/cpu/z80/z80.h"
 #include "component/cpu/m68000/m68000.h"
 #include "component/audio/sn76489/sn76489.h"
 #include "component/audio/ym2612/ym2612.h"
-#include "helpers/scheduler.h"
+#include "helpers_c/scheduler.h"
 
 #include "component/controller/genesis3/genesis3.h"
 #include "component/controller/genesis6/genesis6.h"

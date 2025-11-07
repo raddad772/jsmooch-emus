@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "helpers/ooc.h"
+#include "helpers_c/ooc.h"
 
 #include "debugger.h"
 #include "disassembly.h"

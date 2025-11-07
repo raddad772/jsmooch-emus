@@ -3,14 +3,14 @@
 //
 #include <string.h>
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 #include "nds_bus.h"
 #include "nds_dma.h"
 #include "nds_regs.h"
 #include "nds_irq.h"
 #include "nds_debugger.h"
-#include "helpers/color.h"
+#include "helpers_c/color.h"
 
 #define NDS_WIN0 0
 #define NDS_WIN1 1

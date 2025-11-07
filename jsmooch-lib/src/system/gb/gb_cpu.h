@@ -1,9 +1,9 @@
 #ifndef JSMOOCH_GB_CPU_H
 #define JSMOOCH_GB_CPU_H
 
-#include "helpers/int.h"
-#include "helpers/physical_io.h"
-#include "helpers/debugger/debuggerdefs.h"
+#include "helpers_c/int.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/debugger/debuggerdefs.h"
 
 #include "component/cpu/sm83/sm83.h"
 

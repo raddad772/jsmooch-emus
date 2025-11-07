@@ -14,8 +14,8 @@
 #include "assert.h"
 #include "string.h"
 
-#include "helpers/int.h"
-#include "helpers/user.h"
+#include "helpers_c/int.h"
+#include "helpers_c/user.h"
 #include "rfb.h"
 #include "component/cpu/sm83/sm83.h"
 #include "../json.h"

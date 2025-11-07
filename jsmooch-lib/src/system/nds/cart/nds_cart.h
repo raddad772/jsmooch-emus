@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_NDS_CART_H
 #define JSMOOCH_EMUS_NDS_CART_H
 
-#include "helpers/buf.h"
-#include "helpers/int.h"
+#include "helpers_c/buf.h"
+#include "helpers_c/int.h"
 
 enum NDS_flash_kinds {
     NDSFK_atmel,

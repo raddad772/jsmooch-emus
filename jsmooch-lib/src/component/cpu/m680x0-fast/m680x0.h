@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_M680X0_H
 #define JSMOOCH_EMUS_M680X0_H
 
-#include "helpers/debugger/debuggerdefs.h"
-#include "helpers/debugger/debugger.h"
-#include "helpers/debug.h"
-#include "helpers/int.h"
-#include "helpers/cvec.h"
+#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers_c/debugger/debugger.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/int.h"
+#include "helpers_c/cvec.h"
 
 enum M68x_kinds {
     M68K_M68000,

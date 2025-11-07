@@ -6,7 +6,7 @@
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/nesm6502_opcodes.h"
 #include "mappers/mapper.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 #include "nes.h"
 #include "nes_cpu.h"
 

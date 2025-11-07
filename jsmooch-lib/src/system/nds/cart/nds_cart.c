@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
-#include "helpers/physical_io.h"
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debugger.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/multisize_memaccess.c"
 
 #include "../nds_bus.h"
 #include "nds_cart.h"
@@ -328,57 +328,60 @@ void NDS_cart_detect_kind(struct NDS *this, u32 from, u32 val)
 {
     // subsystem tag (bits 0-4) and the data portion (bits 6-31)
     u32 subsystem = val & 0x1F;
-    u32 reset = 1;
-    if (subsystem == FS_SUBSYS) {
-        u32 data = val >> 6;
-        if ((this->cart.backup.detect.pos == 0) && (from == 9) && (data == 0)) {
-            reset = 0;
-        }
-        else if ((this->cart.backup.detect.pos < 3) && (from == 9) && (!this->cart.backup.detect.done)) {
-            reset = 0;
-            this->cart.backup.detect.arg_buf_addr = data;
-            u32 second_word = cR32(this->mem.RAM, (this->cart.backup.detect.arg_buf_addr + 4) & 0x3FFFFF);
-            // bits 0-1 encode the savedata type (0=none, 1=EEPROM, 2=flash, 3=fram
-            // - never seen fram used), and
-            // bits 8-15 encode the backup size in a shift amount - i.e. the size in bytes is (1 << n)
-            u32 kind = second_word & 3;
-            u32 sz = 1 << ((second_word >> 8) & 0xFF);
-            printf("\nDETECT CART SAVE KIND:%d SZ:%d bytes", kind, sz);
-            this->cart.backup.detect.kind = kind;
-            this->cart.backup.detect.sz = sz;
-            this->cart.backup.detect.sz_mask = sz - 1;
-            this->cart.backup.detect.done = 1;
-            this->cart.backup.store->requested_size = sz;
-            switch(this->cart.backup.detect.kind) {
-                case 0: // none
-                break;
-                case 1: // eeprom
-                    NDS_eeprom_setup(this);
-                    break;
-                case 2: // flash
-                    NDS_flash_setup(this);
-                    break;
-                case 3: // fram
-                    printf("\nFRAM IMPLEMENT!");
-                    break;
+    printf("\nARM9 subsystem %1x", subsystem);
+    if (!this->cart.backup.detect.done) {
+        u32 reset = 1;
+        if (subsystem == FS_SUBSYS) {
+            u32 data = val >> 6;
+            if ((this->cart.backup.detect.pos == 0) && (from == 9) && (data == 0)) {
+                reset = 0;
             }
+            else if ((this->cart.backup.detect.pos < 3) && (from == 9) && (!this->cart.backup.detect.done)) {
+                reset = 0;
+                this->cart.backup.detect.arg_buf_addr = data;
+                u32 second_word = cR32(this->mem.RAM, (this->cart.backup.detect.arg_buf_addr + 4) & 0x3FFFFF);
+                // bits 0-1 encode the savedata type (0=none, 1=EEPROM, 2=flash, 3=fram
+                // - never seen fram used), and
+                // bits 8-15 encode the backup size in a shift amount - i.e. the size in bytes is (1 << n)
+                u32 kind = second_word & 3;
+                u32 sz = 1 << ((second_word >> 8) & 0xFF);
+                printf("\nDETECT CART SAVE KIND:%d SZ:%d bytes", kind, sz);
+                this->cart.backup.detect.kind = kind;
+                this->cart.backup.detect.sz = sz;
+                this->cart.backup.detect.sz_mask = sz - 1;
+                this->cart.backup.detect.done = 1;
+                this->cart.backup.store->requested_size = sz;
+                switch(this->cart.backup.detect.kind) {
+                    case 0: // none
+                        break;
+                    case 1: // eeprom
+                        NDS_eeprom_setup(this);
+                        break;
+                    case 2: // flash
+                        NDS_flash_setup(this);
+                        break;
+                    case 3: // fram
+                        printf("\nFRAM IMPLEMENT!");
+                        break;
+                }
+            }
+            else if ((this->cart.backup.detect.pos == 1) && (from == 7) && (data == 1)) {
+                reset = 0;
+            }
+            /*if ((this->cart.backup.detect.pos == 3) && (from == 7) && (data == 1)) {
+                reset = 0;
+                printf("\nSTEP 4");
+            }
+            if ((this->cart.backup.detect.pos == 4) && (from == 9)) {
+                printf("\nSTEP 5?");
+            }*/
         }
-        else if ((this->cart.backup.detect.pos == 1) && (from == 7) && (data == 1)) {
-            reset = 0;
-        }
-        /*if ((this->cart.backup.detect.pos == 3) && (from == 7) && (data == 1)) {
-            reset = 0;
-            printf("\nSTEP 4");
-        }
-        if ((this->cart.backup.detect.pos == 4) && (from == 9)) {
-            printf("\nSTEP 5?");
-        }*/
-    }
 
-    if (reset) {
-        this->cart.backup.detect.pos = 0;
-    }
-    else {
-        this->cart.backup.detect.pos++;
+        if (reset) {
+            this->cart.backup.detect.pos = 0;
+        }
+        else {
+            this->cart.backup.detect.pos++;
+        }
     }
 }

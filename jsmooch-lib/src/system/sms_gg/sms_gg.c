@@ -7,7 +7,7 @@
 #include "string.h"
 #include "stdio.h"
 
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 #include "sms_gg.h"
 #include "sms_gg_clock.h"
 #include "sms_gg_io.h"

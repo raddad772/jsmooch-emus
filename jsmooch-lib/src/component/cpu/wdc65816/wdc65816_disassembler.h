@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_WDC65816_DISASSEMBLER_H
 #define JSMOOCH_EMUS_WDC65816_DISASSEMBLER_H
 
-#include "helpers/int.h"
-#include "helpers/jsm_string.h"
-#include "helpers/debug.h"
+#include "helpers_c/int.h"
+#include "helpers_c/jsm_string.h"
+#include "helpers_c/debug.h"
 
 #include "wdc65816.h"
 

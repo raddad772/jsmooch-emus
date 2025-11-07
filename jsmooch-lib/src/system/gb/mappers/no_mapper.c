@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers/serialize/serialize.h"
+#include "helpers_c/serialize/serialize.h"
 
 #include "system/gb/mappers/mapper.h"
 #include "system/gb/mappers/no_mapper.h"

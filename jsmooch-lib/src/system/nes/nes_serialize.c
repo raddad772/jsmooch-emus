@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include "nes.h"
 #include "nes_serialize.h"
-#include "helpers/sys_present.h"
-#include "helpers/debug.h"
-#include "helpers/serialize/serialize.h"
+#include "helpers_c/sys_present.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/serialize/serialize.h"
 #include "component/audio/nes_apu/nes_apu.h"
 #include "component/cpu/m6502/m6502.h"
 

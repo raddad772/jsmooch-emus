@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "helpers/color.h"
+#include "helpers_c/color.h"
 
 #include "tg16_debugger.h"
 #include "tg16_bus.h"

@@ -1,4 +1,4 @@
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "sm83.h"
 #include "sm83_opcodes.h"
 

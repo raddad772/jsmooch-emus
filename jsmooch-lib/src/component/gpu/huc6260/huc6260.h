@@ -5,10 +5,10 @@
 #ifndef JSMOOCH_EMUS_HUC6260_H
 #define JSMOOCH_EMUS_HUC6260_H
 
-#include "helpers/int.h"
-#include "helpers/cvec.h"
-#include "helpers/scheduler.h"
-#include "helpers/debugger/debuggerdefs.h"
+#include "helpers_c/int.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/scheduler.h"
+#include "helpers_c/debugger/debuggerdefs.h"
 
 struct HUC6270;
 

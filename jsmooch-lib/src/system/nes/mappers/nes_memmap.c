@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 
-#include "helpers/simplebuf.h"
+#include "helpers_c/simplebuf.h"
 #include "nes_memmap.h"
 
 void NES_memmap_map(struct NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num, struct persistent_store *SRAM)

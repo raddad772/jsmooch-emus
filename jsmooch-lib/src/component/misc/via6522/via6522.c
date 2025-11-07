@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers/debug.h"
+#include "helpers_c/debug.h"
 #include "via6522.h"
 
 void via6522_init(struct via6522* this, u64* trace_cycles)

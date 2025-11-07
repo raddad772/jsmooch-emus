@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_RASTERIZE_TRI_H
 #define JSMOOCH_EMUS_RASTERIZE_TRI_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 // All coordinates to PS1 are drawn with integer values
 

@@ -5,14 +5,14 @@
 #ifndef JSMOOCH_EMUS_PS1_BUS_H
 #define JSMOOCH_EMUS_PS1_BUS_H
 
-#include "helpers/physical_io.h"
-#include "helpers/better_irq_multiplexer.h"
-#include "helpers/debugger/debuggerdefs.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/better_irq_multiplexer.h"
+#include "helpers_c/debugger/debuggerdefs.h"
 
 #include "component/cpu/r3000/r3000.h"
 
-#include "helpers/scheduler.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/scheduler.h"
+#include "helpers_c/debugger/debugger.h"
 
 #include "ps1_clock.h"
 #include "gpu/ps1_gpu.h"

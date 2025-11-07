@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_NES_JOYPAD_H
 #define JSMOOCH_EMUS_NES_JOYPAD_H
 
-#include "helpers/int.h"
-#include "helpers/physical_io.h"
+#include "helpers_c/int.h"
+#include "helpers_c/physical_io.h"
 
 struct nespad_inputs {
     u32 a, b, start, select, up, down, left, right;

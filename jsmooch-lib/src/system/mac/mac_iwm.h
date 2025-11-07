@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 struct mac;
 

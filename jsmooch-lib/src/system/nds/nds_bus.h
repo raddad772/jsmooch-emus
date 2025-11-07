@@ -7,7 +7,7 @@
 
 //#define TRACE
 
-#include "helpers/scheduler.h"
+#include "helpers_c/scheduler.h"
 #include "nds_clock.h"
 #include "nds_ppu.h"
 #include "nds_controller.h"

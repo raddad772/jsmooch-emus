@@ -7,9 +7,9 @@
 
 #include "component/gpu/huc6270/huc6270.h"
 #include "huc6260.h"
-#include "helpers/physical_io.h"
-#include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debugger.h"
 
 /* HUC6260 creates an NTSC-ish frame.
  * It drives VDC to get pixel info

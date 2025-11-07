@@ -14,13 +14,13 @@
 #include "cpu-test-helpers.h"
 #include "m68000-tests.h"
 
-#include "helpers/debug.h"
-#include "helpers/jsm_string.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/jsm_string.h"
 #include "component/cpu/m68000/m68000.h"
 #include "component/cpu/m68000/m68000_disassembler.h"
 #include "component/cpu/m68000/m68000_instructions.h"
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (b) : (a))

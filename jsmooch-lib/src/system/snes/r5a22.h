@@ -4,7 +4,7 @@
 
 #ifndef JSMOOCH_EMUS_R5A22_H
 #define JSMOOCH_EMUS_R5A22_H
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "component/cpu/wdc65816/wdc65816.h"
 #include "snes_controller_port.h"
 

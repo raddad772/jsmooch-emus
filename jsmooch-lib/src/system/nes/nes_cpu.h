@@ -6,8 +6,8 @@
 #define JSMOOCH_EMUS_NES_CPU_H
 
 #include "component/cpu/m6502/m6502.h"
-#include "helpers/int.h"
-#include "helpers/irq_multiplexer.h"
+#include "helpers_c/int.h"
+#include "helpers_c/irq_multiplexer.h"
 #include "component/controller/nes/nes_joypad.h"
 
 enum NES_controller_devices {

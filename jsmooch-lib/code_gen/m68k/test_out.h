@@ -1,5 +1,5 @@
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 
 #ifndef JSMOOCH_LIB_M68K_GENTEST_ITEM_H
 #define JSMOOCH_LIB_M68K_GENTEST_ITEM_H

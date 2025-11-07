@@ -18,10 +18,10 @@
 #include "nds_spi.h"
 #include "nds_apu.h"
 
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
-#include "helpers/multisize_memaccess.c"
+#include "helpers_c/multisize_memaccess.c"
 
 #define JTHIS struct NDS* this = (struct NDS*)jsm->ptr
 #define JSM struct jsm_system* jsm
@@ -447,7 +447,7 @@ void NDSJ_reset(JSM)
     NDS_GE_reset(this);
     NDS_RE_reset(this);
 
-    skip_BIOS(this);
+    //skip_BIOS(this);
     this->waitstates.current_transaction = 0;
     this->clock.master_cycle_count7 = 0;
     this->clock.master_cycle_count9 = 0;

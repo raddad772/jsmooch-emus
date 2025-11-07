@@ -7,8 +7,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "helpers/int.h"
-#include "helpers/sys_interface.h"
+#include "helpers_c/int.h"
+#include "helpers_c/sys_interface.h"
 
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/m6502_opcodes.h"

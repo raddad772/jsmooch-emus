@@ -2,7 +2,7 @@
 // Created by . on 11/27/24.
 //
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "../vendor/myimgui/imgui.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_opengl.h"

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
-#include "helpers/int.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debugger/debugger.h"
 #include "huc6280_opcodes.h"
 #include "huc6280.h"
 

@@ -4,9 +4,9 @@
 
 #ifndef JSMOOCH_EMUS_R3000_DISASSEMBLER_H
 #define JSMOOCH_EMUS_R3000_DISASSEMBLER_H
-#include "helpers/int.h"
-#include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "helpers_c/int.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/debugger/debugger.h"
 
 struct R3000ctxt {
     u64 regs; // bits 0-31: regs 0-31. bit 32: PC

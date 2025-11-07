@@ -1,7 +1,7 @@
 #ifndef _JSMOOCH_MAPPER_H
 #define _JSMOOCH_MAPPER_H
 
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "../gb_enums.h"
 #include "system/gb/cart.h"
 

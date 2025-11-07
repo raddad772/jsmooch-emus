@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_AUDIOWRAP_H
 #define JSMOOCH_EMUS_AUDIOWRAP_H
 
-#include "helpers/int.h"
-#include "helpers/audiobuf.h"
+#include "helpers_c/int.h"
+#include "helpers_c/audiobuf.h"
 
 #define MAX_AUDIO_BUFS 10
 

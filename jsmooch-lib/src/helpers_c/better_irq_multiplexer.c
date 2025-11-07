@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "better_irq_multiplexer.h"
-#include "helpers/debug.h"
+#include "helpers_c/debug.h"
 
 void IRQ_multiplexer_b_init(struct IRQ_multiplexer_b *this, u32 max_IRQ)
 {

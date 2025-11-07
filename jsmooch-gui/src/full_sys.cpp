@@ -12,16 +12,16 @@
 #include "build.h"
 #include "my_texture.h"
 #include "application.h"
-#include "helpers/sys_interface.h"
-#include "helpers/cvec.h"
-#include "helpers/sys_present.h"
-#include "helpers/debug.h"
-#include "helpers/buf.h"
+#include "helpers_c/sys_interface.h"
+#include "helpers_c/cvec.h"
+#include "helpers_c/sys_present.h"
+#include "helpers_c/debug.h"
+#include "helpers_c/buf.h"
 #include "full_sys.h"
 #include "system/dreamcast/gdi.h"
-#include "helpers/physical_io.h"
-#include "helpers/debugger/debugger.h"
-#include "helpers/user.h"
+#include "helpers_c/physical_io.h"
+#include "helpers_c/debugger/debugger.h"
+#include "helpers_c/user.h"
 //#include "system/gb/gb_enums.h"
 
 // mac overlay - 14742566
@@ -751,9 +751,9 @@ void full_system::load_default_ROM()
             //worked = grab_ROM(&ROMs, which, "pokemon_diamond.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdbrt.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "pmdes.nds", nullptr);
-            worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
+            //worked = grab_ROM(&ROMs, which, "mariokart.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "phoenixwright.nds", nullptr);
-            //worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
+            worked = grab_ROM(&ROMs, which, "sm64.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "nintendogs.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "dbz2.nds", nullptr);
             //worked = grab_ROM(&ROMs, which, "rayman.nds", nullptr);

@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "stdlib.h"
-#include "helpers/int.h"
+#include "helpers_c/int.h"
 #include "cart.h"
 #include "system/gb/gb_clock.h"
 #include "system/gb/mappers/mapper.h"
