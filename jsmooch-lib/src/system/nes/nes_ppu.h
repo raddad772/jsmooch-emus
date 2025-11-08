@@ -60,8 +60,8 @@ public:
     NES* nes;
     void (NES_PPU::*render_cycle)() = &NES_PPU::scanline_visible;
 
-    struct cvec_ptr display_ptr{};
-    struct JSM_DISPLAY *display{};
+    cvec_ptr<physical_io_device> display_ptr{};
+    JSM_DISPLAY *display{};
 
     i32 line_cycle{};
     u8 OAM[256]{};
@@ -118,7 +118,7 @@ public:
     struct {
         u32 v{}, t{}, x{}, w{};
 
-        struct { struct cvec_ptr view; } events;
+        struct { cvec_ptr<debugger_view> view{}; } events{};
     } dbg{};
 
     struct {
@@ -132,6 +132,10 @@ public:
 
     u32 rendering_enabled = 1;
     u32 new_rendering_enabled = 1;
+
+    void serialize(struct serialized_state &state);
+    void deserialize(struct serialized_state &state);
+
 };
 
 

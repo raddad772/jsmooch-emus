@@ -1,4 +1,5 @@
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 23)
 #set(CMAKE_C_FLAGS "$CMAKE_C_FLAGS -Wincompatible-pointer-types")
 
 set(SOURCE_LIST
@@ -33,9 +34,9 @@ set(SOURCE_LIST
         "src/system/nes/mappers/mapper.h"
         "src/system/nes/mappers/nrom.cpp"
         "src/system/nes/mappers/nrom.h"
-        "src/system/nes/mappers/mmc3b_dxrom/mmc3b_dxrom.c"
+        "src/system/nes/mappers/mmc3b_dxrom/mmc3b_dxrom.cpp"
         "src/system/nes/mappers/mmc3b_dxrom/mmc3b_dxrom.h"
-        "src/system/nes/mappers/mmc3b_dxrom/a12_watcher.c"
+        "src/system/nes/mappers/mmc3b_dxrom/a12_watcher.cpp"
         "src/system/nes/mappers/mmc3b_dxrom/a12_watcher.h"
         "src/system/nes/mappers/axrom.cpp"
         "src/system/nes/mappers/axrom.h"

@@ -41,16 +41,16 @@ struct NES {
     u32 described_inputs=0;
     u32 cycles_left=0;
     u32 display_enabled=0;
-    struct cvec* IOs;
+    std::vector<physical_io_device> *IOs{};
 
     struct NES_bus bus{};
     struct NES_cart cart;
 
     struct {
-        double master_cycles_per_audio_sample;
-        double next_sample_cycle;
-        struct audiobuf *buf;
-    } audio;
+        double master_cycles_per_audio_sample{};
+        double next_sample_cycle{};
+        struct audiobuf *buf{};
+    } audio{};
 
     DBG_START
         DBG_CPU_REG_START1 *A, *X, *Y, *P, *S, *PC DBG_CPU_REG_END1
@@ -70,12 +70,36 @@ struct NES {
     struct NESDBGDATA {
         struct DBGNESROW {
             struct {
-                u32 bg_hide_left_8, bg_enable, emph_bits, bg_pattern_table;
-                u32 x_scroll, y_scroll;
-            } io;
-        } rows[240];
+                u32 bg_hide_left_8{}, bg_enable{}, emph_bits{}, bg_pattern_table{};
+                u32 x_scroll{}, y_scroll{};
+            } io{};
+        } rows[240]{};
 
-    } dbg_data;
+    } dbg_data{};
+
+    void serialize(struct serialized_state &state) const;
+    void deserialize(struct serialized_state &state);
 };
+
+struct NESJ : jsm_system {
+    void play() override;
+    void pause() override;
+    void stop() override;
+    void get_framevars(struct framevars* out) override;
+    void reset() override;
+    void killall();
+    u32 finish_frame() override;
+    u32 finish_scanline() override;
+    u32 step_master(u32 howmany) override;
+    void load_BIOS(struct multi_file_set* mfs) override;
+    void enable_tracing();
+    void disable_tracing();
+    void describe_io(std::vector<physical_io_device> &inIOs) override;
+    void save_state(struct serialized_state &state) override;
+    void load_state(struct serialized_state &state, struct deserialize_ret &ret) override;
+    void set_audiobuf(struct audiobuf *ab) override;
+    struct NES nes{};
+};
+
 
 #endif //JSMOOCH_EMUS_NES_H

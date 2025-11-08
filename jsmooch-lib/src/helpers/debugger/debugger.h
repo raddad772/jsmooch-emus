@@ -2,14 +2,12 @@
 // Created by . on 8/2/24.
 //
 
-#ifndef JSMOOCH_EMUS_DEBUGGER_H
-#define JSMOOCH_EMUS_DEBUGGER_H
+#pragma once
 #include "helpers/physical_io.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#include <array>
+#include <algorithm>
+#include <ranges>
 #include <stddef.h>
 
 #include "helpers/int.h"
@@ -335,39 +333,43 @@ struct debug_waveform {
         u32 buf_pos;
     } user;
 };
-
 #define MAX_TRACE_COLS 20
 struct trace_line {
-    struct jsm_string cols[MAX_TRACE_COLS];
-    i32 source_id;
-    u32 empty;
+    std::array<jsm_string, MAX_TRACE_COLS> cols;
+    trace_line() :
+    cols(make_jsm_string_array<MAX_TRACE_COLS>(80))
+    {};
+
+    i32 source_id{};
+    u32 empty{};
 };
 
 struct trace_view_col {
-    char name[50];
-    i32 default_size;
+    char name[50]{};
+    i32 default_size{};
 };
 
 struct trace_view {
-    struct cvec lines;
-    struct cvec columns;
-    struct trace_line *lptr;
-    u32 current_output_line;
-    u32 max_trace_lines;
-    u32 num_trace_lines;
-    u32 waiting_for_startline;
-    u32 waiting_for_endline;
-    u32 first_line;
+    std::vector<trace_line> lines{};
+    std::vector<trace_view_col> columns{};
+    trace_view() {lines.reserve(this->max_trace_lines); columns.reserve(MAX_TRACE_COLS); }
+    trace_line *lptr{};
+    u32 current_output_line{};
+    u32 max_trace_lines=100;
+    u32 num_trace_lines{};
+    u32 waiting_for_startline{};
+    u32 waiting_for_endline=1;
+    u32 first_line=1;
 
     // User-set options...
-    char name[150];
-    u32 autoscroll;
-    u32 display_end_top;
+    char name[150]{};
+    u32 autoscroll{};
+    u32 display_end_top{};
 };
 
 struct waveform_view {
-    char name[50];
-    struct cvec waveforms;
+    char name[50]{};
+    std::vector<debug_waveform> waveforms{};
 };
 
 
@@ -398,52 +400,60 @@ enum JSMD_widgets {
 
 struct debugger_widget_checkbox
 {
-    char text[100];
-    u32 value;
+    char text[100]{};
+    u32 value{};
 };
 
+struct debugger_widget;
 struct debugger_widget_radiogroup {
-    char title[100];
-    u32 value;
-    struct cvec buttons; // debugger_widget_checkbox
+    char title[100]{};
+    u32 value{};
+    std::vector<debugger_widget> buttons{}; // debugger_widget_checkbox
 };
 
 struct debugger_widget_colorkey_item {
-    char name[50];
-    u32 color;
-    u32 hovered;
+    char name[50]{};
+    u32 color{};
+    u32 hovered{};
 };
 
 struct debugger_widget_colorkey {
-    char title[100];
-    u32 num_items;
-    struct debugger_widget_colorkey_item items[50];
+    char title[100]{};
+    u32 num_items{};
+    debugger_widget_colorkey_item items[50]{};
 };
 
 struct debugger_widget_textbox {
-    struct jsm_string contents;
+    jsm_string contents{4000};
 };
 
 struct debugger_widget {
-    enum JSMD_widgets kind;
-    u32 same_line, enabled, visible;
+    debugger_widget() = default;
+    ~debugger_widget();
+
+    JSMD_widgets kind = JSMD_textbox;
+    u32 same_line{}, enabled{}, visible{};
 
     union {
-        struct debugger_widget_checkbox checkbox;
-        struct debugger_widget_radiogroup radiogroup;
-        struct debugger_widget_textbox textbox;
-        struct debugger_widget_colorkey colorkey;
+        debugger_widget_checkbox checkbox{};
+        debugger_widget_radiogroup radiogroup;
+        debugger_widget_textbox textbox;
+        debugger_widget_colorkey colorkey;
     };
 };
 
+
+struct debugger_widget;
 struct debugger_view {
+    debugger_view() : memory{} {};
+
     void init(enum debugger_view_kinds kind);
     debugger_view_kinds kind=dview_null;
     struct {
         u32 on_break{}, on_pause{}, on_step{};
         struct { u32 enabled{}; u32 line_num{}; } on_line{};
     } update{};
-    std::vector<debugger_widget> options; //5
+    std::vector<debugger_widget> options{}; //5
 
     union {
         disassembly_view disassembly;
@@ -459,8 +469,8 @@ struct debugger_view {
 
 /* This need to be used on two sides. The application side, and the core side. */
 struct debugger_interface {
-    struct cvec views; // debugger_view
-
+    std::vector<debugger_view> views; // debugger_view
+    cvec_ptr<debugger_view> &make_view(enum debugger_view_kinds kind);
     u32 smallest_step; // smallest possible step
     u32 supported_by_core;
 };
@@ -469,7 +479,7 @@ struct debugger_interface {
 // General functions
 void debugger_interface_init(struct debugger_interface *);
 void debugger_interface_delete(struct debugger_interface *);
-struct cvec_ptr debugger_view_new(struct debugger_interface *, enum debugger_view_kinds kind);
+cvec_ptr<debugger_view> &make_view(struct debugger_interface *, enum debugger_view_kinds kind);
 
 void debugger_view_init(struct debugger_view *, enum debugger_view_kinds kind);
 void debugger_interface_dirty_mem(struct debugger_interface *, u32 mem_bus, u32 addr_start, u32 addr_end);
@@ -500,13 +510,12 @@ void events_view_add_event(struct debugger_interface *dbgr, struct events_view *
 void events_view_report_draw_start(struct events_view *);
 
 void debugger_report_frame(struct debugger_interface *dbgr);
-void debugger_report_event(struct cvec_ptr viewptr, i32 event_id);
-u64 events_view_get_current_line_pos(struct cvec_ptr viewptr);
-u64 events_view_get_current_line_start(struct cvec_ptr viewptr);
-u64 events_view_get_current_line(struct cvec_ptr viewptr);
+void debugger_report_event(cvec_ptr<debugger_view> &viewptr, i32 event_id);
+u64 events_view_get_current_line_pos(cvec_ptr<debugger_view>viewptr);
+u64 events_view_get_current_line_start(cvec_ptr<debugger_view> viewptr);
+u64 events_view_get_current_line(cvec_ptr<debugger_view> viewptr);
 
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
-void debugger_report_line_mclks(struct cvec_ptr event_view, u64 mclks, u32 line_num);
 
 void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
 
@@ -550,7 +559,3 @@ void debugger_widgets_colorkey_add_item(struct debugger_widget_colorkey *, const
 
 #define DBG_EVENT(x) debugger_report_event(this->dbg.events.view, x)
 
-#ifdef __cplusplus
-}
-#endif
-#endif //JSMOOCH_EMUS_DEBUGGER_H

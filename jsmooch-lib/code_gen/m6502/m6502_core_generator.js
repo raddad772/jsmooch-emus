@@ -34,6 +34,8 @@ function replace_for_C(whatr) {
     whatr = whatr.replaceAll('true', 'TRUE');
     whatr = whatr.replaceAll('false', 'FALSE');
     //what = what.replaceAll('mksigned8(regs->TA)', '(i32)(i8)regs->TA')
+    whatr = whatr.replaceAll('M6502_regs_P_getbyte(&regs->P)', 'regs->P.getbyte()');
+    whatr = whatr.replaceAll('M6502_regs_P_setbyte(&regs->P, ', 'regs->P.setbyte(');
     //what = what.replaceAll('mksigned8(regs->TR)', '(i32)(i8)regs->TR')
     return whatr;
 }
@@ -2132,12 +2134,12 @@ function generate_nesm6502_core_c(is_C=true) {
 
 function generate_nesm6502_c(is_C=true) {
     set_gentarget('c');
-    save_js('nesm6502_opcodes.c', generate_nesm6502_core_c());
+    save_js('nesm6502_opcodes.cpp', generate_nesm6502_core_c());
 }
 
 function generate_m6502_c(is_C=true) {
     set_gentarget('c');
-    save_js('m6502_opcodes.c', generate_m6502_core_c());
+    save_js('m6502_opcodes.cpp', generate_m6502_core_c());
 }
 
 

@@ -521,7 +521,7 @@ float NES_APU::sample_channel(int cnum)
     return 0.0f;
 }
 
-void NES_APU::serialize(struct serialized_state *state)
+void NES_APU::serialize(struct serialized_state &state)
 {
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
     S(channels[0]);
@@ -536,7 +536,7 @@ void NES_APU::serialize(struct serialized_state *state)
 #undef S
 }
 
-void NES_APU::deserialize(struct serialized_state *state)
+void NES_APU::deserialize(struct serialized_state &state)
 {
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
     L(channels[0]);

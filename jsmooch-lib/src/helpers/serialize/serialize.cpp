@@ -22,11 +22,11 @@ void serialized_state::new_section(const char *friendly_name, int kind, int vers
     cvec_alloc_atleast(&buf, buf.len+howmuch);
 }*/
 
-void Sload(struct serialized_state *th, void *ptr, u64 howmuch)
+void Sload(struct serialized_state &th, void *ptr, u64 howmuch)
 {
     if (howmuch == 0) return;
-    memcpy(ptr, &th->buf[0] + th->iter.offset, howmuch);
-    th->iter.offset += howmuch;
+    memcpy(ptr, &th.buf[0] + th.iter.offset, howmuch);
+    th.iter.offset += howmuch;
 }
 
 void serialized_state::write_to_file(FILE *f) const {
@@ -95,11 +95,11 @@ int serialized_state::read_from_file(FILE *f, size_t file_size)
     return 0;
 }
 
-void Sadd(struct serialized_state *th, const void *ptr, u64 howmuch)
+void Sadd(struct serialized_state &th, const void *ptr, u64 howmuch)
 {
     if (howmuch == 0) return;
-    u64 p = th->buf.size();
-    th->buf.resize(p + howmuch);
-    memcpy(th->buf.data() + p, ptr, howmuch);
-    th->cur_section->sz += howmuch;
+    u64 p = th.buf.size();
+    th.buf.resize(p + howmuch);
+    memcpy(th.buf.data() + p, ptr, howmuch);
+    th.cur_section->sz += howmuch;
 }

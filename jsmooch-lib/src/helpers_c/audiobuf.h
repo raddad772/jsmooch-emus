@@ -5,10 +5,6 @@
 #ifndef JSMOOCH_EMUS_AUDIOBUF_H
 #define JSMOOCH_EMUS_AUDIOBUF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "helpers/int.h"
 
 struct audiobuf {
@@ -26,9 +22,5 @@ struct audiobuf {
 void audiobuf_init(struct audiobuf *);
 void audiobuf_delete(struct audiobuf *);
 void audiobuf_allocate(struct audiobuf*, u32 num_channels, float num_samples);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //JSMOOCH_EMUS_AUDIOBUF_H

@@ -54,11 +54,12 @@ void debugger_report_line(struct debugger_interface *dbgr, i32 line_num)
     }
 }
 
-struct cvec_ptr debugger_view_new(struct debugger_interface *this, enum debugger_view_kinds kind)
+cvec_ptr<debugger_view> &debugger_interface::make_view(enum debugger_view_kinds kind)
 {
-    struct debugger_view *n = cvec_push_back(&this->views);
-    debugger_view_init(n, kind);
-    return make_cvec_ptr(&this->views, cvec_len(&this->views)-1);
+    debugger_view &n = views.emplace_back();
+    n.init(kind);
+    cvec_ptr r(views, views.size() - 1);
+    return r;
 }
 
 void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end)
@@ -161,18 +162,19 @@ void debugger_widget_init(struct debugger_widget *this, enum JSMD_widgets kind)
     }
 }
 
-void debugger_widget_delete(struct debugger_widget *this)
+debugger_widget::~debugger_widget()
 {
-    if (!this) return;
     switch(this->kind) {
         case JSMD_colorkey:
+            colorkey.~debugger_widget_colorkey();
         case JSMD_checkbox:
+            checkbox.~debugger_widget_checkbox();
             break;
         case JSMD_radiogroup:
-            cvec_delete(&this->radiogroup.buttons);
+            radiogroup.~debugger_widget_radiogroup();
             break;
         case JSMD_textbox:
-            jsm_string_delete(&this->textbox.contents);
+            textbox.~debugger_widget_textbox();
             break;
         default:
             NOGOHERE;

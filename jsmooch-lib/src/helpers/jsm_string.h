@@ -20,7 +20,18 @@ struct jsm_string {
     void empty();
     void quickempty();
 };
+#include <cstddef>
+#include <utility>
+template <std::size_t N, std::size_t... Is>
+constexpr auto make_jsm_string_array_impl(int num, std::index_sequence<Is...>) {
+    // construct array of N jsm_string(num) calls — all explicitly constructed
+    return std::array<jsm_string, N>{ ( (void)Is, jsm_string(num) )... };
+}
 
+template <std::size_t N>
+constexpr auto make_jsm_string_array(int num) {
+    return make_jsm_string_array_impl<N>(num, std::make_index_sequence<N>{});
+}
 
 // thanks https://stackoverflow.com/questions/744766/how-to-compare-ends-of-strings-in-c
 u32 ends_with(const char *str, const char *suffix);

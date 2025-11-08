@@ -3,6 +3,7 @@
 //
 
 #include <cstdio>
+#include <cassert>
 
 #include "helpers/debugger/debugger.h"
 

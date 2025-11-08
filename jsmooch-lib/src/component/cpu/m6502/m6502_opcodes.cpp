@@ -32,7 +32,7 @@ static void M6502_ins_00_BRK(struct M6502_regs *regs, struct M6502_pins *pins)
         case 4: {
             pins->Addr = regs->S | 0x100;
             regs->S = (regs->S - 1) & 0xFF;
-            pins->D = M6502_regs_P_getbyte(&regs->P);
+            pins->D = regs->P.getbyte();
             break; }
         case 5: {
             regs->P.B = 1; // Confirmed via Visual6502 that this bit is actually set always during NMI, IRQ, and BRK. It basically always stays 1 unless forced to 0
@@ -267,7 +267,7 @@ static void M6502_ins_08_PHP(struct M6502_regs *regs, struct M6502_pins *pins)
         case 2: {
             pins->Addr = regs->S | 0x100;
             regs->S = (regs->S - 1) & 0xFF;
-            pins->D = M6502_regs_P_getbyte(&regs->P) | 0x30;
+            pins->D = regs->P.getbyte() | 0x30;
             pins->RW = 1;
             // Following is auto-generated code for instruction finish
             break; }
@@ -1246,7 +1246,7 @@ static void M6502_ins_28_PLP(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->Addr = regs->S | 0x100;
             break; }
         case 4: { //cleanup_custom
-            M6502_regs_P_setbyte(&regs->P, pins->D);
+            regs->P.setbyte(pins->D);
             // Following is auto-generated code for instruction finish
             pins->Addr = regs->PC;
             regs->PC = (regs->PC + 1) & 0xFFFF;
@@ -1988,7 +1988,7 @@ static void M6502_ins_40_RTI(struct M6502_regs *regs, struct M6502_pins *pins)
             pins->Addr = regs->S | 0x100;
             break; }
         case 4: { //Read PCL
-            M6502_regs_P_setbyte(&regs->P, pins->D);
+            regs->P.setbyte(pins->D);
             regs->S = (regs->S + 1) & 0xFF;
             pins->Addr = regs->S | 0x100;
             break; }
@@ -8041,7 +8041,7 @@ static void M6502_ins_101_S_NMI(struct M6502_regs *regs, struct M6502_pins *pins
         case 4: {
             pins->Addr = regs->S | 0x100;
             regs->S = (regs->S - 1) & 0xFF;
-            pins->D = M6502_regs_P_getbyte(&regs->P);
+            pins->D = regs->P.getbyte();
             break; }
         case 5: {
             regs->P.B = 1; // Confirmed via Visual6502 that this bit is actually set always during NMI, IRQ, and BRK. It basically always stays 1 unless forced to 0
@@ -8087,7 +8087,7 @@ static void M6502_ins_102_S_IRQ(struct M6502_regs *regs, struct M6502_pins *pins
         case 4: {
             pins->Addr = regs->S | 0x100;
             regs->S = (regs->S - 1) & 0xFF;
-            pins->D = M6502_regs_P_getbyte(&regs->P);
+            pins->D = regs->P.getbyte();
             break; }
         case 5: {
             regs->P.B = 1; // Confirmed via Visual6502 that this bit is actually set always during NMI, IRQ, and BRK. It basically always stays 1 unless forced to 0

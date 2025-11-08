@@ -16,7 +16,7 @@ enum NES_controller_devices {
 };
 
 struct NES_controllerport {
-    enum NES_controller_devices kind=NES_NONE;
+    NES_controller_devices kind=NES_NONE;
     void *device{};
     u32 data();
     void latch(u32 what);
@@ -50,20 +50,13 @@ struct r2A03 {
         } dma{};
     } io{};
 
-    struct NES_controllerport controller_port1{};
-    struct NES_controllerport controller_port2{};
-    struct NES_joypad joypad1{};
-    struct NES_joypad joypad2{};
+    NES_controllerport controller_port1{};
+    NES_controllerport controller_port2{};
+    NES_joypad joypad1{0};
+    NES_joypad joypad2{1};
+
+    void serialize(struct serialized_state &state);
+    void deserialize(struct serialized_state &state);
 };
-
-void r2A03_init(struct r2A03*, struct NES* nes);
-void r2A03_notify_NMI(struct r2A03*, u32 level);
-void r2A03_notify_IRQ(struct r2A03*, u32 level, u32 from);
-void r2A03_reset(struct r2A03*);
-void r2A03_run_cycle(struct r2A03*);
-void NES_bus_CPU_write_reg(struct NES* nes, u32 addr, u32 val);
-u32 NES_bus_CPU_read_reg(struct NES* nes, u32 addr, u32 val, u32 has_effect);
-
-void NES_controllerport_init(struct NES_controllerport*);
 
 #endif //JSMOOCH_EMUS_NES_CPU_H

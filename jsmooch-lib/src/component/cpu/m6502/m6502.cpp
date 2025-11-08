@@ -32,7 +32,6 @@ M6502::M6502(M6502_ins_func *opcode_table) : opcode_table(opcode_table) {
     current_instruction = opcode_table[0];
     trace.cycles = &trace.my_cycles;
 
-    DBG_EVENT_VIEW_INIT;
     dbg.events.IRQ = -1;
     dbg.events.NMI = -1;
 }

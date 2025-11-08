@@ -2,8 +2,7 @@
 // Created by . on 9/8/24.
 //
 
-#ifndef JSMOOCH_EMUS_NES_APU_H
-#define JSMOOCH_EMUS_NES_APU_H
+#pragma once
 
 #include "helpers/int.h"
 
@@ -11,7 +10,6 @@ struct NES;
 
 struct NES_APU {
     NES_APU();
-    ~NES_APU();
 
     void write_IO(u32 addr, u8 val);
     u8 read_IO(u32 addr, u8 old_val, u32 has_effect);
@@ -19,8 +17,8 @@ struct NES_APU {
     float mix_sample(u32 is_debug);
     float sample_channel(int cnum);
     void reset();
-    void serialize(struct serialized_state *state);
-    void deserialize(struct serialized_state *state);
+    void serialize(struct serialized_state &state);
+    void deserialize(struct serialized_state &state);
 
 private:
     i32 get_pulse_channel_output(u32 pc, u32 is_debug);
@@ -131,9 +129,3 @@ public:
         u32 just_set{};
     } IRQ_pin{};
 };
-
-struct serialized_state;
-void NES_APU_serialize(struct NES_APU*, struct serialized_state *state);
-void NES_APU_deserialize(struct NES_APU*, struct serialized_state *state);
-
-#endif //JSMOOCH_EMUS_NES_APU_H

@@ -20,8 +20,6 @@
 #define JTHIS struct NES* this = (struct NES*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
-#define THIS struct NES* this
-
 static void NESJ_play(JSM);
 static void NESJ_pause(JSM);
 static void NESJ_stop(JSM);
@@ -38,39 +36,38 @@ static void NESJ_describe_io(JSM, struct cvec* IOs);
 
 static u32 read_trace(void *ptr, u32 addr)
 {
-    struct NES* me= (struct NES*)ptr;
+    NES* me= (struct NES*)ptr;
     return NES_bus_CPU_read(me, addr, 0, 0);
 }
 
 #define APU_CYCLES_PER_FRAME  29780
 
-static void setup_debug_waveform(struct debug_waveform *dw)
+static void setup_debug_waveform(struct debug_waveform &dw)
 {
-    if (dw->samples_requested == 0) return;
-    dw->samples_rendered = dw->samples_requested;
-    dw->user.cycle_stride = ((float)APU_CYCLES_PER_FRAME / (float)dw->samples_requested);
-    dw->user.buf_pos = 0;
+    if (dw.samples_requested == 0) return;
+    dw.samples_rendered = dw.samples_requested;
+    dw.user.cycle_stride = ((float)APU_CYCLES_PER_FRAME / (float)dw.samples_requested);
+    dw.user.buf_pos = 0;
 }
 
-static void NESJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void NESJ::set_audiobuf(audiobuf *ab)
 {
-    JTHIS;
-    this->audio.buf = ab;
-    if (this->audio.master_cycles_per_audio_sample == 0) {
-        this->audio.master_cycles_per_audio_sample = ((float)APU_CYCLES_PER_FRAME / (float)ab->samples_len);
-        printf("\nCYCLES PER FRAME:%d PER SAMPLE:%f", APU_CYCLES_PER_FRAME, this->audio.master_cycles_per_audio_sample);
-        this->audio.next_sample_cycle = 0;
-        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.main);
-        this->apu.ext_enable = wf->ch_output_enabled;
+    nes.audio.buf = ab;
+    if (nes.audio.master_cycles_per_audio_sample == 0) {
+        nes.audio.master_cycles_per_audio_sample = ((float)APU_CYCLES_PER_FRAME / (float)ab->samples_len);
+        printf("\nCYCLES PER FRAME:%d PER SAMPLE:%f", APU_CYCLES_PER_FRAME, nes.audio.master_cycles_per_audio_sample);
+        nes.audio.next_sample_cycle = 0;
+        struct debug_waveform &wf = nes.dbg.waveforms.main.get();
+        nes.apu.ext_enable = wf.ch_output_enabled;
     }
-    setup_debug_waveform(cpg(this->dbg.waveforms.main));
+    setup_debug_waveform(nes.dbg.waveforms.main.get());
     for (u32 i = 0; i < 4; i++) {
-        struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[i]);
+        struct debug_waveform &wf = nes.dbg.waveforms.chan[i].get();
         setup_debug_waveform(wf);
-        this->apu.channels[i].ext_enable = wf->ch_output_enabled;
+        nes.apu.channels[i].ext_enable = wf.ch_output_enabled;
     }
-    struct debug_waveform *wf = (struct debug_waveform *)cpg(this->dbg.waveforms.chan[4]);
-    this->apu.dmc.ext_enable = wf->ch_output_enabled;
+    struct debug_waveform &wf = nes.dbg.waveforms.chan[4].get();
+    nes.apu.dmc.ext_enable = wf.ch_output_enabled;
 }
 
 NES::NES() : cpu(this), ppu(this), cart(this) {
@@ -78,56 +75,31 @@ NES::NES() : cpu(this), ppu(this), cart(this) {
 }
 
 NES::~NES() {
-
 }
 
 void NES_new(JSM)
 {
     NES *nes = new NES();
-    //NES_bus_init(&this, &this->clock);
-    this->apu.master_cycles = &this->clock.master_clock;
+    //NES_bus_init(&this, &nes->clock);
+    nes->apu.master_cycles = &nes->clock.master_clock;
 
     struct jsm_debug_read_trace dt;
     dt.read_trace = &read_trace;
     dt.ptr = (void*)this;
 
-    M6502_setup_tracing(&this->cpu.cpu, &dt, &this->clock.master_clock);
+    M6502_setup_tracing(&nes->cpu.cpu, &dt, &nes->clock.master_clock);
     snprintf(jsm->label, sizeof(jsm->label), "Nintendo Entertainment System");
 
-    this->described_inputs = 0;
+    nes->described_inputs = 0;
 
-    this->cycles_left = 0;
-    this->display_enabled = 1;
-    this->IOs = NULL;
-    jsm->ptr = (void*)this;
-
-    jsm->finish_frame = &NESJ_finish_frame;
-    jsm->finish_scanline = &NESJ_finish_scanline;
-    jsm->step_master = &NESJ_step_master;
-    jsm->reset = &NESJ_reset;
-    jsm->load_BIOS = &NESJ_load_BIOS;
-    jsm->get_framevars = &NESJ_get_framevars;
-    jsm->play = &NESJ_play;
-    jsm->pause = &NESJ_pause;
-    jsm->stop = &NESJ_stop;
-    jsm->set_audiobuf = &NESJ_set_audiobuf;
-    jsm->describe_io = &NESJ_describe_io;
-    jsm->sideload = NULL;
-    jsm->setup_debugger_interface = &NESJ_setup_debugger_interface;
-    jsm->save_state = &NESJ_save_state;
-    jsm->load_state = &NESJ_load_state;
+    nes->cycles_left = 0;
+    nes->display_enabled = 1;
+    nes->IOs = nullptr;
 }
 
 
 void NES_delete(JSM)
 {
-    JTHIS;
-    //NES_CPU_delete(&this->cpu);
-    //NES_PPU_delete(&this->ppu);
-    /*GB_cart_delete(&this->cart);
-    GB_bus_delete(&this->bus);*/
-    //GB_clock_delete(&this->clock);
-
     NES_bus_delete(&this->bus);
     NES_cart_delete(&this->cart);
 

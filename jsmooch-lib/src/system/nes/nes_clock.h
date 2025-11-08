@@ -2,9 +2,7 @@
 // Created by Dave on 2/5/2024.
 //
 
-#ifndef JSMOOCH_EMUS_NES_CLOCK_H
-#define JSMOOCH_EMUS_NES_CLOCK_H
-
+#pragma once
 #include "helpers/int.h"
 
 struct NES_clock {
@@ -39,6 +37,7 @@ struct NES_clock {
 
     i32 ppu_y{};
     u32 frame_odd{};
-};
 
-#endif //JSMOOCH_EMUS_NES_CLOCK_H
+    void serialize(struct serialized_state &state) const;
+    void deserialize(struct serialized_state &state);
+};

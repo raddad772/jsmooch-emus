@@ -189,14 +189,14 @@ void NES_bus_CPU_cycle(struct NES *nes)
     if (nes->bus.cpu_cycle) nes->bus.cpu_cycle(&nes->bus);
 }
 
-u32 NES_bus_CPU_read(struct NES *nes, u32 addr, u32 old_val, u32 has_effect)
+u32 NES_bus_CPU_read(NES *nes, u32 addr, u32 old_val, u32 has_effect)
 {
     if (addr < 0x2000)
         return nes->bus.CPU_RAM.ptr[addr & 0x7FF];
     if (addr < 0x4000)
         return NES_bus_PPU_read_regs(nes, addr, old_val, has_effect);
     if (addr < 0x4020)
-        return NES_bus_CPU_read_reg(nes, addr, old_val, has_effect);
+        return nes->cpu.read_reg(addr, old_val, has_effect);
 
     u32 do_read = 1;
     u32 nv = nes->bus.readcart(&nes->bus, addr, old_val, has_effect, &do_read);

@@ -34,17 +34,6 @@ enum NES_mappers {
     NESM_MMC5
 };
 
-#ifndef NES_PPU_mirror_modes_def
-#define NES_PPU_mirror_modes_def
-enum NES_PPU_mirror_modes {
-    PPUM_Horizontal,
-    PPUM_Vertical,
-    PPUM_FourWay,
-    PPUM_ScreenAOnly,
-    PPUM_ScreenBOnly
-};
-#endif
-
 struct NES;
 
 struct NES_bus {
@@ -63,8 +52,8 @@ struct NES_bus {
     void (*a12_watch)(struct NES_bus*, u32 addr);
     void (*cpu_cycle)(struct NES_bus*);
 
-    void (*serialize)(struct NES_bus*, struct serialized_state *state);
-    void (*deserialize)(struct NES_bus*, struct serialized_state *state);
+    void (*serialize)(struct NES_bus*, struct serialized_state &state);
+    void (*deserialize)(struct NES_bus*, struct serialized_state &state);
 
     float (*sample_audio)(struct NES_bus*);
 

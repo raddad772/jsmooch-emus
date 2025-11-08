@@ -2,17 +2,17 @@
 // Created by . on 12/7/24.
 //
 
-#include <stdlib.h>
+#include <cstdlib>
+#include <cassert>
 #include "nes.h"
 #include "nes_serialize.h"
 #include "helpers/sys_present.h"
-#include "helpers/debug.h"
 #include "helpers/serialize/serialize.h"
 #include "component/audio/nes_apu/nes_apu.h"
 #include "component/cpu/m6502/m6502.h"
 
-static void serialize_console(struct NES *this, struct serialized_state *state) {
-    serialized_state_new_section(state, "console", NESSS_console, 1);
+void NES::serialize(struct serialized_state &state) const {
+    state.new_section("console", NESSS_console, 1);
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
     S(cycles_left);
     S(display_enabled);
@@ -20,9 +20,9 @@ static void serialize_console(struct NES *this, struct serialized_state *state) 
 #undef S
 }
 
-static void serialize_clock(struct NES *this, struct serialized_state *state) {
-    serialized_state_new_section(state, "clock", NESSS_clock, 1);
-#define S(x) Sadd(state, &(this->clock. x), sizeof(this->clock. x))
+void NES_clock::serialize(struct serialized_state &state) const {
+    state.new_section("clock", NESSS_clock, 1);
+#define S(x) Sadd(state, &x, sizeof(x))
     S(master_clock);
     S(master_frame);
     S(frames_since_restart);
@@ -40,31 +40,30 @@ static void serialize_clock(struct NES *this, struct serialized_state *state) {
 #undef S
 }
 
-static void serialize_apu(struct NES *this, struct serialized_state *state) {
-    serialized_state_new_section(state, "APU", NESSS_apu, 1);
-    NES_APU_serialize(&this->apu, state);
+static void serialize_apu(struct NES &nes, struct serialized_state &state) {
+    state.new_section("APU", NESSS_apu, 1);
+    nes.apu.serialize(state);
 }
 
-static void serialize_cpu(struct NES *this, struct serialized_state *state) {
-    serialized_state_new_section(state, "CPU", NESSS_cpu, 1);
-#define S(x) Sadd(state, &(this->cpu. x), sizeof(this->cpu. x))
+void r2A03::serialize(struct serialized_state &state) {
+    state.new_section("CPU", NESSS_cpu, 1);
+#define S(x) Sadd(state, &x, sizeof(x))
     S(open_bus);
     S(irq);
     S(io);
-    M6502_serialize(&this->cpu.cpu, state);
+    cpu.serialize(state);
 #undef S
 }
 
-static void serialize_ppu(struct NES *this, struct serialized_state *state) {
-    serialized_state_new_section(state, "PPU", NESSS_ppu, 1);
-#define S(x) Sadd(state, &(this->ppu. x), sizeof(this->ppu. x))
+void NES_PPU::serialize(struct serialized_state &state) {
+    state.new_section("PPU", NESSS_ppu, 1);
+#define S(x) Sadd(state, &x, sizeof(x))
 
     // render_cycle...//visible, postrender, prerender
     u32 v = 0;
-    if (this->ppu.render_cycle == &PPU_scanline_visible) v = 1;
-    if (this->ppu.render_cycle == &PPU_scanline_postrender) v = 2;
+    if (render_cycle == &NES_PPU::scanline_visible) v = 1;
+    if (render_cycle == &NES_PPU::scanline_postrender) v = 2;
     Sadd(state, &v, sizeof(v));
-
 
     S(line_cycle);
     S(OAM);
@@ -108,45 +107,44 @@ static void serialize_ppu(struct NES *this, struct serialized_state *state) {
 #undef S
 }
 
-static void serialize_cart(struct NES *this, struct serialized_state *state) {
-    serialized_state_new_section(state, "cart", NESSS_cartridge, 1);
-#define S(x) Sadd(state, &(this->bus. x), sizeof(this->bus. x))
+void serialize_cart(struct NES &nes, struct serialized_state &state) {
+    state.new_section("cart", NESSS_cartridge, 1);
+#define S(x) Sadd(state, &(nes.bus. x), sizeof(nes.bus. x))
     S(ppu_mirror_mode);
     //void NES_bus_PPU_mirror_set(struct NES_bus *bus)
 
-    Sadd(state, this->bus.CIRAM.ptr, this->bus.CIRAM.sz);
-    Sadd(state, this->bus.CPU_RAM.ptr, this->bus.CPU_RAM.sz);
-    u32 sz = this->bus.SRAM->actual_size;
+    Sadd(state, nes.bus.CIRAM.ptr, nes.bus.CIRAM.sz);
+    Sadd(state, nes.bus.CPU_RAM.ptr, nes.bus.CPU_RAM.sz);
+    u32 sz = nes.bus.SRAM->actual_size;
     Sadd(state, &sz, sizeof(sz));
     if (sz > 0) {
-        Sadd(state, this->bus.SRAM->data, this->bus.SRAM->actual_size);
+        Sadd(state, nes.bus.SRAM->data, nes.bus.SRAM->actual_size);
     }
-    Sadd(state, this->bus.CHR_RAM.ptr, this->bus.CHR_RAM.sz);
-    this->bus.serialize(&this->bus, state);
+    Sadd(state, nes.bus.CHR_RAM.ptr, nes.bus.CHR_RAM.sz);
+    nes.bus.serialize(&nes.bus, state);
 #undef S
 }
 
-void NESJ_save_state(struct jsm_system *jsm, struct serialized_state *state) {
-    struct NES *this = (struct NES *) jsm->ptr;
+void NESJ::save_state(struct serialized_state &state) {
     // Basic info
-    state->version = 1;
-    state->opt.len = 0;
+    state.version = 1;
+    state.opt.len = 0;
 
     // Make screenshot
-    state->has_screenshot = 1;
-    jsimg_allocate(&state->screenshot, 256, 240);
-    jsimg_clear(&state->screenshot);
-    NES_present(cpg(this->ppu.display_ptr), state->screenshot.data.ptr, 0, 0, 256, 240);
+    state.has_screenshot = 1;
+    state.screenshot.allocate(256, 240);
+    state.screenshot.clear();
+    NES_present(&nes.ppu.display_ptr.get(), state.screenshot.data.ptr, 0, 0, 256, 240);
 
-    serialize_console(this, state);
-    serialize_clock(this, state);
-    serialize_apu(this, state);
-    serialize_cpu(this, state);
-    serialize_ppu(this, state);
-    serialize_cart(this, state);
+    nes.serialize(state);
+    nes.clock.serialize(state);
+    serialize_apu(nes, state);
+    nes.cpu.serialize(state);
+    nes.ppu.serialize(state);
+    serialize_cart(nes, state);
 }
 
-static void deserialize_console(struct NES* this, struct serialized_state *state) {
+void NES::deserialize(struct serialized_state &state) {
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
     L(cycles_left);
     L(display_enabled);
@@ -154,8 +152,8 @@ static void deserialize_console(struct NES* this, struct serialized_state *state
 #undef L
 }
 
-static void deserialize_clock(struct NES* this, struct serialized_state *state) {
-#define L(x) Sload(state, &this->clock. x, sizeof(this->clock. x))
+void NES_clock::deserialize(struct serialized_state &state) {
+#define L(x) Sload(state, &x, sizeof(x))
     L(master_clock);
     L(master_frame);
     L(frames_since_restart);
@@ -173,32 +171,32 @@ static void deserialize_clock(struct NES* this, struct serialized_state *state) 
 #undef L
 }
 
-static void deserialize_apu(struct NES* this, struct serialized_state *state) {
-    NES_APU_deserialize(&this->apu, state);
+void deserialize_apu(struct NES &nes, struct serialized_state &state) {
+    nes.apu.deserialize(state);
 }
 
-static void deserialize_cpu(struct NES* this, struct serialized_state *state) {
-#define L(x) Sload(state, &this->cpu. x, sizeof(this->cpu. x))
+void r2A03::deserialize(struct serialized_state &state) {
+#define L(x) Sload(state, &x, sizeof(x))
     L(open_bus);
     L(irq);
     L(io);
-    M6502_deserialize(&this->cpu.cpu, state);
+    cpu.deserialize(state);
 #undef L
 }
 
-static void deserialize_ppu(struct NES* this, struct serialized_state *state) {
-#define L(x) Sload(state, &this->ppu. x, sizeof(this->ppu. x))
+void NES_PPU::deserialize(struct serialized_state &state) {
+#define L(x) Sload(state, &x, sizeof(x))
     u32 v = 0;
     Sload(state, &v, sizeof(v));
     switch(v) {
         case 0:
-            this->ppu.render_cycle = &PPU_scanline_prerender;
+            render_cycle = &NES_PPU::scanline_prerender;
             break;
         case 1:
-            this->ppu.render_cycle = &PPU_scanline_visible;
+            render_cycle = &NES_PPU::scanline_visible;
             break;
         case 2:
-            this->ppu.render_cycle = &PPU_scanline_postrender;
+            render_cycle = &NES_PPU::scanline_postrender;
             break;
         default:
             NOGOHERE;
@@ -247,50 +245,47 @@ static void deserialize_ppu(struct NES* this, struct serialized_state *state) {
 #undef L
 }
 
-static void deserialize_cart(struct NES* this, struct serialized_state *state) {
-#define L(x) Sload(state, &this->bus. x, sizeof(this->bus. x))
+void deserialize_cart(struct NES &nes, struct serialized_state &state) {
+#define L(x) Sload(state, &nes.bus. x, sizeof(nes.bus. x))
     L(ppu_mirror_mode);
 
-    Sload(state, this->bus.CIRAM.ptr, this->bus.CIRAM.sz);
-    Sload(state, this->bus.CPU_RAM.ptr, this->bus.CPU_RAM.sz);
+    Sload(state, nes.bus.CIRAM.ptr, nes.bus.CIRAM.sz);
+    Sload(state, nes.bus.CPU_RAM.ptr, nes.bus.CPU_RAM.sz);
     u32 v;
     Sload(state, &v, sizeof(v));
     if (v > 0) {
-        Sload(state, this->bus.SRAM->data, v);
-        this->bus.SRAM->dirty = 1;
+        Sload(state, nes.bus.SRAM->data, v);
+        nes.bus.SRAM->dirty = 1;
     }
-    Sload(state, this->bus.CHR_RAM.ptr, this->bus.CHR_RAM.sz);
-    this->bus.deserialize(&this->bus, state);
+    Sload(state, nes.bus.CHR_RAM.ptr, nes.bus.CHR_RAM.sz);
+    nes.bus.deserialize(&nes.bus, state);
 #undef L
 }
 
-void NESJ_load_state(struct jsm_system *jsm, struct serialized_state *state, struct deserialize_ret *ret) {
-    state->iter.offset = 0;
-    assert(state->version == 1);
+void NESJ::load_state(struct serialized_state &state, struct deserialize_ret &ret) {
+    state.iter.offset = 0;
+    assert(state.version == 1);
 
-    struct NES *this = (struct NES *) jsm->ptr;
-
-    for (u32 i = 0; i < cvec_len(&state->sections); i++) {
-        struct serialized_state_section *sec = cvec_get(&state->sections, i);
-        state->iter.offset = sec->offset;
-        switch (sec->kind) {
+    for (auto & sec : state.sections) {
+        state.iter.offset = sec.offset;
+        switch (sec.kind) {
             case NESSS_console:
-                deserialize_console(this, state);
+                nes.deserialize(state);
                 break;
             case NESSS_clock:
-                deserialize_clock(this, state);
+                nes.clock.deserialize(state);
                 break;
             case NESSS_apu:
-                deserialize_apu(this, state);
+                deserialize_apu(nes, state);
                 break;
             case NESSS_cpu:
-                deserialize_cpu(this, state);
+                nes.cpu.deserialize(state);
                 break;
             case NESSS_ppu:
-                deserialize_ppu(this, state);
+                nes.ppu.deserialize(state);
                 break;
             case NESSS_cartridge:
-                deserialize_cart(this, state);
+                deserialize_cart(nes, state);
                 break;
             default: NOGOHERE;
         }

@@ -15,7 +15,7 @@ u32 NES_controllerport::data()
     if (device == NULL) return 0;
     switch(kind) {
         case NES_JOYPAD:
-            return NES_joypad_data((struct NES_joypad*)device) & 3;
+            return static_cast<NES_joypad *>(device)->data() & 3;
         case NES_NONE:
         default:
             break;
@@ -27,7 +27,7 @@ void NES_controllerport::latch(u32 what) {
     if (!device) return;
     switch(kind) {
         case NES_JOYPAD:
-            return NES_joypad_latch((struct NES_joypad*)device, what);
+            return static_cast<NES_joypad *>(device)->latch(what);
         case NES_NONE:
         default:
             printf("PLEASE IMP 2");
@@ -35,7 +35,7 @@ void NES_controllerport::latch(u32 what) {
     }
 }
 
-r2A03::r2A03(struct NES* nes) : nes(nes), cpu(nesM6502_decoded_opcodes)
+r2A03::r2A03(NES* nes) : cpu(nesM6502_decoded_opcodes), nes(nes)
 {
     tracing = 0;
 
@@ -51,7 +51,7 @@ r2A03::r2A03(struct NES* nes) : nes(nes), cpu(nesM6502_decoded_opcodes)
 }
 
 u32 NES_CPU_read_trace(void *tr, u32 addr) {
-    struct NES* nes = (struct NES*)tr;
+    NES* nes = static_cast<NES *>(tr);
     return NES_bus_CPU_read(nes, addr, 0, 0);
 }
 

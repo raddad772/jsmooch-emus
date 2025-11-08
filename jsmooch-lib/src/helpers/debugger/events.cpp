@@ -134,18 +134,18 @@ u64 events_view_get_current_line_pos(struct cvec_ptr viewptr)
     return (*this->master_clocks.ptr) - this->master_clocks.lines[this->master_clocks.back_buffer][line_num];
 }
 
-void debugger_report_event(struct cvec_ptr viewptr, i32 event_id)
+void debugger_report_event(cvec_ptr<debugger_view> &viewptr, i32 event_id)
 {
-    if (viewptr.vec == NULL) {
+    if (viewptr.vec == nullptr) {
         return;
     }
     if (event_id == -1) {
         return;
     }
-    struct events_view *this = &((struct debugger_view *)cpg(viewptr))->events;
-    struct debugger_event *ev = cvec_get(&this->events, event_id);
-    struct JSM_DISPLAY *d = &((struct physical_io_device *)cpg(this->associated_display))->display;
-    struct debugger_event_update *upd = cvec_push_back(&ev->updates[ev->updates_index]);
+    events_view *th = &viewptr.get().events;
+    debugger_event *ev = cvec_get(&this->events, event_id);
+    JSM_DISPLAY *d = &((struct physical_io_device *)cpg(this->associated_display))->display;
+    debugger_event_update *upd = cvec_push_back(&ev->updates[ev->updates_index]);
     upd->frame_num = this->current_frame;
     switch(this->timing) {
         case ev_timing_scanxy:

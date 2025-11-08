@@ -52,8 +52,8 @@ struct serialized_state {
 };
 
 
-void Sadd(serialized_state *, const void *ptr, u64 howmuch);
-void Sload(serialized_state *, void *ptr, u64 howmuch);
+void Sadd(serialized_state &, const void *ptr, u64 howmuch);
+void Sload(serialized_state &, void *ptr, u64 howmuch);
 
 #define u64S(x) Sadd(state, &(x), 8)
 #define i64S(x) u64S(x)

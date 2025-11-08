@@ -12,28 +12,28 @@
 #include "mappers/mapper.h"
 #include "nes.h"
 
-#define JTHIS struct NES* this = (struct NES*)jsm->ptr
+#define JTHIS struct NES* th = (struct NES*)jsm->ptr
 #define JSM struct jsm_system* jsm
 
 static void get_dissasembly(void *nesptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
 {
-    struct NES* this = (struct NES*)nesptr;
-    M6502_disassemble_entry(&this->cpu.cpu, entry);
+    NES* th = static_cast<struct NES *>(nesptr);
+    M6502_disassemble_entry(&th->cpu.cpu, entry);
 }
 
 
-static struct disassembly_vars get_disassembly_vars(void *nesptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
+static disassembly_vars get_disassembly_vars(void *nesptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
 {
-    struct NES* this = (struct NES*)nesptr;
+    struct NES* th = (struct NES*)nesptr;
     struct disassembly_vars dvar;
-    dvar.address_of_executing_instruction = this->cpu.cpu.PCO;
-    dvar.current_clock_cycle = this->clock.trace_cycles;
+    dvar.address_of_executing_instruction = th->cpu.cpu.PCO;
+    dvar.current_clock_cycle = th->clock.trace_cycles;
     return dvar;
 }
 
 static int render_p(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
 {
-    return snprintf(outbuf, outbuf_sz, "%c%c-%c%c%c%c%c",
+    return snprintf(static_cast<char *>(outbuf), outbuf_sz, "%c%c-%c%c%c%c%c",
                     ctx->int32_data & 0x80 ? 'N' : 'n',
                     ctx->int32_data & 0x40 ? 'V' : 'v',
                     ctx->int32_data & 0x10 ? 'B' : 'b',
@@ -46,56 +46,56 @@ static int render_p(struct cpu_reg_context *ctx, void *outbuf, size_t outbuf_sz)
 
 static void fill_disassembly_view(void *nesptr, struct debugger_interface *dbgr, struct disassembly_view *dview)
 {
-    struct NES* this = (struct NES*)nesptr;
+    struct NES* th = (struct NES*)nesptr;
 
-    this->dbg.dasm.A->int8_data = this->cpu.cpu.regs.A;
-    this->dbg.dasm.X->int8_data = this->cpu.cpu.regs.X;
-    this->dbg.dasm.Y->int8_data = this->cpu.cpu.regs.Y;
-    this->dbg.dasm.PC->int16_data = this->cpu.cpu.regs.PC;
-    this->dbg.dasm.S->int8_data = this->cpu.cpu.regs.S;
-    this->dbg.dasm.P->int8_data = M6502_regs_P_getbyte(&this->cpu.cpu.regs.P);
+    th->dbg.dasm.A->int8_data = th->cpu.cpu.regs.A;
+    th->dbg.dasm.X->int8_data = th->cpu.cpu.regs.X;
+    th->dbg.dasm.Y->int8_data = th->cpu.cpu.regs.Y;
+    th->dbg.dasm.PC->int16_data = th->cpu.cpu.regs.PC;
+    th->dbg.dasm.S->int8_data = th->cpu.cpu.regs.S;
+    th->dbg.dasm.P->int8_data = th->cpu.cpu.regs.P.getbyte();
 }
 
-static void create_and_bind_registers(struct NES* this, struct disassembly_view *dv)
+static void create_and_bind_registers(struct NES* th, struct disassembly_view *dv)
 {
     u32 tkindex = 0;
-    struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
+    cpu_reg_context *rg = &dv->cpu.regs.emplace_back();
     snprintf(rg->name, sizeof(rg->name), "A");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
-    rg = cvec_push_back(&dv->cpu.regs);
+    rg = &dv->cpu.regs.emplace_back();
     snprintf(rg->name, sizeof(rg->name), "X");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
-    rg = cvec_push_back(&dv->cpu.regs);
+    rg = &dv->cpu.regs.emplace_back();
     snprintf(rg->name, sizeof(rg->name), "Y");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
-    rg = cvec_push_back(&dv->cpu.regs);
+    rg = &dv->cpu.regs.emplace_back();
     snprintf(rg->name, sizeof(rg->name), "PC");
     rg->kind = RK_int16;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
-    rg = cvec_push_back(&dv->cpu.regs);
+    rg = &dv->cpu.regs.emplace_back();
     snprintf(rg->name, sizeof(rg->name), "S");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = NULL;
 
-    rg = cvec_push_back(&dv->cpu.regs);
+    rg = &dv->cpu.regs.emplace_back();
     snprintf(rg->name, sizeof(rg->name), "P");
     rg->kind = RK_int8;
     rg->index = tkindex++;
     rg->custom_render = &render_p;
 
-#define BIND(dn, index) this->dbg.dasm. dn = cvec_get(&dv->cpu.regs, index)
+#define BIND(dn, index) th->dbg.dasm. dn = &dv->cpu.regs.at(index)
     BIND(A, 0);
     BIND(X, 1);
     BIND(Y, 2);
@@ -105,7 +105,7 @@ static void create_and_bind_registers(struct NES* this, struct disassembly_view 
 #undef BIND
 }
 
-static void setup_disassembly_view(struct NES* this, struct debugger_interface *dbgr)
+static void setup_disassembly_view(struct NES* th, struct debugger_interface *dbgr)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
@@ -134,8 +134,8 @@ static u32 calc_stride(u32 out_width, u32 in_width)
 
 static void render_image_view_tilemap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct NES* this = (struct NES*)ptr;
-    if (this->clock.master_frame == 0) return;
+    struct NES* th = (struct NES*)ptr;
+    if (th->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
@@ -179,8 +179,8 @@ static void render_image_view_tilemap(struct debugger_interface *dbgr, struct de
 
 static void render_image_view_nametables(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
 {
-    struct NES* this = (struct NES*)ptr;
-    if (this->clock.master_frame == 0) return;
+    struct NES* th = (struct NES*)ptr;
+    if (th->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
     u32 *outbuf = iv->img_buf[iv->draw_which_buf].ptr;
@@ -190,7 +190,7 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
         nt_rows_to_crtrow[i] = -1;
     }
     for (u32 i = 0; i < 240; i++) {
-        struct DBGNESROW *row = &this->dbg_data.rows[i];
+        struct DBGNESROW *row = &th->dbg_data.rows[i];
         nt_rows_to_crtrow[(i + row->io.y_scroll) % 480] = (i32)i;
     }
 
@@ -207,7 +207,7 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
                     u32 img_x = nt_x * 256;
                     assert(img_y < 480);
                     int snum = nt_rows_to_crtrow[img_y];
-                    struct DBGNESROW *row = &this->dbg_data.rows[snum == -1 ? 0 : snum];
+                    struct DBGNESROW *row = &th->dbg_data.rows[snum == -1 ? 0 : snum];
                     u32 left = row->io.x_scroll;
                     u32 right = (row->io.x_scroll + 256) & 0x1FF;
                     u32 bg_pattern_table = row->io.bg_pattern_table;
@@ -250,10 +250,10 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
 #undef get
 }
 
-static void setup_image_view_nametables(struct NES* this, struct debugger_interface *dbgr)
+static void setup_image_view_nametables(struct NES* th, struct debugger_interface *dbgr)
 {
-    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    th->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(th->dbg.image_views.nametables);
     struct image_view *iv = &dview->image;
     // 512x480
 
@@ -270,10 +270,10 @@ static void setup_image_view_nametables(struct NES* this, struct debugger_interf
     snprintf(iv->label, sizeof(iv->label), "Nametable Viewer");
 }
 
-static void setup_image_view_tilemap(struct NES* this, struct debugger_interface *dbgr)
+static void setup_image_view_tilemap(struct NES* th, struct debugger_interface *dbgr)
 {
-    this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
-    struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
+    th->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
+    struct debugger_view *dview = cpg(th->dbg.image_views.nametables);
     struct image_view *iv = &dview->image;
 
     iv->width = 128;
@@ -290,52 +290,52 @@ static void setup_image_view_tilemap(struct NES* this, struct debugger_interface
 }
 
 
-static void setup_waveforms(struct NES* this, struct debugger_interface *dbgr)
+static void setup_waveforms(struct NES* th, struct debugger_interface *dbgr)
 {
-    this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
-    struct debugger_view *dview = cpg(this->dbg.waveforms.view);
+    th->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
+    struct debugger_view *dview = cpg(th->dbg.waveforms.view);
     struct waveform_view *wv = (struct waveform_view *)&dview->waveform;
     snprintf(wv->name, sizeof(wv->name), "Audio");
 
     // 384 8x8 tiles, or 2x for CGB
     struct debug_waveform *dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms.main = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Output");
     dw->kind = dwk_main;
     dw->samples_requested = 400;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms.chan[0] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Pulse 1");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms.chan[1] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Pulse 2");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms.chan[2] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Triangle");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms.chan[3] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "Noise");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
 
     dw = cvec_push_back(&wv->waveforms);
     debug_waveform_init(dw);
-    this->dbg.waveforms.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
+    th->dbg.waveforms.chan[4] = make_cvec_ptr(&wv->waveforms, cvec_len(&wv->waveforms)-1);
     snprintf(dw->name, sizeof(dw->name), "DMC");
     dw->kind = dwk_channel;
     dw->samples_requested = 200;
@@ -343,11 +343,11 @@ static void setup_waveforms(struct NES* this, struct debugger_interface *dbgr)
 }
 
 
-static void setup_events_view(struct NES* this, struct debugger_interface *dbgr)
+static void setup_events_view(struct NES* th, struct debugger_interface *dbgr)
 {
     // Setup events view
-    this->dbg.events.view = debugger_view_new(dbgr, dview_events);
-    struct debugger_view *dview = cpg(this->dbg.events.view);
+    th->dbg.events.view = debugger_view_new(dbgr, dview_events);
+    struct debugger_view *dview = cpg(th->dbg.events.view);
     struct events_view *ev = &dview->events;
 
     for (u32 i = 0; i < 2; i++) {
@@ -356,7 +356,7 @@ static void setup_events_view(struct NES* this, struct debugger_interface *dbgr)
         ev->display[i].buf = NULL;
         ev->display[i].frame_num = 0;
     }
-    ev->associated_display = this->ppu.display_ptr;
+    ev->associated_display = th->ppu.display_ptr;
 
     cvec_grow_by(&ev->events, DBG_NES_EVENT_MAX);
     DEBUG_REGISTER_EVENT_CATEGORY("CPU events", DBG_NES_CATEGORY_CPU);
@@ -370,19 +370,19 @@ static void setup_events_view(struct NES* this, struct debugger_interface *dbgr)
     DEBUG_REGISTER_EVENT("Write $2006 (PPUADDR)", 0xFF0080, DBG_NES_CATEGORY_PPU, DBG_NES_EVENT_W2006, 1);
     DEBUG_REGISTER_EVENT("Write $2007 (PPUDATA)", 0x0080FF, DBG_NES_CATEGORY_PPU, DBG_NES_EVENT_W2007, 1);
 
-    SET_EVENT_VIEW(this->cpu.cpu);
-    SET_EVENT_VIEW(this->ppu);
+    SET_EVENT_VIEW(th->cpu.cpu);
+    SET_EVENT_VIEW(th->ppu);
 
     SET_CPU_CPU_EVENT_ID(DBG_NES_EVENT_IRQ, IRQ);
     SET_CPU_CPU_EVENT_ID(DBG_NES_EVENT_NMI, NMI);
 
-    debugger_report_frame(this->dbg.interface);
+    debugger_report_frame(th->dbg.interface);
 }
 
 void NESJ_setup_debugger_interface(struct jsm_system *jsm, struct debugger_interface *dbgr)
 {
     JTHIS;
-    this->dbg.interface = dbgr;
+    th->dbg.interface = dbgr;
 
     dbgr->supported_by_core = 1;
     dbgr->smallest_step = 1;
