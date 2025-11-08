@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_SN76489_H
 #define JSMOOCH_EMUS_SN76489_H
 
-#include "helpers_c/debugger/debuggerdefs.h"
-#include "helpers_c/int.h"
-#include "helpers_c/serialize/serialize.h"
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/int.h"
+#include "helpers/serialize/serialize.h"
 
 /*
 Big thanks to TotalJustice of TotalSMS, who allowed me to

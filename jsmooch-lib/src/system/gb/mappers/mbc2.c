@@ -10,7 +10,7 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "helpers_c/serialize/serialize.h"
+#include "helpers/serialize/serialize.h"
 
 #include "mbc2.h"
 

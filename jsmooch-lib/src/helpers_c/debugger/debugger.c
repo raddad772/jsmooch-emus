@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "helpers_c/ooc.h"
+#include "helpers/ooc.h"
 
 #include "debugger.h"
 #include "disassembly.h"

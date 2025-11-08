@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_GB_APU_H
 #define JSMOOCH_EMUS_GB_APU_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct GB_APU {
     u32 ext_enable;

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 #include "nds_bus.h"
 #include "nds_vram.h"
 

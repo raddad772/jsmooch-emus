@@ -6,9 +6,9 @@ extern "C" {
 #endif
 
 #include "physical_io.h"
-#include "helpers_c/int.h"
-#include "helpers_c/sys_interface.h"
-#include "helpers_c/enums.h"
+#include "helpers/int.h"
+#include "helpers/sys_interface.h"
+#include "helpers/enums.h"
 
 struct events_view;
 void jsm_present(enum jsm_systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, struct events_view *ev);

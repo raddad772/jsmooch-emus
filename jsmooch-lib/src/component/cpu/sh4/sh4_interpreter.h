@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_SH4_INTERPRETER_H
 #define JSMOOCH_EMUS_SH4_INTERPRETER_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/scheduler.h"
+#include "helpers/int.h"
+#include "helpers/debug.h"
+#include "helpers/scheduler.h"
 
 // One of these for external mem system to write/read registers here,
 // One for this to read/write main memory

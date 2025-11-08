@@ -10,13 +10,13 @@
 #include <pwd.h>
 #endif
 #include "z80-tests.h"
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "rfb.h"
 #include "component/cpu/z80/z80.h"
 //#include "component/cpu/z80/z80_opcodes.h"
 
 #include "../json.h"
-#include "helpers_c/user.h"
+#include "helpers/user.h"
 
 struct test_cpu_regs {
     u32 r;

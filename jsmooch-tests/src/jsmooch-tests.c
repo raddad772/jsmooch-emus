@@ -19,8 +19,8 @@
 #include "cpu-tests/wdc65816_tests.h"
 #include "helper-tests/scheduler-tests.h"
 #include "cpu-tests/arm7tdmi_tests.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/bitbuffer.h"
+#include "helpers/debug.h"
+#include "helpers/bitbuffer.h"
 
 #if 0 // unresolved external symbol bitbuf_read_bits referenced in function test_bitbuf
 void test_bitbuf()

@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_M68000_H
 #define JSMOOCH_EMUS_M68000_H
 
-#include "helpers_c/debugger/debuggerdefs.h"
-#include "helpers_c/int.h"
-#include "helpers_c/cvec.h"
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/int.h"
+#include "helpers/cvec.h"
 #include "m68000_instructions.h"
 
 #define M68K_E_CLOCK

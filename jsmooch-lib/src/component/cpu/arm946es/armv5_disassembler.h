@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_ARMV5_DISASSEMBLER_H
 #define JSMOOCH_EMUS_ARMV5_DISASSEMBLER_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/jsm_string.h"
+#include "helpers/int.h"
+#include "helpers/jsm_string.h"
 
 //struct ARM946ES;
 struct ARMctxt {

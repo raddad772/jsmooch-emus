@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "gba_bus.h"
 #include "gba_apu.h"
 #include "gba_dma.h"

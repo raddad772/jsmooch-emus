@@ -7,7 +7,7 @@
 
 #include <stdarg.h>
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct jsm_string {
     char *ptr; // Pointer

@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "helpers_c/intrinsics.h"
+#include "helpers/intrinsics.h"
 
 #include "gte.h"
 

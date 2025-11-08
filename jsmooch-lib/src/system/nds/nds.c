@@ -18,10 +18,10 @@
 #include "nds_spi.h"
 #include "nds_apu.h"
 
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 #define JTHIS struct NDS* this = (struct NDS*)jsm->ptr
 #define JSM struct jsm_system* jsm

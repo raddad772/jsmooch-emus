@@ -6,9 +6,9 @@
 #include "gb_serialize.h"
 #include "gb.h"
 #include "gb_bus.h"
-#include "helpers_c/sys_present.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/serialize/serialize.h"
+#include "helpers/sys_present.h"
+#include "helpers/debug.h"
+#include "helpers/serialize/serialize.h"
 #include "component/cpu/sm83/sm83.h"
 #include "mappers/mapper.h"
 

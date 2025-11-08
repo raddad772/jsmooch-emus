@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_GBA_PPU_H
 #define JSMOOCH_EMUS_GBA_PPU_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/physical_io.h"
+#include "helpers/int.h"
+#include "helpers/physical_io.h"
 
 
 struct GBA_PPU_window {

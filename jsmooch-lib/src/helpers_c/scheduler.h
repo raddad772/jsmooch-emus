@@ -6,7 +6,7 @@
 #define JSMOOCH_EMUS_SCHEDULER_H
 
 #include "int.h"
-#include "helpers_c/cvec.h"
+#include "helpers/cvec.h"
 
 // void* ptr, current timecode, jitter
 typedef void (*scheduler_callback)(void *bound_ptr, u64 user_key, u64 current_clock, u32 jitter);

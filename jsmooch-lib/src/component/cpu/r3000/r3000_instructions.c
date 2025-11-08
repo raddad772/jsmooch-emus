@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "helpers_c/intrinsics.h"
+#include "helpers/intrinsics.h"
 #include "r3000.h"
 #include "r3000_instructions.h"
 #include "gte.h"

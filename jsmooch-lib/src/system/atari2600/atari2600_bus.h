@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_ATARI2600_BUS_H
 #define JSMOOCH_EMUS_ATARI2600_BUS_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "component/cpu/m6502/m6502.h"
 #include "component/misc/m6532/m6532.h"
 #include "cart.h"

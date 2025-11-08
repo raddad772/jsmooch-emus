@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "helpers_c/color.h"
+#include "helpers/color.h"
 #include "snes_bus.h"
 #include "component/cpu/wdc65816/wdc65816_disassembler.h"
 #include "component/cpu/spc700/spc700_disassembler.h"

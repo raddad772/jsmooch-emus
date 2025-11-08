@@ -2,8 +2,8 @@
 #define _GB_PPU_H
 
 #include "gb_enums.h"
-#include "helpers_c/physical_io.h"
-#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers/physical_io.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #ifndef NULL
 #define NULL 0

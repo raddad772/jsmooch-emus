@@ -3,11 +3,11 @@
 #include <vector>
 #include "build.h"
 
-#include "helpers_c/int.h"
-#include "helpers_c/sys_interface.h"
-#include "helpers_c/physical_io.h"
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/cvec.h"
+#include "helpers/int.h"
+#include "helpers/sys_interface.h"
+#include "helpers/physical_io.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/cvec.h"
 
 #include "my_texture.h"
 
@@ -152,16 +152,16 @@ public:
     enum full_system_states state;
 
     struct fsio {
-        struct cvec_ptr touchscreen{};
-        struct cvec_ptr controller1{};
-        struct cvec_ptr controller2{};
-        struct cvec_ptr display{};
-        struct cvec_ptr chassis{};
-        struct cvec_ptr keyboard{};
-        struct cvec_ptr mouse{};
-        struct cvec_ptr cartridge_port{};
-        struct cvec_ptr disk_drive{};
-        struct cvec_ptr audio_cassette{};
+        JSM_TOUCHSCREEN *touchscreen{};
+        JSM_CONTROLLER *controller1{};
+        JSM_CONTROLLER *controller2{};
+        JSM_DISPLAY *display{};
+        JSM_CHASSIS *chassis{};
+        JSM_KEYBOARD *keyboard{};
+        JSM_MOUSE *mouse{};
+        JSM_CARTRIDGE_PORT *cartridge_port{};
+        JSM_DISC_DRIVE *disk_drive{};
+        JSM_AUDIO_CASSETTE *audio_cassette{};
 
         fsio() = default;
     } io{};

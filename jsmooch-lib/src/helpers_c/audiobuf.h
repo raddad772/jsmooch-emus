@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct audiobuf {
     void *ptr;

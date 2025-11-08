@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_MAPPER_H
 #define JSMOOCH_EMUS_MAPPER_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/sys_interface.h"
-#include "helpers_c/simplebuf.h"
+#include "helpers/int.h"
+#include "helpers/sys_interface.h"
+#include "helpers/simplebuf.h"
 #include "../nes_cart.h"
-#include "helpers_c/sram.h"
+#include "helpers/sram.h"
 #include "nes_memmap.h"
 
 // NES_bus takes care of mappers!
@@ -48,12 +48,12 @@ enum NES_PPU_mirror_modes {
 struct NES;
 
 struct NES_bus {
-    void *ptr;
-    struct NES* nes;
+    void *ptr{};
+    NES* nes{};
 
-    enum NES_mappers which;
+    NES_mappers which;
 
-    void *mapper_ptr;
+    void *mapper_ptr{};
 
     void (*destruct)(struct NES_bus*);
     void (*writecart)(struct NES_bus*, u32 addr, u32 val, u32 *do_write);
@@ -77,17 +77,17 @@ struct NES_bus {
         u32 has_sound;
     } flags;
 
-    struct simplebuf8 CIRAM; // 0x800 PPU RAM
-    struct simplebuf8 CPU_RAM; // 0x800 CPU RAM
+    simplebuf8 CIRAM{}; // 0x800 PPU RAM
+    simplebuf8 CPU_RAM{}; // 0x800 CPU RAM
 
-    struct NES_memmap CPU_map[65536 / 0x2000];
-    struct NES_memmap PPU_map[0x4000 / 0x400];
+    NES_memmap CPU_map[65536 / 0x2000];
+    NES_memmap PPU_map[0x4000 / 0x400];
 
-    struct persistent_store *SRAM;
-    struct simplebuf8 fake_PRG_RAM;
-    struct simplebuf8 PRG_ROM;
-    struct simplebuf8 CHR_ROM;
-    struct simplebuf8 CHR_RAM;
+    persistent_store *SRAM{};
+    simplebuf8 fake_PRG_RAM{};
+    simplebuf8 PRG_ROM{};
+    simplebuf8 CHR_ROM{};
+    simplebuf8 CHR_RAM{};
 
     float NES_audio_bias;
     float mapper_audio_bias;

@@ -8,7 +8,7 @@
 #include "rasterize_tri.h"
 #include "pixel_helpers.h"
 #include "ps1_gpu.h"
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 float edge_function (struct RT_POINT2D *a, struct RT_POINT2D *b, struct RT_POINT2D *c)  {
     return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);

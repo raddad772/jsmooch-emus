@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_SH4_DISASSEMBLER_H
 #define JSMOOCH_EMUS_SH4_DISASSEMBLER_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/buf.h"
+#include "helpers/int.h"
+#include "helpers/buf.h"
 
 struct dasm_support {
     u32 (*read8)(u32);

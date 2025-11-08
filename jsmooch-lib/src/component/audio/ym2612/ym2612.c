@@ -13,8 +13,8 @@
 
 #include <assert.h>
 
-#include "helpers_c/debug.h"
-#include "helpers_c/serialize/serialize.h"
+#include "helpers/debug.h"
+#include "helpers/serialize/serialize.h"
 #include "ym2612.h"
 
 #define SIGNe14to32(x) (((((x) >> 13) & 1) * 0xFFFFC000) | ((x) & 0x3FFF))

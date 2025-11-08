@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_GENESIS_CART_H
 #define JSMOOCH_EMUS_GENESIS_CART_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/buf.h"
+#include "helpers/int.h"
+#include "helpers/buf.h"
 
 enum genesis_cart_kinds {
     sega_cart_invalid,

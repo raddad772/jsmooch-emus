@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_THUMB_DISASSEMBLER_H
 #define JSMOOCH_EMUS_THUMB_DISASSEMBLER_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/int.h"
+#include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 
 struct ARM7TDMI;
 struct ARMctxt;

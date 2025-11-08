@@ -9,8 +9,8 @@
 // they need to exchange bytes also
 // and get CSn changes
 
-#include "helpers_c/int.h"
-#include "helpers_c/scheduler.h"
+#include "helpers/int.h"
+#include "helpers/scheduler.h"
 
 // so...CPU does write to port...CSn changes
 // then a byte exchange happens, OK

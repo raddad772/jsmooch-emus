@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_HUC6280_PSG_H
 #define JSMOOCH_EMUS_HUC6280_PSG_H
 
-#include "helpers_c/debugger/debuggerdefs.h"
-#include "helpers_c/int.h"
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/int.h"
 
 
 struct HUC6280_PSG {

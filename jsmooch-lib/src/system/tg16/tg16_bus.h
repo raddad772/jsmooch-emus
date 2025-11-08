@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_TG16_BUS_H
 #define JSMOOCH_EMUS_TG16_BUS_H
 
-#include "helpers_c/scheduler.h"
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers/scheduler.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #include "component/cpu/huc6280/huc6280.h"
 #include "component/gpu/huc6270/huc6270.h"

@@ -11,10 +11,10 @@
 #include "gba_dma.h"
 #include "gba_debugger.h"
 
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debugger/debugger.h"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 #define JTHIS struct GBA* this = (struct GBA*)jsm->ptr
 #define JSM struct jsm_system* jsm

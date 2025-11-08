@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_MBC2_H
 #define JSMOOCH_EMUS_MBC2_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "mapper.h"
 #include "../gb_clock.h"
 #include "../gb_bus.h"

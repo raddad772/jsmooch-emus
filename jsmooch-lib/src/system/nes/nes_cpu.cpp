@@ -1,0 +1,126 @@
+//
+// Created by Dave on 2/5/2024.
+//
+
+#include <stdio.h>
+#include "component/cpu/m6502/m6502.h"
+#include "component/cpu/m6502/nesm6502_opcodes.h"
+#include "mappers/mapper.h"
+#include "helpers/debugger/debugger.h"
+#include "nes.h"
+#include "nes_cpu.h"
+
+u32 NES_controllerport::data()
+{
+    if (device == NULL) return 0;
+    switch(kind) {
+        case NES_JOYPAD:
+            return NES_joypad_data((struct NES_joypad*)device) & 3;
+        case NES_NONE:
+        default:
+            break;
+    }
+    return 0;
+}
+
+void NES_controllerport::latch(u32 what) {
+    if (!device) return;
+    switch(kind) {
+        case NES_JOYPAD:
+            return NES_joypad_latch((struct NES_joypad*)device, what);
+        case NES_NONE:
+        default:
+            printf("PLEASE IMP 2");
+            break;
+    }
+}
+
+r2A03::r2A03(struct NES* nes) : nes(nes), cpu(nesM6502_decoded_opcodes)
+{
+    tracing = 0;
+
+    cpu.reset();
+
+    io.dma.addr = io.dma.running = 0;
+    io.dma.bytes_left = io.dma.step = 0;
+
+    controller_port1.device = static_cast<void *>(&joypad1);
+    controller_port2.device = static_cast<void *>(&joypad2);
+    controller_port1.kind = NES_JOYPAD;
+    controller_port2.kind = NES_NONE;
+}
+
+u32 NES_CPU_read_trace(void *tr, u32 addr) {
+    struct NES* nes = (struct NES*)tr;
+    return NES_bus_CPU_read(nes, addr, 0, 0);
+}
+
+void r2A03::notify_NMI(u32 level) {
+    cpu.pins.NMI = level > 0 ? 1 : 0;
+}
+
+void r2A03::notify_IRQ(u32 level, u32 from) {
+    cpu.pins.IRQ = irq.set_level(level, from);
+}
+
+void r2A03::reset() {
+    cpu.reset();
+    irq.clear();
+    nes->clock.cpu_frame_cycle = 0;
+    nes->clock.cpu_master_clock = 0;
+    io.dma.running = 0;
+}
+
+void r2A03::run_cycle() {
+    if (io.dma.running) {
+        io.dma.step++;
+        if (io.dma.step == 1) {
+            return;
+        }
+        io.dma.step = 0;
+        NES_bus_PPU_write_regs(nes, 0x2004, NES_bus_CPU_read(nes, io.dma.addr, 0, 1));
+        io.dma.bytes_left--;
+        io.dma.addr = (io.dma.addr + 1) & 0xFFFF;
+        if (io.dma.bytes_left == 0) {
+            io.dma.running = 0;
+        }
+        return;
+    }
+
+    cpu.cycle();
+    if (cpu.pins.RW) {
+        NES_bus_CPU_write(nes, cpu.pins.Addr, cpu.pins.D);
+    }
+    else {
+        cpu.pins.D = open_bus = NES_bus_CPU_read(nes, cpu.pins.Addr, open_bus, 1);
+    }
+}
+
+u32 r2A03::read_reg(u32 addr, u32 val, u32 has_effect)
+{
+    u32 r;
+
+    switch(addr) {
+        case 0x4016: // JOYSER0
+            return controller_port1.data();
+        case 0x4017: // JOYSER1
+            return controller_port2.data();
+    }
+    return nes->apu.read_IO(addr, val, has_effect);
+}
+
+void r2A03::write_reg(u32 addr, u32 val)
+{
+    switch(addr) {
+        case 0x4014: //OAMDMA
+            io.dma.addr = val << 8;
+            io.dma.running = 1;
+            io.dma.bytes_left = 256;
+            io.dma.step = 0;
+            return;
+        case 0x4016: // JOYSER0
+            controller_port1.latch(val&1);
+            return;
+    }
+    nes->apu.write_IO(addr, val);
+}

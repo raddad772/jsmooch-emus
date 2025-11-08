@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_IRQ_H
 #define JSMOOCH_EMUS_NDS_IRQ_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 struct NDS;
 void NDS_update_IFs(struct NDS*, u32 bitnum);
 void NDS_update_IFs_card(struct NDS*, u32 bitnum);

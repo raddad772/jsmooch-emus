@@ -12,12 +12,12 @@
 #include "assert.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "helpers_c/debug.h"
+#include "helpers/debug.h"
 #include "dreamcast.h"
 #include "holly.h"
 #include "triangle.h"
 #include "component/cpu/sh4/sh4_interrupts.h"
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 static void holly_soft_reset(struct DC* this)
 {

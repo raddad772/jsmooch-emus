@@ -6,8 +6,8 @@
 #define JSMOOCH_EMUS_RFB_H
 
 #include <stddef.h>
-#include "helpers_c/int.h"
-#include "helpers_c/buf.h"
+#include "helpers/int.h"
+#include "helpers/buf.h"
 
 
 #endif //JSMOOCH_EMUS_RFB_H

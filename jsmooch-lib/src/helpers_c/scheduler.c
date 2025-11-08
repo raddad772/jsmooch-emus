@@ -7,7 +7,7 @@
 #include "assert.h"
 #include "stdlib.h"
 #include "scheduler.h"
-#include "helpers_c/debug.h"
+#include "helpers/debug.h"
 
 
 static inline i64 current_time(struct scheduler_t *this) {

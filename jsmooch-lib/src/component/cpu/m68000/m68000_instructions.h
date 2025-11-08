@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_M68000_INSTRUCTIONS_H
 #define JSMOOCH_EMUS_M68000_INSTRUCTIONS_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/debug.h"
+#include "helpers/int.h"
+#include "helpers/debug.h"
 #include "m68000_internal.h"
 
 struct M68k;

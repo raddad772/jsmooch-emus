@@ -31,7 +31,7 @@
         THUMB_BL_BLX_prefix,
         THUMB_BL_suffix
  */
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 struct ARM7TDMI;
 
 struct thumb_instruction;

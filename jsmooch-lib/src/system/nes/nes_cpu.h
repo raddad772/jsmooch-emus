@@ -6,8 +6,8 @@
 #define JSMOOCH_EMUS_NES_CPU_H
 
 #include "component/cpu/m6502/m6502.h"
-#include "helpers_c/int.h"
-#include "helpers_c/irq_multiplexer.h"
+#include "helpers/int.h"
+#include "helpers/irq_multiplexer.h"
 #include "component/controller/nes/nes_joypad.h"
 
 enum NES_controller_devices {
@@ -16,34 +16,44 @@ enum NES_controller_devices {
 };
 
 struct NES_controllerport {
-    enum NES_controller_devices kind;
-    void *device;
+    enum NES_controller_devices kind=NES_NONE;
+    void *device{};
+    u32 data();
+    void latch(u32 what);
 };
 
 struct r2A03 {
-    struct M6502 cpu;
-    struct NES *nes;
+    explicit r2A03(struct NES *nes);
+    M6502 cpu;
+    NES *nes;
+
+    void reset();
+    void notify_IRQ(u32 level, u32 from);
+    void notify_NMI(u32 level);
+    void run_cycle();
+    u32 read_reg(u32 addr, u32 val, u32 has_effect);
+    void write_reg(u32 addr, u32 val);
 
     //struct NES_APU apu;
 
-    u32 tracing;
-    u8 open_bus;
+    u32 tracing{};
+    u8 open_bus{};
 
-    struct IRQ_multiplexer irq;
+    IRQ_multiplexer irq{};
 
     struct {
         struct {
-            u32 addr;
-            u32 running;
-            u32 bytes_left;
-            u32 step;
-        } dma;
-    } io;
+            u32 addr{};
+            u32 running{};
+            u32 bytes_left{};
+            u32 step{};
+        } dma{};
+    } io{};
 
-    struct NES_controllerport controller_port1;
-    struct NES_controllerport controller_port2;
-    struct NES_joypad joypad1;
-    struct NES_joypad joypad2;
+    struct NES_controllerport controller_port1{};
+    struct NES_controllerport controller_port2{};
+    struct NES_joypad joypad1{};
+    struct NES_joypad joypad2{};
 };
 
 void r2A03_init(struct r2A03*, struct NES* nes);

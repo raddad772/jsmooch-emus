@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_SMS_GG_IO_H
 #define JSMOOCH_EMUS_SMS_GG_IO_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/int.h"
+#include "helpers/sys_interface.h"
 
 struct SMSGG_controller_port {
     enum jsm_systems variant;

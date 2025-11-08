@@ -5,14 +5,14 @@
 #ifndef JSMOOCH_EMUS_SNES_BUS_H
 #define JSMOOCH_EMUS_SNES_BUS_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/physical_io.h"
-#include "helpers_c/cvec.h"
+#include "helpers/int.h"
+#include "helpers/debug.h"
+#include "helpers/physical_io.h"
+#include "helpers/cvec.h"
 #include "component/cpu/wdc65816/wdc65816.h"
 #include "component/cpu/spc700/spc700.h"
-#include "helpers_c/scheduler.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/scheduler.h"
+#include "helpers/sys_interface.h"
 #include "component/controller/snes/snes_joypad.h"
 
 #include "snes.h"

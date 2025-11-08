@@ -11,7 +11,7 @@
 #include "string.h"
 #include "time.h"
 
-#include "helpers_c/serialize/serialize.h"
+#include "helpers/serialize/serialize.h"
 
 #include "mbc3.h"
 

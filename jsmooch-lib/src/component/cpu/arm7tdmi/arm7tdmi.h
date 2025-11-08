@@ -5,12 +5,12 @@
 #ifndef JSMOOCH_EMUS_ARM7TDMI_H
 #define JSMOOCH_EMUS_ARM7TDMI_H
 
-#include "helpers_c/scheduler.h"
-#include "helpers_c/debugger/debuggerdefs.h"
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/int.h"
-#include "helpers_c/cvec.h"
+#include "helpers/scheduler.h"
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/debug.h"
+#include "helpers/int.h"
+#include "helpers/cvec.h"
 
 #include "thumb_instructions.h"
 #define ARM7P_nonsequential 0

@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_WDC65816_H
 #define JSMOOCH_EMUS_WDC65816_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
-#include "helpers_c/debugger/debuggerdefs.h"
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/debug.h"
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/debug.h"
 
 
 #define WDC65816_OP_RESET 0x100

@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_SMS_GG_MAPPER_SEGA_H
 #define JSMOOCH_EMUS_SMS_GG_MAPPER_SEGA_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/simplebuf.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/int.h"
+#include "helpers/simplebuf.h"
+#include "helpers/sys_interface.h"
 
 enum SMSGG_mem_kinds {
     SMSGGMK_empty,

@@ -12,16 +12,16 @@
 #include "build.h"
 #include "my_texture.h"
 #include "application.h"
-#include "helpers_c/sys_interface.h"
-#include "helpers_c/cvec.h"
-#include "helpers_c/sys_present.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/buf.h"
+#include "helpers/sys_interface.h"
+#include "helpers/cvec.h"
+#include "helpers/sys_present.h"
+#include "helpers/debug.h"
+#include "helpers/buf.h"
 #include "full_sys.h"
 #include "system/dreamcast/gdi.h"
-#include "helpers_c/physical_io.h"
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/user.h"
+#include "helpers/physical_io.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/user.h"
 //#include "system/gb/gb_enums.h"
 
 // mac overlay - 14742566
@@ -1214,7 +1214,7 @@ void full_system::setup_system(enum jsm_systems which)
 
 void full_system::update_touch(i32 x, i32 y, i32 button_down)
 {
-    if (io.touchscreen.vec) {
+    if (io.touchscreen) {
         struct physical_io_device *pio = (struct physical_io_device *)cpg(io.touchscreen);
         struct JSM_TOUCHSCREEN *ts = &pio->touchscreen;
         x += ts->params.x_offset;

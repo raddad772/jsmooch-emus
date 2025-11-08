@@ -580,7 +580,7 @@ def main():
     lines = ['#ifndef JSMOOCH_EMUS_M68k_DISASM_FUNCS_H\n',
              '#define JSMOOCH_EMUS_M68k_DISASM_FUNCS_H\n',
              '\n',
-             '#include "helpers_c/int.h"\n',
+             '#include "helpers/int.h"\n',
              '#include "helpers/debug.h"\n',
              '#include "helpers/jsm_string.h"\n',
              '#include "component/cpu/m68000/m68000.h"\n',

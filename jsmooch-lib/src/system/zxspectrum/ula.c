@@ -5,8 +5,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-#include "helpers_c/int.h"
-#include "helpers_c/physical_io.h"
+#include "helpers/int.h"
+#include "helpers/physical_io.h"
 
 #include "zxspectrum.h"
 #include "ula.h"

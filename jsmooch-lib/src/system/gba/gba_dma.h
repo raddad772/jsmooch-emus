@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_GBA_DMA_H
 #define JSMOOCH_EMUS_GBA_DMA_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct GBA_DMA_ch;
 struct GBA;

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_PIXEL_HELPERS_H
 #define JSMOOCH_EMUS_PIXEL_HELPERS_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct PS1_GPU;
 void setpix(struct PS1_GPU *this, i32 y, i32 x, u32 color, u32 is_tex, u32 tex_mask);

@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_SH2_INTERPRETER_H
 #define JSMOOCH_EMUS_SH2_INTERPRETER_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/scheduler.h"
+#include "helpers/int.h"
+#include "helpers/debug.h"
+#include "helpers/scheduler.h"
 
 struct SH2_memaccess_t {
     void *ptr;

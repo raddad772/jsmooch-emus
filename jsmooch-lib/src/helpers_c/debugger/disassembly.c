@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "helpers_c/ooc.h"
+#include "helpers/ooc.h"
 
 #include "debugger.h"
 #include "disassembly.h"
@@ -84,24 +84,17 @@ void disassembly_view_init(struct disassembly_view *this)
     jsm_string_init(&this->processor_name, 40);
 }
 
-void disassembly_entry_init(struct disassembly_entry *this)
+void disassembly_entry::clear_for_reuse()
 {
-    CTOR_ZERO_SELF;
-    jsm_string_init(&this->dasm, 100);
-    jsm_string_init(&this->context, 100);
-}
+    assert(dasm.ptr);
+    *dasm.ptr = 0;
+    dasm.cur = this->dasm.ptr;
 
-void disassembly_entry_clear_for_reuse(struct disassembly_entry* this)
-{
-    assert(this->dasm.ptr);
-    *this->dasm.ptr = 0;
-    this->dasm.cur = this->dasm.ptr;
+    *context.ptr = 0;
+    context.cur = this->context.ptr;
 
-    *this->context.ptr = 0;
-    this->context.cur = this->context.ptr;
-
-    this->addr = -1;
-    this->ins_size_bytes = 0;
+    addr = -1;
+    ins_size_bytes = 0;
 }
 
 void disassembly_entry_delete(struct disassembly_entry* this)

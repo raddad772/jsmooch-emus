@@ -11,7 +11,7 @@
 #include "arm946es_instructions.h"
 #include "thumb2_disassembler.h"
 
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 #define PC R[15]
 
 //#define TRACE

@@ -5,9 +5,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "helpers_c/color.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/color.h"
+#include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 
 #include "huc6270.h"
 

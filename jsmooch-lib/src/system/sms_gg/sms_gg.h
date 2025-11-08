@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_SMS_GG_H
 #define JSMOOCH_EMUS_SMS_GG_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/int.h"
+#include "helpers/debug.h"
+#include "helpers/sys_interface.h"
 #include "component/cpu/z80/z80.h"
-#include "helpers_c/physical_io.h"
+#include "helpers/physical_io.h"
 
 #include "component/controller/sms/sms_gamepad.h"
 #include "sms_gg_clock.h"

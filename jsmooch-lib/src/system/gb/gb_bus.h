@@ -1,10 +1,10 @@
 #ifndef _GB_BUS_H
 #define _GB_BUS_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/cvec.h"
-#include "helpers_c/debugger/debuggerdefs.h"
-#include "helpers_c/sram.h"
+#include "helpers/int.h"
+#include "helpers/cvec.h"
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/sram.h"
 
 #ifndef NULL
 #define NULL 0

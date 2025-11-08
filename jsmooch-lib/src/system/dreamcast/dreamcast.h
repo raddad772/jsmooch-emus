@@ -5,12 +5,12 @@
 #ifndef JSMOOCH_EMUS_DREAMCAST_H
 #define JSMOOCH_EMUS_DREAMCAST_H
 
-#include "helpers_c/physical_io.h"
-#include "helpers_c/buf.h"
-#include "helpers_c/sys_interface.h"
-#include "helpers_c/scheduler.h"
-#include "helpers_c/cvec.h"
-#include "helpers_c/elf_helpers.h"
+#include "helpers/physical_io.h"
+#include "helpers/buf.h"
+#include "helpers/sys_interface.h"
+#include "helpers/scheduler.h"
+#include "helpers/cvec.h"
+#include "helpers/elf_helpers.h"
 
 #include "component/cpu/sh4/sh4_interpreter_opcodes.h"
 #include "component/cpu/sh4/sh4_interpreter.h"

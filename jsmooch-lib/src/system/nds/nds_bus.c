@@ -13,7 +13,7 @@
 #include "nds_spi.h"
 #include "nds_timers.h"
 #include "nds_debugger.h"
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 static const u32 masksz[5] = { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF};
 static const u32 maskalign[5] = {0, 0xFFFFFFFF, 0xFFFFFFFE, 0, 0xFFFFFFFC};
@@ -1577,9 +1577,9 @@ static u32 busrd9_io(struct NDS *this, u32 addr, u32 sz, u32 access, u32 has_eff
             return NDS_cart_read_romctrl(this);
 
         case R_ROMDATA+0: // 4100010
-        case R_ROMDATA+1: // 4100010
-        case R_ROMDATA+2: // 4100010
-        case R_ROMDATA+3: // 4100010
+        case R_ROMDATA+1: // 4100011
+        case R_ROMDATA+2: // 4100012
+        case R_ROMDATA+3: // 4100013
             assert(sz==4);
             if (this->io.rights.nds_slot_is7) return 0;
             return NDS_cart_read_rom(this, addr, sz);

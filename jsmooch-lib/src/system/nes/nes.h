@@ -30,17 +30,20 @@ enum NES_TIMINGS {
 };
 
 struct NES {
-    struct NES_clock clock;
-    struct r2A03 cpu;
-    struct NES_PPU ppu;
-    struct NES_APU apu;
+    NES_clock clock{};
+    NES_APU apu{};
+    r2A03 cpu;
+    NES_PPU ppu;
 
-    u32 described_inputs;
-    u32 cycles_left;
-    u32 display_enabled;
+    NES();
+    ~NES();
+
+    u32 described_inputs=0;
+    u32 cycles_left=0;
+    u32 display_enabled=0;
     struct cvec* IOs;
 
-    struct NES_bus bus;
+    struct NES_bus bus{};
     struct NES_cart cart;
 
     struct {
@@ -64,7 +67,7 @@ struct NES {
 
     DBG_END
 
-    struct {
+    struct NESDBGDATA {
         struct DBGNESROW {
             struct {
                 u32 bg_hide_left_8, bg_enable, emph_bits, bg_pattern_table;

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_CP15_H
 #define JSMOOCH_EMUS_NDS_CP15_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 #define ITCM_SIZE 0x8000
 #define DTCM_SIZE 0x4000

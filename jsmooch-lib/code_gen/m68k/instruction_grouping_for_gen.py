@@ -45,7 +45,7 @@ def main():
         instructions[iname].opcodes.add(int(opcode, 16))
         opcode_to_disasm[int(opcode, 16)] = disasm
 
-    o = '\n#include "helpers_c/int.h"'
+    o = '\n#include "helpers/int.h"'
     o += '\n'
     o += '\n#ifndef JSMOOCH_LIB_M68K_GENTEST_ITEM_H'
     o += '\n#define JSMOOCH_LIB_M68K_GENTEST_ITEM_H'

@@ -5,11 +5,11 @@
 #ifndef JSMOOCH_EMUS_SMS_GG_VDP_H
 #define JSMOOCH_EMUS_SMS_GG_VDP_H
 
-#include "helpers_c/physical_io.h"
-#include "helpers_c/int.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/physical_io.h"
+#include "helpers/int.h"
+#include "helpers/sys_interface.h"
 
-#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 enum SMSGG_VDP_modes {
     VDP_SMS,

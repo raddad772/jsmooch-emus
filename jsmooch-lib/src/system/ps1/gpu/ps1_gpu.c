@@ -11,7 +11,7 @@
 #include "ps1_gpu.h"
 #include "rasterize_line.h"
 
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 //#define LOG_GP0
 //#define DBG_GP0

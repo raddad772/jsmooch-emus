@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_THUMB2_INSTRUCTIONS_H
 #define JSMOOCH_EMUS_THUMB2_INSTRUCTIONS_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 struct ARM946ES;
 
 struct thumb2_instruction;

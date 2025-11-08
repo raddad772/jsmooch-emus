@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_IPC_H
 #define JSMOOCH_EMUS_NDS_IPC_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct NDS_CPU_FIFO {
     u32 data[16];

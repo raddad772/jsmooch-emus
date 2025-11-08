@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_HUC6280_DISASSEMBLER_H
 #define JSMOOCH_EMUS_HUC6280_DISASSEMBLER_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/int.h"
+#include "helpers/debugger/debugger.h"
 
 struct HUC6280;
 

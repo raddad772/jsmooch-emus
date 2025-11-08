@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_GE_H
 #define JSMOOCH_EMUS_NDS_GE_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 enum NDS_GE_cmds {
     NDS_GE_CMD_NOP = 0x00,

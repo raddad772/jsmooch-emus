@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_PS1_CLOCK_H
 #define JSMOOCH_EMUS_PS1_CLOCK_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 
 struct PS1_clock {

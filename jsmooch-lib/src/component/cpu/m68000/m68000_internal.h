@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_M68000_INTERNAL_H
 #define JSMOOCH_EMUS_M68000_INTERNAL_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 enum M68k_address_modes {
     M68k_AM_data_register_direct = 0,

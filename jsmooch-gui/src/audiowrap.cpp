@@ -10,7 +10,7 @@
 #define CLOWNRESAMPLER_STATIC
 #include "../vendor/clownresampler/clownresampler.h"
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 #include "audiowrap.h"
 

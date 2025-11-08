@@ -11,7 +11,7 @@
 #include "sms_gg_vdp.h"
 
 #include "sms_gg_serialize.h"
-#include "helpers_c/sys_present.h"
+#include "helpers/sys_present.h"
 
 
 static void serialize_console(struct SMSGG *this, struct serialized_state *state)

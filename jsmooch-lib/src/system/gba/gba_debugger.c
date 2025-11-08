@@ -5,7 +5,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "helpers_c/color.h"
+#include "helpers/color.h"
 #include "gba.h"
 #include "gba_bus.h"
 #include "gba_debugger.h"

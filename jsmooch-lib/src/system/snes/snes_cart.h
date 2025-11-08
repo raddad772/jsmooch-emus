@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_SNES_CART_H
 #define JSMOOCH_EMUS_SNES_CART_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/buf.h"
-#include "helpers_c/physical_io.h"
+#include "helpers/int.h"
+#include "helpers/buf.h"
+#include "helpers/physical_io.h"
 
 struct SNES_cart {
     struct buf ROM;

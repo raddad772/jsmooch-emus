@@ -7,7 +7,7 @@
 
 #define IMGUI_DISABLE_OBSOLETE_KEYIO
 #include "../vendor/myimgui/imgui.h"
-#include "helpers_c/physical_io.h"
+#include "helpers/physical_io.h"
 
 enum ImGuiKey jk_to_imgui_gp(enum JKEYS key_id);
 enum ImGuiKey jk_to_imgui(enum JKEYS key_id);

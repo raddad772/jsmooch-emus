@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_SNES_MEM_H
 #define JSMOOCH_EMUS_SNES_MEM_H
 
-#include "helpers_c/buf.h"
+#include "helpers/buf.h"
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct SNES_memmap_block {
     enum SMB_kind {

@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_PS1_DMA_H
 #define JSMOOCH_EMUS_PS1_DMA_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct PS1;
 

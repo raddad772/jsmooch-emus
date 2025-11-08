@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/int.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/int.h"
 
 #include "gb.h"
 #include "gb_ppu.h"

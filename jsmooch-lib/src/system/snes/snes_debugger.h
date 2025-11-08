@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_SNES_DEBUGGER_H
 #define JSMOOCH_EMUS_SNES_DEBUGGER_H
 
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/sys_interface.h"
 
 #undef DBG_EVENT
 #define DBG_EVENT(x) debugger_report_event(snes->dbg.events.view, x)

@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_NES_CART_H
 #define JSMOOCH_EMUS_NES_CART_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/buf.h"
+#include "helpers/int.h"
+#include "helpers/buf.h"
 #include "mappers/mapper.h"
 
 #ifndef NES_PPU_mirror_modes_def
@@ -22,7 +22,9 @@ enum NES_PPU_mirror_modes {
 #endif
 
 struct NES_cart {
-    u32 valid;
+    explicit NES_cart(struct NES *nes);
+    ~NES_cart();
+    u32 valid=0;
     struct buf CHR_ROM;
     struct buf PRG_ROM;
     struct NES* nes;

@@ -11,11 +11,11 @@ extern "C" {
 
 #include <stdio.h>
 
-#include "helpers_c/int.h"
-#include "helpers_c/enums.h"
-#include "helpers_c/cvec.h"
-#include "helpers_c/img.h"
-#include "helpers_c/jsm_string.h"
+#include "helpers/int.h"
+#include "helpers/enums.h"
+#include "helpers/cvec.h"
+#include "helpers/img.h"
+#include "helpers/jsm_string.h"
 
 struct serialized_opt_data {
     char buf[512];
@@ -59,7 +59,7 @@ struct serialized_state {
 void serialized_state_init(struct serialized_state *);
 void serialized_state_delete(struct serialized_state *);
 void serialized_state_new_section(struct serialized_state *, const char *friendly_name, int kind, int version);
-void Sadd(struct serialized_state *, void *ptr, u64 howmuch);
+void Sadd(struct serialized_state *, const void *ptr, u64 howmuch);
 void Sload(struct serialized_state *, void *ptr, u64 howmuch);
 void serialized_state_write_to_file(struct serialized_state *, FILE *f);
 int serialized_state_read_from_file(struct serialized_state *, FILE *f, size_t file_size);

@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include "helpers_c/cvec.h"
+#include "helpers/cvec.h"
 
 #ifdef interface
 #undef interface

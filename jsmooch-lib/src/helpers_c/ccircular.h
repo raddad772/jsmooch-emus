@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_CCIRCULAR_H
 #define JSMOOCH_EMUS_CCIRCULAR_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/cvec.h"
+#include "helpers/int.h"
+#include "helpers/cvec.h"
 
 /*enum ccircular_enum {
     CCB_none,

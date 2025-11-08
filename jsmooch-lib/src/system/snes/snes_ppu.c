@@ -3,12 +3,12 @@
 //
 
 #include <string.h>
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debugger/debugger.h"
 #include "snes_ppu.h"
 #include "snes_bus.h"
 #include "snes_debugger.h"
 
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 #define PPU_src_BG1 0
 #define PPU_src_BG2 1

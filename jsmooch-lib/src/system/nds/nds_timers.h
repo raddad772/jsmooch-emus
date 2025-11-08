@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_TIMERS_H
 #define JSMOOCH_EMUS_NDS_TIMERS_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct NDS;
 u32 NDS_timer7_enabled(struct NDS *, u32 tn);

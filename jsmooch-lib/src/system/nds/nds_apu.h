@@ -5,9 +5,9 @@
 #ifndef JSMOOCH_EMUS_NDS_APU_H
 #define JSMOOCH_EMUS_NDS_APU_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/wav.h"
-#include "helpers_c/scheduler.h"
+#include "helpers/int.h"
+#include "helpers/wav.h"
+#include "helpers/scheduler.h"
 
 #define NDS_APU_MAX_SAMPLES 131072
 

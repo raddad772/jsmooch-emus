@@ -64,8 +64,8 @@ extern "C" {
 
 #define printif(x, ...) if (dbg.trace_on && dbg.traces. x) dbg_printf(__VA_ARGS__)
 
-#include "helpers_c/int.h"
-#include "helpers_c/jsm_string.h"
+#include "helpers/int.h"
+#include "helpers/jsm_string.h"
 
 #define MAX_DEBUG_MSG 2000000
 #define LAST_TRACES_LEN 3000

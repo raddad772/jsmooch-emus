@@ -6,8 +6,8 @@
 #include "stdio.h"
 
 #include "scheduler-tests.h"
-#include "helpers_c/int.h"
-#include "helpers_c/scheduler.h"
+#include "helpers/int.h"
+#include "helpers/scheduler.h"
 
 #define MAXT 10000
 

@@ -9,10 +9,10 @@
 extern "C" {
 #endif
 
-#include "helpers_c/int.h"
-#include "helpers_c/cvec.h"
-#include "helpers_c/buf.h"
-#include "helpers_c/bitbuffer.h"
+#include "helpers/int.h"
+#include "helpers/cvec.h"
+#include "helpers/buf.h"
+#include "helpers/bitbuffer.h"
 
 
 struct generic_floppy_sector {

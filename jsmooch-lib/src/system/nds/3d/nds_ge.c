@@ -10,7 +10,7 @@
 #include "system/nds/nds_regs.h"
 #include "system/nds/nds_dma.h"
 #include "nds_3dmath.h"
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/multisize_memaccess.c"
 
 #define printfifo(...) (void)0
 //#define printffifo(...) printf(__VA_ARGS__)

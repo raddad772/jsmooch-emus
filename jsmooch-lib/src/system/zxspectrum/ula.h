@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_ULA_H
 #define JSMOOCH_EMUS_ULA_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 
 enum ZXSpectrum_variants {

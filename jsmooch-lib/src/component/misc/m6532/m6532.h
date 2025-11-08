@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_M6532_H
 #define JSMOOCH_EMUS_M6532_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct M6532 {
     u8 RAM[128];

@@ -9,8 +9,8 @@
 
 #include "gdi.h"
 #include "gdrom.h"
-#include "helpers_c/scheduler.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/scheduler.h"
+#include "helpers/sys_interface.h"
 #include "dreamcast.h"
 #include "dc_mem.h"
 #include "holly.h"
@@ -19,7 +19,7 @@
 #ifdef DC_SUPPORT_ELF
 #include "vendor/elf-parser/elf-parser.h"
 #endif
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debugger/debugger.h"
 
 #define IP_BIN
 

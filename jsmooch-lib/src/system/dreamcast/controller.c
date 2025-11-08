@@ -4,8 +4,8 @@
 
 #include <string.h>
 #include <stdio.h>
-#include "helpers_c/physical_io.h"
-#include "helpers_c/pack.h"
+#include "helpers/physical_io.h"
+#include "helpers/pack.h"
 #include "controller.h"
 #include "dreamcast.h"
 

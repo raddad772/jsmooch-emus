@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debugger/debugger.h"
 
 #include "z80.h"
 #include "z80_opcodes.h"

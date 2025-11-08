@@ -1,7 +1,7 @@
 #ifndef _GB_CLOCK_H
 #define _GB_CLOCK_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "gb_enums.h"
 
 #define GB_CYCLES_PER_FRAME 70224

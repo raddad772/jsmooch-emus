@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_SNES_CLOCK_H
 #define JSMOOCH_EMUS_SNES_CLOCK_H
 
-#include <helpers_c/int.h>
+#include <helpers/int.h>
 
 struct SNES_clock {
     u64 master_cycle_count, nothing;

@@ -8,7 +8,7 @@
 #ifdef JSM_WEBGPU
 #include <stdio.h>
 #include "build.h"
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "../vendor/myimgui/imgui.h"
 #include "../vendor/myimgui/backends/imgui_impl_glfw.h"
 #include "../vendor/myimgui/backends/imgui_impl_wgpu.h"

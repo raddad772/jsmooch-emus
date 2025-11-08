@@ -1,9 +1,9 @@
 #ifndef _GB_H
 #define _GB_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/sys_interface.h"
-#include "helpers_c/debugger/debuggerdefs.h"
+#include "helpers/int.h"
+#include "helpers/sys_interface.h"
+#include "helpers/debugger/debuggerdefs.h"
 
 #include "component/audio/gb_apu/gb_apu.h"
 

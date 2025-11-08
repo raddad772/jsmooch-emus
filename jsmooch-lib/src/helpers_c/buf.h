@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_BUF_H
 #define JSMOOCH_EMUS_BUF_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 struct buf {
     void *ptr;

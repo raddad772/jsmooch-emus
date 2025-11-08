@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_MAC_H
 #define JSMOOCH_EMUS_MAC_H
 
-#include "helpers_c/sys_interface.h"
+#include "helpers/sys_interface.h"
 
 enum mac_variants {
     mac128k = 0,

@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 #include "m6502_tests.h"
-#include "helpers_c/int.h"
-#include "helpers_c/user.h"
+#include "helpers/int.h"
+#include "helpers/user.h"
 #include "rfb.h"
 #include "component/cpu/m6502/nesm6502_opcodes.h"
 #include "component/cpu/m6502/m6502.h"

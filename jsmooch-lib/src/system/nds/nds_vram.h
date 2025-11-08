@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_NDS_VRAM_H
 #define JSMOOCH_EMUS_NDS_VRAM_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 #define NVA 0
 #define NVB 1

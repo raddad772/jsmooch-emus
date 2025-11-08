@@ -6,7 +6,7 @@
 #define JSMOOCH_EMUS_COLOR_H
 
 #include <stdio.h>
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 static inline u32 ps1_to_screen(u32 color)
 {

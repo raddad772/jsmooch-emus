@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_GENESIS_CLOCK_H
 #define JSMOOCH_EMUS_GENESIS_CLOCK_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/enums.h"
+#include "helpers/int.h"
+#include "helpers/enums.h"
 
 struct genesis_clock {
     u64 master_cycle_count;

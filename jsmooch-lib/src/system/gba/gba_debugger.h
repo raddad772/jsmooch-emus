@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_GBA_DEBUGGER_H
 #define JSMOOCH_EMUS_GBA_DEBUGGER_H
 
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/sys_interface.h"
 
 #define DBG_GBA_CATEGORY_PPU 0
 #define DBG_GBA_CATEGORY_CPU 1

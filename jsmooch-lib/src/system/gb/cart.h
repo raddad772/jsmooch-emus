@@ -2,8 +2,8 @@
 #define _JSMOOCH_GB_CART_H
 
 #include "gb_enums.h"
-#include "helpers_c/physical_io.h"
-#include "helpers_c/sram.h"
+#include "helpers/physical_io.h"
+#include "helpers/sram.h"
 
 struct GB_cart {
 	enum GB_variants variant;

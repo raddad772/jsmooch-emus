@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_TG16_CONTROLLERPORT_H
 #define JSMOOCH_EMUS_TG16_CONTROLLERPORT_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 enum TG16_controller_kinds {
     TG16CK_none,

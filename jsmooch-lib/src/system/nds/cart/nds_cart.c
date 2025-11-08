@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers_c/debug.h"
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/physical_io.h"
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/physical_io.h"
+#include "helpers/multisize_memaccess.c"
 
 #include "../nds_bus.h"
 #include "nds_cart.h"

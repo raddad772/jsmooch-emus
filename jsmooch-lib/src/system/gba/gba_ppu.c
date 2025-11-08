@@ -6,11 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers_c/debug.h"
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debug.h"
+#include "helpers/debugger/debugger.h"
 #include "gba_bus.h"
-#include "helpers_c/color.h"
-#include "helpers_c/multisize_memaccess.c"
+#include "helpers/color.h"
+#include "helpers/multisize_memaccess.c"
 
 #include "gba_ppu.h"
 #include "gba_debugger.h"

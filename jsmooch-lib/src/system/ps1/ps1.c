@@ -8,7 +8,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "helpers_c/scheduler.h"
+#include "helpers/scheduler.h"
 #include "ps1.h"
 #include "ps1_bus.h"
 #include "gpu/ps1_gpu.h"
@@ -17,11 +17,11 @@
 #include "peripheral/ps1_digital_pad.h"
 
 
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debugger/debugger.h"
 #include "component/cpu/r3000/r3000.h"
 
-#include "helpers_c/multisize_memaccess.c"
-#include "helpers_c/physical_io.h"
+#include "helpers/multisize_memaccess.c"
+#include "helpers/physical_io.h"
 
 #define JTHIS struct PS1* this = (struct PS1*)jsm->ptr
 #define JSM struct jsm_system* jsm

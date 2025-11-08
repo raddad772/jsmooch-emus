@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_MY_TEXTURE_SDLR3_H
 #define JSMOOCH_EMUS_MY_TEXTURE_SDLR3_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "build.h"
 #ifdef JSM_SDLR3
 

@@ -5,105 +5,132 @@
 #ifndef JSMOOCH_EMUS_NES_APU_H
 #define JSMOOCH_EMUS_NES_APU_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
+
+struct NES;
 
 struct NES_APU {
-    u32 ext_enable;
+    NES_APU();
+    ~NES_APU();
+
+    void write_IO(u32 addr, u8 val);
+    u8 read_IO(u32 addr, u8 old_val, u32 has_effect);
+    void cycle();
+    float mix_sample(u32 is_debug);
+    float sample_channel(int cnum);
+    void reset();
+    void serialize(struct serialized_state *state);
+    void deserialize(struct serialized_state *state);
+
+private:
+    i32 get_pulse_channel_output(u32 pc, u32 is_debug);
+    void update_IF();
+    i32 get_noise_channel_output(u32 is_debug);
+    i32 get_triangle_channel_output(u32 is_debug);
+    void set_length_counter(u32 pc, u32 val);
+    void write_length_counter_enable(u32 pc, u32 val);
+    void quarter_frame();
+    void half_frame();
+    void clock_env(u32 pc);
+    void clock_linear_counter();
+    void clock_envs_and_linear_counters();
+    void clock_length_counters_and_sweeps();
+    void clock_irq();
+    void clock_frame_counter();
+    void clock_triangle();
+    void clock_noise();
+    void clock_pulse(u32 pc);
+
+public:
+    u32 ext_enable=1;
     
     struct NESSNDCHAN {
-        u32 ext_enable;
-        u32 number;
-        i32 output;
+        NESSNDCHAN() = default;
+        u32 ext_enable=1;
+        u32 number=0;
+        i32 output=0;
 
-        u32 vol;
-
-        struct {
-            i32 reload;
-            i32 enabled;
-            i32 count;
-            u32 reload_flag;
-        } linear_counter;
+        u32 vol=0;
 
         struct {
-            u32 counter;
-            u32 kind;
-            u32 current;
-        } duty;
-
-        u32 env_loop_or_length_counter_halt, constant_volume, volume_or_envelope;
-        u32 mode;
-        struct {
-            i32 reload, count;
-        } period;
+            i32 reload=0;
+            i32 enabled=0;
+            i32 count=0;
+            u32 reload_flag=0;
+        } linear_counter{};
 
         struct {
-            i32 period_count;
-            u32 decay_level;
-            u32 start_flag;
-        } envelope;
+            u32 counter=0;
+            u32 kind=0;
+            u32 current=0;
+        } duty{};
+
+        u32 env_loop_or_length_counter_halt{}, constant_volume{}, volume_or_envelope{};
+        u32 mode{};
+        struct {
+            i32 reload{}, count{};
+        } period{};
 
         struct {
-            u32 enabled, shift, overflow, reload;
-            i32 negate;
+            i32 period_count{};
+            u32 decay_level{};
+            u32 start_flag{};
+        } envelope{};
+
+        struct {
+            u32 enabled{}, shift{}, overflow{}, reload{};
+            i32 negate{};
             struct {
-                i32 counter, reload;
-            } period;
-        } sweep;
+                i32 counter{}, reload{};
+            } period{};
+        } sweep{};
 
         struct {
-            i32 count;
-            u32 overflow;
-            u32 enabled;
-            u32 count_write_value;
-        } length_counter;
+            i32 count{};
+            u32 overflow{};
+            u32 enabled{};
+            u32 count_write_value{};
+        } length_counter{};
 
-        i32 first_clock;
+        i32 first_clock=0;
     } channels[4];
 
 
-    u64 *master_cycles;
+    u64 *master_cycles{};
 
     struct {
-        i32 bytes_remaining;
-        u32 ext_enable;
-        u32 enabled;
+        i32 bytes_remaining{};
+        u32 ext_enable=1;
+        u32 enabled{};
 
-        u32 IF, new_IF;
-    } dmc;
-
-    struct {
-        u32 step5_mode;
-    } io;
+        u32 IF{}, new_IF{};
+    } dmc{};
 
     struct {
-        u32 step;
-        u32 step_mod;
-        u32 mode;
-        u32 IF; // interrupt flag
-        u32 new_IF;
-        u32 interrupt_inhibit;
-    } frame_counter;
+        u32 step5_mode{};
+    } io{};
 
     struct {
-        u32 counter_1;
-        i32 counter_240hz;
-        i32 every_other;
-    } clocks;
+        u32 step{};
+        u32 step_mod=4;
+        u32 mode{};
+        u32 IF{}; // interrupt flag
+        u32 new_IF{};
+        u32 interrupt_inhibit{};
+    } frame_counter{};
 
     struct {
-        void (*func)(void *, u32);
-        void *ptr;
-        u32 just_set;
-    } IRQ_pin;
+        u32 counter_1{};
+        i32 counter_240hz{};
+        i32 every_other=1;
+    } clocks{};
+
+    struct {
+        void (*func)(void *, u32){};
+        void *ptr{};
+        u32 just_set{};
+    } IRQ_pin{};
 };
-
-void NES_APU_init(struct NES_APU* this);
-void NES_APU_write_IO(struct NES_APU* this, u32 addr, u8 val);
-u8 NES_APU_read_IO(struct NES_APU* this, u32 addr, u8 old_val, u32 has_effect);
-void NES_APU_cycle(struct NES_APU* this);
-float NES_APU_mix_sample(struct NES_APU* this, u32 is_debug);
-float NES_APU_sample_channel(struct NES_APU* this, int cnum);
-void NES_APU_reset(struct NES_APU* this);
 
 struct serialized_state;
 void NES_APU_serialize(struct NES_APU*, struct serialized_state *state);

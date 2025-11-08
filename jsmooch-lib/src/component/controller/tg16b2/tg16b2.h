@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_TG16B2_H
 #define JSMOOCH_EMUS_TG16B2_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/physical_io.h"
+#include "helpers/int.h"
+#include "helpers/physical_io.h"
 
 struct TG16_2button {
     struct physical_io_device *pio;

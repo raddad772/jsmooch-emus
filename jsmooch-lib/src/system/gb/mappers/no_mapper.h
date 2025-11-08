@@ -1,7 +1,7 @@
 #ifndef _JSMOOCH_GB_NOMAPPER_H
 #define _JSMOOCH_GB_NOMAPPER_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 #include "mapper.h"
 #include "../gb_clock.h"
 #include "../gb_bus.h"

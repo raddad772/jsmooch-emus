@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include "genesis_serialize.h"
 #include "genesis_bus.h"
-#include "helpers_c/sys_present.h"
-#include "helpers_c/debug.h"
-#include "helpers_c/serialize/serialize.h"
+#include "helpers/sys_present.h"
+#include "helpers/debug.h"
+#include "helpers/serialize/serialize.h"
 
 static void serialize_console(struct genesis *this, struct serialized_state *state)
 {

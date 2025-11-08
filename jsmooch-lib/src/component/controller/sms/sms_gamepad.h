@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_SMS_GAMEPAD_H
 #define JSMOOCH_EMUS_SMS_GAMEPAD_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/sys_interface.h"
+#include "helpers/int.h"
+#include "helpers/sys_interface.h"
 
 struct SMSGG_gamepad {
     struct SMSGG_gamepad_pins { u32 tr, th, tl, up, down, left, right, start; } pins;

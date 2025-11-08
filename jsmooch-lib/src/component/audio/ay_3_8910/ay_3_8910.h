@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_AY_3_8910_H
 #define JSMOOCH_EMUS_AY_3_8910_H
 
-#include "helpers_c/int.h"
+#include "helpers/int.h"
 
 enum ay_3_8910_variants {
     AY3V_8910,

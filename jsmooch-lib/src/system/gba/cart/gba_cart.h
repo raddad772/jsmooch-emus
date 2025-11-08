@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_GBA_CART_H
 #define JSMOOCH_EMUS_GBA_CART_H
 
-#include "helpers_c/buf.h"
-#include "helpers_c/int.h"
+#include "helpers/buf.h"
+#include "helpers/int.h"
 
 enum GBA_flash_kinds {
     GBAFK_atmel,

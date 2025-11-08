@@ -17,8 +17,8 @@
 
 #define MAX_RAM_ENTRIES 50
 
-#include "helpers_c/int.h"
-#include "helpers_c/user.h"
+#include "helpers/int.h"
+#include "helpers/user.h"
 #include "wdc65816_tests.h"
 
 #include "component/cpu/wdc65816/wdc65816.h"

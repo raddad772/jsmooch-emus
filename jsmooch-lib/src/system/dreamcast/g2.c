@@ -4,7 +4,7 @@
 
 #include "stdio.h"
 
-#include "helpers_c/debug.h"
+#include "helpers/debug.h"
 #include "g2.h"
 
 

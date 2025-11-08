@@ -8,8 +8,8 @@
 #include "z80_drag_race.h"
 
 #include "component/cpu/z80/z80.h"
-#include "helpers_c/buf.h"
-#include "helpers_c/user.h"
+#include "helpers/buf.h"
+#include "helpers/user.h"
 
 const u8 cpm_print_routine[29] = {
     0xF5, // PUSH AF

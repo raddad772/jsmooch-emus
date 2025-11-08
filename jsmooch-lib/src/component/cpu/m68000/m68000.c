@@ -6,9 +6,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "helpers_c/debug.h"
-#include "helpers_c/serialize/serialize.h"
-#include "helpers_c/debugger/debugger.h"
+#include "helpers/debug.h"
+#include "helpers/serialize/serialize.h"
+#include "helpers/debugger/debugger.h"
 #include "m68000.h"
 #include "m68000_instructions.h"
 #include "m68000_internal.h"

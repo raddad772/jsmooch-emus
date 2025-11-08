@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_CART_H
 #define JSMOOCH_EMUS_CART_H
 
-#include "helpers_c/int.h"
-#include "helpers_c/buf.h"
+#include "helpers/int.h"
+#include "helpers/buf.h"
 
 struct atari2600_cart {
     struct buf ROM;

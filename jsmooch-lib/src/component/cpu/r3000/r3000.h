@@ -5,13 +5,13 @@
 #ifndef JSMOOCH_EMUS_R3000_H
 #define JSMOOCH_EMUS_R3000_H
 
-#include "helpers_c/debugger/debuggerdefs.h"
-#include "helpers_c/debugger/debugger.h"
-#include "helpers_c/better_irq_multiplexer.h"
-#include "helpers_c/int.h"
-#include "helpers_c/debug.h"
+#include "helpers/debugger/debuggerdefs.h"
+#include "helpers/debugger/debugger.h"
+#include "helpers/better_irq_multiplexer.h"
+#include "helpers/int.h"
+#include "helpers/debug.h"
 #include "r3000_multiplier.h"
-#include "helpers_c/scheduler.h"
+#include "helpers/scheduler.h"
 #include "gte.h"
 
 struct R3000_regs {
