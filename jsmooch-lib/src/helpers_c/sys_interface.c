@@ -16,7 +16,7 @@
 #include "system/apple2/apple2.h"
 #include "system/mac/mac.h"
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "system/gba/gba.h"
 #include "system/galaksija/galaksija.h"
 #include "system/tg16/tg16.h"

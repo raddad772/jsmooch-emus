@@ -6,7 +6,7 @@
 #include "stdlib.h"
 #include <stdio.h>
 #include "helpers/sys_interface.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/m6502_opcodes.h"

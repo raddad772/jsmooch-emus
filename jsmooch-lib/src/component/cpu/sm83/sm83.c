@@ -3,7 +3,7 @@
 #include "sm83_opcodes.h"
 #include "stdio.h"
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "helpers/serialize/serialize.h"
 
 u32 SM83_regs_F_getbyte(struct SM83_regs_F* this) {

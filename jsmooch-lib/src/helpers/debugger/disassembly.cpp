@@ -1,10 +1,9 @@
 //
 // Created by . on 8/11/24.
 //
-#include <string.h>
-#include <stdio.h>
-
-#include "helpers/ooc.h"
+#include <cstring>
+#include <cstdio>
+#include <cassert>
 
 #include "debugger.h"
 #include "disassembly.h"
@@ -20,23 +19,22 @@
  * Perhaps a max block size, and do it up to there?
  */
 
-#define is_range_dirty(r) ((r)->addr_range_start == -1)
+#define is_range_dirty(r) (r.addr_range_start == -1)
 #define DBG_DISASSEMBLE_MAX_BLOCK_SIZE 50
 
 
-static void mark_disassembly_range_invalid(struct disassembly_view *dview, struct disassembly_range *range, u32 index)
+void disassembly_view::mark_range_invalid(disassembly_range &range, u32 index)
 {
-    range->valid = 0;
+    range.valid = 0;
 
-    for (u32 j = 0; j < cvec_len(&range->entries); j++) {
-        disassembly_entry_clear_for_reuse(cvec_get(&range->entries, j));
+    for (auto &entry : range.entries) {
+        entry.clear_for_reuse();
     }
-    cvec_clear(&range->entries);
-    range->addr_range_end = -1;
-    range->addr_range_start = -1;
-    range->addr_of_next_ins = -1;
-    u32 *dp = cvec_push_back(&dview->dirty_range_indices);
-    *dp = index;
+    range.entries.clear();
+    range.addr_range_end = -1;
+    range.addr_range_start = -1;
+    range.addr_of_next_ins = -1;
+    dirty_range_indices.emplace_back(index);
 }
 
 
@@ -58,8 +56,8 @@ static int range_collides(struct disassembly_range *range, u32 addr_start, u32 a
     //                  10, 12    no         no       yes
     //                  11, 15    no         yes      no
 
-    u32 whole_of_range_before = ((range->addr_range_start < addr_start) && (range->addr_range_end < addr_start));
-    u32 whole_of_range_after = ((range->addr_range_start > addr_end) && (range->addr_range_end > addr_end));
+    u32 whole_of_range_before = ((range.addr_range_start < addr_start) && (range.addr_range_end < addr_start));
+    u32 whole_of_range_after = ((range.addr_range_start > addr_end) && (range.addr_range_end > addr_end));
 
     return !((whole_of_range_before) || (whole_of_range_after));
 }
@@ -75,66 +73,24 @@ void disassembly_view_dirty_mem(struct debugger_interface *dbgr, struct disassem
     }
 }
 
-void disassembly_view_init(struct disassembly_view *this)
+disassembly_view::disassembly_view()
 {
-    memset(this, 0, sizeof(*this));
-    cvec_init(&this->ranges, sizeof(struct disassembly_range), 100);
-    cvec_init(&this->cpu.regs, sizeof(struct cpu_reg_context), 32);
-    cvec_init(&this->dirty_range_indices, sizeof(u32), 100);
-    jsm_string_init(&this->processor_name, 40);
+    ranges.reserve(100);
+    cpu.regs.reserve(32);
+    dirty_range_indices.reserve(100);
 }
 
-void disassembly_entry_init(struct disassembly_entry *this)
+void disassembly_entry::clear_for_reuse()
 {
-    CTOR_ZERO_SELF;
-    jsm_string_init(&this->dasm, 100);
-    jsm_string_init(&this->context, 100);
-}
+    assert(dasm.ptr);
+    *dasm.ptr = 0;
+    dasm.cur = dasm.ptr;
 
-void disassembly_entry_clear_for_reuse(struct disassembly_entry* this)
-{
-    assert(this->dasm.ptr);
-    *this->dasm.ptr = 0;
-    this->dasm.cur = this->dasm.ptr;
+    *context.ptr = 0;
+    context.cur = context.ptr;
 
-    *this->context.ptr = 0;
-    this->context.cur = this->context.ptr;
-
-    this->addr = -1;
-    this->ins_size_bytes = 0;
-}
-
-void disassembly_entry_delete(struct disassembly_entry* this)
-{
-    jsm_string_delete(&this->dasm);
-    jsm_string_delete(&this->context);
-    this->addr = 0;
-}
-
-void disassembly_range_init(struct disassembly_range *this)
-{
-    CTOR_ZERO_SELF;
-    cvec_init(&this->entries, sizeof(struct disassembly_range), 20);
-}
-
-void disassembly_range_delete(struct disassembly_range *this)
-{
-    DTOR_child_cvec(entries, disassembly_entry)
-}
-
-void cpu_reg_context_init(struct cpu_reg_context *this)
-{
-    CTOR_ZERO_SELF;
-}
-
-void cpu_reg_context_delete(struct cpu_reg_context *this)
-{
-}
-
-void disassembly_view_delete(struct disassembly_view *this)
-{
-    DTOR_child_cvec(ranges, disassembly_range);
-    DTOR_child_cvec(cpu.regs, cpu_reg_context)
+    addr = -1;
+    ins_size_bytes = 0;
 }
 
 static void w_entry_to_strs(struct disassembly_entry_strings *strs, struct disassembly_entry *entry, int col_size)
@@ -154,39 +110,31 @@ static void w_entry_to_strs(struct disassembly_entry_strings *strs, struct disas
     snprintf(strs->context, 400, "%s", entry->context.ptr);
 }
 
-static void mark_block_dirty(struct disassembly_range *r)
+void disassembly_range::mark_block_dirty()
 {
-    r->addr_range_start = r->addr_range_end = -1;
-    r->valid = 0;
-    struct disassembly_range *this = r;
-    DTOR_child_cvec(entries, disassembly_entry);
+    addr_range_start = addr_range_end = -1;
+    valid = 0;
+    entries.clear();
 }
 
-/*static int is_range_dirty(struct disassembly_range *r)
+disassembly_range *disassembly_view::find_range_including(u32 instruction_addr)
 {
-    return r->addr_range_start == -1;
-}*/
-
-static struct disassembly_range *find_range_including(struct disassembly_view *dview, u32 instruction_addr)
-{
-    for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
-        struct disassembly_range *r = (struct disassembly_range *) cvec_get(&dview->ranges, i);
-        if (!is_range_dirty(r) && (r->addr_range_start <= instruction_addr) &&
-            (r->addr_range_end >= instruction_addr)) {
-            for (u32 j = 0; j < cvec_len(&r->entries); j++) {
-                struct disassembly_entry *e = (struct disassembly_entry *) cvec_get(&r->entries, j);
-                if (e->addr == instruction_addr) return r;
+    for (auto &r : ranges) {
+        if (!is_range_dirty(r) && (r.addr_range_start <= instruction_addr) &&
+            (r.addr_range_end >= instruction_addr)) {
+            for (auto &e : r.entries) {
+                if (e.addr == instruction_addr) return &r;
             }
-            mark_block_dirty(r);
-            return NULL;
+            r.mark_block_dirty();
+            return nullptr;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 static struct disassembly_range *find_next_range(struct disassembly_view *dview, u32 what_addr) {
     i64 lowest_addr = -1;
-    struct disassembly_range *lowest_r = NULL;
+    struct disassembly_range *lowest_r = nullptr;
     // Only called if there is no CURRENT range
     for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
         struct disassembly_range *r = cvec_get(&dview->ranges, i);
@@ -198,7 +146,7 @@ static struct disassembly_range *find_next_range(struct disassembly_view *dview,
             }
         }
     }
-    return lowest_r; // returns NULL if none found
+    return lowest_r; // returns nullptr if none found
 }
 
 #define CVEC_FOREACH(iterval, cvec, struct_type, iterator) for (u32 iterval = 0; iterval < cvec_len(&cvec); iterval++) {\
@@ -209,7 +157,7 @@ static struct disassembly_range *find_next_range(struct disassembly_view *dview,
 static struct disassembly_range *get_range(struct disassembly_view *dview)
 {
     // Get either a dirty range to re-use, or a new range
-    struct disassembly_range *r = NULL;
+    struct disassembly_range *r = nullptr;
 
     u32 *dp = cvec_pop_back(&dview->dirty_range_indices);
     if (dp) {
@@ -232,7 +180,7 @@ static struct disassembly_range *create_diassembly_block(struct debugger_interfa
     r->addr_range_start = range_start;
     r->addr_range_end = range_end;
     r->valid = 1;
-    struct disassembly_entry *last_entry = NULL;
+    struct disassembly_entry *last_entry = nullptr;
     while(true) {
         struct disassembly_entry *entry = cvec_push_back(&r->entries);
         if (cvec_len(&r->entries) > r->num_entries_previously_made) { // If we've added an entry that has not been init yet...
@@ -272,21 +220,21 @@ int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_
     //  1a) If closest block buts up against it, use that as a boundary
     //  1b) Otherwise, use MAX_BLOCK_SIZE
     //  2) Now, search for next address outside block
-    struct disassembly_range *next_loop_r = NULL;
+    struct disassembly_range *next_loop_r = nullptr;
     u32 none_found = 0;
 
     while(true) {
-        struct disassembly_range *fr = NULL;
+        struct disassembly_range *fr = nullptr;
 
         if (next_loop_r) fr = next_loop_r;
-        else fr = none_found ? NULL : find_range_including(dview, cur_search_addr);
+        else fr = none_found ? nullptr : find_range_including(dview, cur_search_addr);
 
-        next_loop_r = NULL;
+        next_loop_r = nullptr;
         // If not found...
-        if (fr == NULL) { // Attempt to start diassembly
+        if (fr == nullptr) { // Attempt to start diassembly
             // Find next
-            struct disassembly_range *nextr = none_found ? NULL : find_next_range(dview, cur_search_addr);
-            none_found = nextr == NULL;
+            struct disassembly_range *nextr = none_found ? nullptr : find_next_range(dview, cur_search_addr);
+            none_found = nextr == nullptr;
             u32 range_start = cur_search_addr;
             u32 range_end = 0;
 

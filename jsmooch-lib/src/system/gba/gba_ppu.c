@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "gba_bus.h"
 #include "helpers/color.h"
 #include "helpers/multisize_memaccess.c"

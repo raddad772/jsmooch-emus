@@ -2,7 +2,7 @@
 // Created by . on 1/20/25.
 //
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "nds_dma.h"
 #include "nds_bus.h"
 #include "nds_irq.h"

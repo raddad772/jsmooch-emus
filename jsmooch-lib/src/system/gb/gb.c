@@ -4,7 +4,7 @@
 
 #include "helpers/sys_interface.h"
 #include "helpers/physical_io.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "component/audio/gb_apu/gb_apu.h"
 

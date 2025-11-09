@@ -4,15 +4,16 @@
 #include <vector>
 
 struct buf {
-    buf();
+    explicit buf(int n);
+    buf() = default;
     ~buf();
-    void *ptr;
-    u64 size;
-    u32 dirty; // used by external programs
+    void *ptr{};
+    u64 size{};
+    u32 dirty{}; // used by external programs
 
     void allocate(u64 size);
     void del();
-    void copy(buf* src);
+    void copy(const buf* src);
 };
 
 struct read_file_buf {
@@ -21,15 +22,12 @@ struct read_file_buf {
     char name[255]{};
     u64 pos{};
 
-    read_file_buf();
-    ~read_file_buf();
     int read(const char *fname, const char *fpath);
 };
 
 struct multi_file_set {
     std::vector<read_file_buf> files{};
 
-    multi_file_set();
-    ~multi_file_set();
+    u32 num_files;
     void add(const char *fname, const char *fpath);
 };

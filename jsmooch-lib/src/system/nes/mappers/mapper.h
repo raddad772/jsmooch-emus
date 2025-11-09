@@ -8,6 +8,7 @@
 #include "helpers/int.h"
 #include "helpers/sys_interface.h"
 #include "helpers/simplebuf.h"
+#include "helpers/serialize/serialize.h"
 #include "../nes_cart.h"
 #include "helpers/sram.h"
 #include "nes_memmap.h"

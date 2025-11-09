@@ -8,7 +8,7 @@
 
 #include "helpers/debug.h"
 #include "helpers/serialize/serialize.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "m68000.h"
 #include "m68000_instructions.h"
 #include "m68000_internal.h"

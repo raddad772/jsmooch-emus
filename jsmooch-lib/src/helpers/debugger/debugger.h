@@ -3,11 +3,11 @@
 //
 
 #pragma once
-#include "helpers/physical_io.h"
 
 #include <array>
 #include <algorithm>
 
+#include "helpers/physical_io.h"
 #include "helpers/int.h"
 #include "helpers/cvec.h"
 #include "helpers/buf.h"
@@ -68,6 +68,10 @@ struct disassembly_entry_strings {
 };
 
 struct disassembly_range {
+    disassembly_range() {
+        entries.reserve(20);
+    };
+    void mark_block_dirty();
     u32 valid{};
     i64 addr_range_start{};
     i64 addr_range_end{};
@@ -134,13 +138,15 @@ struct memory_view {
 };
 
 struct disassembly_view {
-    u32 mem_start;
-    u32 mem_end;
-    std::vector<disassembly_range> ranges; // 100
-    std::vector<u32> dirty_range_indices; // 100 indices of dirty ranges we can re-use
+    disassembly_view();
+    void mark_range_invalid(disassembly_range &range, u32 index);
+    u32 mem_start{};
+    u32 mem_end{};
+    std::vector<disassembly_range> ranges{}; // 100
+    std::vector<u32> dirty_range_indices{}; // 100 indices of dirty ranges we can re-use
     struct {
-        std::vector<cpu_reg_context> regs; // 32 cpu_reg_context
-    } cpu;
+        std::vector<cpu_reg_context> regs{}; // 32 cpu_reg_context
+    } cpu{};
     jsm_string processor_name{40};
 
     u32 addr_column_size{}; // how many columns to put in address of disassembly view
@@ -148,12 +154,12 @@ struct disassembly_view {
 
     struct { // get_disassembly_vars gets variables for disassembly such as address of currently-executing instructions
         void *ptr{};
-        disassembly_vars (*func)(void *, struct debugger_interface *, struct disassembly_view *){};
+        disassembly_vars (*func)(void *, debugger_interface *, disassembly_view *){};
     } get_disassembly_vars{};
 
     struct { // fill_view fills out variables and stuff
         void *ptr{};
-        void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview){};
+        void (*func)(void *, debugger_interface *dbgr, disassembly_view *dview){};
     } fill_view{};
 
     struct {
@@ -163,7 +169,7 @@ struct disassembly_view {
 
     struct { // get_disaassembly gets disasssembly
         void *ptr{};
-        void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry){};
+        void (*func)(void *, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry){};
     } get_disassembly{};
 };
 
@@ -184,11 +190,15 @@ struct debugger_event_update {
 };
 
 struct debugger_event {
+    debugger_event() {
+        updates[0].reserve(100);
+        updates[1].reserve(100);
+    }
     cvec_ptr<event_category> category{};
     char name[50]{};
 
     std::vector<debugger_event_update>updates[2]{};
-    u32 updates_index{};
+    u32 updates_index=1;
     u32 color{};
     u32 category_id{};
     u32 display_enabled{};
@@ -280,18 +290,29 @@ struct dbglog_view {
 };
 
 struct events_view {
+    events_view() {
+        events.reserve(1000);
+        categories.reserve(100);
+    }
+    void add_event(u32 category_id, const char *name, u32 color, debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
+    void report_event(i32 event_id);
+    void render(u32 *buf, u32 out_width, u32 out_height);
+    void report_draw_start();
+    void report_frame();
+    void report_line(i32 line_num);
+    void add_category(debugger_interface *dbgr, const char *name, u32 color, u32 id);
     std::vector<debugger_event> events{}; // prealloc 1000?
 
     ev_timing_kind timing{};
 
     std::vector<event_category> categories{};
-    u64 current_frame{};
+    u64 current_frame=-1;
 
     u32 index_in_use{};
 
-    u64 last_frame{};
+    u64 last_frame=-1;
     u32 keep_last_frame{};
-    cvec_ptr<JSM_DISPLAY> associated_display{};
+    cvec_ptr<physical_io_device> associated_display{};
 
     struct events_view_master_clocks {
         u64 per_line{};
@@ -300,7 +321,7 @@ struct events_view {
         u32 height{};
         i32 cur_line{};
         u64 *ptr{};
-        u32 back_buffer{};
+        u32 back_buffer=1;
         u32 front_buffer{};
     } master_clocks{};
 
@@ -309,7 +330,7 @@ struct events_view {
         u32 width{}, height{};
         float width_scale{}, height_scale{};
         u32 *buf{};
-        u64 frame_num{};
+        u64 frame_num=-2;
     } display[2]{};
 };
 
@@ -320,7 +341,7 @@ struct ivec2 {
 struct debugger_view;
 struct debugger_update_func {
     void *ptr;
-    void (*func)(debugger_interface*, struct debugger_view *, void *, u32);
+    void (*func)(debugger_interface*, debugger_view *, void *, u32);
 };
 
 enum debug_waveform_kinds {
@@ -330,15 +351,15 @@ enum debug_waveform_kinds {
 };
 
 struct debug_waveform {
-    char name[50];
-    u32 ch_output_enabled;
-    u32 default_clock_divider;
-    u32 clock_divider;
-    u32 samples_requested;
-    u32 samples_rendered;
-    u32 is_unsigned;
-    struct buf buf; // height*width. value -1...1
-    enum debug_waveform_kinds kind;
+    char name[50]{};
+    u32 ch_output_enabled=1;
+    u32 default_clock_divider{};
+    u32 clock_divider{};
+    u32 samples_requested{};
+    u32 samples_rendered{};
+    u32 is_unsigned{};
+    buf buf{8192}; // height*width. value -1...1
+    debug_waveform_kinds kind{};
 
     struct {
         double next_sample_cycle;
@@ -346,7 +367,9 @@ struct debug_waveform {
         u32 buf_pos;
     } user;
 };
+
 #define MAX_TRACE_COLS 20
+
 struct trace_line {
     std::array<jsm_string, MAX_TRACE_COLS> cols;
     trace_line() :
@@ -431,6 +454,8 @@ struct debugger_widget_colorkey_item {
 };
 
 struct debugger_widget_colorkey {
+    void set_title(const char *str);
+    void add_item(const char *str, u32 color);
     char title[100]{};
     u32 num_items{};
     debugger_widget_colorkey_item items[50]{};
@@ -459,10 +484,21 @@ private:
 };
 
 
-struct debugger_widget;
 struct debugger_view {
     explicit debugger_view(debugger_view_kinds kind);
     ~debugger_view();
+
+    debugger_view(const debugger_view&) = delete;            // Non-copyable (union)
+    debugger_view& operator=(const debugger_view&) = delete; // Non-copy-assignable
+
+    debugger_view(debugger_view&& other) noexcept
+        : kind(other.kind),
+          update(other.update),
+          options(std::move(other.options))
+    {
+        move_union_from(std::move(other));
+        other.kind = debugger_view_kinds::dview_null; // Reset state
+    }
 
     debugger_view_kinds kind;
 
@@ -485,14 +521,14 @@ struct debugger_view {
     };
 
 private:
-
+    void move_union_from(debugger_view&& other);
     void destroy_active();
 };
 
 /* This need to be used on two sides. The application side, and the core side. */
 struct debugger_interface {
     std::vector<debugger_view> views; // debugger_view
-    cvec_ptr<debugger_view> &make_view(enum debugger_view_kinds kind);
+    cvec_ptr<debugger_view> make_view(debugger_view_kinds kind);
     u32 smallest_step; // smallest possible step
     u32 supported_by_core;
 };
@@ -502,6 +538,10 @@ dbglog_category_node &dbglog_category_get_root(dbglog_view &dv);
 u32 dbglog_count_visible_lines(dbglog_view *);
 u32 dbglog_get_nth_visible(dbglog_view *, u32 n);
 u32 dbglog_get_next_visible(dbglog_view *, u32 start);
+void debugger_report_event(cvec_ptr<debugger_view> &viewptr, i32 event_id);
+void debugger_report_frame(debugger_interface *dbgr);
+void debugger_report_line(debugger_interface *dbgr, i32 line_num);
+void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end);
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id, default_enable) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, default_enable, 0, NULL, id)

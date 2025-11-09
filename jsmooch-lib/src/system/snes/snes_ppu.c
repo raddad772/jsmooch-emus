@@ -3,7 +3,7 @@
 //
 
 #include <string.h>
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "snes_ppu.h"
 #include "snes_bus.h"
 #include "snes_debugger.h"

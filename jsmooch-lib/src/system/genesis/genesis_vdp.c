@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "genesis_bus.h"
 #include "genesis_vdp.h"
 #include "genesis_debugger.h"

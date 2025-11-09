@@ -19,7 +19,7 @@
 #ifdef DC_SUPPORT_ELF
 #include "vendor/elf-parser/elf-parser.h"
 #endif
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #define IP_BIN
 

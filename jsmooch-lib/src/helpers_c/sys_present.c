@@ -7,7 +7,7 @@
 
 #include "sys_present.h"
 #include "helpers/color.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "component/gpu/huc6260/huc6260.h"
 
 static u32 calc_stride(u32 out_width, u32 in_width)

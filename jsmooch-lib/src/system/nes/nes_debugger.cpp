@@ -108,7 +108,7 @@ static void create_and_bind_registers(struct NES &th, struct disassembly_view &d
 
 static void setup_disassembly_view( NES& th, struct debugger_interface *dbgr)
 {
-    cvec_ptr<debugger_view> &p = dbgr->make_view(dview_disassembly);
+    cvec_ptr<debugger_view> p = dbgr->make_view(dview_disassembly);
 
     debugger_view &dview = p.get();
     disassembly_view &dv = dview.disassembly;

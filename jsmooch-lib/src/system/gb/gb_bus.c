@@ -6,7 +6,7 @@
 #include "gb_cpu.h"
 #include "gb_debugger.h"
 #include "mappers/mapper.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 void GB_bus_init(struct GB_bus* this, struct GB_clock* clock) {
 	this->cart = NULL;

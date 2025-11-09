@@ -11,7 +11,7 @@
 #include "gba_dma.h"
 #include "gba_debugger.h"
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "component/cpu/arm7tdmi/arm7tdmi.h"
 
 #include "helpers/multisize_memaccess.c"

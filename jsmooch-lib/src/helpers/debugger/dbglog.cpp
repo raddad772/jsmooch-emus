@@ -11,12 +11,12 @@ dbglog_category_node &dbglog_category_get_root(dbglog_view &dv)
     return dv.category_root;
 }
 
-dbglog_category_node &dbglog_category_node::add_node(dbglog_view &dv, const char *name, const char *short_name, u32 id, u32 color)
+dbglog_category_node &dbglog_category_node::add_node(dbglog_view &dv, const char *inname, const char *inshort_name, u32 id, u32 color)
 {
     dbglog_category_node &d = children.emplace_back();
-    snprintf(d.name, sizeof(d.name), "%s", name);
-    if (short_name)
-        snprintf(d.short_name, sizeof(d.short_name), "%s", short_name);
+    snprintf(d.name, sizeof(d.name), "%s", inname);
+    if (inshort_name)
+        snprintf(d.short_name, sizeof(d.short_name), "%s", inshort_name);
     d.category_id = id;
     dv.id_to_category[id] = &d;
     dv.id_to_color[id] = color;

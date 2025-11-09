@@ -9,7 +9,7 @@
 #include "huc6260.h"
 #include "helpers/physical_io.h"
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 /* HUC6260 creates an NTSC-ish frame.
  * It drives VDC to get pixel info

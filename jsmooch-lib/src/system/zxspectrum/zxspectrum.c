@@ -7,7 +7,7 @@
 #include <string.h>
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "zxspectrum.h"
 

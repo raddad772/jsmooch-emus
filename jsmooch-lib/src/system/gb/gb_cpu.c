@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "gb_cpu.h"
 #include "component/cpu/sm83/sm83.h"

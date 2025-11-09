@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.31.0)
 project(jsmooch-emus)
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer -O1")
@@ -14,4 +14,4 @@ if(APPLE)
     add_subdirectory(jsmooch-gui)
 endif()
 
-add_subdirectory(jsmooch-tests)
+#add_subdirectory(jsmooch-tests)

@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "snes.h"
 #include "snes_debugger.h"

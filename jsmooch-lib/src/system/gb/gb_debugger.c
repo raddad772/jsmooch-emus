@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "component/cpu/sm83/sm83.h"
 #include "component/cpu/sm83/sm83_disassembler.h"

@@ -2,73 +2,67 @@
 // Created by Dave on 2/6/2024.
 //
 
-#include "assert.h"
-#include <stdio.h>
-#include "file_exists.h"
-#include "string.h"
-#include "stdlib.h"
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #include "buf.h"
+#include "file_exists.h"
 
-void buf_init(struct buf* this)
-{
-    this->ptr = NULL;
-    this->size = 0;
+buf::buf(int n) {
+    allocate(n);
 }
 
-void buf_allocate(struct buf* this, u64 size)
+void buf::allocate(u64 insize)
 {
-    if (this->ptr != NULL) {
-        free(this->ptr);
-        this->ptr = NULL;
+    if (ptr != nullptr) {
+        free(ptr);
+        ptr = nullptr;
     }
-    this->dirty = 0;
-    if (size == 0) {
-        this->ptr = NULL;
-        this->size = 0;
+    dirty = 0;
+    if (insize == 0) {
+        ptr = nullptr;
+        size = 0;
         return;
     }
-    this->ptr = malloc(size);
-    this->size = size;
+    ptr = malloc(insize);
+    size = insize;
 }
 
-void buf_delete(struct buf* this)
+void buf::del() {
+    if (ptr != nullptr)
+        free(ptr);
+    ptr = nullptr;
+    size = 0;
+}
+
+buf::~buf()
 {
-    if (this->ptr != NULL)
-        free(this->ptr);
-    this->ptr = NULL;
-    this->size = 0;
+    del();
 }
 
-void buf_copy(struct buf* dst, struct buf* src) {
-    if (src->ptr == NULL) {
-        buf_delete(dst);
+void buf::copy(const buf* src) {
+    if (src->ptr == nullptr) {
+        del();
         return;
     }
-    buf_allocate(dst, src->size);
+    allocate(src->size);
     if (src->size > 0)
-        memcpy(dst->ptr, src->ptr, src->size);
+        memcpy(ptr, src->ptr, src->size);
 }
 
-void rfb_init(struct read_file_buf* this){
-    buf_init(&this->buf);
-    this->path[0] = 0;
-    this->name[0] = 0;
-    this->pos = 0;
-}
-
-int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
+int read_file_buf::read(const char *fname, const char *fpath)
 {
     char OUTPATH[500];
-    if (fname == NULL) {
+    if (fname == nullptr) {
         snprintf(OUTPATH, 500, "%s", fpath);
-        strncpy(rfb->path, fpath, 255);
-        snprintf(rfb->name, 255, "");
+        strncpy(path, fpath, 255);
+        snprintf(name, 255, "");
     }
     else {
         snprintf(OUTPATH, 500, "%s/%s", fpath, fname);
-        strncpy(rfb->name, fname, 255);
-        strncpy(rfb->path, fpath, 255);
+        strncpy(name, fname, 255);
+        strncpy(path, fpath, 255);
     }
     if (!file_exists(OUTPATH)) {
         printf("\nFILE %s NOT FOUND", OUTPATH);
@@ -77,41 +71,20 @@ int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
 
     FILE *fil = fopen(OUTPATH, "rb");
     fseek(fil, 0L, SEEK_END);
-    buf_allocate(&rfb->buf, ftell(fil));
+    buf.allocate(ftell(fil));
 
     fseek(fil, 0L, SEEK_SET);
-    fread(rfb->buf.ptr, sizeof(char), rfb->buf.size, fil);
+    fread(buf.ptr, sizeof(char), buf.size, fil);
 
     fclose(fil);
     return 1;
 }
 
-void rfb_delete(struct read_file_buf *rfb)
+void multi_file_set::add(const char *fname, const char *fpath)
 {
-    buf_delete(&rfb->buf);
-}
-
-void mfs_init(struct multi_file_set* this)
-{
-    this->num_files = 0;
-    for (u32 i = 0; i < MFS_MAX; i++) {
-        rfb_init(&this->files[i]);
-    }
-}
-
-void mfs_delete(struct multi_file_set* this)
-{
-    for (u32 i = 0; i < this->num_files; i++) {
-        rfb_delete(&this->files[i]);
-    }
-    this->num_files = 0;
-}
-
-void mfs_add(const char *fname, const char *fpath, struct multi_file_set *this)
-{
-    assert(this->num_files < (MFS_MAX - 1));
-    if (!rfb_read(fname, fpath, &this->files[this->num_files])) {
+    assert(num_files < (MFS_MAX - 1));
+    if (!files[num_files].read(fname, fpath)) {
         printf("\nERROR GETTING FILE %s", fname);
     };
-    this->num_files++;
+    num_files++;
 }

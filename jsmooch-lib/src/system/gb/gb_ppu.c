@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "helpers/int.h"
 
 #include "gb.h"

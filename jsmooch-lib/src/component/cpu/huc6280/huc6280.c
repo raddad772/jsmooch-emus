@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "huc6280.h"
 #include "huc6280_disassembler.h"
 

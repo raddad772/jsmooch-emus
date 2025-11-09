@@ -7,7 +7,7 @@
 
 #include "helpers/color.h"
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "huc6270.h"
 

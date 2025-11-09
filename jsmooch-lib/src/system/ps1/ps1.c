@@ -17,7 +17,7 @@
 #include "peripheral/ps1_digital_pad.h"
 
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "component/cpu/r3000/r3000.h"
 
 #include "helpers/multisize_memaccess.c"

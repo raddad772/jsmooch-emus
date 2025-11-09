@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #include "helpers/debug.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "helpers/physical_io.h"
 #include "helpers/multisize_memaccess.c"
 

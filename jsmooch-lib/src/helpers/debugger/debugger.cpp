@@ -2,40 +2,30 @@
 // Created by . on 8/7/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-
-#include "helpers/ooc.h"
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
 
 #include "debugger.h"
 #include "disassembly.h"
-#include "events.h"
-#include "image.h"
-#include "waveform.h"
-#include "trace.h"
 #include "console.h"
-#include "dbglog.h"
-#include "memory.h"
 
 enum dvur {
     dvur_frame,
     dvur_on_line,
 };
 
-static void debugger_view_do_update(debugger_interface *dbgr, struct debugger_view *dview, enum dvur reason)
+static void debugger_view_do_update(debugger_interface *dbgr, debugger_view &dview, dvur reason)
 {
     // TODO: this
 }
 
 void debugger_report_frame(debugger_interface *dbgr)
 {
-    if (dbgr == NULL) return;
-    for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
-        struct debugger_view *dview = cvec_get(&dbgr->views, i);
-        if (dview->kind == dview_events) {
-            events_view_report_frame(&dview->events);
+    if (dbgr == nullptr) return;
+    for (auto &dview : dbgr->views) {
+        if (dview.kind == dview_events) {
+            dview.events.report_frame();
         }
     }
 }
@@ -44,29 +34,26 @@ void debugger_report_line(debugger_interface *dbgr, i32 line_num)
 {
     assert(line_num>=0);
     if (!dbgr) return;
-    for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
-        struct debugger_view *dview = cvec_get(&dbgr->views, i);
-        if (dview->kind == dview_events) {
-            events_view_report_line(&dview->events, line_num);
+    for (auto &dview : dbgr->views) {
+        if (dview.kind == dview_events) {
+            dview.events.report_line(line_num);
         }
-        if ((dview->update.on_line.enabled) && (dview->update.on_line.line_num == line_num))
+        if ((dview.update.on_line.enabled) && (dview.update.on_line.line_num == line_num))
             debugger_view_do_update(dbgr, dview, dvur_on_line);
     }
 }
 
-cvec_ptr<debugger_view> &debugger_interface::make_view(enum debugger_view_kinds kind)
+cvec_ptr<debugger_view> debugger_interface::make_view(enum debugger_view_kinds kind)
 {
     views.emplace_back(kind);
-    cvec_ptr r(views, views.size() - 1);
-    return r;
+    return cvec_ptr(views, views.size() - 1);
 }
 
 void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end)
 {
-    if (dbgr == NULL) return;
-    for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
-        struct debugger_view *dv = cvec_get(&dbgr->views, i);
-        switch(dv->kind) {
+    if (dbgr == nullptr) return;
+    for (auto &dv : dbgr->views) {
+        switch(dv.kind) {
             case dview_null:
             case dview_events:
             case dview_image:
@@ -76,12 +63,11 @@ void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 add
             case dview_dbglog:
                 break;
             case dview_memory: {
-                struct memory_view *mv = &dv->memory;
-                mv->force_refresh = 1;
+                dv.memory.force_refresh = 1;
                 break; }
             case dview_disassembly: {
-                struct disassembly_view *dview = &dv->disassembly;
-                disassembly_view_dirty_mem(dbgr, dview, mem_bus, addr_start, addr_end);
+                disassembly_view &dview = dv.disassembly;
+                dv.dirty_mem(dbgr, addr_start, addr_end);
                 break; }
             default:
                 assert(1==0);
@@ -98,13 +84,13 @@ void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 add
 
 debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
 {
-    this->update.on_break = UPDATE_ON_BREAK_DEFAULT;
-    this->update.on_line.enabled = UPDATE_ON_LINE_ENABLED_DEFAULT;
-    this->update.on_line.line_num = UPDATE_ON_LINE_NUM_DEFAULT;
-    this->update.on_pause = UPDATE_ON_PAUSE_DEFAULT;
-    this->update.on_step = UPDATE_ON_STEP_DEFAULT;
-    switch(this->kind) {
-        case dview_null:
+    update.on_break = UPDATE_ON_BREAK_DEFAULT;
+    update.on_line.enabled = UPDATE_ON_LINE_ENABLED_DEFAULT;
+    update.on_line.line_num = UPDATE_ON_LINE_NUM_DEFAULT;
+    update.on_pause = UPDATE_ON_PAUSE_DEFAULT;
+    update.on_step = UPDATE_ON_STEP_DEFAULT;
+    switch(kind) {
+        case dview_nullptr:
             assert(1==2);
             break;
         case dview_dbglog:
@@ -112,7 +98,7 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
             break;
         case dview_console:
             new (&console) console_view();
-            console_view_init(&this->console);
+            console_view_init(&console);
             break;
         case dview_image:
             new (&image) image_view();
@@ -159,7 +145,7 @@ debugger_widget::debugger_widget(JSMD_widgets kind) : kind(kind)
 }
 
 void debugger_widget::destroy_active() {
-    switch(this->kind) {
+    switch(kind) {
         case JSMD_colorkey:
             colorkey.~debugger_widget_colorkey();
         case JSMD_checkbox:
@@ -207,7 +193,7 @@ int debugger_widgets_textbox_sprintf(debugger_widget_textbox *tb, const char *fo
 
 void debugger_widgets_add_checkbox(cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
 {
-    struct debugger_widget *w = cvec_push_back(widgets);
+    debugger_widget *w = cvec_push_back(widgets);
     debugger_widget_init(w, JSMD_checkbox);
     w->same_line = same_line;
     snprintf(w->checkbox.text, sizeof(w->checkbox.text), "%s", text);
@@ -216,9 +202,9 @@ void debugger_widgets_add_checkbox(cvec *widgets, const char *text, u32 enabled,
     w->visible = 1;
 }
 
-struct debugger_widget *debugger_widgets_add_color_key(cvec *widgets, const char *default_text, u32 default_visible)
+debugger_widget *debugger_widgets_add_color_key(cvec *widgets, const char *default_text, u32 default_visible)
 {
-    struct debugger_widget *w = cvec_push_back(widgets);
+    debugger_widget *w = cvec_push_back(widgets);
     debugger_widget_init(w, JSMD_colorkey);
     w->enabled = 1;
     w->same_line = 1;
@@ -227,9 +213,9 @@ struct debugger_widget *debugger_widgets_add_color_key(cvec *widgets, const char
     return w;
 }
 
-struct debugger_widget *debugger_widgets_add_radiogroup(cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+debugger_widget *debugger_widgets_add_radiogroup(cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
 {
-    struct debugger_widget *w = cvec_push_back(widgets);
+    debugger_widget *w = cvec_push_back(widgets);
     debugger_widget_init(w, JSMD_radiogroup);
     w->same_line = same_line;
     w->enabled = enabled;
@@ -239,17 +225,17 @@ struct debugger_widget *debugger_widgets_add_radiogroup(cvec* widgets, const cha
     return w;
 }
 
-void debugger_widgets_colorkey_set_title(debugger_widget_colorkey *this, const char *str)
+void debugger_widget_colorkey::set_title(const char *str)
 {
-    snprintf(this->title, sizeof(this->title), "%s", str);
-    this->num_items = 0;
+    snprintf(title, sizeof(title), "%s", str);
+    num_items = 0;
 }
 
-void debugger_widgets_colorkey_add_item(debugger_widget_colorkey *this, const char *str, u32 color)
+void debugger_widget_colorkey::add_item(const char *str, u32 color)
 {
-    u32 num = this->num_items++;
-    assert(this->num_items < 50);
-    struct debugger_widget_colorkey_item *item = &this->items[num];
+    u32 num = num_items++;
+    assert(num_items < 50);
+    debugger_widget_colorkey_item *item = &items[num];
     snprintf(item->name, sizeof(item->name), "%s", str);
     item->color = color;
     item->hovered = 0;
@@ -258,7 +244,7 @@ void debugger_widgets_colorkey_add_item(debugger_widget_colorkey *this, const ch
 
 void debugger_widget_radiogroup_add_button(debugger_widget *radiogroup, const char *text, u32 value, u32 same_line)
 {
-    struct debugger_widget *w = cvec_push_back(&radiogroup->radiogroup.buttons);
+    debugger_widget *w = cvec_push_back(&radiogroup->radiogroup.buttons);
     debugger_widget_init(w, JSMD_checkbox);
     w->same_line = same_line;
     w->enabled = 1;
@@ -267,15 +253,38 @@ void debugger_widget_radiogroup_add_button(debugger_widget *radiogroup, const ch
     w->visible = 1;
 }
 
+void debugger_view::move_union_from(debugger_view&& other) {
+    switch (other.kind) {
+        case dview_disassembly:
+            new (&disassembly) disassembly_view(std::move(other.disassembly)); break;
+        case dview_events:
+            new (&events) events_view(std::move(other.events)); break;
+        case dview_image:
+            new (&image) image_view(std::move(other.image)); break;
+        case dview_waveforms:
+            new (&waveform) waveform_view(std::move(other.waveform)); break;
+        case dview_trace:
+            new (&trace) trace_view(std::move(other.trace)); break;
+        case dview_console:
+            new (&console) console_view(std::move(other.console)); break;
+        case dview_dbglog:
+            new (&dbglog) dbglog_view(std::move(other.dbglog)); break;
+        case dview_memory:
+            new (&memory) memory_view(std::move(other.memory)); break;
+        default:
+            break;
+    }
+}
+
 debugger_view::~debugger_view() {
     destroy_active();
 }
 
 void debugger_view::destroy_active()
 {
-    this->options.clear();
-    switch(this->kind) {
-        case dview_null:
+    options.clear();
+    switch(kind) {
+        case dview_nullptr:
             assert(1==2);
             break;
         case dview_disassembly:

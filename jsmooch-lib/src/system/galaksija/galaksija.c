@@ -10,7 +10,7 @@
 #include "galaksija_bus.h"
 #include "galaksija_debugger.h"
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 #include "helpers/physical_io.h"
 #include "helpers/multisize_memaccess.c"
 

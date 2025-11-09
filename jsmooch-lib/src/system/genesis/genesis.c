@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "component/controller/genesis3/genesis3.h"
 #include "component/controller/genesis6/genesis6.h"

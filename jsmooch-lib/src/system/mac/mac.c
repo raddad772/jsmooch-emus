@@ -15,7 +15,7 @@
 #include "helpers/int.h"
 #include "helpers/physical_io.h"
 #include "helpers/sys_interface.h"
-#include "helpers/debugger/debugger.h"
+#include "fail"
 
 #include "component/cpu/m68000/m68000.h"
 
