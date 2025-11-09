@@ -7,6 +7,14 @@
 
 #include "debugger/debugger.h"
 
+struct framevars {
+    u64 master_frame{};
+    i32 x{};
+    u32 scanline{};
+    u32 last_used_buffer{};
+    u64 master_cycle{};
+};
+
 struct jsm_system {
     virtual ~jsm_system() = default;
 

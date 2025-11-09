@@ -12,6 +12,7 @@
 #include "nes_cart.h"
 #include "nes_cpu.h"
 #include "nes_ppu.h"
+#include "helpers/audiobuf.h"
 
 void NES_new(struct jsm_system* system);
 void NES_delete(struct jsm_system* system);
@@ -43,13 +44,13 @@ struct NES {
     u32 display_enabled=0;
     std::vector<physical_io_device> *IOs{};
 
-    struct NES_bus bus{};
-    struct NES_cart cart;
+    NES_mapper bus;
+    NES_cart cart;
 
     struct {
         double master_cycles_per_audio_sample{};
         double next_sample_cycle{};
-        struct audiobuf *buf{};
+        audiobuf *buf{};
     } audio{};
 
     DBG_START
@@ -82,23 +83,28 @@ struct NES {
 };
 
 struct NESJ : jsm_system {
+private:
+    void setup_audio(std::vector<physical_io_device> &inIOs);
+    void sample_audio();
+
+public:
     void play() override;
     void pause() override;
     void stop() override;
-    void get_framevars(struct framevars* out) override;
+    void get_framevars(framevars* out) override;
     void reset() override;
     void killall();
     u32 finish_frame() override;
     u32 finish_scanline() override;
     u32 step_master(u32 howmany) override;
-    void load_BIOS(struct multi_file_set* mfs) override;
+    void load_BIOS(multi_file_set* mfs) override;
     void enable_tracing();
     void disable_tracing();
     void describe_io(std::vector<physical_io_device> &inIOs) override;
-    void save_state(struct serialized_state &state) override;
-    void load_state(struct serialized_state &state, struct deserialize_ret &ret) override;
-    void set_audiobuf(struct audiobuf *ab) override;
-    struct NES nes{};
+    void save_state(serialized_state &state) override;
+    void load_state(serialized_state &state, struct deserialize_ret &ret) override;
+    void set_audiobuf(audiobuf *ab) override;
+    NES nes{};
 };
 
 

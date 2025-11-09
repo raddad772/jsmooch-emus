@@ -4,6 +4,33 @@
 
 #include "physical_io.h"
 
+void physical_io_device::move_from(physical_io_device&& other) noexcept {
+    kind = other.kind;
+    connected = other.connected;
+    enabled = other.enabled;
+    sys_ptr = other.sys_ptr;
+    id = other.id;
+    input = other.input;
+    output = other.output;
+
+    // Move the correct union member
+    switch (kind) {
+        case HID_CONTROLLER: new(&controller) JSM_CONTROLLER(std::move(other.controller)); break;
+        case HID_KEYBOARD: new(&keyboard) JSM_KEYBOARD(std::move(other.keyboard)); break;
+        case HID_DISPLAY: new(&display) JSM_DISPLAY(std::move(other.display)); break;
+        case HID_MOUSE: new(&mouse) JSM_MOUSE(std::move(other.mouse)); break;
+        case HID_CHASSIS: new(&chassis) JSM_CHASSIS(std::move(other.chassis)); break;
+        case HID_AUDIO_CHANNEL: new(&audio_channel) JSM_AUDIO_CHANNEL(std::move(other.audio_channel)); break;
+        case HID_CART_PORT: new(&cartridge_port) JSM_CARTRIDGE_PORT(std::move(other.cartridge_port)); break;
+        case HID_DISC_DRIVE: new(&disc_drive) JSM_DISC_DRIVE(std::move(other.disc_drive)); break;
+        case HID_AUDIO_CASSETTE: new(&audio_cassette) JSM_AUDIO_CASSETTE(std::move(other.audio_cassette)); break;
+        case HID_TOUCHSCREEN: new(&touchscreen) JSM_TOUCHSCREEN(std::move(other.touchscreen)); break;
+        default: break;
+    }
+
+    // Reset source
+    other.kind = IO_CLASSES{};
+}
 
 void physical_io_device::init(IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output)
 {
@@ -50,7 +77,7 @@ void physical_io_device::init(IO_CLASSES kind, u32 enabled, u32 connected, u32 i
     }
 }
 
-physical_io_device::~physical_io_device()
+void physical_io_device::destroy_active_member() noexcept
 {
     switch(kind) {
         case HID_TOUCHSCREEN:
@@ -87,6 +114,11 @@ physical_io_device::~physical_io_device()
         case HID_NONE:
             break;
     }
+}
+
+physical_io_device::~physical_io_device()
+{
+    destroy_active_member();
 }
 
 void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id)

@@ -33,14 +33,14 @@ struct NROM {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_bus *bus)
+static void remap(struct NES_mapper *bus)
 {
     THISM;
     NES_bus_map_PRG32K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, this->io.PRG_bank, READONLY);
     NES_bus_PPU_mirror_set(bus);
 }
 
-static void serialize(struct NES_bus *bus, struct serialized_state *state)
+static void serialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
@@ -49,7 +49,7 @@ static void serialize(struct NES_bus *bus, struct serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
@@ -59,12 +59,12 @@ static void deserialize(struct NES_bus *bus, struct serialized_state *state)
     remap(bus);
 }
 
-static void AXROM_destruct(struct NES_bus *bus)
+static void AXROM_destruct(struct NES_mapper *bus)
 {
 
 }
 
-static void AXROM_reset(struct NES_bus *bus)
+static void AXROM_reset(struct NES_mapper *bus)
 {
     THISM;
     printf("\nAXROM Resetting, so remapping bus...");
@@ -74,7 +74,7 @@ static void AXROM_reset(struct NES_bus *bus)
     NES_bus_map_CHR8K(bus, 0x0000, 0x1FFF, &bus->CHR_RAM, 0, READWRITE);
 }
 
-static void AXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_write)
+static void AXROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     THISM;
     if (addr >= 0x8000) {
@@ -86,19 +86,19 @@ static void AXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
     *do_write = 1;
 }
 
-static u32 AXROM_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 AXROM_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void AXROM_setcart(struct NES_bus *bus, struct NES_cart *cart)
+static void AXROM_setcart(struct NES_mapper *bus, struct NES_cart *cart)
 {
     bus->ppu_mirror_mode = PPUM_ScreenAOnly;
     NES_bus_PPU_mirror_set(bus);
 }
 
-void AXROM_init(struct NES_bus *bus, struct NES *nes)
+void AXROM_init(struct NES_mapper *bus, struct NES *nes)
 {
     if (bus->ptr != NULL) free(bus->ptr);
     bus->ptr = malloc(sizeof(struct NROM));

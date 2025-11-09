@@ -5,5 +5,5 @@
 #ifndef JSMOOCH_EMUS_VRC_2B_2E_4F_H
 #define JSMOOCH_EMUS_VRC_2B_2E_4F_H
 
-void VRC2B_4E_4F_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kind);
+void VRC2B_4E_4F_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers kind);
 #endif //JSMOOCH_EMUS_VRC_2B_2E_4F_H

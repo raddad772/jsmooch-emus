@@ -93,14 +93,6 @@ void DC_new(JSM)
 
     this->sb.SB_FFST = this->sb.SB_FFST_rc = 0;
 
-    /*NES_clock_init(&this->clock);
-    //NES_bus_init(&this, &this->clock);
-    r2A03_init(&this->cpu, this);
-    NES_PPU_init(&this->ppu, this);
-    NES_cart_init(&this->cart, this);
-    NES_mapper_init(&this->bus, this);
-
-    */
     holly_reset(this);
     this->holly.master_frame = -1;
 

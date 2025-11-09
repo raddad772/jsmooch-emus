@@ -26,7 +26,7 @@ struct UXROM {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_bus *bus, u32 is_boot)
+static void remap(struct NES_mapper *bus, u32 is_boot)
 {
     THISM;
     NES_bus_map_PRG16K(bus, 0x8000, 0xBFFF, &bus->PRG_ROM, this->io.bank_num, READONLY);
@@ -36,7 +36,7 @@ static void remap(struct NES_bus *bus, u32 is_boot)
     }
 }
 
-static void serialize(struct NES_bus *bus, struct serialized_state *state)
+static void serialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
@@ -44,7 +44,7 @@ static void serialize(struct NES_bus *bus, struct serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
@@ -53,18 +53,18 @@ static void deserialize(struct NES_bus *bus, struct serialized_state *state)
     remap(bus, 0);
 }
 
-static void UXROM_destruct(struct NES_bus *bus)
+static void UXROM_destruct(struct NES_mapper *bus)
 {
 
 }
 
-static void UXROM_reset(struct NES_bus *bus)
+static void UXROM_reset(struct NES_mapper *bus)
 {
     printf("\nUXROM Resetting, so remapping bus...");
     remap(bus, 1);
 }
 
-static void UXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_write)
+static void UXROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     THISM;
     *do_write = 1;
@@ -75,19 +75,19 @@ static void UXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
     }
 }
 
-static u32 UXROM_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 UXROM_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void UXROM_setcart(struct NES_bus *bus, struct NES_cart *cart)
+static void UXROM_setcart(struct NES_mapper *bus, struct NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
     NES_bus_PPU_mirror_set(bus);
 }
 
-void UXROM_init(struct NES_bus *bus, struct NES *nes)
+void UXROM_init(struct NES_mapper *bus, struct NES *nes)
 {
     if (bus->ptr != NULL) free(bus->ptr);
     bus->ptr = malloc(sizeof(struct UXROM));

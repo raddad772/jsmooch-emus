@@ -77,7 +77,7 @@ static void map_CHR8K(struct MMC5 *mapper, u32 sprites_status, u32 range_start, 
     NES_memmap_map(mapper->PPU_map[sprites_status], 10, range_start, range_end, buf, bank << 13, is_readonly, NULL, 1, mapper->nes->bus.SRAM);
 }
 
-static void remap_CHR(struct NES_bus *bus)
+static void remap_CHR(struct NES_mapper *bus)
 {
     THISM;
     switch(this->io.CHR_page_size) {
@@ -131,7 +131,7 @@ static void remap_CHR(struct NES_bus *bus)
     }
 }
 
-static void map_PRG(struct NES_bus *bus, u32 start_addr, u32 end_addr, u32 val)
+static void map_PRG(struct NES_mapper *bus, u32 start_addr, u32 end_addr, u32 val)
 {
     THISM;
     struct simplebuf8 *bptr = val & 0x80 ? &bus->PRG_ROM : &bus->fake_PRG_RAM;
@@ -140,7 +140,7 @@ static void map_PRG(struct NES_bus *bus, u32 start_addr, u32 end_addr, u32 val)
     NES_bus_map_PRG8K(bus, start_addr, end_addr, bptr, val & 0x7F, readwrite);
 }
 
-static void remap_PRG(struct NES_bus *bus)
+static void remap_PRG(struct NES_mapper *bus)
 {
     THISM;
     switch(this->io.PRG_bank_mode) {
@@ -185,12 +185,12 @@ static void remap_PRG(struct NES_bus *bus)
     }
 }
 
-static void remap_exram(struct NES_bus *bus)
+static void remap_exram(struct NES_mapper *bus)
 {
 
 }
 
-static void remap(struct NES_bus *bus, u32 boot)
+static void remap(struct NES_mapper *bus, u32 boot)
 {
     THISM;
     if (boot) {
@@ -202,21 +202,21 @@ static void remap(struct NES_bus *bus, u32 boot)
     remap_exram(bus);
 }
 
-static void serialize(struct NES_bus *bus, struct serialized_state *state)
+static void serialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
 #undef S
 }
 
-static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
 #undef L
 }
 
-static void MMC5_destruct(struct NES_bus *bus)
+static void MMC5_destruct(struct NES_mapper *bus)
 {
     THISM;
     NES_memmap_init_empty(this->PPU_map[0], 0x0000, 0x3FFF, 10);
@@ -224,7 +224,7 @@ static void MMC5_destruct(struct NES_bus *bus)
     simplebuf8_delete(&this->exram);
 }
 
-static void MMC5_reset(struct NES_bus *bus)
+static void MMC5_reset(struct NES_mapper *bus)
 {
     printf("\nMMC5 Resetting, so remapping bus...");
     THISM;
@@ -236,7 +236,7 @@ static void MMC5_reset(struct NES_bus *bus)
 }
 
 
-static void MMC5_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_write)
+static void MMC5_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     *do_write = 1;
     THISM;
@@ -327,7 +327,7 @@ static void MMC5_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_write
     }
 }
 
-static void PPU_mirror_set(struct NES_bus *bus)
+static void PPU_mirror_set(struct NES_mapper *bus)
 {
     THISM;
     /*switch(bus->ppu_mirror_mode) {
@@ -357,7 +357,7 @@ static void PPU_mirror_set(struct NES_bus *bus)
     }
 }
 
-static u32 MMC5_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 MMC5_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     THISM;
@@ -386,14 +386,14 @@ static u32 MMC5_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_eff
     return old_val;
 }
 
-static void MMC5_setcart(struct NES_bus *bus, struct NES_cart *cart)
+static void MMC5_setcart(struct NES_mapper *bus, struct NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
     //1simplebuf8_allocate(&bus->PRG_RAM, 64 * 1024); // Re-allocate to 64KB RAM
     // TODO: was this important?
 }
 
-static u32 MMC5_PPU_read(struct NES_bus *bus, u32 addr, u32 has_effect)
+static u32 MMC5_PPU_read(struct NES_mapper *bus, u32 addr, u32 has_effect)
 {
     addr &= 0x3FFF;
     THISM;
@@ -428,7 +428,7 @@ static u32 MMC5_PPU_read(struct NES_bus *bus, u32 addr, u32 has_effect)
     return 0xFF;
 }
 
-static void MMC5_PPU_write(struct NES_bus *bus, u32 addr, u32 val)
+static void MMC5_PPU_write(struct NES_mapper *bus, u32 addr, u32 val)
 {
 
     addr &= 0x3FFF;
@@ -454,7 +454,7 @@ static void MMC5_PPU_write(struct NES_bus *bus, u32 addr, u32 val)
 }
 
 
-void MMC5_a12_watch(struct NES_bus *bus, u32 addr) {
+void MMC5_a12_watch(struct NES_mapper *bus, u32 addr) {
     THISM;
     if ((addr >= 0x2000) && (addr <= 0x2FFF) && (addr == this->irq.addr))
         this->irq.reads++;
@@ -476,7 +476,7 @@ void MMC5_a12_watch(struct NES_bus *bus, u32 addr) {
     //ppuIsReading := true
 }
 
-void MMC5_init(struct NES_bus *bus, struct NES *nes)
+void MMC5_init(struct NES_mapper *bus, struct NES *nes)
 {
     if (bus->ptr != NULL) free(bus->ptr);
     bus->ptr = malloc(sizeof(struct MMC5));

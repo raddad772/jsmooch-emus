@@ -23,7 +23,7 @@ struct NES_memmap {
 
 };
 
-struct NES_bus;
+struct NES_mapper;
 void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, struct simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num, struct persistent_store *SRAM);
 void NES_memmap_init_empty(NES_memmap *map, u32 addr_start, u32 addr_end, u32 shift);
 

@@ -497,7 +497,7 @@ void NES_APU::cycle() {
 
 static const float div15 = 1.0f / 15.0f;
 
-float NES_APU::mix_sample(u32 is_debug)
+float NES_APU::mix_sample(const u32 is_debug)
 {
     float output = 0.0f;
     output += static_cast<float>(get_pulse_channel_output(PULSE0, is_debug)) * div15 * 0.2f;

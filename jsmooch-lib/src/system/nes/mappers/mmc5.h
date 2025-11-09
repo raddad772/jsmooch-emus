@@ -5,8 +5,8 @@
 #ifndef JSMOOCH_EMUS_MMC5_H
 #define JSMOOCH_EMUS_MMC5_H
 
-struct NES_bus;
+struct NES_mapper;
 struct NES;
-void MMC5_init(struct NES_bus *bus, struct NES *nes);
+void MMC5_init(struct NES_mapper *bus, struct NES *nes);
 
 #endif //JSMOOCH_EMUS_MMC5_H

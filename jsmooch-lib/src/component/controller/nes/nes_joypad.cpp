@@ -54,18 +54,18 @@ u32 NES_joypad::data()
     return 1;
 }
 
-void NES_joypad::setup_pio(struct physical_io_device *d, u32 num, const char*name, u32 connected)
+void NES_joypad::setup_pio(physical_io_device &d, u32 num, const char*name, u32 connected)
 {
     // = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_CONTROLLER, 0, 0, 1, 1);
+    d.init(HID_CONTROLLER, 0, 0, 1, 1);
 
-    snprintf(d->controller.name, sizeof(d->controller.name), "%s", name);
-    d->id = num;
-    d->kind = HID_CONTROLLER;
-    d->connected = connected;
-    d->enabled = connected;
+    snprintf(d.controller.name, sizeof(d.controller.name), "%s", name);
+    d.id = num;
+    d.kind = HID_CONTROLLER;
+    d.connected = connected;
+    d.enabled = connected;
 
-    struct JSM_CONTROLLER* cnt = &d->controller;
+    JSM_CONTROLLER* cnt = &d.controller;
 
     // up down left right a b start select. in that order
     pio_new_button(cnt, "up", DBCID_co_up);

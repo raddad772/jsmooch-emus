@@ -49,7 +49,7 @@ struct sunsoft_5_7 {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_bus *bus, u32 boot)
+static void remap(struct NES_mapper *bus, u32 boot)
 {
     THISM;
 
@@ -83,7 +83,7 @@ static void remap(struct NES_bus *bus, u32 boot)
     NES_bus_map_CHR1K(bus, 0x1C00, 0x1FFF, &bus->CHR_ROM, this->io.ppu.banks[7], READONLY);
 }
 
-static void serialize(struct NES_bus *bus, struct serialized_state *state)
+static void serialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
@@ -92,7 +92,7 @@ static void serialize(struct NES_bus *bus, struct serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
@@ -102,18 +102,18 @@ static void deserialize(struct NES_bus *bus, struct serialized_state *state)
     remap(bus, 0);
 }
 
-static void sunsoft_5_7_destruct(struct NES_bus *bus)
+static void sunsoft_5_7_destruct(struct NES_mapper *bus)
 {
 
 }
 
-static void sunsoft_5_7_reset(struct NES_bus *bus)
+static void sunsoft_5_7_reset(struct NES_mapper *bus)
 {
     printf("\nsunsoft_5_7 Resetting, so remapping bus...");
     remap(bus, 1);
 }
 
-static void write_reg(struct NES_bus* bus, u32 val)
+static void write_reg(struct NES_mapper* bus, u32 val)
 {
     THISM;
     if (this->io.reg < 8) {
@@ -173,14 +173,14 @@ static void write_reg(struct NES_bus* bus, u32 val)
     }
 }
 
-static void write_audio_reg(struct NES_bus* bus, u32 val)
+static void write_audio_reg(struct NES_mapper* bus, u32 val)
 {
     THISM;
     printf("\nwrite A%d: %02x", this->io.audio.reg, val);
 }
 
 
-static void sunsoft_5_7_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_write)
+static void sunsoft_5_7_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     *do_write = 1;
     THISM;
@@ -202,19 +202,19 @@ static void sunsoft_5_7_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *d
     }
 }
 
-static u32 sunsoft_5_7_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 sunsoft_5_7_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void sunsoft_5_7_setcart(struct NES_bus *bus, struct NES_cart *cart)
+static void sunsoft_5_7_setcart(struct NES_mapper *bus, struct NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
     NES_bus_PPU_mirror_set(bus);
 }
 
-static void sunsoft_5_7_cpucycle(struct NES_bus *bus)
+static void sunsoft_5_7_cpucycle(struct NES_mapper *bus)
 {
     THISM;
     if (this->irq.enabled && this->irq.counter_enabled) {
@@ -226,7 +226,7 @@ static void sunsoft_5_7_cpucycle(struct NES_bus *bus)
     }
 }
 
-void sunsoft_5_7_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kind)
+void sunsoft_5_7_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers kind)
 {
     if (bus->ptr != NULL) free(bus->ptr);
     bus->ptr = malloc(sizeof(struct sunsoft_5_7));

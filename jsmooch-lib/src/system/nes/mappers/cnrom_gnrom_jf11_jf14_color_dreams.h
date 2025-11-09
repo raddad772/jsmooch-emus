@@ -8,8 +8,8 @@
 // Implements iNES mapper 003 (aka CNROM and "similar")
 // 8KB switchable CHR banks. That's pretty much all
 
-struct NES_bus;
+struct NES_mapper;
 struct NES;
-void GNROM_JF11_JF14_color_dreams_init(struct NES_bus *bus, struct NES *nes, enum NES_mappers kind);
+void GNROM_JF11_JF14_color_dreams_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers kind);
 
 #endif //JSMOOCH_EMUS_CNROM_H

@@ -48,7 +48,3 @@ struct NES_cart {
     void serialize(struct serialized_state &state);
     void deserialize(struct serialized_state &state);
 };
-
-void NES_cart_init(struct NES_cart*, struct NES* nes);
-void NES_cart_delete(struct NES_cart*);
-u32 NES_cart_load_ROM_from_RAM(struct NES_cart*, char* fil, u64 fil_sz);

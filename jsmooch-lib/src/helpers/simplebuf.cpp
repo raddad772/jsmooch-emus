@@ -19,7 +19,7 @@ simplebuf8::~simplebuf8()
 
 void simplebuf8::clear()
 {
-    if (this->ptr == NULL) return;
+    if (this->ptr == nullptr) return;
     memset(this->ptr, 0, this->sz);
 }
 
@@ -33,7 +33,7 @@ int popcount(u64 n)
 
 void simplebuf8::allocate(u64 sz)
 {
-    if (ptr != NULL) {
+    if (ptr != nullptr) {
         free(ptr);
     }
     this->ptr = malloc(sz);
@@ -41,9 +41,9 @@ void simplebuf8::allocate(u64 sz)
     this->mask = sz - 1; // only use if we're a power of 2
 }
 
-void simplebuf8::copy_from_buf(struct buf *src)
+void simplebuf8::copy_from_buf(buf &src)
 {
-    if (src->ptr == NULL) {
+    if (src.ptr == nullptr) {
         if (ptr) free(ptr);
         ptr = nullptr;
         sz = 0;
@@ -51,9 +51,9 @@ void simplebuf8::copy_from_buf(struct buf *src)
         return;
     }
 
-    allocate(src->size);
-    if (src->size > 0)
-        memcpy(ptr, src->ptr, src->size);
-    dest->sz = src->size;
-    dest->mask = dest->sz - 1; // only use if we're definitely a power of 2
+    allocate(src.size);
+    if (src.size > 0)
+        memcpy(ptr, src.ptr, src.size);
+    sz = src.size;
+    mask = sz - 1; // only use if we're definitely a power of 2
 }

@@ -37,7 +37,7 @@ struct SXROM {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_bus *bus, u32 boot, u32 may_contain_PRG)
+static void remap(struct NES_mapper *bus, u32 boot, u32 may_contain_PRG)
 {
     THISM;
     if (boot) {
@@ -83,7 +83,7 @@ static void remap(struct NES_bus *bus, u32 boot, u32 may_contain_PRG)
 
 }
 
-static void serialize(struct NES_bus *bus, struct serialized_state *state)
+static void serialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
@@ -92,7 +92,7 @@ static void serialize(struct NES_bus *bus, struct serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct NES_bus *bus, struct serialized_state *state)
+static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
 {
     THISM;
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
@@ -103,12 +103,12 @@ static void deserialize(struct NES_bus *bus, struct serialized_state *state)
 }
 
 
-static void SXROM_destruct(struct NES_bus *bus)
+static void SXROM_destruct(struct NES_mapper *bus)
 {
 
 }
 
-static void SXROM_reset(struct NES_bus *bus)
+static void SXROM_reset(struct NES_mapper *bus)
 {
     printf("\nSXROM Resetting, so remapping bus...");
     THISM;
@@ -116,7 +116,7 @@ static void SXROM_reset(struct NES_bus *bus)
     remap(bus, 1, 1);
 }
 
-static void SXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_write)
+static void SXROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     *do_write = 1;
     THISM;
@@ -179,18 +179,18 @@ static void SXROM_writecart(struct NES_bus *bus, u32 addr, u32 val, u32 *do_writ
     }
 }
 
-static u32 SXROM_readcart(struct NES_bus *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 SXROM_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void SXROM_setcart(struct NES_bus *bus, struct NES_cart *cart)
+static void SXROM_setcart(struct NES_mapper *bus, struct NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
 }
 
-void SXROM_init(struct NES_bus *bus, struct NES *nes)
+void SXROM_init(struct NES_mapper *bus, struct NES *nes)
 {
     if (bus->ptr != NULL) free(bus->ptr);
     bus->ptr = malloc(sizeof(struct SXROM));

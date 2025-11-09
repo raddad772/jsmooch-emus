@@ -1,5 +1,6 @@
 #pragma once
 
+#include "helpers/int.h"
 #include <vector>
 
 template<typename T>

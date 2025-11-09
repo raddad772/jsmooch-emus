@@ -36,8 +36,8 @@ static void NESJ_describe_io(JSM, struct cvec* IOs);
 
 static u32 read_trace(void *ptr, u32 addr)
 {
-    NES* me= (struct NES*)ptr;
-    return NES_bus_CPU_read(me, addr, 0, 0);
+    NES* nes= (struct NES*)ptr;
+    return nes->bus.CPU_read(addr, 0, 0);
 }
 
 #define APU_CYCLES_PER_FRAME  29780
@@ -70,7 +70,7 @@ void NESJ::set_audiobuf(audiobuf *ab)
     nes.apu.dmc.ext_enable = wf.ch_output_enabled;
 }
 
-NES::NES() : cpu(this), ppu(this), cart(this) {
+NES::NES() : cpu(this), ppu(this), bus(this), cart(this) {
 
 }
 
@@ -80,14 +80,13 @@ NES::~NES() {
 void NES_new(JSM)
 {
     NES *nes = new NES();
-    //NES_bus_init(&this, &nes->clock);
     nes->apu.master_cycles = &nes->clock.master_clock;
 
-    struct jsm_debug_read_trace dt;
+    jsm_debug_read_trace dt;
     dt.read_trace = &read_trace;
-    dt.ptr = (void*)this;
+    dt.ptr = static_cast<void *>(nes);
 
-    M6502_setup_tracing(&nes->cpu.cpu, &dt, &nes->clock.master_clock);
+    nes->cpu.cpu.setup_tracing(&dt, &nes->clock.master_clock);
     snprintf(jsm->label, sizeof(jsm->label), "Nintendo Entertainment System");
 
     nes->described_inputs = 0;
@@ -100,30 +99,22 @@ void NES_new(JSM)
 
 void NES_delete(JSM)
 {
-    NES_bus_delete(&this->bus);
-    NES_cart_delete(&this->cart);
-
-    while (cvec_len(this->IOs) > 0) {
-        struct physical_io_device* pio = cvec_pop_back(this->IOs);
-        if (pio->kind == HID_CART_PORT) {
-            if (pio->cartridge_port.unload_cart) pio->cartridge_port.unload_cart(jsm);
+    NESJ *nesj = static_cast<NESJ *>(jsm);
+    std::vector<physical_io_device> &ms = *nesj->nes.IOs;
+    for (physical_io_device &pio : *nesj->nes.IOs) {
+        if (pio.kind == HID_CART_PORT) {
+            if (pio.cartridge_port.unload_cart) pio.cartridge_port.unload_cart(jsm);
         }
-        physical_io_device_delete(pio);
     }
-
-    free(jsm->ptr);
-    jsm->ptr = NULL;
-
-    jsm_clearfuncs(jsm);
+    ms.clear();
 }
 
-static void NESIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
-    JTHIS;
-    struct buf* b = &mfs->files[0].buf;
-    NES_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size);
-    NES_bus_set_which_mapper(&this->bus, this->cart.header.mapper_number);
-    NES_bus_set_cart(this, &this->cart, pio);
-    //NESJ_reset(jsm);
+static void NESIO_load_cart(JSM, multi_file_set &mfs, physical_io_device &pio) {
+    NESJ *nesj = dynamic_cast<NESJ *>(jsm);
+    buf* b = &mfs.files[0].buf;
+    nesj->nes.cart.load_ROM_from_RAM(static_cast<char *>(b->ptr), b->size);
+    nesj->nes.bus.set_which_mapper(nesj->nes.cart.header.mapper_number);
+    nesj->nes.bus.set_cart(pio);
 }
 
 static void NESIO_unload_cart(JSM)
@@ -158,149 +149,148 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 8;
 }
 
-static void setup_audio(struct cvec* IOs)
+void NESJ::setup_audio(std::vector<physical_io_device> &inIOs)
 {
-    struct physical_io_device *pio = cvec_push_back(IOs);
-    pio->kind = HID_AUDIO_CHANNEL;
-    struct JSM_AUDIO_CHANNEL *chan = &pio->audio_channel;
+    physical_io_device &pio = inIOs.emplace_back();
+    pio.kind = HID_AUDIO_CHANNEL;
+    JSM_AUDIO_CHANNEL *chan = &pio.audio_channel;
     chan->sample_rate = APU_CYCLES_PER_FRAME * 60;
     chan->low_pass_filter = 14000;
 }
 
-void NESJ_describe_io(JSM, struct cvec *IOs)
+void NESJ::describe_io(std::vector<physical_io_device> &inIOs)
 {
-    JTHIS;
-    if (this->described_inputs) return;
-    this->described_inputs = 1;
+    if (nes.described_inputs) return;
+    nes.described_inputs = 1;
 
-    this->IOs = IOs;
+    nes.IOs = IOs;
+    IOs->reserve(15);
 
     // controllers
-    struct physical_io_device *c1 = cvec_push_back(this->IOs); //0
-    //struct physical_io_device *c2 = cvec_push_back(this->IOs); //1
-    NES_joypad_setup_pio(c1, 0, "Player 1", 1);
+    physical_io_device &c1 = nes.IOs->emplace_back(); //0
+    //struct physical_io_device *c2 = cvec_push_back(nes.IOs); //1
+    NES_joypad::setup_pio(c1, 0, "Player 1", 1);
     //NES_joypad_setup_pio(c2, 1, "Player 2", 0);
 
     // power and reset buttons
-    struct physical_io_device* chassis = cvec_push_back(IOs); //2
-    physical_io_device_init(chassis, HID_CHASSIS, 1, 1, 1, 1);
-    struct HID_digital_button* b;
-    b = cvec_push_back(&chassis->chassis.digital_buttons);
+    physical_io_device* chassis = &IOs->emplace_back(); //2
+    chassis->init(HID_CHASSIS, 1, 1, 1, 1);
+    HID_digital_button* b;
+
+    b = &chassis->chassis.digital_buttons.emplace_back();
     snprintf(b->name, sizeof(b->name), "Power");
     b->state = 1;
     b->common_id = DBCID_ch_power;
 
-    b = cvec_push_back(&chassis->chassis.digital_buttons); //3
+    b = &chassis->chassis.digital_buttons.emplace_back();
     b->common_id = DBCID_ch_reset;
     snprintf(b->name, sizeof(b->name), "Reset");
     b->state = 0;
 
     // cartridge port
-    struct physical_io_device *d = cvec_push_back(IOs); //4
-    physical_io_device_init(d, HID_CART_PORT, 1, 1, 1, 0);
+    physical_io_device *d = &IOs->emplace_back(); //4
+    d->init(HID_CART_PORT, 1, 1, 1, 0);
     d->cartridge_port.load_cart = &NESIO_load_cart;
     d->cartridge_port.unload_cart = &NESIO_unload_cart;
 
     // screen
-    d = cvec_push_back(IOs);
-    physical_io_device_init(d, HID_DISPLAY, 1, 1, 0, 1); //5
+    d = &IOs->emplace_back(); //4
+    d->init(HID_DISPLAY, 1, 1, 0, 1); //5
     d->display.output[0] = malloc(256 * 224 * 2);
     d->display.output[1] = malloc(256 * 224 * 2);
     d->display.output_debug_metadata[0] = NULL;
     d->display.output_debug_metadata[1] = NULL;
-    this->ppu.display_ptr = make_cvec_ptr(IOs, cvec_len(IOs)-1);
-    this->ppu.cur_output = (u16 *)d->display.output[0];
+    nes.ppu.display_ptr = cvec_ptr(*IOs, IOs->size()-1);
+    nes.ppu.cur_output = static_cast<u16 *>(d->display.output[0]);
     setup_crt(&d->display);
     d->display.last_written = 1;
     //d->display.last_displayed = 1;
 
-    setup_audio(IOs);
+    setup_audio(*IOs);
 
-    this->cpu.joypad1.devices = IOs;
-    this->cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
-    this->cpu.joypad2.devices = IOs;
-    this->cpu.joypad2.device_index = NES_INPUTS_PLAYER2;
+    nes.cpu.joypad1.devices = IOs;
+    nes.cpu.joypad1.device_index = NES_INPUTS_PLAYER1;
+    nes.cpu.joypad2.devices = IOs;
+    nes.cpu.joypad2.device_index = NES_INPUTS_PLAYER2;
 
-    this->ppu.display = &((struct physical_io_device *)cpg(this->ppu.display_ptr))->display;
+    nes.ppu.display = &nes.ppu.display_ptr.get().display;
 }
 
-void NESJ_enable_tracing(JSM)
+void NESJ::enable_tracing()
 {
     // TODO
     assert(1==0);
 }
 
-void NESJ_disable_tracing(JSM)
+void NESJ::disable_tracing()
 {
     // TODO
     assert(1==0);
 }
 
-void NESJ_play(JSM)
+void NESJ::play()
 {
 }
 
-void NESJ_pause(JSM)
+void NESJ::pause()
 {
 }
 
-void NESJ_stop(JSM)
+void NESJ::stop()
 {
 }
 
-void NESJ_get_framevars(JSM, struct framevars* out)
+void NESJ::get_framevars(framevars* out)
 {
-    JTHIS;
-    out->master_frame = this->clock.master_frame;
-    out->x = this->ppu.line_cycle;
-    out->scanline = this->clock.ppu_y;
+    out->master_frame = nes.clock.master_frame;
+    out->x = nes.ppu.line_cycle;
+    out->scanline = nes.clock.ppu_y;
 }
 
-void NESJ_reset(JSM)
+void NESJ::reset()
 {
-    JTHIS;
-    NES_clock_reset(&this->clock);
-    r2A03_reset(&this->cpu);
-    NES_PPU_reset(&this->ppu);
-    NES_APU_reset(&this->apu);
-    NES_bus_reset(this);
+    nes.clock.reset();
+    nes.cpu.reset();
+    nes.ppu.reset();
+    nes.apu.reset();
+    if (nes.bus.reset) nes.bus.reset(&nes.bus);
 }
 
 
-void NESJ_killall(JSM)
+void NESJ::killall()
 {
 
 }
 
-static void sample_audio(struct NES* this)
+void NESJ::sample_audio()
 {
-    this->clock.apu_master_clock++;
-    if (this->audio.buf && (this->clock.apu_master_clock >= (u64)this->audio.next_sample_cycle)) {
-        this->audio.next_sample_cycle += this->audio.master_cycles_per_audio_sample;
-        float *sptr = ((float *)this->audio.buf->ptr) + (this->audio.buf->upos);
-        if (this->audio.buf->upos <= this->audio.buf->samples_len) {
-            *sptr = NES_APU_mix_sample(&this->apu, 0);
+    nes.clock.apu_master_clock++;
+    if (nes.audio.buf && (nes.clock.apu_master_clock >= (u64)nes.audio.next_sample_cycle)) {
+        nes.audio.next_sample_cycle += nes.audio.master_cycles_per_audio_sample;
+        float *sptr = ((float *)nes.audio.buf->ptr) + (nes.audio.buf->upos);
+        if (nes.audio.buf->upos <= nes.audio.buf->samples_len) {
+            *sptr = nes.apu.mix_sample(0);
         }
-        this->audio.buf->upos++;
+        nes.audio.buf->upos++;
     }
 
-    struct debug_waveform *dw = cpg(this->dbg.waveforms.main);
-    if (this->clock.master_clock >= dw->user.next_sample_cycle) {
+    struct debug_waveform *dw = &nes.dbg.waveforms.main.get();
+    if (nes.clock.master_clock >= dw->user.next_sample_cycle) {
         if (dw->user.buf_pos < dw->samples_requested) {
             dw->user.next_sample_cycle += dw->user.cycle_stride;
-            ((float *) dw->buf.ptr)[dw->user.buf_pos] = NES_APU_mix_sample(&this->apu, 1);
+            static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = nes.apu.mix_sample(1);
             dw->user.buf_pos++;
         }
     }
 
-    dw = cpg(this->dbg.waveforms.chan[0]);
-    if (this->clock.master_clock >= dw->user.next_sample_cycle) {
+    dw = &nes.dbg.waveforms.chan[0].get();
+    if (nes.clock.master_clock >= dw->user.next_sample_cycle) {
         for (int j = 0; j < 5; j++) {
-            dw = cpg(this->dbg.waveforms.chan[j]);
+            dw = &nes.dbg.waveforms.chan[j].get();
             if (dw->user.buf_pos < dw->samples_requested) {
                 dw->user.next_sample_cycle += dw->user.cycle_stride;
-                float sv = NES_APU_sample_channel(&this->apu, j);
-                ((float *) dw->buf.ptr)[dw->user.buf_pos] = sv;
+                float sv = nes.apu.sample_channel(j);
+                static_cast<float *>(dw->buf.ptr)[dw->user.buf_pos] = sv;
                 dw->user.buf_pos++;
                 assert(dw->user.buf_pos < 410);
             }
@@ -309,79 +299,76 @@ static void sample_audio(struct NES* this)
 }
 
 
-u32 NESJ_finish_frame(JSM)
+u32 NESJ::finish_frame()
 {
-    JTHIS;
-    if (this->bus.fake_PRG_RAM.ptr == NULL)
-        this->bus.fake_PRG_RAM.ptr = this->bus.SRAM->data;
-    u64 current_frame = this->clock.master_frame;
-    while (this->clock.master_frame == current_frame) {
-        NESJ_finish_scanline(jsm);
+    if (nes.bus.fake_PRG_RAM.ptr == NULL)
+        nes.bus.fake_PRG_RAM.ptr = static_cast<u8 *>(nes.bus.SRAM->data);
+    u64 current_frame = nes.clock.master_frame;
+    while (nes.clock.master_frame == current_frame) {
+        finish_scanline();
         if (dbg.do_break) break;
     }
-    return this->ppu.display->last_written;
+    return nes.ppu.display->last_written;
 }
 
-u32 NESJ_finish_scanline(JSM)
+u32 NESJ::finish_scanline()
 {
-    JTHIS;
-    i32 cpu_step = (i32)this->clock.timing.cpu_divisor;
-    i64 ppu_step = (i64)this->clock.timing.ppu_divisor;
+    i32 cpu_step = static_cast<i32>(nes.clock.timing.cpu_divisor);
+    i64 ppu_step = nes.clock.timing.ppu_divisor;
     i32 done = 0;
-    i32 start_y = this->clock.ppu_y;
-    while (this->clock.ppu_y == start_y) {
-        this->clock.master_clock += cpu_step;
-        //this->apu.cycle(this->clock.master_clock);
-        r2A03_run_cycle(&this->cpu);
-        NES_APU_cycle(&this->apu);
-        sample_audio(this);
-        NES_bus_CPU_cycle(this);
-        this->clock.cpu_frame_cycle++;
-        this->clock.cpu_master_clock += cpu_step;
-        i64 ppu_left = (i64)this->clock.master_clock - (i64)this->clock.ppu_master_clock;
+    i32 start_y = nes.clock.ppu_y;
+    while (nes.clock.ppu_y == start_y) {
+        nes.clock.master_clock += cpu_step;
+        //nes.apu.cycle(nes.clock.master_clock);
+        nes.cpu.run_cycle();
+        nes.apu.cycle();
+        sample_audio();
+        nes.bus.CPU_cycle();
+        nes.clock.cpu_frame_cycle++;
+        nes.clock.cpu_master_clock += cpu_step;
+        i64 ppu_left = static_cast<i64>(nes.clock.master_clock) - static_cast<i64>(nes.clock.ppu_master_clock);
         done = 0;
         while (ppu_left >= ppu_step) {
             ppu_left -= ppu_step;
             done++;
         }
-        NES_PPU_cycle(&this->ppu, done);
-        this->cycles_left -= cpu_step;
+        nes.ppu.cycle(done);
+        nes.cycles_left -= cpu_step;
         if (dbg.do_break) break;
     }
     return 0;
 }
 
 
-u32 NESJ_step_master(JSM, u32 howmany)
+u32 NESJ::step_master(u32 howmany)
 {
-    JTHIS;
-    this->cycles_left += howmany;
-    i64 cpu_step = (i64)this->clock.timing.cpu_divisor;
-    i64 ppu_step = (i64)this->clock.timing.ppu_divisor;
+    nes.cycles_left += howmany;
+    i64 cpu_step = nes.clock.timing.cpu_divisor;
+    i64 ppu_step = nes.clock.timing.ppu_divisor;
     u32 done = 0;
-    while (this->cycles_left >= cpu_step) {
-        //this->apu.cycle(this->clock.master_clock);
-        this->clock.master_clock += cpu_step;
-        r2A03_run_cycle(&this->cpu);
-        NES_APU_cycle(&this->apu);
-        sample_audio(this);
-        NES_bus_CPU_cycle(this);
-        this->clock.cpu_frame_cycle++;
-        this->clock.cpu_master_clock += cpu_step;
-        i64 ppu_left = (i64)this->clock.master_clock - (i64)this->clock.ppu_master_clock;
+    while (nes.cycles_left >= cpu_step) {
+        //nes.apu.cycle(nes.clock.master_clock);
+        nes.clock.master_clock += cpu_step;
+        nes.cpu.run_cycle();
+        nes.apu.cycle();
+        sample_audio();
+        nes.bus.CPU_cycle();
+        nes.clock.cpu_frame_cycle++;
+        nes.clock.cpu_master_clock += cpu_step;
+        i64 ppu_left = static_cast<i64>(nes.clock.master_clock) - static_cast<i64>(nes.clock.ppu_master_clock);
         done = 0;
         while (ppu_left >= ppu_step) {
             ppu_left -= ppu_step;
             done++;
         }
-        NES_PPU_cycle(&this->ppu, done);
-        this->cycles_left -= cpu_step;
+        nes.ppu.cycle(done);
+        nes.cycles_left -= cpu_step;
         if (dbg.do_break) break;
     }
     return 0;
 }
 
-void NESJ_load_BIOS(JSM, struct multi_file_set* mfs)
+void NESJ::load_BIOS(multi_file_set* mfs)
 {
     printf("\nNES doesn't have a BIOS...?");
 }

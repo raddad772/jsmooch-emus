@@ -294,7 +294,7 @@ struct JSM_TOUCHSCREEN {
 };
 
 struct JSM_CARTRIDGE_PORT {
-    void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct physical_io_device *whichpio){};
+    void (*load_cart)(struct jsm_system *ptr, multi_file_set& mfs, struct physical_io_device &whichpio){};
     void (*unload_cart)(struct jsm_system *ptr){};
     persistent_store SRAM{};
 };
@@ -315,10 +315,23 @@ struct JSM_AUDIO_CASSETTE {
     void (*play)(struct jsm_system *ptr){};
     void (*stop)(struct jsm_system *ptr){};
 };
-
+#include <utility>
 struct physical_io_device {
-    physical_io_device() {}
+    physical_io_device() {};
     ~physical_io_device();
+    // Move constructor
+    physical_io_device(physical_io_device&& other) noexcept {
+        move_from(std::move(other));
+    }
+
+    // Move assignment
+    physical_io_device& operator=(physical_io_device&& other) noexcept {
+        if (this != &other) {
+            destroy_active_member();
+            move_from(std::move(other));
+        }
+        return *this;
+    }
     IO_CLASSES kind{};
 
     u32 connected{};
@@ -342,10 +355,12 @@ struct physical_io_device {
         JSM_AUDIO_CASSETTE audio_cassette;
         JSM_TOUCHSCREEN touchscreen;
     };
+
+private:
+    void destroy_active_member() noexcept;
+    void move_from(physical_io_device&& other) noexcept;
 };
 
-void physical_io_device_init(struct physical_io_device*, enum IO_CLASSES kind, u32 enabled, u32 connected, u32 input, u32 output);
-void physical_io_device_delete(struct physical_io_device*);
 void pio_new_button(struct JSM_CONTROLLER* cnt, const char* name, enum JKEYS common_id);
 
 #endif //JSMOOCH_EMUS_PHYSICAL_IO_H
