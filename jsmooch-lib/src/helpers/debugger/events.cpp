@@ -8,6 +8,7 @@
 
 #include "helpers/cvec.h"
 #include "helpers/physical_io.h"
+#include "debugger.h"
 #include "events.h"
 
 void events_view::add_category(debugger_interface *dbgr, const char *name, u32 color, u32 id)

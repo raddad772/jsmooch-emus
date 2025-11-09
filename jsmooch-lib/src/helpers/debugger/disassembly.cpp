@@ -20,6 +20,7 @@
  */
 
 #define is_range_dirty(r) (r.addr_range_start == -1)
+#define is_srange_dirty (addr_range_start == -1)
 #define DBG_DISASSEMBLE_MAX_BLOCK_SIZE 50
 
 
@@ -38,10 +39,10 @@ void disassembly_view::mark_range_invalid(disassembly_range &range, u32 index)
 }
 
 
-static int range_collides(struct disassembly_range *range, u32 addr_start, u32 addr_end)
+int disassembly_range::collides(u32 addr_start, u32 addr_end)
 {
     // So we want to check...
-    if (is_range_dirty(range)) return 0; // If it's dirty, it doesn't collide
+    if (is_srange_dirty) return 0; // If it's dirty, it doesn't collide
 
     // Whole of range is BEFORE check
     // WHole of range is AFTER check
@@ -56,22 +57,20 @@ static int range_collides(struct disassembly_range *range, u32 addr_start, u32 a
     //                  10, 12    no         no       yes
     //                  11, 15    no         yes      no
 
-    u32 whole_of_range_before = ((range.addr_range_start < addr_start) && (range.addr_range_end < addr_start));
-    u32 whole_of_range_after = ((range.addr_range_start > addr_end) && (range.addr_range_end > addr_end));
+    u32 whole_of_range_before = ((addr_range_start < addr_start) && (addr_range_end < addr_start));
+    u32 whole_of_range_after = ((addr_range_start > addr_end) && (addr_range_end > addr_end));
 
     return !((whole_of_range_before) || (whole_of_range_after));
 }
 
-void disassembly_view_dirty_mem(struct debugger_interface *dbgr, struct disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end)
+void disassembly_view::dirty_mem(u32 mem_bus, u32 addr_start, u32 addr_end)
 {
-    for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
-        struct disassembly_range *range = cvec_get(&dview->ranges, i);
-        // If the addr range start or end are in ours...
-        if ((!is_range_dirty(range)) && range_collides(range, addr_start, addr_end)) {// TODO: add all colision cases
-            mark_disassembly_range_invalid(dview, range, i);
+    for (size_t i = 0; i < ranges.size(); i++) {
+        auto &range = ranges[i];
+        if (!is_range_dirty(range) && range.collides(addr_start, addr_end)) {
+            mark_range_invalid(range, i);
         }
-    }
-}
+    }}
 
 disassembly_view::disassembly_view()
 {
@@ -93,7 +92,7 @@ void disassembly_entry::clear_for_reuse()
     ins_size_bytes = 0;
 }
 
-static void w_entry_to_strs(struct disassembly_entry_strings *strs, struct disassembly_entry *entry, int col_size)
+static void w_entry_to_strs(disassembly_entry_strings *strs, disassembly_entry *entry, int col_size)
 {
     switch(col_size) {
         case 4:
@@ -132,17 +131,15 @@ disassembly_range *disassembly_view::find_range_including(u32 instruction_addr)
     return nullptr;
 }
 
-static struct disassembly_range *find_next_range(struct disassembly_view *dview, u32 what_addr) {
+disassembly_range *disassembly_view::find_next_range(u32 what_addr) {
     i64 lowest_addr = -1;
-    struct disassembly_range *lowest_r = nullptr;
+    disassembly_range *lowest_r = nullptr;
     // Only called if there is no CURRENT range
-    for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
-        struct disassembly_range *r = cvec_get(&dview->ranges, i);
-
-        if ((!is_range_dirty(r)) && (r->addr_range_start > what_addr)) {
-            if (r->addr_range_start < lowest_addr) {
-                lowest_addr = r->addr_range_start;
-                lowest_r = r;
+    for (auto &r : ranges) {
+        if ((!is_range_dirty(r)) && (r.addr_range_start > what_addr)) {
+            if (r.addr_range_start < lowest_addr) {
+                lowest_addr = r.addr_range_start;
+                lowest_r = &r;
             }
         }
     }
@@ -150,187 +147,68 @@ static struct disassembly_range *find_next_range(struct disassembly_view *dview,
 }
 
 #define CVEC_FOREACH(iterval, cvec, struct_type, iterator) for (u32 iterval = 0; iterval < cvec_len(&cvec); iterval++) {\
-    struct struct_type * iterator = (struct struct_type *)cvec_get(&cvec, iterval)
+    struct_type * iterator = (struct_type *)cvec_get(&cvec, iterval)
 
 #define CVEC_FOREACH_END }
 
-static struct disassembly_range *get_range(struct disassembly_view *dview)
+cvec_ptr<disassembly_range> disassembly_view::get_range()
 {
     // Get either a dirty range to re-use, or a new range
-    struct disassembly_range *r = nullptr;
-
-    u32 *dp = cvec_pop_back(&dview->dirty_range_indices);
+    cvec_ptr<disassembly_range> a;
+    u32 *dp = nullptr;
+    if (dirty_range_indices.size() > 0)
+        dp = &dirty_range_indices.back();
     if (dp) {
-        r = cvec_get(&dview->ranges, *dp);
-        assert(r->valid == 0);
-        r->valid = 1;
+        a.make(ranges, *dp);
+        disassembly_range &r = ranges.at(*dp);
+        assert(r.valid == 0);
+        r.valid = 1;
     }
     else {
-        r = cvec_push_back(&dview->ranges);
-        disassembly_range_init(r);
+        a.make(ranges, ranges.size());
     }
-    return r;
+    return a;
 }
 
-static struct disassembly_range *create_diassembly_block(struct debugger_interface *di, struct disassembly_view *dview, u32 range_start, u32 range_end)
+disassembly_range *disassembly_view::create_diassembly_block(u32 range_start, u32 range_end)
 {
-    assert(range_start<(dview->mem_end+1));
-    u32 cur_addr = range_start;
-    struct disassembly_range *r = get_range(dview);
-    r->addr_range_start = range_start;
-    r->addr_range_end = range_end;
-    r->valid = 1;
-    struct disassembly_entry *last_entry = nullptr;
-    while(true) {
-        struct disassembly_entry *entry = cvec_push_back(&r->entries);
-        if (cvec_len(&r->entries) > r->num_entries_previously_made) { // If we've added an entry that has not been init yet...
-            r->num_entries_previously_made++;
-            disassembly_entry_init(entry); // Init it!
-        }
-        entry->addr = cur_addr;
-        //printf("\nDISASSEMBLE %04x", entry->addr);
-        dview->get_disassembly.func(dview->get_disassembly.ptr, di, dview, entry);
-        cur_addr += entry->ins_size_bytes;
-        assert(cur_addr>range_start);
-        if (cur_addr > range_end) break;
-    }
-    r->addr_of_next_ins = cur_addr;
-    return r;
+    return nullptr;
 }
 
-int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines) {
-    for (u32 i = 0; i < cvec_len(out_lines); i++) {
-        struct disassembly_entry_strings *strs = cvec_get(out_lines, i);
-        strs->addr[0] = strs->dasm[0] = strs->context[0] = 0;
+int disassembly_view::get_rows(u32 instruction_addr, u32 bytes_before, u32 total_lines, std::vector<disassembly_entry_strings> &out_lines) {
+    for (auto &[addr, dasm, context] : out_lines) {
+        addr[0] = dasm[0] = context[0] = 0;
     }
-
-    // So we get an address,
-    // dasm_rows comes out as struct disassembly_entry_strings
-    //
-    u32 line_of_current_instruction = 0;
-    u32 num_rows = 0;
-
-    u32 cur_search_addr = instruction_addr - bytes_before;
-    if (bytes_before > instruction_addr) cur_search_addr = 0;
-
-    // 0. set addr to place - start
-    // A. Attempt to find block with addr
-    // B. If found, copy relavent entries and repeat 1) with next address outside the block
-    // C. If not found, find next closest block:
-    //  1a) If closest block buts up against it, use that as a boundary
-    //  1b) Otherwise, use MAX_BLOCK_SIZE
-    //  2) Now, search for next address outside block
-    struct disassembly_range *next_loop_r = nullptr;
-    u32 none_found = 0;
-
-    while(true) {
-        struct disassembly_range *fr = nullptr;
-
-        if (next_loop_r) fr = next_loop_r;
-        else fr = none_found ? nullptr : find_range_including(dview, cur_search_addr);
-
-        next_loop_r = nullptr;
-        // If not found...
-        if (fr == nullptr) { // Attempt to start diassembly
-            // Find next
-            struct disassembly_range *nextr = none_found ? nullptr : find_next_range(dview, cur_search_addr);
-            none_found = nextr == nullptr;
-            u32 range_start = cur_search_addr;
-            u32 range_end = 0;
-
-            if (!nextr) { // If next range isn't found...
-                none_found = 1;
-                // Check if we're before the instruction addr. IF we are, we must skip to it and start over
-                if (cur_search_addr < instruction_addr) {
-                    cur_search_addr = instruction_addr;
-                    continue;
-                }
-                // If we're not, we can start disassembly here.
-                range_end = range_start + DBG_DISASSEMBLE_MAX_BLOCK_SIZE;
-            }
-            else { // We have a next range
-                // Check if WE are < our start range...
-                if (cur_search_addr < instruction_addr) {
-                    // Just jump and restart, we can't start here
-                    cur_search_addr = nextr->addr_range_start;
-                    next_loop_r = nextr;
-                    continue;
-                }
-                else { // We are >= our start range, so we can start where we are
-                    range_end = nextr->addr_range_start - 1;
-                }
-            }
-
-            // Check if it's > MAX_BLOCK_SIZE away, set new block size to that or MAX_BLOCK_SIZE
-            u32 range_len = range_end - range_start;
-            if (range_len > DBG_DISASSEMBLE_MAX_BLOCK_SIZE) range_len = DBG_DISASSEMBLE_MAX_BLOCK_SIZE;
-            else {
-                if (nextr) next_loop_r = nextr; // SUSPECT???
-            }
-            if (range_end > dview->mem_end) range_end = dview->mem_end;
-
-            // Disassemble and create block!
-            fr = create_diassembly_block(di, dview, range_start, range_end);
-        }
-
-        // At this point, we have a block, so add it in until we hit limit of address
-        for (u32 i = 0; i < cvec_len(&fr->entries); i++) {
-            struct disassembly_entry *e = cvec_get(&fr->entries, i);
-            if (e->addr < cur_search_addr) continue; // Skip if we're in the block before current address
-
-            struct disassembly_entry_strings *es = cvec_push_back(out_lines);
-
-            if (dview->print_addr.func) {
-                dview->print_addr.func(dview->print_addr.ptr, e->addr, es->addr, sizeof(es->addr));
-            }
-            else {
-                snprintf(es->addr, sizeof(es->addr), "%04x", e->addr);
-            }
-            snprintf(es->dasm, sizeof(es->dasm), "%s", e->dasm.ptr);
-            snprintf(es->context, sizeof(es->context), "%s", e->context.ptr);
-
-            if (e->addr == instruction_addr) line_of_current_instruction = num_rows;
-
-            num_rows++;
-            if (num_rows >= total_lines) break;
-
-            cur_search_addr = e->addr + e->ins_size_bytes;
-            if (cur_search_addr > dview->mem_end) break;
-        }
-        if (num_rows >= total_lines) break;
-        if (cur_search_addr > dview->mem_end) break;
-    }
-
-    return line_of_current_instruction;
+    return 0;
 }
 
 
-void cpu_reg_context_render(struct cpu_reg_context *ctx, char* outbuf, size_t outbuf_sz) {
-    if (ctx->custom_render) {
-        ctx->custom_render(ctx, outbuf, outbuf_sz);
+void cpu_reg_context::render(char* outbuf, size_t outbuf_sz) {
+    if (custom_render) {
+        custom_render(this, outbuf, outbuf_sz);
     }
     else {
-        switch(ctx->kind) {
+        switch(kind) {
             case RK_bitflags:
                 snprintf(outbuf, outbuf_sz, "OOPS!");
                 break;
             case RK_bool:
-                snprintf(outbuf, outbuf_sz, "%s", ctx->bool_data ? "true" : "false");
+                snprintf(outbuf, outbuf_sz, "%s", bool_data ? "true" : "false");
                 break;
             case RK_int8:
-                snprintf(outbuf, outbuf_sz, "%02x", (u32)ctx->int8_data);
+                snprintf(outbuf, outbuf_sz, "%02x", static_cast<u32>(int8_data));
                 break;
             case RK_int16:
-                snprintf(outbuf, outbuf_sz, "%04x", (u32)ctx->int16_data);
+                snprintf(outbuf, outbuf_sz, "%04x", static_cast<u32>(int16_data));
                 break;
             case RK_int32:
-                snprintf(outbuf, outbuf_sz, "%08x", (u32)ctx->int32_data);
+                snprintf(outbuf, outbuf_sz, "%08x", static_cast<u32>(int32_data));
                 break;
             case RK_float:
-                snprintf(outbuf, outbuf_sz, "%f", ctx->float_data);
+                snprintf(outbuf, outbuf_sz, "%f", float_data);
                 break;
             case RK_double:
-                snprintf(outbuf, outbuf_sz, "%f", ctx->double_data);
+                snprintf(outbuf, outbuf_sz, "%f", double_data);
                 break;
         }
     }

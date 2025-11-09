@@ -72,6 +72,7 @@ struct disassembly_range {
         entries.reserve(20);
     };
     void mark_block_dirty();
+    int collides(u32 addr_start, u32 addr_end);
     u32 valid{};
     i64 addr_range_start{};
     i64 addr_range_end{};
@@ -98,6 +99,8 @@ struct disassembly_vars {
 
 struct debugger_interface;
 struct cpu_reg_context {
+    void render(char* outbuf, size_t outbuf_sz);
+
     cpu_reg_kinds kind{};
     union {
         u8 bool_data;
@@ -125,22 +128,38 @@ struct memory_view_module {
 };
 
 struct memory_view {
-    std::vector<memory_view_module> modules; //50
+    memory_view() {
+        modules.reserve(50);
+    }
+    memory_view_module *get_module(u32 id);
+    u32 num_modules();
+    void add_module(const char *name, u32 inid, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
+
+    std::vector<memory_view_module> modules{}; //50
 
     // 16 bytes per row!
 
     // Input
-    u32 display_start_addr;
-    u32 current_id;
+    u32 display_start_addr{};
+    u32 current_id{};
 
-    u32 force_refresh;
-    u32 old_top_display;
+    u32 force_refresh{};
+    u32 old_top_display{};
 };
 
 struct disassembly_view {
+private:
+    cvec_ptr<disassembly_range> get_range();
+
+public:
     disassembly_view();
+    disassembly_range *create_diassembly_block(u32 range_start, u32 range_end);
+    void dirty_mem(u32 mem_bus, u32 addr_start, u32 addr_end);
     void mark_range_invalid(disassembly_range &range, u32 index);
-    u32 mem_start{};
+    disassembly_range *find_next_range(u32 what_addr);
+    disassembly_range *find_range_including(u32 instruction_addr);    u32 mem_start{};
+    int get_rows(u32 instruction_addr, u32 bytes_before, u32 total_lines, std::vector<disassembly_entry_strings> &out_lines);
+
     u32 mem_end{};
     std::vector<disassembly_range> ranges{}; // 100
     std::vector<u32> dirty_range_indices{}; // 100 indices of dirty ranges we can re-use
@@ -371,24 +390,30 @@ struct debug_waveform {
 #define MAX_TRACE_COLS 20
 
 struct trace_line {
-    std::array<jsm_string, MAX_TRACE_COLS> cols;
-    trace_line() :
-    cols(make_jsm_string_array<MAX_TRACE_COLS>(80))
-    {};
+    std::array<jsm_string, MAX_TRACE_COLS> cols = make_jsm_string_array<MAX_TRACE_COLS>(80);
 
-    i32 source_id{};
-    u32 empty{};
+    i32 source_id=-1;
+    u32 empty=1;
+
+    void clear(u32 num_cols);
 };
 
 struct trace_view_col {
     char name[50]{};
-    i32 default_size{};
+    i32 default_size=-1;
 };
 
 struct trace_view {
+    trace_view();
+    void add_col(const char *name, i32 default_size);
+    void clear();
+    void printf(u32 col, char *format, ...);
+    void startline(i32 source);
+    void endline();
+    trace_line *get_line(int row);
+
     std::vector<trace_line> lines{};
     std::vector<trace_view_col> columns{};
-    trace_view() {lines.reserve(this->max_trace_lines); columns.reserve(MAX_TRACE_COLS); }
     trace_line *lptr{};
     u32 current_output_line{};
     u32 max_trace_lines=100;
@@ -535,13 +560,11 @@ struct debugger_interface {
 
 dbglog_category_node &dbglog_category_get_root(dbglog_view &dv);
 
-u32 dbglog_count_visible_lines(dbglog_view *);
-u32 dbglog_get_nth_visible(dbglog_view *, u32 n);
-u32 dbglog_get_next_visible(dbglog_view *, u32 start);
 void debugger_report_event(cvec_ptr<debugger_view> &viewptr, i32 event_id);
 void debugger_report_frame(debugger_interface *dbgr);
 void debugger_report_line(debugger_interface *dbgr, i32 line_num);
 void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end);
+void memory_view_get_line(memory_view_module *mm, u32 addr, char *out)
 
 #define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
 #define DEBUG_REGISTER_EVENT(name, color, category, id, default_enable) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, default_enable, 0, NULL, id)
