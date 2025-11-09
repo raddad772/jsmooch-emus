@@ -214,15 +214,15 @@ u32 NES_mapper::PPU_read_noeffect(u32 addr)
     addr &= 0x3FFF;
     if (PPU_read_override) return PPU_read_override(&nes->bus, addr, 0);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
-    return NES_mmap_read(&PPU_map[addr >> 10], addr, 0);
+    return PPU_map[addr >> 10].read(addr, 0);
 }
 
-void NES_PPU_write(NES *nes, u32 addr, u32 val)
+void NES_mapper::PPU_write(u32 addr, u32 val)
 {
     addr &= 0x3FFF;
     if (PPU_write_override) return PPU_write_override(&nes->bus, addr, val);
     if (addr > 0x2000) addr = (addr & 0xFFF) | 0x2000;
-    NES_mmap_write(&PPU_map[addr >> 10], addr, val);
+    PPU_map[addr >> 10].write(addr, val);
 }
 
 void NES_bus_reset(NES *nes)

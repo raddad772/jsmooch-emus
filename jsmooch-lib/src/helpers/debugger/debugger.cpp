@@ -24,12 +24,12 @@ enum dvur {
     dvur_on_line,
 };
 
-static void debugger_view_do_update(struct debugger_interface *dbgr, struct debugger_view *dview, enum dvur reason)
+static void debugger_view_do_update(debugger_interface *dbgr, struct debugger_view *dview, enum dvur reason)
 {
     // TODO: this
 }
 
-void debugger_report_frame(struct debugger_interface *dbgr)
+void debugger_report_frame(debugger_interface *dbgr)
 {
     if (dbgr == NULL) return;
     for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
@@ -40,7 +40,7 @@ void debugger_report_frame(struct debugger_interface *dbgr)
     }
 }
 
-void debugger_report_line(struct debugger_interface *dbgr, i32 line_num)
+void debugger_report_line(debugger_interface *dbgr, i32 line_num)
 {
     assert(line_num>=0);
     if (!dbgr) return;
@@ -56,13 +56,12 @@ void debugger_report_line(struct debugger_interface *dbgr, i32 line_num)
 
 cvec_ptr<debugger_view> &debugger_interface::make_view(enum debugger_view_kinds kind)
 {
-    debugger_view &n = views.emplace_back();
-    n.init(kind);
+    views.emplace_back(kind);
     cvec_ptr r(views, views.size() - 1);
     return r;
 }
 
-void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end)
+void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end)
 {
     if (dbgr == NULL) return;
     for (u32 i = 0; i < cvec_len(&dbgr->views); i++) {
@@ -97,9 +96,8 @@ void debugger_interface_dirty_mem(struct debugger_interface *dbgr, u32 mem_bus, 
 #define UPDATE_ON_PAUSE_DEFAULT 1
 #define UPDATE_ON_STEP_DEFAULT 1
 
-void debugger_view::init(enum debugger_view_kinds kind)
+debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
 {
-    this->kind = kind;
     this->update.on_break = UPDATE_ON_BREAK_DEFAULT;
     this->update.on_line.enabled = UPDATE_ON_LINE_ENABLED_DEFAULT;
     this->update.on_line.line_num = UPDATE_ON_LINE_NUM_DEFAULT;
@@ -110,60 +108,57 @@ void debugger_view::init(enum debugger_view_kinds kind)
             assert(1==2);
             break;
         case dview_dbglog:
-            dbglog_view_init(&dbglog);
+            new (&dbglog) dbglog_view();
             break;
         case dview_console:
+            new (&console) console_view();
             console_view_init(&this->console);
             break;
         case dview_image:
-            image_view_init(&this->image);
+            new (&image) image_view();
             break;
         case dview_disassembly:
-            disassembly_view_init(&this->disassembly);
+            new (&disassembly) disassembly_view();
             break;
         case dview_memory:
-            memory_view_init(&this->memory);
+            new (&memory) memory_view();
             break;
 
         case dview_events:
-            events_view_init(&this->events);
+            new (&events) events_view();
             break;
         case dview_waveforms:
-            waveform_view_init(&this->waveform);
+            new (&waveform) waveform_view;
             break;
         case dview_trace:
-            trace_view_init(&this->trace);
+            new (&trace) trace_view();
             break;
         default:
             assert(1==2);
     }
 }
 
-void debugger_widget_init(struct debugger_widget *this, enum JSMD_widgets kind)
+debugger_widget::debugger_widget(JSMD_widgets kind) : kind(kind)
 {
-    memset(this, 0, sizeof(struct debugger_widget));
-    this->kind = kind;
-
-    switch(this->kind) {
+    switch(kind) {
         case JSMD_checkbox:
+            new (&checkbox) debugger_widget_checkbox();
             break;
         case JSMD_radiogroup:
-            cvec_init(&this->radiogroup.buttons, sizeof(struct debugger_widget), 5);
+            new (&radiogroup) debugger_widget_radiogroup();
             break;
         case JSMD_colorkey:
-            this->colorkey.num_items = 0;
-            this->colorkey.title[0] = 0;
+            new (&colorkey) debugger_widget_colorkey;
             break;
         case JSMD_textbox:
-            jsm_string_init(&this->textbox.contents, 4000);
+            new (&textbox) debugger_widget_textbox();
             break;
         default:
             NOGOHERE;
     }
 }
 
-debugger_widget::~debugger_widget()
-{
+void debugger_widget::destroy_active() {
     switch(this->kind) {
         case JSMD_colorkey:
             colorkey.~debugger_widget_colorkey();
@@ -181,9 +176,14 @@ debugger_widget::~debugger_widget()
     }
 }
 
-void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_line)
+debugger_widget::~debugger_widget()
 {
-    struct debugger_widget *w = cvec_push_back(widgets);
+    destroy_active();
+}
+
+void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, char *text, u32 same_line)
+{
+    debugger_widget &w = widgets.emplace_back();
     debugger_widget_init(w, JSMD_textbox);
     w->same_line = same_line;
     jsm_string_sprintf(&w->textbox.contents, "%s", text);
@@ -191,12 +191,12 @@ void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_lin
     w->visible = 1;
 }
 
-void debugger_widgets_textbox_clear(struct debugger_widget_textbox *tb)
+void debugger_widgets_textbox_clear(debugger_widget_textbox *tb)
 {
     jsm_string_quickempty(&tb->contents);
 }
 
-int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const char *format, ...)
+int debugger_widgets_textbox_sprintf(debugger_widget_textbox *tb, const char *format, ...)
 {
     va_list va;
     va_start(va, format);
@@ -205,7 +205,7 @@ int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const c
     return num;
 }
 
-void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+void debugger_widgets_add_checkbox(cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
 {
     struct debugger_widget *w = cvec_push_back(widgets);
     debugger_widget_init(w, JSMD_checkbox);
@@ -216,7 +216,7 @@ void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 e
     w->visible = 1;
 }
 
-struct debugger_widget *debugger_widgets_add_color_key(struct cvec *widgets, const char *default_text, u32 default_visible)
+struct debugger_widget *debugger_widgets_add_color_key(cvec *widgets, const char *default_text, u32 default_visible)
 {
     struct debugger_widget *w = cvec_push_back(widgets);
     debugger_widget_init(w, JSMD_colorkey);
@@ -227,7 +227,7 @@ struct debugger_widget *debugger_widgets_add_color_key(struct cvec *widgets, con
     return w;
 }
 
-struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+struct debugger_widget *debugger_widgets_add_radiogroup(cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
 {
     struct debugger_widget *w = cvec_push_back(widgets);
     debugger_widget_init(w, JSMD_radiogroup);
@@ -239,13 +239,13 @@ struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, co
     return w;
 }
 
-void debugger_widgets_colorkey_set_title(struct debugger_widget_colorkey *this, const char *str)
+void debugger_widgets_colorkey_set_title(debugger_widget_colorkey *this, const char *str)
 {
     snprintf(this->title, sizeof(this->title), "%s", str);
     this->num_items = 0;
 }
 
-void debugger_widgets_colorkey_add_item(struct debugger_widget_colorkey *this, const char *str, u32 color)
+void debugger_widgets_colorkey_add_item(debugger_widget_colorkey *this, const char *str, u32 color)
 {
     u32 num = this->num_items++;
     assert(this->num_items < 50);
@@ -256,7 +256,7 @@ void debugger_widgets_colorkey_add_item(struct debugger_widget_colorkey *this, c
 }
 
 
-void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, const char *text, u32 value, u32 same_line)
+void debugger_widget_radiogroup_add_button(debugger_widget *radiogroup, const char *text, u32 value, u32 same_line)
 {
     struct debugger_widget *w = cvec_push_back(&radiogroup->radiogroup.buttons);
     debugger_widget_init(w, JSMD_checkbox);
@@ -267,53 +267,42 @@ void debugger_widget_radiogroup_add_button(struct debugger_widget *radiogroup, c
     w->visible = 1;
 }
 
-void debugger_view_delete(struct debugger_view *this)
+debugger_view::~debugger_view() {
+    destroy_active();
+}
+
+void debugger_view::destroy_active()
 {
-    for (u32 i = 0; i < cvec_len(&this->options); i++) {
-        struct debugger_widget *p = cvec_get(&this->options, i);
-        debugger_widget_delete(p);
-    }
-    cvec_delete(&this->options);
+    this->options.clear();
     switch(this->kind) {
         case dview_null:
             assert(1==2);
             break;
         case dview_disassembly:
-            disassembly_view_delete(&this->disassembly);
+            disassembly.~disassembly_view();
             break;
         case dview_events:
-            events_view_delete(&this->events);
+            events.~events_view();
             break;
         case dview_memory:
-            memory_view_delete(&this->memory);
+            memory.~memory_view();
             break;
         case dview_dbglog:
-            dbglog_view_delete(&this->dbglog);
+            dbglog.~dbglog_view();
             break;
         case dview_console:
-            console_view_delete(&this->console);
+            console.~console_view();
             break;
         case dview_image:
-            image_view_delete(&this->image);
+            image.~image_view();
             break;
         case dview_waveforms:
-            waveform_view_delete(&this->waveform);
+            waveform.~waveform_view();
             break;
         case dview_trace:
-            trace_view_delete(&this->trace);
+            trace.~trace_view();
             break;
         default:
             assert(1==2);
     }
-}
-
-void debugger_interface_init(struct debugger_interface *this)
-{
-    CTOR_ZERO_SELF;
-    cvec_init(&this->views, sizeof(struct debugger_view), 10);
-}
-
-void debugger_interface_delete(struct debugger_interface *this)
-{
-    DTOR_child_cvec(views, debugger_view);
 }

@@ -14,7 +14,7 @@ void NES_joypad::latch(u32 what)
     latched = what;
     counter = 0;
     if (latched == 0) {
-        physical_io_device& p = devices[device_index];
+        physical_io_device& p = devices->at(device_index);
         if (p.connected) {
             struct std::vector<HID_digital_button> &bl = p.controller.digital_buttons;
             struct HID_digital_button* b;

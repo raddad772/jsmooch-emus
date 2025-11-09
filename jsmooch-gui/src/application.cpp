@@ -444,7 +444,7 @@ void imgui_jsmooch_app::render_dbglog_view(struct DLVIEW &dview, bool update_das
                     ImGui::TableNextRow();
 
                     ImGui::TableSetColumnIndex(0);
-                    struct dbglog_entry *e = &dlv->items.data[idx];
+                    dbglog_entry *e = &dlv->items.data[idx];
 
                     ImGui::TextColored(get_iv4(dlv->id_to_color[e->category_id]), "%s", dlv->id_to_category[e->category_id]->short_name);
 

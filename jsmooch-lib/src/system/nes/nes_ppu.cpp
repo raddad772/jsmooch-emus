@@ -77,7 +77,7 @@ u32 NES_PPU::read_cgram(u32 addr) const {
 
 void NES_PPU::mem_write(u32 addr, u32 val)
 {
-    if ((addr & 0x3FFF) < 0x3F00) NES_PPU_write(nes, addr, val);
+    if ((addr & 0x3FFF) < 0x3F00) nes->bus.PPU_write(addr, val);
     else write_cgram(addr & 0x1F, val);
 }
 
@@ -181,7 +181,7 @@ u32 NES_PPU::read_regs(u32 addr, u32 val, u32 has_effect)
             }
             else {
                 output = latch.VRAM_read;
-                latch.VRAM_read = NES_PPU_read_effect(nes, io.v & 0x3FFF);
+                latch.VRAM_read = nes->bus.PPU_read_effect(io.v & 0x3FFF);
             }
             io.v = (io.v + io.vram_increment) & 0x7FFF;
             //nes->bus.a12_watch(nes, io.v & 0x3FFF);
@@ -196,8 +196,8 @@ u32 NES_PPU::read_regs(u32 addr, u32 val, u32 has_effect)
 u32 NES_PPU::fetch_chr_line(u32 table, u32 tile, u32 line, u32 has_effect) {
     u32 r = (0x1000 * table) + (tile * 16) + line;
     last_sprite_addr = r + 8;
-    u32 lo = NES_PPU_read_effect(nes, r);
-    u32 hi = NES_PPU_read_effect(nes, r + 8);
+    u32 lo = nes->bus.PPU_read_effect(r);
+    u32 hi = nes->bus.PPU_read_effect(r + 8);
     u32 output = 0;
     for (u32 i = 0; i < 8; i++) {
         output <<= 2;
@@ -213,7 +213,7 @@ static inline u32 fetch_chr_addr(u32 table, u32 tile, u32 line) {
 }
 
 u32 NES_PPU::fetch_chr_line_low(u32 addr) const {
-    u32 low = NES_PPU_read_effect(nes, addr);
+    u32 low = nes->bus.PPU_read_effect(addr);
     u32 output = 0;
     for (u32 i = 0; i < 8; i++) {
         output <<= 2;
@@ -224,7 +224,7 @@ u32 NES_PPU::fetch_chr_line_low(u32 addr) const {
 }
 
 u32 NES_PPU::fetch_chr_line_high(u32 addr, u32 o) const {
-    u32 high = NES_PPU_read_effect(nes, addr + 8);
+    u32 high = nes->bus.PPU_read_effect(addr + 8);
     u32 output = 0;
     for (u32 i = 0; i < 8; i++) {
         output <<= 2;
@@ -427,7 +427,7 @@ void NES_PPU::perform_bg_fetches() { // Only called from prerender and visible s
         // Do memory accesses and shifters
         switch (line_cycle & 7) {
             case 1: // nametable, tile #
-                bg_fetches[0] = NES_PPU_read_effect(nes, 0x2000 | (io.v & 0xFFF));
+                bg_fetches[0] = nes->bus.PPU_read_effect(0x2000 | (io.v & 0xFFF));
                 bg_tile_fetch_addr = fetch_chr_addr(io.bg_pattern_table, bg_fetches[0], in_tile_y);
                 bg_tile_fetch_buffer = 0;
                 // Reload shifters if needed
@@ -440,7 +440,7 @@ void NES_PPU::perform_bg_fetches() { // Only called from prerender and visible s
                 // attribute table
                 u32 attrib_addr = 0x23C0 | (io.v & 0x0C00) | ((io.v >> 4) & 0x38) | ((io.v >> 2) & 7);
                 u32 shift = ((io.v >> 4) & 0x04) | (io.v & 0x02);
-                bg_fetches[1] = (NES_PPU_read_effect(nes, attrib_addr) >> shift) & 3;
+                bg_fetches[1] = (nes->bus.PPU_read_effect(attrib_addr) >> shift) & 3;
                 break; }
             case 5: // low buffer
                 bg_tile_fetch_buffer = fetch_chr_line_low(bg_tile_fetch_addr);

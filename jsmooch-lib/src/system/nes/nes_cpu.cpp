@@ -2,17 +2,14 @@
 // Created by Dave on 2/5/2024.
 //
 
-#include <stdio.h>
 #include "component/cpu/m6502/m6502.h"
 #include "component/cpu/m6502/nesm6502_opcodes.h"
 #include "mappers/mapper.h"
-#include "helpers/debugger/debugger.h"
 #include "nes.h"
 #include "nes_cpu.h"
 
-u32 NES_controllerport::data()
-{
-    if (device == NULL) return 0;
+u32 NES_controllerport::data() const {
+    if (device == nullptr) return 0;
     switch(kind) {
         case NES_JOYPAD:
             return static_cast<NES_joypad *>(device)->data() & 3;
@@ -23,7 +20,7 @@ u32 NES_controllerport::data()
     return 0;
 }
 
-void NES_controllerport::latch(u32 what) {
+void NES_controllerport::latch(u32 what) const {
     if (!device) return;
     switch(kind) {
         case NES_JOYPAD:
@@ -52,7 +49,7 @@ r2A03::r2A03(NES* nes) : cpu(nesM6502_decoded_opcodes), nes(nes)
 
 u32 NES_CPU_read_trace(void *tr, u32 addr) {
     NES* nes = static_cast<NES *>(tr);
-    return NES_bus_CPU_read(nes, addr, 0, 0);
+    return nes->bus.CPU_read(addr, 0, 0);
 }
 
 void r2A03::notify_NMI(u32 level) {
@@ -78,7 +75,7 @@ void r2A03::run_cycle() {
             return;
         }
         io.dma.step = 0;
-        NES_bus_PPU_write_regs(nes, 0x2004, NES_bus_CPU_read(nes, io.dma.addr, 0, 1));
+        nes->ppu.write_regs(0x2004, nes->bus.CPU_read(io.dma.addr, 0, 1));
         io.dma.bytes_left--;
         io.dma.addr = (io.dma.addr + 1) & 0xFFFF;
         if (io.dma.bytes_left == 0) {
@@ -89,24 +86,23 @@ void r2A03::run_cycle() {
 
     cpu.cycle();
     if (cpu.pins.RW) {
-        NES_bus_CPU_write(nes, cpu.pins.Addr, cpu.pins.D);
+        nes->bus.CPU_write(cpu.pins.Addr, cpu.pins.D);
     }
     else {
-        cpu.pins.D = open_bus = NES_bus_CPU_read(nes, cpu.pins.Addr, open_bus, 1);
+        cpu.pins.D = open_bus = nes->bus.CPU_read(cpu.pins.Addr, open_bus, 1);
     }
 }
 
-u32 r2A03::read_reg(u32 addr, u32 val, u32 has_effect)
+u32 r2A03::read_reg(u32 addr, u32 val, u32 has_effect) const
 {
-    u32 r;
-
     switch(addr) {
         case 0x4016: // JOYSER0
             return controller_port1.data();
         case 0x4017: // JOYSER1
             return controller_port2.data();
+        default:
+            return nes->apu.read_IO(addr, val, has_effect);
     }
-    return nes->apu.read_IO(addr, val, has_effect);
 }
 
 void r2A03::write_reg(u32 addr, u32 val)
@@ -121,6 +117,8 @@ void r2A03::write_reg(u32 addr, u32 val)
         case 0x4016: // JOYSER0
             controller_port1.latch(val&1);
             return;
+        default:
+            nes->apu.write_IO(addr, val);
     }
-    nes->apu.write_IO(addr, val);
+
 }

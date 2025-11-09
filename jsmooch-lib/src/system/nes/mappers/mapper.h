@@ -49,6 +49,7 @@ struct NES_mapper {
     void *ptr{};
     NES* nes{};
     void do_a12_watch(u32 addr);
+    void PPU_write(u32 addr, u32 val);
     u32 PPU_read_effect(u32 addr);
     u32 PPU_read_noeffect(u32 addr);
 

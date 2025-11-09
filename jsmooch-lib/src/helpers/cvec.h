@@ -12,7 +12,10 @@ struct cvec_ptr {
     cvec_ptr(std::vector<T> &v, u32 idx) : vec(&v), index(idx) {};
 
     // Copy constructor (defaulted)
-    cvec_ptr(const cvec_ptr&) = default;
+    cvec_ptr(const cvec_ptr &other) {
+        vec = other.vec;
+        index = other.index;
+    }
 
     // Move constructor
     cvec_ptr(cvec_ptr&& other) noexcept

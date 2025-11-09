@@ -260,7 +260,7 @@ struct dbglog_view {
         u32 first_entry, next_entry, len;
     } items;
 
-    struct dbglog_entry *last_added;
+    dbglog_entry *last_added;
 
     struct dbglog_category_node category_root;
 };
@@ -470,8 +470,6 @@ struct cvec_ptr debugger_view_new(struct debugger_interface *, enum debugger_vie
 void debugger_view_init(struct debugger_view *, enum debugger_view_kinds kind);
 void debugger_interface_dirty_mem(struct debugger_interface *, u32 mem_bus, u32 addr_start, u32 addr_end);
 
-void debugger_widget_init(struct debugger_widget *, enum JSMD_widgets kind);
-void debugger_widget_delete(struct debugger_widget *);
 void debugger_widgets_add_checkbox(struct cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
 struct debugger_widget *debugger_widgets_add_radiogroup(struct cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line);
 struct debugger_widget *debugger_widgets_add_color_key(struct cvec *widgets, const char *default_text, u32 default_visible);

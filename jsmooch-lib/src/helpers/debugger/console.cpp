@@ -2,59 +2,44 @@
 // Created by . on 3/1/25.
 //
 
-#include <stdio.h>
 #include <string.h>
 #include "console.h"
 
-void console_view_init(struct console_view *this)
+void console_view::add_char(u8 c)
 {
-    jsm_string_init(&this->buffer[0], 1024*1024);
-    jsm_string_init(&this->buffer[1], 1024*1024);
-    this->cur_buf = 0;
-    memset(this->name, 0, sizeof(this->name));
-}
-
-void console_view_delete(struct console_view *this)
-{
-    jsm_string_delete(&this->buffer[0]);
-    jsm_string_delete(&this->buffer[1]);
-}
-
-void console_view_add_char(struct console_view *this, u8 c)
-{
-    struct jsm_string *cb = &this->buffer[this->cur_buf];
+    jsm_string *cb = &buffer[cur_buf];
     u64 len = cb->cur - cb->ptr;
     if ((len + 2) >= cb->allocated_len) {
-        this->cur_buf ^= 1;
-        cb = &this->buffer[this->cur_buf];
-        jsm_string_quickempty(cb);
+        cur_buf ^= 1;
+        cb = &buffer[cur_buf];
+        cb->quickempty();
     }
-    jsm_string_sprintf(cb, "%c", c);
-    this->updated = 1;
+    cb->sprintf("%c", c);
+    updated = 1;
 }
 
-void console_view_add_cstr(struct console_view *this, char *s)
+void console_view::add_cstr(char *s)
 {
     u32 l = strlen(s);
-    struct jsm_string *cb = &this->buffer[this->cur_buf];
+    jsm_string *cb = &buffer[cur_buf];
     u64 len = cb->cur - cb->ptr;
     if ((len + l + 1) >= cb->allocated_len) {
-        this->cur_buf ^= 1;
-        cb = &this->buffer[this->cur_buf];
-        jsm_string_quickempty(cb);
+        cur_buf ^= 1;
+        cb = &buffer[cur_buf];
+        cb->quickempty();
     }
-    jsm_string_sprintf(cb, "%s", s);
-    this->updated = 1;
+    cb->sprintf("%s", s);
+    updated = 1;
 }
 
-void console_view_render_to_buffer(struct console_view *tv, char *output, u64 sz)
+void console_view::render_to_buffer(char *output, u64 sz)
 {
-    struct jsm_string *s = &tv->buffer[tv->cur_buf ^ 1];
+    jsm_string *s = &buffer[cur_buf ^ 1];
     char *v = output;
     u64 num_chars = snprintf(v, sz, "%s", s->ptr);
     sz -= num_chars;
     v += num_chars;
 
-    s = &tv->buffer[tv->cur_buf];
+    s = &buffer[cur_buf];
     snprintf(v, sz, "%s", s->ptr);
 }

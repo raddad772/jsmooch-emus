@@ -18,8 +18,8 @@ enum NES_controller_devices {
 struct NES_controllerport {
     NES_controller_devices kind=NES_NONE;
     void *device{};
-    u32 data();
-    void latch(u32 what);
+    u32 data() const;
+    void latch(u32 what) const;
 };
 
 struct r2A03 {
@@ -31,7 +31,7 @@ struct r2A03 {
     void notify_IRQ(u32 level, u32 from);
     void notify_NMI(u32 level);
     void run_cycle();
-    u32 read_reg(u32 addr, u32 val, u32 has_effect);
+    u32 read_reg(u32 addr, u32 val, u32 has_effect) const;
     void write_reg(u32 addr, u32 val);
 
     //struct NES_APU apu;
