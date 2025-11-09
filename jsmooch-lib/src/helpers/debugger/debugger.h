@@ -319,7 +319,7 @@ struct events_view {
     void report_draw_start();
     void report_frame();
     void report_line(i32 line_num);
-    void add_category(debugger_interface *dbgr, const char *name, u32 color, u32 id);
+    void add_category(const char *name, u32 color, u32 id);
     std::vector<debugger_event> events{}; // prealloc 1000?
 
     ev_timing_kind timing{};
@@ -564,13 +564,13 @@ void debugger_report_event(cvec_ptr<debugger_view> &viewptr, i32 event_id);
 void debugger_report_frame(debugger_interface *dbgr);
 void debugger_report_line(debugger_interface *dbgr, i32 line_num);
 void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 addr_start, u32 addr_end);
-void memory_view_get_line(memory_view_module *mm, u32 addr, char *out)
+void memory_view_get_line(memory_view_module *mm, u32 addr, char *out);
 
-#define DEBUG_REGISTER_EVENT_CATEGORY(name, id) events_view_add_category(dbgr, ev, name, 0, id)
-#define DEBUG_REGISTER_EVENT(name, color, category, id, default_enable) events_view_add_event(dbgr, ev, category, name, color, dek_pix_square, default_enable, 0, NULL, id)
-#define SET_EVENT_VIEW(x) x .dbg.events.view = this->dbg.events.view
-#define SET_CPU_CPU_EVENT_ID(id, k) this->cpu.cpu.dbg.events. k = id
-#define SET_CPU_EVENT_ID(id, k) this->cpu.dbg.events. k = id
+#define DEBUG_REGISTER_EVENT_CATEGORY(name, id) ev.add_category(name, 0, id)
+#define DEBUG_REGISTER_EVENT(name, color, category, id, default_enable) ev.add_event(category, name, color, dek_pix_square, default_enable, 0, NULL, id)
+#define SET_EVENT_VIEW(x) x .dbg.events.view = th.dbg.events.view
+#define SET_CPU_CPU_EVENT_ID(id, k) th.cpu.cpu.dbg.events. k = id
+#define SET_CPU_EVENT_ID(id, k) th.cpu.dbg.events. k = id
 
-#define DBG_EVENT(x) debugger_report_event(this->dbg.events.view, x)
+#define DBG_EVENT(x) debugger_report_event(dbg.events.view, x)
 

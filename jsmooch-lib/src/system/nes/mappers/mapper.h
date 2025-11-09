@@ -38,7 +38,7 @@ enum NES_mappers {
 struct NES;
 
 struct NES_mapper {
-    NES_mapper(NES *nes);
+    explicit NES_mapper(NES *nes);
     ~NES_mapper();
 
     void set_cart(physical_io_device &pio);
@@ -55,6 +55,7 @@ struct NES_mapper {
     u32 PPU_read_noeffect(u32 addr);
 
     NES_mappers which{};
+    void do_reset();
 
     void *mapper_ptr{};
 

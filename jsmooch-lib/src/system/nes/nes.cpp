@@ -253,7 +253,7 @@ void NESJ::reset()
     nes.cpu.reset();
     nes.ppu.reset();
     nes.apu.reset();
-    if (nes.bus.reset) nes.bus.reset(&nes.bus);
+    nes.bus.do_reset();
 }
 
 

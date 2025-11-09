@@ -2,10 +2,6 @@
 // Created by . on 9/27/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-
 #include "helpers/debugger/debugger.h"
 #include "../nes.h"
 
@@ -15,7 +11,8 @@
 // TODO: emulate SXROM better
 // according to this: https://www.nesdev.org/wiki/MMC1#Banks
 
-#define THISM struct SXROM *this = (struct SXROM *)bus->ptr
+#define THISM SXROM* th = static_cast<SXROM *>(bus->mapper_ptr);
+
 
 struct SXROM {
     struct NES *nes;
@@ -37,7 +34,7 @@ struct SXROM {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_mapper *bus, u32 boot, u32 may_contain_PRG)
+static void remap(NES_mapper *bus, u32 boot, u32 may_contain_PRG)
 {
     THISM;
     if (boot) {
@@ -52,50 +49,52 @@ static void remap(struct NES_mapper *bus, u32 boot, u32 may_contain_PRG)
         }
     }
 
-    switch(this->io.prg_bank_mode) {
+    switch(th->io.prg_bank_mode) {
         case 0:
         case 1: // 32k at 0x8000
-            NES_bus_map_PRG16K(bus, 0x8000, 0xBFFF, &bus->PRG_ROM, this->io.bank & 0xFE, READONLY);
-            NES_bus_map_PRG16K(bus, 0xC000, 0xFFFF, &bus->PRG_ROM, this->io.bank | 1, READONLY);
+            NES_bus_map_PRG16K(bus, 0x8000, 0xBFFF, &bus->PRG_ROM, th->io.bank & 0xFE, READONLY);
+            NES_bus_map_PRG16K(bus, 0xC000, 0xFFFF, &bus->PRG_ROM, th->io.bank | 1, READONLY);
             break;
         case 2:
             NES_bus_map_PRG16K(bus, 0x8000, 0xBFFF, &bus->PRG_ROM, 0, READONLY);
-            NES_bus_map_PRG16K(bus, 0xC000, 0xFFFF, &bus->PRG_ROM, this->io.bank, READONLY);
+            NES_bus_map_PRG16K(bus, 0xC000, 0xFFFF, &bus->PRG_ROM, th->io.bank, READONLY);
             break;
         case 3:
-            NES_bus_map_PRG16K(bus, 0x8000, 0xBFFF, &bus->PRG_ROM, this->io.bank, READONLY);
+            NES_bus_map_PRG16K(bus, 0x8000, 0xBFFF, &bus->PRG_ROM, th->io.bank, READONLY);
             NES_bus_map_PRG16K(bus, 0xC000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks16K - 1, READONLY);
             break;
+        default: break;
     }
 
     if (bus->CHR_RAM.sz == 0) {
-        switch (this->io.chr_bank_mode) {
+        switch (th->io.chr_bank_mode) {
             case 0: // 8kb switch at a time
-                NES_bus_map_CHR4K(bus, 0x0000, 0x0FFF, &bus->CHR_ROM, this->io.ppu_bank00 & 0xFE, READONLY);
-                NES_bus_map_CHR4K(bus, 0x1000, 0x1FFF, &bus->CHR_ROM, this->io.ppu_bank00 | 1, READONLY);
+                NES_bus_map_CHR4K(bus, 0x0000, 0x0FFF, &bus->CHR_ROM, th->io.ppu_bank00 & 0xFE, READONLY);
+                NES_bus_map_CHR4K(bus, 0x1000, 0x1FFF, &bus->CHR_ROM, th->io.ppu_bank00 | 1, READONLY);
                 break;
             case 1: // 4kb switch at a time
-                NES_bus_map_CHR4K(bus, 0x0000, 0x0FFF, &bus->CHR_ROM, this->io.ppu_bank00, READONLY);
-                NES_bus_map_CHR4K(bus, 0x1000, 0x1FFF, &bus->CHR_ROM, this->io.ppu_bank10, READONLY);
+                NES_bus_map_CHR4K(bus, 0x0000, 0x0FFF, &bus->CHR_ROM, th->io.ppu_bank00, READONLY);
+                NES_bus_map_CHR4K(bus, 0x1000, 0x1FFF, &bus->CHR_ROM, th->io.ppu_bank10, READONLY);
                 break;
+            default: break;
         }
     }
 
 }
 
-static void serialize(struct NES_mapper *bus, struct serialized_state *state)
+static void serialize(NES_mapper *bus, serialized_state &state)
 {
     THISM;
-#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+#define S(x) Sadd(state, &th-> x, sizeof(th-> x))
     S(last_cycle_write);
     S(io);
 #undef S
 }
 
-static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
+static void deserialize(NES_mapper *bus, serialized_state &state)
 {
     THISM;
-#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+#define L(x) Sload(state, &th-> x, sizeof(th-> x))
     L(last_cycle_write);
     L(io);
 #undef L
@@ -103,50 +102,50 @@ static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
 }
 
 
-static void SXROM_destruct(struct NES_mapper *bus)
+static void SXROM_destruct(NES_mapper *bus)
 {
 
 }
 
-static void SXROM_reset(struct NES_mapper *bus)
+static void SXROM_reset(NES_mapper *bus)
 {
     printf("\nSXROM Resetting, so remapping bus...");
     THISM;
-    this->io.prg_bank_mode = 3;
+    th->io.prg_bank_mode = 3;
     remap(bus, 1, 1);
 }
 
-static void SXROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
+static void SXROM_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     *do_write = 1;
     THISM;
     if (addr < 0x8000) return;
     if (val & 0x80) {
         // Writes ctrl | 0x0C
-        this->io.shift_pos = 4;
-        this->io.shift_value = this->io.ctrl | 0x0C;
-        this->last_cycle_write = bus->nes->clock.cpu_master_clock;
+        th->io.shift_pos = 4;
+        th->io.shift_value = th->io.ctrl | 0x0C;
+        th->last_cycle_write = bus->nes->clock.cpu_master_clock;
         addr = 0x8000;
     } else {
-        if (bus->nes->clock.cpu_master_clock == (this->last_cycle_write + bus->nes->clock.timing.cpu_divisor)) {
+        if (bus->nes->clock.cpu_master_clock == (th->last_cycle_write + bus->nes->clock.timing.cpu_divisor)) {
             // writes on consecutive cycles fail
-            this->last_cycle_write = bus->nes->clock.cpu_master_clock;
+            th->last_cycle_write = bus->nes->clock.cpu_master_clock;
             printf("\nCONSECUTIVE WRITE ISSUE");
             return;
         } else {
-            this->io.shift_value = (this->io.shift_value >> 1) | ((val & 1) << 4);
+            th->io.shift_value = (th->io.shift_value >> 1) | ((val & 1) << 4);
         }
     }
 
-    this->last_cycle_write = bus->nes->clock.cpu_master_clock;
+    th->last_cycle_write = bus->nes->clock.cpu_master_clock;
 
-    this->io.shift_pos++;
-    if (this->io.shift_pos == 5) {
+    th->io.shift_pos++;
+    if (th->io.shift_pos == 5) {
         addr &= 0xE000;
-        val = this->io.shift_value;
+        val = th->io.shift_value;
         switch (addr) {
             case 0x8000: // control register
-                this->io.ctrl = this->io.shift_value;
+                th->io.ctrl = th->io.shift_value;
                 switch(val & 3) {
                     case 0: bus->ppu_mirror_mode = PPUM_ScreenAOnly; break;
                     case 1: bus->ppu_mirror_mode = PPUM_ScreenBOnly; break;
@@ -154,55 +153,56 @@ static void SXROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_w
                     case 3: bus->ppu_mirror_mode = PPUM_Horizontal; break;
                 }
                 NES_bus_PPU_mirror_set(bus);
-                this->io.prg_bank_mode = (val >> 2) & 3;
-                this->io.chr_bank_mode = (val >> 4) & 1;
-                //printf("\nline:%03d cycle:%d   (CTRL)  mirror_mode:%d  chr_bank_mode:%d", this->nes->clock.ppu_y, this->nes->ppu.line_cycle, val & 3, this->io.chr_bank_mode);
+                th->io.prg_bank_mode = (val >> 2) & 3;
+                th->io.chr_bank_mode = (val >> 4) & 1;
+                //printf("\nline:%03d cycle:%d   (CTRL)  mirror_mode:%d  chr_bank_mode:%d", th->nes->clock.ppu_y, th->nes->ppu.line_cycle, val & 3, th->io.chr_bank_mode);
                 remap(bus, 0, 1);
                 break;
             case 0xA000: // CHR bank 0x0000
-                this->io.ppu_bank00 = this->io.shift_value % bus->num_CHR_ROM_banks4K;
+                th->io.ppu_bank00 = th->io.shift_value % bus->num_CHR_ROM_banks4K;
                 remap(bus, 0, 0);
                 break;
             case 0xC000: // CHR bank 1
-                this->io.ppu_bank10 = this->io.shift_value % bus->num_CHR_ROM_banks4K;
+                th->io.ppu_bank10 = th->io.shift_value % bus->num_CHR_ROM_banks4K;
                 remap(bus, 0, 0);
                 break;
             case 0xE000: // PRG bank
-                this->io.bank = this->io.shift_value & 0x0F;
-                if (this->io.shift_value & 0x10)
+                th->io.bank = th->io.shift_value & 0x0F;
+                if (th->io.shift_value & 0x10)
                     printf("WARNING50!");
                 remap(bus, 0, 1);
                 break;
+            default: break;
         }
-        this->io.shift_value = 0;
-        this->io.shift_pos = 0;
+        th->io.shift_value = 0;
+        th->io.shift_pos = 0;
     }
 }
 
-static u32 SXROM_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 SXROM_readcart(NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void SXROM_setcart(struct NES_mapper *bus, struct NES_cart *cart)
+static void SXROM_setcart(NES_mapper *bus, NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
 }
 
-void SXROM_init(struct NES_mapper *bus, struct NES *nes)
+void SXROM_init(NES_mapper *bus, NES *nes)
 {
-    if (bus->ptr != NULL) free(bus->ptr);
-    bus->ptr = malloc(sizeof(struct SXROM));
-    struct SXROM *this = (struct SXROM*)bus->ptr;
+    if (bus->ptr != nullptr) free(bus->ptr);
+    bus->ptr = malloc(sizeof(SXROM));
+    THISM;
 
-    this->nes = nes;
+    th->nes = nes;
 
-    this->io.shift_pos = 0;
-    this->io.shift_value = 0;
-    this->io.ppu_bank00 = this->io.ppu_bank10 = 0;
-    this->io.bank = this->io.ctrl = 0;
-    this->io.prg_bank_mode = this->io.chr_bank_mode = 0;
+    th->io.shift_pos = 0;
+    th->io.shift_value = 0;
+    th->io.ppu_bank00 = th->io.ppu_bank10 = 0;
+    th->io.bank = th->io.ctrl = 0;
+    th->io.prg_bank_mode = th->io.chr_bank_mode = 0;
     bus->ppu_mirror_mode = PPUM_Horizontal;
     NES_bus_PPU_mirror_set(bus);
 
@@ -211,8 +211,8 @@ void SXROM_init(struct NES_mapper *bus, struct NES *nes)
     bus->writecart = &SXROM_writecart;
     bus->readcart = &SXROM_readcart;
     bus->setcart = &SXROM_setcart;
-    bus->cpu_cycle = NULL;
-    bus->a12_watch = NULL;
+    bus->cpu_cycle = nullptr;
+    bus->a12_watch = nullptr;
     bus->serialize = &serialize;
     bus->deserialize = &deserialize;
 }

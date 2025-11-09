@@ -2,7 +2,7 @@
 // Created by Dave on 2/4/2024.
 //
 
-#include "stdio.h"
+#include <cstdio>
 
 #include "m6502.h"
 #include "m6502_disassembler.h"

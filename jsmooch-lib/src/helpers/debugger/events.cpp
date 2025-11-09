@@ -11,7 +11,7 @@
 #include "debugger.h"
 #include "events.h"
 
-void events_view::add_category(debugger_interface *dbgr, const char *name, u32 color, u32 id)
+void events_view::add_category(const char *name, u32 color, u32 id)
 {
     assert(id==categories.size());
     event_category &ec = categories.emplace_back();
