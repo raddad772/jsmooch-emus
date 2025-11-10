@@ -2,9 +2,8 @@
 // Created by . on 10/3/24.
 //
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdlib>
 
 #include "helpers/debugger/debugger.h"
 
@@ -46,7 +45,7 @@ void NES_memmap_init_empty(struct NES_memmap *map, u32 addr_start, u32 addr_end,
         m->offset = 0;
         m->read_only = 1;
         m->is_SRAM = 0;
-        m->buf = NULL;
+        m->buf = nullptr;
     }
 }
 

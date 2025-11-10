@@ -77,7 +77,7 @@ void test_gdi() {
     GDI_delete(&foo);
 }
 
-u32 grab_BIOSes(struct multi_file_set* BIOSes, enum jsm_systems which)
+u32 grab_BIOSes(multi_file_set* BIOSes, enum jsm_systems which)
 {
     char BIOS_PATH[255];
     char BASE_PATH[255];
@@ -289,7 +289,7 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, enum jsm_systems which, const c
     }
 }
 
-void mfs_add_IP_BIN(struct multi_file_set* mfs)
+void mfs_add_IP_BIN(multi_file_set* mfs)
 {
     char BASER_PATH[255];
     char BASE_PATH[255];
@@ -303,7 +303,7 @@ void mfs_add_IP_BIN(struct multi_file_set* mfs)
     printf("\nLOADED IP.BIN SIZE %04llx", mfs->files[1].buf.size);
 }
 
-u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fname, const char* sec_path)
+u32 grab_ROM(multi_file_set* ROMs, enum jsm_systems which, const char* fname, const char* sec_path)
 {
     char BASE_PATH[255];
     char ROM_PATH[255];
@@ -317,7 +317,7 @@ u32 grab_ROM(struct multi_file_set* ROMs, enum jsm_systems which, const char* fn
     return ROMs->files[ROMs->num_files-1].buf.size > 0;
 }
 
-struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec* IOs, struct multi_file_set* mfs)
+struct physical_io_device* load_ROM_into_emu(jsm_system* sys, cvec* IOs, multi_file_set* mfs)
 {
     struct physical_io_device *pio = nullptr;
     switch(sys->kind) {
@@ -329,7 +329,7 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
         case SYS_MACPLUS_1MB:
         case SYS_APPLEIIe:
             for (u32 i = 0; i < cvec_len(IOs); i++) {
-                pio = (struct physical_io_device*)cvec_get(IOs, i);
+                pio = (physical_io_device*)cvec_get(IOs, i);
                 if (pio->kind == HID_DISC_DRIVE) {
                     printf("\nINSERT DISC!");
                     pio->disc_drive.insert_disc(sys, pio, mfs);
@@ -345,7 +345,7 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
     }
     pio = nullptr;
     for (u32 i = 0; i < cvec_len(IOs); i++) {
-        pio = (struct physical_io_device*)cvec_get(IOs, i);
+        pio = (physical_io_device*)cvec_get(IOs, i);
         if (pio->kind == HID_CART_PORT) break;
         pio = nullptr;
     }
@@ -353,11 +353,11 @@ struct physical_io_device* load_ROM_into_emu(struct jsm_system* sys, struct cvec
     return pio;
 }
 
-static void setup_controller(struct system_io* io, struct physical_io_device* pio, u32 pnum)
+static void setup_controller(system_io* io, physical_io_device* pio, u32 pnum)
 {
     struct cvec* dbs = &pio->controller.digital_buttons;
     for (u32 i = 0; i < cvec_len(dbs); i++) {
-        struct HID_digital_button* db = (struct HID_digital_button*)cvec_get(dbs, i);
+        struct HID_digital_button* db = (HID_digital_button*)cvec_get(dbs, i);
         switch(db->common_id) {
             case DBCID_co_up:
                 io->p[pnum].up = db;
@@ -408,9 +408,9 @@ static void setup_controller(struct system_io* io, struct physical_io_device* pi
 void full_system::setup_ios()
 {
     struct cvec *IOs = &sys->IOs;
-    memset(&inputs, 0, sizeof(struct system_io));
+    memset(&inputs, 0, sizeof(system_io));
     for (u32 i = 0; i < cvec_len(IOs); i++) {
-        struct physical_io_device* pio = (struct physical_io_device*)cvec_get(IOs, i);
+        struct physical_io_device* pio = (physical_io_device*)cvec_get(IOs, i);
         switch(pio->kind) {
             case HID_TOUCHSCREEN:
                 if (io.touchscreen.vec == nullptr) {
@@ -438,7 +438,7 @@ void full_system::setup_ios()
                 //make_cvec_ptr(IOs, i);
                 struct cvec* dbs = &pio->chassis.digital_buttons;
                 for (u32 j = 0; j < cvec_len(dbs); j++) {
-                    struct HID_digital_button* db = (struct HID_digital_button*)cvec_get(dbs, j);
+                    struct HID_digital_button* db = (HID_digital_button*)cvec_get(dbs, j);
                     switch(db->common_id) {
                         case DBCID_ch_pause:
                             inputs.ch_pause = db;
@@ -474,7 +474,7 @@ void full_system::setup_ios()
     assert(io.chassis.vec);
 
 
-    output.display = &((struct physical_io_device *)cpg(io.display))->display;
+    output.display = &((physical_io_device *)cpg(io.display))->display;
 }
 
 void full_system::setup_wgpu()
@@ -488,7 +488,7 @@ void full_system::setup_audio()
     u32 lpf = 0;
     u32 num_chans =  0;
     for (u32 i = 0; i < cvec_len(&sys->IOs); i++) {
-        struct physical_io_device *pio = (struct physical_io_device *)cvec_get(&sys->IOs, i);
+        struct physical_io_device *pio = (physical_io_device *)cvec_get(&sys->IOs, i);
         switch(pio->kind) {
             case HID_AUDIO_CHANNEL:
                 audiochans.push_back(&pio->audio_channel);
@@ -522,7 +522,7 @@ void full_system::setup_bios()
     mfs_delete(&BIOSes);
 }
 
-void full_system::setup_persistent_store(struct persistent_store *ps, struct multi_file_set *mfs)
+void full_system::setup_persistent_store(persistent_store *ps, multi_file_set *mfs)
 {
     printf("\nSETTING UP PERSISTENT STORE!");
     struct read_file_buf *rfb = &mfs->files[0];
@@ -1077,15 +1077,15 @@ void full_system::load_default_ROM()
 
 void full_system::add_waveform_view(u32 idx)
 {
-    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
     struct WVIEW myv;
     myv.view = &dview->waveform;
-    auto *wv = (struct waveform_view *)&dview->waveform;
+    auto *wv = (waveform_view *)&dview->waveform;
     for (u32 i = 0; i < cvec_len(&wv->waveforms); i++) {
         WFORM wf;
         wf.enabled = true;
         wf.height = 80;
-        wf.wf = (struct debug_waveform *)cvec_get(&wv->waveforms, i);
+        wf.wf = (debug_waveform *)cvec_get(&wv->waveforms, i);
         myv.waveforms.push_back(wf);
     }
 
@@ -1094,7 +1094,7 @@ void full_system::add_waveform_view(u32 idx)
 
 void full_system::add_console_view(u32 idx)
 {
-    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
     CVIEW myv;
     myv.view = dview;
     console_views.push_back(myv);
@@ -1103,7 +1103,7 @@ void full_system::add_console_view(u32 idx)
 
 void full_system::add_trace_view(u32 idx)
 {
-    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
     TVIEW myv;
     myv.view = dview;
     trace_views.push_back(myv);
@@ -1111,7 +1111,7 @@ void full_system::add_trace_view(u32 idx)
 
 void full_system::add_dbglog_view(u32 idx)
 {
-    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
     DLVIEW myv;
     myv.view = dview;
     dlviews.push_back(myv);
@@ -1120,13 +1120,13 @@ void full_system::add_dbglog_view(u32 idx)
 
 void full_system::add_disassembly_view(u32 idx)
 {
-    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
     //printf("\nAdding disassembly view %s:", dview->disassembly.processor_name.ptr);
     DVIEW myv;
     myv.view = dview;
-    cvec_init(&myv.dasm_rows, sizeof(struct disassembly_entry_strings), 150);
+    myv.dasm_rows.reserve(150);
     for (u32 i = 0; i < 200; i++) {
-        auto *das = (struct disassembly_entry_strings *)cvec_push_back(&myv.dasm_rows);
+        auto *das = (disassembly_entry_strings *)cvec_push_back(&myv.dasm_rows);
         memset(das, 0, sizeof(*das));
     }
 
@@ -1135,7 +1135,7 @@ void full_system::add_disassembly_view(u32 idx)
 
 void full_system::add_image_view(u32 idx)
 {
-    auto *dview = (struct debugger_view *)cvec_get(&dbgr.views, idx);
+    auto *dview = (debugger_view *)cvec_get(&dbgr.views, idx);
     IVIEW myv;
     myv.enabled = true;
     myv.view = dview;
@@ -1148,7 +1148,7 @@ void full_system::setup_debugger_interface()
     sys->setup_debugger_interface(sys, &dbgr);
     debugger_setup = 1;
     for (u32 i = 0; i < cvec_len(&dbgr.views); i++) {
-        auto view = (struct debugger_view *)cvec_get(&dbgr.views, i);
+        auto view = (debugger_view *)cvec_get(&dbgr.views, i);
         switch(view->kind) {
             case dview_disassembly:
                 add_disassembly_view(i);
@@ -1215,7 +1215,7 @@ void full_system::setup_system(enum jsm_systems which)
 void full_system::update_touch(i32 x, i32 y, i32 button_down)
 {
     if (io.touchscreen) {
-        struct physical_io_device *pio = (struct physical_io_device *)cpg(io.touchscreen);
+        struct physical_io_device *pio = (physical_io_device *)cpg(io.touchscreen);
         struct JSM_TOUCHSCREEN *ts = &pio->touchscreen;
         x += ts->params.x_offset;
         y += ts->params.y_offset;
@@ -1415,7 +1415,7 @@ void full_system::take_screenshot(void *where, u32 buf_width, u32 buf_height)
     construct_ss_path(mpath);
 
     // Get screen output
-    struct physical_io_device *pio = (struct physical_io_device *)cpg(io.display);
+    struct physical_io_device *pio = (physical_io_device *)cpg(io.display);
 
     // Create intermediate buffer
 
@@ -1434,7 +1434,7 @@ void full_system::present()
 {
     struct framevars fv = {};
     sys->get_framevars(sys, &fv);
-    jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, NULL);
+    jsm_present(sys->kind, (physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, NULL);
     if (screenshot) take_screenshot(output.backbuffer_backer, output.backbuffer_texture.width, output.backbuffer_texture.height);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
@@ -1469,9 +1469,9 @@ void full_system::events_view_present()
 
         struct framevars fv = {};
         sys->get_framevars(sys, &fv);
-        struct JSM_DISPLAY *d = &((struct physical_io_device *) cpg(io.display))->display;
+        struct JSM_DISPLAY *d = &((physical_io_device *) cpg(io.display))->display;
         memset(evd->buf, 0, events.texture.width*events.texture.height*4);
-        jsm_present(sys->kind, (struct physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
+        jsm_present(sys->kind, (physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
         events_view_render(&dbgr, events.view, evd->buf, events.texture.width, events.texture.height);
 
         events.texture.upload_data(evd->buf, events.texture.width*events.texture.height*4, events.texture.width, events.texture.height);
@@ -1501,7 +1501,7 @@ static void draw_box(u32 *ptr, u32 x0, u32 y0, u32 x1, u32 y1, u32 out_width, u3
     }
 }
 
-void full_system::waveform_view_present(struct WVIEW &wv)
+void full_system::waveform_view_present(WVIEW &wv)
 {
     for (auto& wf : wv.waveforms) {
         if (!wf.tex.is_good) {
@@ -1545,7 +1545,7 @@ void full_system::waveform_view_present(struct WVIEW &wv)
     }
 }
 
-void full_system::image_view_present(struct debugger_view *dview, struct my_texture &tex)
+void full_system::image_view_present(debugger_view *dview, my_texture &tex)
 {
     struct image_view *iview = &dview->image;
     if (!tex.is_good) {
@@ -1589,7 +1589,7 @@ ImVec2 full_system::output_uv1() const
     return v;
 }
 
-void full_system::debugger_pre_frame_waveforms(struct waveform_view *wv)
+void full_system::debugger_pre_frame_waveforms(waveform_view *wv)
 {
 
 }

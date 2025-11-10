@@ -2,9 +2,8 @@
 // Created by . on 9/27/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 
 // TODO: verify all mappers dirty memory appropriately
 #include "helpers/debugger/debugger.h"
@@ -13,10 +12,10 @@
 #include "mapper.h"
 #include "sunsoft_5_7.h"
 
-#define THISM struct sunsoft_5_7 *this = (struct sunsoft_5_7 *)bus->ptr
+#define THISM sunsoft_5_7 *th = static_cast<sunsoft_5_7 *>(bus->ptr)
 
 struct sunsoft_5_7 {
-    struct NES *nes;
+    NES *nes;
 
     u32 bank_mask;
     u32 has_sound;
@@ -49,97 +48,97 @@ struct sunsoft_5_7 {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_mapper *bus, u32 boot)
+static void remap(NES_mapper *bus, u32 boot)
 {
     THISM;
 
     if (boot) {
-        this->io.cpu.banks[0] = 0;
-        this->io.cpu.banks[1] = 1;
-        this->io.cpu.banks[2] = 2;
-        this->io.cpu.banks[3] = 3;
-        this->io.wram_enabled = 0;
-        this->io.wram_mapped = 0;
+        th->io.cpu.banks[0] = 0;
+        th->io.cpu.banks[1] = 1;
+        th->io.cpu.banks[2] = 2;
+        th->io.cpu.banks[3] = 3;
+        th->io.wram_enabled = 0;
+        th->io.wram_mapped = 0;
 
         NES_bus_map_PRG8K(bus, 0xE000, 0xFFFF, &bus->PRG_ROM, bus->num_PRG_ROM_banks8K - 1, READONLY);
     }
 
-    if (this->io.wram_mapped && this->io.wram_enabled)
+    if (th->io.wram_mapped && th->io.wram_enabled)
         NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
     else
-        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_ROM, this->io.cpu.banks[0], READONLY);
+        NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_ROM, th->io.cpu.banks[0], READONLY);
 
-    NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, this->io.cpu.banks[1], READONLY);
-    NES_bus_map_PRG8K(bus, 0xA000, 0xBFFF, &bus->PRG_ROM, this->io.cpu.banks[2], READONLY);
-    NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, this->io.cpu.banks[3], READONLY);
+    NES_bus_map_PRG8K(bus, 0x8000, 0x9FFF, &bus->PRG_ROM, th->io.cpu.banks[1], READONLY);
+    NES_bus_map_PRG8K(bus, 0xA000, 0xBFFF, &bus->PRG_ROM, th->io.cpu.banks[2], READONLY);
+    NES_bus_map_PRG8K(bus, 0xC000, 0xDFFF, &bus->PRG_ROM, th->io.cpu.banks[3], READONLY);
 
-    NES_bus_map_CHR1K(bus, 0x0000, 0x03FF, &bus->CHR_ROM, this->io.ppu.banks[0], READONLY);
-    NES_bus_map_CHR1K(bus, 0x0400, 0x07FF, &bus->CHR_ROM, this->io.ppu.banks[1], READONLY);
-    NES_bus_map_CHR1K(bus, 0x0800, 0x0BFF, &bus->CHR_ROM, this->io.ppu.banks[2], READONLY);
-    NES_bus_map_CHR1K(bus, 0x0C00, 0x0FFF, &bus->CHR_ROM, this->io.ppu.banks[3], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1000, 0x13FF, &bus->CHR_ROM, this->io.ppu.banks[4], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1400, 0x17FF, &bus->CHR_ROM, this->io.ppu.banks[5], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1800, 0x1BFF, &bus->CHR_ROM, this->io.ppu.banks[6], READONLY);
-    NES_bus_map_CHR1K(bus, 0x1C00, 0x1FFF, &bus->CHR_ROM, this->io.ppu.banks[7], READONLY);
+    NES_bus_map_CHR1K(bus, 0x0000, 0x03FF, &bus->CHR_ROM, th->io.ppu.banks[0], READONLY);
+    NES_bus_map_CHR1K(bus, 0x0400, 0x07FF, &bus->CHR_ROM, th->io.ppu.banks[1], READONLY);
+    NES_bus_map_CHR1K(bus, 0x0800, 0x0BFF, &bus->CHR_ROM, th->io.ppu.banks[2], READONLY);
+    NES_bus_map_CHR1K(bus, 0x0C00, 0x0FFF, &bus->CHR_ROM, th->io.ppu.banks[3], READONLY);
+    NES_bus_map_CHR1K(bus, 0x1000, 0x13FF, &bus->CHR_ROM, th->io.ppu.banks[4], READONLY);
+    NES_bus_map_CHR1K(bus, 0x1400, 0x17FF, &bus->CHR_ROM, th->io.ppu.banks[5], READONLY);
+    NES_bus_map_CHR1K(bus, 0x1800, 0x1BFF, &bus->CHR_ROM, th->io.ppu.banks[6], READONLY);
+    NES_bus_map_CHR1K(bus, 0x1C00, 0x1FFF, &bus->CHR_ROM, th->io.ppu.banks[7], READONLY);
 }
 
-static void serialize(struct NES_mapper *bus, struct serialized_state *state)
+static void serialize(NES_mapper *bus, serialized_state &state)
 {
     THISM;
-#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+#define S(x) Sadd(state, &th-> x, sizeof(th-> x))
     S(irq);
     S(io);
 #undef S
 }
 
-static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
+static void deserialize(NES_mapper *bus, serialized_state &state)
 {
     THISM;
-#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+#define L(x) Sload(state, &th-> x, sizeof(th-> x))
     L(irq);
     L(io);
 #undef L
     remap(bus, 0);
 }
 
-static void sunsoft_5_7_destruct(struct NES_mapper *bus)
+static void sunsoft_5_7_destruct(NES_mapper *bus)
 {
 
 }
 
-static void sunsoft_5_7_reset(struct NES_mapper *bus)
+static void sunsoft_5_7_reset(NES_mapper *bus)
 {
     printf("\nsunsoft_5_7 Resetting, so remapping bus...");
     remap(bus, 1);
 }
 
-static void write_reg(struct NES_mapper* bus, u32 val)
+static void write_reg(NES_mapper* bus, u32 val)
 {
     THISM;
-    if (this->io.reg < 8) {
-        this->io.ppu.banks[this->io.reg] = val;
-        u32 rng_start = 0x400 * this->io.reg;
+    if (th->io.reg < 8) {
+        th->io.ppu.banks[th->io.reg] = val;
+        u32 rng_start = 0x400 * th->io.reg;
         NES_bus_map_CHR1K(bus, rng_start, rng_start + 0x3FF, &bus->CHR_ROM, val, READONLY);
         return;
     }
 
-    switch(this->io.reg) {
+    switch(th->io.reg) {
         case 8:
-            this->io.cpu.banks[0] = val;
-            this->io.wram_mapped = (val >> 6) & 1;
-            this->io.wram_enabled = (val >> 7) & 1;
-            if (this->io.wram_mapped && this->io.wram_enabled)
+            th->io.cpu.banks[0] = val;
+            th->io.wram_mapped = (val >> 6) & 1;
+            th->io.wram_enabled = (val >> 7) & 1;
+            if (th->io.wram_mapped && th->io.wram_enabled)
                 NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->fake_PRG_RAM, 0, READWRITE);
             else
-                NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_ROM, this->io.cpu.banks[0], READONLY);
+                NES_bus_map_PRG8K(bus, 0x6000, 0x7FFF, &bus->PRG_ROM, th->io.cpu.banks[0], READONLY);
             break;
         case 9:
         case 10:
         case 11: {
-            u32 r = this->io.reg - 8;
-            this->io.cpu.banks[r] = val;
+            u32 r = th->io.reg - 8;
+            th->io.cpu.banks[r] = val;
             u32 rng_start = 0x6000 + (0x2000 * r);
-            NES_bus_map_PRG8K(bus, rng_start, rng_start + 0x1FFF, &bus->PRG_ROM, this->io.cpu.banks[r], READONLY);
+            NES_bus_map_PRG8K(bus, rng_start, rng_start + 0x1FFF, &bus->PRG_ROM, th->io.cpu.banks[r], READONLY);
             break; }
         case 12:
             switch(val & 3) {
@@ -155,102 +154,105 @@ static void write_reg(struct NES_mapper* bus, u32 val)
                 case 3:
                     bus->ppu_mirror_mode = PPUM_ScreenBOnly;
                     break;
+                default: break;
             }
             NES_bus_PPU_mirror_set(bus);
             break;
         case 13: // IRQ control
-            this->irq.enabled = val & 1;
-            this->irq.counter_enabled = (val >> 7) & 1;
-            this->irq.output = 0;
-            r2A03_notify_IRQ(&bus->nes->cpu, 0, 1);
+            th->irq.enabled = val & 1;
+            th->irq.counter_enabled = (val >> 7) & 1;
+            th->irq.output = 0;
+            bus->nes->cpu.notify_IRQ(0, 1);
             break;
         case 14: // IRQ counter low
-            this->irq.counter = (this->irq.counter & 0xFF00) | val;
+            th->irq.counter = (th->irq.counter & 0xFF00) | val;
             break;
         case 15:
-            this->irq.counter = (this->irq.counter & 0xFF) | (val << 8);
+            th->irq.counter = (th->irq.counter & 0xFF) | (val << 8);
             break;
+        default: break;
     }
 }
 
-static void write_audio_reg(struct NES_mapper* bus, u32 val)
+static void write_audio_reg(NES_mapper* bus, u32 val)
 {
     THISM;
-    printf("\nwrite A%d: %02x", this->io.audio.reg, val);
+    printf("\nwrite A%d: %02x", th->io.audio.reg, val);
 }
 
 
-static void sunsoft_5_7_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
+static void sunsoft_5_7_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     *do_write = 1;
     THISM;
     if (addr < 0x8000) return;
     switch(addr & 0xE000) {
         case 0x8000:
-            this->io.reg = val & 15;
+            th->io.reg = val & 15;
             break;
         case 0xA000:
             write_reg(bus, val);
             break;
         case 0xC000:
-            this->io.audio.reg = val & 15;
-            this->io.audio.write_enabled = (val >> 4) == 0;
+            th->io.audio.reg = val & 15;
+            th->io.audio.write_enabled = (val >> 4) == 0;
             break;
         case 0xE000:
             write_audio_reg(bus, val);
             break;
+        default: break;
     }
 }
 
-static u32 sunsoft_5_7_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 sunsoft_5_7_readcart(NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void sunsoft_5_7_setcart(struct NES_mapper *bus, struct NES_cart *cart)
+static void sunsoft_5_7_setcart(NES_mapper *bus, NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
     NES_bus_PPU_mirror_set(bus);
 }
 
-static void sunsoft_5_7_cpucycle(struct NES_mapper *bus)
+static void sunsoft_5_7_cpucycle(NES_mapper *bus)
 {
     THISM;
-    if (this->irq.enabled && this->irq.counter_enabled) {
-        this->irq.counter = (this->irq.counter - 1) & 0xFFFF;
-        if (this->irq.counter == 0xFFFF) {
-            this->irq.output = 1;
-            r2A03_notify_IRQ(&bus->nes->cpu, 1, 1);
+    if (th->irq.enabled && th->irq.counter_enabled) {
+        th->irq.counter = (th->irq.counter - 1) & 0xFFFF;
+        if (th->irq.counter == 0xFFFF) {
+            th->irq.output = 1;
+            bus->nes->cpu.notify_IRQ(1, 1);
         }
     }
 }
 
-void sunsoft_5_7_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers kind)
+void sunsoft_5_7_init(NES_mapper *bus, NES *nes, enum NES_mappers kind)
 {
-    if (bus->ptr != NULL) free(bus->ptr);
-    bus->ptr = malloc(sizeof(struct sunsoft_5_7));
-    struct sunsoft_5_7 *this = (struct sunsoft_5_7*)bus->ptr;
+    if (bus->ptr != nullptr) free(bus->ptr);
+    bus->ptr = malloc(sizeof(sunsoft_5_7));
+    THISM;
 
-    this->nes = nes;
-    this->kind = kind;
+    th->nes = nes;
+    th->kind = kind;
 
     bus->NES_audio_bias = 0.5f;
     bus->mapper_audio_bias = 0.5f;
 
     switch(kind) {
         case NESM_SUNSOFT_5b:
-            this->has_sound = 1;
+            th->has_sound = 1;
             break;
         case NESM_SUNSOFT_7:
-            this->has_sound = 0;
+            th->has_sound = 0;
             break;
         default:
             assert(1==2);
     }
 
-    this->io.wram_enabled = this->io.wram_mapped = 0;
-    this->irq.enabled = 0;
+    th->io.wram_enabled = th->io.wram_mapped = 0;
+    th->irq.enabled = 0;
 
 
     bus->destruct = &sunsoft_5_7_destruct;
@@ -259,7 +261,7 @@ void sunsoft_5_7_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers 
     bus->readcart = &sunsoft_5_7_readcart;
     bus->setcart = &sunsoft_5_7_setcart;
     bus->cpu_cycle = &sunsoft_5_7_cpucycle;
-    bus->a12_watch = NULL;
+    bus->a12_watch = nullptr;
     bus->serialize = &serialize;
     bus->deserialize = &deserialize;
 }

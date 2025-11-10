@@ -2,9 +2,8 @@
 // Created by . on 9/30/24.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 
 #include "helpers/debugger/debugger.h"
 
@@ -13,11 +12,11 @@
 #include "mapper.h"
 #include "cnrom_gnrom_jf11_jf14_color_dreams.h"
 
-#define THISM struct GNROM *this = (struct GNROM *)bus->ptr
+#define THISM GNROM *th = static_cast<GNROM *>(bus->ptr)
 
 struct GNROM {
-    struct NES *nes;
-    enum NES_mappers kind;
+    NES *nes;
+    NES_mappers kind;
 
     struct {
         u32 CHR_bank_num;
@@ -28,80 +27,80 @@ struct GNROM {
 #define READONLY 1
 #define READWRITE 0
 
-static void remap(struct NES_mapper *bus)
+static void remap(NES_mapper *bus)
 {
     THISM;
-    NES_bus_map_PRG32K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, this->io.PRG_bank_num, READONLY);
-    NES_bus_map_CHR8K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, this->io.CHR_bank_num, READONLY);
+    NES_bus_map_PRG32K(bus, 0x8000, 0xFFFF, &bus->PRG_ROM, th->io.PRG_bank_num, READONLY);
+    NES_bus_map_CHR8K(bus, 0x0000, 0x1FFF, &bus->CHR_ROM, th->io.CHR_bank_num, READONLY);
 }
 
-static void serialize(struct NES_mapper *bus, struct serialized_state *state)
+static void serialize(NES_mapper *bus, serialized_state &state)
 {
     THISM;
-#define S(x) Sadd(state, &this-> x, sizeof(this-> x))
+#define S(x) Sadd(state, &th-> x, sizeof(th-> x))
     S(io.CHR_bank_num);
     S(io.PRG_bank_num);
 #undef S
 }
 
-static void deserialize(struct NES_mapper *bus, struct serialized_state *state)
+static void deserialize(NES_mapper *bus, serialized_state &state)
 {
     THISM;
-#define L(x) Sload(state, &this-> x, sizeof(this-> x))
+#define L(x) Sload(state, &th-> x, sizeof(th-> x))
     L(io.CHR_bank_num);
     L(io.PRG_bank_num);
 #undef L
     remap(bus);
 }
 
-static void GNROM_destruct(struct NES_mapper *bus)
+static void GNROM_destruct(NES_mapper *bus)
 {
 
 }
 
-static void GNROM_reset(struct NES_mapper *bus)
+static void GNROM_reset(NES_mapper *bus)
 {
     printf("\nGNROM/JF11/JF14/Color Dreams Resetting, so remapping bus...");
     THISM;
     NES_bus_PPU_mirror_set(bus);
-    this->io.CHR_bank_num = 0;
-    this->io.PRG_bank_num = 0;
+    th->io.CHR_bank_num = 0;
+    th->io.PRG_bank_num = 0;
     remap(bus);
 }
 
-static void GNROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
+static void GNROM_writecart(NES_mapper *bus, u32 addr, u32 val, u32 *do_write)
 {
     *do_write = 1;
     THISM;
-    u32 dirty_RAM = 0;
-    switch(this->kind) {
+    //u32 dirty_RAM = 0;
+    switch(th->kind) {
         case NESM_JF11_JF14:
             if ((addr >= 0x6000) && (addr <= 0x7FFF)) {
-                dirty_RAM = this->io.PRG_bank_num != ((val >> 4) & 3);
-                this->io.PRG_bank_num = (val >> 4) & 3;
-                this->io.CHR_bank_num = val & 15;
+                //dirty_RAM = th->io.PRG_bank_num != ((val >> 4) & 3);
+                th->io.PRG_bank_num = (val >> 4) & 3;
+                th->io.CHR_bank_num = val & 15;
                 remap(bus);
             }
             break;
         case NESM_GNROM:
             if (addr >= 0x8000) {
-                dirty_RAM = this->io.PRG_bank_num != ((val >> 4) & 3);
-                this->io.PRG_bank_num = (val >> 4) & 3;
-                this->io.CHR_bank_num = val & 3;
+                //dirty_RAM = th->io.PRG_bank_num != ((val >> 4) & 3);
+                th->io.PRG_bank_num = (val >> 4) & 3;
+                th->io.CHR_bank_num = val & 3;
                 remap(bus);
             }
             break;
         case NESM_CNROM:
             if (addr >= 0x8000) {
-                this->io.CHR_bank_num = val % bus->num_CHR_ROM_banks8K;
+                th->io.CHR_bank_num = val % bus->num_CHR_ROM_banks8K;
                 remap(bus);
             }
             break;
         case NESM_COLOR_DREAMS:
             if (addr >= 0x8000) {
-                dirty_RAM = this->io.PRG_bank_num != (val & 3);
-                this->io.PRG_bank_num = val & 3;
-                this->io.CHR_bank_num = (val >> 4) & 15;
+                //dirty_RAM = th->io.PRG_bank_num != (val & 3);
+                th->io.PRG_bank_num = val & 3;
+                th->io.CHR_bank_num = (val >> 4) & 15;
                 remap(bus);
             }
         default:
@@ -109,36 +108,36 @@ static void GNROM_writecart(struct NES_mapper *bus, u32 addr, u32 val, u32 *do_w
     }
 }
 
-static u32 GNROM_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
+static u32 GNROM_readcart(NES_mapper *bus, u32 addr, u32 old_val, u32 has_effect, u32 *do_read)
 {
     *do_read = 1;
     return old_val;
 }
 
-static void GNROM_setcart(struct NES_mapper *bus, struct NES_cart *cart)
+static void GNROM_setcart(NES_mapper *bus, NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring ^ 1;
 }
 
-void GNROM_JF11_JF14_color_dreams_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers kind)
+void GNROM_JF11_JF14_color_dreams_init(NES_mapper *bus, NES *nes, enum NES_mappers kind)
 {
-    if (bus->ptr != NULL) free(bus->ptr);
-    bus->ptr = malloc(sizeof(struct GNROM));
-    struct GNROM *this = (struct GNROM*)bus->ptr;
+    if (bus->ptr != nullptr) free(bus->ptr);
+    bus->ptr = malloc(sizeof(GNROM));
+    THISM;
 
-    this->nes = nes;
-    this->kind = kind;
+    th->nes = nes;
+    th->kind = kind;
 
-    this->io.CHR_bank_num = 0;
-    this->io.PRG_bank_num = 0;
+    th->io.CHR_bank_num = 0;
+    th->io.PRG_bank_num = 0;
 
     bus->destruct = &GNROM_destruct;
     bus->reset = &GNROM_reset;
     bus->writecart = &GNROM_writecart;
     bus->readcart = &GNROM_readcart;
     bus->setcart = &GNROM_setcart;
-    bus->cpu_cycle = NULL;
-    bus->a12_watch = NULL;
+    bus->cpu_cycle = nullptr;
+    bus->a12_watch = nullptr;
     bus->serialize = &serialize;
     bus->deserialize = &deserialize;
 

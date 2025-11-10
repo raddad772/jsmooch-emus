@@ -131,12 +131,10 @@ static void clown_init()
 
 audiowrap::audiowrap()
 {
-    for (auto & item : bufs.items) audiobuf_init(&item);
     if (!clown_init_done) clown_init();
 }
 
 audiowrap::~audiowrap() {
-    for (auto & item: bufs.items) audiobuf_delete(&item);
     if (started) { ma_device_stop(&w->device); started = false; }
 }
 
@@ -145,7 +143,7 @@ void audiowrap::configure_for_fps(float in_fps)
     fps = in_fps;
     samples_per_buf = (float)sample_rate / fps;
     for (auto & item : bufs.items) {
-        audiobuf_allocate(&item, num_channels, samples_per_buf);
+        item.allocate(num_channels, samples_per_buf);
     }
     bufs.emu.head = 0;
     bufs.emu.len = 0;

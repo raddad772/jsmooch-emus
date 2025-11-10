@@ -56,6 +56,8 @@ set(SOURCE_LIST
         "src/system/nes/mappers/nes_memmap.cpp"
         "src/system/nes/mappers/nes_memmap.h"
         "src/helpers/int.h"
+        "src/helpers/inifile.cpp"
+        "src/helpers/inifile.h"
         "src/helpers/irq_multiplexer.cpp"
         "src/helpers/irq_multiplexer.h"
         src/helpers/cvec.cpp
