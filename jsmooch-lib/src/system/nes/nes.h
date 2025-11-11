@@ -91,6 +91,7 @@ public:
     NESJ() {
         has.save_state = true;
         has.load_BIOS = false;
+        has.set_audiobuf = true;
     }
 
     void play() override;

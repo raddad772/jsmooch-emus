@@ -40,7 +40,7 @@ u32 TG16_cart_read(struct TG16_cart *this, u32 addr, u32 old)
     return this->cart_ptrs[bank][inner];
 }
 
-void TG16_cart_load_ROM_from_RAM(struct TG16_cart *this, void *ptr, u64 sz, struct physical_io_device *pio)
+void TG16_cart_load_ROM_from_RAM(struct TG16_cart *this, void *ptr, u64 sz, physical_io_device *pio)
 {
     buf_allocate(&this->ROM, sz);
     memcpy(this->ROM.ptr, ptr, sz);

@@ -26,7 +26,7 @@ u32 NUM_ROMBANKS(u32 inp) {
     return 1;
 }
 
-void GB_cart_init(struct GB_cart* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus) {
+void GB_cart_init(struct GB_cart* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
     this->variant = variant;
     this->clock = clock;
     this->bus = bus;
@@ -86,7 +86,7 @@ void GBC_setup_mapper(struct GB_cart* this)
     this->mapper->set_cart(this->mapper, this);
 }
 
-void GB_cart_load_ROM_from_RAM(struct GB_cart*this, void* ibuf, u64 size, struct physical_io_device *pio)
+void GB_cart_load_ROM_from_RAM(struct GB_cart*this, void* ibuf, u64 size, physical_io_device *pio)
 {
     this->SRAM = &pio->cartridge_port.SRAM;
     this->SRAM->ready_to_use = 0;

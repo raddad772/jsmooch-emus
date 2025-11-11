@@ -151,7 +151,7 @@ void NDS_cart_init(struct NDS *);
 void NDS_cart_reset(struct NDS *);
 void NDS_cart_delete(struct NDS *);
 void NDS_cart_direct_boot(struct NDS *);
-u32 NDS_cart_load_ROM_from_RAM(struct NDS_cart*, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable);
+u32 NDS_cart_load_ROM_from_RAM(struct NDS_cart*, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable);
 void NDS_cart_spi_write_spicnt(struct NDS *, u32 val, u32 bnum);
 void NDS_cart_spi_transaction(struct NDS *, u32 val);
 void NDS_cart_write_romctrl(struct NDS *, u32 val);

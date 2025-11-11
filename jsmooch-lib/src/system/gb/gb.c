@@ -30,20 +30,20 @@ void GB_bus_IRQ_vblank_down(struct GB_bus* this);
 void GBJ_play(JSM);
 void GBJ_pause(JSM);
 void GBJ_stop(JSM);
-void GBJ_get_framevars(JSM, struct framevars* out);
+void GBJ_get_framevars(JSM, framevars* out);
 void GBJ_reset(JSM);
 void GBJ_killall(JSM);
 u32 GBJ_finish_frame(JSM);
 u32 GBJ_finish_scanline(JSM);
 u32 GBJ_step_master(JSM, u32 howmany);
-void GBJ_load_BIOS(JSM, struct multi_file_set* mfs);
+void GBJ_load_BIOS(JSM, multi_file_set* mfs);
 void GB_write_IO(struct GB_bus* bus, u32 addr, u32 val);
 u32 GB_read_IO(struct GB_bus* bus, u32 addr, u32 val);
 void GBJ_enable_tracing(JSM);
 void GBJ_disable_tracing(JSM);
-void GBJ_describe_io(JSM, struct cvec* IOs);
+void GBJ_describe_io(JSM, cvec* IOs);
 static void GBIO_unload_cart(JSM);
-static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio);
+static void GBIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio);
 
 #define MASTER_CYCLES_PER_FRAME GB_CYCLES_PER_FRAME
 static void setup_debug_waveform(struct debug_waveform *dw)
@@ -54,7 +54,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-static void GBJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+static void GBJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -207,7 +207,7 @@ static void setup_audio(struct cvec* IOs)
     chan->low_pass_filter = 16000;
 }
 
-void GBJ_describe_io(JSM, struct cvec *IOs)
+void GBJ_describe_io(JSM, cvec *IOs)
 {
     // TODO guard against more than one init
     JTHIS;
@@ -395,7 +395,7 @@ void GBJ_reset(JSM)
 	}
 }
 
-void GBJ_get_framevars(JSM, struct framevars* out)
+void GBJ_get_framevars(JSM, framevars* out)
 {
 	JTHIS;
 	out->master_frame = this->clock.master_frame;
@@ -431,7 +431,7 @@ void GBJ_stop(JSM)
 
 }
 
-static void GBIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
+static void GBIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
     GB_cart_load_ROM_from_RAM(&this->cart, b->ptr, b->size, pio);
@@ -442,7 +442,7 @@ static void GBIO_unload_cart(JSM){
 
 }
 
-void GBJ_load_BIOS(JSM, struct multi_file_set* mfs) {
+void GBJ_load_BIOS(JSM, multi_file_set* mfs) {
 	JTHIS;
     buf_copy(&this->BIOS, &mfs->files[0].buf);
 }

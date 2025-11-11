@@ -339,7 +339,7 @@ static void do_decode_table(struct R3000 *this) {
     }
 }
 
-void R3000_init(struct R3000 *this, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler, struct IRQ_multiplexer_b *IRQ_multiplexer)
+void R3000_init(struct R3000 *this, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler, IRQ_multiplexer_b *IRQ_multiplexer)
 {
     memset(this, 0, sizeof(*this));
     this->clock = master_clock;
@@ -363,7 +363,7 @@ void R3000_delete(struct R3000 *this)
     jsm_string_delete(&this->trace.str);
 }
 
-void R3000_setup_tracing(struct R3000 *this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+void R3000_setup_tracing(struct R3000 *this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;
@@ -390,7 +390,7 @@ static void add_to_console(struct R3000 *this, u32 ch)
         jsm_string_sprintf(&this->console, "%c", ch);*/
 }
 
-static void delay_slots(struct R3000 *this, struct R3000_pipeline_item *which)
+static void delay_slots(struct R3000 *this, R3000_pipeline_item *which)
 {
     // Load delay slot from instruction before this one
     if (which->target > 0) {// R0 stays 0
@@ -448,7 +448,7 @@ void R3000_exception(struct R3000 *this, u32 code, u32 branch_delay, u32 cop0)
     this->regs.COP0[RCR_SR] = (lstat & 0xFFFFFFC0) | ((lstat & 0x0F) << 2);
 }
 
-static inline void decode(struct R3000 *this, u32 IR, struct R3000_pipeline_item *current)
+static inline void decode(struct R3000 *this, u32 IR, R3000_pipeline_item *current)
 {
     u32 p1 = (IR & 0xFC000000) >> 26;
 
@@ -478,7 +478,7 @@ static void fetch_and_decode(struct R3000 *this)
 #pragma warning(disable: 4334) // warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
 #endif
 
-static void R3000_print_context(struct R3000 *this, struct R3000ctxt *ct, struct jsm_string *out)
+static void R3000_print_context(struct R3000 *this, R3000ctxt *ct, jsm_string *out)
 {
     jsm_string_quickempty(out);
     u32 needs_commaspace = 0;
@@ -497,7 +497,7 @@ static void R3000_print_context(struct R3000 *this, struct R3000ctxt *ct, struct
 #pragma warning(pop)
 #endif
 
-static void lycoder_trace_format(struct R3000 *this, struct jsm_string *out)
+static void lycoder_trace_format(struct R3000 *this, jsm_string *out)
 {
     struct R3000ctxt ct;
     ct.cop = 0;
@@ -513,7 +513,7 @@ static void lycoder_trace_format(struct R3000 *this, struct jsm_string *out)
     }
 }
 
-void R3000_trace_format(struct R3000 *this, struct jsm_string *out)
+void R3000_trace_format(struct R3000 *this, jsm_string *out)
 {
     struct R3000ctxt ct;
     ct.cop = 0;

@@ -16,7 +16,7 @@
  * VDC responds to some signals like HSYNC etc.
  */
 
-void HUC6260_init(struct HUC6260 *this, struct scheduler_t *scheduler, struct HUC6270 *vdc0, struct HUC6270 *vdc1) {
+void HUC6260_init(struct HUC6260 *this, scheduler_t *scheduler, HUC6270 *vdc0, HUC6270 *vdc1) {
     memset(this, 0, sizeof(*this));
     this->regs.clock_div = 4;
     //this->scheduler = scheduler;

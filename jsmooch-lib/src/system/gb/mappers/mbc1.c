@@ -15,7 +15,7 @@
 
 static void GBMBC1_update_banks(struct GB_mapper_MBC1 *this);
 
-static void serialize(struct GB_mapper *parent, struct serialized_state *state)
+static void serialize(struct GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
@@ -29,7 +29,7 @@ static void serialize(struct GB_mapper *parent, struct serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct GB_mapper *parent, struct serialized_state *state)
+static void deserialize(struct GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
@@ -45,7 +45,7 @@ static void deserialize(struct GB_mapper *parent, struct serialized_state *state
 
 
 
-void GB_mapper_MBC1_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus)
+void GB_mapper_MBC1_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus)
 {
     struct GB_mapper_MBC1 *this = (struct GB_mapper_MBC1 *)malloc(sizeof(struct GB_mapper_MBC1));
     parent->ptr = (void *)this;
@@ -177,7 +177,7 @@ void GBMBC1_CPU_write(struct GB_mapper* parent, u32 addr, u32 val)
     }
 }
 
-void GBMBC1_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
+void GBMBC1_set_cart(struct GB_mapper* parent, GB_cart* cart)
 {
     THIS;
     this->cart = cart;

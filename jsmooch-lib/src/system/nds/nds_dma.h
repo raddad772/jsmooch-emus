@@ -30,10 +30,10 @@ enum NDS_DMA_start_timings {
 
 struct NDS_DMA_ch;
 struct NDS;
-void NDS_dma7_start(struct NDS *, struct NDS_DMA_ch *ch, u32 i);
+void NDS_dma7_start(struct NDS *, NDS_DMA_ch *ch, u32 i);
 u32 NDS_dma7_go(struct NDS *this);
 
-void NDS_dma9_start(struct NDS *, struct NDS_DMA_ch *ch, u32 i);
+void NDS_dma9_start(struct NDS *, NDS_DMA_ch *ch, u32 i);
 u32 NDS_dma9_go(struct NDS *this);
 
 void NDS_DMA_init(struct NDS *);

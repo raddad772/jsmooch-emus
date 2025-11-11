@@ -157,7 +157,7 @@ static u32 had_ea_with_predec(struct M68k* this)
 }
 
 
-static u8* read_test_transactions(u8* ptr, struct m68k_test *test)
+static u8* read_test_transactions(u8* ptr, m68k_test *test)
 {
     u32 sz = R32;
     u32 mn = R32;
@@ -209,7 +209,7 @@ static u8* read_test_transactions(u8* ptr, struct m68k_test *test)
     return ptr;
 }
 
-static u8* read_test_state(u8* ptr, struct m68k_test_state *state)
+static u8* read_test_state(u8* ptr, m68k_test_state *state)
 {
     u32 sz = R32;
     u32 mn = R32;
@@ -241,7 +241,7 @@ static u8* read_test_state(u8* ptr, struct m68k_test_state *state)
     return ptr;
 }
 
-static u8* read_test_name(u8* ptr, struct m68k_test *test)
+static u8* read_test_name(u8* ptr, m68k_test *test)
 {
     u32 sz = R32;
     u32 mn = R32;
@@ -257,7 +257,7 @@ static u8* read_test_name(u8* ptr, struct m68k_test *test)
     return ptr;
 }
 
-static u8* decode_test(u8* ptr, struct m68k_test *test)
+static u8* decode_test(u8* ptr, m68k_test *test)
 {
     u32 sz = R32;
     u32 mn = R32;
@@ -459,7 +459,7 @@ static void copy_state_to_RAM(struct m68k_test_state *s)
     }
 }
 
-static void copy_state_to_cpu(struct M68k* cpu, struct m68k_test_state *s)
+static void copy_state_to_cpu(struct M68k* cpu, m68k_test_state *s)
 {
     M68k_set_SR(cpu, s->sr, 1);
     for (u32 i = 0; i < 8; i++) {
@@ -601,7 +601,7 @@ static void do_test_write(struct m68k_test_struct *ts, u32 addr, u32 UDS, u32 LD
     }
 }
 
-static u32 cval_SR(u64 mine, u64 theirs, u64 initial, const char* display_str, const char *name, u32 had_group0, u32 had_predec, struct m68k_test_struct *ts) {
+static u32 cval_SR(u64 mine, u64 theirs, u64 initial, const char* display_str, const char *name, u32 had_group0, u32 had_predec, m68k_test_struct *ts) {
     if (mine == theirs) return 1;
     u32 move_l = ts->cpu.ins->exec == &M68k_ins_MOVE;
     if (move_l && had_group0) return 1;
@@ -657,7 +657,7 @@ static void pprint_state(struct m68k_test_state *s, const char *r)
 }
 
 
-static u32 compare_state_to_cpu(struct m68k_test_struct *ts, struct m68k_test_state *final, struct m68k_test_state *initial)
+static u32 compare_state_to_cpu(struct m68k_test_struct *ts, m68k_test_state *final, m68k_test_state *initial)
 {
     u32 all_passed = 1;
     u32 ea = had_ea_with_predec(&ts->cpu);
@@ -749,7 +749,7 @@ static void cycle_cpu(struct m68k_test_struct *ts)
 }
 
 static char kkttr[6] = {'I', 'R', 'W', 't', 'r', 'w'};
-static u32 dopppt(char *ptr, struct transaction *t)
+static u32 dopppt(char *ptr, transaction *t)
 {
     char *m = ptr;
 
@@ -757,7 +757,7 @@ static u32 dopppt(char *ptr, struct transaction *t)
     return m - ptr;
 }
 
-static void pprint_transactions(struct m68k_test_transactions *ts, struct m68k_test_transactions *mts, struct m68k_test_struct *test)
+static void pprint_transactions(struct m68k_test_transactions *ts, m68k_test_transactions *mts, m68k_test_struct *test)
 {
     char buf[500];
     printf("\n---Transactions: %d, %d, %d", test->had_group0 != -1, test->had_group1 != -1, test->had_group2 != -1);

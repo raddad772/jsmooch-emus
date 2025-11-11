@@ -106,7 +106,7 @@ void M6502_reset(struct M6502* this) {
     this->pins.D = M6502_OP_RESET;
 }
 
-void M6502_setup_tracing(struct M6502* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
+void M6502_setup_tracing(struct M6502* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
 {
     jsm_copy_read_trace(&this->trace.strct, strct);
     this->trace.ok = 1;
@@ -153,7 +153,7 @@ void M6502_cycle(struct M6502* this)
     this->trace.my_cycles++;
 }
 
-void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins)
+void M6502_poll_NMI_only(struct M6502_regs *regs, M6502_pins *pins)
 {
     if (regs->NMI_level_detected) {
         regs->do_NMI = 1;
@@ -162,7 +162,7 @@ void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins)
 }
 
 // Poll during second-to-last cycle
-void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins)
+void M6502_poll_IRQs(struct M6502_regs *regs, M6502_pins *pins)
 {
     if (regs->NMI_level_detected) {
         regs->do_NMI = 1;
@@ -173,7 +173,7 @@ void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins)
 }
 
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-static void serialize_regs(struct M6502_regs *this, struct serialized_state *state) {
+static void serialize_regs(struct M6502_regs *this, serialized_state *state) {
     S(A);
     S(X);
     S(Y);
@@ -199,7 +199,7 @@ static void serialize_regs(struct M6502_regs *this, struct serialized_state *sta
     S(do_NMI);
 }
 
-static void serialize_pins(struct M6502_pins *this, struct serialized_state *state) {
+static void serialize_pins(struct M6502_pins *this, serialized_state *state) {
     S(Addr);
     S(D);
     S(RW);
@@ -209,7 +209,7 @@ static void serialize_pins(struct M6502_pins *this, struct serialized_state *sta
     S(RDY);
 }
 
-void M6502_serialize(struct M6502 *this, struct serialized_state *state)
+void M6502_serialize(struct M6502 *this, serialized_state *state)
 {
     serialize_regs(&this->regs, state);
     serialize_pins(&this->pins, state);
@@ -220,7 +220,7 @@ void M6502_serialize(struct M6502 *this, struct serialized_state *state)
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
 
-static void deserialize_regs(struct M6502_regs *this, struct serialized_state *state) {
+static void deserialize_regs(struct M6502_regs *this, serialized_state *state) {
     L(A);
     L(X);
     L(Y);
@@ -246,7 +246,7 @@ static void deserialize_regs(struct M6502_regs *this, struct serialized_state *s
     L(do_NMI);
 }
 
-static void deserialize_pins(struct M6502_pins *this, struct serialized_state *state) {
+static void deserialize_pins(struct M6502_pins *this, serialized_state *state) {
     L(Addr);
     L(D);
     L(RW);
@@ -256,7 +256,7 @@ static void deserialize_pins(struct M6502_pins *this, struct serialized_state *s
     L(RDY);
 }
 
-void M6502_deserialize(struct M6502 *this, struct serialized_state *state)
+void M6502_deserialize(struct M6502 *this, serialized_state *state)
 {
     deserialize_regs(&this->regs, state);
     deserialize_pins(&this->pins, state);

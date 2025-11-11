@@ -376,7 +376,7 @@ static u32 genesis_color_lookup[4][8] =  {
         {0,0,0,0,0,0,0,0}
 };
 
-void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present, struct events_view *evp)
+void tg16_present(struct physical_io_device *device, void *out_buf, u32 out_width, u32 out_height, u32 is_event_view_present, events_view *evp)
 {
     u16 *tg16o = (u16 *)device->display.output[device->display.last_written];
     u32 w = out_width;//256 - (overscan_left + overscan_right);
@@ -573,7 +573,7 @@ void DC_present(struct physical_io_device *device, void *out_buf, u32 out_width,
     }
 }
 
-void jsm_present(enum jsm::systems which, struct physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, struct events_view *ev)
+void jsm_present(enum jsm::systems which, physical_io_device *display, void *out_buf, u32 x_offset, u32 y_offset, u32 out_width, u32 out_height, events_view *ev)
 {
     u32 is_event_view_present = ev != NULL;
     switch(which) {

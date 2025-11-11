@@ -109,7 +109,7 @@ static struct NDS_GE_VTX_list_node *vertex_list_alloc_node(struct NDS_GE_VTX_lis
     return a;
 }
 
-static void vertex_list_free_node(struct NDS_GE_VTX_list *p, struct NDS_GE_VTX_list_node *n)
+static void vertex_list_free_node(struct NDS_GE_VTX_list *p, NDS_GE_VTX_list_node *n)
 {
     p->pool_bitmap &= n->poolclear;
     n->next = n->prev = NULL;
@@ -175,7 +175,7 @@ static struct NDS_GE_VTX_list_node *vertex_list_add_to_end(struct NDS_GE_VTX_lis
     return n;
 }
 
-static void copy_vertex_list_into(struct NDS_GE_VTX_list *dest, struct NDS_GE_VTX_list *src)
+static void copy_vertex_list_into(struct NDS_GE_VTX_list *dest, NDS_GE_VTX_list *src)
 {
     vertex_list_init(dest);
     struct NDS_GE_VTX_list_node *src_node = src->first;
@@ -719,7 +719,7 @@ static inline u32 C5to18(u32 c) {
     return c ? ((c << 12) + 0xFFF) : 0;
 }
 
-static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_list_node *node)
+static void transform_vertex_on_ingestion(struct NDS *this, NDS_GE_VTX_list_node *node)
 {
     if (this->ge.clip_mtx_dirty) calculate_clip_matrix(this);
     node->data.processed = 0;
@@ -744,13 +744,13 @@ static void transform_vertex_on_ingestion(struct NDS *this, struct NDS_GE_VTX_li
     }
 }
 
-static void vertex_list_add_copy(struct NDS_GE_VTX_list *l, struct NDS_GE_VTX_list_node *src)
+static void vertex_list_add_copy(struct NDS_GE_VTX_list *l, NDS_GE_VTX_list_node *src)
 {
     struct NDS_GE_VTX_list_node *dest = vertex_list_add_to_end(l, 0);
     memcpy(&dest->data, &src->data, sizeof(dest->data));
 }
 
-static void clip_segment(struct NDS *this, u32 comp, i32 plane, u32 attribs, struct NDS_GE_VTX_list *outlist, struct NDS_GE_VTX_list_node *vin, struct NDS_GE_VTX_list_node *vout)
+static void clip_segment(struct NDS *this, u32 comp, i32 plane, u32 attribs, NDS_GE_VTX_list *outlist, NDS_GE_VTX_list_node *vin, NDS_GE_VTX_list_node *vout)
 {
     i64 factor_num = vin->data.xyzw[3] - (plane*vin->data.xyzw[comp]);
     i32 factor_den = factor_num - (vout->data.xyzw[3] - (plane*vout->data.xyzw[comp]));
@@ -778,7 +778,7 @@ static void clip_segment(struct NDS *this, u32 comp, i32 plane, u32 attribs, str
 #undef INTERPOLATE
 }
 
-static void clip_verts_on_plane(struct NDS *this, u32 comp, u32 attribs, struct NDS_GE_VTX_list *vertices)
+static void clip_verts_on_plane(struct NDS *this, u32 comp, u32 attribs, NDS_GE_VTX_list *vertices)
 {
     struct NDS_GE_VTX_list tmp;
     vertex_list_init(&tmp);
@@ -837,7 +837,7 @@ static void clip_verts_on_plane(struct NDS *this, u32 comp, u32 attribs, struct 
     }
 }
 
-static void clip_verts(struct NDS *this, struct NDS_RE_POLY *out) {
+static void clip_verts(struct NDS *this, NDS_RE_POLY *out) {
     clip_verts_on_plane(this, 2, true, &out->vertex_list);
     clip_verts_on_plane(this, 1, true, &out->vertex_list);
     clip_verts_on_plane(this, 0, true, &out->vertex_list);
@@ -856,7 +856,7 @@ static u32 determine_needs_clipping(struct NDS_GE_VTX_list_node *v)
     return 0;
 }
 
-static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb)
+static u32 commit_vertex(struct NDS *this, NDS_GE_VTX_list_node *v, i32 xx, i32 yy, i32 zz, i32 ww, i32 *uv, u32 cr, u32 cg, u32 cb)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     if (this->ge.ge_has_buffer > 1) {
@@ -889,7 +889,7 @@ static u32 commit_vertex(struct NDS *this, struct NDS_GE_VTX_list_node *v, i32 x
     return addr;
 }
 
-static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
+static void normalize_w(struct NDS *this, NDS_RE_POLY *out)
 {
     out->w_normalization_left = 0;
     out->w_normalization_right = 0;
@@ -936,7 +936,7 @@ static void normalize_w(struct NDS *this, struct NDS_RE_POLY *out)
     }
 }
 
-static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_POLY *poly)
+static void finalize_verts_and_get_first_addr(struct NDS *this, NDS_RE_POLY *poly)
 {
     // Final transform to screen and write into vertex buffer
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
@@ -982,7 +982,7 @@ static void finalize_verts_and_get_first_addr(struct NDS *this, struct NDS_RE_PO
     }
 }
 
-static u32 edge_is_top_or_bottom(struct NDS_RE_POLY *poly, struct NDS_GE_VTX_list_node *v[])
+static u32 edge_is_top_or_bottom(struct NDS_RE_POLY *poly, NDS_GE_VTX_list_node *v[])
 {
     u32 y1, y2;
     if (v[0]->data.xyzw[1] > v[1]->data.xyzw[1]) {
@@ -996,7 +996,7 @@ static u32 edge_is_top_or_bottom(struct NDS_RE_POLY *poly, struct NDS_GE_VTX_lis
     return v[0]->data.xyzw[1] < v[1]->data.xyzw[1];
 }
 
-static void determine_highest_vertex(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
+static void determine_highest_vertex(struct NDS_RE_POLY *poly, NDS_GE_BUFFERS *b)
 {
     poly->min_y = 512;
     poly->max_y = 0;
@@ -1010,7 +1010,7 @@ static void determine_highest_vertex(struct NDS_RE_POLY *poly, struct NDS_GE_BUF
     }
 }
 
-static u32 determine_winding_order(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFERS *b)
+static u32 determine_winding_order(struct NDS_RE_POLY *poly, NDS_GE_BUFFERS *b)
 {
     // OK, now progress in order until we have a y-delta of >0.
     struct NDS_GE_VTX_list_node *n = poly->highest_vertex;
@@ -1030,7 +1030,7 @@ static u32 determine_winding_order(struct NDS_RE_POLY *poly, struct NDS_GE_BUFFE
     return CCW;
 }
 
-static void evaluate_edges(struct NDS *this, struct NDS_RE_POLY *poly, u32 expected_winding_order)
+static void evaluate_edges(struct NDS *this, NDS_RE_POLY *poly, u32 expected_winding_order)
 {
     struct NDS_GE_BUFFERS *b = &this->ge.buffers[this->ge.ge_has_buffer];
     struct NDS_GE_VTX_list_node *v[2];
@@ -1279,7 +1279,7 @@ static void cmd_POS_TEST(struct NDS *this)
     this->ge.results.pos_test[3] = ((vertex[0]*M_CLIP[3] + vertex[1]*M_CLIP[7] + vertex[2]*M_CLIP[11] + vertex[3]*M_CLIP[15]) >> 12);
 }
 
-static void box_test_clip_segment(struct NDS *this, i32 comp, i32 plane, struct NDS_GE_VTX_list_node* outbuf, struct NDS_GE_VTX_list_node* vin, struct NDS_GE_VTX_list_node* vout)
+static void box_test_clip_segment(struct NDS *this, i32 comp, i32 plane, NDS_GE_VTX_list_node* outbuf, NDS_GE_VTX_list_node* vin, NDS_GE_VTX_list_node* vout)
 {
     s64 factor_num = vin->data.xyzw[3] - (plane*vin->data.xyzw[comp]);
     s32 factor_den = factor_num - (vout->data.xyzw[3] - (plane*vout->data.xyzw[comp]));
@@ -1295,7 +1295,7 @@ static void box_test_clip_segment(struct NDS *this, i32 comp, i32 plane, struct 
 #undef INTERPOLATE
 }
 
-static int box_test_against_plane(struct NDS *this, int comp, struct NDS_GE_VTX_list_node *vertices, int nverts) {
+static int box_test_against_plane(struct NDS *this, int comp, NDS_GE_VTX_list_node *vertices, int nverts) {
     struct NDS_GE_VTX_list_node temp[10];
     i32 prev, next;
     i32 c = 0;
@@ -1354,7 +1354,7 @@ static int box_test_against_plane(struct NDS *this, int comp, struct NDS_GE_VTX_
 }
 
 
-static i32 box_test_clip_verts(struct NDS *this, struct NDS_GE_VTX_list_node *vertices, int nverts)
+static i32 box_test_clip_verts(struct NDS *this, NDS_GE_VTX_list_node *vertices, int nverts)
 {
     nverts = box_test_against_plane(this, 2, vertices, nverts);
 

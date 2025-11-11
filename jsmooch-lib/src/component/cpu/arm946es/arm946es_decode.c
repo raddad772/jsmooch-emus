@@ -171,7 +171,7 @@ static u16 doBITS(u16 val, u16 hi, u16 lo)
     return (val >> shift) & mask;
 }
 
-void decode_thumb2(u16 opc, struct thumb2_instruction *ins)
+void decode_thumb2(u16 opc, thumb2_instruction *ins)
 {
 #define OBIT(x) ((opc >> (x)) & 1)
 #define BITS(hi,lo) (doBITS(opc, hi, lo))

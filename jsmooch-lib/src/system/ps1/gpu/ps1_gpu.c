@@ -36,7 +36,7 @@ static inline void uv_from_cmd(struct RT_POINT2D *this, u32 cmd)
     this->v = (cmd >> 8) & 0xFF;
 }
 
-void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 page_y, u32 clut_addr, struct PS1_GPU *ctrl)
+void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *this, u32 page_x, u32 page_y, u32 clut_addr, PS1_GPU *ctrl)
 {
     this->page_x = (page_x & 0x0F) << 6; // * 64
     this->page_y = (page_y & 1) * 256;
@@ -194,7 +194,7 @@ static u16 sample_tex_15bit(struct PS1_GPU_TEXTURE_SAMPLER *ts, i32 u, i32 v)
     return cR16(ts->VRAM, addr & 0xFFFFF);
 }
 
-static void get_texture_sampler_from_texpage_and_palette(struct PS1_GPU *this, u32 texpage, u32 palette, struct PS1_GPU_TEXTURE_SAMPLER *ts)
+static void get_texture_sampler_from_texpage_and_palette(struct PS1_GPU *this, u32 texpage, u32 palette, PS1_GPU_TEXTURE_SAMPLER *ts)
 {
     u32 clx = (palette & 0x3F) << 4;
     u32 cly = (palette >> 6) & 0x1FF;

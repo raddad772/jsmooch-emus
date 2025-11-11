@@ -12,7 +12,7 @@
 
 #define THIS struct GB_mapper_none* this = (struct GB_mapper_none*)parent->ptr
 
-static void serialize(struct GB_mapper *parent, struct serialized_state *state)
+static void serialize(struct GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define S(x) Sadd(state, &(this-> x), sizeof(this-> x))
@@ -20,7 +20,7 @@ static void serialize(struct GB_mapper *parent, struct serialized_state *state)
 #undef S
 }
 
-static void deserialize(struct GB_mapper *parent, struct serialized_state *state)
+static void deserialize(struct GB_mapper *parent, serialized_state *state)
 {
     THIS;
 #define L(x) Sload(state, &(this-> x), sizeof(this-> x))
@@ -29,7 +29,7 @@ static void deserialize(struct GB_mapper *parent, struct serialized_state *state
 }
 
 
-void GB_mapper_none_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus)
+void GB_mapper_none_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus)
 {
     struct GB_mapper_none *this = (struct GB_mapper_none *)malloc(sizeof(struct GB_mapper_none));
     parent->ptr = (void *)this;
@@ -69,7 +69,7 @@ void GBMN_reset(struct GB_mapper* parent)
     GB_bus_reset(this->bus);
 }
 
-void GBMN_set_cart(struct GB_mapper* parent, struct GB_cart* cart)
+void GBMN_set_cart(struct GB_mapper* parent, GB_cart* cart)
 {
     THIS;
     this->cart = cart;

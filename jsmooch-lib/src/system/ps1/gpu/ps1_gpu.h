@@ -143,5 +143,5 @@ void PS1_GPU_write_gp0(struct PS1_GPU *, u32 val);
 void PS1_GPU_write_gp1(struct PS1_GPU *, u32 val);
 u32 PS1_GPU_get_gpuread(struct PS1_GPU *);
 u32 PS1_GPU_get_gpustat(struct PS1_GPU *);
-void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *, u32 page_x, u32 page_y, u32 clut, struct PS1_GPU *ctrl);
+void PS1_GPU_texture_sampler_new(struct PS1_GPU_TEXTURE_SAMPLER *, u32 page_x, u32 page_y, u32 clut, PS1_GPU *ctrl);
 #endif //JSMOOCH_EMUS_PS1_GPU_H

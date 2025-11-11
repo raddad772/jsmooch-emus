@@ -585,7 +585,7 @@ u32 M68k_read_ea_addr(struct M68k* this, uint32 opnum, u32 sz, u32 hold, u32 pre
     }
 }
 
-static u32 M68k_write_ea_addr(struct M68k* this, struct M68k_EA *ea, u32 sz, u32 commit, u32 opnum)
+static u32 M68k_write_ea_addr(struct M68k* this, M68k_EA *ea, u32 sz, u32 commit, u32 opnum)
 {
     switch(ea->kind) {
         case M68k_AM_address_register_indirect_with_postincrement:
@@ -721,7 +721,7 @@ void M68k_start_read_operand_for_ea(struct M68k* this, u32 fast, u32 sz, u32 nex
 }
 
 
-u32 M68k_get_r(struct M68k* this, struct M68k_EA *ea, u32 sz)
+u32 M68k_get_r(struct M68k* this, M68k_EA *ea, u32 sz)
 {
     u32 v;
     switch(ea->kind) {
@@ -1199,7 +1199,7 @@ static i32 sgn32(u32 num, u32 sz) {
     return 0;
 }
 
-void M68k_set_r(struct M68k* this, struct M68k_EA *ea, u32 val, u32 sz)
+void M68k_set_r(struct M68k* this, M68k_EA *ea, u32 val, u32 sz)
 {
     u32 v;
     switch(ea->kind) {

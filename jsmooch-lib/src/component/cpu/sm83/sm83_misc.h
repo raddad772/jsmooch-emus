@@ -117,7 +117,7 @@ enum SM83_MN {
 struct SM83_regs;
 struct SM83_pins;
 
-typedef void (*SM83_ins_func)(struct SM83_regs*, struct SM83_pins*);
+typedef void (*SM83_ins_func)(struct SM83_regs*, SM83_pins*);
 
 struct SM83_opcode_info {
     u32 opcode;

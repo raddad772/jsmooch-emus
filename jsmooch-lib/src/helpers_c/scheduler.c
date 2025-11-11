@@ -14,7 +14,7 @@ static inline i64 current_time(struct scheduler_t *this) {
     return (i64)(*this->clock) + (i64)(*this->waitstates);
 }
 
-static void del_event(struct scheduler_t *this, struct scheduler_event *e)
+static void del_event(struct scheduler_t *this, scheduler_event *e)
 {
     this->to_delete.items[this->to_delete.num++] = e;
     //printf("\nDELETE EVENT ID %lld", e->id);
@@ -60,7 +60,7 @@ void scheduler_clear(struct scheduler_t* this)
     this->first_event = NULL;
 }
 
-struct scheduler_event* alloc_event(struct scheduler_t *this, i64 timecode, u64 key, struct scheduler_event* next, u64 id) {
+struct scheduler_event* alloc_event(struct scheduler_t *this, i64 timecode, u64 key, scheduler_event* next, u64 id) {
     struct scheduler_event *se;
 
     // Reuse a struct if we can. FOR SPEED!
@@ -137,7 +137,7 @@ u64 scheduler_bind_or_run(struct scheduler_event *e, void *ptr, scheduler_callba
     return e->id;
 }
 
-static void pprint_list(char *s, struct scheduler_t *this)
+static void pprint_list(char *s, scheduler_t *this)
 {
     return;
     //printf("\n\nScheduled tasks %s:", s);

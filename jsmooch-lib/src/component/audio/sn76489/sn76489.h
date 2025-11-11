@@ -46,6 +46,6 @@ i16 SN76489_mix_sample(struct SN76489*, u32 for_debug);
 i16 SN76489_sample_channel(struct SN76489*, int num);
 void SN76489_reset(struct SN76489*);
 void SN76489_write_data(struct SN76489*, u32 val);
-void SN76489_serialize(struct SN76489*, struct serialized_state *state);
-void SN76489_deserialize(struct SN76489*, struct serialized_state *state);
+void SN76489_serialize(struct SN76489*, serialized_state *state);
+void SN76489_deserialize(struct SN76489*, serialized_state *state);
 #endif //JSMOOCH_EMUS_SN76489_H

@@ -20,13 +20,13 @@
 static void galaksijaJ_play(JSM);
 static void galaksijaJ_pause(JSM);
 static void galaksijaJ_stop(JSM);
-static void galaksijaJ_get_framevars(JSM, struct framevars* out);
+static void galaksijaJ_get_framevars(JSM, framevars* out);
 static void galaksijaJ_reset(JSM);
 static u32 galaksijaJ_finish_frame(JSM);
 static u32 galaksijaJ_finish_scanline(JSM);
 static u32 galaksijaJ_step_master(JSM, u32 howmany);
-static void galaksijaJ_load_BIOS(JSM, struct multi_file_set* mfs);
-static void galaksijaJ_describe_io(JSM, struct cvec* IOs);
+static void galaksijaJ_load_BIOS(JSM, multi_file_set* mfs);
+static void galaksijaJ_describe_io(JSM, cvec* IOs);
 
 // 192x320 incl. hblank
 // 128x208 not inc;.
@@ -50,7 +50,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void galaksijaJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void galaksijaJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -156,7 +156,7 @@ void galaksijaJ_stop(JSM)
 {
 }
 
-void galaksijaJ_get_framevars(JSM, struct framevars* out)
+void galaksijaJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -233,7 +233,7 @@ static u32 galaksijaJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-static void galaksijaJ_load_BIOS(JSM, struct multi_file_set* mfs)
+static void galaksijaJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     // File 0, chargen
@@ -323,7 +323,7 @@ static void setup_keyboard(struct galaksija* this)
 }
 
 
-static void galaksijaJ_describe_io(JSM, struct cvec* IOs)
+static void galaksijaJ_describe_io(JSM, cvec* IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;

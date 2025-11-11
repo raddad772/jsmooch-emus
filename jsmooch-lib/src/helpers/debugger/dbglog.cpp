@@ -5,10 +5,11 @@
 #include <string.h>
 #include <stdio.h>
 #include "dbglog.h"
+#include "debugger.h"
 
-dbglog_category_node &dbglog_category_get_root(dbglog_view &dv)
+dbglog_category_node &dbglog_view::get_category_root()
 {
-    return dv.category_root;
+    return category_root;
 }
 
 dbglog_category_node &dbglog_category_node::add_node(dbglog_view &dv, const char *inname, const char *inshort_name, u32 id, u32 color)

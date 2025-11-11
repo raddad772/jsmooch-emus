@@ -46,7 +46,7 @@ void ZXSpectrum_tape_deck_delete(struct ZXSpectrum* bus)
     cvec_delete(&this->TAPE_pulses);
 }
 
-void ZXSpectrum_tape_deck_load_pzx(struct ZXSpectrum* bus, struct multi_file_set* mfs) {
+void ZXSpectrum_tape_deck_load_pzx(struct ZXSpectrum* bus, multi_file_set* mfs) {
     BTHIS;
     this->kind = tdk_none;
     this->state = td_stopped;
@@ -229,7 +229,7 @@ void ZXSpectrum_tape_deck_stop(struct ZXSpectrum* bus)
 }
 
 
-void ZXSpectrum_tape_deck_load(struct ZXSpectrum* bus, struct multi_file_set* mfs) {
+void ZXSpectrum_tape_deck_load(struct ZXSpectrum* bus, multi_file_set* mfs) {
     BTHIS;
     this->kind = tdk_binary;
     this->state = td_stopped;

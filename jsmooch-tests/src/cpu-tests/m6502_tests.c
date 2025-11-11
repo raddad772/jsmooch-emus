@@ -92,7 +92,7 @@ static void construct_path(char *out, u32 ins)
     tp += sprintf(tp, "%02x.json", ins);
 }
 
-static void parse_state(struct json_object_s *object, struct test_state *state)
+static void parse_state(struct json_object_s *object, test_state *state)
 {
     struct json_object_element_s *el = object->start;
     state->num_ram_entry = 0;
@@ -156,7 +156,7 @@ static void parse_state(struct json_object_s *object, struct test_state *state)
     }
 }
 
-static void parse_and_fill_out(struct jsontest tests[NTESTS], struct read_file_buf *infile)
+static void parse_and_fill_out(struct jsontest tests[NTESTS], read_file_buf *infile)
 {
     struct json_value_s *root = json_parse(infile->buf.ptr, infile->buf.size);
     assert(root->type == json_type_array);
@@ -269,7 +269,7 @@ static void pprint_P(u32 mine, u32 final, u32 initial)
 }
 
 
-static void pprint_regs(struct M6502_regs *cpu_regs, struct test_cpu_regs *test_regs, struct test_cpu_regs *initial_regs, u32 last_pc, u32 only_print_diff)
+static void pprint_regs(struct M6502_regs *cpu_regs, test_cpu_regs *test_regs, test_cpu_regs *initial_regs, u32 last_pc, u32 only_print_diff)
 {
     printf("\nREG CPU       TESTEND     TESTSTART");
     printf("\n------------------------------------");
@@ -287,7 +287,7 @@ static void pprint_regs(struct M6502_regs *cpu_regs, struct test_cpu_regs *test_
         pprint_P(M6502_regs_P_getbyte(&cpu_regs->P), test_regs->p, initial_regs->p);
 }
 
-static void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
+static void pprint_test(struct jsontest *test, test_cycle *cpucycles) {
     printf("\nCycles");
     for (u32 i = 0; i < test->num_cycles; i++) {
 #define DC(x) (test->cycles[i]. x == cpucycles[i]. x)
@@ -301,7 +301,7 @@ static void pprint_test(struct jsontest *test, struct test_cycle *cpucycles) {
 //#define PP(a, b) passed &= cpu->regs.a == final->regs.b; printf("\n%s %04x %04x %d", #a, cpu->regs.a, final->regs.b, passed)
 #define PP(a, b) passed &= cpu->regs.a == final->regs.b
 
-static u32 testregs(struct M6502* cpu, struct test_state* final, struct test_state* initial, u32 last_pc, u32 is_call, u32 tn)
+static u32 testregs(struct M6502* cpu, test_state* final, test_state* initial, u32 last_pc, u32 is_call, u32 tn)
 {
     u32 passed = 1;
     u32 rpc = last_pc == final->regs.pc;
@@ -323,7 +323,7 @@ static u32 testregs(struct M6502* cpu, struct test_state* final, struct test_sta
     return passed;
 }
 
-static void test_m6502_automated(struct m6502_test_result *out, struct M6502* cpu, struct jsontest tests[NTESTS], u32 is_call)
+static void test_m6502_automated(struct m6502_test_result *out, M6502* cpu, jsontest tests[NTESTS], u32 is_call)
 {
     out->passed = 0;
     sprintf(out->msg, "");

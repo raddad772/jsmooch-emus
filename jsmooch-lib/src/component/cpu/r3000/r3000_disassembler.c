@@ -67,7 +67,7 @@ const char *GTE_reg_alias(int reg) {
     return GTE_reg_alias_arr[64];
 }
 
-void disassemble_GTE(u32 opcode, struct jsm_string *out, struct R3000ctxt *ctxt) {
+void disassemble_GTE(u32 opcode, jsm_string *out, R3000ctxt *ctxt) {
     u32 sf = (opcode >> 19) & 1;
     switch(opcode & 0x3F) {
         case 0x00: // N/A
@@ -144,7 +144,7 @@ void disassemble_GTE(u32 opcode, struct jsm_string *out, struct R3000ctxt *ctxt)
     }
 }
 
-static void disassemble_COP(u32 opcode, struct jsm_string *out, struct R3000ctxt *ctxt)
+static void disassemble_COP(u32 opcode, jsm_string *out, R3000ctxt *ctxt)
 {
     u32 copnum = (opcode >> 26) & 3;
     if (copnum == 2) {
@@ -235,7 +235,7 @@ static void disassemble_COP(u32 opcode, struct jsm_string *out, struct R3000ctxt
     NOGOHERE;
 }
 
-void R3000_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct R3000ctxt *ct)
+void R3000_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, R3000ctxt *ct)
 {
     jsm_string_quickempty(out);
     if (opcode == 0) {

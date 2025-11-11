@@ -81,7 +81,7 @@ u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)
 {
     char BIOS_PATH[255];
     char BASE_PATH[255];
-    char ALT_PATH[255];
+    //char ALT_PATH[255];
     const char *homeDir = getenv("HOME");
 
     if (!homeDir) {
@@ -291,9 +291,9 @@ void GET_HOME_BASE_SYS(char *out, size_t out_sz, jsm::systems which, const char*
 
 void mfs_add_IP_BIN(multi_file_set* mfs)
 {
-    char BASER_PATH[255];
+    //char BASER_PATH[255];
     char BASE_PATH[255];
-    char ROM_PATH[255];
+    //char ROM_PATH[255];
     u32 worked = 0;
 
     GET_HOME_BASE_SYS(BASE_PATH, 255, jsm::systems::DREAMCAST, nullptr, &worked);
@@ -306,7 +306,7 @@ void mfs_add_IP_BIN(multi_file_set* mfs)
 u32 grab_ROM(multi_file_set* ROMs, jsm::systems which, const char* fname, const char* sec_path)
 {
     char BASE_PATH[255];
-    char ROM_PATH[255];
+    //char ROM_PATH[255];
     u32 worked = 0;
 
     GET_HOME_BASE_SYS(BASE_PATH, sizeof(BASE_PATH), which, sec_path, &worked);
@@ -497,6 +497,7 @@ void full_system::setup_audio()
                 num_chans += pio.audio_channel.num;
                 lpf = pio.audio_channel.low_pass_filter;
                 break;
+            default:
         }
     }
     if (audiochans.empty()) {
@@ -515,7 +516,7 @@ void full_system::setup_bios()
 
     u32 has_bios = grab_BIOSes(&BIOSes, which);
     if (has_bios) {
-        sys->load_BIOS(&BIOSes);
+        sys->load_BIOS(BIOSes);
     }
 }
 
@@ -1054,7 +1055,7 @@ void full_system::load_default_ROM()
     }
 
     if (which == jsm::systems::PS1) {
-        sys->sideload(&ROMs);
+        sys->sideload(ROMs);
     }
     else {
         physical_io_device *fileioport = load_ROM_into_emu(sys, IOs, ROMs);
@@ -1117,7 +1118,7 @@ void full_system::add_disassembly_view(u32 idx)
     myv.view = dview;
     myv.dasm_rows.reserve(150);
     for (u32 i = 0; i < 200; i++) {
-        auto *das = &myv.dasm_rows.emplace_back();
+        myv.dasm_rows.emplace_back();
         //memset(das, 0, sizeof(*das));
     }
 
@@ -1136,7 +1137,7 @@ void full_system::add_image_view(u32 idx)
 
 void full_system::setup_debugger_interface()
 {
-    sys->setup_debugger_interface(&dbgr);
+    sys->setup_debugger_interface(dbgr);
     debugger_setup = 1;
     for (u32 i = 0; i < dbgr.views.size(); i++) {
         auto &view = dbgr.views.at(i);
@@ -1285,7 +1286,7 @@ void full_system::destroy_system()
 framevars full_system::get_framevars() const
 {
     framevars fv = {};
-    sys->get_framevars(&fv);
+    sys->get_framevars(fv);
     return fv;
 }
 
@@ -1420,7 +1421,7 @@ void full_system::present()
 {
     framevars fv = {};
     sys->get_framevars(fv);
-    jsm_present(sys->kind, (physical_io_device *)cpg(io.display), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, nullptr);
+    jsm_present(sys->kind, io.display->pio.get(), output.backbuffer_backer, 0, 0, output.backbuffer_texture.width, output.backbuffer_texture.height, nullptr);
     if (screenshot) take_screenshot(output.backbuffer_backer, output.backbuffer_texture.width, output.backbuffer_texture.height);
     output.backbuffer_texture.upload_data(output.backbuffer_backer, output.backbuffer_texture.width * output.backbuffer_texture.height * 4, output.backbuffer_texture.width, output.backbuffer_texture.height);
 }
@@ -1454,11 +1455,11 @@ void full_system::events_view_present()
         events_view::DVDP *evd = &events.view->display[events.view->index_in_use];
 
         framevars fv = {};
-        sys->get_framevars(sys, &fv);
-        JSM_DISPLAY *d = &((physical_io_device *) cpg(io.display))->display;
+        sys->get_framevars(fv);
+        JSM_DISPLAY *d = &(io.display->pio.get()).display;
         memset(evd->buf, 0, events.texture.width*events.texture.height*4);
-        jsm_present(sys->kind, (physical_io_device *)cpg(io.display), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
-        events_view_render(&dbgr, events.view, evd->buf, events.texture.width, events.texture.height);
+        jsm_present(sys->kind, io.display->pio.get(), evd->buf, d->pixelometry.offset.x, d->pixelometry.offset.y, events.texture.width, events.texture.height, events.view);
+        events.view->render(evd->buf, events.texture.width, events.texture.height);
 
         events.texture.upload_data(evd->buf, events.texture.width*events.texture.height*4, events.texture.width, events.texture.height);
     }
@@ -1531,7 +1532,7 @@ void full_system::waveform_view_present(WVIEW &wv)
     }
 }
 
-void full_system::image_view_present(debugger_view *dview, my_texture &tex)
+void full_system::image_view_present(debugger_view &dview, my_texture &tex)
 {
     image_view *iview = &dview.image;
     if (!tex.is_good) {
@@ -1543,13 +1544,13 @@ void full_system::image_view_present(debugger_view *dview, my_texture &tex)
                                     (float)((double)iview->height / (double)szpo2));
 
         tex.sz_for_display = ImVec2((float)iview->width, (float)iview->height);
-        buf_allocate(&iview->img_buf[0], szpo2*szpo2*4);
-        buf_allocate(&iview->img_buf[1], szpo2*szpo2*4);
+        iview->img_buf[0].allocate(szpo2*szpo2*4);
+        iview->img_buf[1].allocate(szpo2*szpo2*4);
         memset(iview->img_buf[0].ptr, 0, szpo2*szpo2*4);
         memset(iview->img_buf[1].ptr, 0, szpo2*szpo2*4);
     }
 
-    iview->update_func.func(&dbgr, dview, iview->update_func.ptr, tex.width);
+    iview->update_func.func(&dbgr, &dview, iview->update_func.ptr, tex.width);
     void *buf = iview->img_buf[iview->draw_which_buf].ptr;
     assert(buf);
 
@@ -1575,7 +1576,7 @@ ImVec2 full_system::output_uv1() const
     return v;
 }
 
-void full_system::debugger_pre_frame_waveforms(waveform_view *wv)
+void full_system::debugger_pre_frame_waveforms(waveform_view &wv)
 {
 
 }
@@ -1608,15 +1609,15 @@ void full_system::discard_audio_buffers()
 
 void full_system::check_new_frame() {
     framevars fv;
-    sys->get_framevars(sys, &fv);
+    sys->get_framevars(fv);
     if (fv.master_frame != int_time.frames) {
-        if (sys->set_audiobuf && int_time.has_audio_buf) {
+        if (sys->has.set_audiobuf && int_time.has_audio_buf) {
             audio.commit_emu_buffer();
             int_time.has_audio_buf = false;
         }
         audiobuf *b = audio.get_buf_for_emu();
-        if (b && sys->set_audiobuf) {
-            sys->set_audiobuf(sys, b);
+        if (b && sys->has.set_audiobuf) {
+            sys->set_audiobuf(b);
             int_time.has_audio_buf = true;
         }
         debugger_pre_frame();
@@ -1637,7 +1638,7 @@ void full_system::advance_time(u32 cycles, u32 scanlines, u32 frames)
             return;
         }
         if (cycles > 0) {
-            sys->step_master(sys, cycles);
+            sys->step_master(cycles);
             check_new_frame();
             if (dbg.do_break) {
                 printf("\nNO ADVANCe, DEBUG!");
@@ -1646,7 +1647,7 @@ void full_system::advance_time(u32 cycles, u32 scanlines, u32 frames)
         }
         if (scanlines) {
             for (u32 i = 0; i < scanlines; i++) {
-                sys->finish_scanline(sys);
+                sys->finish_scanline();
                 check_new_frame();
                 if (dbg.do_break) {
                     printf("\nNO ADVANCe, DEBUG!");
@@ -1656,7 +1657,7 @@ void full_system::advance_time(u32 cycles, u32 scanlines, u32 frames)
         }
         if (frames > 0) {
             for (u32 i = 0; i < frames; i++) {
-                sys->finish_frame(sys);
+                sys->finish_frame();
                 check_new_frame();
                 if (dbg.do_break) {
                     printf("\nNO ADVANCe, DEBUG!");
@@ -1677,17 +1678,17 @@ void full_system::do_frame() {
 
         framevars fv = {};
         if (!dbg.do_break) {
-            if (b && sys->set_audiobuf) {
+            if (b && sys->has.set_audiobuf) {
                 //printf("\nSetting EMU into audiobuf %d", audio.bufs.emu.current);
-                sys->set_audiobuf(sys, b);
+                sys->set_audiobuf(b);
             }
             debugger_pre_frame();
-            sys->finish_frame(sys);
-            if (b && sys->set_audiobuf) {
+            sys->finish_frame();
+            if (b && sys->has.set_audiobuf) {
                 audio.commit_emu_buffer();
             }
         }
-        sys->get_framevars(sys, &fv);
+        sys->get_framevars(fv);
         //dbg_flush();
         sync_persistent_storage();
         //TODO: here

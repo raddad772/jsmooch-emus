@@ -105,7 +105,7 @@ static u32 align_val(u32 addr, u32 tmp)
 }
 
 
-void ARM946ES_THUMB_ins_INVALID(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_INVALID(struct ARM946ES *this, thumb2_instruction *ins)
 {
     UNIMPLEMENTED;
 }
@@ -132,7 +132,7 @@ static u32 SUB(struct ARM946ES *this, u32 op1, u32 op2, u32 set_flags)
     return result;
 }
 
-void ARM946ES_THUMB_ins_ADD_SUB(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_ADD_SUB(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u64 val;
     if (ins->I) {
@@ -149,7 +149,7 @@ void ARM946ES_THUMB_ins_ADD_SUB(struct ARM946ES *this, struct thumb2_instruction
     else *Rd = ADD(this, op1, val);
 }
 
-void ARM946ES_THUMB_ins_LSL_LSR_ASR(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LSL_LSR_ASR(struct ARM946ES *this, thumb2_instruction *ins)
 {
     //UPDATE!
     u32 *Rd = getR(this, ins->Rd);
@@ -173,7 +173,7 @@ void ARM946ES_THUMB_ins_LSL_LSR_ASR(struct ARM946ES *this, struct thumb2_instruc
     this->regs.CPSR.N = ((*Rd) >> 31) & 1;
 }
 
-void ARM946ES_THUMB_ins_MOV_CMP_ADD_SUB(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_MOV_CMP_ADD_SUB(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 *Rd = getR(this, ins->Rd);
     switch(ins->sub_opcode) {
@@ -217,7 +217,7 @@ static inline u32 thumb_mul_ticks(u32 multiplier, u32 is_signed)
     return n;
 }
 
-void ARM946ES_THUMB_ins_data_proc(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_data_proc(struct ARM946ES *this, thumb2_instruction *ins)
 {
 #define setnz(x) this->regs.CPSR.N = ((x) >> 31) & 1; \
               this->regs.CPSR.Z = (x) == 0;
@@ -300,7 +300,7 @@ void ARM946ES_THUMB_ins_data_proc(struct ARM946ES *this, struct thumb2_instructi
     this->regs.CPSR.C = this->carry;
 }
 
-void ARM946ES_THUMB_ins_BX_BLX(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_BX_BLX(struct ARM946ES *this, thumb2_instruction *ins)
 {
     // Update the BLX!
     // for BX, MSBd must be zero
@@ -317,7 +317,7 @@ void ARM946ES_THUMB_ins_BX_BLX(struct ARM946ES *this, struct thumb2_instruction 
     ARM946ES_flush_pipeline(this);
 }
 
-void ARM946ES_THUMB_ins_ADD_CMP_MOV_hi(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_ADD_CMP_MOV_hi(struct ARM946ES *this, thumb2_instruction *ins)
 {
     assert(ins->sub_opcode != 3);
     u32 op1 = *getR(this, ins->Rs);
@@ -346,7 +346,7 @@ void ARM946ES_THUMB_ins_ADD_CMP_MOV_hi(struct ARM946ES *this, struct thumb2_inst
     }
 }
 
-void ARM946ES_THUMB_ins_LDR_PC_relative(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDR_PC_relative(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = (this->regs.PC & (~3)) + ins->imm;
     this->regs.PC += 2;
@@ -356,7 +356,7 @@ void ARM946ES_THUMB_ins_LDR_PC_relative(struct ARM946ES *this, struct thumb2_ins
     *Rd = v;
 }
 
-void ARM946ES_THUMB_ins_LDRH_STRH_reg_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDRH_STRH_reg_offset(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     u32 *Rd = getR(this, ins->Rd);
@@ -372,7 +372,7 @@ void ARM946ES_THUMB_ins_LDRH_STRH_reg_offset(struct ARM946ES *this, struct thumb
     }
 }
 
-void ARM946ES_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     this->regs.PC += 2;
@@ -391,7 +391,7 @@ void ARM946ES_THUMB_ins_LDRSH_LDRSB_reg_offset(struct ARM946ES *this, struct thu
     *Rd = v;
 }
 
-void ARM946ES_THUMB_ins_LDR_STR_reg_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDR_STR_reg_offset(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     this->regs.PC += 2;
@@ -407,7 +407,7 @@ void ARM946ES_THUMB_ins_LDR_STR_reg_offset(struct ARM946ES *this, struct thumb2_
     }
 }
 
-void ARM946ES_THUMB_ins_LDRB_STRB_reg_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDRB_STRB_reg_offset(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + *getR(this, ins->Ro);
     this->regs.PC += 2;
@@ -422,7 +422,7 @@ void ARM946ES_THUMB_ins_LDRB_STRB_reg_offset(struct ARM946ES *this, struct thumb
     }
 }
 
-void ARM946ES_THUMB_ins_LDR_STR_imm_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDR_STR_imm_offset(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + ins->imm;
     this->regs.PC += 2;
@@ -438,7 +438,7 @@ void ARM946ES_THUMB_ins_LDR_STR_imm_offset(struct ARM946ES *this, struct thumb2_
     }
 }
 
-void ARM946ES_THUMB_ins_LDRB_STRB_imm_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDRB_STRB_imm_offset(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + ins->imm;
     u32 *Rd = getR(this, ins->Rd);
@@ -454,7 +454,7 @@ void ARM946ES_THUMB_ins_LDRB_STRB_imm_offset(struct ARM946ES *this, struct thumb
     }
 }
 
-void ARM946ES_THUMB_ins_LDRH_STRH_imm_offset(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDRH_STRH_imm_offset(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, ins->Rb) + ins->imm;
     u32 *Rd = getR(this, ins->Rd);
@@ -470,7 +470,7 @@ void ARM946ES_THUMB_ins_LDRH_STRH_imm_offset(struct ARM946ES *this, struct thumb
     }
 }
 
-void ARM946ES_THUMB_ins_LDR_STR_SP_relative(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_LDR_STR_SP_relative(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 addr = *getR(this, 13) + ins->imm;
     this->regs.PC += 2;
@@ -485,7 +485,7 @@ void ARM946ES_THUMB_ins_LDR_STR_SP_relative(struct ARM946ES *this, struct thumb2
     }
 }
 
-void ARM946ES_THUMB_ins_ADD_SP_or_PC(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_ADD_SP_or_PC(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 *Rd = getR(this, ins->Rd);
     if (ins->SP) *Rd = *getR(this, 13) + ins->imm;
@@ -494,7 +494,7 @@ void ARM946ES_THUMB_ins_ADD_SP_or_PC(struct ARM946ES *this, struct thumb2_instru
     this->pipeline.access = ARM9P_sequential | ARM9P_code;
 }
 
-void ARM946ES_THUMB_ins_ADD_SUB_SP(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_ADD_SUB_SP(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 *sp = getR(this, 13);
     if (ins->S) *sp -= ins->imm;
@@ -503,7 +503,7 @@ void ARM946ES_THUMB_ins_ADD_SUB_SP(struct ARM946ES *this, struct thumb2_instruct
     this->pipeline.access = ARM9P_sequential | ARM9P_code;
 }
 
-void ARM946ES_THUMB_ins_PUSH_POP(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_PUSH_POP(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 *r13 = getR(this, 13);
     u32 pop = ins->sub_opcode;
@@ -559,7 +559,7 @@ void ARM946ES_THUMB_ins_PUSH_POP(struct ARM946ES *this, struct thumb2_instructio
     this->pipeline.access = ARM9P_code | ARM9P_nonsequential;
 }
 
-void ARM946ES_THUMB_ins_LDM_STM(struct ARM946ES *this, struct thumb2_instruction *ins) {
+void ARM946ES_THUMB_ins_LDM_STM(struct ARM946ES *this, thumb2_instruction *ins) {
     u32 rlist = ins->rlist;
     u32 address = *getR(this, ins->Rb);
     u32 L = ins->sub_opcode;
@@ -591,7 +591,7 @@ void ARM946ES_THUMB_ins_LDM_STM(struct ARM946ES *this, struct thumb2_instruction
     this->regs.PC += 2;
 }
 
-void ARM946ES_THUMB_ins_SWI(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_SWI(struct ARM946ES *this, thumb2_instruction *ins)
 {
     /*
 Execution SWI/BKPT:
@@ -611,7 +611,7 @@ Execution SWI/BKPT:
     ARM946ES_flush_pipeline(this);
 }
 
-void ARM946ES_THUMB_ins_BKPT(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_BKPT(struct ARM946ES *this, thumb2_instruction *ins)
 {
     this->regs.R_abt[1] = this->regs.PC - 2;
     this->regs.SPSR_abt = this->regs.CPSR.u;
@@ -624,12 +624,12 @@ void ARM946ES_THUMB_ins_BKPT(struct ARM946ES *this, struct thumb2_instruction *i
     ARM946ES_flush_pipeline(this);
 }
 
-void ARM946ES_THUMB_ins_UNDEFINED_BCC(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_UNDEFINED_BCC(struct ARM946ES *this, thumb2_instruction *ins)
 {
     ARM946ES_THUMB_ins_BCC(this, ins);
 }
 
-void ARM946ES_THUMB_ins_BCC(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_BCC(struct ARM946ES *this, thumb2_instruction *ins)
 {
     this->regs.PC += 2;
     if (condition_passes(&this->regs, ins->sub_opcode)) {
@@ -642,13 +642,13 @@ void ARM946ES_THUMB_ins_BCC(struct ARM946ES *this, struct thumb2_instruction *in
     }
 }
 
-void ARM946ES_THUMB_ins_B(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_B(struct ARM946ES *this, thumb2_instruction *ins)
 {
     this->regs.PC += ins->imm;
     ARM946ES_flush_pipeline(this);
 }
 
-void ARM946ES_THUMB_ins_BL_BLX_prefix(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_BL_BLX_prefix(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 *lr = getR(this, 14);
     this->regs.PC += 2;
@@ -656,7 +656,7 @@ void ARM946ES_THUMB_ins_BL_BLX_prefix(struct ARM946ES *this, struct thumb2_instr
     this->pipeline.access = ARM9P_sequential | ARM9P_code;
 }
 
-void ARM946ES_THUMB_ins_BL_suffix(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_BL_suffix(struct ARM946ES *this, thumb2_instruction *ins)
 {
     u32 v = (this->regs.PC - 2) | 1;
     u32 *LR = getR(this, 14);
@@ -665,7 +665,7 @@ void ARM946ES_THUMB_ins_BL_suffix(struct ARM946ES *this, struct thumb2_instructi
     ARM946ES_flush_pipeline(this);
 }
 
-void ARM946ES_THUMB_ins_BLX_suffix(struct ARM946ES *this, struct thumb2_instruction *ins)
+void ARM946ES_THUMB_ins_BLX_suffix(struct ARM946ES *this, thumb2_instruction *ins)
 {
 
     u32 v = (this->regs.PC - 2) | 1;

@@ -8,7 +8,7 @@
 #include "mappers/mapper.h"
 #include "fail"
 
-void GB_bus_init(struct GB_bus* this, struct GB_clock* clock) {
+void GB_bus_init(struct GB_bus* this, GB_clock* clock) {
 	this->cart = NULL;
 	this->mapper = NULL;
 	this->ppu = NULL;
@@ -132,7 +132,7 @@ inline u32 GB_bus_CPU_read(struct GB_bus *this, u32 addr, u32 val, u32 has_effec
     return this->mapper->CPU_read(this->mapper, addr, val, has_effect);
 }
 
-void GB_bus_set_cart(struct GB_bus* this, struct GB_cart* cart)
+void GB_bus_set_cart(struct GB_bus* this, GB_cart* cart)
 {
     this->cart = cart;
 }

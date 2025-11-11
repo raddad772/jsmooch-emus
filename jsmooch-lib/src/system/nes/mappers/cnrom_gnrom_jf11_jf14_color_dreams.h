@@ -10,6 +10,6 @@
 
 struct NES_mapper;
 struct NES;
-void GNROM_JF11_JF14_color_dreams_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers kind);
+void GNROM_JF11_JF14_color_dreams_init(struct NES_mapper *bus, NES *nes, enum NES_mappers kind);
 
 #endif //JSMOOCH_EMUS_CNROM_H

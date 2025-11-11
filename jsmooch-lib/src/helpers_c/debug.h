@@ -217,7 +217,7 @@ void DFT(char *format, ...);
 #define dbg_LT_dump() (void)0
 #define dbg_LT_clear() (void)0
 #endif
-void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, struct jsm_debug_read_trace *src);
+void jsm_copy_read_trace(struct jsm_debug_read_trace *dst, jsm_debug_read_trace *src);
 
 
 #ifdef TRACE_COLORS

@@ -143,7 +143,7 @@ static void update_phases(struct mac* this)
         updates_drive_phases(this, m_phases_cb)*/
 }
 
-static void drive_do_step(struct mac* this, struct JSMAC_DRIVE *drv)
+static void drive_do_step(struct mac* this, JSMAC_DRIVE *drv)
 {
     if (drv->head_step_direction == 0) {
         if (drv->head.track_num > 0) {

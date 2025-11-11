@@ -28,16 +28,16 @@
 static void macJ_play(JSM);
 static void macJ_pause(JSM);
 static void macJ_stop(JSM);
-static void macJ_get_framevars(JSM, struct framevars* out);
+static void macJ_get_framevars(JSM, framevars* out);
 static void macJ_reset(JSM);
 static void macJ_killall(JSM);
 static u32 macJ_finish_frame(JSM);
 static u32 macJ_finish_scanline(JSM);
 static u32 macJ_step_master(JSM, u32 howmany);
-static void macJ_load_BIOS(JSM, struct multi_file_set* mfs);
+static void macJ_load_BIOS(JSM, multi_file_set* mfs);
 static void macJ_enable_tracing(JSM);
 static void macJ_disable_tracing(JSM);
-static void macJ_describe_io(JSM, struct cvec* IOs);
+static void macJ_describe_io(JSM, cvec* IOs);
 
 static u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
     struct mac* this = (struct mac*)ptr;
@@ -174,7 +174,7 @@ static void setup_keyboard(struct mac* this)
     }
 }
 
-void macJ_IO_insert_disk(struct jsm_system *jsm, struct physical_io_device* pio, struct multi_file_set* mfs)
+void macJ_IO_insert_disk(struct jsm_system *jsm, physical_io_device* pio, multi_file_set* mfs)
 {
     JTHIS;
     struct mac_floppy *mflpy = cvec_push_back(&this->iwm.my_disks);
@@ -212,7 +212,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
 }
 
 
-void macJ_describe_io(JSM, struct cvec *IOs)
+void macJ_describe_io(JSM, cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -277,7 +277,7 @@ void macJ_stop(JSM)
 {
 }
 
-void macJ_get_framevars(JSM, struct framevars* out)
+void macJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -286,7 +286,7 @@ void macJ_get_framevars(JSM, struct framevars* out)
     out->master_cycle = this->clock.master_cycles;
 }
 
-void macJ_load_BIOS(JSM, struct multi_file_set* mfs)
+void macJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;

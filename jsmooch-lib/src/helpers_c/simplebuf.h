@@ -21,7 +21,7 @@ void simplebuf8_init(struct simplebuf8*);
 void simplebuf8_delete(struct simplebuf8*);
 void simplebuf8_allocate(struct simplebuf8*, u64 sz);
 void simplebuf8_clear(struct simplebuf8 *);
-void simplebuf8_copy_from_buf(struct simplebuf8 *dest, struct buf *src);
+void simplebuf8_copy_from_buf(struct simplebuf8 *dest, buf *src);
 
 #ifdef __cplusplus
 }

@@ -23,7 +23,7 @@ struct NDS_tsc_cd {
     i32 screen_y2;
 };
 
-static void apply_calib_data(struct NDS *this, struct NDS_tsc_cd *data)
+static void apply_calib_data(struct NDS *this, NDS_tsc_cd *data)
 {
     struct NDS_SPI_TOUCHSCREEN *t = &this->spi.touchscr;
     t->adc_x_top_left = data->adc_x1;

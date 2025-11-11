@@ -20,7 +20,7 @@
 
 #define JTHIS struct GB* this = (struct GB*)jsm->ptr
 #define JSM struct jsm_system* jsm
-static void render_image_view_nametables_DMG(struct GB* this, struct debugger_interface *dbgr, struct debugger_view *dview, u32 out_width, u32 cgb_enable)
+static void render_image_view_nametables_DMG(struct GB* this, debugger_interface *dbgr, debugger_view *dview, u32 out_width, u32 cgb_enable)
 {
     struct image_view *iv = &dview->image;
     iv->draw_which_buf ^= 1;
@@ -125,7 +125,7 @@ static void render_image_view_nametables_DMG(struct GB* this, struct debugger_in
     }
 }
 
-static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_sprites(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
     struct GB *this = (struct GB *) ptr;
     struct image_view *iv = &dview->image;
@@ -145,7 +145,7 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
     }
 }
 
-static void render_image_view_nametables(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_nametables(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
     struct GB *this = (struct GB *) ptr;
     switch(this->variant) {
@@ -164,7 +164,7 @@ static void render_image_view_nametables(struct debugger_interface *dbgr, struct
     }
 }
 
-static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
+static void setup_events_view(struct GB* this, debugger_interface *dbgr)
 {
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
     struct debugger_view *dview = cpg(this->dbg.events.view);
@@ -218,7 +218,7 @@ static void setup_events_view(struct GB* this, struct debugger_interface *dbgr)
     debugger_report_frame(this->dbg.interface);
 }
 
-static void render_image_view_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width)
+static void render_image_view_tiles(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width)
 {
     struct GB *this = (struct GB *) ptr;
     struct image_view *iv = &dview->image;
@@ -253,7 +253,7 @@ static void render_image_view_tiles(struct debugger_interface *dbgr, struct debu
     }
 }
 
-static void setup_debugger_view_tiles(struct GB* this, struct debugger_interface *dbgr) {
+static void setup_debugger_view_tiles(struct GB* this, debugger_interface *dbgr) {
     this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.tiles);
     struct image_view *iv = &dview->image;
@@ -272,7 +272,7 @@ static void setup_debugger_view_tiles(struct GB* this, struct debugger_interface
     snprintf(iv->label, sizeof(iv->label), "Tile View");
 }
 
-static void setup_debugger_view_sprites(struct GB* this, struct debugger_interface *dbgr)
+static void setup_debugger_view_sprites(struct GB* this, debugger_interface *dbgr)
 {
     this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
@@ -288,7 +288,7 @@ static void setup_debugger_view_sprites(struct GB* this, struct debugger_interfa
     snprintf(iv->label, sizeof(iv->label), "Sprite Position Viewer");
 }
 
-static void setup_debugger_view_nametables(struct GB* this, struct debugger_interface *dbgr)
+static void setup_debugger_view_nametables(struct GB* this, debugger_interface *dbgr)
 {
     this->dbg.image_views.nametables = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.nametables);
@@ -306,7 +306,7 @@ static void setup_debugger_view_nametables(struct GB* this, struct debugger_inte
     snprintf(iv->label, sizeof(iv->label), "Nametable Viewer");
 }
 
-static void setup_waveforms(struct GB* this, struct debugger_interface *dbgr)
+static void setup_waveforms(struct GB* this, debugger_interface *dbgr)
 {
     this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms.view);
@@ -351,7 +351,7 @@ static void setup_waveforms(struct GB* this, struct debugger_interface *dbgr)
 }
 
 
-void GBJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
+void GBJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
 {
     JTHIS;
     this->dbg.interface = dbgr;

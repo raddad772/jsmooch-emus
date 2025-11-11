@@ -82,7 +82,7 @@ static void construct_path(char *out, u32 iclass, u32 ins)
 
 static struct jsontest tests[10000];
 
-static void parse_state(struct json_object_s *object, struct test_state *state)
+static void parse_state(struct json_object_s *object, test_state *state)
 {
     struct json_object_element_s *el = object->start;
     state->num_ram_entry = 0;
@@ -240,7 +240,7 @@ static void parse_and_fill_out(struct read_file_buf *infile)
     free(root);
 }
 
-static void copy_state_to_cpu(struct test_state *state, struct WDC65816 *cpu)
+static void copy_state_to_cpu(struct test_state *state, WDC65816 *cpu)
 {
     //    u32 C, DBR, D, X, Y, P, PBR, PC, S, E;
     cpu->regs.C = state->regs.C;
@@ -255,7 +255,7 @@ static void copy_state_to_cpu(struct test_state *state, struct WDC65816 *cpu)
     cpu->regs.E = state->regs.E;
 }
 
-static void pprint_regs(struct WDC65816_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
+static void pprint_regs(struct WDC65816_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff)
 {
     printf("\nREG  CPU    TEST");
     printf("\n----------------");
@@ -274,7 +274,7 @@ static void pprint_regs(struct WDC65816_regs *cpu_regs, struct test_cpu_regs *te
     TREG4(P.v, P, "P    ");
 #undef TREG4
 }
-static u32 testregs(struct WDC65816 *cpu, struct test_state *final, u32 last_pc)
+static u32 testregs(struct WDC65816 *cpu, test_state *final, u32 last_pc)
 {
     u32 passed = 1;
     // u32 C, DBR, D, X, Y, P, PBR, PC, S, E;
@@ -312,7 +312,7 @@ static void pprint_P(u32 r)
 #undef F
 }
 
-static int test_wdc65816_automated(struct wdc65816_test_result *out, struct WDC65816 *cpu) {
+static int test_wdc65816_automated(struct wdc65816_test_result *out, WDC65816 *cpu) {
     out->passed = 0;
     out->mycycles = 0;
     sprintf(out->msg, "");

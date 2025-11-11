@@ -49,6 +49,6 @@ enum SNES_DBLOG_CATEGORIES {
 
 #define dbgloglog(wth, r_cat, r_severity, r_format, ...) if (wth->dbg.dvptr->ids_enabled[r_cat]) { dbglog_view_add_printf(wth->dbg.dvptr, r_cat, wth->clock.master_cycle_count, r_severity, r_format, __VA_ARGS__); dbglog_view_extra_printf(wth->dbg.dvptr, ""); }
 
-void SNESJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
+void SNESJ_setup_debugger_interface(struct jsm_system *, debugger_interface *dbgr);
 
 #endif //JSMOOCH_EMUS_SNES_DEBUGGER_H

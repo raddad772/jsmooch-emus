@@ -31,7 +31,7 @@ static void dma7_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
     NDS_update_IF7(this, NDS_IRQ_DMA0 + key);
 }
 
-static void dma7_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
+static void dma7_go_ch(struct NDS *this, NDS_DMA_ch *ch) {
     u32 num_transfer = 0;
     u32 ct = this->waitstates.current_transaction;
     ch->active = 1;
@@ -116,7 +116,7 @@ static void dma7_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
     ch->active = 0;
 }
 
-void NDS_dma7_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
+void NDS_dma7_start(struct NDS *this, NDS_DMA_ch *ch, u32 i)
 {
     if (ch->active) return;
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA7 %d start", i);
@@ -147,7 +147,7 @@ static void dma9_irq(void *ptr, u64 key, u64 cur_time, u32 jitter)
 }
 
 
-static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
+static void dma9_go_ch(struct NDS *this, NDS_DMA_ch *ch) {
     ch->active = 1;
     u32 num_transfer = 0;
     u32 ct = this->waitstates.current_transaction;
@@ -231,7 +231,7 @@ static void dma9_go_ch(struct NDS *this, struct NDS_DMA_ch *ch) {
     ch->active = 0;
 }
 
-void NDS_dma9_start(struct NDS *this, struct NDS_DMA_ch *ch, u32 i)
+void NDS_dma9_start(struct NDS *this, NDS_DMA_ch *ch, u32 i)
 {
     if (ch->active) return;
     dbgloglog(NDS_CAT_DMA_START, DBGLS_INFO, "DMA9 %d start", i);

@@ -10,7 +10,7 @@
 #include "helpers/debugger/debugger.h"
 
 struct ARMctxt;
-void ARM946ES_thumb_disassemble(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct);
+void ARM946ES_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct);
 
 
 #endif //JSMOOCH_EMUS_THUMB2_DISASSEMBLER_H

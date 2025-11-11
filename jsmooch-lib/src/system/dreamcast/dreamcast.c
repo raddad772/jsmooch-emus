@@ -35,20 +35,20 @@
 void DCJ_play(JSM);
 void DCJ_pause(JSM);
 void DCJ_stop(JSM);
-void DCJ_get_framevars(JSM, struct framevars* out);
+void DCJ_get_framevars(JSM, framevars* out);
 void DCJ_reset(JSM);
 void DCJ_killall(JSM);
 u32 DCJ_finish_frame(JSM);
 u32 DCJ_finish_scanline(JSM);
 u32 DCJ_step_master(JSM, u32 howmany);
-void DCJ_load_BIOS(JSM, struct multi_file_set* mfs);
+void DCJ_load_BIOS(JSM, multi_file_set* mfs);
 void DCJ_enable_tracing(JSM);
 void DCJ_disable_tracing(JSM);
 static void DC_schedule_frame(struct DC* this);
 static void new_frame(struct DC* this, u32 copy_buf);
-void DCJ_describe_io(JSM, struct cvec* IOs);
-static void DCJ_sideload(JSM, struct multi_file_set* mfs);
-static void DCJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
+void DCJ_describe_io(JSM, cvec* IOs);
+static void DCJ_sideload(JSM, multi_file_set* mfs);
+static void DCJ_setup_debugger_interface(JSM, debugger_interface *intf);
 
 #define JITTER 448
 
@@ -145,7 +145,7 @@ void DC_delete(struct jsm_system* jsm)
     jsm_clearfuncs(jsm);
 }
 
-static void DCJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+static void DCJ_setup_debugger_interface(JSM, debugger_interface *intf)
 {
     intf->supported_by_core = 0;
     printf("\nWARNING: debugger interface not supported on core: dreamcast");
@@ -207,7 +207,7 @@ void DCJ_stop(JSM)
     this->holly.master_frame++;
 }
 
-void DCJ_get_framevars(JSM, struct framevars* out)
+void DCJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_cycle = this->trace_cycles;
@@ -357,7 +357,7 @@ u32 DCJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void DCJ_load_BIOS(JSM, struct multi_file_set* mfs)
+void DCJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     // We expect dc_boot.bin and dc_flash.bin
@@ -397,7 +397,7 @@ static void DCIO_remove_disc(JSM)
 
 }
 
-static void DCIO_insert_disc(JSM, struct physical_io_device *pio, struct multi_file_set *mfs)
+static void DCIO_insert_disc(JSM, physical_io_device *pio, multi_file_set *mfs)
 {
     JTHIS;
     GDI_load(mfs->files[0].path, mfs->files[0].name, &this->gdrom.gdi);
@@ -461,7 +461,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-void DCJ_describe_io(JSM, struct cvec* IOs)
+void DCJ_describe_io(JSM, cvec* IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -514,7 +514,7 @@ void DCJ_describe_io(JSM, struct cvec* IOs)
 }
 
 
-void DCJ_old_load_ROM(JSM, struct multi_file_set* mfs)
+void DCJ_old_load_ROM(JSM, multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
@@ -607,7 +607,7 @@ static void DC_CPU_state_after_boot_rom(struct DC* this)
     sh4->regs.PC = 0xAC008300; // IP.bin start address
 }
 
-static void DC_RAM_state_after_boot_rom(struct DC* this, struct read_file_buf *IPBIN)
+static void DC_RAM_state_after_boot_rom(struct DC* this, read_file_buf *IPBIN)
 {
     memset(&this->RAM[0x00200000], 0, 0x1000000);
 
@@ -671,7 +671,7 @@ static void DC_RAM_state_after_boot_rom(struct DC* this, struct read_file_buf *I
 
 
 // Thanks to Deecey for values to write
-static void DCJ_sideload(JSM, struct multi_file_set* mfs) {
+static void DCJ_sideload(JSM, multi_file_set* mfs) {
     JTHIS;
     DC_CPU_state_after_boot_rom(this);
     DC_RAM_state_after_boot_rom(this, &mfs->files[1]);

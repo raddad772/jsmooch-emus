@@ -28,13 +28,13 @@
 static void genesisJ_play(JSM);
 static void genesisJ_pause(JSM);
 static void genesisJ_stop(JSM);
-static void genesisJ_get_framevars(JSM, struct framevars* out);
+static void genesisJ_get_framevars(JSM, framevars* out);
 static void genesisJ_reset(JSM);
 static u32 genesisJ_finish_frame(JSM);
 static u32 genesisJ_finish_scanline(JSM);
 static u32 genesisJ_step_master(JSM, u32 howmany);
-static void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs);
-static void genesisJ_describe_io(JSM, struct cvec* IOs);
+static void genesisJ_load_BIOS(JSM, multi_file_set* mfs);
+static void genesisJ_describe_io(JSM, cvec* IOs);
 
 
 u32 read_trace_z80(void *ptr, u32 addr) {
@@ -47,7 +47,7 @@ u32 read_trace_m68k(void *ptr, u32 addr, u32 UDS, u32 LDS) {
     return genesis_mainbus_read(this, addr, UDS, LDS, this->io.m68k.open_bus_data, 0);
 }
 
-static void setup_debug_waveform(struct genesis *this, struct debug_waveform *dw)
+static void setup_debug_waveform(struct genesis *this, debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -55,7 +55,7 @@ static void setup_debug_waveform(struct genesis *this, struct debug_waveform *dw
     dw->user.buf_pos = 0;
 }
 
-void genesisJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void genesisJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -107,7 +107,7 @@ static void populate_opts(struct jsm_system *jsm)
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: trace", 1, 0, 0);
 }
 
-static void read_opts(struct jsm_system *jsm, struct genesis* this)
+static void read_opts(struct jsm_system *jsm, genesis* this)
 {
     struct debugger_widget *w = cvec_get(&jsm->opts, 0);
     this->opts.vdp.enable_A = w->checkbox.value;
@@ -122,7 +122,7 @@ static void read_opts(struct jsm_system *jsm, struct genesis* this)
     this->opts.vdp.ex_trace = w->checkbox.value;
 }
 
-static void c_vdp_z80_m68k(struct genesis *this, struct gensched_item *e)
+static void c_vdp_z80_m68k(struct genesis *this, gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_vdp;
     genesis_VDP_cycle(this);
@@ -136,7 +136,7 @@ static void c_vdp_z80_m68k(struct genesis *this, struct gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_z80_vdp_m68k(struct genesis *this, struct gensched_item *e)
+static void c_z80_vdp_m68k(struct genesis *this, gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_z80;
     genesis_cycle_z80(this);
@@ -149,7 +149,7 @@ static void c_z80_vdp_m68k(struct genesis *this, struct gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_vdp+e->clk_add_z80) == 7);
 }
 
-static void c_vdp_m68k(struct genesis *this, struct gensched_item *e)
+static void c_vdp_m68k(struct genesis *this, gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_vdp;
     genesis_VDP_cycle(this);
@@ -159,7 +159,7 @@ static void c_vdp_m68k(struct genesis *this, struct gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_vdp) == 7);
 }
 
-static void c_z80_m68k(struct genesis *this, struct gensched_item *e)
+static void c_z80_m68k(struct genesis *this, gensched_item *e)
 {
     this->clock.master_cycle_count += e->clk_add_z80;
     genesis_cycle_z80(this);
@@ -169,7 +169,7 @@ static void c_z80_m68k(struct genesis *this, struct gensched_item *e)
     //assert((e->clk_add_m68k+e->clk_add_z80) == 7);
 }
 
-static void c_m68k(struct genesis *this, struct gensched_item *e)
+static void c_m68k(struct genesis *this, gensched_item *e)
 {
     genesis_cycle_m68k(this);
     this->clock.master_cycle_count += 7;
@@ -483,7 +483,7 @@ static void schedule_first(struct genesis *this)
     genesis_VDP_schedule_first(this);
 }
 
-static void genesisIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
+static void genesisIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *which_pio)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
@@ -502,7 +502,7 @@ static void genesisIO_unload_cart(JSM)
 {
 }
 
-static void setup_crt(struct genesis *this, struct JSM_DISPLAY *d)
+static void setup_crt(struct genesis *this, JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -535,7 +535,7 @@ static void setup_crt(struct genesis *this, struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(struct genesis *this, struct cvec* IOs)
+static void setup_audio(struct genesis *this, cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -546,7 +546,7 @@ static void setup_audio(struct genesis *this, struct cvec* IOs)
     chan->low_pass_filter = 24000;
 }
 
-void genesisJ_describe_io(JSM, struct cvec *IOs)
+void genesisJ_describe_io(JSM, cvec *IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;
@@ -618,7 +618,7 @@ void genesisJ_stop(JSM)
 {
 }
 
-void genesisJ_get_framevars(JSM, struct framevars* out)
+void genesisJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -716,7 +716,7 @@ u32 genesisJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void genesisJ_load_BIOS(JSM, struct multi_file_set* mfs)
+void genesisJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     printf("\nSega Genesis doesn't have a BIOS...?");
 }

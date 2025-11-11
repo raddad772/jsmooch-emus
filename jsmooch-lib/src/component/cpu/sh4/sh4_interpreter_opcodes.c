@@ -11,7 +11,7 @@
 #include "sh4_interpreter.h"
 #include "sh4_interpreter_opcodes.h"
 
-#define SH4args  struct SH4* this, struct SH4_ins_t *ins
+#define SH4args  struct SH4* this, SH4_ins_t *ins
 #define PCinc rPC += 2
 #define rPC this->regs.PC
 

@@ -105,7 +105,7 @@ struct Z80_pins {
 
 void Z80_pins_init(struct Z80_pins*);
 
-typedef void (*Z80_ins_func)(struct Z80_regs*, struct Z80_pins*);
+typedef void (*Z80_ins_func)(struct Z80_regs*, Z80_pins*);
 
 struct Z80 {
     struct Z80_regs regs;
@@ -139,9 +139,9 @@ void Z80_reset(struct Z80*);
 void Z80_cycle(struct Z80*);
 void Z80_notify_NMI(struct Z80*, u32 level);
 void Z80_notify_IRQ(struct Z80*, u32 level);
-void Z80_setup_tracing(struct Z80*, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
-void Z80_serialize(struct Z80*, struct serialized_state *state);
-void Z80_deserialize(struct Z80*, struct serialized_state *state);
+void Z80_setup_tracing(struct Z80*, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer);
+void Z80_serialize(struct Z80*, serialized_state *state);
+void Z80_deserialize(struct Z80*, serialized_state *state);
 void Z80_trace_format(struct Z80 *);
 void Z80_printf_trace(struct Z80* this);
 

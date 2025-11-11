@@ -4,13 +4,13 @@
 
 #include "spc700_disassembler.h"
 
-void do_the_thing(struct jsm_string *out, struct jsm_debug_read_trace *rt, u32 PC, const char *str)
+void do_the_thing(struct jsm_string *out, jsm_debug_read_trace *rt, u32 PC, const char *str)
 {
     u32 n = rt->read_trace(rt->ptr, PC + 1) + (rt->read_trace(rt->ptr, PC + 2) << 8);
     jsm_string_sprintf(out, "%s %04x:%01x", str, n & 0x1FFF, n >> 13);
 }
 
-u32 SPC700_disassemble(u32 PC, struct jsm_debug_read_trace *rt, struct jsm_string *out, u32 p_p)
+u32 SPC700_disassemble(u32 PC, jsm_debug_read_trace *rt, jsm_string *out, u32 p_p)
 {
     u32 mdo = p_p << 8;
     u32 opcode = rt->read_trace(rt->ptr, PC);

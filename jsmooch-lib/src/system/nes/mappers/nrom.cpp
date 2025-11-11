@@ -29,12 +29,12 @@ static void remap(struct NES_mapper *bus)
     NES_bus_PPU_mirror_set(bus);
 }
 
-static void serialize(struct NES_mapper *bus, struct serialized_state &state)
+static void serialize(struct NES_mapper *bus, serialized_state &state)
 {
 
 }
 
-static void deserialize(struct NES_mapper *bus, struct serialized_state &state)
+static void deserialize(struct NES_mapper *bus, serialized_state &state)
 {
 
 }
@@ -61,12 +61,12 @@ static u32 NROM_readcart(struct NES_mapper *bus, u32 addr, u32 old_val, u32 has_
     return old_val;
 }
 
-static void NROM_setcart(struct NES_mapper *bus, struct NES_cart *cart)
+static void NROM_setcart(struct NES_mapper *bus, NES_cart *cart)
 {
     bus->ppu_mirror_mode = cart->header.mirroring;
 }
 
-void NROM_init(struct NES_mapper *bus, struct NES *nes)
+void NROM_init(struct NES_mapper *bus, NES *nes)
 {
     if (bus->ptr != NULL) free(bus->ptr);
     bus->ptr = malloc(sizeof(struct NROM));

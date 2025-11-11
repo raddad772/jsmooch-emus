@@ -142,7 +142,7 @@ static u8 exchange_byte(void *ptr, u8 byte, u64 clock_cycle) {
     return r;
 }
 
-void PS1_SIO_digital_gamepad_init(struct PS1_SIO_digital_gamepad *this, struct PS1 *bus)
+void PS1_SIO_digital_gamepad_init(struct PS1_SIO_digital_gamepad *this, PS1 *bus)
 {
     memset(this, 0, sizeof(*this));
     this->interface.device_ptr = this;

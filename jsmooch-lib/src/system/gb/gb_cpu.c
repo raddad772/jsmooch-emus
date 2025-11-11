@@ -19,7 +19,7 @@ void GB_CPU_raise_TIMA(struct GB_CPU *this) {
 
 void GB_timer_SYSCLK_change(struct GB_timer* this, u32 new_value);
 
-void GB_timer_init(struct GB_timer* this, void (*raise_IRQ)(struct GB_CPU *), struct GB_CPU *cpu) {
+void GB_timer_init(struct GB_timer* this, void (*raise_IRQ)(struct GB_CPU *), GB_CPU *cpu) {
     this->SYSCLK = 0;
     this->cycles_til_TIMA_IRQ = 0;
     this->raise_IRQ = raise_IRQ;
@@ -126,7 +126,7 @@ u32 GB_timer_read_IO(struct GB_timer *this, u32 addr) {
 }
 
 
-void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus)
+void GB_CPU_init(struct GB_CPU* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus)
 {
     this->variant = variant;
     this->clock = clock;

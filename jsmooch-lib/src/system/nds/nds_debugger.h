@@ -38,6 +38,6 @@ enum NDS_DBLOG_CATEGORIES {
 
 #define dbgloglog(r_cat, r_severity, r_format, ...) if (this->dbg.dvptr->ids_enabled[r_cat]) dbglog_view_add_printf(this->dbg.dvptr, r_cat, this->clock.master_cycle_count9+this->waitstates.current_transaction, r_severity, r_format, __VA_ARGS__);
 
-void NDSJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
+void NDSJ_setup_debugger_interface(struct jsm_system *, debugger_interface *dbgr);
 
 #endif //JSMOOCH_EMUS_NDS_DEBUGGER_H

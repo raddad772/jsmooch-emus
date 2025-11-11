@@ -31,15 +31,15 @@ struct RT_TEXTURE_SAMPLER {
 };
 
 struct PS1_GPU;
-void RT_draw_flat_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color);
+void RT_draw_flat_triangle(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color);
 struct PS1_GPU_TEXTURE_SAMPLER;
-void RT_draw_flat_tex_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts);
-void RT_draw_flat_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color, struct PS1_GPU_TEXTURE_SAMPLER *ts);
-void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 color, struct PS1_GPU_TEXTURE_SAMPLER *ts);
-void RT_draw_shaded_tex_triangle_modulated(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts);
-void RT_draw_shaded_tex_triangle_modulated_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts);
-void RT_draw_flat_tex_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, struct PS1_GPU_TEXTURE_SAMPLER *ts);
-void RT_draw_flat_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2, u32 r, u32 g, u32 b);
-void RT_draw_shaded_triangle(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2);
-void RT_draw_shaded_triangle_semi(struct PS1_GPU *this, struct RT_POINT2D *v0, struct RT_POINT2D *v1, struct RT_POINT2D *v2);
+void RT_draw_flat_tex_triangle(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts);
+void RT_draw_flat_tex_triangle_modulated(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, PS1_GPU_TEXTURE_SAMPLER *ts);
+void RT_draw_flat_tex_triangle_modulated_semi(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 color, PS1_GPU_TEXTURE_SAMPLER *ts);
+void RT_draw_shaded_tex_triangle_modulated(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts);
+void RT_draw_shaded_tex_triangle_modulated_semi(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts);
+void RT_draw_flat_tex_triangle_semi(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, PS1_GPU_TEXTURE_SAMPLER *ts);
+void RT_draw_flat_triangle_semi(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2, u32 r, u32 g, u32 b);
+void RT_draw_shaded_triangle(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2);
+void RT_draw_shaded_triangle_semi(struct PS1_GPU *this, RT_POINT2D *v0, RT_POINT2D *v1, RT_POINT2D *v2);
 #endif //JSMOOCH_EMUS_RASTERIZE_TRI_H

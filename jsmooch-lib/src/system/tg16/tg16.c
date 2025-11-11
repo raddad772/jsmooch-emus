@@ -28,20 +28,20 @@
 static void TG16J_play(JSM);
 static void TG16J_pause(JSM);
 static void TG16J_stop(JSM);
-static void TG16J_get_framevars(JSM, struct framevars* out);
+static void TG16J_get_framevars(JSM, framevars* out);
 static void TG16J_reset(JSM);
 static u32 TG16J_finish_frame(JSM);
 static u32 TG16J_finish_scanline(JSM);
 static u32 TG16J_step_master(JSM, u32 howmany);
-static void TG16J_load_BIOS(JSM, struct multi_file_set* mfs);
-static void TG16J_describe_io(JSM, struct cvec* IOs);
+static void TG16J_load_BIOS(JSM, multi_file_set* mfs);
+static void TG16J_describe_io(JSM, cvec* IOs);
 
 u32 read_trace_huc6280(void *ptr, u32 addr) {
     struct TG16* this = (struct TG16*)ptr;
     return TG16_bus_read(this, addr, this->cpu.pins.D, 0);
 }
 
-static void setup_debug_waveform(struct TG16 *this, struct debug_waveform *dw)
+static void setup_debug_waveform(struct TG16 *this, debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -50,7 +50,7 @@ static void setup_debug_waveform(struct TG16 *this, struct debug_waveform *dw)
 }
 
 
-void TG16J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void TG16J_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -83,7 +83,7 @@ static void populate_opts(struct jsm_system *jsm)
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: trace", 1, 0, 0);*/
 }
 
-static void read_opts(struct jsm_system *jsm, struct TG16* this)
+static void read_opts(struct jsm_system *jsm, TG16* this)
 {
     /*struct debugger_widget *w = cvec_get(&jsm->opts, 0);
     this->opts.vdp.enable_A = w->checkbox.value;
@@ -270,7 +270,7 @@ static void sample_audio_debug_min(void *ptr, u64 key, u64 clock, u32 jitter)
 }
 
 
-static void TG16IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
+static void TG16IO_load_cart(JSM, multi_file_set *mfs, physical_io_device *which_pio)
 {
     JTHIS;
 
@@ -293,7 +293,7 @@ static void TG16IO_unload_cart(JSM)
 {
 }
 
-static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
+static void setup_crt(struct TG16 *this, JSM_DISPLAY *d)
 {
     d->standard = JSS_NTSC;
     d->enabled = 1;
@@ -321,7 +321,7 @@ static void setup_crt(struct TG16 *this, struct JSM_DISPLAY *d)
     d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-static void setup_audio(struct TG16 *this, struct cvec* IOs)
+static void setup_audio(struct TG16 *this, cvec* IOs)
 {
     struct physical_io_device *pio = cvec_push_back(IOs);
     pio->kind = HID_AUDIO_CHANNEL;
@@ -333,7 +333,7 @@ static void setup_audio(struct TG16 *this, struct cvec* IOs)
     chan->low_pass_filter = 24000;
 }
 
-void TG16J_describe_io(JSM, struct cvec *IOs)
+void TG16J_describe_io(JSM, cvec *IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;
@@ -420,7 +420,7 @@ static void schedule_first(struct TG16 *this)
     scheduler_only_add_abs(&this->scheduler, (i64)this->audio.next_sample_cycle, 0, this, &sample_audio, NULL);
 }
 
-void TG16J_get_framevars(JSM, struct framevars* out)
+void TG16J_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->vce.master_frame;
@@ -503,7 +503,7 @@ u32 TG16J_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void TG16J_load_BIOS(JSM, struct multi_file_set* mfs)
+void TG16J_load_BIOS(JSM, multi_file_set* mfs)
 {
     printf("\nTG16 doesn't have a BIOS...?");
 }

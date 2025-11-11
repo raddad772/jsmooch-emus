@@ -25,7 +25,7 @@ static const i16 ima_step_table[89] = {
 0x7FFF
 };
 
-static void disable_ch(struct NDS *this, struct NDS_APU_CH *ch)
+static void disable_ch(struct NDS *this, NDS_APU_CH *ch)
 {
     if (ch->scheduled) {
         scheduler_delete_if_exist(&this->scheduler, ch->schedule_id);
@@ -105,7 +105,7 @@ static u32 apu_read8(struct NDS *this, u32 addr)
     return 0;
 }
 
-static void calc_loop_start(struct NDS *this, struct NDS_APU_CH *ch)
+static void calc_loop_start(struct NDS *this, NDS_APU_CH *ch)
 {
     switch(ch->io.format) {
         case NDS_APU_FMT_pcm8:
@@ -123,7 +123,7 @@ static void calc_loop_start(struct NDS *this, struct NDS_APU_CH *ch)
     }
 }
 
-static void update_len(struct NDS *this, struct NDS_APU_CH *ch)
+static void update_len(struct NDS *this, NDS_APU_CH *ch)
 {
     // TODO: more of this
     switch(ch->io.format) {
@@ -141,20 +141,20 @@ static void update_len(struct NDS *this, struct NDS_APU_CH *ch)
     }
 }
 
-static void run_pcm8(struct NDS *this, struct NDS_APU_CH *ch)
+static void run_pcm8(struct NDS *this, NDS_APU_CH *ch)
 {
     ch->sample = (i16)(NDS_mainbus_read7(this, ch->io.source_addr + (ch->status.pos & 0xFFFFFFFC), 1, 0, 0) << 8);
     ch->status.pos++;
 }
 
-static void run_pcm16(struct NDS *this, struct NDS_APU_CH *ch)
+static void run_pcm16(struct NDS *this, NDS_APU_CH *ch)
 {
     // addr, sz, access, effect
     ch->sample = NDS_mainbus_read7(this, ch->io.source_addr + ((ch->status.pos >> 1) << 2), 2, 0, 0);
     ch->status.pos++;
 }
 
-static void run_ima_adpcm(struct NDS *this, struct NDS_APU_CH *ch)
+static void run_ima_adpcm(struct NDS *this, NDS_APU_CH *ch)
 {
     if ((ch->status.pos & 7) == 0) {
         ch->adpcm.data = NDS_mainbus_read7(this, ch->io.source_addr + ((ch->status.pos >> 3) << 2) + 4, 4, 0, 0);
@@ -180,13 +180,13 @@ static void run_ima_adpcm(struct NDS *this, struct NDS_APU_CH *ch)
     ch->status.pos++;
 }
 
-static void run_psg(struct NDS *this, struct NDS_APU_CH *ch)
+static void run_psg(struct NDS *this, NDS_APU_CH *ch)
 {
     ch->sample = (i16)((i32)(((ch->status.pos++) > ch->io.wave_duty) * 65535) - 32768);
     ch->status.pos++;
 }
 
-static void run_noise(struct NDS *this, struct NDS_APU_CH *ch)
+static void run_noise(struct NDS *this, NDS_APU_CH *ch)
 {
     u32 b1 = ch->lfsr & 1;
     u32 xorby = b1 * 0x6000;
@@ -255,7 +255,7 @@ static void run_channel(void *ptr, u64 ch_num, u64 cur_clock, u32 jitter)
     if (ch->has_cap) run_cap(this, ch->num >> 1);
 }
 
-static void change_freq(struct NDS *this, struct NDS_APU_CH *ch)
+static void change_freq(struct NDS *this, NDS_APU_CH *ch)
 {
     u32 new_interval = (0x10000 - ch->io.period) << 1;
     if (new_interval != ch->status.sampling_interval) {
@@ -268,7 +268,7 @@ static void change_freq(struct NDS *this, struct NDS_APU_CH *ch)
 }
 
 
-static void probe_trigger(struct NDS *this, struct NDS_APU_CH *ch, u32 old_status)
+static void probe_trigger(struct NDS *this, NDS_APU_CH *ch, u32 old_status)
 {
     if (old_status == ch->io.status) return;
 
@@ -298,7 +298,7 @@ static void probe_trigger(struct NDS *this, struct NDS_APU_CH *ch, u32 old_statu
     ch->lfsr = 0x7FFF;
 }
 
-static void apu_write8(struct NDS *this, u32 addr, u32 val, struct NDS_APU_CH *ch)
+static void apu_write8(struct NDS *this, u32 addr, u32 val, NDS_APU_CH *ch)
 {
     switch(addr) {
         case R7_SOUNDCNT+0:

@@ -118,6 +118,6 @@ u8 SPC700_read8D(struct SPC700 *, u32 addr);
 void SPC700_write8(struct SPC700 *, u32 addr, u32 val);
 void SPC700_write8D(struct SPC700 *, u32 addr, u32 val);
 
-void SPC700_setup_tracing(struct SPC700* this, struct jsm_debug_read_trace *strct);
+void SPC700_setup_tracing(struct SPC700* this, jsm_debug_read_trace *strct);
 
 #endif //JSMOOCH_EMUS_SPC700_H

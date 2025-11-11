@@ -224,14 +224,14 @@ void SMSGG_bus_write(struct SMSGG* bus, u16 addr, u8 val)
     region->buf->ptr[baddr] = val;
 }
 
-void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega* this, struct buf *BIOS)
+void SMSGG_mapper_load_BIOS_from_RAM(struct SMSGG_mapper_sega* this, buf *BIOS)
 {
     simplebuf8_allocate(&this->BIOS, BIOS->size);
     memcpy(this->BIOS.ptr, BIOS->ptr, BIOS->size);
     this->has_bios = 1;
 }
 
-void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, struct buf* inbuf)
+void SMSGG_mapper_load_ROM_from_RAM(struct SMSGG_mapper_sega* this, buf* inbuf)
 {
     u64 sz = inbuf->size;
     u64 offset = 0;

@@ -94,7 +94,7 @@ struct SMSGG_VDP {
     DBG_EVENT_VIEW_ONLY;
 };
 
-void SMSGG_VDP_init(struct SMSGG_VDP*, struct SMSGG* bus, enum jsm::systems variant);
+void SMSGG_VDP_init(struct SMSGG_VDP*, SMSGG* bus, enum jsm::systems variant);
 void SMSGG_VDP_cycle(struct SMSGG_VDP*);
 void SMSGG_VDP_reset(struct SMSGG_VDP*);
 void SMSGG_VDP_write_control(struct SMSGG_VDP*, u32 val);

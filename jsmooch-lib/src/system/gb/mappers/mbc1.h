@@ -30,10 +30,10 @@ struct GB_mapper_MBC1 {
     u32 cartRAM_offset;
 };
 
-void GB_mapper_MBC1_new(struct GB_mapper *parent, struct GB_clock *clock, struct GB_bus *bus);
+void GB_mapper_MBC1_new(struct GB_mapper *parent, GB_clock *clock, GB_bus *bus);
 void GB_mapper_MBC1_delete(struct GB_mapper *parent);
 void GBMBC1_reset(struct GB_mapper* parent);
-void GBMBC1_set_cart(struct GB_mapper* parent, struct GB_cart* cart);
+void GBMBC1_set_cart(struct GB_mapper* parent, GB_cart* cart);
 
 u32 GBMBC1_CPU_read(struct GB_mapper* parent, u32 addr, u32 val, u32 has_effect);
 void GBMBC1_CPU_write(struct GB_mapper* parent, u32 addr, u32 val);

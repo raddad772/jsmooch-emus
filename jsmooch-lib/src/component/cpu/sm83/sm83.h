@@ -90,12 +90,12 @@ void SM83_pins_init(struct SM83_pins*);
 void SM83_init(struct SM83*); // Initializes SM83 processor struct. Use before using the struct
 void SM83_cycle(struct SM83*); // Runs SM83 cycle
 void SM83_reset(struct SM83*); // Resets SM83 processor
-void SM83_enable_tracing(struct SM83*, struct jsm_debug_read_trace *dbg_read_trace);
+void SM83_enable_tracing(struct SM83*, jsm_debug_read_trace *dbg_read_trace);
 void SM83_disable_tracing(struct SM83*);
 
 struct serialized_state;
-void SM83_serialize(struct SM83*, struct serialized_state *state);
-void SM83_deserialize(struct SM83*, struct serialized_state *state);
+void SM83_serialize(struct SM83*, serialized_state *state);
+void SM83_deserialize(struct SM83*, serialized_state *state);
 
 
 #endif

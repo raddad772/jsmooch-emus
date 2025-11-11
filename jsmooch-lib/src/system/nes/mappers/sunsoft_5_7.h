@@ -7,6 +7,6 @@
 
 struct NES_mapper;
 struct NES;
-void sunsoft_5_7_init(struct NES_mapper *bus, struct NES *nes, enum NES_mappers kind);
+void sunsoft_5_7_init(struct NES_mapper *bus, NES *nes, enum NES_mappers kind);
 
 #endif //JSMOOCH_EMUS_SUNSOFT_5_7_H

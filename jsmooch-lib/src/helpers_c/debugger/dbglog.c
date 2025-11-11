@@ -11,7 +11,7 @@ struct dbglog_category_node *dbglog_category_get_root(struct dbglog_view *this)
     return &this->category_root;
 }
 
-struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, struct dbglog_category_node *this, const char *name, const char *short_name, u32 id, u32 color)
+struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, dbglog_category_node *this, const char *name, const char *short_name, u32 id, u32 color)
 {
     struct dbglog_category_node *d = cvec_push_back(&this->children);
     category_node_init(d);

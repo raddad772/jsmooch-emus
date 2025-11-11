@@ -10,7 +10,7 @@
 #define THIS struct galaksija* this
 
 
-void galaksijaJ_setup_debugger_interface(struct jsm_system *jsm, struct debugger_interface *dbgr)
+void galaksijaJ_setup_debugger_interface(struct jsm_system *jsm, debugger_interface *dbgr)
 {
     
 }

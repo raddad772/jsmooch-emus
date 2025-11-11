@@ -49,7 +49,7 @@ void simplebuf8_allocate(struct simplebuf8 *this, u64 sz)
     this->mask = sz - 1; // only use if we're a power of 2
 }
 
-void simplebuf8_copy_from_buf(struct simplebuf8 *dest, struct buf *src)
+void simplebuf8_copy_from_buf(struct simplebuf8 *dest, buf *src)
 {
     if (src->ptr == NULL) {
         simplebuf8_delete(dest);

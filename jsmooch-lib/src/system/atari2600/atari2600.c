@@ -33,20 +33,20 @@ static void atari2600_inputs_init(struct atari2600_inputs* this) {
 void atari2600J_play(JSM);
 void atari2600J_pause(JSM);
 void atari2600J_stop(JSM);
-void atari2600J_get_framevars(JSM, struct framevars* out);
+void atari2600J_get_framevars(JSM, framevars* out);
 void atari2600J_reset(JSM);
 void atari2600J_killall(JSM);
 u32 atari2600J_finish_frame(JSM);
 u32 atari2600J_finish_scanline(JSM);
 u32 atari2600J_step_master(JSM, u32 howmany);
-void atari2600J_load_BIOS(JSM, struct multi_file_set* mfs);
-void atari2600J_load_ROM(JSM, struct multi_file_set* mfs);
+void atari2600J_load_BIOS(JSM, multi_file_set* mfs);
+void atari2600J_load_ROM(JSM, multi_file_set* mfs);
 void atari2600J_enable_tracing(JSM);
 void atari2600J_disable_tracing(JSM);
-void atari2600J_describe_io(JSM, struct cvec* IOs);
-static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio);
+void atari2600J_describe_io(JSM, cvec* IOs);
+static void atari2600IO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio);
 static void atari2600IO_unload_cart(JSM);
-static void atari2600J_setup_debugger_interface(JSM, struct debugger_interface *intf);
+static void atari2600J_setup_debugger_interface(JSM, debugger_interface *intf);
 
 void atari2600_new(JSM)
 {
@@ -107,7 +107,7 @@ void atari2600_delete(JSM)
     jsm_clearfuncs(jsm);
 }
 
-static void atari2600J_setup_debugger_interface(JSM, struct debugger_interface *intf)
+static void atari2600J_setup_debugger_interface(JSM, debugger_interface *intf)
 {
     intf->supported_by_core = 0;
     printf("\nWARNING: debugger interface not supported on core: mac");
@@ -171,7 +171,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
 }
 
 
-void atari2600J_describe_io(JSM, struct cvec *IOs)
+void atari2600J_describe_io(JSM, cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -258,7 +258,7 @@ void atari2600J_stop(JSM)
 {
 }
 
-void atari2600J_get_framevars(JSM, struct framevars* out)
+void atari2600J_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->tia.master_frame;
@@ -400,12 +400,12 @@ u32 atari2600J_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void atari2600J_load_BIOS(JSM, struct multi_file_set* mfs)
+void atari2600J_load_BIOS(JSM, multi_file_set* mfs)
 {
     printf("\nAtari 2600 doesn't have a BIOS...?");
 }
 
-static void atari2600IO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
+static void atari2600IO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
     printf("\nLoad ROM");

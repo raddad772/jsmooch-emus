@@ -29,18 +29,18 @@ static float i16_to_float(i16 val)
 void SMSGGJ_play(JSM) {}
 void SMSGGJ_pause(JSM) {}
 void SMSGGJ_stop(JSM) {}
-void SMSGGJ_get_framevars(JSM, struct framevars* out);
+void SMSGGJ_get_framevars(JSM, framevars* out);
 void SMSGGJ_reset(JSM);
 void SMSGGJ_killall(JSM);
 u32 SMSGGJ_finish_frame(JSM);
 u32 SMSGGJ_finish_scanline(JSM);
 u32 SMSGGJ_step_master(JSM, u32 howmany);
-void SMSGGJ_load_BIOS(JSM, struct multi_file_set* mfs);
+void SMSGGJ_load_BIOS(JSM, multi_file_set* mfs);
 void SMSGGJ_enable_tracing(JSM);
 void SMSGGJ_disable_tracing(JSM);
-void SMSGGJ_describe_io(JSM, struct cvec *IOs);
+void SMSGGJ_describe_io(JSM, cvec *IOs);
 static void SMSGGIO_unload_cart(JSM);
-static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio);
+static void SMSGGIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio);
 
 
 u32 SMSGG_CPU_read_trace(void *ptr, u32 addr)
@@ -58,7 +58,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void SMSGGJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void SMSGGJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -239,7 +239,7 @@ static void setup_audio(struct cvec* IOs)
     chan->low_pass_filter = 16000;
 }
 
-void SMSGGJ_describe_io(JSM, struct cvec *IOs)
+void SMSGGJ_describe_io(JSM, cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -326,7 +326,7 @@ void SMSGG_delete(struct jsm_system* jsm)
     jsm_clearfuncs(jsm);
 }
 
-void SMSGGJ_get_framevars(JSM, struct framevars* out)
+void SMSGGJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.frames_since_restart;
@@ -518,7 +518,7 @@ u32 SMSGGJ_step_master(JSM, u32 howmany) {
     return 0;
 }
 
-void SMSGGJ_load_BIOS(JSM, struct multi_file_set* mfs) {
+void SMSGGJ_load_BIOS(JSM, multi_file_set* mfs) {
     JTHIS;
     SMSGG_mapper_load_BIOS_from_RAM(&this->mapper, &mfs->files[0].buf);
 }
@@ -528,7 +528,7 @@ static void SMSGGIO_unload_cart(JSM)
 
 }
 
-static void SMSGGIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
+static void SMSGGIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     JTHIS;
     struct buf *b = &mfs->files[0].buf;
     SMSGG_mapper_load_ROM_from_RAM(&this->mapper, b);

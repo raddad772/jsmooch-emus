@@ -10,7 +10,7 @@
 #include "helpers/simplebuf.h"
 #include "nes_memmap.h"
 
-void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, simplebuf8* buf, u32 offset, u32 is_readonly, struct debugger_interface *iface, u32 bus_num, struct persistent_store *SRAM)
+void NES_memmap_map(NES_memmap *mmap, u32 shift, u32 range_start, u32 range_end, simplebuf8* buf, u32 offset, u32 is_readonly, debugger_interface *iface, u32 bus_num, persistent_store *SRAM)
 {
     u32 range_size = 1 << shift;
     u32 is_SRAM = 0;

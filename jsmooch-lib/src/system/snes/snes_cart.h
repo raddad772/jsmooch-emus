@@ -28,5 +28,5 @@ struct SNES_cart {
 struct SNES;
 void SNES_cart_init(struct SNES *);
 void SNES_cart_delete(struct SNES *);
-u32 SNES_cart_load_ROM_from_RAM(struct SNES *, char* fil, u64 fil_sz, struct physical_io_device *pio);
+u32 SNES_cart_load_ROM_from_RAM(struct SNES *, char* fil, u64 fil_sz, physical_io_device *pio);
 #endif //JSMOOCH_EMUS_SNES_CART_H

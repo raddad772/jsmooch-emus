@@ -23,7 +23,7 @@ struct WDC65816_ctxt {
 
 struct WDC65816_regs;
 struct WDC65816_pins;
-typedef void (*WDC65816_ins_func)(struct WDC65816_regs*, struct WDC65816_pins*);
+typedef void (*WDC65816_ins_func)(struct WDC65816_regs*, WDC65816_pins*);
 
 union WDC65816_P {
     struct {
@@ -127,7 +127,7 @@ void WDC65816_cycle(struct WDC65816*);
 void WDC65816_init(struct WDC65816*, u64 *master_clock);
 void WDC65816_delete(struct WDC65816*);
 void WDC65816_reset(struct WDC65816*);
-void WDC65816_setup_tracing(struct WDC65816*, struct jsm_debug_read_trace *strct);
+void WDC65816_setup_tracing(struct WDC65816*, jsm_debug_read_trace *strct);
 void WDC65816_set_IRQ_level(struct WDC65816 *, u32 level);
 void WDC65816_set_NMI_level(struct WDC65816 *, u32 level);
 

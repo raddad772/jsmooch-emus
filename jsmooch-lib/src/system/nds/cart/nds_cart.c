@@ -44,7 +44,7 @@ void NDS_cart_direct_boot(struct NDS *this)
     this->cart.io.romctrl.data_block_size = 1;
 }
 
-u32 NDS_cart_load_ROM_from_RAM(struct NDS_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable) {
+u32 NDS_cart_load_ROM_from_RAM(struct NDS_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable) {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);
 

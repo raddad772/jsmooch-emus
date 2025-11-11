@@ -167,7 +167,7 @@ struct HUC6270 {
 };
 
 
-void HUC6270_init(struct HUC6270 *, struct scheduler_t *scheduler);
+void HUC6270_init(struct HUC6270 *, scheduler_t *scheduler);
 void HUC6270_delete(struct HUC6270 *);
 void HUC6270_reset(struct HUC6270 *);
 void HUC6270_write(struct HUC6270 *, u32 addr, u32 val);

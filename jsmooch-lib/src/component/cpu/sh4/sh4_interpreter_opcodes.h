@@ -8,7 +8,7 @@
 struct SH4_ins_t;
 
 struct SH4;
-typedef void (*SH4_ins_func)(struct SH4* sh4, struct SH4_ins_t *ins);
+typedef void (*SH4_ins_func)(struct SH4* sh4, SH4_ins_t *ins);
 struct SH4_ins_t {
     u16 opcode;
     u32 Rm;

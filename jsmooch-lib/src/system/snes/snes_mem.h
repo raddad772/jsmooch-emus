@@ -24,8 +24,8 @@ struct SNES_memmap_block {
 };
 
 struct SNES;
-typedef void (*SNES_memmap_write)(struct SNES *, u32 addr, u32 val, struct SNES_memmap_block *bl);
-typedef u32 (*SNES_memmap_read)(struct SNES *, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl);
+typedef void (*SNES_memmap_write)(struct SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
+typedef u32 (*SNES_memmap_read)(struct SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
 
 struct SNES_mem {
     struct SNES_memmap_block blockmap[0x1000];

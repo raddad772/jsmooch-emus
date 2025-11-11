@@ -22,13 +22,13 @@
 static void GBAJ_play(JSM);
 static void GBAJ_pause(JSM);
 static void GBAJ_stop(JSM);
-static void GBAJ_get_framevars(JSM, struct framevars* out);
+static void GBAJ_get_framevars(JSM, framevars* out);
 static void GBAJ_reset(JSM);
 static u32 GBAJ_finish_frame(JSM);
 static u32 GBAJ_finish_scanline(JSM);
 static u32 GBAJ_step_master(JSM, u32 howmany);
-static void GBAJ_load_BIOS(JSM, struct multi_file_set* mfs);
-static void GBAJ_describe_io(JSM, struct cvec* IOs);
+static void GBAJ_load_BIOS(JSM, multi_file_set* mfs);
+static void GBAJ_describe_io(JSM, cvec* IOs);
 
 // 240x160, but 308x228 with v and h blanks
 #define MASTER_CYCLES_PER_SCANLINE 1232
@@ -53,7 +53,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void GBAJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void GBAJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -207,7 +207,7 @@ void GBAJ_stop(JSM)
 {
 }
 
-void GBAJ_get_framevars(JSM, struct framevars* out)
+void GBAJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -385,7 +385,7 @@ static u32 GBAJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-static void GBAJ_load_BIOS(JSM, struct multi_file_set* mfs)
+static void GBAJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     memcpy(this->BIOS.data, mfs->files[0].buf.ptr, 16384);
@@ -396,7 +396,7 @@ static void GBAIO_unload_cart(JSM)
 {
 }
 
-static void GBAIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
+static void GBAIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
 
@@ -444,7 +444,7 @@ static void setup_audio(struct cvec* IOs)
 }
 
 
-static void GBAJ_describe_io(JSM, struct cvec* IOs)
+static void GBAJ_describe_io(JSM, cvec* IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;

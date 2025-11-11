@@ -20,7 +20,7 @@ static u16 dbg_read16(struct jsm_debug_read_trace &trace, u32 *PC)
     return v;
 }
 
-#define SARG const char *ins, struct jsm_debug_read_trace &trace, u32 *PC, struct jsm_string &outstr
+#define SARG const char *ins, jsm_debug_read_trace &trace, u32 *PC, jsm_string &outstr
 static void absolute(SARG)
 {
     u16 v = dbg_read16(trace, PC);
@@ -88,7 +88,7 @@ void M6502_disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 #define dasm(id, prefix, mode) case id: mode(prefix SPCS, trace, PC, outstr); break;
 
     u32 opcode = dbg_read(trace, PC);
-    // const char *ins, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr
+    // const char *ins, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr
     switch(opcode) {
         dasm(0x00, "brk", immediate)
         dasm(0x01, "ora", indirect_x)
@@ -276,7 +276,7 @@ void M6502_disassemble(u32 *PC, jsm_debug_read_trace &trace, jsm_string &outstr)
 #undef op
 }
 
-void M6502_disassemble_entry(struct M6502 *cpu, struct disassembly_entry &entry)
+void M6502_disassemble_entry(struct M6502 *cpu, disassembly_entry &entry)
 {
     entry.dasm.quickempty();
     entry.context.quickempty();

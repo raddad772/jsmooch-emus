@@ -57,7 +57,7 @@ static WDC65816_ins_func get_decoded_opcode(struct WDC65816 *this)
     return ret;
 }
 
-static void pprint_context(struct WDC65816 *this, struct jsm_string *out)
+static void pprint_context(struct WDC65816 *this, jsm_string *out)
 {
     jsm_string_sprintf(out, "%c%c  A:%04x  D:%04x  X:%04x  Y:%04x  DBR:%02x  PBR:%02x  S:%04x, P:%c%c%c%c%c%c",
         this->regs.P.M ? 'M' : 'm',
@@ -194,7 +194,7 @@ void WDC65816_reset(struct WDC65816* this)
     }
 }
 
-void WDC65816_setup_tracing(struct WDC65816* this, struct jsm_debug_read_trace *strct)
+void WDC65816_setup_tracing(struct WDC65816* this, jsm_debug_read_trace *strct)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;

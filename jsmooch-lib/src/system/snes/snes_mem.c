@@ -8,12 +8,12 @@
 #include "snes_ppu.h"
 #include "r5a22.h"
 
-static void write_bad(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
+static void write_bad(struct SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
 {
     printf("\nWARN BAD WRITE %06x:%02x", addr, val);
 }
 
-static u32 read_bad(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
+static u32 read_bad(struct SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     if (has_effect) {
         printf("\nWARN BAD READ %06x", addr);
@@ -41,19 +41,19 @@ void SNES_mem_init(struct SNES *this)
     clear_map(this);
 }
 
-// typedef void (*SNES_memmap_write)(struct SNES *, u32 addr, u32 val, struct SNES_memmap_block *bl);
-//typedef u32 (*SNES_memmap_read)(struct SNES *, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl);
-static void write_WRAM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
+// typedef void (*SNES_memmap_write)(struct SNES *, u32 addr, u32 val, SNES_memmap_block *bl);
+//typedef u32 (*SNES_memmap_read)(struct SNES *, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl);
+static void write_WRAM(struct SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
 {
     this->mem.WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF] = val;
 }
 
-static u32 read_WRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
+static u32 read_WRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     return this->mem.WRAM[((addr & 0xFFF) + bl->offset) & 0x1FFFF];
 }
 
-static void write_loROM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
+static void write_loROM(struct SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
 {
     static int a = 1;
     printf("\nWARNING writes to ROM area! %06x", addr);
@@ -63,19 +63,19 @@ static void write_loROM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap
     }
 }
 
-static u32 read_loROM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
+static u32 read_loROM(struct SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     u32 maddr = ((addr & 0xFFF) + bl->offset) % this->cart.ROM.size;
     return ((u8 *)this->cart.ROM.ptr)[maddr];
 }
 
-static void write_SRAM(struct SNES *this, u32 addr, u32 val, struct SNES_memmap_block *bl)
+static void write_SRAM(struct SNES *this, u32 addr, u32 val, SNES_memmap_block *bl)
 {
     ((u8 *)this->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & this->cart.header.sram_mask] = val;
     this->cart.SRAM->dirty = 1;
 }
 
-static u32 read_SRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
+static u32 read_SRAM(struct SNES *this, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     return ((u8 *)this->cart.SRAM->data)[((addr & 0xFFF) + bl->offset) & this->cart.header.sram_mask];
 }

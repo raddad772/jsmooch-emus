@@ -149,7 +149,7 @@ void dbg_delete()
     dbg.msg_last_newline = 0;
 }
 
-void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, struct jsm_debug_read_trace *src)
+void jsm_copy_read_trace (struct jsm_debug_read_trace *dst, jsm_debug_read_trace *src)
 {
     dst->ptr = src->ptr;
     dst->read_trace = src->read_trace;

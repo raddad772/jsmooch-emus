@@ -66,7 +66,7 @@ static const struct env_rate envelope_rates[16] = {
 
 static int math_done = 0;
 
-static void op_update_phase(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void op_update_phase(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     u32 v1max = MAX((u32)op->pitch.value, 0x300);
     u32 key = MIN(v1max, 0x4FF);
@@ -82,7 +82,7 @@ static void op_update_phase(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct
 }
 #define op_update_envelope(a,b,c) op_update_envelope_f(a,b,c,0)
 
-static void op_update_envelope_f(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, int debuggy)
+static void op_update_envelope_f(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op, int debuggy)
 {
     u32 v1max = MAX((u32)op->pitch.value, 0x300);
     u32 key = MIN(v1max, 0x4ff);
@@ -103,7 +103,7 @@ static void op_update_envelope_f(struct ym2612 *ym, struct YM2612_CHANNEL *ch, s
     op->envelope.steps   = entry->steps[rate & 3];
 }
 
-static void op_update_level(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void op_update_level(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     u32 lfo = ym->lfo.clock & 0x40 ? ym->lfo.clock & 0x3f : ~ym->lfo.clock & 0x3f;
     u32 depth = tremolos[ch->tremolo];
@@ -114,7 +114,7 @@ static void op_update_level(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct
     op->output_level = ((op->total_level << 3) + value + (op->lfo_enable ? lfo << 1 >> depth : 0)) << 3;
 }
 
-static void op_update_pitch(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void op_update_pitch(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     op->pitch.value = ch->mode ? op->pitch.reload : ch->operator[3].pitch.reload;
     op->octave.value = ch->mode ? op->octave.reload : ch->operator[3].octave.reload;
@@ -123,7 +123,7 @@ static void op_update_pitch(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct
     op_update_envelope(ym, ch, op);
 }
 
-static void ch_power(struct ym2612 *ym, struct YM2612_CHANNEL *ch)
+static void ch_power(struct ym2612 *ym, YM2612_CHANNEL *ch)
 {
     ch->left_enable = ch->right_enable = 1;
     ch->algorithm = ch->feedback = ch->vibrato = ch->tremolo = 0;
@@ -388,7 +388,7 @@ static void cycle_env(struct ym2612 *this)
     }
 }
 
-static void op_update_key_state(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void op_update_key_state(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     if (op->key_on == op->key_line) return;  //no change
     op->key_on = op->key_line;
@@ -417,7 +417,7 @@ static void op_update_key_state(struct ym2612 *ym, struct YM2612_CHANNEL *ch, st
     op_update_level(ym, ch, op);
 }
 
-static void op_run_phase(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void op_run_phase(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     op_update_key_state(ym, ch, op);
     op->phase.value += op->phase.delta;  //advance wave position
@@ -445,7 +445,7 @@ static void op_run_phase(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM
     op_update_level(ym, ch, op);
 }
 
-static void op_run_envelope(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void op_run_envelope(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     u32 value = ym->envelope.clock >> op->envelope.divider;
     u32 step = op->envelope.steps >> ((~value & 7) << 2) & 0xf;

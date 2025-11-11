@@ -38,7 +38,7 @@ void event_category_delete(struct event_category *this)
     this->name[0] = 0;
 }
 
-void events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id)
+void events_view_add_category(struct debugger_interface *dbgr, events_view *ev, const char *name, u32 color, u32 id)
 {
     assert(id==cvec_len(&ev->categories));
     struct event_category *ec = cvec_push_back(&ev->categories);
@@ -48,7 +48,7 @@ void events_view_add_category(struct debugger_interface *dbgr, struct events_vie
     ec->id = id;
 }
 
-void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id)
+void events_view_add_event(struct debugger_interface *dbgr, events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id)
 {
     if (cvec_len(&ev->events) <= id) {
         assert(1==0);
@@ -214,7 +214,7 @@ void events_view_report_line(struct events_view *this, i32 line_num)
     }
 }
 
-void events_view_render(struct debugger_interface *dbgr, struct events_view *this, u32 *buf, u32 out_width, u32 out_height)
+void events_view_render(struct debugger_interface *dbgr, events_view *this, u32 *buf, u32 out_width, u32 out_height)
 {
     // Render our current events to buf
     u32 frame_to_use = this->current_frame - 1;

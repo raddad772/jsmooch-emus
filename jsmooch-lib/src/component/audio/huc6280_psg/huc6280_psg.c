@@ -27,7 +27,7 @@ void HUC6280_PSG_reset(struct HUC6280_PSG *this)
     }
 }
 
-static void update_ch_output(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
+static void update_ch_output(struct HUC6280_PSG *this, HUC6280_PSG_ch *ch)
 {
     const u8 volume_reduce[30] = { 255,214,180,151,127,107,90,76,64,53,45,38,32,27,22,19,16,13,11,9,8,6,5,4,4,3,2,2,2,1 };
     uint8_t reduction_l = (0xF - this->LMAL) * 2 + (0x1F - ch->AL) + (0xF - ch->LAL) * 2;
@@ -46,7 +46,7 @@ static void update_ch_output(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch
     }
 }
 
-static void update_DDA(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
+static void update_DDA(struct HUC6280_PSG *this, HUC6280_PSG_ch *ch)
 {
     this->updates = 1;
     ch->output = ch->WAVEDATA[ch->wavectr];
@@ -136,7 +136,7 @@ static void clock_noise(struct HUC6280_PSG_ch *ch)
     }
 }
 
-static void tick_ch(struct HUC6280_PSG *this, struct HUC6280_PSG_ch *ch)
+static void tick_ch(struct HUC6280_PSG *this, HUC6280_PSG_ch *ch)
 {
     if (ch->num > 4) clock_noise(ch);
     ch->counter--;

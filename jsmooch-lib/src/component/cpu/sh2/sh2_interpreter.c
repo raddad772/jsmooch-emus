@@ -19,7 +19,7 @@ u32 SH2_SR_get(struct SH2_regs_SR *this)
     return (this->M << 9) | (this->Q << 8) | (this->IMASK << 4) | (this->S << 1) | (this->T);
 }
 
-void SH2_init(struct SH2 *this, struct scheduler_t *scheduler)
+void SH2_init(struct SH2 *this, scheduler_t *scheduler)
 {
     this->trace.my_cycles = 0;
     this->trace.ok = 0;

@@ -28,7 +28,7 @@ void ARM946ES_flush_pipeline(struct ARM946ES *this)
     this->pipeline.flushed = 1;
 }
 
-void ARM946ES_init(struct ARM946ES *this, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler)
+void ARM946ES_init(struct ARM946ES *this, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler)
 {
     //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));
@@ -67,7 +67,7 @@ void ARM946ES_reset(struct ARM946ES *this)
 
 }
 
-void ARM946ES_setup_tracing(struct ARM946ES* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+void ARM946ES_setup_tracing(struct ARM946ES* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;
@@ -184,7 +184,7 @@ void ARM946ES_reload_pipeline(struct ARM946ES* this)
     }
 }
 
-static void print_context(struct ARM946ES *this, struct ARMctxt *ct, struct jsm_string *out, u32 taken)
+static void print_context(struct ARM946ES *this, ARMctxt *ct, jsm_string *out, u32 taken)
 {
     jsm_string_quickempty(out);
     u32 needs_commaspace = 0;

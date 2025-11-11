@@ -63,7 +63,7 @@ void NDS_PPU_reset(struct NDS *this)
     }
 }
 
-static u64 read_vram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
+static u64 read_vram_bg(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     assert((addr >> 14) < 32);
     u8 *ptr = eng->memp.bg_vram[(addr >> 14) & 31];
@@ -78,7 +78,7 @@ static u64 read_vram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz
     return cR[sz](ptr, addr & 0x3FFF);
 }
 
-static u32 read_vram_obj(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_vram_obj(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     assert((addr >> 14) < 16);
     u8 *ptr = eng->memp.obj_vram[(addr >> 14) & 15];
@@ -93,7 +93,7 @@ static u32 read_vram_obj(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 s
     return cR[sz](ptr, addr & 0x3FFF);
 }
 
-static u32 read_pram_bg_ext(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 slotnum, u32 addr)
+static u32 read_pram_bg_ext(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 slotnum, u32 addr)
 {
     if (!eng->memp.bg_extended_palette[slotnum & 3]) {
         static int a = 1;
@@ -107,12 +107,12 @@ static u32 read_pram_bg_ext(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u
     return cR16(eng->memp.bg_extended_palette[slotnum & 3], addr);
 }
 
-static u32 read_pram_bg(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_pram_bg(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.bg_palette, addr & 0x1FF);
 }
 
-static u32 read_ext_palette_obj(struct NDS *this, struct NDSENG2D *eng, u32 palette, u32 index)
+static u32 read_ext_palette_obj(struct NDS *this, NDSENG2D *eng, u32 palette, u32 index)
 {
     u32 addr = 0x600 + ((palette << 5) | (index << 1)) + (0x200 * eng->num);
     addr &= 0x1FFF;
@@ -123,7 +123,7 @@ static u32 read_ext_palette_obj(struct NDS *this, struct NDSENG2D *eng, u32 pale
     return 0;
 }
 
-static u32 read_pram_obj2(struct NDS *this, struct NDSENG2D *eng, u32 palette, u32 index)
+static u32 read_pram_obj2(struct NDS *this, NDSENG2D *eng, u32 palette, u32 index)
 {
     if (eng->io.obj.extended_palettes)
         return read_ext_palette_obj(this, eng, palette, index) & 0x7FFF;
@@ -134,12 +134,12 @@ static u32 read_pram_obj2(struct NDS *this, struct NDSENG2D *eng, u32 palette, u
 
 
 
-static u32 read_pram_obj(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_pram_obj(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.obj_palette, addr & 0x1FF);
 }
 
-static u32 read_oam(struct NDS *this, struct NDSENG2D *eng, u32 addr, u32 sz)
+static u32 read_oam(struct NDS *this, NDSENG2D *eng, u32 addr, u32 sz)
 {
     return cR[sz](eng->mem.oam, addr & 0x3FF);
 }
@@ -173,7 +173,7 @@ static void get_obj_tile_size(u32 sz, u32 shape, u32 *htiles, u32 *vtiles)
 #undef T
 }
 
-static void calculate_windows_vflags(struct NDS *this, struct NDSENG2D *eng)
+static void calculate_windows_vflags(struct NDS *this, NDSENG2D *eng)
 {
     for (u32 wn = 0; wn < 2; wn++) {
         struct NDS_PPU_window *w = &eng->window[wn];
@@ -190,7 +190,7 @@ static int obj_size[4][4][2] = {
         { { 8 , 8  }, { 8 , 8  }, { 8 , 8  }, { 8 , 8  } }
 };
 
-static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 oam_offset, u32 prio_to_draw)
+static inline void draw_obj_on_line(struct NDS *this, NDSENG2D *eng, u32 oam_offset, u32 prio_to_draw)
 {
     i32 cycles_per_pixel;
     i32 pa, pb, pc, pd;
@@ -356,7 +356,7 @@ static inline void draw_obj_on_line(struct NDS *this, struct NDSENG2D *eng, u32 
     }
 }
 
-static void draw_obj_line(struct NDS *this, struct NDSENG2D *eng)
+static void draw_obj_line(struct NDS *this, NDSENG2D *eng)
 {
     //eng->obj.drawing_cycles = eng->io.hblank_free ? 1530 : 2124;
     eng->obj.drawing_cycles = 10000;
@@ -399,7 +399,7 @@ static inline u32 C18to15(u32 c)
     //return (((c >> 13) & 0x1F) << 10) | (((c >> 7) & 0x1F) << 5) | ((c >> 1) & 0x1F);
 }
 
-static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+static void draw_3d_line(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     u32 line_num = this->clock.ppu.y;
     if (line_num > 191) return;
@@ -420,7 +420,7 @@ static void draw_3d_line(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
 #pragma warning(disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
 #endif
 
-static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+static void draw_bg_line_normal(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
@@ -545,7 +545,7 @@ static void draw_bg_line_normal(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 #pragma warning(pop)
 #endif
 
-static void affine_line_start(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg)
+static void affine_line_start(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
 {
     if (!bg->enable) {
         if (bg->mosaic_y != bg->last_y_rendered) {
@@ -556,7 +556,7 @@ static void affine_line_start(struct NDS *this, struct NDSENG2D *eng, struct NDS
     }
 }
 
-static void affine_line_end(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg)
+static void affine_line_end(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg)
 {
     if (bg->mosaic_y != bg->last_y_rendered) {
         bg->x_lerp += bg->pb * eng->mosaic.bg.vsize;
@@ -565,7 +565,7 @@ static void affine_line_end(struct NDS *this, struct NDSENG2D *eng, struct NDS_P
     }
 }
 
-typedef void (*affinerenderfunc)(struct NDS *, struct NDSENG2D *, struct NDS_PPU_bg *, i32 x, i32 y, union NDS_PX *, void *);
+typedef void (*affinerenderfunc)(struct NDS *, NDSENG2D *, NDS_PPU_bg *, i32 x, i32 y, union NDS_PX *, void *);
 
 // map_base, block_width, tile_base
 
@@ -575,7 +575,7 @@ struct affine_normal_xtradata {
     i32 width, height;
 };
 
-static void affine_normal(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_normal(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
     u32 tile_number = read_vram_bg(this, eng, xd->map_base + (y >> 3) * xd->block_width + (x >> 3), 1);
@@ -595,7 +595,7 @@ static void affine_normal(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU
     }
 }
 
-static void render_affine_loop(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 width, i32 height, affinerenderfunc render_func, void *xtra)
+static void render_affine_loop(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 width, i32 height, affinerenderfunc render_func, void *xtra)
 {
     i32 fx = bg->x_lerp;
     i32 fy = bg->y_lerp;
@@ -624,7 +624,7 @@ static void render_affine_loop(struct NDS *this, struct NDSENG2D *eng, struct ND
     affine_line_end(this, eng, bg);
 }
 
-static void affine_rotodc(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_rotodc(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
 
@@ -638,7 +638,7 @@ static void affine_rotodc(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU
     }
 }
 
-static void affine_rotobpp8(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_rotobpp8(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
 
@@ -652,7 +652,7 @@ static void affine_rotobpp8(struct NDS *this, struct NDSENG2D *eng, struct NDS_P
     }
 }
 
-static void affine_rotobpp16(struct NDS *this, struct NDSENG2D *eng, struct NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
+static void affine_rotobpp16(struct NDS *this, NDSENG2D *eng, NDS_PPU_bg *bg, i32 x, i32 y, union NDS_PX *out, void *xtra)
 {
     struct affine_normal_xtradata *xd = (struct affine_normal_xtradata *)xtra;
     u32 encoder = read_vram_bg(this, eng, xd->map_base + ((y >> 3) * xd->block_width + (x >> 3)) * 2, 2);
@@ -682,7 +682,7 @@ static void affine_rotobpp16(struct NDS *this, struct NDSENG2D *eng, struct NDS_
 }
 
 
-static void draw_bg_line_extended(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+static void draw_bg_line_extended(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
     memset(bg->line, 0, sizeof(bg->line));
@@ -719,7 +719,7 @@ static void draw_bg_line_extended(struct NDS *this, struct NDSENG2D *eng, u32 bg
 }
 
 
-static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnum)
+static void draw_bg_line_affine(struct NDS *this, NDSENG2D *eng, u32 bgnum)
 {
     struct NDS_PPU_bg *bg = &eng->bg[bgnum];
 
@@ -742,7 +742,7 @@ static void draw_bg_line_affine(struct NDS *this, struct NDSENG2D *eng, u32 bgnu
 
 
 
-static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
+static void apply_mosaic(struct NDS *this, NDSENG2D *eng)
 {
     // This function updates vertical mosaics, and applies horizontal.
     struct NDS_PPU_bg *bg;
@@ -802,7 +802,7 @@ static void apply_mosaic(struct NDS *this, struct NDSENG2D *eng)
 
 #define NDSCTIVE_SFX 5
 
-static inline struct NDS_PPU_window *get_active_window(struct NDS *this, struct NDSENG2D *eng, u32 x)
+static inline struct NDS_PPU_window *get_active_window(struct NDS *this, NDSENG2D *eng, u32 x)
 {
     struct NDS_PPU_window *active_window = NULL;
     if (eng->window[NDS_WIN0].enable || eng->window[NDS_WIN1].enable || eng->window[NDS_WINOBJ].enable) {
@@ -849,7 +849,7 @@ static void find_targets_and_priorities(u32 bg_enables[6], union NDS_PX *layers[
     *layer_b_out = lbout;
 }
 
-static void calculate_windows(struct NDS *this, struct NDSENG2D *eng)
+static void calculate_windows(struct NDS *this, NDSENG2D *eng)
 {
     //if (!force && !this->ppu.window[0].enable && !this->ppu.window[1].enable && !this->ppu.window[GBA_WINOBJ].enable) return;
 
@@ -895,7 +895,7 @@ static void calculate_windows(struct NDS *this, struct NDSENG2D *eng)
 }
 
 
-static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_enable, u32 bg_enables[4]) {
+static void output_pixel(struct NDS *this, NDSENG2D *eng, u32 x, u32 obj_enable, u32 bg_enables[4]) {
     // Find which window applies to us.
     u32 default_active[6] = {1, 1, 1, 1, 1, 1}; // Default to active if no window.
 
@@ -960,7 +960,7 @@ static void output_pixel(struct NDS *this, struct NDSENG2D *eng, u32 x, u32 obj_
     eng->line_px[x] = output_color;
 }
 
-static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+static void draw_line0(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -980,7 +980,7 @@ static void draw_line0(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     }
 }
 
-static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+static void draw_line1(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1002,7 +1002,7 @@ static void draw_line1(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     }
 }
 
-static void draw_line2(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+static void draw_line2(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1025,7 +1025,7 @@ static void draw_line2(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
 }
 
 
-static void draw_line3(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+static void draw_line3(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1047,7 +1047,7 @@ static void draw_line3(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_li
     }
 }
 
-static void draw_line5(struct NDS *this, struct NDSENG2D *eng, struct NDS_DBG_line *l)
+static void draw_line5(struct NDS *this, NDSENG2D *eng, NDS_DBG_line *l)
 {
     draw_obj_line(this, eng);
     if ((eng->num == 0) && (eng->io.bg.do_3d)) {
@@ -1363,7 +1363,7 @@ void NDS_PPU_write_2d_obj_palette(struct NDS *this, u32 eng_num, u32 addr, u32 s
     cW[sz](this->ppu.eng2d[eng_num].mem.obj_palette, addr, val);
 }
 
-static void calc_screen_sizeA(struct NDS *this, struct NDSENG2D *eng, u32 num) {
+static void calc_screen_sizeA(struct NDS *this, NDSENG2D *eng, u32 num) {
     struct NDS_PPU_bg *bg = &eng->bg[num];
     if ((num == 0) && bg->do3d) {
         bg->hpixels = 256;
@@ -1447,7 +1447,7 @@ screen base however NOT used at all for Large screen bitmap mode
     bg->vpixels_mask = bg->vpixels - 1;
 }
 
-static void calc_screen_sizeB(struct NDS *this, struct NDSENG2D *eng, u32 num)
+static void calc_screen_sizeB(struct NDS *this, NDSENG2D *eng, u32 num)
 {
     struct NDS_PPU_bg *bg = &eng->bg[num];
     u32 mode = eng->io.bg_mode;
@@ -1487,13 +1487,13 @@ static void calc_screen_sizeB(struct NDS *this, struct NDSENG2D *eng, u32 num)
     bg->vpixels_mask = bg->vpixels - 1;
 }
 
-static void calc_screen_size(struct NDS *this, struct NDSENG2D *eng, u32 num)
+static void calc_screen_size(struct NDS *this, NDSENG2D *eng, u32 num)
 {
     if (eng->num == 0) calc_screen_sizeA(this, eng, num);
     else calc_screen_sizeB(this, eng, num);
 }
 
-static void update_bg_x(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
+static void update_bg_x(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
 {
     i32 v = eng->bg[bgnum].x & 0x0FFFFFFF;
     val &= 0xFF;
@@ -1508,7 +1508,7 @@ static void update_bg_x(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 w
     eng->bg[bgnum].x_written = 1;
 }
 
-static void update_bg_y(struct NDS *this, struct NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
+static void update_bg_y(struct NDS *this, NDSENG2D *eng, u32 bgnum, u32 which, u32 val)
 {
     u32 v = eng->bg[bgnum].y & 0x0FFFFFFF;
     val &= 0xFF;

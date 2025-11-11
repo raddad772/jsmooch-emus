@@ -8,7 +8,7 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
 
-void NESJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
+void NESJ_setup_debugger_interface(struct jsm_system *, debugger_interface *dbgr);
 
 #define DBG_NES_CATEGORY_CPU 0
 #define DBG_NES_CATEGORY_PPU 1

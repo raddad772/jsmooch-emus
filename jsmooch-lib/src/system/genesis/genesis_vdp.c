@@ -1162,7 +1162,7 @@ static void get_vscrolls(struct genesis* this, int column, u32 *planes)
 
 static int fetch_order[4] = { 1, 0, 3, 2 };
 
-static void render_to_ringbuffer(struct genesis* this, u32 plane, struct slice *slice, u32 pattern_pos, u32 pattern_max)
+static void render_to_ringbuffer(struct genesis* this, u32 plane, slice *slice, u32 pattern_pos, u32 pattern_max)
 {
     u32 epos = pattern_max + 1;
     u32 *tail = &this->vdp.ringbuf[plane].tail;
@@ -1217,7 +1217,7 @@ static inline u32 in_window(struct genesis* this)
             ((row >= this->vdp.window.top_row) && (row < this->vdp.window.bottom_row)));
 }
 
-static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row, struct slice *slice, u32 plane_num)
+static void fetch_slice(struct genesis* this, u32 nt_base_addr, u32 col, u32 row, slice *slice, u32 plane_num)
 {
     // Fetch a 16-pixel slice of a nametable to a provided struct
     u32 tile_row = (row >> 3) & this->vdp.io.foreground_height_mask;
@@ -1289,7 +1289,7 @@ struct spr_out {
     u32 gfx; // tile # in VRAM
 };
 
-static u32 fetch_sprites(struct genesis* this, struct spr_out *sprites, u32 vcount, u32 sprites_max_on_line)
+static u32 fetch_sprites(struct genesis* this, spr_out *sprites, u32 vcount, u32 sprites_max_on_line)
 {
     u32 compare_y = vcount + 128;
     u16 *sprite_table_ptr = this->vdp.VRAM + this->vdp.io.sprite_table_addr;

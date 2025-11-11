@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "rfb.h"
 
-int open_and_read(char *fname, struct read_file_buf *rfb)
+int open_and_read(char *fname, read_file_buf *rfb)
 {
     assert(1==2);
     /*FILE *fil = fopen(fname, "rb");

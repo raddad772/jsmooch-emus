@@ -19,21 +19,21 @@
 static void ZXSpectrumJ_play(JSM);
 static void ZXSpectrumJ_pause(JSM);
 static void ZXSpectrumJ_stop(JSM);
-static void ZXSpectrumJ_get_framevars(JSM, struct framevars* out);
+static void ZXSpectrumJ_get_framevars(JSM, framevars* out);
 static void ZXSpectrumJ_reset(JSM);
 static void ZXSpectrumJ_killall(JSM);
 static u32 ZXSpectrumJ_finish_frame(JSM);
 static u32 ZXSpectrumJ_finish_scanline(JSM);
 static u32 ZXSpectrumJ_step_master(JSM, u32 howmany);
-static void ZXSpectrumJ_load_BIOS(JSM, struct multi_file_set* mfs);
+static void ZXSpectrumJ_load_BIOS(JSM, multi_file_set* mfs);
 static void ZXSpectrumJ_enable_tracing(JSM);
 static void ZXSpectrumJ_disable_tracing(JSM);
-static void ZXSpectrumJ_describe_io(JSM, struct cvec* IOs);
+static void ZXSpectrumJ_describe_io(JSM, cvec* IOs);
 
 static u32 ZXSpectrum_CPU_read_trace(void *ptr, u32 addr);
 
 static void ZXSpectrum_CPU_cycle(struct ZXSpectrum* this);
-static void ZXSpectrumJ_setup_debugger_interface(JSM, struct debugger_interface *intf);
+static void ZXSpectrumJ_setup_debugger_interface(JSM, debugger_interface *intf);
 
 void ZXSpectrum_new(JSM, enum ZXSpectrum_variants variant)
 {
@@ -128,7 +128,7 @@ void ZXSpectrum_delete(JSM)
     jsm_clearfuncs(jsm);
 }
 
-static void ZXSpectrumJ_setup_debugger_interface(JSM, struct debugger_interface *intf)
+static void ZXSpectrumJ_setup_debugger_interface(JSM, debugger_interface *intf)
 {
     intf->supported_by_core = 0;
     printf("\nWARNING: debugger interface not supported on core: zxspectrum");
@@ -252,7 +252,7 @@ static void ZXSpectrum_fast_load(struct ZXSpectrum* this)
 #define SR(reg, pos) this->cpu.regs. reg = infil[pos]
 #define SR2(reg, pos) this->cpu.regs. reg = infil[pos] | (infil[pos] << 8)
 
-static void load_Z80_file(struct ZXSpectrum* this, struct multi_file_set* mfs) {
+static void load_Z80_file(struct ZXSpectrum* this, multi_file_set* mfs) {
     struct buf *b = &mfs->files[0].buf;
     u8 *infil = b->ptr;
 
@@ -303,7 +303,7 @@ static void load_Z80_file(struct ZXSpectrum* this, struct multi_file_set* mfs) {
     }
 }
 
-static void load_SNA_file(struct ZXSpectrum* this, struct multi_file_set* mfs)
+static void load_SNA_file(struct ZXSpectrum* this, multi_file_set* mfs)
 {
     struct buf* b = &mfs->files[0].buf;
     u8 *infil = b->ptr;
@@ -356,7 +356,7 @@ static void load_SNA_file(struct ZXSpectrum* this, struct multi_file_set* mfs)
     this->cpu.regs.poll_IRQ = true;
 }
 
-static void ZXSpectrumIO_insert_tape(JSM, struct physical_io_device *pio, struct multi_file_set *mfs, struct buf* sram)
+static void ZXSpectrumIO_insert_tape(JSM, physical_io_device *pio, multi_file_set *mfs, buf* sram)
 {
     JTHIS;
     char *s = mfs->files[0].name;
@@ -461,7 +461,7 @@ static void setup_crt128(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
- void ZXSpectrumJ_describe_io(JSM, struct cvec *IOs)
+ void ZXSpectrumJ_describe_io(JSM, cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -542,7 +542,7 @@ static void ZXSpectrumJ_stop(JSM)
 {
 }
 
-static void ZXSpectrumJ_get_framevars(JSM, struct framevars* out)
+static void ZXSpectrumJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.frames_since_restart;
@@ -661,7 +661,7 @@ static u32 ZXSpectrumJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-static void ZXSpectrumJ_load_BIOS(JSM, struct multi_file_set* mfs)
+static void ZXSpectrumJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;

@@ -29,13 +29,13 @@
 static void PS1J_play(JSM);
 static void PS1J_pause(JSM);
 static void PS1J_stop(JSM);
-static void PS1J_get_framevars(JSM, struct framevars* out);
+static void PS1J_get_framevars(JSM, framevars* out);
 static void PS1J_reset(JSM);
 static u32 PS1J_finish_frame(JSM);
 static u32 PS1J_finish_scanline(JSM);
 static u32 PS1J_step_master(JSM, u32 howmany);
-static void PS1J_load_BIOS(JSM, struct multi_file_set* mfs);
-static void PS1J_describe_io(JSM, struct cvec* IOs);
+static void PS1J_load_BIOS(JSM, multi_file_set* mfs);
+static void PS1J_describe_io(JSM, cvec* IOs);
 
 // 240x160, but 308x228 with v and h blanks
 
@@ -105,7 +105,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;*/
 }
 
-void PS1J_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void PS1J_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     /*this->audio.buf = ab;
@@ -155,7 +155,7 @@ static u32 read_trace_cpu(void *ptr, u32 addr, u32 sz)
     return PS1_mainbus_read(this, addr, sz, 0);
 }
 
-static void PS1_update_SR(void *ptr, struct R3000 *core, u32 val)
+static void PS1_update_SR(void *ptr, R3000 *core, u32 val)
 {
     struct PS1 *this = (struct PS1 *)ptr;
     this->mem.cache_isolated = (val & 0x10000) == 0x10000;
@@ -172,7 +172,7 @@ static void BIOS_patch(struct PS1 *this, u32 addr, u32 val)
     cW32(this->mem.BIOS, addr, val);
 }
 
-static void PS1J_sideload(JSM, struct multi_file_set *fs) {
+static void PS1J_sideload(JSM, multi_file_set *fs) {
     JTHIS;
     buf_allocate(&this->sideloaded, fs->files[0].buf.size);
     memcpy(this->sideloaded.ptr, fs->files[0].buf.ptr, fs->files[0].buf.size);
@@ -342,7 +342,7 @@ void PS1J_stop(JSM)
 {
 }
 
-void PS1J_get_framevars(JSM, struct framevars* out)
+void PS1J_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -355,7 +355,7 @@ static void skip_BIOS(struct PS1* this)
 {
 }
 
-static void sideload_EXE(struct PS1 *this, struct buf *w)
+static void sideload_EXE(struct PS1 *this, buf *w)
 {
     u8 *r = w->ptr;
     if ((r[0] == 80) && (r[1] == 83) && (r[2] == 45) &&
@@ -493,7 +493,7 @@ static u32 PS1J_step_master(JSM, u32 howmany)
     return 0;
 }
 
-static void PS1J_load_BIOS(JSM, struct multi_file_set* mfs)
+static void PS1J_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     if (mfs->files[0].buf.size != (512*1024)) {
@@ -543,7 +543,7 @@ static void setup_audio(struct cvec* IOs)
 }
 
 
-static void PS1J_describe_io(JSM, struct cvec* IOs)
+static void PS1J_describe_io(JSM, cvec* IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;

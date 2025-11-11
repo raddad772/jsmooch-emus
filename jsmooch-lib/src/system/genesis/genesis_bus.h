@@ -30,7 +30,7 @@
 //#define GENSCHED_SWITCH
 struct genesis;
 struct gensched_item;
-typedef void (*gensched_callback)(struct genesis *, struct gensched_item *);
+typedef void (*gensched_callback)(struct genesis *, gensched_item *);
 
 struct gensched_item {
     u16 next_index;

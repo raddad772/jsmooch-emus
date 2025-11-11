@@ -8,7 +8,7 @@
 #include "helpers/debugger/debugger.h"
 #include "helpers/sys_interface.h"
 
-void SMSGGJ_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
+void SMSGGJ_setup_debugger_interface(struct jsm_system *, debugger_interface *dbgr);
 
 #define DBG_SMSGG_CATEGORY_CPU 0
 #define DBG_SMSGG_CATEGORY_VDP 1

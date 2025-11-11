@@ -14,7 +14,7 @@ struct ARMctxt {
 };
 
 
-//void ARMv4_disassemble(u32 opc, struct jsm_string *out, i64 ins_addr);
-void ARMv5_disassemble(u32 opcode, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct);
+//void ARMv4_disassemble(u32 opc, jsm_string *out, i64 ins_addr);
+void ARMv5_disassemble(u32 opcode, jsm_string *out, i64 ins_addr, ARMctxt *ct);
 
 #endif //JSMOOCH_EMUS_ARMV5_DISASSEMBLER_H

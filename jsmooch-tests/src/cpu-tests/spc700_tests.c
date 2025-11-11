@@ -94,7 +94,7 @@ static int skip_test(int n)
     return 0;
 }
 
-static void parse_state(struct json_object_s *object, struct test_state *state)
+static void parse_state(struct json_object_s *object, test_state *state)
 {
     struct json_object_element_s *el = object->start;
     state->num_ram_entry = 0;
@@ -234,7 +234,7 @@ static void parse_and_fill_out(struct read_file_buf *infile)
     free(root);
 }
 
-static void copy_state_to_cpu(struct test_state *state, struct SPC700 *cpu)
+static void copy_state_to_cpu(struct test_state *state, SPC700 *cpu)
 {
     // u32 A, X, Y, P, SP, PC
     cpu->regs.A = state->regs.A;
@@ -246,7 +246,7 @@ static void copy_state_to_cpu(struct test_state *state, struct SPC700 *cpu)
 
 }
 
-static void pprint_regs(struct SPC700_regs *cpu_regs, struct test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
+static void pprint_regs(struct SPC700_regs *cpu_regs, test_cpu_regs *test_regs, u32 last_pc, u32 only_print_diff) {
     printf("\nREG  CPU    TEST");
     printf("\n----------------");
 #define TREG4(cpuname, testname, strname) if ((only_print_diff && (cpu_regs->cpuname != test_regs->testname)) || (!only_print_diff))\
@@ -264,7 +264,7 @@ static void pprint_regs(struct SPC700_regs *cpu_regs, struct test_cpu_regs *test
 #undef TREG4
 }
 
-static u32 testregs(struct SPC700 *cpu, struct test_state *final, u32 last_pc) {
+static u32 testregs(struct SPC700 *cpu, test_state *final, u32 last_pc) {
     u32 passed = 1;
     // u32 A X Y P SP PC
     passed &= ((cpu->regs.PC & 0xFFFF) == final->regs.PC) || (last_pc == final->regs.PC);
@@ -299,7 +299,7 @@ static void pprint_P(u32 r) {
 #pragma warning(disable: 4700) // warning C4700: uninitialized local variable 'last_pc' used
 #endif
 
-static int test_spc700_automated(struct spc700_test_result *out, struct SPC700 *cpu, u32 opc) {
+static int test_spc700_automated(struct spc700_test_result *out, SPC700 *cpu, u32 opc) {
     out->passed = 0;
     out->mycycles = 0;
     sprintf(out->msg, "");

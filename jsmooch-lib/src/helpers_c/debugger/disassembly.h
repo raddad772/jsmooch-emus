@@ -5,7 +5,7 @@
 #ifndef JSMOOCH_EMUS_DISASSEMBLY_H
 #define JSMOOCH_EMUS_DISASSEMBLY_H
 
-void disassembly_view_dirty_mem(struct debugger_interface *dbgr, struct disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end);
+void disassembly_view_dirty_mem(struct debugger_interface *dbgr, disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end);
 void disassembly_view_delete(struct disassembly_view *);
 void cpu_reg_context_delete(struct cpu_reg_context *);
 

@@ -51,7 +51,7 @@ static void read_sector_to_buffer(u8 *dst, u8 *src, u32 sz)
     }
 }
 
-static void read_sectors_to_buffer(u8* dst, struct GDI_track *track, u32 lba, u32 num)
+static void read_sectors_to_buffer(u8* dst, GDI_track *track, u32 lba, u32 num)
 {
     u8* dst_ptr = dst;
     for (u32 n = 0; n < num; n++) {
@@ -99,7 +99,7 @@ static void read_directory_datetime(struct ISO9660_directroy_dt* this, u8* whr)
     this->tz_offset = whr[6];
 }
 
-static void read_directory_entry(struct ISO9660_directory_record* this, u8* w, u32 lba_start, struct GDI_track *track, u32 is_root)
+static void read_directory_entry(struct ISO9660_directory_record* this, u8* w, u32 lba_start, GDI_track *track, u32 is_root)
 {
     memset(this, 0, sizeof(struct ISO9660_directory_record));
     buf_init(&this->data);
@@ -134,7 +134,7 @@ struct ISO9660_path_table_entry{
     char volume_id[500];
 };
 
-static void read_primary_volume_descriptor(struct ISO9660_volume_descriptor *vd, u8* sector, u32 lba_start, struct GDI_track *track)
+static void read_primary_volume_descriptor(struct ISO9660_volume_descriptor *vd, u8* sector, u32 lba_start, GDI_track *track)
 {
     memset(vd, 0, sizeof(struct ISO9660_volume_descriptor));
     assert(sector[1] == 'C' && sector[2] == 'D' && sector[3] == '0' && sector[4] == '0' && sector[5] == '1' && sector[6] == 1);
@@ -237,7 +237,7 @@ void GDI_GetToc(struct GDI_image *this, u32* to, u32 area)
 
 }
 
-void GDI_load(char *folder, const char *filename, struct GDI_image *img)
+void GDI_load(char *folder, const char *filename, GDI_image *img)
 {
     struct GDI_image *this = img;
     snprintf(this->path, sizeof(this->path), "%s/%s", folder, filename);

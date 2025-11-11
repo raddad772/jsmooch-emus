@@ -172,7 +172,7 @@ struct NDS_RE_TEX_SAMPLER {
     u32 s_repeat, t_repeat;
     u32 filled_out;
 
-    void (*sample)(struct NDS *, struct NDS_RE_TEX_SAMPLER *, struct NDS_RE_POLY *, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a);
+    void (*sample)(struct NDS *, NDS_RE_TEX_SAMPLER *, NDS_RE_POLY *, u32 s, u32 t, u32 *r, u32 *g, u32 *b, u32 *a);
 };
 
 

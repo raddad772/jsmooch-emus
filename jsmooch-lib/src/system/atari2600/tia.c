@@ -168,7 +168,7 @@ static void ball_step(struct atari_TIA* this, u32 clocks)
     }
 }
 
-static void TIA_WQ_finish(struct atari_TIA* this, struct atari_TIA_WQ_item* item)
+static void TIA_WQ_finish(struct atari_TIA* this, atari_TIA_WQ_item* item)
 {
     item->active = 0;
     u32 val = item->data;

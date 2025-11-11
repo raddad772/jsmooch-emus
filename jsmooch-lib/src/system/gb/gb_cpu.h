@@ -86,7 +86,7 @@ struct GB_CPU {
     struct cvec_ptr device_ptr;
 };
 
-void GB_CPU_init(struct GB_CPU*, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus);
+void GB_CPU_init(struct GB_CPU*, enum GB_variants variant, GB_clock* clock, GB_bus* bus);
 void GB_CPU_cycle(struct GB_CPU*);
 void GB_CPU_reset(struct GB_CPU*);
 void GB_CPU_quick_boot(struct GB_CPU*);

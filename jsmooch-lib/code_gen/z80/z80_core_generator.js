@@ -2542,7 +2542,7 @@ function Z80_C_func_name(opc, prefix, r)
 
 function Z80_C_func_signature(opc, prefix, r)
 {
-    return 'void ' + Z80_C_func_name(opc, prefix, r) + '(struct Z80_regs* regs, struct Z80_pins* pins)';
+    return 'void ' + Z80_C_func_name(opc, prefix, r) + '(struct Z80_regs* regs, Z80_pins* pins)';
 }
 
 function Z80_C_func_dec(opc, prefix, r) {

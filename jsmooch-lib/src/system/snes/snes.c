@@ -27,20 +27,20 @@
 static void SNESJ_play(JSM);
 static void SNESJ_pause(JSM);
 static void SNESJ_stop(JSM);
-static void SNESJ_get_framevars(JSM, struct framevars* out);
+static void SNESJ_get_framevars(JSM, framevars* out);
 static void SNESJ_reset(JSM);
 static u32 SNESJ_finish_frame(JSM);
 static u32 SNESJ_finish_scanline(JSM);
 static u32 SNESJ_step_master(JSM, u32 howmany);
-static void SNESJ_load_BIOS(JSM, struct multi_file_set* mfs);
-static void SNESJ_describe_io(JSM, struct cvec* IOs);
+static void SNESJ_load_BIOS(JSM, multi_file_set* mfs);
+static void SNESJ_describe_io(JSM, cvec* IOs);
 
 u32 read_trace_wdc65816(void *ptr, u32 addr) {
     struct SNES* this = (struct SNES*)ptr;
     return SNES_wdc65816_read(this, addr, 0, 0);
 }
 
-static void setup_debug_waveform(struct SNES *snes, struct debug_waveform *dw)
+static void setup_debug_waveform(struct SNES *snes, debug_waveform *dw)
 {
     if (dw->samples_requested == 0) return;
     dw->samples_rendered = dw->samples_requested;
@@ -48,7 +48,7 @@ static void setup_debug_waveform(struct SNES *snes, struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void SNESJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void SNESJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -81,7 +81,7 @@ static void populate_opts(struct jsm_system *jsm)
     debugger_widgets_add_checkbox(&jsm->opts, "VDP: trace", 1, 0, 0);*/
 }
 
-static void read_opts(struct jsm_system *jsm, struct SNES* this)
+static void read_opts(struct jsm_system *jsm, SNES* this)
 {
     /*struct debugger_widget *w = cvec_get(&jsm->opts, 0);
     this->opts.vdp.enable_A = w->checkbox.value;
@@ -245,7 +245,7 @@ static void schedule_first(struct SNES *this)
     R5A22_schedule_first(this);
 }
 
-static void SNESIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *which_pio)
+static void SNESIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *which_pio)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
@@ -297,7 +297,7 @@ static void setup_audio(struct cvec* IOs)
     chan->low_pass_filter = 16000;
 }
 
-void SNESJ_describe_io(JSM, struct cvec *IOs)
+void SNESJ_describe_io(JSM, cvec *IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;
@@ -367,7 +367,7 @@ void SNESJ_stop(JSM)
 {
 }
 
-void SNESJ_get_framevars(JSM, struct framevars* out)
+void SNESJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -433,7 +433,7 @@ u32 SNESJ_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void SNESJ_load_BIOS(JSM, struct multi_file_set* mfs)
+void SNESJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     printf("\nSega SNES doesn't have a BIOS...?");
 }

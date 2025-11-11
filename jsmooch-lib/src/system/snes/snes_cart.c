@@ -132,7 +132,7 @@ static u32 find_cart_header(struct SNES *this)
     return header_addr;
 }
 
-u32 SNES_cart_load_ROM_from_RAM(struct SNES* this, char* fil, u64 fil_sz, struct physical_io_device *pio)
+u32 SNES_cart_load_ROM_from_RAM(struct SNES* this, char* fil, u64 fil_sz, physical_io_device *pio)
 {
     u32 SMCheader_size = fil_sz % 1024;
     if (SMCheader_size != 0) {

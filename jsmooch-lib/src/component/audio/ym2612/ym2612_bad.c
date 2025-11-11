@@ -24,10 +24,10 @@
 #endif
 
 
-static void ch_update_pitches(struct ym2612* ym, struct YM2612_CHANNEL *ch);
-static void op_update_level(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *this);
+static void ch_update_pitches(struct ym2612* ym, YM2612_CHANNEL *ch);
+static void op_update_level(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this);
 static void env_update(struct ym2612_env *this, u16 pitch, u16 octave);
-static void ch_update_pitch(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op);
+static void ch_update_pitch(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op);
 
 static int init_tables = 0;
 
@@ -63,7 +63,7 @@ static const u32 vibratos[8][16] = {
     {0, 0, 4, 6, 8, 8,10,12,12,10, 8, 8, 6, 4, 0, 0}, {0, 0, 8,12,16,16,20,24,24,20,16,16,12, 8, 0, 0},
 };
 
-static void update_key_state(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void update_key_state(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     if (op->key == op->key_on) return;
     op->key = op->key_on;
@@ -176,7 +176,7 @@ static void write_addr(struct ym2612* this, u16 val)
     this->io.address = val;
 }
 
-static void op_update_phase(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *this)
+static void op_update_phase(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this)
 {
     u32 key = MIN(MAX((u32)this->pitch.value, 0x300), 0x4ff);
     u32 ksr = (this->octave.value << 2) + ((key - 0x300) >> 7);
@@ -358,7 +358,7 @@ static void write_data(struct ym2612* this, u8 val) {
 
 static u32 tremolo_table[4] = {7, 3, 1, 0};
 
-static void op_update_level(struct ym2612 *ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *this) {
+static void op_update_level(struct ym2612 *ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *this) {
     u32 invert_clock = (((ym->lfo.clock >> 6) & 1) ^ 1) * 0x3F;
     u32 lfo = (ym->lfo.clock ^ invert_clock) & 0x3F;
 
@@ -447,7 +447,7 @@ static void env_update(struct ym2612_env *this, u16 pitch, u16 octave) {
     this->steps = env_steps[this->rate];
 }
 
-static void ch_update_pitch(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op) {
+static void ch_update_pitch(struct ym2612* ym, YM2612_CHANNEL *ch, YM2612_OPERATOR *op) {
     struct YM2612_OPERATOR *op3 = &ch->operator[3];
     op->pitch.value = ch->mode ? op->pitch.reload : op3->pitch.reload;
     op->octave.value = ch->mode ? op->octave.reload : op3->octave.reload;
@@ -456,7 +456,7 @@ static void ch_update_pitch(struct ym2612* ym, struct YM2612_CHANNEL *ch, struct
     env_update(&op->env, op->pitch.value, op->octave.value);
 }
 
-static void ch_update_pitches(struct ym2612* ym, struct YM2612_CHANNEL *ch) {
+static void ch_update_pitches(struct ym2612* ym, YM2612_CHANNEL *ch) {
     //only channel[2] allows per-operator frequencies
     //implemented by forcing mode to zero (single frequency) for other channels
     //in single frequency mode, operator[3] frequency is used for all operators
@@ -467,7 +467,7 @@ static void ch_update_pitches(struct ym2612* ym, struct YM2612_CHANNEL *ch) {
 }
 
 
-static void ch_keyon(struct ym2612 *ym, struct YM2612_CHANNEL *ch)
+static void ch_keyon(struct ym2612 *ym, YM2612_CHANNEL *ch)
 {
     for (u32 i = 0; i < 4; i++) {
         struct YM2612_OPERATOR *op = &ch->operator[i];
@@ -478,7 +478,7 @@ static void ch_keyon(struct ym2612 *ym, struct YM2612_CHANNEL *ch)
     }
 }
 
-static void ch_keyoff(struct ym2612 *ym, struct YM2612_CHANNEL *ch)
+static void ch_keyoff(struct ym2612 *ym, YM2612_CHANNEL *ch)
 {
     for (u32 i = 0; i < 4; i++) {
         struct YM2612_OPERATOR *op = &ch->operator[i];
@@ -488,7 +488,7 @@ static void ch_keyoff(struct ym2612 *ym, struct YM2612_CHANNEL *ch)
     }
 }
 
-static void do_env_tick(struct ym2612 *ym, struct ym2612_env *this, u16 pitch, u16 octave)
+static void do_env_tick(struct ym2612 *ym, ym2612_env *this, u16 pitch, u16 octave)
 {
     this->divider.counter = (this->divider.counter + 1);
     if (this->divider.counter >= this->divider.period) {

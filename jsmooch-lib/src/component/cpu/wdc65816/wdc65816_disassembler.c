@@ -28,44 +28,44 @@ static inline u32 inc_addr16of24(u32 addr)
     return (addr & 0xFF0000) | ((addr + 1) & 0xFFFF);
 }
 
-static u32 read(u32 addr, struct jsm_debug_read_trace *rt)
+static u32 read(u32 addr, jsm_debug_read_trace *rt)
 {
     return rt->read_trace(rt->ptr, addr & 0xFFFFFF);
 }
 
-static u32 read_byte(u32 addr, struct jsm_debug_read_trace *rt) {
+static u32 read_byte(u32 addr, jsm_debug_read_trace *rt) {
     return read(addr, rt);
 }
 
-static u32 read_word(u32 addr, struct jsm_debug_read_trace *rt) {
+static u32 read_word(u32 addr, jsm_debug_read_trace *rt) {
     u32 data = read(addr, rt);
 
     return data | (read(addr+1, rt) << 8);
 }
 
-static u32 read_long(u32 addr, struct jsm_debug_read_trace *rt) {
+static u32 read_long(u32 addr, jsm_debug_read_trace *rt) {
     u32 data = read_byte(addr, rt);
     return data | (read_word(addr+1, rt) << 8);
 }
 
-static u32 read_op_byte(u32 addr, struct jsm_debug_read_trace *rt) {
+static u32 read_op_byte(u32 addr, jsm_debug_read_trace *rt) {
     return read_byte(addr, rt);
 }
 
-static u32 read_op_word(u32 addr, struct jsm_debug_read_trace *rt) {
+static u32 read_op_word(u32 addr, jsm_debug_read_trace *rt) {
     u32 data = read(addr, rt);
     addr = inc_addr16of24(addr);
 
     return data | (read(addr, rt) << 8);
 }
 
-static u32 read_op_long(u32 addr, struct jsm_debug_read_trace *rt) {
+static u32 read_op_long(u32 addr, jsm_debug_read_trace *rt) {
     u32 data = read_op_byte(addr, rt);
     addr = inc_addr16of24(addr);
     return data | (read_op_word(addr, rt) << 8);
 }
 
-#define ARGS char *buf, u32 addr, u32 e, u32 m, u32 x, struct WDC65816_regs *r, struct jsm_debug_read_trace *rt, u32 *ins_len, u32 *rp
+#define ARGS char *buf, u32 addr, u32 e, u32 m, u32 x, WDC65816_regs *r, jsm_debug_read_trace *rt, u32 *ins_len, u32 *rp
 
 static i32 do_absolute(ARGS)
 {
@@ -295,7 +295,7 @@ static i32 do_stack_indirect(ARGS) {
     return (i32)((r->DBR << 16) + read_word((n + r->S) & 0xFFFF, rt) + r->Y);
 }
 
-u32 WDC65816_disassemble(u32 addr, struct WDC65816_regs *r, u32 e, u32 m, u32 x, struct jsm_debug_read_trace *rt, struct jsm_string *out, struct WDC65816_ctxt *ct)
+u32 WDC65816_disassemble(u32 addr, WDC65816_regs *r, u32 e, u32 m, u32 x, jsm_debug_read_trace *rt, jsm_string *out, WDC65816_ctxt *ct)
 {
     char buf[50];
     char *mnemonic;

@@ -9,6 +9,6 @@
 #include "helpers/sys_interface.h"
 #include "helpers/debugger/debuggerdefs.h"
 
-void PS1J_setup_debugger_interface(struct jsm_system *, struct debugger_interface *dbgr);
+void PS1J_setup_debugger_interface(struct jsm_system *, debugger_interface *dbgr);
 
 #endif //JSMOOCH_EMUS_PS1_DEBUGGER_H

@@ -19,9 +19,9 @@ struct mac_floppy {
 void mac_floppy_init(struct mac_floppy *);
 void mac_floppy_delete(struct mac_floppy *);
 void mac_floppy_encode_track(struct generic_floppy_track *track);
-int mac_floppy_plain_load(struct mac_floppy *mflpy, struct buf *b);
-int mac_floppy_load(struct mac_floppy *mflpy, const char* fname, struct buf *b);
-int mac_floppy_dc42_load(struct mac_floppy *mflpy, struct buf *b);
+int mac_floppy_plain_load(struct mac_floppy *mflpy, buf *b);
+int mac_floppy_load(struct mac_floppy *mflpy, const char* fname, buf *b);
+int mac_floppy_dc42_load(struct mac_floppy *mflpy, buf *b);
 
 
 #ifdef __cplusplus

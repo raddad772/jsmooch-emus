@@ -198,7 +198,7 @@ static void GB_px_init(struct GB_px* this) {
     this->had_pixel = this->color = this->bg_or_sp = this->palette = 0;
 };
 
-static void GB_pixel_slice_fetcher_init(struct GB_pixel_slice_fetcher* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus) {
+static void GB_pixel_slice_fetcher_init(struct GB_pixel_slice_fetcher* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
     this->clock = clock;
     this->bus = bus;
     this->variant = variant;
@@ -447,7 +447,7 @@ void GB_PPU_bus_write_OAM(struct GB_bus* bus, u32 addr, u32 val) {
     GB_PPU_write_OAM(bus->ppu, addr, val);
 }
 
-void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, struct GB_clock* clock, struct GB_bus* bus) {
+void GB_PPU_init(struct GB_PPU* this, enum GB_variants variant, GB_clock* clock, GB_bus* bus) {
     u32 i;
     this->variant = variant;
     this->clock = clock;

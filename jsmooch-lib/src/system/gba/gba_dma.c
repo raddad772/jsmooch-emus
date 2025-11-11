@@ -123,14 +123,14 @@ void GBA_block_step_dma(void *ptr, u64 key, u64 clock, u32 jitter)
     dma_go_ch(this, chn);
 }
 
-void GBA_DMA_start(struct GBA *gba, struct GBA_DMA_ch *ch)
+void GBA_DMA_start(struct GBA *gba, GBA_DMA_ch *ch)
 {
     ch->latch.started = 1;
     GBA_DMA_on_modify_write(ch);
     eval_bit_masks(gba);
 }
 
-void GBA_DMA_cnt_written(struct GBA *this, struct GBA_DMA_ch *ch, u32 old_enable)
+void GBA_DMA_cnt_written(struct GBA *this, GBA_DMA_ch *ch, u32 old_enable)
 {
     if (ch->io.enable) {
         if (!old_enable) { // 0->1

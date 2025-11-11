@@ -49,7 +49,7 @@ public:
     virtual void setup_debugger_interface(debugger_interface &intf) {};
 
     struct {
-        bool save_state=false, load_BIOS=false;
+        bool save_state=false, load_BIOS=false, set_audiobuf=false;
     } has{};
 
     virtual void save_state(serialized_state &state) {};

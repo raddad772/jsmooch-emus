@@ -49,7 +49,7 @@ static int render_f_z80(struct cpu_reg_context*ctx, void *outbuf, size_t outbuf_
 }
 
 
-static void create_and_bind_registers_z80(struct genesis* this, struct disassembly_view *dv)
+static void create_and_bind_registers_z80(struct genesis* this, disassembly_view *dv)
 {
     u32 tkindex = 0;
     struct cpu_reg_context *rg = cvec_push_back(&dv->cpu.regs);
@@ -183,7 +183,7 @@ static void create_and_bind_registers_z80(struct genesis* this, struct disassemb
 }
 
 
-static void create_and_bind_registers_m68k(struct genesis* this, struct disassembly_view *dv)
+static void create_and_bind_registers_m68k(struct genesis* this, disassembly_view *dv)
 {
     u32 tkindex = 0;
     for (u32 i = 0; i < 8; i++) {
@@ -282,7 +282,7 @@ static void create_and_bind_registers_m68k(struct genesis* this, struct disassem
 #undef BIND
 }
 
-static void fill_disassembly_view(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dview)
+static void fill_disassembly_view(void *macptr, debugger_interface *dbgr, disassembly_view *dview)
 {
     struct genesis* this = (struct genesis*)macptr;
     for (u32 i = 0; i < 8; i++) {
@@ -307,7 +307,7 @@ static void fill_disassembly_view(void *macptr, struct debugger_interface *dbgr,
     this->dbg.dasm_m68k.IRC->int32_data = this->m68k.regs.IRC;
 }
 
-static struct disassembly_vars get_disassembly_vars_m68k(void *macptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
+static struct disassembly_vars get_disassembly_vars_m68k(void *macptr, debugger_interface *dbgr, disassembly_view *dv)
 {
     struct genesis* this = (struct genesis*)macptr;
     struct disassembly_vars dvar;
@@ -316,13 +316,13 @@ static struct disassembly_vars get_disassembly_vars_m68k(void *macptr, struct de
     return dvar;
 }
 
-static void get_disassembly_m68k(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
+static void get_disassembly_m68k(void *genptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
 {
     struct genesis* this = (struct genesis*)genptr;
     M68k_disassemble_entry(&this->m68k, entry);
 }
 
-static void setup_m68k_disassembly(struct debugger_interface *dbgr, struct genesis* this)
+static void setup_m68k_disassembly(struct debugger_interface *dbgr, genesis* this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
@@ -343,13 +343,13 @@ static void setup_m68k_disassembly(struct debugger_interface *dbgr, struct genes
     dv->get_disassembly_vars.func = &get_disassembly_vars_m68k;
 }
 
-static void get_dissasembly_z80(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry)
+static void get_dissasembly_z80(void *genptr, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry)
 {
     struct genesis* this = (struct genesis*)genptr;
     Z80_disassemble_entry(&this->z80, entry);
 }
 
-static struct disassembly_vars get_disassembly_vars_z80(void *genptr, struct debugger_interface *dbgr, struct disassembly_view *dv)
+static struct disassembly_vars get_disassembly_vars_z80(void *genptr, debugger_interface *dbgr, disassembly_view *dv)
 {
     struct genesis* this = (struct genesis*)genptr;
     struct disassembly_vars dvar;
@@ -358,7 +358,7 @@ static struct disassembly_vars get_disassembly_vars_z80(void *genptr, struct deb
     return dvar;
 }
 
-static void setup_z80_disassembly(struct debugger_interface *dbgr, struct genesis* this)
+static void setup_z80_disassembly(struct debugger_interface *dbgr, genesis* this)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_disassembly);
     struct debugger_view *dview = cpg(p);
@@ -380,7 +380,7 @@ static void setup_z80_disassembly(struct debugger_interface *dbgr, struct genesi
 
 }
 
-static void setup_waveforms_ym2612(struct genesis* this, struct debugger_interface *dbgr)
+static void setup_waveforms_ym2612(struct genesis* this, debugger_interface *dbgr)
 {
     this->dbg.waveforms_ym2612.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms_ym2612.view);
@@ -439,7 +439,7 @@ static void setup_waveforms_ym2612(struct genesis* this, struct debugger_interfa
 }
 
 
-static void setup_waveforms_psg(struct genesis* this, struct debugger_interface *dbgr)
+static void setup_waveforms_psg(struct genesis* this, debugger_interface *dbgr)
 {
     this->dbg.waveforms_psg.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms_psg.view);
@@ -531,7 +531,7 @@ static inline u32 shade_boundary_func(u32 kind, u32 incolor)
 
 static int fetch_order[4] = { 1, 0, 3, 2 };
 
-static void render_image_view_plane(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width, int plane_num)
+static void render_image_view_plane(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width, int plane_num)
 {
     struct genesis *this = (struct genesis *) ptr;
     if (this->clock.master_frame == 0) return;
@@ -717,7 +717,7 @@ static void render_image_view_plane(struct debugger_interface *dbgr, struct debu
     }
 }
 
-static void render_image_view_ym_info(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_ym_info(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *gen = (struct genesis *) ptr;
     struct ym2612 *this = &gen->ym2612;
     //memset(ptr, 0, out_width * 4 * 10);
@@ -774,15 +774,15 @@ static void render_image_view_ym_info(struct debugger_interface *dbgr, struct de
 #undef tbp
 #undef YN
 
-static void render_image_view_planea(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_planea(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     render_image_view_plane(dbgr, dview, ptr, out_width, 0);
 }
 
-static void render_image_view_planeb(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_planeb(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     render_image_view_plane(dbgr, dview, ptr, out_width, 1);
 }
 
-static void render_image_view_planew(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_planew(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     render_image_view_plane(dbgr, dview, ptr, out_width, 2);
 }
 
@@ -801,7 +801,7 @@ static u32 genesis_color_lookup[4][8] =  {
         {0,0,0,0,0,0,0,0}
 };
 
-static void render_image_view_output(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_output(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *this = (struct genesis *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
@@ -907,7 +907,7 @@ static void render_image_view_output(struct debugger_interface *dbgr, struct deb
 
 }
 
-static void render_image_view_sprites(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_sprites(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *this = (struct genesis *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
@@ -1061,7 +1061,7 @@ static void render_image_view_sprites(struct debugger_interface *dbgr, struct de
     }
 }
 
-static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_palette(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *this = (struct genesis *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
@@ -1093,7 +1093,7 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
 
 }
 
-static void render_image_view_tilemap(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_tilemap(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct genesis *this = (struct genesis *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
@@ -1134,7 +1134,7 @@ static void render_image_view_tilemap(struct debugger_interface *dbgr, struct de
     }
 }
 
-static void setup_image_view_plane(struct genesis* this, struct debugger_interface *dbgr, int plane_num)
+static void setup_image_view_plane(struct genesis* this, debugger_interface *dbgr, int plane_num)
 {
     // 0 = plane A
     // 1 = plane B
@@ -1203,7 +1203,7 @@ static void setup_image_view_plane(struct genesis* this, struct debugger_interfa
 }
 
 
-static void setup_image_view_tilemap(struct genesis* this, struct debugger_interface *dbgr)
+static void setup_image_view_tilemap(struct genesis* this, debugger_interface *dbgr)
 {
     this->dbg.image_views.tiles = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.tiles);
@@ -1225,7 +1225,7 @@ static void setup_image_view_tilemap(struct genesis* this, struct debugger_inter
     snprintf(iv->label, sizeof(iv->label), "Pattern Table Viewer");
 }
 
-static void setup_image_view_output(struct genesis* this, struct debugger_interface *dbgr)
+static void setup_image_view_output(struct genesis* this, debugger_interface *dbgr)
 {
     this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
@@ -1259,7 +1259,7 @@ static void setup_image_view_output(struct genesis* this, struct debugger_interf
 
 }
 
-static void setup_image_view_sprites(struct genesis* this, struct debugger_interface *dbgr)
+static void setup_image_view_sprites(struct genesis* this, debugger_interface *dbgr)
 {
     this->dbg.image_views.sprites = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.sprites);
@@ -1286,7 +1286,7 @@ static void setup_image_view_sprites(struct genesis* this, struct debugger_inter
 }
 
 
-static void setup_image_view_palette(struct genesis* this, struct debugger_interface *dbgr)
+static void setup_image_view_palette(struct genesis* this, debugger_interface *dbgr)
 {
     this->dbg.image_views.palette = debugger_view_new(dbgr, dview_image);
     struct debugger_view *dview = cpg(this->dbg.image_views.palette);
@@ -1308,7 +1308,7 @@ static void setup_image_view_palette(struct genesis* this, struct debugger_inter
     snprintf(iv->label, sizeof(iv->label), "Palette Viewer");
 }
 
-static void setup_events_view(struct genesis* this, struct debugger_interface *dbgr)
+static void setup_events_view(struct genesis* this, debugger_interface *dbgr)
 {
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
     struct debugger_view *dview = cpg(this->dbg.events.view);
@@ -1351,7 +1351,7 @@ static void setup_events_view(struct genesis* this, struct debugger_interface *d
     debugger_report_frame(this->dbg.interface);
 }
 
-static void setup_image_view_ym_info(struct genesis *this, struct debugger_interface *dbgr)
+static void setup_image_view_ym_info(struct genesis *this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.ym_info = debugger_view_new(dbgr, dview_image);
@@ -1373,7 +1373,7 @@ static void setup_image_view_ym_info(struct genesis *this, struct debugger_inter
     debugger_widgets_add_textbox(&dview->options, "blah!", 1);
 }
 
-void genesisJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr)
+void genesisJ_setup_debugger_interface(JSM, debugger_interface *dbgr)
 {
     JTHIS;
     this->dbg.interface = dbgr;

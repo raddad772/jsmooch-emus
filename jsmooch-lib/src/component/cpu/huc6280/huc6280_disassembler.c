@@ -19,9 +19,9 @@ static u16 dbg_read16(struct jsm_debug_read_trace *trace, u32 *PC)
     return v;
 }
 
-#define SARG const char *ins, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr, struct HUC6280 *cpu
-#define SARG2x const char *ins, const char *s2, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr, struct HUC6280 *cpu
-#define SARGBIT const char *ins, u32 bitnum, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr, struct HUC6280 *cpu
+#define SARG const char *ins, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
+#define SARG2x const char *ins, const char *s2, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
+#define SARGBIT const char *ins, u32 bitnum, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr, HUC6280 *cpu
 
 static u32 longaddr(struct HUC6280 *cpu, u32 addr)
 {
@@ -173,14 +173,14 @@ static void zero_page_y(SARG)
 #undef zpa
 #undef la
 
-void HUC6280_disassemble(struct HUC6280 *cpu, u32 *PC, struct jsm_debug_read_trace *trace, struct jsm_string *outstr)
+void HUC6280_disassemble(struct HUC6280 *cpu, u32 *PC, jsm_debug_read_trace *trace, jsm_string *outstr)
 {
 #define SPCS "   "
 #define dasm(id, prefix, mode) case id: mode(prefix SPCS, trace, PC, outstr, cpu); break;
 #define dasm2s(id, prefix, str) case id: str2x(prefix SPCS, str, trace, PC, outstr, cpu); break;
 #define dasmbit(id, prefix, mode, bitnum) case id: mode(prefix SPCS, bitnum, trace, PC, outstr, cpu); break;
     u32 opcode = dbg_read(trace, PC);
-    // const char *ins, struct jsm_debug_read_trace *trace, u32 *PC, struct jsm_string *outstr
+    // const char *ins, jsm_debug_read_trace *trace, u32 *PC, jsm_string *outstr
     switch(opcode) {
         dasm(0x00, "brk", implied)
         dasm(0x01, "ora", indirect_x)
@@ -444,7 +444,7 @@ void HUC6280_disassemble(struct HUC6280 *cpu, u32 *PC, struct jsm_debug_read_tra
 #undef op
 }
 
-void HUC6280_disassemble_entry(struct HUC6280 *this, struct disassembly_entry* entry)
+void HUC6280_disassemble_entry(struct HUC6280 *this, disassembly_entry* entry)
 {
     jsm_string_quickempty(&entry->dasm);
     jsm_string_quickempty(&entry->context);

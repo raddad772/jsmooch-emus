@@ -372,7 +372,7 @@ static void scanline_visible(struct SMSGG_VDP* this)
     }
 }
 
-void SMSGG_VDP_init(struct SMSGG_VDP* this, struct SMSGG* bus, enum jsm::systems variant)
+void SMSGG_VDP_init(struct SMSGG_VDP* this, SMSGG* bus, enum jsm::systems variant)
 {
     this->variant = variant;
     this->bus = bus;

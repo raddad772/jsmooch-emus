@@ -24,7 +24,7 @@ enum dvur {
     dvur_on_line,
 };
 
-static void debugger_view_do_update(struct debugger_interface *dbgr, struct debugger_view *dview, enum dvur reason)
+static void debugger_view_do_update(struct debugger_interface *dbgr, debugger_view *dview, enum dvur reason)
 {
     // TODO: this
 }

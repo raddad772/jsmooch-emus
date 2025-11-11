@@ -43,6 +43,6 @@ struct DC;
 void DC_controller_write(void *ptr, u32 data);
 u32 DC_controller_read(void *ptr, u32* more);
 void DC_controller_init(struct DC_controller*);
-void DC_controller_connect(struct DC* console, int portnum, struct DC_controller* which);
+void DC_controller_connect(struct DC* console, int portnum, DC_controller* which);
 
 #endif //JSMOOCH_EMUS_CONTROLLER_H

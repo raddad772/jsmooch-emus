@@ -9,7 +9,7 @@
 
 static void write_timer(struct PS1 *this, u32 timer_num, u32 val, u32 sz);
 
-static void deschedule(struct PS1 *this, struct PS1_TIMERS *t)
+static void deschedule(struct PS1 *this, PS1_TIMERS *t)
 {
     if (t->overflow.still_sched) {
         scheduler_delete_if_exist(&this->scheduler, t->overflow.sched_id);

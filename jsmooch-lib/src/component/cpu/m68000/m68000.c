@@ -16,7 +16,7 @@
 
 //#define BREAKPOINT 0x40016e
 
-void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 *PC, struct jsm_debug_read_trace *rt, struct jsm_string *out);
+void M68k_disasm_RESET_POWER(struct M68k_ins_t *ins, u32 *PC, jsm_debug_read_trace *rt, jsm_string *out);
 void M68k_init(struct M68k* this, u32 megadrive_bug)
 {
     memset(this, 0, sizeof(struct M68k));
@@ -33,7 +33,7 @@ void M68k_init(struct M68k* this, u32 megadrive_bug)
 
 }
 
-void M68k_setup_tracing(struct M68k* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
+void M68k_setup_tracing(struct M68k* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;
@@ -84,7 +84,7 @@ void M68k_set_SR(struct M68k* this, u32 val, u32 immediate_t)
     if (immediate_t || (this->regs.next_SR_T == 0)) this->regs.SR.T = this->regs.next_SR_T;
 }
 
-static void pprint_ea(struct M68k* this, struct M68k_ins_t *ins, u32 opnum, struct jsm_string *outstr)
+static void pprint_ea(struct M68k* this, M68k_ins_t *ins, u32 opnum, jsm_string *outstr)
 {
     struct M68k_EA *ea = &ins->ea[opnum];
     u32 kind = 0; // 0 = NONE, 1 = addr reg, 2 = data reg, 3 = EA
@@ -368,7 +368,7 @@ void M68k_reset(struct M68k* this)
     this->opc = 0xFFFFFFFF;
 }
 
-void M68k_disassemble_entry(struct M68k *this, struct disassembly_entry* entry)
+void M68k_disassemble_entry(struct M68k *this, disassembly_entry* entry)
 {
     u16 IR = this->trace.strct.read_trace_m68k(this->trace.strct.ptr, entry->addr, 1, 1);
     u16 opcode = IR;
@@ -384,7 +384,7 @@ void M68k_disassemble_entry(struct M68k *this, struct disassembly_entry* entry)
 }
 
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-static void serialize_regs(struct M68k_regs *this, struct serialized_state *state) {
+static void serialize_regs(struct M68k_regs *this, serialized_state *state) {
     S(D);
     S(A);
     S(IPC);
@@ -397,7 +397,7 @@ static void serialize_regs(struct M68k_regs *this, struct serialized_state *stat
     S(next_SR_T);
 }
 
-static void serialize_pins(struct M68k_pins* this, struct serialized_state *state) {
+static void serialize_pins(struct M68k_pins* this, serialized_state *state) {
     S(FC);
     S(Addr);
     S(D);
@@ -413,7 +413,7 @@ static void serialize_pins(struct M68k_pins* this, struct serialized_state *stat
 }
 
 // #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-void M68k_serialize(struct M68k *this, struct serialized_state *state)
+void M68k_serialize(struct M68k *this, serialized_state *state)
 {
     serialize_regs(&this->regs, state);
     serialize_pins(&this->pins, state);
@@ -440,7 +440,7 @@ void M68k_serialize(struct M68k *this, struct serialized_state *state)
 
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
-static void deserialize_regs(struct M68k_regs* this, struct serialized_state *state)
+static void deserialize_regs(struct M68k_regs* this, serialized_state *state)
 {
     L(D);
     L(A);
@@ -454,7 +454,7 @@ static void deserialize_regs(struct M68k_regs* this, struct serialized_state *st
     L(next_SR_T);
 }
 
-static void deserialize_pins(struct M68k_pins* this, struct serialized_state *state)
+static void deserialize_pins(struct M68k_pins* this, serialized_state *state)
 {
     L(FC);
     L(Addr);
@@ -470,7 +470,7 @@ static void deserialize_pins(struct M68k_pins* this, struct serialized_state *st
     L(RESET);
 }
 
-void M68k_deserialize(struct M68k*this, struct serialized_state *state)
+void M68k_deserialize(struct M68k*this, serialized_state *state)
 {
     deserialize_regs(&this->regs, state);
     deserialize_pins(&this->pins, state);

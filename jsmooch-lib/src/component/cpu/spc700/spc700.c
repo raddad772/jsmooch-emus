@@ -359,7 +359,7 @@ static u32 read_trace(void *ptr, u32 addr)
 
 }
 
-void SPC700_setup_tracing(struct SPC700* this, struct jsm_debug_read_trace *strct)
+void SPC700_setup_tracing(struct SPC700* this, jsm_debug_read_trace *strct)
 {
     this->trace.strct.ptr = this;
     this->trace.strct.read_trace = &read_trace;

@@ -193,13 +193,13 @@ struct SH4 {
     struct scheduler_t* scheduler;
 };
 
-void SH4_init(struct SH4*, struct scheduler_t* scheduler);
+void SH4_init(struct SH4*, scheduler_t* scheduler);
 void SH4_delete(struct SH4*);
 void SH4_reset(struct SH4*);
 void SH4_run_cycles(struct SH4*, u32 howmany);
 void SH4_fetch_and_exec(struct SH4*, u32 is_delay_slot);
 void SH4_SR_set(struct SH4*, u32 val);
-void SH4_give_memaccess(struct SH4*, struct SH4_memaccess_t* to);
-void SH4_setup_tracing(struct SH4*, struct jsm_debug_read_trace *rt, u64 *trace_cycles);
+void SH4_give_memaccess(struct SH4*, SH4_memaccess_t* to);
+void SH4_setup_tracing(struct SH4*, jsm_debug_read_trace *rt, u64 *trace_cycles);
 
 #endif //JSMOOCH_EMUS_SH4_INTERPRETER_H

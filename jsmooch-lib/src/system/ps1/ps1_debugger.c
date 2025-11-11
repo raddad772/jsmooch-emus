@@ -10,7 +10,7 @@
 
 #define THIS struct PS1* this
 
-static void setup_console_view(struct PS1* this, struct debugger_interface *dbgr)
+static void setup_console_view(struct PS1* this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.console_view = debugger_view_new(dbgr, dview_console);
@@ -23,7 +23,7 @@ static void setup_console_view(struct PS1* this, struct debugger_interface *dbgr
     this->cpu.dbg.console = cv;
 }
 
-void PS1J_setup_debugger_interface(struct jsm_system *jsm, struct debugger_interface *dbgr)
+void PS1J_setup_debugger_interface(struct jsm_system *jsm, debugger_interface *dbgr)
 {
     JTHIS;
     this->dbg.interface = dbgr;

@@ -112,7 +112,7 @@ void M6502::cycle()
     trace.my_cycles++;
 }
 
-void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins)
+void M6502_poll_NMI_only(struct M6502_regs *regs, M6502_pins *pins)
 {
     if (regs->NMI_level_detected) {
         regs->do_NMI = 1;
@@ -121,7 +121,7 @@ void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins)
 }
 
 // Poll during second-to-last cycle
-void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins)
+void M6502_poll_IRQs(struct M6502_regs *regs, M6502_pins *pins)
 {
     if (regs->NMI_level_detected) {
         regs->do_NMI = 1;

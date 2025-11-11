@@ -291,7 +291,7 @@ struct JSM_TOUCHSCREEN {
 };
 
 struct JSM_CARTRIDGE_PORT {
-    void (*load_cart)(struct jsm_system *ptr, struct multi_file_set* mfs, struct physical_io_device *whichpio);
+    void (*load_cart)(struct jsm_system *ptr, multi_file_set* mfs, physical_io_device *whichpio);
     void (*unload_cart)(struct jsm_system *ptr);
     struct persistent_store SRAM;
 };
@@ -299,14 +299,14 @@ struct JSM_CARTRIDGE_PORT {
 struct physical_io_device;
 
 struct JSM_DISC_DRIVE {
-    void (*insert_disc)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs);
+    void (*insert_disc)(struct jsm_system *ptr, physical_io_device *pio, multi_file_set* mfs);
     void (*remove_disc)(struct jsm_system *ptr);
     void (*close_drive)(struct jsm_system *ptr);
     void (*open_drive)(struct jsm_system *ptr);
 };
 
 struct JSM_AUDIO_CASSETTE {
-    void (*insert_tape)(struct jsm_system *ptr, struct physical_io_device *pio, struct multi_file_set* mfs, struct buf* sram);
+    void (*insert_tape)(struct jsm_system *ptr, physical_io_device *pio, multi_file_set* mfs, buf* sram);
     void (*remove_tape)(struct jsm_system *ptr);
     void (*rewind)(struct jsm_system *ptr);
     void (*play)(struct jsm_system *ptr);

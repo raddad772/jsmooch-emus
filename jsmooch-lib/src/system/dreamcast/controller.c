@@ -61,7 +61,7 @@ void DC_controller_init(struct DC_controller* this)
     memset(&this->input_waiting, 0, sizeof(this->input_waiting));
 }
 
-void DC_controller_connect(struct DC* console, int portnum, struct DC_controller* which)
+void DC_controller_connect(struct DC* console, int portnum, DC_controller* which)
 {
     struct MAPLE_port* p = &console->maple.ports[portnum];
     p->device_kind = MAPLE_CONTROLLER;

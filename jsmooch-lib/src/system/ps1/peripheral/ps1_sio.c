@@ -74,7 +74,7 @@ void PS1_SIO0_update_ACKs(struct PS1 *bus, enum PS1_SIO0_port port, u32 level)
 }
 
 
-static void get_select_port(struct PS1 *bus, u32 num, struct PS1_SIO0_memport *port)
+static void get_select_port(struct PS1 *bus, u32 num, PS1_SIO0_memport *port)
 {
     port->controller = NULL;
     port->memcard = NULL;

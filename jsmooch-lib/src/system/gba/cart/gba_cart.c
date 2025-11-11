@@ -300,7 +300,7 @@ static enum save_kinds search_strings(struct buf *f)
     return SK_none;
 }
 
-static void detect_RTC(struct GBA_cart *this, struct buf *ROM)
+static void detect_RTC(struct GBA_cart *this, buf *ROM)
 {
     // offset 00000C4 at least 6 bytes filled with 0
     u8 *ptr = ((u8 *)ROM->ptr) + 0xC4;
@@ -312,7 +312,7 @@ static void detect_RTC(struct GBA_cart *this, struct buf *ROM)
     if (detect) printf("\nRTC DETECTED!");
 }
 
-u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable) {
+u32 GBA_cart_load_ROM_from_RAM(struct GBA_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable) {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);
     if (SRAM_enable) *SRAM_enable = 1;

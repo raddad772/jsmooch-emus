@@ -281,7 +281,7 @@ static char *eval_cart_RAM(struct genesis_cart* this, char *tptr)
     return tptr;
 }
 
-u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz, struct physical_io_device *pio, u32 *SRAM_enable)
+u32 genesis_cart_load_ROM_from_RAM(struct genesis_cart* this, char* fil, u64 fil_sz, physical_io_device *pio, u32 *SRAM_enable)
 {
     buf_allocate(&this->ROM, fil_sz);
     memcpy(this->ROM.ptr, fil, fil_sz);

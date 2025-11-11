@@ -67,13 +67,13 @@ static void outdec(struct jsm_string *out, u32 num, u32 add_comma)
 #define rd_addr_rb_ro    { oregc(Rd); ostr("["); oregc(Rb); oreg(Ro); ostr("]"); }
 #define rd_addr_rb_imm    { oregc(Rd); ostr("["); oregc(Rb); odec(imm); ostr("]"); }
 
-static void dasm_invalid(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_invalid(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     ostr("unknown ");
     ohex(opc, 4);
 }
 
-static void dasm_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_ADD_SUB(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 I = OBIT(10); // 0 = register, 1 = immediate
     u32 sub_opcode = OBIT(9); // 0= add, 1 = sub
@@ -113,7 +113,7 @@ static void dasm_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr, struct A
     NOGOHERE;
 }
 
-static void dasm_LSL_LSR_ASR(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LSL_LSR_ASR(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 sub_opcode = BITS(12, 11);
     u32 imm = BITS(10, 6);
@@ -132,7 +132,7 @@ static void dasm_LSL_LSR_ASR(u16 opc, struct jsm_string *out, i64 ins_addr, stru
     }
     oreg2_dec(Rd,Rs,imm);
 }
-static void dasm_MOV_CMP_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_MOV_CMP_ADD_SUB(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 sub_opcode = BITS(12, 11);
     u32 Rd = BITS(10, 8);
@@ -146,7 +146,7 @@ static void dasm_MOV_CMP_ADD_SUB(u16 opc, struct jsm_string *out, i64 ins_addr, 
     oreg_hex(Rd, imm, 2);
 }
 
-static void dasm_data_proc(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_data_proc(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 sub_opcode = BITS(9, 6);
     u32 Rs = BITS(5, 3);
@@ -172,7 +172,7 @@ static void dasm_data_proc(u16 opc, struct jsm_string *out, i64 ins_addr, struct
     }
     oreg2(Rd, Rs);
 }
-static void dasm_BX_BLX(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_BX_BLX(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     ostr("bx/blx ");
     u32 Rs = OBIT(6) << 3;
@@ -181,7 +181,7 @@ static void dasm_BX_BLX(u16 opc, struct jsm_string *out, i64 ins_addr, struct AR
     oreg(Rs);
 }
 
-static void dasm_ADD_CMP_MOV_hi(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_ADD_CMP_MOV_hi(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 Rd = OBIT(7) << 3;
     u32 Rs = OBIT(6) << 3;
@@ -202,7 +202,7 @@ static void dasm_ADD_CMP_MOV_hi(u16 opc, struct jsm_string *out, i64 ins_addr, s
     }
     oreg2(Rd, Rs);
 }
-static void dasm_LDR_PC_relative(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDR_PC_relative(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 Rd = BITS(10, 8);
     u32 imm = BITS(7, 0);
@@ -215,7 +215,7 @@ static void dasm_LDR_PC_relative(u16 opc, struct jsm_string *out, i64 ins_addr, 
     ostr("]");
 }
 
-static void dasm_LDRH_STRH_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDRH_STRH_reg_offset(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 Ro = BITS(8, 6);
@@ -234,7 +234,7 @@ static void dasm_LDRH_STRH_reg_offset(u16 opc, struct jsm_string *out, i64 ins_a
 
 
 
-static void dasm_LDRSH_LDRSB_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDRSH_LDRSB_reg_offset(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 B = !OBIT(11);
     u32 Ro = BITS(8, 6);
@@ -247,7 +247,7 @@ static void dasm_LDRSH_LDRSB_reg_offset(u16 opc, struct jsm_string *out, i64 ins
     rd_addr_rb_ro;
 }
 
-static void dasm_LDR_STR_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDR_STR_reg_offset(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 Ro = BITS(8, 6);
@@ -263,7 +263,7 @@ static void dasm_LDR_STR_reg_offset(u16 opc, struct jsm_string *out, i64 ins_add
     rd_addr_rb_ro;
 }
 
-static void dasm_LDRB_STRB_reg_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDRB_STRB_reg_offset(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 L = OBIT(11); // 0=STR, 1=LDR
     u32 Ro = BITS(8, 6);
@@ -279,7 +279,7 @@ static void dasm_LDRB_STRB_reg_offset(u16 opc, struct jsm_string *out, i64 ins_a
     rd_addr_rb_ro;
 }
 
-static void dasm_LDR_STR_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDR_STR_imm_offset(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 imm = BITS(10, 6);
@@ -295,7 +295,7 @@ static void dasm_LDR_STR_imm_offset(u16 opc, struct jsm_string *out, i64 ins_add
     rd_addr_rb_imm;
 }
 
-static void dasm_LDRB_STRB_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDRB_STRB_imm_offset(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 imm = BITS(10, 6);
@@ -310,7 +310,7 @@ static void dasm_LDRB_STRB_imm_offset(u16 opc, struct jsm_string *out, i64 ins_a
     rd_addr_rb_imm;
 }
 
-static void dasm_LDRH_STRH_imm_offset(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDRH_STRH_imm_offset(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 imm = BITS(10, 6);
@@ -326,7 +326,7 @@ static void dasm_LDRH_STRH_imm_offset(u16 opc, struct jsm_string *out, i64 ins_a
     rd_addr_rb_imm;
 }
 
-static void dasm_LDR_STR_SP_relative(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDR_STR_SP_relative(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 L = OBIT(11);
     u32 Rd = BITS(10, 8);
@@ -344,7 +344,7 @@ static void dasm_LDR_STR_SP_relative(u16 opc, struct jsm_string *out, i64 ins_ad
     ostr("]");
 }
 
-static void dasm_ADD_SP_or_PC(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_ADD_SP_or_PC(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 SP = OBIT(11);
     u32 Rd = BITS(10, 8);
@@ -368,7 +368,7 @@ static void dasm_ADD_SP_or_PC(u16 opc, struct jsm_string *out, i64 ins_addr, str
     }
 }
 
-static void dasm_ADD_SUB_SP(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_ADD_SUB_SP(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 S = OBIT(7);
     u32 imm = BITS(6, 0);
@@ -400,7 +400,7 @@ static void do_rlist(struct jsm_string *out, u16 rlist)
     }
 }
 
-static void dasm_PUSH_POP(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_PUSH_POP(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     // 0: PUSH {Rlist}{LR}   ;store in memory, decrements SP (R13)
     // 1: POP  {Rlist}{PC}   ;load from memory, increments SP (R13
@@ -422,7 +422,7 @@ static void dasm_PUSH_POP(u16 opc, struct jsm_string *out, i64 ins_addr, struct 
         if (rlist != 0) ostr("}");
     }
 }
-static void dasm_LDM_STM(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_LDM_STM(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 sub_opcode = OBIT(11);
     u32 Rb = BITS(10, 8);
@@ -439,21 +439,21 @@ static void dasm_LDM_STM(u16 opc, struct jsm_string *out, i64 ins_addr, struct A
     if (rlist) ostr("}");
 }
 
-static void dasm_SWI(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_SWI(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 comment = BITS(7, 0);
     ostr("swi   ");
     ohex(comment, 2);
 }
 
-static void dasm_BKPT(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_BKPT(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 comment = BITS(7, 0);
     ostr("bkpt  ");
     ohex(comment, 2);
 }
 
-static void dasm_UNDEFINED_BCC(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_UNDEFINED_BCC(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 sub_opcode = BITS(11, 8);
     u32 imm = BITS(7, 0);
@@ -462,7 +462,7 @@ static void dasm_UNDEFINED_BCC(u16 opc, struct jsm_string *out, i64 ins_addr, st
     ostr("bcc   undefined");
 }
 
-static void dasm_BCC(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_BCC(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 sub_opcode = BITS(11, 8);
     u32 imm = BITS(7, 0);
@@ -488,7 +488,7 @@ static void dasm_BCC(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMct
     }
     odec(imm);
 }
-static void dasm_B(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_B(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 imm = BITS(10, 0);
     imm = SIGNe11to32(imm);
@@ -497,7 +497,7 @@ static void dasm_B(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt
     odec(imm);
 }
 
-static void dasm_BLX_suffix(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_BLX_suffix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 imm = BITS(10, 0);
     imm <<= 1;
@@ -505,7 +505,7 @@ static void dasm_BLX_suffix(u16 opc, struct jsm_string *out, i64 ins_addr, struc
     odec(imm);
 }
 
-static void dasm_BL_BLX_prefix(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_BL_BLX_prefix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 imm = BITS(11, 0);
     imm = (i32)SIGNe11to32(imm); // now SHL 11...
@@ -514,7 +514,7 @@ static void dasm_BL_BLX_prefix(u16 opc, struct jsm_string *out, i64 ins_addr, st
     odec(imm);
 }
 
-static void dasm_BL_suffix(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+static void dasm_BL_suffix(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     u32 imm = BITS(10, 0);
     imm <<= 1;
@@ -523,7 +523,7 @@ static void dasm_BL_suffix(u16 opc, struct jsm_string *out, i64 ins_addr, struct
 }
 
 
-void ARM946ES_thumb_disassemble(u16 opc, struct jsm_string *out, i64 ins_addr, struct ARMctxt *ct)
+void ARM946ES_thumb_disassemble(u16 opc, jsm_string *out, i64 ins_addr, ARMctxt *ct)
 {
     jsm_string_quickempty(out);
 

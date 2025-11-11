@@ -143,7 +143,7 @@ void Z80_init(struct Z80* this, u32 CMOS)
 
 #define THIS struct Z80* this
 
-void Z80_setup_tracing(struct Z80* this, struct jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer)
+void Z80_setup_tracing(struct Z80* this, jsm_debug_read_trace* dbg_read_trace, u64 *trace_cycle_pointer)
 {
     jsm_copy_read_trace(&this->read_trace, dbg_read_trace);
     this->trace.cycles = trace_cycle_pointer;
@@ -462,7 +462,7 @@ u32 Z80_parity(u32 val) {
 }
 
 #define S(x) Sadd(state, &this-> x, sizeof(this-> x))
-static void serialize_regs(struct Z80_regs *this, struct serialized_state *state)
+static void serialize_regs(struct Z80_regs *this, serialized_state *state)
 {
     S(IR);
     S(TCU);
@@ -511,7 +511,7 @@ static void serialize_regs(struct Z80_regs *this, struct serialized_state *state
     S(poll_IRQ);
 }
 
-static void serialize_pins(struct Z80_pins* this, struct serialized_state *state)
+static void serialize_pins(struct Z80_pins* this, serialized_state *state)
 {
     S(Addr);
     S(D);
@@ -524,7 +524,7 @@ static void serialize_pins(struct Z80_pins* this, struct serialized_state *state
     S(WAIT);
 }
 
-void Z80_serialize(struct Z80 *this, struct serialized_state *state)
+void Z80_serialize(struct Z80 *this, serialized_state *state)
 {
     serialize_regs(&this->regs, state);
     serialize_pins(&this->pins, state);
@@ -539,7 +539,7 @@ void Z80_serialize(struct Z80 *this, struct serialized_state *state)
 #undef S
 
 #define L(x) Sload(state, &this-> x, sizeof(this-> x))
-static void deserialize_regs(struct Z80_regs* this, struct serialized_state *state)
+static void deserialize_regs(struct Z80_regs* this, serialized_state *state)
 {
     L(IR);
     L(TCU);
@@ -589,7 +589,7 @@ static void deserialize_regs(struct Z80_regs* this, struct serialized_state *sta
     L(poll_IRQ);
 }
 
-static void deserialize_pins(struct Z80_pins* this, struct serialized_state *state)
+static void deserialize_pins(struct Z80_pins* this, serialized_state *state)
 {
     L(Addr);
     L(D);
@@ -602,7 +602,7 @@ static void deserialize_pins(struct Z80_pins* this, struct serialized_state *sta
     L(WAIT);
 }
 
-void Z80_deserialize(struct Z80* this, struct serialized_state *state)
+void Z80_deserialize(struct Z80* this, serialized_state *state)
 {
     deserialize_regs(&this->regs, state);
     deserialize_pins(&this->pins, state);

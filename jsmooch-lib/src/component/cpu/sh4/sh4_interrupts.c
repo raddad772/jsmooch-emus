@@ -142,7 +142,7 @@ void SH4_IPR_update(struct SH4* this)
 }
 
 
-void SH4_init_interrupt_struct(struct SH4_interrupt_source interrupt_sources[], struct SH4_interrupt_source* interrupt_map[])
+void SH4_init_interrupt_struct(struct SH4_interrupt_source interrupt_sources[], SH4_interrupt_source* interrupt_map[])
 {
 #define SS(src, prior, sub_prior, intea) { interrupt_sources[src] = (struct SH4_interrupt_source) {.source = src, .priority = prior, .sub_priority = sub_prior, .intevt = intea }; interrupt_map[src] = &interrupt_sources[src]; }
     SS(sh4i_nmi, 16, 0, 0x1C0);

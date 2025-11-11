@@ -7,7 +7,7 @@
 #include "ps1_bus.h"
 #include "ps1_dma.h"
 
-static void do_dma_linked_list(struct PS1 *ps1, struct PS1_DMA_channel *ch)
+static void do_dma_linked_list(struct PS1 *ps1, PS1_DMA_channel *ch)
 {
     u32 addr = ch->base_addr & 0x1FFFFC;
     if (ch->direction == PS1D_to_ram) {
@@ -56,7 +56,7 @@ static u32 ch_transfer_size(struct PS1_DMA_channel *this)
     return 0;
 }
 
-static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
+static void do_dma_block(struct PS1 *ps1, PS1_DMA_channel *ch)
 {
     u32 step = (ch->step == PS1D_increment) ? 4 : -4;
     u32 addr = ch->base_addr;
@@ -130,7 +130,7 @@ static void do_dma_block(struct PS1 *ps1, struct PS1_DMA_channel *ch)
     }
 }
 
-static void do_dma(struct PS1 *ps1, struct PS1_DMA_channel *ch)
+static void do_dma(struct PS1 *ps1, PS1_DMA_channel *ch)
 {
     // Executes DMA for a channel
     // We'll just do an instant copy for now

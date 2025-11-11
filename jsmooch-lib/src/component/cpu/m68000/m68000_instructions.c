@@ -319,15 +319,15 @@ static u32 condition(struct M68k* this, u32 condition) {
 
 #define DELAY_IF_REGWRITE(k, n) if ((ins->sz == 4) && ((k == M68k_AM_data_register_direct) || (k == M68k_AM_address_register_direct))) M68k_start_wait(this, n, M68kS_exec);
 
-#define export_M68KINS(x) void M68k_ins_##x(struct M68k* this, struct M68k_ins_t *ins) { \
+#define export_M68KINS(x) void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) { \
     switch(this->state.instruction.TCU) {
 
-#define M68KINS(x) static void M68k_ins_##x(struct M68k* this, struct M68k_ins_t *ins) { \
+#define M68KINS(x) static void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) { \
     switch(this->state.instruction.TCU) {
 
-#define export_M68KINS_NOSWITCH(x) void M68k_ins_##x(struct M68k* this, struct M68k_ins_t *ins) {
+#define export_M68KINS_NOSWITCH(x) void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) {
 
-#define M68KINS_NOSWITCH(x) static void M68k_ins_##x(struct M68k* this, struct M68k_ins_t *ins) {
+#define M68KINS_NOSWITCH(x) static void M68k_ins_##x(struct M68k* this, M68k_ins_t *ins) {
 #define INS_END_NOSWITCH }
 
 static void M68k_set_IPC(struct M68k* this) {
@@ -355,7 +355,7 @@ static void M68k_set_IPC(struct M68k* this) {
 }
 
 
-void M68k_ins_RESET_POWER(struct M68k* this, struct M68k_ins_t *ins) {
+void M68k_ins_RESET_POWER(struct M68k* this, M68k_ins_t *ins) {
     switch (this->state.instruction.TCU) {
         STEP0
             this->pins.RESET = 0;
@@ -3302,7 +3302,7 @@ INS_END
 
 
 
-static u32 M68k_disasm_BAD(struct M68k_ins_t *ins, struct jsm_debug_read_trace *rt, struct jsm_string *out)
+static u32 M68k_disasm_BAD(struct M68k_ins_t *ins, jsm_debug_read_trace *rt, jsm_string *out)
 {
     printf("\nERROR UNIMPLEMENTED DISASSEMBLY %04x", ins->opcode);
     jsm_string_sprintf(out, "UNIMPLEMENTED DISASSEMBLY %s", __func__);
@@ -3345,7 +3345,7 @@ static void transform_ea(struct M68k_EA *ea)
     }
 }
 
-static void bind_opcode(const char* inpt, u32 sz, M68k_ins_func exec_func, M68k_disassemble_t disasm_func, u32 op_or, struct M68k_EA *ea1, struct M68k_EA *ea2, u32 variant, enum M68k_operand_modes operand_mode)
+static void bind_opcode(const char* inpt, u32 sz, M68k_ins_func exec_func, M68k_disassemble_t disasm_func, u32 op_or, M68k_EA *ea1, M68k_EA *ea2, u32 variant, enum M68k_operand_modes operand_mode)
 {
     const char *ptr;
     u32 orer = 0x8000;

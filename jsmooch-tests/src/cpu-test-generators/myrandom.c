@@ -29,7 +29,7 @@ static struct cyrb128_ret cyrb128(const char *str) {
     return (struct cyrb128_ret){ .a = h1^h2^h3^h4, .b = h2^h1, .c = h3^h1, .d = h4^h1};
 }
 
-void sfc32_seed(const char *seed, struct sfc32_state *state) {
+void sfc32_seed(const char *seed, sfc32_state *state) {
     struct cyrb128_ret r = cyrb128(seed);
     state->a = r.a;
     state->b = r.b;

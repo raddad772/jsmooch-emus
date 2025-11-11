@@ -40,7 +40,7 @@ void buf_delete(struct buf* this)
     this->size = 0;
 }
 
-void buf_copy(struct buf* dst, struct buf* src) {
+void buf_copy(struct buf* dst, buf* src) {
     if (src->ptr == NULL) {
         buf_delete(dst);
         return;
@@ -57,7 +57,7 @@ void rfb_init(struct read_file_buf* this){
     this->pos = 0;
 }
 
-int rfb_read(const char *fname, const char *fpath, struct read_file_buf *rfb)
+int rfb_read(const char *fname, const char *fpath, read_file_buf *rfb)
 {
     char OUTPATH[500];
     if (fname == NULL) {
@@ -107,7 +107,7 @@ void mfs_delete(struct multi_file_set* this)
     this->num_files = 0;
 }
 
-void mfs_add(const char *fname, const char *fpath, struct multi_file_set *this)
+void mfs_add(const char *fname, const char *fpath, multi_file_set *this)
 {
     assert(this->num_files < (MFS_MAX - 1));
     if (!rfb_read(fname, fpath, &this->files[this->num_files])) {

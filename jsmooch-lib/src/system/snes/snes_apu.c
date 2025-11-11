@@ -7,8 +7,8 @@
 #include "snes_bus.h"
 
 // ratio for one to the other =
-static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate);
-static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch);
+static void update_envelope(struct SNES *snes, SNES_APU_ch *ch, u32 rate);
+static u32 calc_env_rate(struct SNES *snes, SNES_APU_ch *ch);
 
 
 static const int env_periods[32] = {
@@ -25,7 +25,7 @@ static const int env_periods[32] = {
         2, 1
 };
 
-static inline void calculate_sample_addr(struct SNES *snes, struct SNES_APU_ch *ch)
+static inline void calculate_sample_addr(struct SNES *snes, SNES_APU_ch *ch)
 {
     u16 brr_entry = ((snes->apu.dsp.io.DIR << 8) + (ch->io.SRCN << 2)) & 0xFFFF;
     ch->sample_data.start_addr = snes->apu.cpu.RAM[brr_entry++];
@@ -45,7 +45,7 @@ static void calculate_sample_addrs(struct SNES *snes)
 //  ((0) + (4F * 8000)
 // ((addr & !0x8000) + (bank & !0x80) * 0x8000
 //  ((addr & 0x7FFF) + (bank & 0x7F) * 0x8000
-static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_filter *filter)
+static void BRR_decode(u8 *buf, SNES_APU_sample *dest, SNES_APU_filter *filter)
 {
     dest->cur_decode_buf ^= 1;
     dest->pos = 0;
@@ -100,7 +100,7 @@ static void BRR_decode(u8 *buf, struct SNES_APU_sample *dest, struct SNES_APU_fi
     }
 }
 
-static u8 read_voice(struct SNES *snes, struct SNES_APU_ch *ch, u8 param)
+static u8 read_voice(struct SNES *snes, SNES_APU_ch *ch, u8 param)
 {
     switch(param) {
         case 0:
@@ -210,7 +210,7 @@ static void do_noise(void *ptr, u64 key, u64 clock, u32 jitter)
     this->noise.sch_id = scheduler_only_add_abs(&snes->scheduler, (i64)this->noise.next_update, 0, snes, &do_noise, &this->noise.sch_still);
 }
 
-static void ch_update_env(struct SNES *snes, struct SNES_APU_ch *ch)
+static void ch_update_env(struct SNES *snes, SNES_APU_ch *ch)
 {
     //printf("\nDO ENV %lld STATE:%d ATTENUATION:%d", key, ch->env.state, ch->env.attenuation);
     ch->env.counter++;
@@ -295,7 +295,7 @@ static void update_noise(struct SNES *snes)
     }
 }
 
-static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch)
+static u32 calc_env_rate(struct SNES *snes, SNES_APU_ch *ch)
 {
     if (ch->io.ADSR1.adsr_on || ch->env.state == SDEM_release) { // ADSR mode
         switch (ch->env.state) {
@@ -316,7 +316,7 @@ static u32 calc_env_rate(struct SNES *snes, struct SNES_APU_ch *ch)
 
 }
 
-static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate) {
+static void update_envelope(struct SNES *snes, SNES_APU_ch *ch, u32 rate) {
     if (!ch->io.ADSR1.adsr_on && !ch->io.GAIN.custom.custom_gain) {
         ch->env.attenuation = ch->io.GAIN.direct.fixed_vol << 4;
         rate = 0;
@@ -325,7 +325,7 @@ static void update_envelope(struct SNES *snes, struct SNES_APU_ch *ch, u32 rate)
 }
 
 
-static void write_voice(struct SNES *snes, struct SNES_APU_ch * ch, u8 param, u8 val)
+static void write_voice(struct SNES *snes, SNES_APU_ch * ch, u8 param, u8 val)
 {
     switch(param) {
         case 0:
@@ -542,7 +542,7 @@ static void CPU_cycle(void *ptr, u64 key, u64 clock, u32 jitter)
 }
 
 
-static i16 gaussian_me_up(struct SNES *snes, struct SNES_APU_ch *ch)
+static i16 gaussian_me_up(struct SNES *snes, SNES_APU_ch *ch)
 {
     i32 sample_num = (i32)((ch->pitch.counter >> 12) & 15);
     u32 g_index = (ch->pitch.counter >> 4) & 0xFF;
@@ -566,7 +566,7 @@ static i16 gaussian_me_up(struct SNES *snes, struct SNES_APU_ch *ch)
     return out;
 }
 
-static void ch_update_sample(struct SNES *snes, struct SNES_APU_ch *ch)
+static void ch_update_sample(struct SNES *snes, SNES_APU_ch *ch)
 {
     u32 step = (ch->io.PITCHH << 8) | ch->io.PITCHL;
     if (ch->num > 0 && snes->apu.dsp.io.PMON & (1 << ch->num)) {

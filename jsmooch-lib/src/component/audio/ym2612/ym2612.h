@@ -162,8 +162,8 @@ struct ym2612 {
 struct serialized_state;
 void ym2612_init(struct ym2612 *this, enum OPN2_variant variant, u64 *master_cycle_count, u64 master_wait_cycles);
 void ym2612_delete(struct ym2612*);
-void ym2612_serialize(struct ym2612*, struct serialized_state *state);
-void ym2612_deserialize(struct ym2612*, struct serialized_state *state);
+void ym2612_serialize(struct ym2612*, serialized_state *state);
+void ym2612_deserialize(struct ym2612*, serialized_state *state);
 
 void ym2612_write(struct ym2612*, u32 addr, u8 val);
 u8 ym2612_read(struct ym2612*, u32 addr, u32 old, u32 has_effect);

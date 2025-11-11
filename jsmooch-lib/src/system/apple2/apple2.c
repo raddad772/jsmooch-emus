@@ -25,20 +25,20 @@
 static void apple2J_play(JSM);
 static void apple2J_pause(JSM);
 static void apple2J_stop(JSM);
-static void apple2J_get_framevars(JSM, struct framevars* out);
+static void apple2J_get_framevars(JSM, framevars* out);
 static void apple2J_reset(JSM);
 static void apple2J_killall(JSM);
 static u32 apple2J_finish_frame(JSM);
 static u32 apple2J_finish_scanline(JSM);
 static u32 apple2J_step_master(JSM, u32 howmany);
-static void apple2J_load_BIOS(JSM, struct multi_file_set* mfs);
+static void apple2J_load_BIOS(JSM, multi_file_set* mfs);
 static void apple2J_enable_tracing(JSM);
 static void apple2J_disable_tracing(JSM);
-static void apple2J_describe_io(JSM, struct cvec* IOs);
+static void apple2J_describe_io(JSM, cvec* IOs);
 
 u32 apple2_CPU_read_trace(void *ptr, u32 addr);
 
-static void apple2J_setup_debugger_interface(JSM, struct debugger_interface *intf);
+static void apple2J_setup_debugger_interface(JSM, debugger_interface *intf);
 
 /*
 $D000 - $DFFF (53248 - 57343): Bank-Switched RAM (2 Banks RAM, 1 Bank ROM)
@@ -102,7 +102,7 @@ void apple2_delete(JSM)
     jsm_clearfuncs(jsm);
 }
 
-static void apple2J_setup_debugger_interface(JSM, struct debugger_interface *intf)
+static void apple2J_setup_debugger_interface(JSM, debugger_interface *intf)
 {
     intf->supported_by_core = 0;
     printf("\nWARNING: debugger interface not supported on core: apple2");
@@ -148,7 +148,7 @@ static void setup_crt(struct JSM_DISPLAY *d)
     d->pixelometry.overscan.left = d->pixelometry.overscan.right = d->pixelometry.overscan.top = d->pixelometry.overscan.bottom = 0;
 }
 
-void apple2J_describe_io(JSM, struct cvec *IOs)
+void apple2J_describe_io(JSM, cvec *IOs)
 {
     JTHIS;
     if (this->described_inputs) return;
@@ -211,7 +211,7 @@ void apple2J_stop(JSM)
 {
 }
 
-void apple2J_get_framevars(JSM, struct framevars* out)
+void apple2J_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.frames_since_restart;
@@ -268,7 +268,7 @@ u32 apple2J_step_master(JSM, u32 howmany)
     return 0;
 }
 
-void apple2J_load_BIOS(JSM, struct multi_file_set* mfs)
+void apple2J_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;

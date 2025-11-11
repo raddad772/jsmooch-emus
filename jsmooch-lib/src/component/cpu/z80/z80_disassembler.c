@@ -22,14 +22,14 @@ static const char *Z80D_tabl_bli[8][10] = {{}, {}, {}, {},
 {"LDDR", "CPDR", "INDR", "OTDR"}, // 7, 0...3
 };
 
-static u32 read8(u32 *PC, struct jsm_debug_read_trace *rt) {
+static u32 read8(u32 *PC, jsm_debug_read_trace *rt) {
 
     u32 r = rt->read_trace(rt->ptr, *PC);
     *PC = ((*PC) + 1) & 0xFFFF;
     return r;
 }
 
-static u32 repl0(u32 *PC, const char *HL, const char *H, const char *L, struct jsm_debug_read_trace* rt, const char *reg, char *w, size_t sz) {
+static u32 repl0(u32 *PC, const char *HL, const char *H, const char *L, jsm_debug_read_trace* rt, const char *reg, char *w, size_t sz) {
     u32 l;
     if (!strcmp(reg, "HL")) l = snprintf(w, sz, "%s", HL);
     else if (!strcmp(reg, "L")) l = snprintf(w, sz, "%s", L);
@@ -47,26 +47,26 @@ static u32 repl0(u32 *PC, const char *HL, const char *H, const char *L, struct j
     return l;
 }
 
-static u32 fetch(u32 *PC, struct jsm_debug_read_trace *rt) {
+static u32 fetch(u32 *PC, jsm_debug_read_trace *rt) {
     u32 r = rt->read_trace(rt->ptr, *PC);
     *PC = ((*PC) + 1) & 0xFFFF;
     return r;
 }
 
-static u32 sread8(u32 *PC, struct jsm_debug_read_trace *rt) {
+static u32 sread8(u32 *PC, jsm_debug_read_trace *rt) {
     u32 r = (u32)((i32)(i8)rt->read_trace(rt->ptr, *PC));
     *PC = ((*PC) + 1) & 0xFFFF;
     return ((*PC) + r) & 0xFFFF;
 }
 
-static u32 read16(u32* PC, struct jsm_debug_read_trace *rt) {
+static u32 read16(u32* PC, jsm_debug_read_trace *rt) {
     u32 r = rt->read_trace(rt->ptr, *PC) + (rt->read_trace(rt->ptr, ((*PC)+1) & 0xFFFF) << 8);
     *PC = ((*PC) + 2) & 0xFFFF;
     return r;
 }
 
 
-void Z80_disassemble_entry(struct Z80*this, struct disassembly_entry* entry)
+void Z80_disassemble_entry(struct Z80*this, disassembly_entry* entry)
 {
     jsm_string_quickempty(&entry->dasm);
     jsm_string_quickempty(&entry->context);
@@ -79,7 +79,7 @@ void Z80_disassemble_entry(struct Z80*this, struct disassembly_entry* entry)
     entry->ins_size_bytes = PC - entry->addr;
 }
 
-u32 Z80_disassemble(u32 *PC, u32 IR, struct jsm_debug_read_trace *rt, char *w, size_t sz)
+u32 Z80_disassemble(u32 *PC, u32 IR, jsm_debug_read_trace *rt, char *w, size_t sz)
 {
     u32 l = 0;
     u32 opcode = IR;

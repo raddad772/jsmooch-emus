@@ -62,7 +62,7 @@ static u32 read_oam(struct SNES_PPU *this, u32 addr)
     }
 }
 
-static void write_oam(struct SNES *snes, struct SNES_PPU *this, u32 addr, u32 val) {
+static void write_oam(struct SNES *snes, SNES_PPU *this, u32 addr, u32 val) {
     if (!snes->clock.ppu.vblank_active && !this->io.force_blank) {
         printf("\nWARN OAM BAD WRITE TIME");
         return;
@@ -273,7 +273,7 @@ static void write_VRAM(struct SNES *snes, u32 addr, u32 val)
     snes->ppu.VRAM[addr] = val;
 }
 
-void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_block *bl) {
+void SNES_PPU_write(struct SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl) {
     addr &= 0xFFFF;
     u32 addre;
     struct SNES_PPU *this = &snes->ppu;
@@ -618,7 +618,7 @@ static u32 mode7_mul(struct SNES_PPU *this)
     return (u32)((i32)(this->mode7.a) * (i32)(i8)(this->mode7.b >> 8));
 }
 
-u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
+u32 SNES_PPU_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     addr &= 0xFFFF;
     struct SNES_PPU *this = &snes->ppu;
@@ -814,7 +814,7 @@ static void draw_bg_line_mode7(struct SNES *snes, u32 source, i32 y)
     }
 }
 
-static u32 get_tile(struct SNES *snes, struct SNES_PPU_BG *bg, i32 hoffset, i32 voffset)
+static u32 get_tile(struct SNES *snes, SNES_PPU_BG *bg, i32 hoffset, i32 voffset)
 {
     u32 hires = snes->ppu.io.bg_mode == 5 || snes->ppu.io.bg_mode == 6;
     u32 tile_height = 3 + bg->io.tile_size;
@@ -1242,7 +1242,7 @@ static u32 hdma_is_finished(struct R5A22_DMA_CHANNEL *this)
 
 }
 
-u32 SNES_hdma_reload_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
+u32 SNES_hdma_reload_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     u32 cn = 8;
     u32 data = SNES_wdc65816_read(snes, (ch->source_bank << 16 | ch->hdma_address), 0, 1);
@@ -1270,7 +1270,7 @@ u32 SNES_hdma_reload_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
     return cn;
 }
 
-static u32 hdma_setup_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
+static u32 hdma_setup_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     ch->hdma_do_transfer = 1;
     if (!ch->hdma_enable) return 0;

@@ -149,12 +149,12 @@ struct disassembly_view {
 
     struct { // get_disassembly_vars gets variables for disassembly such as address of currently-executing instructions
         void *ptr;
-        struct disassembly_vars (*func)(void *, struct debugger_interface *, struct disassembly_view *);
+        struct disassembly_vars (*func)(void *, debugger_interface *, disassembly_view *);
     } get_disassembly_vars;
 
     struct { // fill_view fills out variables and stuff
         void *ptr;
-        void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview);
+        void (*func)(void *, debugger_interface *dbgr, disassembly_view *dview);
     } fill_view;
 
     struct {
@@ -164,7 +164,7 @@ struct disassembly_view {
 
     struct { // get_disaassembly gets disasssembly
         void *ptr;
-        void (*func)(void *, struct debugger_interface *dbgr, struct disassembly_view *dview, struct disassembly_entry *entry);
+        void (*func)(void *, debugger_interface *dbgr, disassembly_view *dview, disassembly_entry *entry);
     } get_disassembly;
 };
 
@@ -306,7 +306,7 @@ struct ivec2 {
 struct debugger_view;
 struct debugger_update_func {
     void *ptr;
-    void (*func)(struct debugger_interface*, struct debugger_view *, void *, u32);
+    void (*func)(struct debugger_interface*, debugger_view *, void *, u32);
 };
 
 enum debug_waveform_kinds {
@@ -479,18 +479,18 @@ int debugger_widgets_textbox_sprintf(struct debugger_widget_textbox *tb, const c
 void debugger_widgets_add_textbox(struct cvec *widgets, char *text, u32 same_line);
 
 // Memory view functions
-void memory_view_add_module(struct debugger_interface *dbgr, struct memory_view *mv, const char *name, u32 id, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
+void memory_view_add_module(struct debugger_interface *dbgr, memory_view *mv, const char *name, u32 id, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));
 u32 memory_view_num_modules(struct memory_view *mv);
 struct memory_view_module *memory_view_get_module(struct memory_view *mv, u32 id);
 void memory_view_get_line(struct memory_view_module *mm, u32 addr, char *out);
 
 // Disassembly view functions
-int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines);
+int disassembly_view_get_rows(struct debugger_interface *di, disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, cvec *out_lines);
 void cpu_reg_context_render(struct cpu_reg_context*, char* outbuf, size_t outbuf_sz);
 
 // Event view functions
-void events_view_add_category(struct debugger_interface *dbgr, struct events_view *ev, const char *name, u32 color, u32 id);
-void events_view_add_event(struct debugger_interface *dbgr, struct events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
+void events_view_add_category(struct debugger_interface *dbgr, events_view *ev, const char *name, u32 color, u32 id);
+void events_view_add_event(struct debugger_interface *dbgr, events_view *ev, u32 category_id, const char *name, u32 color, enum debugger_event_kind display_kind, u32 default_enable, u32 order, const char* context, u32 id);
 void events_view_report_draw_start(struct events_view *);
 
 void debugger_report_frame(struct debugger_interface *dbgr);
@@ -502,7 +502,7 @@ u64 events_view_get_current_line(struct cvec_ptr viewptr);
 void debugger_report_line(struct debugger_interface *dbgr, i32 line_num);
 void debugger_report_line_mclks(struct cvec_ptr event_view, u64 mclks, u32 line_num);
 
-void events_view_render(struct debugger_interface *dbgr, struct events_view *, u32 *buf, u32 out_width, u32 out_height);
+void events_view_render(struct debugger_interface *dbgr, events_view *, u32 *buf, u32 out_width, u32 out_height);
 
 void debug_waveform_init(struct debug_waveform *);
 
@@ -523,7 +523,7 @@ void console_view_add_cstr(struct console_view *, char *s);
 void console_view_render_to_buffer(struct console_view *tv, char *output, u64 sz);
 
 struct dbglog_category_node *dbglog_category_get_root(struct dbglog_view *);
-struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, struct dbglog_category_node *, const char *name, const char *short_name, u32 id, u32 color);
+struct dbglog_category_node *dbglog_category_add_node(struct dbglog_view *dv, dbglog_category_node *, const char *name, const char *short_name, u32 id, u32 color);
 void dbglog_view_add_item(struct dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *txt);
 void dbglog_view_add_printf(struct dbglog_view *, u32 id, u64 timecode, enum dbglog_severity severity, const char *format, ...);
 void dbglog_view_extra_printf(struct dbglog_view *, const char *format, ...);

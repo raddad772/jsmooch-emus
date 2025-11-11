@@ -23,16 +23,16 @@
 static void NESJ_play(JSM);
 static void NESJ_pause(JSM);
 static void NESJ_stop(JSM);
-static void NESJ_get_framevars(JSM, struct framevars* out);
+static void NESJ_get_framevars(JSM, framevars* out);
 static void NESJ_reset(JSM);
 static void NESJ_killall(JSM);
 static u32 NESJ_finish_frame(JSM);
 static u32 NESJ_finish_scanline(JSM);
 static u32 NESJ_step_master(JSM, u32 howmany);
-static void NESJ_load_BIOS(JSM, struct multi_file_set* mfs);
+static void NESJ_load_BIOS(JSM, multi_file_set* mfs);
 static void NESJ_enable_tracing(JSM);
 static void NESJ_disable_tracing(JSM);
-static void NESJ_describe_io(JSM, struct cvec* IOs);
+static void NESJ_describe_io(JSM, cvec* IOs);
 
 static u32 read_trace(void *ptr, u32 addr)
 {
@@ -241,11 +241,11 @@ void NESJ::stop()
 {
 }
 
-void NESJ::get_framevars(framevars* out)
+void NESJ::get_framevars(framevars& out)
 {
-    out->master_frame = nes.clock.master_frame;
-    out->x = nes.ppu.line_cycle;
-    out->scanline = nes.clock.ppu_y;
+    out.master_frame = nes.clock.master_frame;
+    out.x = nes.ppu.line_cycle;
+    out.scanline = nes.clock.ppu_y;
 }
 
 void NESJ::reset()
@@ -369,8 +369,8 @@ u32 NESJ::step_master(u32 howmany)
     return 0;
 }
 
-void NESJ::load_BIOS(multi_file_set* mfs)
+/*void NESJ::load_BIOS(multi_file_set* mfs)
 {
     printf("\nNES doesn't have a BIOS...?");
-}
+}*/
 

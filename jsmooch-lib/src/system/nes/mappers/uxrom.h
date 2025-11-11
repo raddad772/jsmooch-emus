@@ -5,6 +5,6 @@
 #ifndef JSMOOCH_EMUS_UXROM_H
 #define JSMOOCH_EMUS_UXROM_H
 
-void UXROM_init(struct NES_mapper *bus, struct NES *nes);
+void UXROM_init(struct NES_mapper *bus, NES *nes);
 
 #endif //JSMOOCH_EMUS_UXROM_H

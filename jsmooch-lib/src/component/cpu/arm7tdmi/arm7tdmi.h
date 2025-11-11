@@ -155,12 +155,12 @@ struct ARM7TDMI {
 };
 
 
-void ARM7TDMI_init(struct ARM7TDMI *, u64 *master_clock, u64 *waitstates, struct scheduler_t *scheduler);
+void ARM7TDMI_init(struct ARM7TDMI *, u64 *master_clock, u64 *waitstates, scheduler_t *scheduler);
 void ARM7TDMI_delete(struct ARM7TDMI *);
 
 void ARM7TDMI_reset(struct ARM7TDMI *);
-void ARM7TDMI_disassemble_entry(struct ARM7TDMI*, struct disassembly_entry* entry);
-void ARM7TDMI_setup_tracing(struct ARM7TDMI*, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
+void ARM7TDMI_disassemble_entry(struct ARM7TDMI*, disassembly_entry* entry);
+void ARM7TDMI_setup_tracing(struct ARM7TDMI*, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id);
 void ARM7TDMI_run_noIRQcheck(struct ARM7TDMI *);
 void ARM7TDMI_IRQcheck(struct ARM7TDMI *, u32 do_sched);
 void ARM7TDMI_flush_pipeline(struct ARM7TDMI *);

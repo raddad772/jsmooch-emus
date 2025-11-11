@@ -289,6 +289,7 @@ struct dbglog_view {
     u32 count_visible_lines();
     u32 get_nth_visible(u32 n);
     u32 get_next_visible(u32 start);
+    dbglog_category_node &get_category_root();
 
     char name[100]{};
 

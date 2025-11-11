@@ -46,8 +46,8 @@ struct ZXSpectrum_tape_deck {
 struct ZXSpectrum;
 void ZXSpectrum_tape_deck_init(struct ZXSpectrum* bus);
 void ZXSpectrum_tape_deck_delete(struct ZXSpectrum* bus);
-void ZXSpectrum_tape_deck_load(struct ZXSpectrum* bus, struct multi_file_set* mfs);
-void ZXSpectrum_tape_deck_load_pzx(struct ZXSpectrum* bus, struct multi_file_set* mfs);
+void ZXSpectrum_tape_deck_load(struct ZXSpectrum* bus, multi_file_set* mfs);
+void ZXSpectrum_tape_deck_load_pzx(struct ZXSpectrum* bus, multi_file_set* mfs);
 void ZXSpectrum_tape_deck_rewind(struct ZXSpectrum *bus);
 void ZXSpectrum_tape_deck_remove(struct ZXSpectrum *bus);
 void ZXSpectrum_tape_deck_play(struct ZXSpectrum* bus);

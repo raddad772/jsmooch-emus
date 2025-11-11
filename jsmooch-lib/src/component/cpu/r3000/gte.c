@@ -11,7 +11,7 @@
 
 #include "gte.h"
 
-static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_cmd *config, enum gteMatrix mat, u8 vei, enum gteControlVector crv);
+static inline void multiply_matrix_by_vector(struct R3000_GTE *this, gte_cmd *config, enum gteMatrix mat, u8 vei, enum gteControlVector crv);
 
 static const u8 UNR_TABLE[257] = {
     0xff, 0xfd, 0xfb, 0xf9, 0xf7, 0xf5, 0xf3, 0xf1,
@@ -89,7 +89,7 @@ inline static void set_flag(struct R3000_GTE *this, int num)
     this->flags |= (1 << num);
 }
 
-inline static i16 i32_to_i16_saturate(struct R3000_GTE *this, struct gte_cmd *config, u8 flag, i32 val)
+inline static i16 i32_to_i16_saturate(struct R3000_GTE *this, gte_cmd *config, u8 flag, i32 val)
 {
    i32 min = config->clamp_negative ? 0 : -32768;
     i32 max = 32767;
@@ -150,7 +150,7 @@ static inline void check_mac_overflow(struct R3000_GTE *this, i64 val)
 #pragma warning(pop)
 #endif
 
-static u32 do_RTP(struct R3000_GTE *this, struct gte_cmd *config, u32 vector_index) {
+static u32 do_RTP(struct R3000_GTE *this, gte_cmd *config, u32 vector_index) {
     i32 z_shifted = 0;
 
     enum gteMatrix rm = GTE_Rotation;
@@ -265,7 +265,7 @@ static inline void depth_queueing(struct R3000_GTE *this, u32 pf)
         this->ir[0] = (i16)depth;
 }
 
-static void cmd_RTPS(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_RTPS(struct R3000_GTE *this, gte_cmd *config)
 {
     u32 pf = do_RTP(this, config, 0);
     depth_queueing(this, pf);
@@ -293,7 +293,7 @@ static void cmd_NCLIP(struct R3000_GTE *this)
     this->mac[0] = (i32)sum;
 }
 
-static inline void mac_to_ir(struct R3000_GTE *this, struct gte_cmd *config)
+static inline void mac_to_ir(struct R3000_GTE *this, gte_cmd *config)
 {
     this->ir[1] = i32_to_i16_saturate(this, config, 0, this->mac[1]);
     this->ir[2] = i32_to_i16_saturate(this, config, 1, this->mac[2]);
@@ -339,7 +339,7 @@ static inline void mac_to_rgb_fifo(struct R3000_GTE *this)
     this->rgb_fifo[2][3] = this->rgb[3];
 }
 
-static void cmd_OP(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_OP(struct R3000_GTE *this, gte_cmd *config)
 {
     enum gteMatrix rm = GTE_Rotation;
 
@@ -375,7 +375,7 @@ void GTE_init(struct R3000_GTE *this)
     this->config1.clamp_negative = 1;
 }
 
-static void cmd_DPCS(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_DPCS(struct R3000_GTE *this, gte_cmd *config)
 {
     enum gteControlVector fca = GTE_FarColor;
     u8 rgb[3];
@@ -405,7 +405,7 @@ static void cmd_DPCS(struct R3000_GTE *this, struct gte_cmd *config)
     mac_to_rgb_fifo(this);
 }
 
-static void cmd_INTPL(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_INTPL(struct R3000_GTE *this, gte_cmd *config)
 {
     enum gteControlVector fca = GTE_FarColor;
 
@@ -424,7 +424,7 @@ static void cmd_INTPL(struct R3000_GTE *this, struct gte_cmd *config)
     mac_to_rgb_fifo(this);
 }
 
-static void cmd_DCPL(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_DCPL(struct R3000_GTE *this, gte_cmd *config)
 {
     enum gteControlVector fca = GTE_FarColor;
 
@@ -454,7 +454,7 @@ static void cmd_DCPL(struct R3000_GTE *this, struct gte_cmd *config)
     mac_to_rgb_fifo(this);
 }
 
-static inline void do_ncd(struct R3000_GTE *this, struct gte_cmd *config, u8 vector_index)
+static inline void do_ncd(struct R3000_GTE *this, gte_cmd *config, u8 vector_index)
 {
     multiply_matrix_by_vector(this, config, GTE_Light, vector_index, GTE_Zero);
 
@@ -467,7 +467,7 @@ static inline void do_ncd(struct R3000_GTE *this, struct gte_cmd *config, u8 vec
     cmd_DCPL(this, config);
 }
 
-static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_cmd *config, enum gteMatrix mat, u8 vei, enum gteControlVector crv)
+static inline void multiply_matrix_by_vector(struct R3000_GTE *this, gte_cmd *config, enum gteMatrix mat, u8 vei, enum gteControlVector crv)
 {
     i32 vector_index = (i32)vei;
     if (mat == GTE_Invalid) {
@@ -501,7 +501,7 @@ static inline void multiply_matrix_by_vector(struct R3000_GTE *this, struct gte_
     mac_to_ir(this, config);
 }
 
-static void do_ncc(struct R3000_GTE *this, struct gte_cmd *config, u8 vector_index)
+static void do_ncc(struct R3000_GTE *this, gte_cmd *config, u8 vector_index)
 {
     multiply_matrix_by_vector(this, config, GTE_Light, vector_index, GTE_Zero);
 
@@ -527,7 +527,7 @@ static void do_ncc(struct R3000_GTE *this, struct gte_cmd *config, u8 vector_ind
     mac_to_rgb_fifo(this);
 }
 
-static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config) {
+static void cmd_MVMVA(struct R3000_GTE *this, gte_cmd *config) {
     this->v[3][0] = this->ir[1];
     this->v[3][1] = this->ir[2];
     this->v[3][2] = this->ir[3];
@@ -535,12 +535,12 @@ static void cmd_MVMVA(struct R3000_GTE *this, struct gte_cmd *config) {
     multiply_matrix_by_vector(this, config, config->matrix, config->vector_mul, config->vector_add);
 }
 
-static void cmd_NCDS(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_NCDS(struct R3000_GTE *this, gte_cmd *config)
 {
     do_ncd(this, config, 0);
 }
 
-static void cmd_CDP(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_CDP(struct R3000_GTE *this, gte_cmd *config)
 {
     this->v[3][0] = this->ir[1];
     this->v[3][1] = this->ir[2];
@@ -551,19 +551,19 @@ static void cmd_CDP(struct R3000_GTE *this, struct gte_cmd *config)
     cmd_DCPL(this, config);
 }
 
-static void cmd_NCDT(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_NCDT(struct R3000_GTE *this, gte_cmd *config)
 {
     do_ncd(this, config, 0);
     do_ncd(this, config, 1);
     do_ncd(this, config, 2);
 }
 
-static void cmd_NCCS(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_NCCS(struct R3000_GTE *this, gte_cmd *config)
 {
     do_ncc(this, config, 0);
 }
 
-static void cmd_CC(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_CC(struct R3000_GTE *this, gte_cmd *config)
 {
     this->v[3][0] = this->ir[1];
     this->v[3][1] = this->ir[2];
@@ -588,7 +588,7 @@ static void cmd_CC(struct R3000_GTE *this, struct gte_cmd *config)
 }
 
 // TODO: what
-static void do_dpc(struct R3000_GTE *this, struct gte_cmd *config)
+static void do_dpc(struct R3000_GTE *this, gte_cmd *config)
 {
     enum gteControlVector fca = GTE_FarColor;
 
@@ -615,7 +615,7 @@ static void do_dpc(struct R3000_GTE *this, struct gte_cmd *config)
     mac_to_rgb_fifo(this);
 }
 
-static void do_nc(struct R3000_GTE *this, struct gte_cmd *config, u8 vector_index)
+static void do_nc(struct R3000_GTE *this, gte_cmd *config, u8 vector_index)
 {
     multiply_matrix_by_vector(this, config, GTE_Light, vector_index, GTE_Zero);
 
@@ -633,19 +633,19 @@ static void do_nc(struct R3000_GTE *this, struct gte_cmd *config, u8 vector_inde
     mac_to_rgb_fifo(this);
 }
 
-static void cmd_NCS(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_NCS(struct R3000_GTE *this, gte_cmd *config)
 {
     do_nc(this, config, 0);
 }
 
-static void cmd_NCT(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_NCT(struct R3000_GTE *this, gte_cmd *config)
 {
     do_nc(this, config, 0);
     do_nc(this, config, 1);
     do_nc(this, config, 2);
 }
 
-static void cmd_SQR(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_SQR(struct R3000_GTE *this, gte_cmd *config)
 {
     for (u32 i = 1; i < 4; i++) {
         i32 ir = (i32)this->ir[i];
@@ -654,7 +654,7 @@ static void cmd_SQR(struct R3000_GTE *this, struct gte_cmd *config)
     mac_to_ir(this, config);
 }
 
-static void cmd_DPCT(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_DPCT(struct R3000_GTE *this, gte_cmd *config)
 {
     do_dpc(this, config);
     do_dpc(this, config);
@@ -710,7 +710,7 @@ static void cmd_AVSZ4(struct R3000_GTE *this)
     this->otz = i64_to_otz(this, average);
 }
 
-static void cmd_RTPT(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_RTPT(struct R3000_GTE *this, gte_cmd *config)
 {
     do_RTP(this, config, 0);
     do_RTP(this, config, 1);
@@ -720,7 +720,7 @@ static void cmd_RTPT(struct R3000_GTE *this, struct gte_cmd *config)
     depth_queueing(this, pf);
 }
 
-static void cmd_GPF(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_GPF(struct R3000_GTE *this, gte_cmd *config)
 {
     i32 ir0 = (i32)this->ir[0];
 
@@ -734,7 +734,7 @@ static void cmd_GPF(struct R3000_GTE *this, struct gte_cmd *config)
     mac_to_rgb_fifo(this);
 }
 
-static void cmd_GPL(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_GPL(struct R3000_GTE *this, gte_cmd *config)
 {
     i32 ir0 = (i32)this->ir[0];
     u8 shift = config->shift;
@@ -753,7 +753,7 @@ static void cmd_GPL(struct R3000_GTE *this, struct gte_cmd *config)
     mac_to_rgb_fifo(this);
 }
 
-static void cmd_NCCT(struct R3000_GTE *this, struct gte_cmd *config)
+static void cmd_NCCT(struct R3000_GTE *this, gte_cmd *config)
 {
     do_ncc(this, config, 0);
     do_ncc(this, config, 1);

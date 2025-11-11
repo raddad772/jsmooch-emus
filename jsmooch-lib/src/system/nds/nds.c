@@ -31,13 +31,13 @@
 static void NDSJ_play(JSM);
 static void NDSJ_pause(JSM);
 static void NDSJ_stop(JSM);
-static void NDSJ_get_framevars(JSM, struct framevars* out);
+static void NDSJ_get_framevars(JSM, framevars* out);
 static void NDSJ_reset(JSM);
 static u32 NDSJ_finish_frame(JSM);
 static u32 NDSJ_finish_scanline(JSM);
 static u32 NDSJ_step_master(JSM, u32 howmany);
-static void NDSJ_load_BIOS(JSM, struct multi_file_set* mfs);
-static void NDSJ_describe_io(JSM, struct cvec* IOs);
+static void NDSJ_load_BIOS(JSM, multi_file_set* mfs);
+static void NDSJ_describe_io(JSM, cvec* IOs);
 
 static u32 timer_reload_ticks(u32 reload)
 {
@@ -60,7 +60,7 @@ static void setup_debug_waveform(struct debug_waveform *dw)
     dw->user.buf_pos = 0;
 }
 
-void NDSJ_set_audiobuf(struct jsm_system* jsm, struct audiobuf *ab)
+void NDSJ_set_audiobuf(struct jsm_system* jsm, audiobuf *ab)
 {
     JTHIS;
     this->audio.buf = ab;
@@ -329,7 +329,7 @@ void NDSJ_stop(JSM)
 {
 }
 
-void NDSJ_get_framevars(JSM, struct framevars* out)
+void NDSJ_get_framevars(JSM, framevars* out)
 {
     JTHIS;
     out->master_frame = this->clock.master_frame;
@@ -487,7 +487,7 @@ static u32 NDSJ_step_master(JSM, u32 howmany)
     return this->ppu.display->last_written;
 }
 
-static void NDSJ_load_BIOS(JSM, struct multi_file_set* mfs)
+static void NDSJ_load_BIOS(JSM, multi_file_set* mfs)
 {
     JTHIS;
     // 7, 9, firmware
@@ -500,7 +500,7 @@ static void NDSIO_unload_cart(JSM)
 {
 }
 
-static void NDSIO_load_cart(JSM, struct multi_file_set *mfs, struct physical_io_device *pio) {
+static void NDSIO_load_cart(JSM, multi_file_set *mfs, physical_io_device *pio) {
     JTHIS;
     struct buf* b = &mfs->files[0].buf;
 
@@ -548,7 +548,7 @@ static void setup_audio(struct cvec* IOs)
 }
 
 
-static void NDSJ_describe_io(JSM, struct cvec* IOs)
+static void NDSJ_describe_io(JSM, cvec* IOs)
 {
     cvec_lock_reallocs(IOs);
     JTHIS;

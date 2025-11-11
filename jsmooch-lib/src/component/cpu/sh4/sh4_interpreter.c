@@ -183,7 +183,7 @@ void SH4_regs_FPSCR_set(struct SH4_regs* this, u32 val) {
     SH4_regs_FPSCR_update(&this->FPSCR, old_RM, old_DN);
 }
 
-static void SH4_pprint(struct SH4* this, struct SH4_ins_t *ins, bool last_traces)
+static void SH4_pprint(struct SH4* this, SH4_ins_t *ins, bool last_traces)
 {
     u32 had_any = 0;
     i32 last_n = -1;
@@ -348,7 +348,7 @@ void SH4_delete(struct SH4* this)
     jsm_string_delete(&this->console);
 }
 
-void SH4_init(struct SH4* this, struct scheduler_t* scheduler)
+void SH4_init(struct SH4* this, scheduler_t* scheduler)
 {
     this->trace.my_cycles = 0;
     this->trace.ok = 0;
@@ -586,14 +586,14 @@ void SH4_ma_write(void *ptr, u32 addr, u64 val, u32 sz, u32* success)
     *success = 0;
 }
 
-void SH4_give_memaccess(struct SH4* this, struct SH4_memaccess_t* to)
+void SH4_give_memaccess(struct SH4* this, SH4_memaccess_t* to)
 {
     to->ptr = (void *)this;
     to->read = &SH4_ma_read;
     to->write = &SH4_ma_write;
 }
 
-void SH4_setup_tracing(struct SH4* this, struct jsm_debug_read_trace *rt, u64 *trace_cycles)
+void SH4_setup_tracing(struct SH4* this, jsm_debug_read_trace *rt, u64 *trace_cycles)
 {
     this->trace.ok = 1;
     jsm_copy_read_trace(&this->read_trace, rt);

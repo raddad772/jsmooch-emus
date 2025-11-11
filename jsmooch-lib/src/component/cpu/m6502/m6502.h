@@ -91,8 +91,8 @@ struct M6502 {
     M6502_ins_func *opcode_table{};
 };
 
-void M6502_poll_IRQs(struct M6502_regs *regs, struct M6502_pins *pins);
-void M6502_poll_NMI_only(struct M6502_regs *regs, struct M6502_pins *pins);
+void M6502_poll_IRQs(struct M6502_regs *regs, M6502_pins *pins);
+void M6502_poll_NMI_only(struct M6502_regs *regs, M6502_pins *pins);
 
 struct serialized_state;
 

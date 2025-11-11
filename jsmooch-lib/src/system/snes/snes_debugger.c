@@ -21,7 +21,7 @@
 #define PAL_BOX_SIZE 10
 #define PAL_BOX_SIZE_W_BORDER 11
 
-static void render_image_view_tilemaps(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_tilemaps(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct SNES *this = (struct SNES *) ptr;
     if (this->clock.master_frame == 0) return;
     struct debugger_widget_radiogroup *layernum = &((struct debugger_widget *) cvec_get(&dview->options,
@@ -36,7 +36,7 @@ static void render_image_view_tilemaps(struct debugger_interface *dbgr, struct d
     }
 }
 
-static void print_layer_info(struct SNES *this, u32 bgnum, struct debugger_widget_textbox *tb)
+static void print_layer_info(struct SNES *this, u32 bgnum, debugger_widget_textbox *tb)
 {
     if (bgnum < 4) {
         struct SNES_PPU_BG *bg = &this->ppu.bg[bgnum];
@@ -72,7 +72,7 @@ static void print_layer_info(struct SNES *this, u32 bgnum, struct debugger_widge
     }
 }
 
-static void render_image_view_obj_tiles(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_obj_tiles(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct SNES *this = (struct SNES *) ptr;
     if (this->clock.master_frame == 0) return;
 
@@ -153,7 +153,7 @@ static void render_image_view_obj_tiles(struct debugger_interface *dbgr, struct 
     }
 }
 
-static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_ppu_layers(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct SNES *this = (struct SNES *) ptr;
     if (this->clock.master_frame == 0) return;
     struct debugger_widget_radiogroup *layernum = &((struct debugger_widget *) cvec_get(&dview->options,
@@ -257,7 +257,7 @@ static void render_image_view_ppu_layers(struct debugger_interface *dbgr, struct
 
 }
 
-static void render_image_view_palette(struct debugger_interface *dbgr, struct debugger_view *dview, void *ptr, u32 out_width) {
+static void render_image_view_palette(struct debugger_interface *dbgr, debugger_view *dview, void *ptr, u32 out_width) {
     struct SNES *this = (struct SNES *) ptr;
     if (this->clock.master_frame == 0) return;
     struct image_view *iv = &dview->image;
@@ -285,7 +285,7 @@ static void render_image_view_palette(struct debugger_interface *dbgr, struct de
 }
 
 
-static void setup_image_view_palettes(struct SNES* this, struct debugger_interface *dbgr)
+static void setup_image_view_palettes(struct SNES* this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.palettes = debugger_view_new(dbgr, dview_image);
@@ -305,7 +305,7 @@ static void setup_image_view_palettes(struct SNES* this, struct debugger_interfa
     snprintf(iv->label, sizeof(iv->label), "Palettes Viewer");
 }
 
-static void setup_dbglog(struct SNES *this, struct debugger_interface *dbgr)
+static void setup_dbglog(struct SNES *this, debugger_interface *dbgr)
 {
     struct cvec_ptr p = debugger_view_new(dbgr, dview_dbglog);
     struct debugger_view *dview = cpg(p);
@@ -345,7 +345,7 @@ static void setup_dbglog(struct SNES *this, struct debugger_interface *dbgr)
 
 }
 
-static void setup_image_view_ppu_obj_tiles(struct SNES *this, struct debugger_interface *dbgr) {
+static void setup_image_view_ppu_obj_tiles(struct SNES *this, debugger_interface *dbgr) {
     struct debugger_view *dview;
     this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
     dview = cpg(this->dbg.image_views.ppu_layers);
@@ -377,7 +377,7 @@ static void setup_image_view_ppu_obj_tiles(struct SNES *this, struct debugger_in
 
 }
 
-    static void setup_image_view_ppu_tilemaps(struct SNES *this, struct debugger_interface *dbgr) {
+    static void setup_image_view_ppu_tilemaps(struct SNES *this, debugger_interface *dbgr) {
     struct debugger_view *dview;
     this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
     dview = cpg(this->dbg.image_views.ppu_layers);
@@ -402,7 +402,7 @@ static void setup_image_view_ppu_obj_tiles(struct SNES *this, struct debugger_in
 
 }
 
-static void setup_image_view_ppu_layers(struct SNES *this, struct debugger_interface *dbgr)
+static void setup_image_view_ppu_layers(struct SNES *this, debugger_interface *dbgr)
 {
     struct debugger_view *dview;
     this->dbg.image_views.ppu_layers = debugger_view_new(dbgr, dview_image);
@@ -438,7 +438,7 @@ static void setup_image_view_ppu_layers(struct SNES *this, struct debugger_inter
 }
 
 
-static void setup_waveforms(struct SNES* this, struct debugger_interface *dbgr)
+static void setup_waveforms(struct SNES* this, debugger_interface *dbgr)
 {
     this->dbg.waveforms.view = debugger_view_new(dbgr, dview_waveforms);
     struct debugger_view *dview = cpg(this->dbg.waveforms.view);
@@ -537,7 +537,7 @@ static void readvram(void *ptr, u32 addr, void *dest)
     }
 }
 
-static void setup_memory_view(struct SNES* this, struct debugger_interface *dbgr) {
+static void setup_memory_view(struct SNES* this, debugger_interface *dbgr) {
     this->dbg.memory = debugger_view_new(dbgr, dview_memory);
     struct debugger_view *dview = cpg(this->dbg.memory);
     struct memory_view *mv = &dview->memory;
@@ -545,7 +545,7 @@ static void setup_memory_view(struct SNES* this, struct debugger_interface *dbgr
     memory_view_add_module(dbgr, mv, "VRAM", 1, 4, 0, 0xFFFF, &this->ppu.VRAM, &readvram);
 }
 
-static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr) {
+static void setup_events_view(struct SNES* this, debugger_interface *dbgr) {
     // Setup events view
     this->dbg.events.view = debugger_view_new(dbgr, dview_events);
     struct debugger_view *dview = cpg(this->dbg.events.view);
@@ -589,7 +589,7 @@ static void setup_events_view(struct SNES* this, struct debugger_interface *dbgr
 
 
 
-void SNESJ_setup_debugger_interface(JSM, struct debugger_interface *dbgr) {
+void SNESJ_setup_debugger_interface(JSM, debugger_interface *dbgr) {
     JTHIS;
     this->dbg.interface = dbgr;
 

@@ -247,7 +247,7 @@ static void auto_joypad_edge(void *ptr, u64 key, u64 clock, u32 jitter)
 
 }
 
-void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, struct SNES_memmap_block *bl)
+void R5A22_reg_write(struct SNES *snes, u32 addr, u32 val, SNES_memmap_block *bl)
 {
     addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) { return dma_reg_write(snes, addr, val); return; }
@@ -360,7 +360,7 @@ void R5A22_hblank(struct SNES *snes, u32 which)
     }
 }
 
-u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct SNES_memmap_block *bl)
+u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, SNES_memmap_block *bl)
 {
     addr &= 0xFFFF;
     if ((addr >= 0x4300) && (addr <= 0x43FF)) return dma_reg_read(snes, addr, old, has_effect );
@@ -425,7 +425,7 @@ u32 R5A22_reg_read(struct SNES *snes, u32 addr, u32 old, u32 has_effect, struct 
     return 0;
 }
 
-void R5A22_setup_tracing(struct R5A22* this, struct jsm_debug_read_trace *strct)
+void R5A22_setup_tracing(struct R5A22* this, jsm_debug_read_trace *strct)
 {
     WDC65816_setup_tracing(&this->cpu, strct);
 }
@@ -526,7 +526,7 @@ static inline void dma_writeB(struct SNES *snes, u32 addr, u32 val, u32 valid)
     if (valid) SNES_wdc65816_write(snes, 0x2100 | addr, val);
 }
 
-static void dma_transfer(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch, u32 addrA, u32 index, u32 hdma_mode)
+static void dma_transfer(struct SNES *snes, R5A22_DMA_CHANNEL *ch, u32 addrA, u32 index, u32 hdma_mode)
 {
     u32 addrB = ch->target_address;
     switch(ch->transfer_mode) {
@@ -578,7 +578,7 @@ static void dma_transfer(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch, u32 ad
     }
 }
 
-static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
+static u32 dma_run_ch(struct SNES *snes, R5A22_DMA_CHANNEL *this)
 {
     u32 nc = 0;
     if (this->transfer_size > 0) {
@@ -608,7 +608,7 @@ static u32 dma_run_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *this)
     return 0;
 }
 
-static void hdma_transfer_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
+static void hdma_transfer_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     static const int HDMA_LENGTHS[8] = {1, 2, 2, 4, 4, 4, 2, 4};
     ch->dma_enable = 0;
@@ -629,7 +629,7 @@ static void hdma_transfer_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
     }
 }
 
-static void hdma_advance_ch(struct SNES *snes, struct R5A22_DMA_CHANNEL *ch)
+static void hdma_advance_ch(struct SNES *snes, R5A22_DMA_CHANNEL *ch)
 {
     if (!(ch->hdma_enable && !ch->hdma_completed)) return;
     ch->line_counter--;

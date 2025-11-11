@@ -24,7 +24,7 @@
 #define DBG_DISASSEMBLE_MAX_BLOCK_SIZE 50
 
 
-static void mark_disassembly_range_invalid(struct disassembly_view *dview, struct disassembly_range *range, u32 index)
+static void mark_disassembly_range_invalid(struct disassembly_view *dview, disassembly_range *range, u32 index)
 {
     range->valid = 0;
 
@@ -64,7 +64,7 @@ static int range_collides(struct disassembly_range *range, u32 addr_start, u32 a
     return !((whole_of_range_before) || (whole_of_range_after));
 }
 
-void disassembly_view_dirty_mem(struct debugger_interface *dbgr, struct disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end)
+void disassembly_view_dirty_mem(struct debugger_interface *dbgr, disassembly_view *dview, u32 mem_bus, u32 addr_start, u32 addr_end)
 {
     for (u32 i = 0; i < cvec_len(&dview->ranges); i++) {
         struct disassembly_range *range = cvec_get(&dview->ranges, i);
@@ -130,7 +130,7 @@ void disassembly_view_delete(struct disassembly_view *this)
     DTOR_child_cvec(cpu.regs, cpu_reg_context)
 }
 
-static void w_entry_to_strs(struct disassembly_entry_strings *strs, struct disassembly_entry *entry, int col_size)
+static void w_entry_to_strs(struct disassembly_entry_strings *strs, disassembly_entry *entry, int col_size)
 {
     switch(col_size) {
         case 4:
@@ -217,7 +217,7 @@ static struct disassembly_range *get_range(struct disassembly_view *dview)
     return r;
 }
 
-static struct disassembly_range *create_diassembly_block(struct debugger_interface *di, struct disassembly_view *dview, u32 range_start, u32 range_end)
+static struct disassembly_range *create_diassembly_block(struct debugger_interface *di, disassembly_view *dview, u32 range_start, u32 range_end)
 {
     assert(range_start<(dview->mem_end+1));
     u32 cur_addr = range_start;
@@ -243,7 +243,7 @@ static struct disassembly_range *create_diassembly_block(struct debugger_interfa
     return r;
 }
 
-int disassembly_view_get_rows(struct debugger_interface *di, struct disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, struct cvec *out_lines) {
+int disassembly_view_get_rows(struct debugger_interface *di, disassembly_view *dview, u32 instruction_addr, u32 bytes_before, u32 total_lines, cvec *out_lines) {
     for (u32 i = 0; i < cvec_len(out_lines); i++) {
         struct disassembly_entry_strings *strs = cvec_get(out_lines, i);
         strs->addr[0] = strs->dasm[0] = strs->context[0] = 0;

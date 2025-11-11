@@ -99,7 +99,7 @@ static u32 se_index_fast(u32 tx, u32 ty, u32 bgcnt) {
     return n;
 }
 
-static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, struct GBA_PPU_bg *bg, i32 px, i32 py, struct GBA_PX *opx)
+static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, GBA_PPU_bg *bg, i32 px, i32 py, GBA_PX *opx)
 {
     // Now px and py represent a number inside 0...hpixels and 0...vpixels
     u32 block_x = px >> 3;
@@ -128,7 +128,7 @@ static void get_affine_bg_pixel(struct GBA *this, u32 bgnum, struct GBA_PPU_bg *
 }
 
 // get color from (px,py)
-static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_1d, u32 dsize, i32 screen_x, u32 blended, struct GBA_PPU_window *w)
+static void get_affine_sprite_pixel(struct GBA *this, u32 mode, i32 px, i32 py, u32 tile_num, u32 htiles, u32 vtiles, u32 bpp8, u32 palette, u32 priority, u32 obj_mapping_1d, u32 dsize, i32 screen_x, u32 blended, GBA_PPU_window *w)
 {
     i32 hpixels = htiles * 8;
     i32 vpixels = vtiles * 8;
@@ -207,7 +207,7 @@ static u32 get_sprite_tile_addr(struct GBA *this, u32 tile_num, u32 htiles, u32 
     return tile_line_addr;
 }
 
-static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w, u32 num)
+static void draw_sprite_affine(struct GBA *this, u16 *ptr, GBA_PPU_window *w, u32 num)
 {
     this->ppu.obj.drawing_cycles -= 1;
     if (this->ppu.obj.drawing_cycles < 1) return;
@@ -271,7 +271,7 @@ static void draw_sprite_affine(struct GBA *this, u16 *ptr, struct GBA_PPU_window
     }
 }
 
-static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 mosaic, struct GBA_PPU_window *w) {
+static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 mosaic, GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 8; tile_x++) {
         i32 sx;
         if (hflip) sx = (7 - tile_x) + screen_x;
@@ -304,7 +304,7 @@ static void output_sprite_8bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
 }
 
 
-static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, u32 mosaic, struct GBA_PPU_window *w) {
+static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_x, u32 priority, u32 hflip, u32 palette, u32 mosaic, GBA_PPU_window *w) {
     for (i32 tile_x = 0; tile_x < 4; tile_x++) {
         i32 sx;
         if (hflip) sx = (7 - (tile_x * 2)) + screen_x;
@@ -343,7 +343,7 @@ static void output_sprite_4bpp(struct GBA *this, u8 *tptr, u32 mode, i32 screen_
     }
 }
 
-static void draw_sprite_normal(struct GBA *this, u16 *ptr, struct GBA_PPU_window *w, u32 num)
+static void draw_sprite_normal(struct GBA *this, u16 *ptr, GBA_PPU_window *w, u32 num)
 {
     // 1 cycle to evaluate and 1 cycle per pixel
     this->ppu.obj.drawing_cycles -= 1;
@@ -430,7 +430,7 @@ static void draw_obj_line(struct GBA *this)
     }
 }
 
-static void fetch_bg_slice(struct GBA *this, struct GBA_PPU_bg *bg, u32 bgnum, u32 block_x, u32 vpos, struct GBA_PX px[8], u32 screen_x)
+static void fetch_bg_slice(struct GBA *this, GBA_PPU_bg *bg, u32 bgnum, u32 block_x, u32 vpos, GBA_PX px[8], u32 screen_x)
 {
     u32 block_y = vpos >> 3;
     u32 screenblock_addr = bg->screen_base_block + (se_index_fast(block_x, block_y, bg->screen_size) << 1);
@@ -625,7 +625,7 @@ static struct GBA_PPU_window *get_active_window(struct GBA *this, u32 x)
 #define GBACTIVE_BG4 4
 #define GBACTIVE_SFX 5
 
-static void affine_line_start(struct GBA *this, struct GBA_PPU_bg *bg, i32 *fx, i32 *fy)
+static void affine_line_start(struct GBA *this, GBA_PPU_bg *bg, i32 *fx, i32 *fy)
 {
     if (!bg->enable) {
         if (bg->mosaic_y != bg->last_y_rendered) {
@@ -639,7 +639,7 @@ static void affine_line_start(struct GBA *this, struct GBA_PPU_bg *bg, i32 *fx, 
     *fy = bg->y_lerp;
 }
 
-static void affine_line_end(struct GBA *this, struct GBA_PPU_bg *bg)
+static void affine_line_end(struct GBA *this, GBA_PPU_bg *bg)
 {
     if (bg->mosaic_y != bg->last_y_rendered) {
         bg->x_lerp += bg->pb * this->ppu.mosaic.bg.vsize;
@@ -721,7 +721,7 @@ static void draw_bg_line_normal(struct GBA *this, u32 bgnum)
     }
 }
 
-static void find_targets_and_priorities(struct GBA *this, u32 bg_enables[6], struct GBA_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x, u32 *actives)
+static void find_targets_and_priorities(struct GBA *this, u32 bg_enables[6], GBA_PX *layers[6], u32 *layer_a_out, u32 *layer_b_out, i32 x, u32 *actives)
 {
     u32 laout = 5;
     u32 lbout = 5;

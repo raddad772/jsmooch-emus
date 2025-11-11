@@ -13,7 +13,7 @@
 static void timer_schedule(struct HUC6280 *this, u64 cur);
 
 
-void HUC6280_init(struct HUC6280 *this, struct scheduler_t *scheduler, u64 clocks_per_second)
+void HUC6280_init(struct HUC6280 *this, scheduler_t *scheduler, u64 clocks_per_second)
 {
     memset(this, 0, sizeof(*this));
     this->scheduler = scheduler;
@@ -52,7 +52,7 @@ void HUC6280_reset(struct HUC6280 *this)
     HUC6280_PSG_reset(&this->psg);
 }
 
-void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
+void HUC6280_setup_tracing(struct HUC6280* this, jsm_debug_read_trace *strct, u64 *trace_cycle_ptr, i32 source_id)
 {
     this->trace.strct.ptr = this;
     this->trace.strct.read_trace = strct->read_trace;
@@ -62,7 +62,7 @@ void HUC6280_setup_tracing(struct HUC6280* this, struct jsm_debug_read_trace *st
 }
 // Poll during second-to-last cycle
 
-void HUC6280_poll_IRQs(struct HUC6280_regs *regs, struct HUC6280_pins *pins)
+void HUC6280_poll_IRQs(struct HUC6280_regs *regs, HUC6280_pins *pins)
 {
     regs->do_IRQ = (regs->IRQD.u & regs->IRQR.u) && !regs->P.I;
     regs->IRQR_polled.u = regs->IRQR.u;

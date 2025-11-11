@@ -66,7 +66,7 @@ struct HUC6260 {
 #define HUC6260_LINE_VSYNC_END 251 // line to term on, so 246 and 249 = 3 lines
 
 
-void HUC6260_init(struct HUC6260 *, struct scheduler_t *scheduler, struct HUC6270 *vdc0, struct HUC6270 *vdc1);
+void HUC6260_init(struct HUC6260 *, scheduler_t *scheduler, HUC6270 *vdc0, HUC6270 *vdc1);
 void HUC6260_delete(struct HUC6260 *);
 void HUC6260_reset(struct HUC6260 *);
 void HUC6260_write(struct HUC6260 *, u32 addr, u32 val);

@@ -117,7 +117,7 @@ void ym2612_delete(struct ym2612*this)
 
 }
 
-static inline void op_key_on(struct ym2612 *this, struct YM2612_CHANNEL *ch, u32 opn, u32 val) {
+static inline void op_key_on(struct ym2612 *this, YM2612_CHANNEL *ch, u32 opn, u32 val) {
     struct YM2612_OPERATOR *op = &ch->operator[opn];
     if (val) {
         //if (op->envelope.state == EP_release) {
@@ -259,7 +259,7 @@ static inline u8 scale_key_code(u16 f_num, u8 block)
            | ((f11 && (f10 || f9 || f8)) || (!f11 && f10 && f9 && f8));
 }
 
-static i32 phase_compute_increment(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static i32 phase_compute_increment(struct ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     u32 mfn = lfo_fm(this->lfo.counter, ch->pms, op->phase.f_num);
     u32 shifted = (mfn << op->phase.block) >> 2;
@@ -274,14 +274,14 @@ static i32 phase_compute_increment(struct ym2612 *this, struct YM2612_CHANNEL *c
     return detuned_f;
 }
 
-static void run_op_phase(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void run_op_phase(struct ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     i32 inc = phase_compute_increment(this, ch, op);
     op->phase.counter = (op->phase.counter + inc) & 0xFFFFF;
     op->phase.output = op->phase.counter >> 10;
 }
 
-static void run_op_env_ssg(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void run_op_env_ssg(struct ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     if (op->envelope.attenuation < 0x200) return;
 
@@ -311,7 +311,7 @@ static void run_op_env_ssg(struct ym2612 *this, struct YM2612_CHANNEL *ch, struc
     }
 }
 
-static void run_op_env(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op)
+static void run_op_env(struct ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op)
 {
     if (op->envelope.ssg.enabled) {
         run_op_env_ssg(this, ch, op);
@@ -591,29 +591,29 @@ i16 ym2612_sample_channel(struct ym2612*this, u32 chn)
     return ch->output;
 }
 
-void ym2612_serialize(struct ym2612*this, struct serialized_state *state)
+void ym2612_serialize(struct ym2612*this, serialized_state *state)
 {
 
 }
 
-void ym2612_deserialize(struct ym2612*this, struct serialized_state *state)
+void ym2612_deserialize(struct ym2612*this, serialized_state *state)
 {
 
 }
 
-static void env_update_key_scale_rate(struct ym2612* this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, u16 f_num, u16 block)
+static void env_update_key_scale_rate(struct ym2612* this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op, u16 f_num, u16 block)
 {
     op->envelope.key_scale_rate = scale_key_code(f_num, block) >> (3 - op->envelope.key_scale);
 }
 
-static void op_update_freq(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, u16 f_num, u16 block)
+static void op_update_freq(struct ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op, u16 f_num, u16 block)
 {
     op->phase.f_num = f_num;
     op->phase.block = block;
     env_update_key_scale_rate(this, ch, op, f_num, block);
 }
 
-static void ch_update_phase_generators(struct ym2612 *this, struct YM2612_CHANNEL *ch)
+static void ch_update_phase_generators(struct ym2612 *this, YM2612_CHANNEL *ch)
 {
     if ((ch->num == 2) && (ch->mode ==  YFM_multiple)) {
         for (u32 opn = 0; opn < 3; opn++) {
@@ -629,7 +629,7 @@ static void ch_update_phase_generators(struct ym2612 *this, struct YM2612_CHANNE
     }
 }
 
-static void op_update_key_scale(struct ym2612 *this, struct YM2612_CHANNEL *ch, struct YM2612_OPERATOR *op, u8 val)
+static void op_update_key_scale(struct ym2612 *this, YM2612_CHANNEL *ch, YM2612_OPERATOR *op, u8 val)
 {
     op->envelope.key_scale = val;
     env_update_key_scale_rate(this, ch, op, op->phase.f_num, op->phase.block);

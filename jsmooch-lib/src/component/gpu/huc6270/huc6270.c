@@ -378,7 +378,7 @@ void HUC6270_cycle(struct HUC6270 *this)
     }*/
 }
 
-void HUC6270_init(struct HUC6270 *this, struct scheduler_t *scheduler)
+void HUC6270_init(struct HUC6270 *this, scheduler_t *scheduler)
 {
     memset(this, 0, sizeof(*this));
     this->scheduler = scheduler;

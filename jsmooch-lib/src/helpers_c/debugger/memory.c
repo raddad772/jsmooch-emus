@@ -24,7 +24,7 @@ void memory_view_delete(struct memory_view *mv)
     cvec_delete(&mv->modules);
 }
 
-void memory_view_add_module(struct debugger_interface *dbgr, struct memory_view *mv, const char *name, u32 id, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest))
+void memory_view_add_module(struct debugger_interface *dbgr, memory_view *mv, const char *name, u32 id, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest))
 {
     struct memory_view_module *mm = (struct memory_view_module *)cvec_push_back(&mv->modules);
     strcpy(mm->name, name);

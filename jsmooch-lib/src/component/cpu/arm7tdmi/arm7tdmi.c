@@ -69,7 +69,7 @@ void ARM7TDMI_schedule_IRQ_check(struct ARM7TDMI *this)
     }
 }
 
-void ARM7TDMI_init(struct ARM7TDMI *this, u64 *clock, u64 *waitstates, struct scheduler_t *scheduler)
+void ARM7TDMI_init(struct ARM7TDMI *this, u64 *clock, u64 *waitstates, scheduler_t *scheduler)
 {
     //dbg.trace_on = 1;
     memset(this, 0, sizeof(*this));
@@ -110,7 +110,7 @@ void ARM7TDMI_reset(struct ARM7TDMI *this)
 
 }
 
-void ARM7TDMI_setup_tracing(struct ARM7TDMI* this, struct jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
+void ARM7TDMI_setup_tracing(struct ARM7TDMI* this, jsm_debug_read_trace *strct, u64 *trace_cycle_pointer, i32 source_id)
 {
     this->trace.strct.read_trace_m68k = strct->read_trace_m68k;
     this->trace.strct.ptr = strct->ptr;
@@ -120,7 +120,7 @@ void ARM7TDMI_setup_tracing(struct ARM7TDMI* this, struct jsm_debug_read_trace *
     this->trace.source_id = source_id;
 }
 
-void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, struct disassembly_entry* entry)
+void ARM7TDMI_disassemble_entry(struct ARM7TDMI *this, disassembly_entry* entry)
 {
     u16 IR = this->trace.strct.read_trace_m68k(this->trace.strct.ptr, entry->addr, 1, 1);
     u16 opcode = IR;
@@ -223,7 +223,7 @@ void ARM7TDMI_reload_pipeline(struct ARM7TDMI* this)
     }
 }
 
-static void print_context(struct ARM7TDMI *this, struct ARMctxt *ct, struct jsm_string *out)
+static void print_context(struct ARM7TDMI *this, ARMctxt *ct, jsm_string *out)
 {
     jsm_string_quickempty(out);
     u32 needs_commaspace = 0;

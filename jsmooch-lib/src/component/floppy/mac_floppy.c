@@ -73,7 +73,7 @@ static void mac_floppy_save(struct mac_floppy *mflpy)
 }
 
 
-int mac_floppy_load(struct mac_floppy *mflpy, const char* fname, struct buf *b)
+int mac_floppy_load(struct mac_floppy *mflpy, const char* fname, buf *b)
 {
     int r;
     if (ends_with(fname, ".image")) {
@@ -136,7 +136,7 @@ u32 dc42_calc_checksum(const u8 *buf, u32 count, u32 chk)
     return chk;
 }
 
-void *dc42_load_gcr(struct mac_floppy *mflpy, struct buf *b, u32 head_count, u32 *check, u32 fmt)
+void *dc42_load_gcr(struct mac_floppy *mflpy, buf *b, u32 head_count, u32 *check, u32 fmt)
 {
     u32 tracki, headi, sectori;
     u32 sector_count;
@@ -195,7 +195,7 @@ int dc42_load_tags(struct mac_floppy *mflpy, u8 *bptr, u32 tags_size, u32 *check
     return 1;
 }
 
-int mac_floppy_dc42_load(struct mac_floppy *mflpy, struct buf *b)
+int mac_floppy_dc42_load(struct mac_floppy *mflpy, buf *b)
 {
     u32 check = 0;
     fill_mac_floppy_tracks(mflpy, 1);
@@ -264,7 +264,7 @@ int mac_floppy_dc42_load(struct mac_floppy *mflpy, struct buf *b)
 }
 
 
-int mac_floppy_plain_load(struct mac_floppy *mflpy, struct buf *b)
+int mac_floppy_plain_load(struct mac_floppy *mflpy, buf *b)
 {
     printf("\nDISC SIZE: %lldb %lldKb", b->size, b->size >> 10);
     u8 *buf_ptr = (u8 *)b->ptr;

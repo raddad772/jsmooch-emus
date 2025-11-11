@@ -14,7 +14,7 @@ u32 NDS_IPC_fifo_is_not_empty(struct NDS_CPU_FIFO *this)
     return this->len != 0;
 }
 
-void NDS_IPC_empty_fifo(struct NDS *this, struct NDS_CPU_FIFO *f)
+void NDS_IPC_empty_fifo(struct NDS *this, NDS_CPU_FIFO *f)
 {
     f->head = 0;
     f->tail = 0;

@@ -117,7 +117,7 @@ struct ISO9660_volume_descriptor {
 
 void GDI_init(struct GDI_image *);
 void GDI_delete(struct GDI_image *);
-void GDI_load(char *folder, const char *filename, struct GDI_image *img);
+void GDI_load(char *folder, const char *filename, GDI_image *img);
 void GDI_GetToc(struct GDI_image *, u32 *toc, u32 area);
 
 #ifdef __cplusplus

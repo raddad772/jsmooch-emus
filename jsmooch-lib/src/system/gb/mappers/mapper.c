@@ -9,7 +9,7 @@
 #include "mbc3.h"
 #include "mbc5.h"
 
-struct GB_mapper* new_GB_mapper(struct GB_clock* clock, struct GB_bus* bus, enum GB_mappers which)
+struct GB_mapper* new_GB_mapper(struct GB_clock* clock, GB_bus* bus, enum GB_mappers which)
 {
 	struct GB_mapper* mapper = malloc(sizeof(struct GB_mapper));
 	mapper->which = which;
