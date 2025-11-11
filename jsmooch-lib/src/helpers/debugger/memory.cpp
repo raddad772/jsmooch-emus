@@ -4,13 +4,13 @@
 
 #include "memory.h"
 
-#include "helpers/cvec.h"
+#include "debugger.h"
 #include "events.h"
 
 
 void memory_view::add_module(const char *name, u32 inid, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest))
 {
-    memory_view_module &mm = modules.push_back;
+    memory_view_module &mm = modules.emplace_back();
     strcpy(mm.name, name);
     mm.id = inid;
     mm.addr_digits = addr_digits;

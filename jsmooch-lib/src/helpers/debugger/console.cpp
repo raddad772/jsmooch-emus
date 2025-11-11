@@ -2,7 +2,8 @@
 // Created by . on 3/1/25.
 //
 
-#include <string.h>
+#include <cstring>
+#include "debugger.h"
 #include "console.h"
 
 void console_view::add_char(u8 c)

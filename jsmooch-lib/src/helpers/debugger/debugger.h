@@ -493,9 +493,27 @@ struct debugger_widget_textbox {
 };
 
 struct debugger_widget {
-    //explicit debugger_widget(JSMD_widgets kind);
     void make(JSMD_widgets kind);
     ~debugger_widget();
+    debugger_widget() = default;
+    explicit debugger_widget(JSMD_widgets k) { make(k); }
+
+    // Disable copy
+    debugger_widget(const debugger_widget&) = delete;
+    debugger_widget& operator=(const debugger_widget&) = delete;
+
+    // Enable move
+    debugger_widget(debugger_widget&& other) noexcept {
+        move_from(std::move(other));
+    }
+
+    debugger_widget& operator=(debugger_widget&& other) noexcept {
+        if (this != &other) {
+            destroy_active();
+            move_from(std::move(other));
+        }
+        return *this;
+    }
 
     JSMD_widgets kind = JSMD_textbox;
     u32 same_line{}, enabled{}, visible{};
@@ -509,6 +527,7 @@ struct debugger_widget {
 
 private:
     void destroy_active();
+    void move_from(debugger_widget&& other) noexcept;
 };
 
 

@@ -67,7 +67,7 @@ void debugger_interface_dirty_mem(debugger_interface *dbgr, u32 mem_bus, u32 add
                 break; }
             case dview_disassembly: {
                 disassembly_view &dview = dv.disassembly;
-                dv.dirty_mem(dbgr, addr_start, addr_end);
+                dview.dirty_mem(mem_bus, addr_start, addr_end);
                 break; }
             default:
                 assert(1==0);
@@ -90,7 +90,7 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
     update.on_pause = UPDATE_ON_PAUSE_DEFAULT;
     update.on_step = UPDATE_ON_STEP_DEFAULT;
     switch(kind) {
-        case dview_nullptr:
+        case dview_null:
             assert(1==2);
             break;
         case dview_dbglog:
@@ -120,6 +120,31 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
             break;
         default:
             assert(1==2);
+    }
+}
+
+void debugger_widget::move_from(debugger_widget&& other) noexcept {
+    kind = other.kind;
+    same_line = other.same_line;
+    enabled = other.enabled;
+    visible = other.visible;
+
+    // Move construct the active member
+    switch (kind) {
+        case JSMD_checkbox:
+            new (&checkbox) debugger_widget_checkbox(std::move(other.checkbox));
+            break;
+        case JSMD_radiogroup:
+            new (&radiogroup) debugger_widget_radiogroup(std::move(other.radiogroup));
+            break;
+        case JSMD_textbox:
+            new (&textbox) debugger_widget_textbox(std::move(other.textbox));
+            break;
+        case JSMD_colorkey:
+            new (&colorkey) debugger_widget_colorkey(std::move(other.colorkey));
+            break;
+        default:
+            break;
     }
 }
 
@@ -175,58 +200,57 @@ debugger_widget::~debugger_widget()
 void debugger_widgets_add_textbox(std::vector<debugger_widget> &widgets, char *text, u32 same_line)
 {
     debugger_widget &w = widgets.emplace_back();
-    debugger_widget_init(w, JSMD_textbox);
-    w->same_line = same_line;
-    jsm_string_sprintf(&w->textbox.contents, "%s", text);
-    w->enabled = 1;
-    w->visible = 1;
+    w.same_line = same_line;
+    w.textbox.contents.sprintf("%s", text);
+    w.enabled = 1;
+    w.visible = 1;
 }
 
 void debugger_widgets_textbox_clear(debugger_widget_textbox *tb)
 {
-    jsm_string_quickempty(&tb->contents);
+    tb->contents.quickempty();
 }
 
 int debugger_widgets_textbox_sprintf(debugger_widget_textbox *tb, const char *format, ...)
 {
     va_list va;
     va_start(va, format);
-    int num = jsm_string_vsprintf(&tb->contents, format, va);
+    int num = tb->contents.vsprintf(format, va);
     va_end(va);
     return num;
 }
 
-void debugger_widgets_add_checkbox(cvec *widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+void debugger_widgets_add_checkbox(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
 {
-    debugger_widget *w = cvec_push_back(widgets);
-    debugger_widget_init(w, JSMD_checkbox);
-    w->same_line = same_line;
-    snprintf(w->checkbox.text, sizeof(w->checkbox.text), "%s", text);
-    w->enabled = enabled;
-    w->checkbox.value = default_value;
-    w->visible = 1;
+    debugger_widget &w = widgets.emplace_back();
+    w.make(JSMD_checkbox);
+    w.same_line = same_line;
+    snprintf(w.checkbox.text, sizeof(w.checkbox.text), "%s", text);
+    w.enabled = enabled;
+    w.checkbox.value = default_value;
+    w.visible = 1;
 }
 
-debugger_widget *debugger_widgets_add_color_key(cvec *widgets, const char *default_text, u32 default_visible)
+debugger_widget &debugger_widgets_add_color_key(std::vector<debugger_widget> &widgets, const char *default_text, u32 default_visible)
 {
-    debugger_widget *w = cvec_push_back(widgets);
-    debugger_widget_init(w, JSMD_colorkey);
-    w->enabled = 1;
-    w->same_line = 1;
-    snprintf(w->colorkey.title, sizeof(w->colorkey.title), "%s", default_text);
-    w->visible = default_visible;
+    debugger_widget &w = widgets.emplace_back();
+    w.make(JSMD_colorkey);
+    w.enabled = 1;
+    w.same_line = 1;
+    snprintf(w.colorkey.title, sizeof(w.colorkey.title), "%s", default_text);
+    w.visible = default_visible;
     return w;
 }
 
-debugger_widget *debugger_widgets_add_radiogroup(cvec* widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
+debugger_widget &debugger_widgets_add_radiogroup(std::vector<debugger_widget> &widgets, const char *text, u32 enabled, u32 default_value, u32 same_line)
 {
-    debugger_widget *w = cvec_push_back(widgets);
-    debugger_widget_init(w, JSMD_radiogroup);
-    w->same_line = same_line;
-    w->enabled = enabled;
-    snprintf(w->radiogroup.title, sizeof(w->radiogroup.title), "%s", text);
-    w->radiogroup.value = default_value;
-    w->visible = 1;
+    debugger_widget &w = widgets.emplace_back();
+    w.make(JSMD_radiogroup);
+    w.same_line = same_line;
+    w.enabled = enabled;
+    snprintf(w.radiogroup.title, sizeof(w.radiogroup.title), "%s", text);
+    w.radiogroup.value = default_value;
+    w.visible = 1;
     return w;
 }
 
@@ -249,13 +273,13 @@ void debugger_widget_colorkey::add_item(const char *str, u32 color)
 
 void debugger_widget_radiogroup_add_button(debugger_widget *radiogroup, const char *text, u32 value, u32 same_line)
 {
-    debugger_widget *w = cvec_push_back(&radiogroup->radiogroup.buttons);
-    debugger_widget_init(w, JSMD_checkbox);
-    w->same_line = same_line;
-    w->enabled = 1;
-    snprintf(w->checkbox.text, sizeof(w->checkbox.text), "%s", text);
-    w->checkbox.value = value;
-    w->visible = 1;
+    debugger_widget &w = radiogroup->radiogroup.buttons.emplace_back();
+    w.make(JSMD_checkbox);
+    w.same_line = same_line;
+    w.enabled = 1;
+    snprintf(w.checkbox.text, sizeof(w.checkbox.text), "%s", text);
+    w.checkbox.value = value;
+    w.visible = 1;
 }
 
 void debugger_view::move_union_from(debugger_view&& other) {
@@ -289,7 +313,7 @@ void debugger_view::destroy_active()
 {
     options.clear();
     switch(kind) {
-        case dview_nullptr:
+        case dview_null:
             assert(1==2);
             break;
         case dview_disassembly:
