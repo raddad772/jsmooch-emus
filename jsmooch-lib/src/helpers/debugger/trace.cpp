@@ -50,7 +50,7 @@ void trace_view::printf(u32 col, char *format, ...)
         return;
     }
     assert(!waiting_for_startline);
-    assert(col < cvec_len(&columns));
+    assert(col < columns.size());
     va_list va;
     va_start(va, format);
     lptr->cols[col].vsprintf(format, va);

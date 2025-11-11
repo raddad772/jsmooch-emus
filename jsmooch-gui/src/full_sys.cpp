@@ -59,7 +59,7 @@ static u32 get_closest_pow2(u32 b)
 }
 
 void test_gdi() {
-    GDI_image foo{};
+/*    GDI_image foo{};
     GDI_init(&foo);
     const char *homeDir = getenv("HOME");
 
@@ -74,7 +74,7 @@ void test_gdi() {
     printf("\nHEY! %s", PATH);
     GDI_load(PATH, "crazy_taxi/crazytaxi.gdi", &foo);
 
-    GDI_delete(&foo);
+    GDI_delete(&foo);*/
 }
 
 u32 grab_BIOSes(multi_file_set* BIOSes, jsm::systems which)

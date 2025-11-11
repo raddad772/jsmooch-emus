@@ -108,7 +108,6 @@ debugger_view::debugger_view(debugger_view_kinds kind) : kind(kind), memory{}
         case dview_memory:
             new (&memory) memory_view();
             break;
-
         case dview_events:
             new (&events) events_view();
             break;

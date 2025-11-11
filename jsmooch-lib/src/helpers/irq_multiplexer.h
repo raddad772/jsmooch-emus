@@ -2,9 +2,7 @@
 // Created by . on 2/15/25.
 //
 
-#ifndef JSMOOCH_EMUS_IRQ_MULTIPLEXER_CPP_H
-#define JSMOOCH_EMUS_IRQ_MULTIPLEXER_CPP_H
-
+#pragma once
 #include "helpers/int.h"
 
 struct IRQ_multiplexer {
@@ -15,4 +13,3 @@ struct IRQ_multiplexer {
     void clear();
 };
 
-#endif //JSMOOCH_EMUS_IRQ_MULTIPLEXER_H

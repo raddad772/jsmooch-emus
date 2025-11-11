@@ -131,6 +131,7 @@ struct memory_view {
     memory_view() {
         modules.reserve(50);
     }
+    ~memory_view() {};
     memory_view_module *get_module(u32 id);
     u32 num_modules();
     void add_module(const char *name, u32 inid, u32 addr_digits, u32 range_start, u32 range_end, void *readptr, void (*readmem16func)(void *ptr, u32 addr, void *dest));

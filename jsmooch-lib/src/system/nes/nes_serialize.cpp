@@ -134,7 +134,7 @@ void NESJ::save_state(serialized_state &state) {
     state.has_screenshot = 1;
     state.screenshot.allocate(256, 240);
     state.screenshot.clear();
-    NES_present(&nes.ppu.display_ptr.get(), state.screenshot.data.ptr, 0, 0, 256, 240);
+    NES_present(nes.ppu.display_ptr.get(), state.screenshot.data.ptr, 0, 0, 256, 240);
 
     nes.serialize(state);
     nes.clock.serialize(state);

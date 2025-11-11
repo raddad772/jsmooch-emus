@@ -29,7 +29,6 @@ void rfb_init(read_file_buf*);
 void rfb_delete(read_file_buf *rfb);
 int rfb_read(const char *fname, const char *fpath, read_file_buf *rfb);
 
-#define MFS_MAX 20
 struct multi_file_set {
     u32 num_files;
     struct read_file_buf files[MFS_MAX];

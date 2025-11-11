@@ -2,10 +2,7 @@
 // Created by . on 11/26/24.
 //
 
-#ifndef JSMOOCH_EMUS_SRAM_H
-#define JSMOOCH_EMUS_SRAM_H
-
-
+#pragma once
 #include <cstdio>
 
 #include "int.h"
@@ -38,5 +35,3 @@ struct persistent_store {
     persistent_store() = default;
     ~persistent_store();
 };
-
-#endif //JSMOOCH_EMUS_SRAM_H

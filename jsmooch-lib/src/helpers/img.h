@@ -2,8 +2,7 @@
 // Created by . on 11/10/24.
 //
 
-#ifndef JSMOOCH_EMUS_IMG_H
-#define JSMOOCH_EMUS_IMG_H
+#pragma once
 
 #include "int.h"
 #include "buf.h"
@@ -22,8 +21,6 @@ struct jsimg {
     JSI_format format{};
     JSI_pixel_format pixel_format{};
 
-    void allocate(u32 width, u32 height);;
+    void allocate(u32 mwidth, u32 mheight);
     void clear();
 };
-
-#endif //JSMOOCH_EMUS_IMG_H

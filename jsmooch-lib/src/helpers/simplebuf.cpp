@@ -1,11 +1,6 @@
 //
 // Created by . on 8/29/24.
 //
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
-
 #include "simplebuf.h"
 #include "buf.h"
 
@@ -19,8 +14,8 @@ simplebuf8::~simplebuf8()
 
 void simplebuf8::clear()
 {
-    if (this->ptr == nullptr) return;
-    memset(this->ptr, 0, this->sz);
+    if (ptr == nullptr) return;
+    memset(ptr, 0, sz);
 }
 
 int popcount(u64 n)
@@ -31,14 +26,14 @@ int popcount(u64 n)
     return c;
 }
 
-void simplebuf8::allocate(u64 sz)
+void simplebuf8::allocate(u64 insz)
 {
     if (ptr != nullptr) {
         free(ptr);
     }
-    this->ptr = malloc(sz);
-    this->sz = sz;
-    this->mask = sz - 1; // only use if we're a power of 2
+    ptr = static_cast<u8 *>(malloc(insz));
+    sz = insz;
+    mask = sz - 1; // only use if we're a power of 2
 }
 
 void simplebuf8::copy_from_buf(buf &src)

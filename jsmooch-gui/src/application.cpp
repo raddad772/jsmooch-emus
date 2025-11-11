@@ -72,15 +72,13 @@ static void CreateSwapChain(int width, int height);
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-// Forward declarations
-static void load_inifile(inifile* ini)
+static void load_inifile(inifile& ini)
 {
-    inifile_init(ini);
+    ini.clear();
     char OUTPATH[500] = {};
     construct_path_with_home(OUTPATH, sizeof(OUTPATH), "dev/jsmooch.ini");
 
-    inifile_load(ini, OUTPATH);
-
+    ini.load(OUTPATH);
 }
 
 static void update_input(full_system* fsys, u32 *hotkeys, ImGuiIO& io) {
@@ -951,17 +949,17 @@ void imgui_jsmooch_app::render_window_manager()
 
 void imgui_jsmooch_app::do_setup_onstart()
 {
-    load_inifile(&ini);
+    load_inifile(ini);
 
     debugger_cols[0] = (char *)malloc(debugger_col_sizes[0]);
     debugger_cols[1] = (char *)malloc(debugger_col_sizes[1]);
     debugger_cols[2] = (char *)malloc(debugger_col_sizes[2]);
 
-    kv_pair *kvp = inifile_get_or_make_key(&ini, "general", "bios_base_path");
+    kv_pair *kvp = ini.get_or_make_key("general", "bios_base_path");
     assert(kvp);
     snprintf(BIOS_BASE_PATH, sizeof(BIOS_BASE_PATH), "%s", kvp->str_value);
 
-    kvp = inifile_get_or_make_key(&ini, "general", "rom_base_path");
+    kvp = ini.get_or_make_key("general", "rom_base_path");
     assert(kvp);
     snprintf(BIOS_BASE_PATH, sizeof(ROM_BASE_PATH), "%s", kvp->str_value);
 }
@@ -1209,8 +1207,6 @@ void imgui_jsmooch_app::mainloop(ImGuiIO& io) {
 void imgui_jsmooch_app::at_end()
 {
     fsys.destroy_system();
-
-    inifile_delete(&ini);
 }
 
 #ifdef JSM_OPENGL

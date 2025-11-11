@@ -6,12 +6,14 @@
 
 #include "img.h"
 
-void jsimg_allocate(jsimg *this, u32 width, u32 height)
+void jsimg::allocate(u32 mwidth, u32 mheight)
 {
-    data.allocate(width*height*4);
+    data.allocate(mwidth*mheight*4);
+    width = mwidth;
+    height = mheight;
 }
 
-void jsimg_clear(jsimg *this)
+void jsimg::clear()
 {
     if (data.ptr) {
         memset(data.ptr, 0, data.size);

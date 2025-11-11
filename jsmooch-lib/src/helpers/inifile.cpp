@@ -92,7 +92,7 @@ kv_section* inifile::get_or_make_section(const char* section)
     return sec;
 }
 
-kv_pair* inifile::inifile_get_or_make_key(const char* section, const char* key)
+kv_pair* inifile::get_or_make_key(const char* section, const char* key)
 {
     kv_section *sec = find_section(section);
     if (sec == nullptr) {

@@ -3,6 +3,8 @@
 #include "helpers/int.h"
 #include <vector>
 
+#define MFS_MAX 20
+
 struct buf {
     explicit buf(int n);
     buf() = default;
